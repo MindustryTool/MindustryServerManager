@@ -20,6 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import org.modelmapper.ModelMapper;
 import org.springframework.http.HttpStatus;
@@ -236,7 +237,7 @@ public class ServerService {
         return serverFlags.computeIfAbsent(id, (_ignore) -> EnumSet.noneOf(ServerFlag.class));
     }
 
-    private Mono<Void> checkRunningServer(Container container, ServerContainerMetadata metadata) {
+    private Mono<Void> checkRunningServer(Container container, ServerContainerMetadata metadata, boolean shouldAutoTurnOff) {
         var server = metadata.getInit();
 
         if (metadata.getInit().isAutoTurnOff() == false) {
@@ -276,7 +277,7 @@ public class ServerService {
 
                     var flag = getFlags(server.getId());
 
-                    if (shouldKill) {
+                    if (shouldKill && shouldAutoTurnOff) {
                         if (flag != null && flag.contains(ServerFlag.KILL)) {
                             sendConsole(server.getId(), "Auto shut down server: %s".formatted(server.getId()));
                             flag.remove(ServerFlag.KILL);
@@ -315,6 +316,15 @@ public class ServerService {
                 .withLabelFilter(List.of(Config.serverLabelName))//
                 .exec();
 
+        var runningWithAutoTurnOff = containers.stream()//
+                .filter(container -> container.getState().equalsIgnoreCase("running"))//
+                .filter(container -> readMetadataFromContainer(container).map(ServerContainerMetadata::getInit).map(
+                        InitServerRequest::isAutoTurnOff).orElse(false))//
+                .collect(Collectors.toList())
+                .size();
+
+        var shouldAutoTurnOff = runningWithAutoTurnOff > 2;
+
         Flux.fromIterable(containers)//
                 .flatMap(container -> {
                     var optional = readMetadataFromContainer(container);
@@ -333,7 +343,7 @@ public class ServerService {
                     var isRunning = container.getState().equalsIgnoreCase("running");
 
                     if (isRunning) {
-                        return checkRunningServer(container, metadata);
+                        return checkRunningServer(container, metadata, shouldAutoTurnOff);
                     }
                     return Mono.empty();
                 })//
