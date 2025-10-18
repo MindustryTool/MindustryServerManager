@@ -1,6 +1,6 @@
 services:
   server-manager:
-    image: ghcr.io/mindustryvn/mindustry-server-manager:latest
+    image: ghcr.io/mindustrytool/mindustry-server-manager:latest
     container_name: server-manager
     restart: always
     networks:
@@ -21,3 +21,4 @@ networks:
 
   server-manager:
     driver: bridge
+
