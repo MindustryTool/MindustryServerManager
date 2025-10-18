@@ -22,4 +22,5 @@ jobs:
         with:
           context: ./
           push: true
-          tags: ghcr.io/mindustryvn/mindustry-server-manager:latest
+          tags: ghcr.io/mindustrytool/mindustry-server-manager:latest
+
