@@ -316,14 +316,14 @@ public class ServerService {
                 .withLabelFilter(List.of(Config.serverLabelName))//
                 .exec();
 
-        var runningWithAutoTurnOff = containers.stream()//
-                .filter(container -> container.getState().equalsIgnoreCase("running"))//
-                .filter(container -> readMetadataFromContainer(container).map(ServerContainerMetadata::getInit).map(
-                        InitServerRequest::isAutoTurnOff).orElse(false))//
-                .collect(Collectors.toList())
-                .size();
+        // var runningWithAutoTurnOff = containers.stream()//
+        //         .filter(container -> container.getState().equalsIgnoreCase("running"))//
+        //         .filter(container -> readMetadataFromContainer(container).map(ServerContainerMetadata::getInit).map(
+        //                 InitServerRequest::isAutoTurnOff).orElse(false))//
+        //         .collect(Collectors.toList())
+        //         .size();
 
-        var shouldAutoTurnOff = runningWithAutoTurnOff > 2;
+        // var shouldAutoTurnOff = runningWithAutoTurnOff > 2;
 
         Flux.fromIterable(containers)//
                 .flatMap(container -> {
@@ -343,7 +343,7 @@ public class ServerService {
                     var isRunning = container.getState().equalsIgnoreCase("running");
 
                     if (isRunning) {
-                        return checkRunningServer(container, metadata, shouldAutoTurnOff);
+                        return checkRunningServer(container, metadata, true);
                     }
                     return Mono.empty();
                 })//
