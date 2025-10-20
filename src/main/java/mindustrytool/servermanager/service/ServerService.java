@@ -20,7 +20,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import org.modelmapper.ModelMapper;
 import org.springframework.http.HttpStatus;
@@ -164,7 +163,6 @@ public class ServerService {
                 });
 
         dockerClient.eventsCmd()
-                .withLabelFilter(Config.serverLabelName)
                 .exec(new ResultCallback.Adapter<>() {
                     @Override
                     public void onNext(Event event) {
@@ -179,16 +177,23 @@ public class ServerService {
 
                         try {
 
-                            var metadata = Utils.readJsonAsClass(
-                                    event.getActor().getAttributes().get(Config.serverLabelName).toString(),
-                                    ServerContainerMetadata.class);
+                            String name = "";
 
-                            Log.info("@ @", event.getStatus().toUpperCase(), metadata.getInit().getName());
+                            if (event.getActor().getAttributes().containsKey(Config.serverLabelName)) {
+                                var metadata = Utils.readJsonAsClass(
+                                        event.getActor().getAttributes().get(Config.serverLabelName).toString(),
+                                        ServerContainerMetadata.class);
+                                name = metadata.getInit().getName();
+                            } else {
+                                name = event.getFrom();
+                            }
+
+                            Log.info("@ @", event.getStatus().toUpperCase(), name);
 
                             webClient.post()
                                     .uri(Config.discordWebhook)
                                     .bodyValue(new WebhookMessage(
-                                            "Server %s %s".formatted(metadata.getInit().getName(), event.getStatus())))
+                                            "Server %s %s".formatted(name, event.getStatus())))
                                     .retrieve()
                                     .bodyToMono(Void.class)
                                     .onErrorResume(WebClientResponseException.class, ex -> {
@@ -237,7 +242,8 @@ public class ServerService {
         return serverFlags.computeIfAbsent(id, (_ignore) -> EnumSet.noneOf(ServerFlag.class));
     }
 
-    private Mono<Void> checkRunningServer(Container container, ServerContainerMetadata metadata, boolean shouldAutoTurnOff) {
+    private Mono<Void> checkRunningServer(Container container, ServerContainerMetadata metadata,
+            boolean shouldAutoTurnOff) {
         var server = metadata.getInit();
 
         if (metadata.getInit().isAutoTurnOff() == false) {
@@ -317,11 +323,12 @@ public class ServerService {
                 .exec();
 
         // var runningWithAutoTurnOff = containers.stream()//
-        //         .filter(container -> container.getState().equalsIgnoreCase("running"))//
-        //         .filter(container -> readMetadataFromContainer(container).map(ServerContainerMetadata::getInit).map(
-        //                 InitServerRequest::isAutoTurnOff).orElse(false))//
-        //         .collect(Collectors.toList())
-        //         .size();
+        // .filter(container -> container.getState().equalsIgnoreCase("running"))//
+        // .filter(container ->
+        // readMetadataFromContainer(container).map(ServerContainerMetadata::getInit).map(
+        // InitServerRequest::isAutoTurnOff).orElse(false))//
+        // .collect(Collectors.toList())
+        // .size();
 
         // var shouldAutoTurnOff = runningWithAutoTurnOff > 2;
 
