@@ -59,17 +59,6 @@ public class SecurityFilter implements WebFilter {
             return chain.filter(exchange);
         }
 
-        if (uri.contains("internal-api")) {
-            String clientIp = exchange.getRequest().getRemoteAddress().getAddress().getHostAddress();
-
-            if (!isInternalIp(clientIp)) {
-                log.info("Invalid ip accessing internal-api: " + clientIp);
-                return ApiError.forbidden();
-            }
-
-            return chain.filter(exchange);
-        }
-
         String securityKey = envConfig.serverConfig().securityKey();
 
         if (securityKey == null) {
@@ -109,9 +98,4 @@ public class SecurityFilter implements WebFilter {
             throw new IllegalStateException(e);
         }
     }
-
-    private boolean isInternalIp(String ip) {
-        return ip.startsWith("172.") || ip.startsWith("10.") || ip.startsWith("192.168.") || ip.equals("127.0.0.1");
-    }
-
 }

@@ -32,11 +32,9 @@ import lombok.RequiredArgsConstructor;
 import mindustrytool.servermanager.config.Config;
 import mindustrytool.servermanager.service.GatewayService;
 import mindustrytool.servermanager.service.ServerService;
+import mindustrytool.servermanager.types.data.PaginationRequest;
 import mindustrytool.servermanager.types.data.Player;
-import mindustrytool.servermanager.types.request.HostFromSeverRequest;
-import mindustrytool.servermanager.types.request.HostServerRequest;
-import mindustrytool.servermanager.types.request.InitServerRequest;
-import mindustrytool.servermanager.types.request.PaginationRequest;
+import mindustrytool.servermanager.types.data.ServerConfig;
 import mindustrytool.servermanager.types.response.LiveStats;
 import mindustrytool.servermanager.types.response.ManagerMapDto;
 import mindustrytool.servermanager.types.response.ManagerModDto;
@@ -53,7 +51,7 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
 @RestController
-@RequestMapping("/api/v1")
+@RequestMapping("/v2")
 @RequiredArgsConstructor
 public class ServerController {
 
@@ -132,14 +130,14 @@ public class ServerController {
     }
 
     @PostMapping(path = "/servers/{id}/host", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<String> host(@PathVariable("id") UUID serverId, @Validated @RequestBody HostServerRequest request) {
+    public Flux<String> host(@PathVariable("id") UUID serverId, @Validated @RequestBody ServerConfig request) {
         return serverService.host(serverId, request);
     }
 
     @PostMapping(path = "/servers/{id}/host-from-server", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<String> hostFromServer(//
             @PathVariable("id") UUID serverId,
-            @Validated @RequestBody HostFromSeverRequest request//
+            @Validated @RequestBody ServerConfig request//
     ) {
         return serverService.hostFromServer(serverId, request).subscribeOn(Schedulers.single());
     }
@@ -154,7 +152,7 @@ public class ServerController {
         return serverService.stats(serverId);
     }
 
-    @GetMapping(path = "/servers/{id}/live-stats", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @GetMapping(path = "/servers/{id}/stats/live", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<LiveStats> liveStats(@PathVariable("id") UUID serverId) {
         return serverService.liveStats(serverId);
     }
@@ -241,7 +239,7 @@ public class ServerController {
     @PostMapping("servers/{id}/mismatch")
     public Flux<String> getMismatch(//
             @PathVariable("id") UUID serverId,
-            @Validated @RequestBody InitServerRequest init//
+            @Validated @RequestBody ServerConfig init//
     ) {
         return serverService.getMismatch(serverId, init).flatMapMany(item -> Flux.fromIterable(item));
     }

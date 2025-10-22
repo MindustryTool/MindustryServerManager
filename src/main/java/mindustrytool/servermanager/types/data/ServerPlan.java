@@ -1,4 +1,4 @@
-package mindustrytool.servermanager.types.request;
+package mindustrytool.servermanager.types.data;
 
 import lombok.Data;
 

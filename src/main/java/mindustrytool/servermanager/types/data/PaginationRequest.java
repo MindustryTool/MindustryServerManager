@@ -1,4 +1,4 @@
-package mindustrytool.servermanager.types.request;
+package mindustrytool.servermanager.types.data;
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;

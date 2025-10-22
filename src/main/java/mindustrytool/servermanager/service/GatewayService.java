@@ -2,7 +2,6 @@ package mindustrytool.servermanager.service;
 
 import java.net.URI;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -25,14 +24,10 @@ import lombok.extern.slf4j.Slf4j;
 import mindustrytool.servermanager.EnvConfig;
 import mindustrytool.servermanager.config.Config;
 import mindustrytool.servermanager.types.data.Player;
-import mindustrytool.servermanager.types.request.HostServerRequest;
-import mindustrytool.servermanager.types.response.ApiServerDto;
-import mindustrytool.servermanager.types.response.BuildLogDto;
+import mindustrytool.servermanager.types.data.ServerConfig;
 import mindustrytool.servermanager.types.response.MindustryPlayerDto;
-import mindustrytool.servermanager.types.response.PlayerDto;
 import mindustrytool.servermanager.types.response.PlayerInfoDto;
 import mindustrytool.servermanager.types.response.ServerCommandDto;
-import mindustrytool.servermanager.types.response.ServerDto;
 import mindustrytool.servermanager.types.response.StatsDto;
 import mindustrytool.servermanager.utils.ApiError;
 import reactor.core.Exceptions;
@@ -60,16 +55,12 @@ public class GatewayService {
         private final EnvConfig envConfig;
 
         @Getter
-        private final Backend backend;
-
-        @Getter
         private final Server server;
 
         public GatewayClient(UUID id, EnvConfig envConfig) {
             this.id = id;
             this.envConfig = envConfig;
 
-            this.backend = new Backend();
             this.server = new Server();
         }
 
@@ -206,7 +197,7 @@ public class GatewayService {
                                 error -> new ApiError(HttpStatus.BAD_REQUEST, "Timeout when say"));
             }
 
-            public Mono<Void> host(HostServerRequest request) {
+            public Mono<Void> host(ServerConfig request) {
                 return webClient.method(HttpMethod.POST)
                         .uri("host")
                         .bodyValue(request.setMode(request.getMode().toLowerCase()))//
@@ -345,103 +336,6 @@ public class GatewayService {
                         .timeout(Duration.ofSeconds(10))
                         .onErrorMap(TimeoutException.class,
                                 error -> new ApiError(HttpStatus.BAD_REQUEST, "Timeout when load workflow"));
-            }
-        }
-
-        public class Backend {
-            private final WebClient webClient = WebClient.builder()
-                    .codecs(configurer -> configurer
-                            .defaultCodecs()
-                            .maxInMemorySize(16 * 1024 * 1024))
-                    .baseUrl(URI.create(envConfig.serverConfig().serverUrl() + "/api/v3/").toString())
-                    .defaultStatusHandler(GatewayClient::handleStatus, GatewayClient::createError)
-                    .defaultHeaders(headers -> {
-                        headers.setBearerAuth("Bearer " + envConfig.serverConfig().accessToken());
-                        headers.set("X-SERVER-ID", id.toString());
-                    })
-                    .build();
-
-            public Mono<MindustryPlayerDto> setPlayer(PlayerDto payload) {
-                return webClient.method(HttpMethod.POST)
-                        .uri("servers/" + id.toString() + "/players")//
-                        .bodyValue(payload)//
-                        .retrieve()//
-                        .bodyToMono(MindustryPlayerDto.class)
-                        .timeout(Duration.ofSeconds(2))
-                        .onErrorMap(TimeoutException.class,
-                                error -> new ApiError(HttpStatus.BAD_REQUEST, "Backend timeout when set player"));
-            }
-
-            public Mono<Void> setStats(StatsDto payload) {
-                return webClient.method(HttpMethod.POST)
-                        .uri("servers/" + id.toString() + "/stats")//
-                        .bodyValue(payload)//
-                        .retrieve()//
-                        .bodyToMono(Void.class)
-                        .timeout(Duration.ofSeconds(2))
-                        .onErrorMap(TimeoutException.class,
-                                error -> new ApiError(HttpStatus.BAD_REQUEST, "Backend timeout when set stats"));
-            }
-
-            public Mono<ApiServerDto> getServers(int page, int size) {
-                return webClient.method(HttpMethod.GET)//
-                        .uri("servers?page=%s&size=%s".formatted(page, size))//
-                        .retrieve()//
-                        .bodyToFlux(ServerDto.class)//
-                        .collectList()//
-                        .map(server -> new ApiServerDto().setServers(server))
-                        .onErrorMap(TimeoutException.class,
-                                error -> new ApiError(HttpStatus.BAD_REQUEST, "Backend timeout when get server"));
-            }
-
-            public Mono<String> host(String serverId) {
-                return webClient.method(HttpMethod.POST)
-                        .uri("servers/" + serverId + "/host-from-server")//
-                        .retrieve()//
-                        .bodyToMono(String.class)
-                        .timeout(Duration.ofSeconds(45))
-                        .onErrorMap(TimeoutException.class,
-                                error -> new ApiError(HttpStatus.BAD_REQUEST, "Backend timeout when send host"));
-            }
-
-            public Mono<Void> sendChat(String chat) {
-                return webClient.method(HttpMethod.POST)
-                        .uri("servers/" + id.toString() + "/chat")//
-                        .bodyValue(chat)//
-                        .retrieve()//
-                        .bodyToMono(Void.class)
-                        .timeout(Duration.ofSeconds(2))
-                        .onErrorMap(TimeoutException.class,
-                                error -> new ApiError(HttpStatus.BAD_REQUEST, "Backend timeout when send chat"));
-            }
-
-            public Mono<Void> sendBuildLog(ArrayList<BuildLogDto> logs) {
-                return webClient.method(HttpMethod.POST)//
-                        .uri("servers/" + id.toString() + "/build-log")//
-                        .bodyValue(logs)//
-                        .retrieve()//
-                        .bodyToMono(Void.class)//
-                        .doOnError((error) -> log.error("Fail to send build log", error))
-                        .onErrorComplete();
-            }
-
-            public Mono<Void> sendConsole(String console) {
-                return webClient.method(HttpMethod.POST)
-                        .uri("servers/" + id.toString() + "/console")//
-                        .bodyValue(console)//
-                        .retrieve()//
-                        .bodyToMono(Void.class)//
-                        .timeout(Duration.ofSeconds(3))
-                        .doOnError((error) -> log.error("Fail to send to console", error));
-
-            }
-
-            public Mono<String> translate(String text, String targetLanguage) {
-                return webClient.method(HttpMethod.POST)//
-                        .uri("servers/translate/" + targetLanguage)//
-                        .bodyValue(text)//
-                        .retrieve()//
-                        .bodyToMono(String.class);
             }
         }
     }
