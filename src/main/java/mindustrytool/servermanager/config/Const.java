@@ -36,8 +36,8 @@ public class Const implements WebFluxConfigurer {
     public static int MAXIMUM_MINDUSTRY_SERVER_PORT = 20000;
 
     public static String volumeFolderPath = Const.IS_DEVELOPMENT ? "./data" : System.getenv("SERVER_MANAGER_DATA");
-    public static String serverLabelName = "com.mindustry-tool.server";
-    public static String serverIdLabel = "com.mindustry-tool.server.id";
+    public static String serverLabelName = "com.mindustry-tool.server.v2";
+    public static String serverIdLabel = "com.mindustry-tool.server.id.v2";
     public static String discordWebhook = "https://discord.com/api/webhooks/1412106054308728953/oDrnWfbyPMtg-Co6UPYcXcS_AEtHcSFTuZ-gSKOdQaSLdVDkRG3SEhODUdH4NVXuanmL";
     public static File volumeFolder = new File(volumeFolderPath);
 

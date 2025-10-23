@@ -299,7 +299,7 @@ public class DockerNodeManager extends NodeManager {
 
             var metadata = Utils.readJsonAsClass(label, ServerMetadata.class);
 
-            if (metadata == null) {
+            if (metadata == null || metadata.getConfig() == null) {
                 dockerClient.removeContainerCmd(container.getId())
                         .withForce(true)
                         .exec();
