@@ -10,12 +10,4 @@ import lombok.experimental.Accessors;
 public class ServerMetadata {
     private String serverImageHash;
     private ServerConfig config;
-
-    public static ServerMetadata from(ServerConfig config) {
-        ServerMetadata metadata = new ServerMetadata();
-
-        metadata.setConfig(config);
-
-        return metadata;
-    }
 }

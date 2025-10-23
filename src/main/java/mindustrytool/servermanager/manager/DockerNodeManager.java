@@ -170,7 +170,8 @@ public class DockerNodeManager extends NodeManager {
 
                 var serverImage = dockerClient.inspectImageCmd(request.getImage()).exec();
 
-                var currentMetadata = ServerMetadata.from(request)
+                var currentMetadata = new ServerMetadata()
+                        .setConfig(request)
                         .setServerImageHash(serverImage.getId());
 
                 var command = dockerClient.createContainerCmd(image)//
@@ -409,7 +410,6 @@ public class DockerNodeManager extends NodeManager {
         for (var container : containers) {
             var optional = readMetadataFromContainer(container);
             try {
-
                 if (optional.isPresent()) {
                     var metadata = optional.orElseThrow();
                     var serverId = metadata.getConfig().getId();
