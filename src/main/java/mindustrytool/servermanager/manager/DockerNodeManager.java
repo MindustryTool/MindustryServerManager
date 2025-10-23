@@ -495,6 +495,7 @@ public class DockerNodeManager extends NodeManager {
             @Override
             public void onComplete() {
                 Log.info("[" + serverId + "] Log stream ended.");
+
                 logCallbacks.remove(serverId);
             }
 
@@ -569,14 +570,17 @@ public class DockerNodeManager extends NodeManager {
                 @Override
                 public void onComplete() {
                     Log.info("[" + serverId + "] Stats stream ended.");
-                    emitter.complete();
+
+                    if (emitter.isCancelled() == false) {
+                        emitter.complete();
+                    }
                 }
 
                 @Override
                 public void onError(Throwable throwable) {
                     Log.info("[" + serverId + "] Stats stream error: " + throwable.getMessage());
 
-                    if (!emitter.isCancelled()) {
+                    if (emitter.isCancelled() == false) {
                         emitter.error(throwable);
                     }
                 }
