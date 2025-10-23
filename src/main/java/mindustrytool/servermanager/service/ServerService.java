@@ -2,8 +2,6 @@ package mindustrytool.servermanager.service;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.Duration;
@@ -15,30 +13,23 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.databind.JsonNode;
 import arc.files.Fi;
-import arc.files.ZipFi;
 import arc.struct.StringMap;
 import arc.util.Log;
-import arc.util.serialization.Json;
-import arc.util.serialization.Jval;
-import arc.util.serialization.Jval.Jformat;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import mindustry.core.Version;
 import mindustry.io.MapIO;
-import mindustry.mod.Mods.ModMeta;
 import mindustrytool.servermanager.types.data.NodeUsage;
 import mindustrytool.servermanager.types.data.ServerConfig;
 import mindustrytool.servermanager.types.data.ServerMisMatch;
 import mindustrytool.servermanager.types.event.LogEvent;
 import mindustrytool.servermanager.config.Const;
 import mindustrytool.servermanager.manager.NodeManager;
-import mindustrytool.servermanager.service.GatewayService.GatewayClient;
 import mindustrytool.servermanager.types.response.ManagerMapDto;
 import mindustrytool.servermanager.types.response.ManagerModDto;
 import mindustrytool.servermanager.types.response.MapDto;
@@ -61,70 +52,16 @@ import reactor.util.retry.Retry;
 @Service
 @RequiredArgsConstructor
 public class ServerService {
+    private final Long MAX_FILE_SIZE = 5000000l;
 
     private final GatewayService gatewayService;
     private final NodeManager nodeManager;
 
-    private enum ServerFlag {
+    private final ConcurrentHashMap<UUID, EnumSet<ServerFlag>> serverFlags = new ConcurrentHashMap<>();
+
+    private static enum ServerFlag {
         KILL,
         RESTART
-    }
-
-    private final ConcurrentHashMap<UUID, EnumSet<ServerFlag>> serverFlags = new ConcurrentHashMap<>();
-    private final Json json = new Json();
-
-    private final Long MAX_FILE_SIZE = 5000000l;
-
-
-    private Mono<Void> checkRunningServer(ServerConfig server, boolean shouldAutoTurnOff) {
-        var serverId = server.getId();
-        var flag = serverFlags.computeIfAbsent(serverId, (_ignore) -> EnumSet.noneOf(ServerFlag.class));
-
-        if (server.isAutoTurnOff() == false) {
-            // TODO: Restart when detect mismatch
-            return Mono.empty();
-        }
-
-        return gatewayService.of(server.getId())//
-                .getServer()//
-                .getStats()
-                .flatMap(stats -> {
-                    boolean shouldKill = stats.getPlayers().isEmpty();
-
-                    if (shouldKill && shouldAutoTurnOff) {
-                        if (flag != null && flag.contains(ServerFlag.KILL)) {
-                            var event = LogEvent.info(serverId, "Auto shut down server");
-                            nodeManager.fire(event);
-                            log.info(event.toString());
-                            flag.remove(ServerFlag.KILL);
-                            return remove(server.getId());
-                        } else {
-                            flag.add(ServerFlag.KILL);
-                            var event = LogEvent.info(serverId, "Server has no players, flag to kill");
-                            nodeManager.fire(event);
-                            log.info(event.toString());
-                            return Mono.empty();
-                        }
-                    } else {
-                        if (flag.contains(ServerFlag.KILL)) {
-                            var event = LogEvent.info(serverId, "Remove kill flag from server");
-                            nodeManager.fire(event);
-                            log.info(event.toString());
-                            flag.remove(ServerFlag.KILL);
-                            return Mono.empty();
-                        }
-                    }
-
-                    return Mono.empty();
-                })//
-                .retry(2)//
-                .onErrorResume(error -> {
-                    var event = LogEvent.error(serverId, "Error: " + error.getMessage());
-                    nodeManager.fire(event);
-                    log.error(event.toString());
-
-                    return Mono.empty();
-                });
     }
 
     @Scheduled(fixedDelay = 5, timeUnit = TimeUnit.MINUTES)
@@ -192,7 +129,12 @@ public class ServerService {
 
             Flux<LogEvent> waitForStatusFlux = Flux.concat(
                     Mono.just(LogEvent.info(serverId, "Wait for server status")),
-                    waitForHosting(serverGateway).thenReturn(LogEvent.info(serverId, "Server hosting")));
+                    serverGateway.isHosting()//
+                            .flatMap(b -> b //
+                                    ? Mono.empty()
+                                    : ApiError.badRequest("Server is not hosting yet"))//
+                            .retryWhen(Retry.fixedDelay(50, Duration.ofMillis(100)))
+                            .thenReturn(LogEvent.info(serverId, "Server hosting")));
 
             return Flux.concat(sendCommandFlux, sendHostFlux, waitForStatusFlux);
         });
@@ -220,14 +162,6 @@ public class ServerService {
 
             return nodeManager.getMismatch(serverId, config, stats, mods);
         });
-    }
-
-    public File getFile(UUID serverId, String path) {
-        return Paths
-                .get(Const.volumeFolderPath, "servers", serverId.toString(), "config",
-                        URLDecoder.decode(path, StandardCharsets.UTF_8))
-                .toFile();
-
     }
 
     private mindustry.maps.Map readMap(Fi file) {
@@ -312,7 +246,7 @@ public class ServerService {
 
         return Flux.fromIterable(result.values()).flatMap(entry -> {
             try {
-                var meta = loadMod(entry.getT1());
+                var meta = Utils.loadMod(entry.getT1());
 
                 return Mono.just(new ManagerModDto()//
                         .setFilename(entry.getT1().name())//
@@ -395,7 +329,7 @@ public class ServerService {
     }
 
     public Flux<MapDto> getMaps(UUID serverId) {
-        var folder = getFile(serverId, "maps");
+        var folder = nodeManager.getFile(serverId, "maps");
 
         if (!folder.exists()) {
             return Flux.empty();
@@ -421,19 +355,20 @@ public class ServerService {
     }
 
     public Flux<ModDto> getMods(UUID serverId) {
-        var folder = getFile(serverId, "mods");
+        var folder = nodeManager.getFile(serverId, "mods");
 
         if (!folder.exists()) {
             return Flux.empty();
         }
 
-        var modFiles = new Fi(folder).findAll(file -> file.extension().equalsIgnoreCase("jar") || file.extension()
-                .equalsIgnoreCase("zip"));
+        var modFiles = new Fi(folder)
+                .findAll(file -> file.extension().equalsIgnoreCase("jar")
+                        || file.extension().equalsIgnoreCase("zip"));
 
         var result = new ArrayList<ModDto>();
         for (var modFile : modFiles) {
             try {
-                var meta = loadMod(modFile);
+                var meta = Utils.loadMod(modFile);
                 result.add(new ModDto()//
                         .setFilename(modFile.name())//
                         .setName(meta.name)
@@ -467,56 +402,8 @@ public class ServerService {
         return Flux.fromIterable(result);
     }
 
-    private ModMeta findMeta(Fi file) {
-        Fi metaFile = null;
-
-        var metaFiles = List.of("mod.json", "mod.hjson", "plugin.json", "plugin.hjson");
-        for (String name : metaFiles) {
-            if ((metaFile = file.child(name)).exists()) {
-                break;
-            }
-        }
-
-        if (!metaFile.exists()) {
-            return null;
-        }
-
-        ModMeta meta = json.fromJson(ModMeta.class, Jval.read(metaFile.readString()).toString(Jformat.plain));
-        meta.cleanup();
-        return meta;
-    }
-
-    private ModMeta loadMod(Fi sourceFile) throws Exception {
-        ZipFi rootZip = null;
-
-        try {
-            Fi zip = sourceFile.isDirectory() ? sourceFile : (rootZip = new ZipFi(sourceFile));
-            if (zip.list().length == 1 && zip.list()[0].isDirectory()) {
-                zip = zip.list()[0];
-            }
-
-            ModMeta meta = findMeta(zip);
-
-            if (meta == null) {
-                log.warn("Mod @ doesn't have a '[mod/plugin].[h]json' file, delete and skipping.", zip);
-                sourceFile.delete();
-                throw new ApiError(HttpStatus.UNPROCESSABLE_ENTITY, "Invalid file: No mod.json found.");
-            }
-
-            return meta;
-        } catch (Exception e) {
-            if (e instanceof ApiError) {
-                throw e;
-            }
-            // delete root zip file so it can be closed on windows
-            if (rootZip != null)
-                rootZip.delete();
-            throw new RuntimeException("Can not load mod from: " + sourceFile.name(), e);
-        }
-    }
-
     public Flux<ServerFileDto> getFiles(UUID serverId, String path) {
-        var folder = getFile(serverId, path);
+        var folder = nodeManager.getFile(serverId, path);
 
         return Mono.just(folder) //
                 .filter(file -> file.length() < MAX_FILE_SIZE)//
@@ -547,34 +434,16 @@ public class ServerService {
     }
 
     public boolean fileExists(UUID serverId, String path) {
-        var file = getFile(serverId, path);
+        var file = nodeManager.getFile(serverId, path);
 
         return file.exists();
     }
 
     public Mono<Void> createFile(UUID serverId, FilePart filePart, String path) {
-        var folder = getFile(serverId, path);
+        var folder = nodeManager.getFile(serverId, path);
 
         if (!folder.exists()) {
             folder.mkdirs();
-        }
-
-        if (folder.getPath().contains("mods")) {
-            // Remove all old mods if exists
-            var parts = filePart.filename().replace(".jar", "").split("_");
-            if (parts.length == 2) {
-                try {
-                    var id = UUID.fromString(parts[0]);
-                    new Fi(folder)//
-                            .findAll()//
-                            .select(f -> f.name().startsWith(id.toString()))//
-                            .each(f -> {
-                                f.delete();
-                            });
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
         }
 
         File file = new File(folder, filePart.filename());
@@ -591,35 +460,11 @@ public class ServerService {
     }
 
     public Mono<Void> deleteFile(UUID serverId, String path) {
-        var file = getFile(serverId, path);
+        var file = nodeManager.getFile(serverId, path);
 
-        if (!file.exists()) {
-            log.info("Delete file: " + path + " is not exists");
-            return Mono.empty();
-        }
-
-        if (file.isDirectory()) {
-            var children = file.listFiles();
-            if (children != null) {
-                for (File child : children) {
-                    child.delete();
-                    log.info("Deleted: " + child.getPath());
-                }
-            }
-        }
-        log.info("Deleted: " + file.getPath());
-        file.delete();
+        Utils.deleteFileRecursive(file);
 
         return Mono.empty();
-    }
-
-    private Mono<Void> waitForHosting(GatewayClient.Server gateway) {
-        return gateway.isHosting()//
-                .flatMap(isHosting -> isHosting //
-                        ? Mono.empty()
-                        : ApiError.badRequest("Server is not hosting yet"))//
-                .retryWhen(Retry.fixedDelay(50, Duration.ofMillis(100)))
-                .then();
     }
 
     public Mono<Void> ok(UUID serverId) {
@@ -661,5 +506,56 @@ public class ServerService {
         }
 
         return Mono.just(Utils.readFile(file));
+    }
+
+    private Mono<Void> checkRunningServer(ServerConfig server, boolean shouldAutoTurnOff) {
+        var serverId = server.getId();
+        var flag = serverFlags.computeIfAbsent(serverId, (_ignore) -> EnumSet.noneOf(ServerFlag.class));
+
+        if (server.isAutoTurnOff() == false) {
+            // TODO: Restart when detect mismatch
+            return Mono.empty();
+        }
+
+        return gatewayService.of(server.getId())//
+                .getServer()//
+                .getStats()
+                .flatMap(stats -> {
+                    boolean shouldKill = stats.getPlayers().isEmpty();
+
+                    if (shouldKill && shouldAutoTurnOff) {
+                        if (flag != null && flag.contains(ServerFlag.KILL)) {
+                            var event = LogEvent.info(serverId, "Auto shut down server");
+                            nodeManager.fire(event);
+                            log.info(event.toString());
+                            flag.remove(ServerFlag.KILL);
+                            return remove(server.getId());
+                        } else {
+                            flag.add(ServerFlag.KILL);
+                            var event = LogEvent.info(serverId, "Server has no players, flag to kill");
+                            nodeManager.fire(event);
+                            log.info(event.toString());
+                            return Mono.empty();
+                        }
+                    } else {
+                        if (flag.contains(ServerFlag.KILL)) {
+                            var event = LogEvent.info(serverId, "Remove kill flag from server");
+                            nodeManager.fire(event);
+                            log.info(event.toString());
+                            flag.remove(ServerFlag.KILL);
+                            return Mono.empty();
+                        }
+                    }
+
+                    return Mono.empty();
+                })//
+                .retry(2)//
+                .onErrorResume(error -> {
+                    var event = LogEvent.error(serverId, "Error: " + error.getMessage());
+                    nodeManager.fire(event);
+                    log.error(event.toString());
+
+                    return Mono.empty();
+                });
     }
 }

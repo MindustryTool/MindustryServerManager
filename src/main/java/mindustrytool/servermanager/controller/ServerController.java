@@ -29,6 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import lombok.RequiredArgsConstructor;
+import mindustrytool.servermanager.manager.NodeManager;
 import mindustrytool.servermanager.service.GatewayService;
 import mindustrytool.servermanager.service.ServerService;
 import mindustrytool.servermanager.types.data.NodeUsage;
@@ -54,6 +55,7 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class ServerController {
 
+    private final NodeManager nodeManager;
     private final ServerService serverService;
     private final GatewayService gatewayService;
 
@@ -77,7 +79,7 @@ public class ServerController {
     public ResponseEntity<Resource> downloadFile(//
             @PathVariable("id") UUID id, @RequestParam(name = "path", required = true) String path) {
 
-        var file = serverService.getFile(id, path);
+        var file = nodeManager.getFile(id, path);
         try {
             InputStreamResource resource = new InputStreamResource(
                     new FileInputStream(file));
