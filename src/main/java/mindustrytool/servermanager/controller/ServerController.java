@@ -41,7 +41,7 @@ import mindustrytool.servermanager.types.event.LogEvent;
 import mindustrytool.servermanager.types.response.ManagerMapDto;
 import mindustrytool.servermanager.types.response.ManagerModDto;
 import mindustrytool.servermanager.types.response.MapDto;
-import mindustrytool.servermanager.types.response.MindustryPlayerDto;
+import mindustrytool.servermanager.types.response.MindustryToolPlayerDto;
 import mindustrytool.servermanager.types.response.ModDto;
 import mindustrytool.servermanager.types.response.PlayerInfoDto;
 import mindustrytool.servermanager.types.response.ServerCommandDto;
@@ -123,7 +123,7 @@ public class ServerController {
 
     @PostMapping("/servers/{id}/players/{playerId}")
     public Mono<Void> setPlayer(@PathVariable("id") UUID serverId, @PathVariable("playerId") String playerId,
-            @RequestBody MindustryPlayerDto request) {
+            @RequestBody MindustryToolPlayerDto request) {
         return serverService.updatePlayer(serverId, request);
     }
 

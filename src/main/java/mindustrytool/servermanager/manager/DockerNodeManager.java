@@ -37,6 +37,8 @@ import mindustrytool.servermanager.types.data.ServerState;
 import mindustrytool.servermanager.types.data.WebhookMessage;
 import mindustrytool.servermanager.types.data.ServerMisMatch;
 import mindustrytool.servermanager.types.event.LogEvent;
+import mindustrytool.servermanager.types.event.StartEvent;
+import mindustrytool.servermanager.types.event.StopEvent;
 import mindustrytool.servermanager.types.response.ModDto;
 import mindustrytool.servermanager.types.response.StatsDto;
 import mindustrytool.servermanager.utils.Utils;
@@ -440,26 +442,34 @@ public class DockerNodeManager extends NodeManager {
                             return;
                         }
 
-                        if (status.equalsIgnoreCase("start")) {
+                        var containers = dockerClient.listContainersCmd()
+                                .withIdFilter(List.of(containerId))
+                                .exec();
 
-                            var containers = dockerClient.listContainersCmd()
-                                    .withIdFilter(List.of(containerId))
-                                    .exec();
-
-                            if (containers.size() != 1) {
-                                return;
-                            }
-
-                            var container = containers.get(0);
-
-                            readMetadataFromContainer(container)
-                                    .ifPresent(metadata -> logCallbacks.computeIfAbsent(
-                                            metadata.getConfig().getId(),
-                                            id -> createLogCallack(containerId, id)));
+                        if (containers.size() != 1) {
+                            return;
                         }
 
-                        String name = Optional.ofNullable(event.getActor().getAttributes().get(Const.serverLabelName))
-                                .map(attr -> Utils.readJsonAsClass(attr, ServerMetadata.class))
+                        var container = containers.get(0);
+
+                        var optional = readMetadataFromContainer(container);
+
+                        optional.ifPresent(metadata -> {
+                            var serverId = metadata.getConfig().getId();
+                            var stopEvents = List.of("stop", "die", "kill", "destroy");
+
+                            if (status.equalsIgnoreCase("start")) {
+                                fire(new StartEvent(serverId, metadata));
+
+                                logCallbacks.computeIfAbsent(
+                                        metadata.getConfig().getId(),
+                                        id -> createLogCallack(containerId, id));
+                            } else if (stopEvents.stream().anyMatch(stop -> status.equalsIgnoreCase(stop))) {
+                                fire(new StopEvent(serverId, metadata));
+                            }
+                        });
+
+                        String name = optional
                                 .map(meta -> meta.getConfig().getName())
                                 .orElse(event.getFrom());
 

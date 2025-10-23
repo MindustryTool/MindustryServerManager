@@ -16,8 +16,6 @@ public class ServerDto {
     public String hostCommand;
     public String status = "BACKEND_UNSET";
     public boolean official;
-    public float ramUsage;
-    public float totalRam;
     public long players;
     public String mapName;
     private List<String> mods;

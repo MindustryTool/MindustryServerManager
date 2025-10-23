@@ -23,7 +23,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import mindustrytool.servermanager.config.Const;
 import mindustrytool.servermanager.types.data.ServerConfig;
-import mindustrytool.servermanager.types.response.MindustryPlayerDto;
+import mindustrytool.servermanager.types.response.MindustryToolPlayerDto;
 import mindustrytool.servermanager.types.response.PlayerDto;
 import mindustrytool.servermanager.types.response.PlayerInfoDto;
 import mindustrytool.servermanager.types.response.ServerCommandDto;
@@ -110,7 +110,7 @@ public class GatewayService {
 										"Timeout when get plugin version"));
 			}
 
-			public Mono<Void> updatePlayer(MindustryPlayerDto request) {
+			public Mono<Void> updatePlayer(MindustryToolPlayerDto request) {
 				return webClient.method(HttpMethod.PUT)//
 						.uri("players/" + request.getUuid())//
 						.bodyValue(request)//

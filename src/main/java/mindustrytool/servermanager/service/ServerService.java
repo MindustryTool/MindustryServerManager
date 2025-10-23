@@ -33,7 +33,7 @@ import mindustrytool.servermanager.manager.NodeManager;
 import mindustrytool.servermanager.types.response.ManagerMapDto;
 import mindustrytool.servermanager.types.response.ManagerModDto;
 import mindustrytool.servermanager.types.response.MapDto;
-import mindustrytool.servermanager.types.response.MindustryPlayerDto;
+import mindustrytool.servermanager.types.response.MindustryToolPlayerDto;
 import mindustrytool.servermanager.types.response.ModDto;
 import mindustrytool.servermanager.types.response.ModMetaDto;
 import mindustrytool.servermanager.types.response.ServerFileDto;
@@ -492,7 +492,7 @@ public class ServerService {
                 .getImage();
     }
 
-    public Mono<Void> updatePlayer(UUID serverId, MindustryPlayerDto payload) {
+    public Mono<Void> updatePlayer(UUID serverId, MindustryToolPlayerDto payload) {
         return gatewayService.of(serverId).getServer().updatePlayer(payload);
     }
 
