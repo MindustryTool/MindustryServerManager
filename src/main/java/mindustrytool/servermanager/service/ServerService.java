@@ -508,16 +508,16 @@ public class ServerService {
         return Mono.just(Utils.readFile(file));
     }
 
-    private Mono<Void> checkRunningServer(ServerConfig server, boolean shouldAutoTurnOff) {
-        var serverId = server.getId();
+    private Mono<Void> checkRunningServer(ServerConfig config, boolean shouldAutoTurnOff) {
+        var serverId = config.getId();
         var flag = serverFlags.computeIfAbsent(serverId, (_ignore) -> EnumSet.noneOf(ServerFlag.class));
 
-        if (server.isAutoTurnOff() == false) {
+        if (config.isAutoTurnOff() == false) {
             // TODO: Restart when detect mismatch
             return Mono.empty();
         }
 
-        return gatewayService.of(server.getId())//
+        return gatewayService.of(serverId)//
                 .getServer()//
                 .getStats()
                 .flatMap(stats -> {
@@ -529,7 +529,7 @@ public class ServerService {
                             nodeManager.fire(event);
                             log.info(event.toString());
                             flag.remove(ServerFlag.KILL);
-                            return remove(server.getId());
+                            return remove(serverId);
                         } else {
                             flag.add(ServerFlag.KILL);
                             var event = LogEvent.info(serverId, "Server has no players, flag to kill");
