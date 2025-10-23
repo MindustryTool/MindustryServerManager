@@ -29,13 +29,14 @@ import org.springframework.web.bind.annotation.RestController;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import lombok.RequiredArgsConstructor;
-import mindustrytool.servermanager.config.Config;
 import mindustrytool.servermanager.service.GatewayService;
 import mindustrytool.servermanager.service.ServerService;
+import mindustrytool.servermanager.types.data.NodeUsage;
 import mindustrytool.servermanager.types.data.PaginationRequest;
-import mindustrytool.servermanager.types.data.Player;
 import mindustrytool.servermanager.types.data.ServerConfig;
-import mindustrytool.servermanager.types.response.LiveStats;
+import mindustrytool.servermanager.types.data.ServerMisMatch;
+import mindustrytool.servermanager.types.event.BaseEvent;
+import mindustrytool.servermanager.types.event.LogEvent;
 import mindustrytool.servermanager.types.response.ManagerMapDto;
 import mindustrytool.servermanager.types.response.ManagerModDto;
 import mindustrytool.servermanager.types.response.MapDto;
@@ -43,34 +44,23 @@ import mindustrytool.servermanager.types.response.MindustryPlayerDto;
 import mindustrytool.servermanager.types.response.ModDto;
 import mindustrytool.servermanager.types.response.PlayerInfoDto;
 import mindustrytool.servermanager.types.response.ServerCommandDto;
-import mindustrytool.servermanager.types.response.ServerWithStatsDto;
 import mindustrytool.servermanager.types.response.ServerFileDto;
 import mindustrytool.servermanager.types.response.StatsDto;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
 
 @RestController
-@RequestMapping("/v2")
+@RequestMapping("api/v2")
 @RequiredArgsConstructor
 public class ServerController {
 
     private final ServerService serverService;
     private final GatewayService gatewayService;
 
-    @GetMapping("/servers/{id}")
-    public Mono<ServerWithStatsDto> getServer(@PathVariable("id") UUID serverId) {
-        return serverService.getServer(serverId);
-    }
-
-    @GetMapping("/servers/{id}/players")
-    public Flux<Player> getServerPlayers(@PathVariable("id") UUID serverId) {
-        return serverService.getPlayers(serverId);
-    }
-
-    @GetMapping("/servers")
-    public Flux<ServerWithStatsDto> getServers() {
-        return serverService.getServers();
+    @GetMapping(path = "/events", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<BaseEvent> getServers() {
+        // TODO send event to backend
+        return Flux.empty();
     }
 
     @GetMapping("/servers/{id}/files")
@@ -124,27 +114,15 @@ public class ServerController {
         return gatewayService.of(serverId).getServer().sendCommand(command);
     }
 
-    @PostMapping("/servers/{id}/say")
-    public Mono<Void> say(@PathVariable("id") UUID serverId, @RequestBody String message) {
-        return serverService.say(serverId, message);
-    }
-
     @PostMapping(path = "/servers/{id}/host", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<String> host(@PathVariable("id") UUID serverId, @Validated @RequestBody ServerConfig request) {
-        return serverService.host(serverId, request);
+    public Flux<LogEvent> host(@Validated @RequestBody ServerConfig request) {
+        return serverService.host(request);
     }
 
-    @PostMapping(path = "/servers/{id}/host-from-server", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<String> hostFromServer(//
-            @PathVariable("id") UUID serverId,
-            @Validated @RequestBody ServerConfig request//
-    ) {
-        return serverService.hostFromServer(serverId, request).subscribeOn(Schedulers.single());
-    }
-
-    @PostMapping("/servers/{id}/set-player")
-    public Mono<Void> setPlayer(@PathVariable("id") UUID serverId, @RequestBody MindustryPlayerDto request) {
-        return serverService.setPlayer(serverId, request);
+    @PostMapping("/servers/{id}/players/{playerId}")
+    public Mono<Void> setPlayer(@PathVariable("id") UUID serverId, @PathVariable("playerId") String playerId,
+            @RequestBody MindustryPlayerDto request) {
+        return serverService.updatePlayer(serverId, request);
     }
 
     @GetMapping("/servers/{id}/stats")
@@ -152,14 +130,9 @@ public class ServerController {
         return serverService.stats(serverId);
     }
 
-    @GetMapping(path = "/servers/{id}/stats/live", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<LiveStats> liveStats(@PathVariable("id") UUID serverId) {
-        return serverService.liveStats(serverId);
-    }
-
-    @PutMapping("/servers/{id}/shutdown")
-    public Mono<Void> shutdown(@PathVariable("id") UUID serverId) {
-        return serverService.shutdown(serverId);
+    @GetMapping(path = "/servers/{id}/usage", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<NodeUsage> getUsage(@PathVariable("id") UUID serverId) {
+        return serverService.getUsage(serverId);
     }
 
     @DeleteMapping("/servers/{id}/remove")
@@ -201,11 +174,6 @@ public class ServerController {
         return serverService.getMaps(serverId);
     }
 
-    @GetMapping("servers/{id}/plugin-version")
-    public Mono<String> getPluginVersion(@PathVariable("id") UUID serverId) {
-        return gatewayService.of(serverId).getServer().getPluginVersion();
-    }
-
     @GetMapping("servers/{id}/kicks")
     public Mono<Map<String, Long>> getKicks(@PathVariable("id") UUID serverId) {
         return gatewayService.of(serverId).getServer().getKickedIps();
@@ -221,27 +189,17 @@ public class ServerController {
         return gatewayService.of(serverId).getServer().getPlayers(request.getPage(), request.getSize(), banned, filter);
     }
 
-    @GetMapping("servers/{id}/manager-version")
-    public String getManagerVersion() {
-        return Config.MANAGER_VERSION;
-    }
-
     @GetMapping("servers/{id}/json")
     public Mono<JsonNode> getJson(@PathVariable("id") UUID serverId) {
         return gatewayService.of(serverId).getServer().getJson();
     }
 
-    @GetMapping("servers/{id}/routes")
-    public Mono<JsonNode> getRoutes(@PathVariable("id") UUID serverId) {
-        return gatewayService.of(serverId).getServer().getRoutes();
-    }
-
     @PostMapping("servers/{id}/mismatch")
-    public Flux<String> getMismatch(//
+    public Flux<ServerMisMatch> getMismatch(//
             @PathVariable("id") UUID serverId,
-            @Validated @RequestBody ServerConfig init//
+            @Validated @RequestBody ServerConfig config//
     ) {
-        return serverService.getMismatch(serverId, init).flatMapMany(item -> Flux.fromIterable(item));
+        return serverService.getMismatch(serverId, config);
     }
 
     @GetMapping("mods")
@@ -252,16 +210,6 @@ public class ServerController {
     @GetMapping("maps")
     public Flux<ManagerMapDto> getManagerMaps() {
         return serverService.getManagerMaps();
-    }
-
-    @DeleteMapping("maps/{filename}")
-    public void deleteManagerMap(@PathVariable("filename") String filename) {
-        serverService.deleteManagerMap(filename);
-    }
-
-    @DeleteMapping("mods/{filename}")
-    public void deleteManagerMod(@PathVariable("filename") String filename) {
-        serverService.deleteManagerMod(filename);
     }
 
     @GetMapping(path = "/servers/{id}/workflow/events", produces = MediaType.TEXT_EVENT_STREAM_VALUE)

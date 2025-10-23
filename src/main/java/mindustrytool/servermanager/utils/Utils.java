@@ -4,6 +4,8 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+
 import javax.imageio.ImageIO;
 
 import org.springframework.core.io.buffer.DataBufferUtils;
@@ -15,6 +17,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import reactor.core.publisher.Mono;
 
@@ -77,5 +80,48 @@ public class Utils {
         } catch (IOException e) {
             throw new RuntimeException("Can not parse to json: " + e.getMessage(), e);
         }
+    }
+
+    public static void writeObject(File file, String key, String value) throws IOException {
+        if (file.isDirectory()) {
+            deleteFileRecursive(file);
+        }
+
+        if (!file.exists()) {
+            file.createNewFile();
+        }
+
+        var config = Utils.readFile(file);
+        var original = config;
+
+        var keys = key.split("\\.");
+
+        for (int i = 0; i < keys.length - 1; i++) {
+            var k = keys[i];
+            if (config.has(k)) {
+                config = config.get(k);
+            } else {
+                config = ((ObjectNode) config).set(k, Utils.readString("{}"));
+                config = config.get(k);
+            }
+        }
+
+        ((ObjectNode) config).set(keys[keys.length - 1], Utils.readString(value));
+
+        Files.writeString(file.toPath(), Utils.toJsonString(original));
+    }
+
+    public static boolean deleteFileRecursive(File file) {
+        if (!file.exists()) {
+            return false;
+        }
+
+        if (file.isDirectory()) {
+            for (File f : file.listFiles()) {
+                deleteFileRecursive(f);
+            }
+        }
+
+        return file.delete();
     }
 }

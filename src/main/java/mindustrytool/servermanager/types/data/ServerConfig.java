@@ -9,6 +9,7 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 import lombok.experimental.Accessors;
+import mindustrytool.servermanager.types.response.ServerPlanDto;
 
 @Data
 @Accessors(chain = true)
@@ -44,5 +45,5 @@ public class ServerConfig {
     @NotEmpty
     @Size(max = 256)
     private String image;
-    private ServerPlan plan = new ServerPlan();
+    private ServerPlanDto plan = new ServerPlanDto();
 }

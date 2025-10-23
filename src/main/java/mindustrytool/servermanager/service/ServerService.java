@@ -3,49 +3,23 @@ package mindustrytool.servermanager.service;
 import java.io.File;
 import java.io.IOException;
 import java.net.URLDecoder;
-import java.nio.channels.AsynchronousCloseException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
-
-import org.modelmapper.ModelMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
-
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.github.dockerjava.api.DockerClient;
-import com.github.dockerjava.api.async.ResultCallback;
-import com.github.dockerjava.api.model.Bind;
-import com.github.dockerjava.api.model.Container;
-import com.github.dockerjava.api.model.Event;
-import com.github.dockerjava.api.model.ExposedPort;
-import com.github.dockerjava.api.model.Frame;
-import com.github.dockerjava.api.model.HostConfig;
-import com.github.dockerjava.api.model.LogConfig;
-import com.github.dockerjava.api.model.Ports;
-import com.github.dockerjava.api.model.PullResponseItem;
-import com.github.dockerjava.api.model.RestartPolicy;
-import com.github.dockerjava.api.model.Statistics;
-import com.github.dockerjava.api.model.Volume;
-
 import arc.files.Fi;
 import arc.files.ZipFi;
 import arc.struct.StringMap;
@@ -53,37 +27,31 @@ import arc.util.Log;
 import arc.util.serialization.Json;
 import arc.util.serialization.Jval;
 import arc.util.serialization.Jval.Jformat;
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import mindustry.core.Version;
 import mindustry.io.MapIO;
 import mindustry.mod.Mods.ModMeta;
-import mindustrytool.servermanager.EnvConfig;
+import mindustrytool.servermanager.types.data.NodeUsage;
 import mindustrytool.servermanager.types.data.ServerConfig;
-import mindustrytool.servermanager.types.data.ServerMetadata;
-import mindustrytool.servermanager.config.Config;
+import mindustrytool.servermanager.types.data.ServerMisMatch;
+import mindustrytool.servermanager.types.event.LogEvent;
+import mindustrytool.servermanager.config.Const;
+import mindustrytool.servermanager.manager.NodeManager;
 import mindustrytool.servermanager.service.GatewayService.GatewayClient;
-import mindustrytool.servermanager.types.data.Player;
-import mindustrytool.servermanager.types.response.LiveStats;
 import mindustrytool.servermanager.types.response.ManagerMapDto;
 import mindustrytool.servermanager.types.response.ManagerModDto;
 import mindustrytool.servermanager.types.response.MapDto;
 import mindustrytool.servermanager.types.response.MindustryPlayerDto;
 import mindustrytool.servermanager.types.response.ModDto;
 import mindustrytool.servermanager.types.response.ModMetaDto;
-import mindustrytool.servermanager.types.response.ServerWithStatsDto;
 import mindustrytool.servermanager.types.response.ServerFileDto;
 import mindustrytool.servermanager.types.response.StatsDto;
+import mindustrytool.servermanager.types.response.StatsDto.ServerStatus;
 import mindustrytool.servermanager.utils.ApiError;
-import mindustrytool.servermanager.utils.SSE;
 import mindustrytool.servermanager.utils.Utils;
-import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.publisher.Sinks;
-import reactor.core.publisher.Sinks.EmitResult;
-import reactor.core.publisher.Sinks.Many;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
@@ -93,232 +61,74 @@ import reactor.util.retry.Retry;
 @Service
 @RequiredArgsConstructor
 public class ServerService {
-    private final Set<String> ignoredEvents = Set.of("exec_create", "exec_start", "exec_die", "exec_detach");
 
-    private final DockerClient dockerClient;
-    private final EnvConfig envConfig;
-    private final ModelMapper modelMapper;
     private final GatewayService gatewayService;
-    private final DockerService dockerService;
-    private final WebClient webClient;
+    private final NodeManager nodeManager;
 
     private enum ServerFlag {
         KILL,
         RESTART
     }
 
-    private final ConcurrentHashMap<UUID, Object> serverLocks = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, EnumSet<ServerFlag>> serverFlags = new ConcurrentHashMap<>();
-    private final Map<UUID, Statistics[]> statsSnapshots = new ConcurrentHashMap<>();
     private final Json json = new Json();
-
-    private final Map<UUID, Disposable> streamSubscriptions = new ConcurrentHashMap<>();
-    private final Map<UUID, Sinks.Many<String>> consoleStreams = new ConcurrentHashMap<>();
-    private final Map<UUID, ResultCallback.Adapter<Frame>> logsAdapter = new ConcurrentHashMap<>();
-    private final Map<UUID, ResultCallback.Adapter<Statistics>> statsAdapter = new ConcurrentHashMap<>();
 
     private final Long MAX_FILE_SIZE = 5000000l;
 
-    private record ContainerStats(
-            float cpuUsage,
-            float jvmRamUsage, // in MB
-            float totalRam // in MB
-    ) {
-    }
 
-    private final HashMap<UUID, ContainerStats> stats = new HashMap<>();
+    private Mono<Void> checkRunningServer(ServerConfig server, boolean shouldAutoTurnOff) {
+        var serverId = server.getId();
+        var flag = serverFlags.computeIfAbsent(serverId, (_ignore) -> EnumSet.noneOf(ServerFlag.class));
 
-    private <T> T lock(UUID id, Supplier<T> fn) {
-        Object lock = serverLocks.computeIfAbsent(id, _ignore -> new Object());
-
-        synchronized (lock) {
-            return fn.get();
-        }
-    }
-
-    @PostConstruct
-    private void init() {
-        dockerClient.eventsCmd()
-                .withEventFilter("start")
-                .exec(new ResultCallback.Adapter<>() {
-                    @Override
-                    public void onNext(Event event) {
-                        String containerId = event.getId();
-
-                        var containers = dockerClient.listContainersCmd()
-                                .withIdFilter(List.of(containerId))
-                                .exec();
-
-                        if (containers.size() != 1) {
-                            return;
-                        }
-
-                        var container = containers.get(0);
-
-                        readMetadataFromContainer(container)
-                                .ifPresent(metadata -> attachToLogs(containerId, metadata.getId()));
-                    }
-                });
-
-        dockerClient.eventsCmd()
-                .exec(new ResultCallback.Adapter<>() {
-                    @Override
-                    public void onNext(Event event) {
-                        if (event.getAction() != null) {
-                            String status = event.getStatus();
-
-                            if (status != null && ignoredEvents.stream()
-                                    .anyMatch(ignored -> status.toLowerCase().startsWith(ignored))) {
-                                return;
-                            }
-                        }
-
-                        try {
-
-                            String name = "";
-
-                            if (event.getActor().getAttributes().containsKey(Config.serverLabelName)) {
-                                var metadata = Utils.readJsonAsClass(
-                                        event.getActor().getAttributes().get(Config.serverLabelName).toString(),
-                                        ServerMetadata.class);
-                                name = metadata.getName();
-                            } else {
-                                name = event.getFrom();
-                            }
-
-                            Log.info("@ @", event.getStatus().toUpperCase(), name);
-
-                            webClient.post()
-                                    .uri(Config.discordWebhook)
-                                    .bodyValue(new WebhookMessage(
-                                            "Server %s %s".formatted(name, event.getStatus())))
-                                    .retrieve()
-                                    .bodyToMono(Void.class)
-                                    .onErrorResume(WebClientResponseException.class, ex -> {
-                                        ex.printStackTrace();
-                                        return Mono.empty();
-                                    }).subscribe();
-
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                            Log.info(event.toString());
-                        }
-
-                    }
-                });
-    }
-
-    private record WebhookMessage(String content) {
-    }
-
-    @PostConstruct
-    @Scheduled(fixedDelay = 1, timeUnit = TimeUnit.MINUTES)
-    private void findAndAttachToLogs() {
-        var containers = dockerClient.listContainersCmd()//
-                .withShowAll(true)//
-                .withLabelFilter(List.of(Config.serverLabelName))//
-                .exec();
-
-        for (var container : containers) {
-            var optional = readMetadataFromContainer(container);
-
-            if (optional.isPresent()) {
-                var metadata = optional.orElseThrow();
-
-                if (!logsAdapter.containsKey(metadata.getId())) {
-                    attachToLogs(container.getId(), metadata.getId());
-                }
-
-                if (!statsAdapter.containsKey(metadata.getId())) {
-                    attachToStats(metadata.getId());
-                }
-            }
-        }
-    }
-
-    private EnumSet<ServerFlag> getFlags(UUID id) {
-        return serverFlags.computeIfAbsent(id, (_ignore) -> EnumSet.noneOf(ServerFlag.class));
-    }
-
-    private Mono<Void> checkRunningServer(Container container, ServerMetadata metadata,
-            boolean shouldAutoTurnOff) {
-        var server = metadata;
-
-        if (metadata.isAutoTurnOff() == false) {
-            var flag = getFlags(server.getId());
-
-            return stats(server.getId()).flatMap(stats -> {
-                if (stats.isHosting()) {
-                    flag.remove(ServerFlag.RESTART);
-                } else {
-                    if (flag.contains(ServerFlag.RESTART)) {
-                        sendConsole(server.getId(), "Restart server [%s] due to running but not hosting".formatted(
-                                server.getId()));
-
-                                // TODO: restart feature
-                        return restart(server.getId())
-                                .then(syncStats(server.getId()));
-
-                    } else if (flag.contains(ServerFlag.RESTART)) {
-                        flag.add(ServerFlag.RESTART);
-                        sendConsole(server.getId(),
-                                "Flag server [%s] to restart due to running but not hosting".formatted(server.getId()));
-                    }
-                }
-
-                return Mono.empty();
-            });
+        if (server.isAutoTurnOff() == false) {
+            // TODO: Restart when detect mismatch
+            return Mono.empty();
         }
 
         return gatewayService.of(server.getId())//
                 .getServer()//
-                .getPlayers()//
-                .collectList()//
-                .onErrorReturn((List.of()))
-                .flatMap(players -> {
-                    boolean shouldKill = players.isEmpty();
-
-                    var flag = getFlags(server.getId());
+                .getStats()
+                .flatMap(stats -> {
+                    boolean shouldKill = stats.getPlayers().isEmpty();
 
                     if (shouldKill && shouldAutoTurnOff) {
                         if (flag != null && flag.contains(ServerFlag.KILL)) {
-                            sendConsole(server.getId(), "Auto shut down server: %s".formatted(server.getId()));
+                            var event = LogEvent.info(serverId, "Auto shut down server");
+                            nodeManager.fire(event);
+                            log.info(event.toString());
                             flag.remove(ServerFlag.KILL);
-
                             return remove(server.getId());
                         } else {
-                            log.info("Server {} has no players, flag to kill.", server.getId());
                             flag.add(ServerFlag.KILL);
-
-                            sendConsole(server.getId(),
-                                    "Server [%s] has no players, flag to kill".formatted(server.getId()));
-
+                            var event = LogEvent.info(serverId, "Server has no players, flag to kill");
+                            nodeManager.fire(event);
+                            log.info(event.toString());
                             return Mono.empty();
                         }
                     } else {
-                        if (flag != null && flag.contains(ServerFlag.KILL)) {
-                            sendConsole(server.getId(), "Remove kill flag from server: %s".formatted(server.getId()));
+                        if (flag.contains(ServerFlag.KILL)) {
+                            var event = LogEvent.info(serverId, "Remove kill flag from server");
+                            nodeManager.fire(event);
+                            log.info(event.toString());
                             flag.remove(ServerFlag.KILL);
-                            log.info("Remove flag from server {}", server.getId());
-
                             return Mono.empty();
                         }
                     }
 
                     return Mono.empty();
                 })//
-                .retry(5)//
-                .doOnError(error -> sendConsole(server.getId(), "Error: " + error.getMessage()))
-                .onErrorComplete();
+                .retry(2)//
+                .onErrorResume(error -> {
+                    var event = LogEvent.error(serverId, "Error: " + error.getMessage());
+                    nodeManager.fire(event);
+                    log.error(event.toString());
+
+                    return Mono.empty();
+                });
     }
 
     @Scheduled(fixedDelay = 5, timeUnit = TimeUnit.MINUTES)
     private void cron() {
-        var containers = dockerClient.listContainersCmd()//
-                .withShowAll(true)//
-                .withLabelFilter(List.of(Config.serverLabelName))//
-                .exec();
-
         // var runningWithAutoTurnOff = containers.stream()//
         // .filter(container -> container.getState().equalsIgnoreCase("running"))//
         // .filter(container ->
@@ -329,505 +139,92 @@ public class ServerService {
 
         // var shouldAutoTurnOff = runningWithAutoTurnOff > 2;
 
-        Flux.fromIterable(containers)//
-                .flatMap(container -> {
-                    var optional = readMetadataFromContainer(container);
-
-                    if (optional.isEmpty()) {
-                        if (container.getState().equalsIgnoreCase("running")) {
-                            dockerClient.stopContainerCmd(container.getId()).exec();
-                        }
-                        dockerClient.removeContainerCmd(container.getId()).exec();
-                        log.error("Container " + container.getId() + " has no metadata");
-                        return Mono.empty();
+        nodeManager.list()
+                .flatMap(state -> {
+                    if (state.running()) {
+                        return checkRunningServer(state.meta().orElseThrow().getConfig(), true);
                     }
 
-                    var metadata = optional.orElseThrow();
-
-                    var isRunning = container.getState().equalsIgnoreCase("running");
-
-                    if (isRunning) {
-                        return checkRunningServer(container, metadata, true);
-                    }
                     return Mono.empty();
-                })//
+                })
+                .timeout(Duration.ofMinutes(5))
                 .subscribeOn(Schedulers.boundedElastic())
                 .blockLast();
     }
 
-    public Mono<Long> getTotalPlayers() {
-        var containers = dockerClient.listContainersCmd()//
-                .withShowAll(true)//
-                .withLabelFilter(List.of(Config.serverLabelName))//
-                .exec();
-
-        return Flux.fromIterable(containers)//
-                .map(container -> readMetadataFromContainer(container).orElseThrow())
-                .flatMap(server -> stats(server.getId()))//
-                .map(stats -> stats.getPlayers())//
-                .collectList()//
-                .flatMap(list -> Mono.justOrEmpty(list.stream().reduce((prev, curr) -> prev + curr)))
-                .onErrorReturn(0L);//
-    }
-
-    public Container findContainerByServerId(UUID serverId) {
-        var containers = dockerClient.listContainersCmd()//
-                .withLabelFilter(Map.of(Config.serverIdLabel, serverId.toString()))//
-                .withShowAll(true)//
-                .exec();
-
-        if (containers.isEmpty()) {
-            return null;
-        } else if (containers.size() == 1) {
-            return containers.get(0);
-        }
-        log.info("Found " + containers.size() + " containers with id " + serverId + " delete duplicates");
-
-        return containers.get(0);
-    }
-
-    public Mono<Void> shutdown(UUID serverId) {
-        var container = findContainerByServerId(serverId);
-
-        log.info("Found %s container to stop".formatted(container.getId()));
-
-        dockerClient.stopContainerCmd(container.getId()).exec();
-        log.info("Stopped: " + container.getNames()[0]);
-
-        return syncStats(serverId);
-    }
-
-    private Mono<Void> syncStats(UUID serverId) {
-        return stats(serverId).then();
-    }
-
     public Mono<Void> remove(UUID serverId) {
-        var container = findContainerByServerId(serverId);
-
-        if (container == null) {
-            log.info("Container not found: " + serverId);
-            return Mono.empty();
-        }
-
-        if (!container.getState().equalsIgnoreCase("stopped")) {
-            dockerClient.stopContainerCmd(container.getId()).exec();
-            log.info("Stopped: " + container.getNames()[0]);
-        }
-
-        dockerClient.removeContainerCmd(container.getId()).exec();
-        log.info("Removed: " + container.getNames()[0]);
-
-        return Mono.empty();
-    }
-
-    public Mono<Void> restart(UUID serverId) {
-        return lock(serverId, () -> {
-            var container = findContainerByServerId(serverId);
-
-            if (container == null) {
-                log.info("Container not found: " + serverId);
-                return Mono.empty();
-            }
-
-            if (container.getState().equalsIgnoreCase("running")) {
-                dockerClient.stopContainerCmd(container.getId()).exec();
-                log.info("Stopped: " + container.getNames()[0]);
-            }
-
-            dockerClient.startContainerCmd(container.getId()).exec();
-
-            return syncStats(serverId);
-        });
+        return nodeManager.remove(serverId);
     }
 
     public Mono<Boolean> pause(UUID serverId) {
         return gatewayService.of(serverId)//
                 .getServer()//
-                .pause()//
-                .flatMap(res -> syncStats(serverId).thenReturn(res));
+                .pause();
     }
 
-    public Flux<ServerWithStatsDto> getServers() {
-        return Flux.fromIterable(dockerClient.listContainersCmd()//
-                .withLabelFilter(List.of(Config.serverLabelName))//
-                .exec())//
-                .flatMap(container -> Mono.justOrEmpty(readMetadataFromContainer(container)))
-                .map(server -> server)//
-                .flatMap(server -> stats(server.getId())//
-                        .map(stats -> modelMapper.map(server, ServerWithStatsDto.class)//
-                                .setUsage(stats)
-                                .setStatus(stats.getStatus()))//
-                        .onErrorResume(error -> {
-                            error.printStackTrace();
-                            return Mono
-                                    .just(modelMapper.map(server, ServerWithStatsDto.class)
-                                            .setUsage(new StatsDto().setStatus("ERROR")));
-                        }))
-                .timeout(Duration.ofSeconds(2));
-    }
+    public Flux<LogEvent> host(ServerConfig request) {
+        var serverId = request.getId();
+        var serverGateway = gatewayService.of(serverId).getServer();
 
-    public Mono<ServerWithStatsDto> getServer(UUID id) {
-        var container = findContainerByServerId(id);
+        Flux<LogEvent> hostFlux = serverGateway.isHosting().flatMapMany(isHosting -> {
 
-        if (container == null) {
-            return Mono.just(new ServerWithStatsDto().setStatus("DELETED"));
-        }
-
-        var metadata = readMetadataFromContainer(container).orElseThrow();
-
-        return stats(id)//
-                .map(stats -> {
-                    var dto = modelMapper.map(metadata, ServerWithStatsDto.class);
-                    return dto.setUsage(stats);
-                });
-    }
-
-    public Flux<Player> getPlayers(UUID id) {
-        return gatewayService.of(id).getServer()//
-                .getPlayers()//
-                .doOnError(error -> log.error("Failed to get players", error))//
-                .onErrorResume(_ignore -> Flux.empty());
-    }
-
-    private Optional<ServerMetadata> readMetadataFromContainer(Container container) {
-        try {
-            var label = container.getLabels().get(Config.serverLabelName);
-
-            if (label == null) {
-                return Optional.empty();
+            if (isHosting) {
+                var event = LogEvent.info(serverId, "Server is hosting, do nothing");
+                Log.info("Server is hosting, do nothing");
+                return Flux.just(event);
             }
 
-            var metadata = Utils.readJsonAsClass(label, ServerMetadata.class);
+            String[] preHostCommand = { //
+                    "config name %s".formatted(request.getName()), //
+                    "config desc %s".formatted(request.getDescription()), //
+                    "version"
+            };
 
-            if (metadata == null || metadata == null) {
-                return Optional.empty();
-            }
+            Flux<LogEvent> sendCommandFlux = Flux.concat(
+                    Mono.just(LogEvent.info(serverId, "Config server: " + Arrays.toString(preHostCommand))),
+                    serverGateway//
+                            .sendCommand(preHostCommand)
+                            .thenReturn(LogEvent.info(serverId, "Config done")));
 
-            return Optional.of(metadata);
-        } catch (Exception _e) {
-            return Optional.empty();
-        }
-    }
+            Flux<LogEvent> sendHostFlux = Flux.concat(
+                    Mono.just(LogEvent.info(serverId, "Host server")),
+                    serverGateway.host(request).then(Mono.empty()));
 
-    public Flux<String> hostFromServer(ServerConfig request) {
-        return SSE.create(callback -> {
+            Flux<LogEvent> waitForStatusFlux = Flux.concat(
+                    Mono.just(LogEvent.info(serverId, "Wait for server status")),
+                    waitForHosting(serverGateway).thenReturn(LogEvent.info(serverId, "Server hosting")));
 
-            log.info("Init server: " + request.getId());
-
-            if (request.getPort() <= 0) {
-                throw new ApiError(HttpStatus.BAD_GATEWAY, "Invalid port number");
-            }
-
-            String containerId = null;
-
-            var servers = dockerClient.listContainersCmd()
-                    .withShowAll(true)
-                    .withLabelFilter(List.of(Config.serverLabelName))
-                    .exec();
-
-            for (var server : servers) {
-                var optional = readMetadataFromContainer(server);
-
-                if (optional.isEmpty()) {
-                    continue;
-                }
-
-                var metadata = optional.get();
-                var isSamePort = metadata.getPort() == request.getPort();
-                var isSameId = metadata.getId().equals(request.getId());
-
-                if (isSamePort && !isSameId) {
-                    callback.accept(
-                            "Delete container " + server.getNames()[0] + " port: " + metadata.getPort());
-
-                    if (server.getState().equalsIgnoreCase("running")) {
-                        dockerClient.stopContainerCmd(server.getId()).exec();
-                    }
-
-                    dockerClient.removeContainerCmd(server.getId()).exec();
-                    continue;
-                }
-            }
-
-            var containers = dockerClient.listContainersCmd()//
-                    .withShowAll(true)//
-                    .withLabelFilter(Map.of(Config.serverIdLabel, request.getId().toString()))//
-                    .exec();
-
-            if (containers.isEmpty()) {
-                callback.accept("Container " + request.getId() + " got deleted, creating new");
-                containerId = createNewServerContainer(request, callback);
-            } else if (containers.size() != 1) {
-                for (var container : containers) {
-                    dockerClient.removeContainerCmd(container.getId()).exec();
-                }
-                containerId = createNewServerContainer(request, callback);
-            } else {
-                var container = containers.get(0);
-                containerId = container.getId();
-
-                var optional = readMetadataFromContainer(container);
-
-                if (optional.isEmpty()) {
-                    callback.accept("Container " + container.getId() + " has no metadata");
-                    if (container.getState().equalsIgnoreCase("running")) {
-                        dockerClient.stopContainerCmd(container.getId()).exec();
-                    }
-                    dockerClient.removeContainerCmd(container.getId()).exec();
-                    containerId = createNewServerContainer(request, callback);
-                }
-
-                callback.accept("Found container " + container.getNames()[0] + " status: " + container.getState());
-
-                if (!container.getState().equalsIgnoreCase("running")) {
-                    callback.accept("Start container " + container.getNames()[0]);
-                    dockerClient.startContainerCmd(containerId).exec();
-                }
-            }
-
-            var serverGateway = gatewayService.of(request.getId()).getServer();
-
-            attachToLogs(containerId, request.getId());
-
-            callback.accept("Waiting for server to start");
-
-            return serverGateway//
-                    .ok()
-                    .then(Mono.fromRunnable(() -> callback.accept("Server started, waiting for hosting")))
-                    .thenMany(host(request.getId(), request));
+            return Flux.concat(sendCommandFlux, sendHostFlux, waitForStatusFlux);
         });
+
+        Flux<LogEvent> createFlux = nodeManager.create(request);
+        Flux<LogEvent> waitingOkFlux = Flux.concat(//
+                Mono.just(LogEvent.info(serverId, "Waiting for server to start")), //
+                serverGateway//
+                        .ok()
+                        .then(Mono.just(LogEvent.info(serverId, "Server started, waiting for hosting"))));
+
+        return Flux.concat(//
+                createFlux,
+                waitingOkFlux, //
+                hostFlux);
     }
 
-    private String createNewServerContainer(ServerConfig request, Consumer<String> callback) {
-        try {
-            callback.accept("Pulling image: " + request.getImage());
-            dockerClient.pullImageCmd(request.getImage())
-                    .exec(new ResultCallback.Adapter<PullResponseItem>())
-                    .awaitCompletion();
-
-            callback.accept("Image pulled");
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-            callback.accept(e.getMessage());
-            sendConsole(request.getId(), e.getMessage());
-        }
-
-        String serverId = request.getId().toString();
-        var serverPath = Paths.get(Config.volumeFolderPath, "servers", serverId, "config")
-                .toAbsolutePath();
-
-        try {
-            Files.createDirectories(serverPath);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        Volume volume = new Volume("/config");
-        Bind bind = new Bind(serverPath.toString(), volume);
-
-        ExposedPort tcp = ExposedPort.tcp(Config.DEFAULT_MINDUSTRY_SERVER_PORT);
-        ExposedPort udp = ExposedPort.udp(Config.DEFAULT_MINDUSTRY_SERVER_PORT);
-
-        Ports portBindings = new Ports();
-
-        portBindings.bind(tcp, Ports.Binding.bindPort(request.getPort()));
-        portBindings.bind(udp, Ports.Binding.bindPort(request.getPort()));
-
-        log.info("Create new container on port " + request.getPort());
-
-        var image = request.getImage() == null || request.getImage().isEmpty()
-                ? envConfig.docker().mindustryServerImage()
-                : request.getImage();
-
-        var self = dockerService.getSelf();
-        var serverImage = dockerClient.inspectImageCmd(request.getImage()).exec();
-
-        var currentMetadata = ServerMetadata.from(request)
-                .setServerImageHash(serverImage.getId())//
-                .setServerManagerImageHash(self.getId());
-
-        var command = dockerClient.createContainerCmd(image)//
-                .withName(request.getId().toString())//
-                .withLabels(Map.of(//
-                        Config.serverLabelName, Utils.toJsonString(currentMetadata),
-                        Config.serverIdLabel, request.getId().toString()//
-                ));
-
-        var env = new ArrayList<String>();
-        var exposedPorts = new ArrayList<ExposedPort>();
-
-        exposedPorts.add(tcp);
-        exposedPorts.add(udp);
-
-        List<String> args = List.of(
-                "-XX:+UseContainerSupport",
-                "-XX:MaxRAMPercentage=75.0",
-                "-XX:+CrashOnOutOfMemoryError",
-                "-XX:+UseSerialGC",
-                "-XX:+AlwaysPreTouch",
-                "-XX:MaxHeapFreeRatio=20",
-                "-XX:MinHeapFreeRatio=10",
-                "-XX:GCTimeRatio=99",
-                "-XX:MaxRAM=" + request.getPlan().getRam() + "m");
-
-        env.addAll(request.getEnv().entrySet().stream().map(v -> v.getKey() + "=" + v.getValue()).toList());
-        env.add("IS_HUB=" + request.isHub());
-        env.add("SERVER_ID=" + serverId);
-        env.add("JAVA_TOOL_OPTIONS=" + String.join(" ", args));
-
-        if (Config.IS_DEVELOPMENT) {
-            env.add("ENV=DEV");
-            ExposedPort localTcp = ExposedPort.tcp(9999);
-            portBindings.bind(localTcp, Ports.Binding.bindPort(9999));
-            exposedPorts.add(localTcp);
-        }
-
-        command.withExposedPorts(exposedPorts)//
-                .withEnv(env)
-                // .withHealthcheck(
-                // new HealthCheck()//
-                // .withInterval(100000000000L)//
-                // .withRetries(5)
-                // .withTimeout(100000000000L) // 10 seconds
-                // .withTest(List.of(
-                // "CMD",
-                // "sh",
-                // "-c",
-                // "wget --spider -q http://" + serverId.toString()
-                // + ":9999/ok || exit 1")))
-                .withHostConfig(HostConfig.newHostConfig()//
-                        .withPortBindings(portBindings)//
-                        .withNetworkMode("mindustry-server")//
-                        // in bytes
-                        .withCpuPeriod(100000l)
-                        .withCpuQuota((long) ((request.getPlan().getCpu() * 100000)))
-                        .withRestartPolicy(request.isAutoTurnOff()//
-                                ? RestartPolicy.noRestart()
-                                : RestartPolicy.unlessStoppedRestart())
-                        .withAutoRemove(request.isAutoTurnOff())
-                        .withLogConfig(new LogConfig(LogConfig.LoggingType.JSON_FILE, Map.of(
-                                "max-size", "100m",
-                                "max-file", "5"//
-                        )))
-                        .withBinds(bind));
-
-        var result = command.exec();
-
-        var containerId = result.getId();
-
-        dockerClient.startContainerCmd(containerId).exec();
-
-        return containerId;
-    }
-
-    public Mono<List<String>> getMismatch(UUID serverId, ServerConfig init) {
-        var container = findContainerByServerId(serverId);
-
-        if (container == null) {
-            return Mono.empty();
-        }
-
-        var self = dockerService.getSelf();
-
-        return Mono.zipDelayError(stats(serverId), getMods(serverId).collectList()).map(zip -> {
+    public Flux<ServerMisMatch> getMismatch(UUID serverId, ServerConfig config) {
+        return Mono.zipDelayError(//
+                stats(serverId), //
+                getMods(serverId).collectList()//
+        ).flatMapMany(zip -> {
             var stats = zip.getT1();
             var mods = zip.getT2();
 
-            if (stats.getStatus().equals("NOT_RESPONSE")) {
-                return List.of("Server not response");
-            }
-
-            List<String> result = new ArrayList<>();
-
-            var meta = readMetadataFromContainer(container).orElseThrow();
-            var serverImage = dockerClient.inspectImageCmd(meta.getImage()).exec();
-
-            if (!meta.getServerImageHash().equals(serverImage.getId())) {
-                result.add("Server image outdated, \ncurrent: " + serverImage.getId() + "\nexpected: "
-                        + meta.getServerImageHash());
-            }
-
-            if (!meta.getImage().equals(init.getImage())) {
-                result.add("Server image mismatch\ncurrent: " + meta.getImage() + "\nexpected: "
-                        + init.getImage());
-            }
-
-            for (var mod : mods) {
-                if (stats.getMods().stream()
-                        .noneMatch(runningMod -> runningMod.getFilename().equals(mod.getFilename()))) {
-                    result.add("Mod " + mod.getName() + ":" + mod.getFilename() + " is not loaded");
-                }
-            }
-
-            for (var runningMod : stats.getMods()) {
-                if (mods.stream()
-                        .noneMatch(mod -> mod.getFilename().equals(runningMod.getFilename()))) {
-                    result.add("Mod " + runningMod.getName() + ":" + runningMod.getFilename() + " is removed");
-                }
-            }
-
-            if (init.isAutoTurnOff() != meta.isAutoTurnOff()) {
-                result.add("Auto turn off mismatch\ncurrent: " + meta.isAutoTurnOff() + "\nexpected: "
-                        + init.isAutoTurnOff());
-            }
-
-            if (!init.getMode().equals(meta.getMode())) {
-                result.add("Mode mismatch\ncurrent: " + meta.getMode() + "\nexpected: " + init.getMode());
-            }
-
-            if (!init.getImage().equals(meta.getImage())) {
-                result.add("Image outdated\ncurrent: " + meta.getImage() + "\nexpected: " + init.getImage());
-            }
-
-            for (var entry : init.getEnv().entrySet()) {
-                if (!meta.getEnv().containsKey(entry.getKey())) {
-                    result.add("Env " + entry.getKey() + " is not set");
-                } else if (!meta.getEnv().get(entry.getKey()).equals(entry.getValue())) {
-                    result.add("Env " + entry.getKey() + " mismatch\ncurrent: "
-                            + meta.getEnv().get(entry.getKey()) + "\nexpected: " + entry.getValue());
-                }
-            }
-
-            if (init.isHub() != meta.isHub()) {
-                result.add("Hub mismatch\ncurrent: " + meta.isHub() + "\nexpected: " + init.isHub());
-            }
-
-            if (init.getPort() != meta.getPort()) {
-                result.add("Port mismatch\ncurrent: " + meta.getPort() + "\nexpected: " + init.getPort());
-            }
-
-            if (!init.getHostCommand().equals(meta.getHostCommand())) {
-                result.add("Host command mismatch\ncurrent: " + meta.getHostCommand() + "\nexpected: "
-                        + init.getHostCommand());
-            }
-
-            if (!init.getPlan().getName().equals(meta.getPlan().getName())) {
-                result.add("Plan mismatch\ncurrent: " + meta.getPlan().getName() + "\nexpected: "
-                        + init.getPlan().getName());
-            }
-
-            if (init.getPlan().getCpu() != meta.getPlan().getCpu()) {
-                result.add("Plan cpu mismatch\ncurrent: " + meta.getPlan().getCpu() + "\nexpected: "
-                        + init.getPlan().getCpu());
-            }
-
-            if (init.getPlan().getRam() != meta.getPlan().getRam()) {
-                result.add("Plan ram mismatch\ncurrent: " + meta.getPlan().getRam() + "\nexpected: "
-                        + init.getPlan().getRam());
-            }
-
-            if (!self.getId().equals(meta.getServerManagerImageHash())) {
-                result.add("Server manager image mismatch\ncurrent: " + self.getId() + "\nexpected: "
-                        + meta.getServerManagerImageHash());
-            }
-
-            return result;
+            return nodeManager.getMismatch(serverId, config, stats, mods);
         });
     }
 
     public File getFile(UUID serverId, String path) {
         return Paths
-                .get(Config.volumeFolderPath, "servers", serverId.toString(), "config",
+                .get(Const.volumeFolderPath, "servers", serverId.toString(), "config",
                         URLDecoder.decode(path, StandardCharsets.UTF_8))
                 .toFile();
 
@@ -843,7 +240,7 @@ public class ServerService {
     }
 
     public Flux<ManagerMapDto> getManagerMaps() {
-        var folder = Paths.get(Config.volumeFolderPath, "servers").toFile();
+        var folder = Paths.get(Const.volumeFolderPath, "servers").toFile();
 
         if (!folder.exists()) {
             return Flux.empty();
@@ -884,7 +281,7 @@ public class ServerService {
     }
 
     public Flux<ManagerModDto> getManagerMods() {
-        var folder = Paths.get(Config.volumeFolderPath, "servers").toFile();
+        var folder = Paths.get(Const.volumeFolderPath, "servers").toFile();
 
         if (!folder.exists()) {
             return Flux.empty();
@@ -943,7 +340,7 @@ public class ServerService {
     }
 
     public void deleteManagerMap(String filename) {
-        var folder = Paths.get(Config.volumeFolderPath, "servers").toFile();
+        var folder = Paths.get(Const.volumeFolderPath, "servers").toFile();
 
         if (!folder.exists()) {
             return;
@@ -971,7 +368,7 @@ public class ServerService {
     }
 
     public void deleteManagerMod(String filename) {
-        var folder = Paths.get(Config.volumeFolderPath, "servers").toFile();
+        var folder = Paths.get(Const.volumeFolderPath, "servers").toFile();
 
         if (!folder.exists()) {
             return;
@@ -1064,13 +461,6 @@ public class ServerService {
                                 .setAuthor("Error")
                                 .setName("Error")
                                 .setDisplayName("Error")));
-
-                if (error instanceof ApiError) {
-                    sendConsole(serverId,
-                            "File doesn't have a '[mod/plugin].[h]json' file, delete and skipping: " + modFile.name());
-                } else {
-                    sendConsole(serverId, "Error while loading mod: " + modFile.name());
-                }
             }
         }
 
@@ -1179,7 +569,6 @@ public class ServerService {
                             .findAll()//
                             .select(f -> f.name().startsWith(id.toString()))//
                             .each(f -> {
-                                sendConsole(serverId, "Delete old plugin/mod: " + f.name());
                                 f.delete();
                             });
                 } catch (Exception e) {
@@ -1224,72 +613,8 @@ public class ServerService {
         return Mono.empty();
     }
 
-    public Mono<Void> say(UUID serverId, String message) {
-        var container = findContainerByServerId(serverId);
-
-        if (container == null || !container.getState().equalsIgnoreCase("running")) {
-            return Mono.empty();
-        }
-
-        return gatewayService.of(serverId).getServer().say(message);
-    }
-
-    public Flux<String> hostFromServer(UUID serverId, ServerConfig request) {
-        return hostFromServer(request);
-    }
-
-    public Flux<String> host(UUID serverId, ServerConfig request) {
-        Many<String> sink = Sinks.many().multicast().onBackpressureBuffer();
-
-        var gateway = gatewayService.of(serverId);
-
-        log.info("Host server: " + serverId);
-
-        var hostMono = gateway.getServer().isHosting().flatMapMany(isHosting -> {
-            if (isHosting) {
-                Log.info("Server is hosting, do nothing");
-                return Flux.just("Server is hosting, do nothing");
-            }
-
-            var container = findContainerByServerId(serverId);
-
-            if (container == null) {
-                Log.info("Server not initialized");
-                return ApiError.badRequest("Server not initialized");
-            }
-
-            sink.tryEmitNext("Reading metadata");
-
-            var server = readMetadataFromContainer(container).orElseThrow();
-
-            String[] preHostCommand = { //
-                    "config name %s".formatted(server.getName()), //
-                    "config desc %s".formatted(server.getDescription()), //
-                    "version"
-            };
-
-            for (var command : preHostCommand) {
-                Log.info("Execute command: " + command);
-                sink.tryEmitNext("Execute command: " + command);
-            }
-
-            return gateway.getServer()//
-                    .sendCommand(preHostCommand)//
-                    .then(gateway.getServer()
-                            .host(new ServerConfig()// \
-                                    .setMode(request.getMode())
-                                    .setHostCommand(request.getHostCommand())))//
-                    .then(Mono.fromCallable(() -> sink.tryEmitNext("Wait for server status")))
-                    .then(waitForHosting(gateway))
-                    .then(syncStats(serverId))
-                    .thenMany(Flux.just("Complete"));
-        });
-
-        return Flux.merge(sink.asFlux(), hostMono.doFinally(_ignore -> sink.tryEmitComplete()));
-    }
-
-    private Mono<Void> waitForHosting(GatewayClient gateway) {
-        return gateway.getServer().isHosting()//
+    private Mono<Void> waitForHosting(GatewayClient.Server gateway) {
+        return gateway.isHosting()//
                 .flatMap(isHosting -> isHosting //
                         ? Mono.empty()
                         : ApiError.badRequest("Server is not hosting yet"))//
@@ -1301,25 +626,11 @@ public class ServerService {
         return gatewayService.of(serverId).getServer().ok();
     }
 
-    public Flux<LiveStats> liveStats(UUID serverId) {
-        var init = stats(serverId).map(stats -> new LiveStats(0l, stats));
-        var interval = Flux.interval(Duration.ofSeconds(1))
-                .flatMap(index -> stats(serverId).map(stats -> new LiveStats(index + 1, stats)));
-
-        return Flux.merge(init, interval);
+    public Flux<NodeUsage> getUsage(UUID serverId) {
+        return nodeManager.getNodeUsage(serverId);
     }
 
     public Mono<StatsDto> stats(UUID serverId) {
-        var container = findContainerByServerId(serverId);
-
-        if (container == null) {
-            return Mono.just(new StatsDto().setStatus("DELETED"));
-        }
-
-        if (!container.getState().equalsIgnoreCase("running")) {
-            return Mono.just(new StatsDto().setStatus("DOWN"));
-        }
-
         return gatewayService.of(serverId)//
                 .getServer()//
                 .getStats()//
@@ -1327,18 +638,7 @@ public class ServerService {
                     Log.err(error.getMessage());
                     return Mono.empty();
                 })
-                .defaultIfEmpty(new StatsDto().setStatus("NOT_RESPONSE"))
-                .map(serverStats -> {
-
-                    var containerStats = stats.get(serverId);
-                    if (containerStats != null) {
-                        serverStats.setCpuUsage(containerStats.cpuUsage())//
-                                .setTotalRam(containerStats.totalRam())//
-                                .setJvmRamUsage(containerStats.jvmRamUsage());
-                    }
-
-                    return serverStats;
-                });
+                .defaultIfEmpty(new StatsDto().setStatus(ServerStatus.NOT_RESPONSE));
     }
 
     public Mono<byte[]> getImage(UUID serverId) {
@@ -1347,272 +647,19 @@ public class ServerService {
                 .getImage();
     }
 
-    public Mono<Void> setPlayer(UUID serverId, MindustryPlayerDto payload) {
-        return gatewayService.of(serverId).getServer().setPlayer(payload);
+    public Mono<Void> updatePlayer(UUID serverId, MindustryPlayerDto payload) {
+        return gatewayService.of(serverId).getServer().updatePlayer(payload);
     }
 
     public Mono<JsonNode> setConfig(UUID serverId, String key, String value) {
-        var folderPath = Paths.get(Config.volumeFolderPath, "servers", serverId.toString(), "config", "config.json");
-        File file = new File(folderPath.toUri());
-
-        if (!file.exists()) {
-            try {
-                file.createNewFile();
-            } catch (IOException e) {
-                return Mono.error(e);
-            }
-        }
-
-        if (file.isDirectory()) {
-            deleteFileRecursive(file);
-
-            try {
-                file.createNewFile();
-            } catch (IOException e) {
-                return Mono.error(e);
-            }
-        }
-
-        var config = Utils.readFile(file);
-        var original = config;
-
-        var keys = key.split("\\.");
-
-        for (int i = 0; i < keys.length - 1; i++) {
-            var k = keys[i];
-            if (config.has(k)) {
-                config = config.get(k);
-            } else {
-                config = ((ObjectNode) config).set(k, Utils.readString("{}"));
-                config = config.get(k);
-            }
-        }
-        ((ObjectNode) config).set(keys[keys.length - 1], Utils.readString(value));
+        var file = nodeManager.getFile(serverId, "config/config.json");
 
         try {
-            Files.writeString(file.toPath(), Utils.toJsonString(original));
+            Utils.writeObject(file, key, value);
         } catch (IOException e) {
-            return Mono.error(e);
+            throw new Error(e);
         }
 
-        return Mono.just(original);
-    }
-
-    private void deleteFileRecursive(File file) {
-        if (!file.exists())
-            return;
-
-        if (file.isDirectory()) {
-            deleteFileRecursive(file);
-        }
-
-        file.delete();
-    }
-
-    public void sendConsole(UUID serverId, String message) {
-        Sinks.Many<String> sink = consoleStreams.computeIfAbsent(serverId, id -> {
-            Sinks.Many<String> newSink = Sinks.many().multicast().onBackpressureBuffer(1000);
-
-            Disposable subscription = newSink.asFlux()
-                    .bufferTimeout(100, Duration.ofMillis(500))
-                    .flatMap(batch -> {
-
-                        String last = null;
-                        int counter = 1;
-                        StringBuilder result = new StringBuilder();
-
-                        for (var item : batch) {
-                            if (item.equals(last)) {
-                                counter++;
-                            } else {
-                                if (counter > 1) {
-                                    result.append(last + " (" + counter + ")");
-                                }
-                                result.append(item);
-                                counter = 1;
-                                last = item;
-                            }
-                        }
-
-                        //TOOD: send server event
-                        // return gatewayService.of(serverId)//
-                        //         .getBackend()
-                        //         .sendConsole(String.join("", batch))
-                        //         .onErrorResume(e -> {
-                        //             Log.info("[" + serverId + "]: " + String.join("", batch));
-                        //             e.printStackTrace();
-                        //             return Mono.empty();
-                        //         });
-
-                        return Mono.empty();
-                    })
-                    .subscribeOn(Schedulers.boundedElastic())
-                    .subscribe(
-                            null,
-                            error -> log.error("Error in log stream for server {}", id, error),
-                            () -> log.info("Log stream for server {} completed", id));
-
-            var prev = streamSubscriptions.put(id, subscription);
-
-            if (prev != null) {
-                Log.warn("Override log for server: " + id);
-                if (!prev.isDisposed()) {
-                    prev.dispose();
-                }
-            }
-
-            return newSink;
-        });
-
-        var result = sink.tryEmitNext(message);
-
-        if (result.isFailure()) {
-            if (result == EmitResult.FAIL_CANCELLED) {
-                streamSubscriptions.remove(serverId);
-            }
-            Log.info("[" + serverId + "] Log stream error: " + result);
-        }
-    }
-
-    private synchronized void attachToStats(UUID id) {
-        var container = findContainerByServerId(id);
-
-        if (container == null) {
-            return;
-        }
-
-        if (statsAdapter.containsKey(id)) {
-            Log.info("[" + id + "] Duplicate stats adapter");
-            return;
-        }
-
-        var adapter = dockerClient.statsCmd(container.getId())
-                .exec(new ResultCallback.Adapter<>() {
-                    @Override
-                    public void onNext(Statistics newStats) {
-
-                        statsSnapshots.compute(id, (_ignore, prev) -> {
-                            if (prev == null)
-                                return new Statistics[] { null, newStats };
-                            return new Statistics[] { prev[1], newStats };
-                        });
-
-                        var snapshots = statsSnapshots.get(id);
-                        float cpuPercent = 0f;
-
-                        if (snapshots != null && snapshots[0] != null && snapshots[1] != null) {
-                            Long cpuDelta = snapshots[1].getCpuStats().getCpuUsage().getTotalUsage()
-                                    - snapshots[0].getCpuStats().getCpuUsage().getTotalUsage();
-
-                            Long systemDelta = Optional.ofNullable(snapshots[1].getCpuStats().getSystemCpuUsage())
-                                    .orElse(0L)
-                                    - Optional.ofNullable(snapshots[0].getCpuStats().getSystemCpuUsage()).orElse(0L);
-
-                            Long cpuCores = snapshots[1].getCpuStats().getOnlineCpus();
-
-                            if (systemDelta != null && systemDelta > 0 && cpuCores != null && cpuCores > 0) {
-                                cpuPercent = ((float) cpuDelta / systemDelta * cpuCores * 100.0f);
-                            }
-                        }
-
-                        long memUsage = Optional.ofNullable(newStats.getMemoryStats().getUsage()).orElse(0L); // bytes
-                        long memLimit = Optional.ofNullable(newStats.getMemoryStats().getLimit()).orElse(0L); // bytes
-
-                        float ramMB = memUsage / (1024f * 1024f);
-                        float totalRamMB = memLimit / (1024f * 1024f);
-
-                        stats.put(id, new ContainerStats(Math.max(cpuPercent, 0), Math.max(ramMB, 0),
-                                Math.max(totalRamMB, 0)));
-                    }
-
-                    @Override
-                    public void onComplete() {
-                        Log.info("[" + id + "] Stats stream ended.");
-                        statsAdapter.remove(id);
-                    }
-
-                    @Override
-                    public void onError(Throwable throwable) {
-                        Log.info("[" + id + "] Stats stream error: " + throwable.getMessage());
-                        statsAdapter.remove(id);
-                    }
-                });
-
-        statsAdapter.put(id, adapter);
-    }
-
-    private synchronized void attachToLogs(String containerId, UUID serverId) {
-        if (logsAdapter.containsKey(serverId)) {
-            Log.info("[" + containerId + "] Duplicate logs adapter");
-            return;
-        }
-
-        ResultCallback.Adapter<Frame> callback = new ResultCallback.Adapter<>() {
-            @Override
-            public void onNext(Frame frame) {
-                var message = new String(frame.getPayload());
-                if (message.isBlank()) {
-                    return;
-                }
-
-                sendConsole(serverId, message);
-            }
-
-            @Override
-            public void onComplete() {
-                Log.info("[" + serverId + "] Log stream ended.");
-                removeConsoleStream(serverId);
-
-                int completedAt = (int) (System.currentTimeMillis() / 1000l);
-
-                dockerClient.logContainerCmd(containerId)
-                        .withStdOut(true)
-                        .withStdErr(true)
-                        .withSince(completedAt)
-                        .exec(new ResultCallback.Adapter<>() {
-                            @Override
-                            public void onNext(Frame frame) {
-                                var message = new String(frame.getPayload());
-                                if (message.isBlank()) {
-                                    return;
-                                }
-                                sendConsole(serverId, "[red]Log after stop: " + message);
-                            }
-                        });
-            }
-
-            @Override
-            public void onError(Throwable throwable) {
-                if (!(throwable instanceof AsynchronousCloseException)) {
-                    System.err
-                            .println("[" + serverId + "] Log stream error: " + throwable.getMessage());
-                    throwable.printStackTrace();
-                }
-                removeConsoleStream(serverId);
-            }
-        };
-
-        dockerClient.logContainerCmd(containerId)
-                .withStdOut(true)
-                .withStdErr(true)
-                .withFollowStream(true)
-                .withTail(0)
-                .exec(callback);
-
-        logsAdapter.put(serverId, callback);
-
-        Log.info("[" + serverId + "] Log stream attached.");
-    }
-
-    public void removeConsoleStream(UUID serverId) {
-        consoleStreams.remove(serverId);
-        Optional.ofNullable(streamSubscriptions.remove(serverId)).ifPresent(Disposable::dispose);
-        Optional.ofNullable(logsAdapter.remove(serverId)).ifPresent(t -> {
-            try {
-                t.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        });
+        return Mono.just(Utils.readFile(file));
     }
 }

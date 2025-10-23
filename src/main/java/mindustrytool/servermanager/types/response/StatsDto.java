@@ -2,6 +2,7 @@ package mindustrytool.servermanager.types.response;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -9,18 +10,27 @@ import lombok.experimental.Accessors;
 @Accessors(chain = true)
 @Data
 public class StatsDto {
-    private long tps;
-    private float ramUsage = 0;
-    private float jvmRamUsage = 0;
-    private float totalRam = 0;
-    private float cpuUsage = 0l;
-    private long players = 0;
+    private UUID id;
     private String mapName = "";
     private List<ModDto> mods = new ArrayList<>();
+    private String version = "UNSET";
+
+    private List<PlayerDto> players = new ArrayList<>();
+
+    private ServerStatus status = ServerStatus.MANAGER_UNSET;
+    
     private int kicks;
+
     private boolean isPaused = false;
     private boolean isHosting = false;
-    private String status = "MANAGER_STATS_UNSET";
-    private String version = "UNSET";
+    
+    // -1 Mean unset
     private Long startedAt = -1l;
+
+    public static enum ServerStatus {
+        UNSET,
+        MANAGER_UNSET,
+        PAUSED,
+        NOT_RESPONSE
+    }
 }
