@@ -1,8 +1,6 @@
 name: Build and push to DockerHub
 on:
   push:
-    branches:
-      - main
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -22,5 +20,5 @@ jobs:
         with:
           context: ./
           push: true
-          tags: ghcr.io/mindustrytool/mindustry-server-manager:latest
+          tags: ghcr.io/mindustrytool/mindustry-server-manager:${{ github.ref_name }}
 
