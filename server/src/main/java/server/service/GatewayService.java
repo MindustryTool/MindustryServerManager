@@ -71,7 +71,8 @@ public class GatewayService {
 		private static Mono<Throwable> createError(ClientResponse response) {
 			return response.bodyToMono(JsonNode.class)
 					.map(message -> new ApiError(HttpStatus.valueOf(response.statusCode().value()),
-							message.has("message") ? message.get("message").asText()
+							message.has("message") //
+									? message.get("message").asText()
 									: message.toString()));
 		}
 
@@ -357,6 +358,17 @@ public class GatewayService {
 						.onErrorMap(TimeoutException.class,
 								error -> new ApiError(HttpStatus.BAD_REQUEST,
 										"Timeout when load workflow"));
+			}
+
+			public Flux<JsonNode> getEvents() {
+				return webClient.get()
+						.uri("events")
+						.accept(MediaType.TEXT_EVENT_STREAM)
+						.retrieve()
+						.bodyToFlux(JsonNode.class)
+						.onErrorMap(TimeoutException.class,
+								error -> new ApiError(HttpStatus.BAD_REQUEST, "Timeout when get workflow events"))
+						.log();
 			}
 		}
 	}
