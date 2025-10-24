@@ -30,8 +30,8 @@ jobs:
          - name: Upload built jar file
            uses: actions/upload-artifact@v4
            with:
-              name: ${{ github.event.repository.name }}-test
-              path: plugin/build/libs/${{ github.event.repository.name }}.jar
+              name: plugin-test
+              path: plugin/build/libs/plugin.jar
 
          #  - name: Upload test report
          #    if: always() # ensures this runs even if tests fail
@@ -55,4 +55,4 @@ jobs:
               prerelease: true
               title: "Plugin"
               files: |
-                 plugin/build/libs/${{ github.event.repository.name }}.jar
+                 plugin/build/libs/plugin.jar
