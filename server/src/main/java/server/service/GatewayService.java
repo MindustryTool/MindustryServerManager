@@ -2,10 +2,14 @@ package server.service;
 
 import java.net.URI;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
 
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
@@ -18,6 +22,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
+import arc.util.Log;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,7 +33,9 @@ import dto.PlayerDto;
 import dto.PlayerInfoDto;
 import dto.ServerCommandDto;
 import dto.StatsDto;
+import events.BaseEvent;
 import server.utils.ApiError;
+import server.utils.Utils;
 import reactor.core.Exceptions;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -42,12 +49,31 @@ public class GatewayService {
 	private final Const envConfig;
 	private final ConcurrentHashMap<UUID, GatewayClient> cache = new ConcurrentHashMap<>();
 
+	private final List<Consumer<BaseEvent>> eventConsumers = new ArrayList<>(List.of(
+			event -> log.info("Event: {}", event)));
+
+	private final Map<Class<? extends BaseEvent>, List<Consumer<BaseEvent>>> eventConsumerMap = new HashMap<>();
+
 	public GatewayClient of(UUID serverId) {
 		return cache.computeIfAbsent(serverId, _id -> new GatewayClient(serverId, envConfig));
 	}
 
+	public Runnable onEvent(Consumer<BaseEvent> consumer) {
+		eventConsumers.add(consumer);
+		return () -> eventConsumers.remove(consumer);
+	}
+
+	public <T extends BaseEvent> Runnable on(Class<T> clazz, Consumer<T> consumer) {
+		List<Consumer<BaseEvent>> list = eventConsumerMap.computeIfAbsent(clazz, _clazz -> new ArrayList<>());
+		Consumer<BaseEvent> wrapper = ev -> consumer.accept(clazz.cast(ev));
+
+		list.add(wrapper);
+
+		return () -> list.remove(wrapper);
+	}
+
 	@RequiredArgsConstructor
-	public static class GatewayClient {
+	public class GatewayClient {
 
 		@Getter
 		private final UUID id;
@@ -59,6 +85,39 @@ public class GatewayService {
 			this.id = id;
 
 			this.server = new Server();
+
+			this.server.getEvents()
+					.flatMap(event -> {
+						var name = event.get("name").asText(null);
+
+						if (name == null) {
+							Log.warn("Invalid event: " + event.asText());
+
+							return Mono.empty();
+						}
+
+						var eventType = BaseEvent.eventTypeMap.get(name);
+
+						if (eventType == null) {
+							Log.warn("Invalid event name: " + name + " in " + BaseEvent.eventTypeMap.keySet());
+
+							return Mono.empty();
+						}
+
+						// Parse JsonNode into clazz
+						BaseEvent data = (BaseEvent) Utils.readJsonAsClass(event, eventType);
+
+						eventConsumers.forEach(consumer -> consumer.accept(data));
+
+						eventConsumerMap.getOrDefault(eventType, List.of()).forEach(c -> c.accept(data));
+
+						return Mono.empty();
+					})
+					.timeout(Duration.ofMinutes(5))
+					.doOnError((error) -> Log.err(error))
+					.retryWhen(Retry.fixedDelay(24, Duration.ofSeconds(10)))
+					.doFinally(_ignore -> cache.remove(id))
+					.subscribe();
 		}
 
 		private static boolean handleStatus(HttpStatusCode status) {

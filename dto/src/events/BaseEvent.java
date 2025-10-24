@@ -4,7 +4,6 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.UUID;
 
-import arc.util.Log;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 
@@ -12,7 +11,14 @@ import lombok.experimental.Accessors;
 @Accessors(chain = true, fluent = true)
 public abstract class BaseEvent {
 
-    private static final HashMap<String, Class<?>> eventTypeMap = new HashMap<>();
+    public static final HashMap<String, Class<?>> eventTypeMap = new HashMap<>();
+
+    {
+        eventTypeMap.put("start", StartEvent.class);
+        eventTypeMap.put("stop", StopEvent.class);
+        eventTypeMap.put("server-stats", ServerStatsEvent.class);
+        eventTypeMap.put("log", LogEvent.class);
+    }
 
     private final UUID serverId;
     private final String name;
@@ -21,9 +27,5 @@ public abstract class BaseEvent {
     public BaseEvent(UUID serverId, String name) {
         this.name = name;
         this.serverId = serverId;
-
-        eventTypeMap.put(name, getClass());
-
-        Log.info("Event " + name + " registered with class " + getClass().getSimpleName());
     }
 }

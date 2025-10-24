@@ -76,6 +76,14 @@ public class Utils {
         }
     }
 
+    public static <T> T readJsonAsClass(JsonNode data, Class<T> clazz) {
+        try {
+            return objectMapper.treeToValue(data, clazz);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Can not parse to json: " + e.getMessage(), e);
+        }
+    }
+
     public static JsonNode readFile(File file) {
         try {
             return objectMapper.readTree(file);
