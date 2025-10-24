@@ -12,8 +12,8 @@ import server.types.data.ServerState;
 import server.types.data.ServerMisMatch;
 import server.types.event.BaseEvent;
 import server.types.event.LogEvent;
-import server.types.response.ModDto;
-import server.types.response.StatsDto;
+import dto.ModDto;
+import dto.StatsDto;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 

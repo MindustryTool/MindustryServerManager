@@ -8,7 +8,6 @@ import plugin.workflow.NodeData;
 
 @Data
 public class WorkflowContext {
-
     private List<NodeData> nodes = new ArrayList<>();
     private Long createdAt = System.currentTimeMillis();
 }

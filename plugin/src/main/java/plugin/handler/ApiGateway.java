@@ -18,10 +18,10 @@ import arc.util.Strings;
 import plugin.utils.JsonUtils;
 import plugin.utils.Utils;
 import plugin.ServerController;
-import plugin.type.MindustryPlayerDto;
+import dto.MindustryPlayerDto;
 import plugin.type.PaginationRequest;
-import plugin.type.PlayerDto;
-import plugin.type.ServerDto;
+import dto.PlayerDto;
+import dto.ServerDto;
 
 public class ApiGateway {
 

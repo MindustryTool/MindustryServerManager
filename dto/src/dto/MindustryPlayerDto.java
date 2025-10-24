@@ -1,11 +1,11 @@
-package server.types.response;
+package dto;
 
 import lombok.Data;
 import lombok.experimental.Accessors;
 
 @Data
 @Accessors(chain = true)
-public class MindustryToolPlayerDto {
+public class MindustryPlayerDto {
     String uuid;
     boolean admin;
     String name;

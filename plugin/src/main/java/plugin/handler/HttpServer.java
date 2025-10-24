@@ -39,17 +39,18 @@ import mindustry.io.MapIO;
 import mindustry.net.Administration.PlayerInfo;
 import plugin.Config;
 import plugin.ServerController;
-import plugin.type.PlayerInfoDto;
-import plugin.type.CommandParamDto;
+import dto.PlayerInfoDto;
+import dto.CommandParamDto;
+import dto.MindustryPlayerDto;
+import dto.ModDto;
+import dto.ModMetaDto;
+import dto.PlayerDto;
+import dto.ServerCommandDto;
+import dto.StartServerDto;
+import dto.StatsDto;
+import dto.TeamDto;
+
 import plugin.type.WorkflowContext;
-import plugin.type.MindustryPlayerDto;
-import plugin.type.ModDto;
-import plugin.type.ModMetaDto;
-import plugin.type.PlayerDto;
-import plugin.type.ServerCommandDto;
-import plugin.type.StartServerDto;
-import plugin.type.StatsDto;
-import plugin.type.TeamDto;
 import plugin.utils.Utils;
 import plugin.workflow.errors.WorkflowError;
 import plugin.workflow.nodes.WorkflowNode;
@@ -225,7 +226,7 @@ public class HttpServer {
                                     .setUuid(player.uuid())//
                                     .setIp(player.ip())
                                     .setLocale(player.locale())//
-                                    .setAdmin(player.admin)//
+                                    .setIsAdmin(player.admin)//
                                     .setJoinedAt(context.get().sessionHandler.contains(player) //
                                             ? context.get().sessionHandler.get(player).joinedAt
                                             : Instant.now().toEpochMilli())
@@ -425,7 +426,7 @@ public class HttpServer {
         app.get("json", ctx -> {
             HashMap<String, Object> res = Utils.appPostWithTimeout(() -> {
 
-                HashMap<String,Object> data = new HashMap<>();
+                HashMap<String, Object> data = new HashMap<>();
 
                 data.put("stats", getStats());
                 data.put("session", context.get().sessionHandler.get());
@@ -436,7 +437,7 @@ public class HttpServer {
                 data.put("enemies", Vars.state.enemies);
                 data.put("tps", Core.graphics.getFramesPerSecond());
 
-                HashMap<String,Object> gameStats = new HashMap<>();
+                HashMap<String, Object> gameStats = new HashMap<>();
 
                 gameStats.put("buildingsBuilt", Vars.state.stats.buildingsBuilt);
                 gameStats.put("buildingsDeconstructed", Vars.state.stats.buildingsDeconstructed);
@@ -612,12 +613,29 @@ public class HttpServer {
                                 .setVersion(mod.meta.version)))
                         .list();
 
-        int players = Groups.player.size();
+        ArrayList<Player> players = new ArrayList<Player>();
+        Groups.player.forEach(players::add);
+
+        List<PlayerDto> p = Utils
+                .appPostWithTimeout(() -> (players.stream()//
+                        .map(player -> new PlayerDto()//
+                                .setName(player.coloredName())//
+                                .setUuid(player.uuid())//
+                                .setIp(player.ip())
+                                .setLocale(player.locale())//
+                                .setIsAdmin(player.admin)//
+                                .setJoinedAt(context.get().sessionHandler.contains(player) //
+                                        ? context.get().sessionHandler.get(player).joinedAt
+                                        : Instant.now().toEpochMilli())
+                                .setTeam(new TeamDto()//
+                                        .setColor(player.team().color.toString())//
+                                        .setName(player.team().name)))
+                        .collect(Collectors.toList())));
 
         return new StatsDto()//
                 .setRamUsage(Core.app.getJavaHeap() / 1024 / 1024)
                 .setTotalRam(Runtime.getRuntime().maxMemory() / 1024 / 1024)//
-                .setPlayers(players)//
+                .setPlayers(p)//
                 .setMapName(mapName)
                 .setMods(mods)//
                 .setTps(Core.graphics.getFramesPerSecond())//

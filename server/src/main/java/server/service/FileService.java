@@ -3,7 +3,7 @@ package server.service;
 import org.springframework.stereotype.Service;
 
 import server.types.request.AddServerFileRequest;
-import server.types.response.ServerFileDto;
+import dto.ServerFileDto;
 import server.utils.ApiError;
 import server.utils.Utils;
 import reactor.core.publisher.Flux;

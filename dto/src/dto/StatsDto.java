@@ -1,4 +1,4 @@
-package plugin.type;
+package dto;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,7 +12,7 @@ public class StatsDto {
     private long tps = 0;
     private long ramUsage = 0;
     private long totalRam = 0;
-    private int players = 1;
+    private List<PlayerDto> players = new ArrayList<>();
     private String mapName = "DEBUG";
     private List<ModDto> mods = new ArrayList<>();
     private String status = "SERVER_UNSET";

@@ -1,4 +1,4 @@
-package plugin.type;
+package dto;
 
 import lombok.Data;
 import lombok.experimental.Accessors;

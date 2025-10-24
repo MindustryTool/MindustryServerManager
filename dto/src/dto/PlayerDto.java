@@ -1,6 +1,4 @@
-package server.types.response;
-
-import com.fasterxml.jackson.annotation.JsonProperty;
+package dto;
 
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -8,13 +6,11 @@ import lombok.experimental.Accessors;
 @Data
 @Accessors(chain = true)
 public class PlayerDto {
-    private String uuid;
     private String name;
+    private String uuid;
+    private String locale;
     private String ip;
     private TeamDto team;
-    private String locale;
-
-    @JsonProperty("isAdmin")
-    private boolean isAdmin;
+    private Boolean isAdmin;
     private Long joinedAt;
 }

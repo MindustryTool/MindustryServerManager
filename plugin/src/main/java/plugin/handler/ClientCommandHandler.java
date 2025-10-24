@@ -20,11 +20,11 @@ import mindustry.gen.Player;
 import mindustry.maps.Map;
 import plugin.ServerController;
 import plugin.type.HudOption;
-import plugin.type.MindustryPlayerDto;
+import dto.MindustryPlayerDto;
 import plugin.type.PaginationRequest;
-import plugin.type.PlayerDto;
+import dto.PlayerDto;
 import plugin.type.PlayerPressCallback;
-import plugin.type.TeamDto;
+import dto.TeamDto;
 
 public class ClientCommandHandler {
 

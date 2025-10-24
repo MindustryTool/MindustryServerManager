@@ -14,7 +14,7 @@ import org.springframework.web.server.ServerWebExchange;
 import io.netty.resolver.dns.DnsNameResolverTimeoutException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import server.types.response.ErrorResponse;
+import dto.ErrorResponse;
 import server.utils.ApiError;
 import reactor.core.publisher.Mono;
 

@@ -1,6 +1,7 @@
 package plugin.type;
 
 import lombok.Data;
+import dto.ServerResponseData;
 
 @Data
 public class ServerCore {

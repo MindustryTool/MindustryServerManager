@@ -20,6 +20,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import arc.files.Fi;
 import arc.struct.StringMap;
 import arc.util.Log;
+import dto.MapDto;
+import dto.ModDto;
+import dto.ModMetaDto;
+import dto.StatsDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import mindustry.core.Version;
@@ -28,17 +32,13 @@ import server.types.data.NodeUsage;
 import server.types.data.ServerConfig;
 import server.types.data.ServerMisMatch;
 import server.types.event.LogEvent;
+import dto.ManagerMapDto;
+import dto.ManagerModDto;
+import dto.MindustryToolPlayerDto;
+import dto.ServerFileDto;
 import server.config.Const;
 import server.manager.NodeManager;
-import server.types.response.ManagerMapDto;
-import server.types.response.ManagerModDto;
-import server.types.response.MapDto;
-import server.types.response.MindustryToolPlayerDto;
-import server.types.response.ModDto;
-import server.types.response.ModMetaDto;
-import server.types.response.ServerFileDto;
-import server.types.response.StatsDto;
-import server.types.response.StatsDto.ServerStatus;
+
 import server.utils.ApiError;
 import server.utils.Utils;
 import reactor.core.publisher.Flux;
@@ -483,7 +483,7 @@ public class ServerService {
                     Log.err(error.getMessage());
                     return Mono.empty();
                 })
-                .defaultIfEmpty(new StatsDto().setStatus(ServerStatus.NOT_RESPONSE));
+                .defaultIfEmpty(new StatsDto().setStatus("NOT_RESPONSE"));
     }
 
     public Mono<byte[]> getImage(UUID serverId) {

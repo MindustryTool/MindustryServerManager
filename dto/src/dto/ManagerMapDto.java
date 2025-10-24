@@ -1,4 +1,4 @@
-package server.types.response;
+package dto;
 
 import java.util.List;
 import java.util.UUID;

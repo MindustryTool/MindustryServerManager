@@ -8,8 +8,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
-import plugin.type.NotMessageException;
-
 public class JsonUtils {
     private static ObjectMapper objectMapper = new ObjectMapper()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
@@ -45,20 +43,6 @@ public class JsonUtils {
             return objectMapper.readTree(data);
         } catch (Exception e) {
             throw new RuntimeException("Can not parse to json: " + e.getMessage(), e);
-        }
-    }
-
-    public static JsonNode readMessage(String data) {
-        try {
-            var node = objectMapper.readTree(data);
-
-            if (!node.hasNonNull("id") || !node.hasNonNull("type") || !node.hasNonNull("method")) {
-                throw new NotMessageException();
-            }
-
-            return node;
-        } catch (Exception e) {
-            throw new NotMessageException();
         }
     }
 }

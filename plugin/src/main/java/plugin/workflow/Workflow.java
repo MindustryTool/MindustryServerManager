@@ -20,7 +20,6 @@ import io.javalin.http.sse.SseClient;
 import lombok.Getter;
 import mindustry.Vars;
 import plugin.ServerController;
-import plugin.type.WorkflowContext;
 import plugin.utils.JsonUtils;
 import plugin.workflow.errors.WorkflowError;
 import plugin.workflow.expressions.ExpressionParser;
@@ -35,6 +34,7 @@ import plugin.workflow.nodes.SetWorkflow;
 import plugin.workflow.nodes.UnaryOperationWorkflow;
 import plugin.workflow.nodes.WaitWorkflow;
 import plugin.workflow.nodes.WorkflowNode;
+import plugin.type.WorkflowContext;
 
 public class Workflow {
     private final HashMap<Object, Seq<Cons2<?, Boolean>>> events = new HashMap<>();

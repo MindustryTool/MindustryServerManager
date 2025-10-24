@@ -1,11 +1,11 @@
-package plugin.type;
+package dto;
 
 import lombok.Data;
 import lombok.experimental.Accessors;
 
 @Data
 @Accessors(chain = true)
-public class MindustryPlayerDto {
+public class MindustryToolPlayerDto {
     String uuid;
     boolean admin;
     String name;

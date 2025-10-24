@@ -9,7 +9,7 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 import lombok.experimental.Accessors;
-import server.types.response.ServerPlanDto;
+import dto.ServerPlanDto;
 
 @Data
 @Accessors(chain = true)
