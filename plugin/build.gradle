@@ -1,0 +1,58 @@
+java {
+    targetCompatibility = 8
+    sourceCompatibility = JavaVersion.VERSION_17
+}
+
+tasks.withType(JavaCompile){
+    options.annotationProcessorPath = configurations.annotationProcessor
+    options.compilerArgs.addAll(['--release', '8'])
+}
+
+sourceSets {
+    main {
+        java {
+            srcDirs 'plugin/src/main/java'
+        }
+    }
+}
+
+compileJava.options.encoding = "UTF-8"
+compileTestJava.options.encoding = "UTF-8"
+
+dependencies{
+    compileOnly 'org.projectlombok:lombok:1.18.30'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.16.2'
+    implementation project(':loader')
+    
+    implementation 'io.javalin:javalin:6.7.0'
+    implementation 'com.github.ben-manes.caffeine:caffeine:2.9.3'
+
+    annotationProcessor 'org.projectlombok:lombok:1.18.30'
+    annotationProcessor 'org.pf4j:pf4j:3.13.0'
+    annotationProcessor "com.github.Anuken:jabel:$jabelVersion"
+
+    // testImplementation 'org.junit.jupiter:junit-jupiter:5.10.0'
+    
+    // // testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    // testImplementation "com.github.Anuken.Arc:arc-core:$mindustryVersion"
+    // testImplementation "com.github.Anuken.Mindustry:core:$mindustryVersion"
+    // testImplementation 'org.projectlombok:lombok:1.18.10'
+    // testImplementation files('lib/MindustryToolPluginLoader.jar')
+
+    
+
+}
+
+jar{
+    duplicatesStrategy(DuplicatesStrategy.EXCLUDE)
+    archiveFileName = "${project.archivesBaseName}.jar"
+    from{
+        configurations.runtimeClasspath.collect{it.isDirectory() ? it : zipTree(it)}
+    }
+
+    from(rootDir){
+        include "plugin.properties"
+        include "META-INF/plugin.properties"
+    }
+}

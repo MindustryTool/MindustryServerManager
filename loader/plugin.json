@@ -1,0 +1,7 @@
+{
+  "name": "MindustryToolPluginLoader",
+  "author": "Sharrlotte",
+  "main": "mindustrytoolpluginloader.MindustryToolPluginLoader",
+  "description": "MindustryToolPluginLoader",
+  "version": 1.0
+}
