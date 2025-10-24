@@ -28,6 +28,8 @@ dependencies{
     implementation project(':dto')
 
     compileOnly 'org.projectlombok:lombok:1.18.30'
+    compileOnly "com.github.Anuken.Arc:arc-core:$mindustryVersion"
+    compileOnly "com.github.Anuken.Mindustry:core:$mindustryVersion"
 
     annotationProcessor 'org.projectlombok:lombok:1.18.30'
     annotationProcessor 'org.pf4j:pf4j:3.13.0'

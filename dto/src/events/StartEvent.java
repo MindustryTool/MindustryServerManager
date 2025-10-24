@@ -1,20 +1,16 @@
-package server.types.event;
+package events;
 
 import java.util.UUID;
 
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import server.types.data.ServerMetadata;
 
 @Getter
 @Setter
 @Accessors(chain = true, fluent = true)
 public class StartEvent extends BaseEvent {
-    private final ServerMetadata metadata;
-
-    public StartEvent(UUID serverId, ServerMetadata metadata) {
+    public StartEvent(UUID serverId) {
         super(serverId, "start");
-        this.metadata = metadata;
     }
 }

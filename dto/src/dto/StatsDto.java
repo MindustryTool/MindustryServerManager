@@ -2,6 +2,7 @@ package dto;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -9,6 +10,7 @@ import lombok.experimental.Accessors;
 @Data
 @Accessors(chain = true)
 public class StatsDto {
+    private UUID serverId;
     private long tps = 0;
     private long ramUsage = 0;
     private long totalRam = 0;

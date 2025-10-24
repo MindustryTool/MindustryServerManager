@@ -36,11 +36,11 @@ import server.types.data.ServerMetadata;
 import server.types.data.ServerState;
 import server.types.data.WebhookMessage;
 import server.types.data.ServerMisMatch;
-import server.types.event.LogEvent;
-import server.types.event.StartEvent;
-import server.types.event.StopEvent;
 import dto.ModDto;
 import dto.StatsDto;
+import events.LogEvent;
+import events.StartEvent;
+import events.StopEvent;
 import server.utils.Utils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -459,13 +459,14 @@ public class DockerNodeManager extends NodeManager {
                             var stopEvents = List.of("stop", "die", "kill", "destroy");
 
                             if (status.equalsIgnoreCase("start")) {
-                                fire(new StartEvent(serverId, metadata));
 
                                 logCallbacks.computeIfAbsent(
                                         metadata.getConfig().getId(),
                                         id -> createLogCallack(containerId, id));
+
+                                fire(new StartEvent(serverId));
                             } else if (stopEvents.stream().anyMatch(stop -> status.equalsIgnoreCase(stop))) {
-                                fire(new StopEvent(serverId, metadata));
+                                fire(new StopEvent(serverId));
                             }
                         });
 

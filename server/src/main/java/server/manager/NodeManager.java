@@ -10,10 +10,10 @@ import server.types.data.NodeUsage;
 import server.types.data.ServerConfig;
 import server.types.data.ServerState;
 import server.types.data.ServerMisMatch;
-import server.types.event.BaseEvent;
-import server.types.event.LogEvent;
 import dto.ModDto;
 import dto.StatsDto;
+import events.BaseEvent;
+import events.LogEvent;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 

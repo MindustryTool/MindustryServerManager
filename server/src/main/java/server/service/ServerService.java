@@ -24,6 +24,7 @@ import dto.MapDto;
 import dto.ModDto;
 import dto.ModMetaDto;
 import dto.StatsDto;
+import events.LogEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import mindustry.core.Version;
@@ -31,7 +32,6 @@ import mindustry.io.MapIO;
 import server.types.data.NodeUsage;
 import server.types.data.ServerConfig;
 import server.types.data.ServerMisMatch;
-import server.types.event.LogEvent;
 import dto.ManagerMapDto;
 import dto.ManagerModDto;
 import dto.MindustryToolPlayerDto;
@@ -483,7 +483,7 @@ public class ServerService {
                     Log.err(error.getMessage());
                     return Mono.empty();
                 })
-                .defaultIfEmpty(new StatsDto().setStatus("NOT_RESPONSE"));
+                .defaultIfEmpty(new StatsDto().setServerId(serverId).setStatus("NOT_RESPONSE"));
     }
 
     public Mono<byte[]> getImage(UUID serverId) {

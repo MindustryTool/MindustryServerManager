@@ -1,4 +1,4 @@
-package server.types.event;
+package events;
 
 import java.time.Instant;
 import java.util.HashMap;

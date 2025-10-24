@@ -49,7 +49,7 @@ import dto.ServerCommandDto;
 import dto.StartServerDto;
 import dto.StatsDto;
 import dto.TeamDto;
-
+import events.StartEvent;
 import plugin.type.WorkflowContext;
 import plugin.utils.Utils;
 import plugin.workflow.errors.WorkflowError;
@@ -58,6 +58,10 @@ import io.javalin.Javalin;
 import io.javalin.http.ContentType;
 import io.javalin.json.JavalinJackson;
 import io.javalin.plugin.bundled.RouteOverviewPlugin;
+import io.javalin.http.sse.SseClient;
+
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class HttpServer {
     private static final String MAP_PREVIEW_FILE_NAME = "MapPreview";
@@ -65,6 +69,7 @@ public class HttpServer {
     private Javalin app;
 
     private final WeakReference<ServerController> context;
+    private final Queue<SseClient> eventConsumers = new ConcurrentLinkedQueue<>();
 
     public class RequestInfo {
         public final String method;
@@ -512,9 +517,7 @@ public class HttpServer {
             ctx.json(res);
         });
 
-        app.sse("workflow/events", client ->
-
-        {
+        app.sse("workflow/events", client -> {
             client.keepAlive();
             client.sendComment("connected");
 
@@ -523,6 +526,17 @@ public class HttpServer {
             });
 
             context.get().workflow.getWorkflowEventConsumers().add(client);
+        });
+
+        app.sse("events", client -> {
+            client.keepAlive();
+            client.sendEvent(new StartEvent(ServerController.SERVER_ID));
+
+            client.onClose(() -> {
+                eventConsumers.remove(client);
+            });
+
+            eventConsumers.add(client);
         });
 
         app.exception(TimeoutException.class, (exception, ctx) -> {
@@ -633,6 +647,7 @@ public class HttpServer {
                         .collect(Collectors.toList())));
 
         return new StatsDto()//
+                .setServerId(ServerController.SERVER_ID)//
                 .setRamUsage(Core.app.getJavaHeap() / 1024 / 1024)
                 .setTotalRam(Runtime.getRuntime().maxMemory() / 1024 / 1024)//
                 .setPlayers(p)//
