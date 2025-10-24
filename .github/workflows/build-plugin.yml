@@ -15,14 +15,17 @@ jobs:
               distribution: "temurin"
               java-version: "17"
 
+         - name: Make Gradle wrapper executable
+           run: chmod +x ./gradlew
+
          - name: Setup Gradle
            uses: gradle/actions/setup-gradle@v4
 
          - name: Build plugin jar
            run: ./gradlew :plugin:jar --stacktrace
 
-        #  - name: Run tests
-        #    run: ./gradlew test --stacktrace
+         #  - name: Run tests
+         #    run: ./gradlew test --stacktrace
 
          - name: Upload built jar file
            uses: actions/upload-artifact@v4
@@ -30,20 +33,20 @@ jobs:
               name: ${{ github.event.repository.name }}-test
               path: plugin/build/libs/${{ github.event.repository.name }}.jar
 
-        #  - name: Upload test report
-        #    if: always() # ensures this runs even if tests fail
-        #    uses: actions/upload-artifact@v4
-        #    with:
-        #       name: test-report
-        #       path: plugin/build/reports/tests/test/
+         #  - name: Upload test report
+         #    if: always() # ensures this runs even if tests fail
+         #    uses: actions/upload-artifact@v4
+         #    with:
+         #       name: test-report
+         #       path: plugin/build/reports/tests/test/
 
-        #  - name: Deploy test report to GitHub Pages
-        #    if: success() || failure() # run this even if tests fail
-        #    uses: peaceiris/actions-gh-pages@v3
-        #    with:
-        #       github_token: ${{ secrets.GITHUB_TOKEN }}
-        #       publish_dir: build/reports/tests/test
-        #       publish_branch: gh-pages
+         #  - name: Deploy test report to GitHub Pages
+         #    if: success() || failure() # run this even if tests fail
+         #    uses: peaceiris/actions-gh-pages@v3
+         #    with:
+         #       github_token: ${{ secrets.GITHUB_TOKEN }}
+         #       publish_dir: build/reports/tests/test
+         #       publish_branch: gh-pages
 
          - uses: "marvinpinto/action-automatic-releases@latest"
            with:
