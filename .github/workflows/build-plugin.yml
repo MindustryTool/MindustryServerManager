@@ -52,7 +52,7 @@ jobs:
            with:
               repo_token: "${{ secrets.GITHUB_TOKEN }}"
               automatic_release_tag: "plugin"
-              prerelease: false
-              title: "Release"
+              prerelease: true
+              title: "Plugin"
               files: |
                  plugin/build/libs/${{ github.event.repository.name }}.jar
