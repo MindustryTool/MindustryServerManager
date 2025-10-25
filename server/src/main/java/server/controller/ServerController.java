@@ -63,7 +63,7 @@ public class ServerController {
     @GetMapping(path = "/events", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<BaseEvent> getServers() {
         // TODO send event to backend
-        return Flux.interval(Duration.ofSeconds(1))
+        return Flux.interval(Duration.ofMinutes(1))
                 .map(i -> LogEvent.info(UUID.randomUUID(), "test: " + i));
     }
 
