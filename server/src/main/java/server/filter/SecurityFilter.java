@@ -1,13 +1,12 @@
 package server.filter;
 
+import java.util.UUID;
+
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,7 +27,6 @@ public class SecurityFilter implements WebFilter {
     private static final String ISSUER = "MindustryTool";
 
     private final EnvConfig envConfig;
-    private final ObjectMapper objectMapper;
 
     public static final Class<?> CONTEXT_KEY = ServerManagerJwt.class;
 
@@ -86,16 +84,17 @@ public class SecurityFilter implements WebFilter {
     }
 
     public ServerManagerJwt getDataFromToken(String token, String secret) {
-        var data = JWT.require(Algorithm.HMAC256(secret))//
+        var claims = JWT.require(Algorithm.HMAC256(secret))//
                 .withIssuer(ISSUER)//
                 .build()//
                 .verify(token)//
-                .getPayload();
+                .getClaims();
 
         try {
-            return objectMapper.readValue(data, ServerManagerJwt.class);
-        } catch (JsonProcessingException e) {
-            throw new IllegalStateException("Invalid token data: " + data, e);
+            return new ServerManagerJwt().setId(UUID.fromString(claims.get("id").asString()))
+                    .setUserId(UUID.fromString(claims.get("userId").asString()));
+        } catch (Exception e) {
+            throw new IllegalStateException("Invalid token data: " + claims, e);
         }
     }
 }
