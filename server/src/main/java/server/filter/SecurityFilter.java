@@ -95,7 +95,7 @@ public class SecurityFilter implements WebFilter {
         try {
             return objectMapper.readValue(data, ServerManagerJwt.class);
         } catch (JsonProcessingException e) {
-            throw new IllegalStateException(e);
+            throw new IllegalStateException("Invalid token data: " + data, e);
         }
     }
 }
