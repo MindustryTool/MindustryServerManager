@@ -8,7 +8,7 @@ import lombok.experimental.Accessors;
 
 @Getter
 @Setter
-@Accessors(chain = true, fluent = true)
+@Accessors(chain = true)
 public class StopEvent extends BaseEvent {
 
     public StopEvent(UUID serverId) {

@@ -8,7 +8,7 @@ import lombok.Getter;
 import lombok.experimental.Accessors;
 
 @Getter
-@Accessors(chain = true, fluent = true)
+@Accessors(chain = true)
 public abstract class BaseEvent {
 
     public static final HashMap<String, Class<?>> eventTypeMap = new HashMap<>();
