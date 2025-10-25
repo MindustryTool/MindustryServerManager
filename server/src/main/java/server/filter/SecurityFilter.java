@@ -81,7 +81,7 @@ public class SecurityFilter implements WebFilter {
         } catch (Exception e) {
             e.printStackTrace();
             log.error("Invalid token: " + token + " security key: " + securityKey, e);
-            return ApiError.forbidden("Invalid token");
+            return ApiError.forbidden("Invalid token or security key");
         }
     }
 
