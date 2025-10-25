@@ -90,7 +90,7 @@ public class SecurityFilter implements WebFilter {
                 .withIssuer(ISSUER)//
                 .build()//
                 .verify(token)//
-                .getSubject();
+                .getPayload();
 
         try {
             return objectMapper.readValue(data, ServerManagerJwt.class);
