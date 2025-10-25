@@ -62,7 +62,7 @@ public class SecurityFilter implements WebFilter {
         String securityKey = envConfig.serverConfig().securityKey();
 
         if (securityKey == null) {
-            return ApiError.forbidden("Security is not set");
+            return ApiError.forbidden("Security token is not set");
         }
 
         String accessToken = exchange.getRequest().getHeaders().getFirst("Authorization");
