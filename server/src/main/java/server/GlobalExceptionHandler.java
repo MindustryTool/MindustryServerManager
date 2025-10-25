@@ -70,12 +70,7 @@ public class GlobalExceptionHandler {
     public Mono<ResponseEntity<ErrorResponse>> createResponse(ServerWebExchange exchange, HttpStatus status,
             Exception exception, String message) {
 
-        var response = exchange.getResponse();
         var request = exchange.getRequest();
-
-        if (response.isCommitted()) {
-            return Mono.empty();
-        }
 
         Mono<String> urlMono = Mono.just(request)//
                 .map(r -> r.getURI().toString())//
@@ -100,6 +95,15 @@ public class GlobalExceptionHandler {
                     exception.printStackTrace();
 
                     return ResponseEntity.status(status).body(data);
+                }).onErrorResume(error -> {
+
+                    log.error("Error while creating response", error);
+                    return Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                            ErrorResponse.builder()//
+                                    .status(status.value())//
+                                    .message("Error while creating error response")//
+                                    .url("unknown")//
+                                    .build()));
                 });
     }
 }
