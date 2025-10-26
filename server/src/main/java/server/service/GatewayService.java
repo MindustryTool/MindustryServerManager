@@ -55,7 +55,7 @@ public class GatewayService {
 
 	private final Map<Class<? extends BaseEvent>, List<Consumer<BaseEvent>>> eventConsumerMap = new HashMap<>();
 
-	public GatewayClient of(UUID serverId) {
+	public synchronized GatewayClient of(UUID serverId) {
 		return cache.computeIfAbsent(serverId, _id -> new GatewayClient(serverId, envConfig));
 	}
 
