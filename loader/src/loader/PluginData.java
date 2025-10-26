@@ -11,9 +11,7 @@ import java.util.concurrent.TimeUnit;
 
 import arc.util.Http;
 import arc.util.Log;
-import lombok.Data;
 
-@Data
 public class PluginData {
     private static final String PLUGIN_API_URL = "https://api.mindustry-tool.com";
 
@@ -23,11 +21,40 @@ public class PluginData {
     private final String repo;
     private final String tag;
 
-    public PLuginVersion getPluginVersion() throws Exception {
-        int timeout = 5000;
-        CompletableFuture<PLuginVersion> result = new CompletableFuture<>();
+    public PluginData(String id, String name, String owner, String repo, String tag) {
+        this.id = id;
+        this.name = name;
+        this.owner = owner;
+        this.repo = repo;
+        this.tag = tag;
+    }
 
-        Http.get(URI.create(PLUGIN_API_URL + "/api/v4/plugins/version?owner=" + this.owner + "&repo=" + this.repo + "&tag=" + this.tag).toString())
+    public String getId() {
+        return this.id;
+    }
+
+    public String getName() {
+        return this.name;
+    }
+
+    public String getOwner() {
+        return this.owner;
+    }
+
+    public String getRepo() {
+        return this.repo;
+    }
+
+    public String getTag() {
+        return this.tag;
+    }
+
+    public PluginVersion getPluginVersion() throws Exception {
+        int timeout = 5000;
+        CompletableFuture<PluginVersion> result = new CompletableFuture<>();
+
+        Http.get(URI.create(PLUGIN_API_URL + "/api/v4/plugins/version?owner=" + this.owner + "&repo=" + this.repo
+                + "&tag=" + this.tag).toString())
                 .error(error -> {
                     result.completeExceptionally(error);
                     Log.err(error);
@@ -35,7 +62,7 @@ public class PluginData {
                 .timeout(timeout)
                 .submit(res -> {
                     String version = res.getResultAsString();
-                    PLuginVersion pluginVersion = PluginLoader.objectMapper.readValue(version, PLuginVersion.class);
+                    PluginVersion pluginVersion = PluginLoader.objectMapper.readValue(version, PluginVersion.class);
 
                     result.complete(pluginVersion);
                 });
@@ -45,7 +72,8 @@ public class PluginData {
 
     public byte[] download() {
         try {
-            URL url = URI.create(PLUGIN_API_URL + "/api/v4/plugins/download?owner=" + this.owner + "&repo=" + this.repo + "&tag=" + this.tag).toURL();
+            URL url = URI.create(PLUGIN_API_URL + "/api/v4/plugins/download?owner=" + this.owner + "&repo=" + this.repo
+                    + "&tag=" + this.tag).toURL();
 
             HttpURLConnection httpConn = (HttpURLConnection) url.openConnection();
 
@@ -76,8 +104,14 @@ public class PluginData {
         }
     }
 
-    @Data
-    public static class PLuginVersion {
+    public static class PluginVersion {
         private String updatedAt;
+
+        public PluginVersion() {
+        }
+
+        public String getUpdatedAt() {
+            return this.updatedAt;
+        }
     }
 }

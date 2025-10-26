@@ -21,9 +21,6 @@ dependencies{
 
     compileOnly "com.github.Anuken.Arc:arc-core:$mindustryVersion"
     compileOnly "com.github.Anuken.Mindustry:core:$mindustryVersion"
-    compileOnly 'org.projectlombok:lombok:1.18.30'
-
-    annotationProcessor 'org.projectlombok:lombok:1.18.30'
 }
 
 jar{

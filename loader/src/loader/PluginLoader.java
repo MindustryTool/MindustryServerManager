@@ -77,7 +77,7 @@ public class PluginLoader extends Plugin {
 
         BACKGROUND_SCHEDULER.scheduleWithFixedDelay(this::checkAndUpdate, 5, 5, TimeUnit.MINUTES);
 
-        var loaded = pluginManager.getPlugins()//
+        List<String> loaded = pluginManager.getPlugins()//
                 .stream()//
                 .map(plugin -> plugin.getPluginId())
                 .collect(Collectors.toList());
@@ -142,7 +142,7 @@ public class PluginLoader extends Plugin {
             ObjectNode meta = objectMapper.createObjectNode();
 
             if (Files.exists(PLUGIN_METADATA_PATH)) {
-                var data = new Fi(PLUGIN_METADATA_PATH.toFile()).readString();
+                String data = new Fi(PLUGIN_METADATA_PATH.toFile()).readString();
                 meta = (ObjectNode) objectMapper.readTree(data);
 
                 return meta;
