@@ -42,7 +42,9 @@ public class PluginLoader extends Plugin {
 
     private final List<PluginData> PLUGINS = Arrays.asList(
             new PluginData("mindustry-tool", "ServerController.jar",
-                    "https://api.github.com/repos/MindustryTool/MindustryServerManager/releases/tags/plugin"));
+                    "MindustryTool",
+                    "MindustryServerManager",
+                    "plugin"));
 
     private final String PLUGIN_DIR = "config/mindustry-tool-plugins";
     private final Path PLUGIN_METADATA_PATH = Paths.get(PLUGIN_DIR, "metadata.json");
@@ -167,8 +169,7 @@ public class PluginLoader extends Plugin {
 
         meta
                 .putObject(plugin.getName())
-                .put("updated_at", updatedAt)
-                .put("url", plugin.getUrl());
+                .put("updated_at", updatedAt);
 
         Fi metaFile = new Fi(PLUGIN_METADATA_PATH.toFile());
 

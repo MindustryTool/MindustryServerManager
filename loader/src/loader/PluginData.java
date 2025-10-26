@@ -19,7 +19,6 @@ public class PluginData {
 
     private final String id;
     private final String name;
-    private final String url;
     private final String owner;
     private final String repo;
     private final String tag;
@@ -73,7 +72,7 @@ public class PluginData {
                 return out.toByteArray();
             }
         } catch (Exception e) {
-            throw new RuntimeException("Error while downloading plugin: " + url, e);
+            throw new RuntimeException("Error while downloading plugin: " + this.id, e);
         }
     }
 
