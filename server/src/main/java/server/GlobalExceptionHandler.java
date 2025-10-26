@@ -70,6 +70,10 @@ public class GlobalExceptionHandler {
     public Mono<ResponseEntity<ErrorResponse>> createResponse(ServerWebExchange exchange, HttpStatus status,
             Exception exception, String message) {
 
+        if (exchange.getResponse().isCommitted()) {
+            return Mono.empty();
+        }
+
         var request = exchange.getRequest();
 
         Mono<String> urlMono = Mono.just(request)//
