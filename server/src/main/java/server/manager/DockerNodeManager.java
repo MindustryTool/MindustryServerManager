@@ -658,11 +658,16 @@ public class DockerNodeManager extends NodeManager {
 
     @Override
     public Mono<Fi> getFile(UUID serverId, String path) {
+        if (path.contains("..") || path.contains("./")) {
+            return Mono.error(new IllegalArgumentException("Invalid path: " + path));
+        }
+
         var decodedPath = URLDecoder.decode(path, StandardCharsets.UTF_8);
+
         var basePath = Paths.get(Const.volumeFolderPath, "servers", serverId.toString(), "config", decodedPath)
                 .toAbsolutePath().toString();
 
-        return Mono.just(FileUtils.getFile(basePath, decodedPath));
+        return Mono.just(new Fi(basePath).child(decodedPath));
 
     }
 
@@ -680,8 +685,6 @@ public class DockerNodeManager extends NodeManager {
 
     @Override
     public Mono<Void> writeFile(UUID serverId, String path, byte[] data) {
-        Log.info("Write file at: " + path + " with " + data.length + " bytes");
-
         return getFile(serverId, path)
                 .doOnNext(file -> FileUtils.writeFile(file.absolutePath(), data))
                 .then();
