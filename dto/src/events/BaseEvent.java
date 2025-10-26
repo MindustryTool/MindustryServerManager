@@ -5,12 +5,14 @@ import java.util.HashMap;
 import java.util.UUID;
 
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.Accessors;
 
 @Getter
 @Accessors(chain = true)
 @ToString
+@NoArgsConstructor
 public abstract class BaseEvent {
 
     private static final HashMap<String, Class<?>> eventTypeMap = new HashMap<>();
@@ -29,9 +31,6 @@ public abstract class BaseEvent {
     private UUID serverId;
     private String name;
     private Instant createdAt = Instant.now();
-
-    public BaseEvent() {
-    }
 
     public BaseEvent(UUID serverId, String name) {
         this.name = name;

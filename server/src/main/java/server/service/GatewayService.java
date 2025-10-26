@@ -224,8 +224,9 @@ public class GatewayService {
 				return wrapError(webClient.method(HttpMethod.GET)
 						.uri("ok")
 						.retrieve()
-						.bodyToMono(Void.class), Duration.ofMillis(100), "Check ok")
-						.retryWhen(Retry.fixedDelay(10 * 4, Duration.ofMillis(100)));
+						.bodyToMono(Void.class)
+						.retryWhen(Retry.fixedDelay(10 * 4, Duration.ofMillis(100))),
+						Duration.ofMillis(100), "Check ok");
 			}
 
 			public Mono<ServerStateDto> getState() {
