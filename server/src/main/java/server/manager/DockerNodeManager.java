@@ -105,17 +105,13 @@ public class DockerNodeManager extends NodeManager {
 
         return Flux.create(emitter -> {
             try {
-                try {
-                    emitter.next(LogEvent.info(serverId, "Pulling image: " + request.getImage()));
+                emitter.next(LogEvent.info(serverId, "Pulling image: " + request.getImage()));
 
-                    dockerClient.pullImageCmd(request.getImage())
-                            .exec(new ResultCallback.Adapter<PullResponseItem>())
-                            .awaitCompletion();
+                dockerClient.pullImageCmd(request.getImage())
+                        .exec(new ResultCallback.Adapter<PullResponseItem>())
+                        .awaitCompletion();
 
-                    emitter.next(LogEvent.info(serverId, "Image pulled"));
-                } catch (InterruptedException e) {
-                    emitter.next(LogEvent.error(serverId, e.getMessage()));
-                }
+                emitter.next(LogEvent.info(serverId, "Image pulled"));
 
                 String serverIdString = request.getId().toString();
                 var serverPath = Paths.get(Const.volumeFolderPath, "servers", serverIdString, "config")
