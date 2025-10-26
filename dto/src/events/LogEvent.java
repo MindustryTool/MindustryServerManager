@@ -14,9 +14,9 @@ public class LogEvent extends BaseEvent {
     private LogLevel level;
 
     public static enum LogLevel {
-        INFO,
-        WARNING,
-        ERROR
+        info,
+        warning,
+        error
     }
 
     public LogEvent(UUID serverId) {
@@ -24,11 +24,11 @@ public class LogEvent extends BaseEvent {
     }
 
     public static LogEvent info(UUID serverId, String data) {
-        return new LogEvent(serverId).setLevel(LogLevel.INFO).setData(data);
+        return new LogEvent(serverId).setLevel(LogLevel.info).setData(data);
     }
 
     public static LogEvent error(UUID serverId, String data) {
-        return new LogEvent(serverId).setLevel(LogLevel.ERROR).setData(data);
+        return new LogEvent(serverId).setLevel(LogLevel.error).setData(data);
     }
 
 }
