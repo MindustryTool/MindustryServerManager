@@ -132,7 +132,9 @@ public class ServerService {
         return Flux.concat(//
                 createFlux,
                 waitingOkFlux, //
-                hostFlux);
+                hostFlux//
+        )
+                .onErrorResume(error -> Flux.just(LogEvent.error(serverId, error.getMessage())));
     }
 
     public Flux<ServerMisMatch> getMismatch(UUID serverId, ServerConfig config) {
