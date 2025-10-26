@@ -39,7 +39,6 @@ public class ServerConfig {
     @Max(900000)
     private int port;
 
-    @NotEmpty
     private Map<String, String> env;
 
     @NotEmpty
