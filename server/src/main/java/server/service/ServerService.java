@@ -133,8 +133,7 @@ public class ServerService {
                 createFlux,
                 waitingOkFlux, //
                 hostFlux//
-        )
-                .onErrorResume(error -> Flux.just(LogEvent.error(serverId, error.getMessage())));
+        );
     }
 
     public Flux<ServerMisMatch> getMismatch(UUID serverId, ServerConfig config) {
