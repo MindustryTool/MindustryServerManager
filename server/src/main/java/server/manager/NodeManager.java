@@ -15,7 +15,7 @@ import dto.ManagerModDto;
 import dto.MapDto;
 import dto.ModDto;
 import dto.ServerFileDto;
-import dto.StatsDto;
+import dto.ServerStateDto;
 import events.BaseEvent;
 import events.LogEvent;
 import reactor.core.publisher.Flux;
@@ -45,7 +45,7 @@ public abstract class NodeManager {
 
     public abstract Mono<Void> remove(UUID id);
 
-    public abstract Flux<ServerMisMatch> getMismatch(UUID id, ServerConfig config, StatsDto stats,
+    public abstract Flux<ServerMisMatch> getMismatch(UUID id, ServerConfig config, ServerStateDto state,
             List<ModDto> mods);
 
     public abstract Flux<NodeUsage> getNodeUsage(UUID serverId);

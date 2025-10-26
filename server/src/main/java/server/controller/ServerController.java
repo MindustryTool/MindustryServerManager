@@ -40,7 +40,7 @@ import dto.ManagerModDto;
 import dto.MindustryToolPlayerDto;
 import dto.MapDto;
 import dto.ModDto;
-import dto.StatsDto;
+import dto.ServerStateDto;
 import events.BaseEvent;
 import events.LogEvent;
 import dto.PlayerInfoDto;
@@ -129,9 +129,9 @@ public class ServerController {
         return serverService.updatePlayer(serverId, request);
     }
 
-    @GetMapping("/servers/{id}/stats")
-    public Mono<StatsDto> stats(@PathVariable("id") UUID serverId) {
-        return serverService.stats(serverId);
+    @GetMapping("/servers/{id}/state")
+    public Mono<ServerStateDto> state(@PathVariable("id") UUID serverId) {
+        return serverService.state(serverId);
     }
 
     @GetMapping(path = "/servers/{id}/usage", produces = MediaType.TEXT_EVENT_STREAM_VALUE)

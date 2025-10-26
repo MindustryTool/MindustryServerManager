@@ -16,7 +16,7 @@ public abstract class BaseEvent {
     {
         eventTypeMap.put("start", StartEvent.class);
         eventTypeMap.put("stop", StopEvent.class);
-        eventTypeMap.put("server-stats", ServerStatsEvent.class);
+        eventTypeMap.put("server-state", ServerStateEvent.class);
         eventTypeMap.put("log", LogEvent.class);
     }
 

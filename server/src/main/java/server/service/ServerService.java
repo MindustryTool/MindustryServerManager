@@ -14,7 +14,7 @@ import arc.files.Fi;
 import arc.util.Log;
 import dto.MapDto;
 import dto.ModDto;
-import dto.StatsDto;
+import dto.ServerStateDto;
 import events.BaseEvent;
 import events.LogEvent;
 import jakarta.annotation.PostConstruct;
@@ -170,13 +170,13 @@ public class ServerService {
 
     public Flux<ServerMisMatch> getMismatch(UUID serverId, ServerConfig config) {
         return Mono.zipDelayError(//
-                stats(serverId), //
+                state(serverId), //
                 getMods(serverId).collectList()//
         ).flatMapMany(zip -> {
-            var stats = zip.getT1();
+            var state = zip.getT1();
             var mods = zip.getT2();
 
-            return nodeManager.getMismatch(serverId, config, stats, mods);
+            return nodeManager.getMismatch(serverId, config, state, mods);
         });
     }
 
@@ -220,15 +220,15 @@ public class ServerService {
         return nodeManager.getNodeUsage(serverId);
     }
 
-    public Mono<StatsDto> stats(UUID serverId) {
+    public Mono<ServerStateDto> state(UUID serverId) {
         return gatewayService.of(serverId)//
                 .getServer()//
-                .getStats()//
+                .getState()//
                 .onErrorResume(error -> {
                     Log.err(error.getMessage());
                     return Mono.empty();
                 })
-                .defaultIfEmpty(new StatsDto().setServerId(serverId).setStatus("NOT_RESPONSE"));
+                .defaultIfEmpty(new ServerStateDto().setServerId(serverId).setStatus("NOT_RESPONSE"));
     }
 
     public Mono<byte[]> getImage(UUID serverId) {
@@ -252,9 +252,9 @@ public class ServerService {
 
         return gatewayService.of(serverId)//
                 .getServer()//
-                .getStats()
-                .flatMap(stats -> {
-                    boolean shouldKill = stats.getPlayers().isEmpty();
+                .getState()
+                .flatMap(state -> {
+                    boolean shouldKill = state.getPlayers().isEmpty();
 
                     if (shouldKill && shouldAutoTurnOff) {
                         if (flag != null && flag.contains(ServerFlag.KILL)) {

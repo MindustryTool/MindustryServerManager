@@ -48,7 +48,7 @@ import dto.ModMetaDto;
 import dto.PlayerDto;
 import dto.ServerCommandDto;
 import dto.StartServerDto;
-import dto.StatsDto;
+import dto.ServerStateDto;
 import dto.TeamDto;
 import events.StartEvent;
 import plugin.type.WorkflowContext;
@@ -115,7 +115,7 @@ public class HttpServer {
             config.registerPlugin(new RouteOverviewPlugin());
 
             config.requestLogger.http((ctx, ms) -> {
-                if (!ctx.fullUrl().contains("stats") && !ctx.fullUrl().contains("hosting")) {
+                if (!ctx.fullUrl().contains("state") && !ctx.fullUrl().contains("hosting")) {
                     Log.info("[" + ctx.method().name() + "] " + Math.round(ms) + "ms " + ctx.fullUrl());
                 }
             });
@@ -141,10 +141,10 @@ public class HttpServer {
 
     public void init() {
         Log.info("Setup http server");
-        app.get("stats", ctx -> {
-            StatsDto stats = Utils.appPostWithTimeout(this::getStats);
+        app.get("state", ctx -> {
+            ServerStateDto state = Utils.appPostWithTimeout(this::getState);
             ctx.contentType(ContentType.APPLICATION_JSON);
-            ctx.json(stats);
+            ctx.json(state);
         });
 
         app.get("image", ctx -> {
@@ -435,7 +435,7 @@ public class HttpServer {
 
                 HashMap<String, Object> data = new HashMap<>();
 
-                data.put("stats", getStats());
+                data.put("state", getState());
                 data.put("session", context.get().sessionHandler.get());
                 data.put("hud", context.get().hudHandler.menus.asMap());
                 data.put("isHub", Config.IS_HUB);
@@ -605,7 +605,7 @@ public class HttpServer {
         Utils.host(mapName, gameMode);
     }
 
-    private StatsDto getStats() {
+    private ServerStateDto getState() {
         mindustry.maps.Map map = Vars.state.map;
         String mapName = map != null ? map.name() : "";
         List<ModDto> mods = Vars.mods == null //
@@ -648,7 +648,7 @@ public class HttpServer {
                                         .setName(player.team().name)))
                         .collect(Collectors.toList())));
 
-        return new StatsDto()//
+        return new ServerStateDto()//
                 .setServerId(ServerController.SERVER_ID)//
                 .setRamUsage(Core.app.getJavaHeap() / 1024 / 1024)
                 .setTotalRam(Runtime.getRuntime().maxMemory() / 1024 / 1024)//

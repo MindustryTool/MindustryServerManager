@@ -9,7 +9,7 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.Accessors;
 import dto.ModDto;
-import dto.StatsDto;
+import dto.ServerStateDto;
 
 @Data
 @Accessors(chain = true, fluent = true)
@@ -22,10 +22,10 @@ public class ServerMisMatch {
 	public static List<ServerMisMatch> from(
 			ServerMetadata meta,
 			ServerConfig expectedConfig,
-			StatsDto stats,
+			ServerStateDto state,
 			List<ModDto> mods//
 	) {
-		if (stats.getStatus().equals("NOT_RESPONSE")) {
+		if (state.getStatus().equals("NOT_RESPONSE")) {
 			throw new BadRequestException("Server not response");
 		}
 
@@ -34,7 +34,7 @@ public class ServerMisMatch {
 		List<ServerMisMatch> result = new ArrayList<>();
 
 		for (var mod : mods) {
-			if (stats.getMods().stream()
+			if (state.getMods().stream()
 					.noneMatch(runningMod -> runningMod.getFilename().equals(mod.getFilename()))) {
 				result.add(
 						new ServerMisMatch(
@@ -45,7 +45,7 @@ public class ServerMisMatch {
 			}
 		}
 
-		for (var runningMod : stats.getMods()) {
+		for (var runningMod : state.getMods()) {
 			if (mods.stream()
 					.noneMatch(mod -> mod.getFilename().equals(runningMod.getFilename()))) {
 				result.add(

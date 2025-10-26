@@ -41,7 +41,7 @@ import dto.ManagerModDto;
 import dto.MapDto;
 import dto.ModDto;
 import dto.ServerFileDto;
-import dto.StatsDto;
+import dto.ServerStateDto;
 import events.LogEvent;
 import events.StartEvent;
 import events.StopEvent;
@@ -345,7 +345,7 @@ public class DockerNodeManager extends NodeManager {
     }
 
     @Override
-    public Flux<ServerMisMatch> getMismatch(UUID id, ServerConfig config, StatsDto stats, List<ModDto> mods) {
+    public Flux<ServerMisMatch> getMismatch(UUID id, ServerConfig config, ServerStateDto state, List<ModDto> mods) {
         var optional = findContainerByServerId(id);
 
         if (optional.isEmpty()) {
@@ -356,7 +356,7 @@ public class DockerNodeManager extends NodeManager {
 
         var meta = readMetadataFromContainer(container).orElseThrow();
 
-        List<ServerMisMatch> result = ServerMisMatch.from(meta, config, stats, mods);
+        List<ServerMisMatch> result = ServerMisMatch.from(meta, config, state, mods);
 
         var serverImage = dockerClient.inspectImageCmd(meta.getConfig().getImage()).exec();
 

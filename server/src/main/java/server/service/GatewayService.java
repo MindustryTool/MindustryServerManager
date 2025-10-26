@@ -34,7 +34,7 @@ import dto.MindustryToolPlayerDto;
 import dto.PlayerDto;
 import dto.PlayerInfoDto;
 import dto.ServerCommandDto;
-import dto.StatsDto;
+import dto.ServerStateDto;
 import events.BaseEvent;
 import server.utils.ApiError;
 import server.utils.Utils;
@@ -226,14 +226,14 @@ public class GatewayService {
 						.retryWhen(Retry.fixedDelay(10 * 2, Duration.ofMillis(100)));
 			}
 
-			public Mono<StatsDto> getStats() {
+			public Mono<ServerStateDto> getState() {
 				return wrapError(
 						webClient.method(HttpMethod.GET)
-								.uri("stats")
+								.uri("state")
 								.retrieve()
-								.bodyToMono(StatsDto.class),
+								.bodyToMono(ServerStateDto.class),
 						Duration.ofMillis(1000),
-						"Get stats");
+						"Get state");
 			}
 
 			public Mono<byte[]> getImage() {

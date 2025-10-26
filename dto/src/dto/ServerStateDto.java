@@ -9,7 +9,7 @@ import lombok.experimental.Accessors;
 
 @Data
 @Accessors(chain = true)
-public class StatsDto {
+public class ServerStateDto {
     private UUID serverId;
     private long tps = 0;
     private long ramUsage = 0;
