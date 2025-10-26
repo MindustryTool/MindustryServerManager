@@ -26,6 +26,9 @@ public abstract class BaseEvent {
     private String name;
     private Instant createdAt = Instant.now();
 
+    public BaseEvent() {
+    }
+
     public BaseEvent(UUID serverId, String name) {
         this.name = name;
         this.serverId = serverId;
