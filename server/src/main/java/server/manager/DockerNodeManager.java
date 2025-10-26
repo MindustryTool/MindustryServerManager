@@ -500,8 +500,6 @@ public class DockerNodeManager extends NodeManager {
                 .withTail(0)
                 .exec(callback);
 
-        logCallbacks.put(serverId, callback);
-
         Log.info("[" + serverId + "] Log stream attached.");
 
         return callback;
