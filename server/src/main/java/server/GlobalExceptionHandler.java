@@ -71,7 +71,7 @@ public class GlobalExceptionHandler {
             Exception exception, String message) {
 
         if (exchange.getResponse().isCommitted()) {
-            return Mono.empty();
+            return Mono.error(exception);
         }
 
         var request = exchange.getRequest();
