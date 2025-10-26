@@ -64,8 +64,6 @@ public class ServerService {
         });
 
         nodeManager.onEvent(event -> {
-            Log.info("Manager event published: " + event);
-
             eventSinks.forEach(sink -> {
                 if (!sink.isCancelled())
                     sink.next(event);
