@@ -9,8 +9,6 @@ import lombok.experimental.Accessors;
 @Data
 @Accessors(chain = true)
 public class ManagerModDto {
-    private String name;
-    private String filename;
-    private ModMetaDto meta;
+    private ModDto data;
     private List<UUID> servers;
 }

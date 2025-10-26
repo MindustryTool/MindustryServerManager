@@ -42,6 +42,7 @@ public class Const implements WebFluxConfigurer {
     public static File volumeFolder = new File(volumeFolderPath);
 
     public static final String MANAGER_VERSION = "0.0.1";
+    public static final Long MAX_FILE_SIZE = 5000000l;
 
     @PostConstruct
     public void init() {

@@ -4,7 +4,6 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.util.List;
 
 import javax.imageio.ImageIO;
@@ -18,14 +17,18 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-
 import arc.files.Fi;
 import arc.files.ZipFi;
+import arc.struct.StringMap;
 import arc.util.Log;
 import arc.util.serialization.Json;
 import arc.util.serialization.Jval;
 import arc.util.serialization.Jval.Jformat;
+import dto.MapDto;
+import dto.ModDto;
+import dto.ModMetaDto;
+import mindustry.core.Version;
+import mindustry.io.MapIO;
 import mindustry.mod.Mods.ModMeta;
 import reactor.core.publisher.Mono;
 
@@ -100,49 +103,6 @@ public class Utils {
         }
     }
 
-    public static void writeObject(File file, String key, String value) throws IOException {
-        if (file.isDirectory()) {
-            deleteFileRecursive(file);
-        }
-
-        if (!file.exists()) {
-            file.createNewFile();
-        }
-
-        var config = Utils.readFile(file);
-        var original = config;
-
-        var keys = key.split("\\.");
-
-        for (int i = 0; i < keys.length - 1; i++) {
-            var k = keys[i];
-            if (config.has(k)) {
-                config = config.get(k);
-            } else {
-                config = ((ObjectNode) config).set(k, Utils.readString("{}"));
-                config = config.get(k);
-            }
-        }
-
-        ((ObjectNode) config).set(keys[keys.length - 1], Utils.readString(value));
-
-        Files.writeString(file.toPath(), Utils.toJsonString(original));
-    }
-
-    public static boolean deleteFileRecursive(File file) {
-        if (!file.exists()) {
-            return false;
-        }
-
-        if (file.isDirectory()) {
-            for (File f : file.listFiles()) {
-                deleteFileRecursive(f);
-            }
-        }
-
-        return file.delete();
-    }
-
     public static ModMeta findMeta(Fi file) {
         Fi metaFile = null;
 
@@ -162,33 +122,87 @@ public class Utils {
         return meta;
     }
 
-    public static ModMeta loadMod(Fi sourceFile) throws Exception {
-        ZipFi rootZip = null;
+    public static ModDto loadMod(Fi sourceFile) {
+        try {
+
+            ZipFi rootZip = null;
+
+            try {
+                Fi zip = sourceFile.isDirectory() ? sourceFile : (rootZip = new ZipFi(sourceFile));
+                if (zip.list().length == 1 && zip.list()[0].isDirectory()) {
+                    zip = zip.list()[0];
+                }
+
+                ModMeta meta = findMeta(zip);
+
+                if (meta == null) {
+                    Log.warn("Mod @ doesn't have a '[mod/plugin].[h]json' file, delete and skipping.", zip);
+                    sourceFile.delete();
+                    throw new ApiError(HttpStatus.UNPROCESSABLE_ENTITY, "Invalid file: No mod.json found.");
+                }
+
+                return new ModDto()//
+                        .setFilename(sourceFile.name())//
+                        .setName(meta.name)
+                        .setMeta(new ModMetaDto()//
+                                .setAuthor(meta.author)//
+                                .setDependencies(meta.dependencies.list())
+                                .setDescription(meta.description)
+                                .setDisplayName(meta.displayName)
+                                .setHidden(meta.hidden)
+                                .setInternalName(meta.internalName)
+                                .setJava(meta.java)
+                                .setMain(meta.main)
+                                .setMinGameVersion(meta.minGameVersion)
+                                .setName(meta.name)
+                                .setRepo(meta.repo)
+                                .setSubtitle(meta.subtitle)
+                                .setVersion(meta.version));
+            } catch (Exception e) {
+                if (e instanceof ApiError) {
+                    throw e;
+                }
+                // delete root zip file so it can be closed on windows
+                if (rootZip != null)
+                    rootZip.delete();
+                throw new RuntimeException("Can not load mod from: " + sourceFile.name(), e);
+            }
+        } catch (Exception error) {
+            error.printStackTrace();
+            return new ModDto()
+                    .setFilename(sourceFile.name())//
+                    .setName("Error")
+                    .setMeta(new ModMetaDto()//
+                            .setAuthor("Error")
+                            .setName("Error")
+                            .setDisplayName("Error"));
+        }
+    }
+
+    public static boolean isModFile(Fi file) {
+        return file.extension().equalsIgnoreCase("jar") || file.extension().equalsIgnoreCase("zip");
+    }
+
+    public static boolean isMapFile(Fi file) {
+        return file.extension().equalsIgnoreCase("msav");
+    }
+
+    public static MapDto loadMap(Fi file) {
+        mindustry.maps.Map map = null;
 
         try {
-            Fi zip = sourceFile.isDirectory() ? sourceFile : (rootZip = new ZipFi(sourceFile));
-            if (zip.list().length == 1 && zip.list()[0].isDirectory()) {
-                zip = zip.list()[0];
-            }
-
-            ModMeta meta = findMeta(zip);
-
-            if (meta == null) {
-                Log.warn("Mod @ doesn't have a '[mod/plugin].[h]json' file, delete and skipping.", zip);
-                sourceFile.delete();
-                throw new ApiError(HttpStatus.UNPROCESSABLE_ENTITY, "Invalid file: No mod.json found.");
-            }
-
-            return meta;
-        } catch (Exception e) {
-            if (e instanceof ApiError) {
-                throw e;
-            }
-            // delete root zip file so it can be closed on windows
-            if (rootZip != null)
-                rootZip.delete();
-            throw new RuntimeException("Can not load mod from: " + sourceFile.name(), e);
+            map = MapIO.createMap(file, true);
+        } catch (Throwable e) {
+            e.printStackTrace();
+            map = new mindustry.maps.Map(file, 0, 0, new StringMap(), true, 0, Version.build);
         }
+
+        return new MapDto()//
+                .setName(map.name())//
+                .setFilename(map.file.name())
+                .setCustom(map.custom)
+                .setHeight(map.height)
+                .setWidth(map.width);
     }
 
 }

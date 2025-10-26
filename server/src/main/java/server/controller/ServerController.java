@@ -20,7 +20,6 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -68,43 +67,47 @@ public class ServerController {
     }
 
     @GetMapping("/servers/{id}/files")
-    Flux<ServerFileDto> getFiles(@PathVariable("id") UUID serverId, @RequestParam("path") String path) {
+    public Flux<ServerFileDto> getFiles(@PathVariable("id") UUID serverId, @RequestParam("path") String path) {
         return serverService.getFiles(serverId, URLDecoder.decode(path, StandardCharsets.UTF_8));
     }
 
     @GetMapping("/servers/{id}/files/exists")
-    boolean fileExists(@PathVariable("id") UUID serverId, @RequestParam("path") String path) {
-        return serverService.fileExists(serverId, URLDecoder.decode(path, StandardCharsets.UTF_8));
+    public Mono<Boolean> isFileExists(@PathVariable("id") UUID serverId, @RequestParam("path") String path) {
+        return serverService.isFileExists(serverId, URLDecoder.decode(path, StandardCharsets.UTF_8));
     }
 
     @GetMapping("/servers/{id}/files/download")
-    public ResponseEntity<Resource> downloadFile(//
+    public Mono<ResponseEntity<Resource>> downloadFile(//
             @PathVariable("id") UUID id, @RequestParam(name = "path", required = true) String path) {
 
-        var file = nodeManager.getFile(id, path);
-        try {
-            InputStreamResource resource = new InputStreamResource(
-                    new FileInputStream(file));
+        return nodeManager.getFile(id, path)
+                .map(file -> {
+                    try {
+                        InputStreamResource resource = new InputStreamResource(
+                                new FileInputStream(file.file()));
 
-            return ResponseEntity.ok()//
-                    .header(HttpHeaders.CONTENT_DISPOSITION,
-                            String.format("attachment; filename=%s", Paths.get(path).getFileName()))
-                    .contentLength(file.length())//
-                    .contentType(MediaType.APPLICATION_OCTET_STREAM)//
-                    .body(resource);
-        } catch (FileNotFoundException e) {
-            throw new RuntimeException("File not found");
-        }
+                        return ResponseEntity.ok()//
+                                .header(HttpHeaders.CONTENT_DISPOSITION,
+                                        String.format("attachment; filename=%s", Paths.get(path).getFileName()))
+                                .contentLength(file.length())//
+                                .contentType(MediaType.APPLICATION_OCTET_STREAM)//
+                                .body(resource);
+                    } catch (FileNotFoundException e) {
+                        throw new RuntimeException("File not found");
+                    }
+                });
     }
 
     @PostMapping(value = "/servers/{id}/files", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    Mono<Void> createFile(@PathVariable("id") UUID serverId, @RequestPart("path") String path,
+    Mono<Void> writeFile(
+            @PathVariable("id") UUID serverId, @RequestPart("path") String path,
             @RequestPart("file") FilePart file) {
-        return serverService.createFile(serverId, file, path);
+
+        return serverService.writeFile(serverId, path, file);
     }
 
     @DeleteMapping("/servers/{id}/files")
-    Mono<Void> deleteFile(@PathVariable("id") UUID serverId, @RequestParam("path") String path) {
+    Mono<Boolean> deleteFile(@PathVariable("id") UUID serverId, @RequestParam("path") String path) {
         return serverService.deleteFile(serverId, URLDecoder.decode(path, StandardCharsets.UTF_8));
     }
 
@@ -157,15 +160,6 @@ public class ServerController {
     @GetMapping("/servers/{id}/ok")
     public Mono<Void> ok(@PathVariable("id") UUID serverId) {
         return serverService.ok(serverId);
-    }
-
-    @PutMapping("servers/{id}/config")
-    public Mono<JsonNode> setConfig(//
-            @PathVariable("id") UUID serverId, //
-            @RequestPart("key") String key,
-            @RequestPart("value") String value//
-    ) {
-        return serverService.setConfig(serverId, key, value);
     }
 
     @GetMapping("servers/{id}/mods")

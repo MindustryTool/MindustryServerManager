@@ -1,6 +1,5 @@
 package server.manager;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URLDecoder;
 import java.nio.channels.AsynchronousCloseException;
@@ -10,6 +9,7 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -26,6 +26,7 @@ import com.github.dockerjava.core.DefaultDockerClientConfig;
 import com.github.dockerjava.core.DockerClientImpl;
 import com.github.dockerjava.httpclient5.ApacheDockerHttpClient;
 
+import arc.files.Fi;
 import arc.util.Log;
 import jakarta.annotation.PostConstruct;
 import server.EnvConfig;
@@ -36,14 +37,21 @@ import server.types.data.ServerMetadata;
 import server.types.data.ServerState;
 import server.types.data.WebhookMessage;
 import server.types.data.ServerMisMatch;
+import dto.ManagerMapDto;
+import dto.ManagerModDto;
+import dto.MapDto;
 import dto.ModDto;
+import dto.ServerFileDto;
 import dto.StatsDto;
 import events.LogEvent;
 import events.StartEvent;
 import events.StopEvent;
+import server.utils.FileUtils;
 import server.utils.Utils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.util.function.Tuple2;
+import reactor.util.function.Tuples;
 import reactor.core.publisher.FluxSink.OverflowStrategy;
 
 import com.github.dockerjava.api.DockerClient;
@@ -69,6 +77,8 @@ public class DockerNodeManager extends NodeManager {
 
     private final Map<UUID, ResultCallback.Adapter<Frame>> logCallbacks = new ConcurrentHashMap<>();
 
+    private static final Fi SERVER_FOLDER = new Fi(Const.volumeFolderPath).child("servers");
+
     public DockerNodeManager(EnvConfig envConfig, WebClient webClient) {
         this.envConfig = envConfig;
         this.webClient = webClient;
@@ -85,6 +95,8 @@ public class DockerNodeManager extends NodeManager {
                 .build();
 
         this.dockerClient = DockerClientImpl.getInstance(dockerConfig, dockerHttpClient);
+
+        SERVER_FOLDER.mkdirs();
     }
 
     @Override
@@ -355,46 +367,6 @@ public class DockerNodeManager extends NodeManager {
         return Flux.fromIterable(result);
     }
 
-    @Override
-    public File getFile(UUID serverId, String path) {
-        if (path.contains("..")) {
-            throw new IllegalArgumentException("Invalid path, contains '..'");
-        }
-
-        var decodedPath = URLDecoder.decode(path, StandardCharsets.UTF_8);
-
-        return Paths
-                .get(Const.volumeFolderPath,
-                        "servers",
-                        serverId.toString(),
-                        "config",
-                        decodedPath)
-                .toFile();
-
-    }
-
-    @Override
-    public boolean deleteFile(UUID serverId, String path) {
-        var file = getFile(serverId, path);
-
-        return deleteFile(file);
-    }
-
-    private boolean deleteFile(File file) {
-        if (!file.exists()) {
-            return false;
-        }
-
-        if (file.isDirectory()) {
-            for (File f : file.listFiles()) {
-                deleteFile(f);
-            }
-        }
-
-        file.delete();
-        return true;
-    }
-
     private List<Container> listContainers() {
         return dockerClient.listContainersCmd()//
                 .withShowAll(true)//
@@ -610,5 +582,106 @@ public class DockerNodeManager extends NodeManager {
                         .exec(callback);
             }
         });
+    }
+
+    @Override
+    public Flux<ManagerMapDto> getManagerMaps() {
+        var result = new HashMap<String, Tuple2<Fi, List<UUID>>>();
+
+        for (var serverFolder : SERVER_FOLDER.list()) {
+            var mapFolder = serverFolder.child("config").child("maps");
+
+            if (!mapFolder.exists()) {
+                continue;
+            }
+
+            for (var mapFile : mapFolder.findAll(Utils::isMapFile)) {
+                result.computeIfAbsent(mapFile.name(), (_ignore) -> Tuples.of(mapFile, new ArrayList<>()))
+                        .getT2()
+                        .add(UUID.fromString(serverFolder.name()));
+            }
+        }
+
+        return Flux.fromIterable(result.values()).map(entry -> {
+            var map = Utils.loadMap(entry.getT1());
+            var servers = entry.getT2();
+
+            return new ManagerMapDto()//
+                    .setServers(servers)
+                    .setMetadata(map);
+        });
+
+    }
+
+    @Override
+    public Flux<ManagerModDto> getManagerMods() {
+        var result = new HashMap<String, Tuple2<Fi, List<UUID>>>();
+
+        for (var serverFolder : SERVER_FOLDER.list()) {
+            var modFolder = serverFolder
+                    .child("config")
+                    .child("mods");
+
+            if (!modFolder.exists()) {
+                continue;
+            }
+
+            for (var mapFile : modFolder.findAll(Utils::isModFile)) {
+                result.computeIfAbsent(mapFile.name(), (_ignore) -> Tuples.of(mapFile, new ArrayList<>()))
+                        .getT2()
+                        .add(UUID.fromString(serverFolder.name()));
+            }
+        }
+
+        return Flux.fromIterable(result.values()).flatMap(entry -> {
+            var meta = Utils.loadMod(entry.getT1());
+
+            return Mono.just(new ManagerModDto()//
+                    .setData(meta)//
+                    .setServers(entry.getT2()));
+        });
+    }
+
+    @Override
+    public Flux<MapDto> getMaps(UUID serverId) {
+        return getFile(serverId, "maps")
+                .filter(folder -> folder.exists())
+                .flatMapIterable(folder -> folder.findAll().map(Utils::loadMap));
+    }
+
+    @Override
+    public Flux<ModDto> getMods(UUID serverId) {
+        return getFile(serverId, "mods")
+                .filter(folder -> folder.exists())
+                .flatMapIterable(folder -> folder.findAll(Utils::isModFile).map(Utils::loadMod));
+    }
+
+    @Override
+    public Mono<Fi> getFile(UUID serverId, String path) {
+        var decodedPath = URLDecoder.decode(path, StandardCharsets.UTF_8);
+        var basePath = Paths.get(Const.volumeFolderPath, "servers", serverId.toString(), "config", decodedPath)
+                .toAbsolutePath().toString();
+
+        return Mono.just(FileUtils.getFile(basePath, decodedPath));
+
+    }
+
+    @Override
+    public Mono<Boolean> deleteFile(UUID serverId, String path) {
+        return getFile(serverId, path)
+                .map(FileUtils::deleteFile);
+    }
+
+    @Override
+    public Flux<ServerFileDto> getFiles(UUID serverId, String path) {
+        return getFile(serverId, path)
+                .flatMapIterable(folder -> FileUtils.getFiles(folder.absolutePath(), path));
+    }
+
+    @Override
+    public Mono<Void> writeFile(UUID serverId, String path, byte[] data) {
+        return getFile(serverId, path)
+                .doOnNext(file -> FileUtils.writeFile(file.absolutePath(), path, data))
+                .then();
     }
 }
