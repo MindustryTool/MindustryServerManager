@@ -2,13 +2,13 @@ package events;
 
 import java.util.UUID;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
 
-@Getter
-@Setter
 @Accessors(chain = true)
+@Data
+@EqualsAndHashCode(callSuper = false)
 public class LogEvent extends BaseEvent {
     private String data;
     private LogLevel level;
