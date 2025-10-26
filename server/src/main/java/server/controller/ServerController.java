@@ -5,7 +5,6 @@ import java.io.FileNotFoundException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
-import java.time.Duration;
 import java.util.Map;
 import java.util.UUID;
 
@@ -61,9 +60,7 @@ public class ServerController {
 
     @GetMapping(path = "/events", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<BaseEvent> getServers() {
-        // TODO send event to backend
-        return Flux.interval(Duration.ofMinutes(1))
-                .map(i -> LogEvent.info(UUID.randomUUID(), "test: " + i));
+        return serverService.getEvents();
     }
 
     @GetMapping("/servers/{id}/files")

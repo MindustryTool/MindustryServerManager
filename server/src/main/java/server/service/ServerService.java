@@ -3,6 +3,7 @@ package server.service;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.LinkedList;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -14,7 +15,9 @@ import arc.util.Log;
 import dto.MapDto;
 import dto.ModDto;
 import dto.StatsDto;
+import events.BaseEvent;
 import events.LogEvent;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import server.types.data.NodeUsage;
@@ -29,6 +32,7 @@ import server.manager.NodeManager;
 import server.utils.ApiError;
 import server.utils.Utils;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.retry.Retry;
@@ -41,10 +45,38 @@ public class ServerService {
     private final NodeManager nodeManager;
 
     private final ConcurrentHashMap<UUID, EnumSet<ServerFlag>> serverFlags = new ConcurrentHashMap<>();
+    private final LinkedList<FluxSink<BaseEvent>> eventSinks = new LinkedList<>();
 
     private static enum ServerFlag {
         KILL,
         RESTART
+    }
+
+    @PostConstruct
+    private void registerEventHandler() {
+        gatewayService.onEvent(event -> {
+            eventSinks.forEach(sink -> {
+                if (!sink.isCancelled())
+                    sink.next(event);
+            });
+        });
+    }
+
+    public Flux<BaseEvent> getEvents() {
+        return Flux.create(emitter -> {
+            emitter.onDispose(() -> eventSinks.remove(emitter));
+
+            eventSinks.add(emitter);
+        });
+    }
+
+    @Scheduled(fixedDelay = 5, timeUnit = TimeUnit.SECONDS)
+    private void scanServer() {
+        nodeManager.list()
+                .filter(state -> state.meta.isPresent())
+                .map(state -> gatewayService.of(state.meta.get().getConfig().getId()))
+                .subscribeOn(Schedulers.boundedElastic())
+                .blockLast();
     }
 
     @Scheduled(fixedDelay = 5, timeUnit = TimeUnit.MINUTES)
