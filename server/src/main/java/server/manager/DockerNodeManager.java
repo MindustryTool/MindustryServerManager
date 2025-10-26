@@ -391,7 +391,7 @@ public class DockerNodeManager extends NodeManager {
                     logCallbacks.computeIfAbsent(serverId, _ignore -> createLogCallack(container.getId(), serverId));
                 }
             } catch (Exception e) {
-                Log.err(e);
+                Log.err(e.getMessage());
             }
         }
     }
