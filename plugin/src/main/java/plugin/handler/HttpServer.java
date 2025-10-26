@@ -18,6 +18,7 @@ import org.eclipse.jetty.util.thread.ExecutorThreadPool;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import arc.Core;
 import arc.files.Fi;
@@ -100,6 +101,7 @@ public class HttpServer {
                         .configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false)
                         .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
 
+                mapper.registerModule(new JavaTimeModule());
             }));
 
             config.http.asyncTimeout = 5_000;
