@@ -18,6 +18,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -46,6 +47,7 @@ import dto.StatsDto;
 import events.LogEvent;
 import events.StartEvent;
 import events.StopEvent;
+import server.utils.ApiError;
 import server.utils.FileUtils;
 import server.utils.Utils;
 import reactor.core.publisher.Flux;
@@ -143,7 +145,7 @@ public class DockerNodeManager extends NodeManager {
                         emitter.next(LogEvent.error(serverId,
                                 "Port exists at conatiner " + server.getNames()[0] + " port: " + config.getPort()));
 
-                        emitter.complete();
+                        emitter.error(new ApiError(HttpStatus.BAD_REQUEST, "Port exists at conatiner " + server.getNames()[0] + " port: " + config.getPort()));
                         return;
                     }
                 }
