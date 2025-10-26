@@ -213,14 +213,9 @@ public class PluginLoader extends Plugin {
 
     private void unloadPlugin(PluginData plugin) {
         plugins.remove(plugin.getId());
+        pluginManager.unloadPlugin(plugin.getId());
 
-        PluginWrapper loaded = pluginManager.getPlugin(plugin.getId());
-
-        if (loaded != null) {
-            pluginManager.unloadPlugin(loaded.getPluginId());
-
-            Log.info("Unloaded plugin: " + plugin.getName());
-        }
+        Log.info("Unloaded plugin: " + plugin.getName());
     }
 
     private void loadPlugin(PluginData plugin) {
