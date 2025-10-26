@@ -74,9 +74,6 @@ public class ServerService {
     }
 
     public Flux<BaseEvent> getEvents() {
-        Flux<LogEvent> hearbeat = Flux.interval(Duration.ofMinutes(1))
-                .map(index -> LogEvent.info(UUID.randomUUID(), "Server heartbeat"));
-
         Flux<BaseEvent> eventSink = Flux.create(emitter -> {
             emitter.onDispose(() -> {
                 eventSinks.remove(emitter);
@@ -88,7 +85,7 @@ public class ServerService {
             eventSinks.add(emitter);
         });
 
-        return Flux.merge(hearbeat, eventSink);
+        return eventSink;
     }
 
     @Scheduled(fixedDelay = 5, timeUnit = TimeUnit.SECONDS)
