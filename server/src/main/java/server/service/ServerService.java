@@ -139,7 +139,7 @@ public class ServerService {
                 Mono.just(LogEvent.info(serverId, "Waiting for server to start")), //
                 serverGateway//
                         .ok()
-                        .then(Mono.just(LogEvent.info(serverId, "Server started, waiting for hosting"))));
+                        .thenReturn(LogEvent.info(serverId, "Server started, waiting for hosting")));
 
         Flux<LogEvent> hostFlux = serverGateway.isHosting().flatMapMany(isHosting -> {
 
@@ -181,7 +181,7 @@ public class ServerService {
                 createFlux,
                 waitingOkFlux, //
                 hostFlux//
-        );
+        ).doOnError(err -> Log.err(err));
     }
 
     public Flux<ServerMisMatch> getMismatch(UUID serverId, ServerConfig config) {
