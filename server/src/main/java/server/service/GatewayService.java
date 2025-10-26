@@ -1,6 +1,7 @@
 package server.service;
 
 import java.net.URI;
+import java.net.UnknownHostException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -19,6 +20,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientRequestException;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -36,7 +38,6 @@ import dto.StatsDto;
 import events.BaseEvent;
 import server.utils.ApiError;
 import server.utils.Utils;
-import reactor.core.Exceptions;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
@@ -136,6 +137,35 @@ public class GatewayService {
 		}
 
 		public class Server {
+
+			private <T> Mono<T> wrapError(Mono<T> publisher, Duration timeout, String message) {
+				return publisher
+						.onErrorMap(WebClientRequestException.class, error -> {
+							if (error.getCause() instanceof UnknownHostException) {
+								return new ApiError(HttpStatus.NOT_FOUND, "Server not found");
+							}
+
+							return error;
+						})
+						.timeout(timeout)
+						.onErrorMap(TimeoutException.class,
+								error -> new ApiError(HttpStatus.BAD_REQUEST, "Timeout error: " + message));
+			}
+
+			private <T> Flux<T> wrapError(Flux<T> publisher, Duration timeout, String message) {
+				return publisher
+						.onErrorMap(WebClientRequestException.class, error -> {
+							if (error.getCause() instanceof UnknownHostException) {
+								return new ApiError(HttpStatus.NOT_FOUND, "Server not found");
+							}
+
+							return error;
+						})
+						.timeout(timeout)
+						.onErrorMap(TimeoutException.class,
+								error -> new ApiError(HttpStatus.BAD_REQUEST, "Timeout error: " + message));
+			}
+
 			private final WebClient webClient = WebClient.builder()
 					.codecs(configurer -> configurer
 							.defaultCodecs()
@@ -149,274 +179,215 @@ public class GatewayService {
 					.build();
 
 			public Mono<JsonNode> getJson() {
-				return webClient.method(HttpMethod.GET)//
+				return wrapError(webClient.method(HttpMethod.GET)//
 						.uri("json")//
 						.retrieve()//
-						.bodyToMono(JsonNode.class)//
-						.timeout(Duration.ofSeconds(15))
-						.onErrorMap(TimeoutException.class,
-								error -> new ApiError(HttpStatus.BAD_REQUEST,
-										"Timeout when get json"));
+						.bodyToMono(JsonNode.class), Duration.ofSeconds(5), "Get json");
 			}
 
 			public Mono<String> getPluginVersion() {
-				return webClient.method(HttpMethod.GET)//
+				return wrapError(webClient.method(HttpMethod.GET)//
 						.uri("plugin-version")//
 						.retrieve()//
-						.bodyToMono(String.class)//
-						.timeout(Duration.ofSeconds(5))
-						.onErrorMap(TimeoutException.class,
-								error -> new ApiError(HttpStatus.BAD_REQUEST,
-										"Timeout when get plugin version"));
+						.bodyToMono(String.class), Duration.ofSeconds(5), "Get plugin version");
 			}
 
 			public Mono<Void> updatePlayer(MindustryToolPlayerDto request) {
-				return webClient.method(HttpMethod.PUT)//
+				return wrapError(webClient.method(HttpMethod.PUT)//
 						.uri("players/" + request.getUuid())//
 						.bodyValue(request)//
 						.retrieve()//
-						.bodyToMono(String.class)//
-						.timeout(Duration.ofSeconds(5))//
-						.onErrorMap(TimeoutException.class,
-								error -> new ApiError(HttpStatus.BAD_REQUEST,
-										"Timeout when set player"))
+						.bodyToMono(String.class), Duration.ofSeconds(5), "Set player")
 						.then();
 			}
 
 			public Mono<Boolean> pause() {
-				return webClient.method(HttpMethod.POST)//
-						.uri("pause")//
-						.retrieve()//
-						.bodyToMono(Boolean.class)//
-						.timeout(Duration.ofSeconds(5))//
-						.onErrorMap(TimeoutException.class,
-								error -> new ApiError(HttpStatus.BAD_REQUEST,
-										"Timeout when pause"));
+				return wrapError(webClient.method(HttpMethod.POST)
+						.uri("pause")
+						.retrieve()
+						.bodyToMono(Boolean.class), Duration.ofSeconds(5), "Pause");
 			}
 
 			public Flux<PlayerDto> getPlayers() {
-				return webClient.method(HttpMethod.GET)//
-						.uri("players")//
-						.retrieve()//
-						.bodyToFlux(PlayerDto.class)//
-						.timeout(Duration.ofSeconds(5))
-						.onErrorMap(TimeoutException.class,
-								error -> new ApiError(HttpStatus.BAD_REQUEST,
-										"Timeout when get player"));
+				return wrapError(
+						webClient.method(HttpMethod.GET)
+								.uri("players")
+								.retrieve()
+								.bodyToFlux(PlayerDto.class),
+						Duration.ofSeconds(5),
+						"Get players");
 			}
 
 			public Mono<Void> ok() {
-				return webClient.method(HttpMethod.GET)
-						.uri("ok")
-						.retrieve()//
-						.bodyToMono(Void.class)//
-						.timeout(Duration.ofMillis(100))//
-						.retryWhen(Retry.fixedDelay(100, Duration.ofMillis(500)))
-						.onErrorMap(error -> Exceptions.isRetryExhausted(error),
-								error -> new ApiError(HttpStatus.BAD_REQUEST,
-										"Fail to check for ok"));//
-
+				return wrapError(
+						webClient.method(HttpMethod.GET)
+								.uri("ok")
+								.retrieve()
+								.bodyToMono(Void.class),
+						Duration.ofMillis(100),
+						"Check ok");
 			}
 
 			public Mono<StatsDto> getStats() {
-				return webClient.method(HttpMethod.GET)
-						.uri("stats")
-						.retrieve()//
-						.bodyToMono(StatsDto.class)//
-						.timeout(Duration.ofMillis(1000))
-						.onErrorMap(TimeoutException.class,
-								error -> new ApiError(HttpStatus.BAD_REQUEST,
-										"Timeout when get stats"));
+				return wrapError(
+						webClient.method(HttpMethod.GET)
+								.uri("stats")
+								.retrieve()
+								.bodyToMono(StatsDto.class),
+						Duration.ofMillis(1000),
+						"Get stats");
 			}
 
 			public Mono<byte[]> getImage() {
-				return webClient.method(HttpMethod.GET)
-						.uri("image")
-						.accept(MediaType.IMAGE_PNG)
-						.retrieve()//
-						.bodyToMono(byte[].class)//
-						.timeout(Duration.ofSeconds(5))
-						.onErrorMap(TimeoutException.class,
-								error -> new ApiError(HttpStatus.BAD_REQUEST,
-										"Timeout when get image"));
+				return wrapError(
+						webClient.method(HttpMethod.GET)
+								.uri("image")
+								.accept(MediaType.IMAGE_PNG)
+								.retrieve()
+								.bodyToMono(byte[].class),
+						Duration.ofSeconds(5),
+						"Get image");
 			}
 
 			public Mono<Void> sendCommand(String... command) {
-				return webClient.method(HttpMethod.POST)
-						.uri("commands")
-						.bodyValue(command)//
-						.retrieve()//
-						.bodyToMono(Void.class)//
-						.timeout(Duration.ofSeconds(2))
-						.onErrorMap(TimeoutException.class,
-								error -> new ApiError(HttpStatus.BAD_REQUEST,
-										"Timeout when send message"));
+				return wrapError(
+						webClient.method(HttpMethod.POST)
+								.uri("commands")
+								.bodyValue(command)
+								.retrieve()
+								.bodyToMono(Void.class),
+						Duration.ofSeconds(2),
+						"Send command");
 			}
 
 			public Mono<Void> say(String message) {
-				return webClient.method(HttpMethod.POST)
-						.uri("say")
-						.bodyValue(message)//
-						.retrieve()//
-						.bodyToMono(Void.class)//
-						.timeout(Duration.ofSeconds(2))
-						.onErrorMap(TimeoutException.class,
-								error -> new ApiError(HttpStatus.BAD_REQUEST,
-										"Timeout when say"));
+				return wrapError(
+						webClient.method(HttpMethod.POST)
+								.uri("say")
+								.bodyValue(message)
+								.retrieve()
+								.bodyToMono(Void.class),
+						Duration.ofSeconds(2),
+						"Say message");
 			}
 
 			public Mono<Void> host(ServerConfig request) {
-				return webClient.method(HttpMethod.POST)
-						.uri("host")
-						.bodyValue(request.setMode(request.getMode().toLowerCase()))//
-						.retrieve()//
-						.bodyToMono(Void.class)//
-						.timeout(Duration.ofSeconds(15))
-						.onErrorMap(TimeoutException.class,
-								error -> new ApiError(HttpStatus.BAD_REQUEST,
-										"Timeout when host"));
+				return wrapError(
+						webClient.method(HttpMethod.POST)
+								.uri("host")
+								.bodyValue(request)
+								.retrieve()
+								.bodyToMono(Void.class),
+						Duration.ofSeconds(15),
+						"Host server");
 			}
 
 			public Mono<Boolean> isHosting() {
-				return webClient.method(HttpMethod.GET)
+				return wrapError(webClient.method(HttpMethod.GET)
 						.uri("hosting")
-						.retrieve()//
-						.bodyToMono(Boolean.class)//
-						.timeout(Duration.ofMillis(100))//
-						.retryWhen(Retry.fixedDelay(50, Duration.ofMillis(300)))
-						.onErrorMap(error -> Exceptions.isRetryExhausted(error),
-								error -> new ApiError(HttpStatus.BAD_REQUEST,
-										"Fail to check for hosting"));
+						.retrieve()
+						.bodyToMono(Boolean.class), Duration.ofMillis(100), "Check hosting");
 			}
 
 			public Flux<ServerCommandDto> getCommands() {
-				return webClient.method(HttpMethod.GET)
+				return wrapError(webClient.method(HttpMethod.GET)
 						.uri("commands")
-						.retrieve()//
-						.bodyToFlux(ServerCommandDto.class)//
-						.timeout(Duration.ofSeconds(10))
-						.onErrorMap(TimeoutException.class,
-								error -> new ApiError(HttpStatus.BAD_REQUEST,
-										"Timeout when get commands"));
+						.retrieve()
+						.bodyToFlux(ServerCommandDto.class), Duration.ofSeconds(10), "Get commands");
 			}
 
 			public Flux<PlayerInfoDto> getPlayers(int page, int size, Boolean banned, String filter) {
-				return webClient.method(HttpMethod.GET)
-						.uri(builder -> builder.path("player-infos")//
-								.queryParam("page", page)
-								.queryParam("size", size)
-								.queryParam("banned", banned)//
-								.queryParam("filter", filter)
-								.build())
-						.retrieve()//
-						.bodyToFlux(PlayerInfoDto.class)//
-						.timeout(Duration.ofSeconds(10))
-						.onErrorMap(TimeoutException.class,
-								error -> new ApiError(HttpStatus.BAD_REQUEST,
-										"Timeout when get players info"));
+				return wrapError(
+						webClient.method(HttpMethod.GET)
+								.uri(builder -> builder.path("players-info")
+										.queryParam("page", page)
+										.queryParam("size", size)
+										.queryParam("banned", banned)
+										.queryParam("filter", filter)
+										.build())
+								.retrieve()
+								.bodyToFlux(PlayerInfoDto.class),
+						Duration.ofSeconds(10),
+						"Get player infos");
 			}
 
 			public Mono<Map<String, Long>> getKickedIps() {
-				return webClient.method(HttpMethod.GET)
-						.uri("kicks")
-						.retrieve()//
-						.bodyToMono(new ParameterizedTypeReference<Map<String, Long>>() {
-						})//
-						.timeout(Duration.ofSeconds(10))
-						.onErrorMap(TimeoutException.class,
-								error -> new ApiError(HttpStatus.BAD_REQUEST,
-										"Timeout when get kicks"));
+				return wrapError(
+						webClient.method(HttpMethod.GET)
+								.uri("kicked-ips")
+								.retrieve()
+								.bodyToMono(new ParameterizedTypeReference<Map<String, Long>>() {
+								}),
+						Duration.ofSeconds(10),
+						"Get kicked IPs");
 			}
 
 			public Mono<JsonNode> getRoutes() {
-				return webClient.method(HttpMethod.GET)
-						.uri("routes")
-						.retrieve()//
-						.bodyToMono(JsonNode.class)//
-						.timeout(Duration.ofSeconds(10))
-						.onErrorMap(TimeoutException.class,
-								error -> new ApiError(HttpStatus.BAD_REQUEST,
-										"Timeout when get routes"));
+				return wrapError(
+						webClient.method(HttpMethod.GET)
+								.uri("routes")
+								.retrieve()
+								.bodyToMono(JsonNode.class),
+						Duration.ofSeconds(10),
+						"Get routes");
 			}
 
 			public Mono<JsonNode> getWorkflowNodes() {
-				return webClient.method(HttpMethod.GET)
-						.uri("/workflow/nodes")
-						.retrieve()//
-						.bodyToMono(JsonNode.class)//
-						.timeout(Duration.ofSeconds(10))
-						.onErrorMap(TimeoutException.class,
-								error -> new ApiError(HttpStatus.BAD_REQUEST,
-										"Timeout when get workflow nodes"));
+				return wrapError(
+						webClient.method(HttpMethod.GET)
+								.uri("workflow/nodes")
+								.retrieve()
+								.bodyToMono(JsonNode.class),
+						Duration.ofSeconds(10),
+						"Get workflow nodes");
 			}
 
 			public Flux<JsonNode> getWorkflowEvents() {
-				return webClient.get()
-						.uri("/workflow/events")
-						.accept(MediaType.TEXT_EVENT_STREAM)
-						.retrieve()
-						.bodyToFlux(JsonNode.class)
-						.onErrorMap(TimeoutException.class,
-								error -> new ApiError(HttpStatus.BAD_REQUEST,
-										"Timeout when get workflow events"))
-						.log();
+				return wrapError(
+						webClient.method(HttpMethod.GET)
+								.uri("workflow/events")
+								.accept(MediaType.TEXT_EVENT_STREAM)
+								.retrieve()
+								.bodyToFlux(JsonNode.class),
+						Duration.ofSeconds(10),
+						"Get workflow events").log();
 			}
 
 			public Mono<JsonNode> emitWorkflowNode(String nodeId) {
-				return webClient.method(HttpMethod.GET)
-						.uri("/workflow/nodes" + nodeId + "/emit")
-						.retrieve()//
-						.bodyToMono(JsonNode.class)//
-						.timeout(Duration.ofSeconds(10))
-						.onErrorMap(TimeoutException.class,
-								error -> new ApiError(HttpStatus.BAD_REQUEST,
-										"Timeout when emit workflow node"));
+				return wrapError(webClient.method(HttpMethod.GET)
+						.uri("workflow/emit/" + nodeId)
+						.retrieve()
+						.bodyToMono(JsonNode.class), Duration.ofSeconds(10), "Emit workflow node");
 			}
 
 			public Mono<Long> getWorkflowVersion() {
-				return webClient.method(HttpMethod.GET)
+				return wrapError(webClient.method(HttpMethod.GET)
 						.uri("/workflow/version")
-						.retrieve()//
-						.bodyToMono(Long.class)//
-						.timeout(Duration.ofSeconds(10))
-						.onErrorMap(TimeoutException.class,
-								error -> new ApiError(HttpStatus.BAD_REQUEST,
-										"Timeout when get workflow version"));
+						.retrieve()
+						.bodyToMono(Long.class), Duration.ofSeconds(10), " Get workflow version");
 			}
 
 			public Mono<JsonNode> getWorkflow() {
-				return webClient.method(HttpMethod.GET)
+				return wrapError(webClient.method(HttpMethod.GET)
 						.uri("/workflow")
-						.retrieve()//
-						.bodyToMono(JsonNode.class)//
-						.timeout(Duration.ofSeconds(10))
-						.onErrorMap(TimeoutException.class,
-								error -> new ApiError(HttpStatus.BAD_REQUEST,
-										"Timeout when get workflow"));
+						.retrieve()
+						.bodyToMono(JsonNode.class), Duration.ofSeconds(10), "Get workflow");
 			}
 
 			public Mono<Void> saveWorkflow(JsonNode payload) {
-				return webClient.method(HttpMethod.POST)
+				return wrapError(webClient.method(HttpMethod.POST)
 						.uri("/workflow")
 						.bodyValue(payload)
-						.retrieve()//
-						.bodyToMono(Void.class)//
-						.timeout(Duration.ofSeconds(10))
-						.onErrorMap(TimeoutException.class,
-								error -> new ApiError(HttpStatus.BAD_REQUEST,
-										"Timeout when save workflow"));
+						.retrieve()
+						.bodyToMono(Void.class), Duration.ofSeconds(10), "Save workflow");
 			}
 
 			public Mono<JsonNode> loadWorkflow(JsonNode payload) {
-				return webClient.method(HttpMethod.POST)
+				return wrapError(webClient.method(HttpMethod.POST)
 						.uri("/workflow/load")
 						.bodyValue(payload)
-						.retrieve()//
-						.bodyToMono(JsonNode.class)//
-						.timeout(Duration.ofSeconds(10))
-						.onErrorMap(TimeoutException.class,
-								error -> new ApiError(HttpStatus.BAD_REQUEST,
-										"Timeout when load workflow"));
+						.retrieve()
+						.bodyToMono(JsonNode.class), Duration.ofSeconds(10), "Load workflow");
 			}
 
 			public Flux<JsonNode> getEvents() {
