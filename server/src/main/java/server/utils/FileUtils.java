@@ -48,6 +48,10 @@ public class FileUtils {
     public static void writeFile(String path, byte[] data) {
         var file = new Fi(path);
 
+        if (file.exists()) {
+            deleteFile(file);
+        }
+
         file.writeBytes(data);
     }
 
