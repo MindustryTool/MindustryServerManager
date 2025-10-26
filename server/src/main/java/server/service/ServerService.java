@@ -55,7 +55,16 @@ public class ServerService {
     @PostConstruct
     private void registerEventHandler() {
         gatewayService.onEvent(event -> {
-            Log.info("Event published: " + event);
+            Log.info("Gateway event published: " + event);
+
+            eventSinks.forEach(sink -> {
+                if (!sink.isCancelled())
+                    sink.next(event);
+            });
+        });
+
+        nodeManager.onEvent(event -> {
+            Log.info("Manager event published: " + event);
 
             eventSinks.forEach(sink -> {
                 if (!sink.isCancelled())
