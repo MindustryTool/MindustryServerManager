@@ -1,9 +1,7 @@
 package server.manager;
 
 import java.io.IOException;
-import java.net.URLDecoder;
 import java.nio.channels.AsynchronousCloseException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.Duration;
@@ -662,12 +660,10 @@ public class DockerNodeManager extends NodeManager {
             return Mono.error(new IllegalArgumentException("Invalid path: " + path));
         }
 
-        var decodedPath = URLDecoder.decode(path, StandardCharsets.UTF_8);
-
-        var basePath = Paths.get(Const.volumeFolderPath, "servers", serverId.toString(), "config", decodedPath)
+        var basePath = Paths.get(Const.volumeFolderPath, "servers", serverId.toString(), "config")
                 .toAbsolutePath().toString();
 
-        return Mono.just(new Fi(basePath).child(decodedPath));
+        return Mono.just(new Fi(basePath).child(path));
 
     }
 
