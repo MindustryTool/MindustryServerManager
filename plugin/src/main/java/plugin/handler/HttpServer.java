@@ -641,20 +641,21 @@ public class HttpServer {
         ArrayList<Player> players = new ArrayList<Player>();
         Groups.player.forEach(players::add);
 
-        List<PlayerDto> p = players.stream()//
-                .map(player -> new PlayerDto()//
-                        .setName(player.coloredName())//
-                        .setUuid(player.uuid())//
-                        .setIp(player.ip())
-                        .setLocale(player.locale())//
-                        .setIsAdmin(player.admin)//
-                        .setJoinedAt(context.get().sessionHandler.contains(player) //
-                                ? context.get().sessionHandler.get(player).joinedAt
-                                : Instant.now().toEpochMilli())
-                        .setTeam(new TeamDto()//
-                                .setColor(player.team().color.toString())//
-                                .setName(player.team().name)))
-                .collect(Collectors.toList());
+        List<PlayerDto> p = Utils
+                .appPostWithTimeout(() -> (players.stream()//
+                        .map(player -> new PlayerDto()//
+                                .setName(player.coloredName())//
+                                .setUuid(player.uuid())//
+                                .setIp(player.ip())
+                                .setLocale(player.locale())//
+                                .setIsAdmin(player.admin)//
+                                .setJoinedAt(context.get().sessionHandler.contains(player) //
+                                        ? context.get().sessionHandler.get(player).joinedAt
+                                        : Instant.now().toEpochMilli())
+                                .setTeam(new TeamDto()//
+                                        .setColor(player.team().color.toString())//
+                                        .setName(player.team().name)))
+                        .collect(Collectors.toList())));
 
         return new ServerStateDto()//
                 .setServerId(ServerController.SERVER_ID)//
