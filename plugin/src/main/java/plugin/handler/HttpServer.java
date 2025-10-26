@@ -541,6 +541,8 @@ public class HttpServer {
             });
 
             eventConsumers.add(client);
+
+            sendStateUpdate();
         });
 
         app.exception(TimeoutException.class, (exception, ctx) -> {
