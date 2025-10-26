@@ -255,6 +255,8 @@ public class DockerNodeManager extends NodeManager {
 
                 dockerClient.startContainerCmd(containerId).exec();
 
+                logCallbacks.computeIfAbsent(serverId, _ignore -> createLogCallack(containerId, serverId));
+
                 emitter.next(LogEvent.info(serverId, "Container " + containerId + " started"));
             } catch (Exception error) {
                 emitter.next(LogEvent.error(serverId, "Error: " + error.getMessage()));
