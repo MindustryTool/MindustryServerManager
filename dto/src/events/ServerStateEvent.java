@@ -7,7 +7,7 @@ import dto.ServerStateDto;
 
 public class ServerStateEvent extends BaseEvent {
 
-    public final List<ServerStateDto> state;
+    public List<ServerStateDto> state;
 
     public ServerStateEvent(UUID serverId, List<ServerStateDto> state) {
         super(serverId, "server-state");

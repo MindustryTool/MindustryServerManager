@@ -22,9 +22,9 @@ public abstract class BaseEvent {
         eventTypeMap.put("log", LogEvent.class);
     }
 
-    private final UUID serverId;
-    private final String name;
-    private final Instant createdAt = Instant.now();
+    private UUID serverId;
+    private String name;
+    private Instant createdAt = Instant.now();
 
     public BaseEvent(UUID serverId, String name) {
         this.name = name;
