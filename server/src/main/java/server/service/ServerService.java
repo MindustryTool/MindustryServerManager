@@ -182,11 +182,32 @@ public class ServerService {
             return Flux.concat(sendCommandFlux, sendHostFlux, waitForStatusFlux);
         });
 
-        return Flux.concat(//
+        Flux<LogEvent> logFlux = Flux.create(emittor -> {
+            Runnable cancelManager = nodeManager.onEvent(event -> {
+                if (event instanceof LogEvent logEvent) {
+                    emittor.next(logEvent);
+                }
+            });
+
+            Runnable cancelGateway = gatewayService.onEvent(event -> {
+                if (event instanceof LogEvent logEvent) {
+                    emittor.next(logEvent);
+                }
+            });
+
+            emittor.onDispose(() -> {
+                cancelManager.run();
+                cancelGateway.run();
+            });
+
+            hostFlux.doFinally(_sig -> emittor.complete());
+        });
+
+        return Flux.merge(Flux.concat(//
                 createFlux,
                 waitingOkFlux, //
                 hostFlux//
-        );
+        ), logFlux);
     }
 
     public Flux<ServerMisMatch> getMismatch(UUID serverId, ServerConfig config) {
