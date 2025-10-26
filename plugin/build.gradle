@@ -21,12 +21,13 @@ compileTestJava.options.encoding = "UTF-8"
 
 dependencies{
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.16.2'
-    implementation project(':loader')
     
     implementation 'io.javalin:javalin:6.7.0'
     implementation 'com.github.ben-manes.caffeine:caffeine:2.9.3'
+    
     implementation project(':dto')
 
+    compileOnly project(':loader')
     compileOnly 'org.projectlombok:lombok:1.18.30'
     compileOnly "com.github.Anuken.Arc:arc-core:$mindustryVersion"
     compileOnly "com.github.Anuken.Mindustry:core:$mindustryVersion"
