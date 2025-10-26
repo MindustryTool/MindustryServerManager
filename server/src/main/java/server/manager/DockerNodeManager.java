@@ -145,7 +145,8 @@ public class DockerNodeManager extends NodeManager {
                         emitter.next(LogEvent.error(serverId,
                                 "Port exists at conatiner " + server.getNames()[0] + " port: " + config.getPort()));
 
-                        emitter.error(new ApiError(HttpStatus.BAD_REQUEST, "Port exists at conatiner " + server.getNames()[0] + " port: " + config.getPort()));
+                        emitter.error(new ApiError(HttpStatus.BAD_REQUEST,
+                                "Port exists at conatiner " + server.getNames()[0] + " port: " + config.getPort()));
                         return;
                     }
                 }
@@ -679,6 +680,8 @@ public class DockerNodeManager extends NodeManager {
 
     @Override
     public Mono<Void> writeFile(UUID serverId, String path, byte[] data) {
+        Log.info("Write file at: " + path + " with " + data.length + " bytes");
+
         return getFile(serverId, path)
                 .doOnNext(file -> FileUtils.writeFile(file.absolutePath(), data))
                 .then();
