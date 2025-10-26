@@ -55,6 +55,8 @@ public class ServerService {
     @PostConstruct
     private void registerEventHandler() {
         gatewayService.onEvent(event -> {
+            Log.info("Event published: " + event);
+
             eventSinks.forEach(sink -> {
                 if (!sink.isCancelled())
                     sink.next(event);
@@ -64,7 +66,12 @@ public class ServerService {
 
     public Flux<BaseEvent> getEvents() {
         return Flux.create(emitter -> {
-            emitter.onDispose(() -> eventSinks.remove(emitter));
+            emitter.onDispose(() -> {
+                eventSinks.remove(emitter);
+                Log.info("Client disconnected: " + eventSinks.size());
+            });
+
+            Log.info("Client connected: " + eventSinks.size());
 
             eventSinks.add(emitter);
         });

@@ -5,10 +5,12 @@ import java.util.HashMap;
 import java.util.UUID;
 
 import lombok.Getter;
+import lombok.ToString;
 import lombok.experimental.Accessors;
 
 @Getter
 @Accessors(chain = true)
+@ToString
 public abstract class BaseEvent {
 
     public static final HashMap<String, Class<?>> eventTypeMap = new HashMap<>();

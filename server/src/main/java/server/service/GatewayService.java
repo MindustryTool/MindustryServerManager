@@ -108,6 +108,8 @@ public class GatewayService {
 						// Parse JsonNode into clazz
 						BaseEvent data = (BaseEvent) Utils.readJsonAsClass(event, eventType);
 
+						Log.info("Event received: " + data.toString());
+
 						eventConsumers.forEach(consumer -> consumer.accept(data));
 
 						eventConsumerMap.getOrDefault(eventType, List.of()).forEach(c -> c.accept(data));
