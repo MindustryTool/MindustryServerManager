@@ -195,7 +195,7 @@ public class PluginLoader extends Plugin {
 
         Log.info("Downloading updated plugin: " + plugin.getName());
 
-        Fi pluginFile = new Fi(path.toString());
+        Fi pluginFile = new Fi(path.toFile());
 
         byte[] data = plugin.download();
 
@@ -237,6 +237,8 @@ public class PluginLoader extends Plugin {
             if (wrapper == null) {
                 throw new RuntimeException("Plugin not found: " + pluginId);
             }
+
+            Log.info("State: " + wrapper.getPluginState().name());
 
             pluginManager.startPlugin(pluginId);
             org.pf4j.Plugin instance = wrapper.getPlugin();
