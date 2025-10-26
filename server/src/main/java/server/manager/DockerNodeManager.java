@@ -101,9 +101,10 @@ public class DockerNodeManager extends NodeManager {
 
     @Override
     public Flux<LogEvent> create(ServerConfig request) {
+        var serverId = request.getId();
+
         return Flux.create(emitter -> {
             try {
-                var serverId = request.getId();
                 try {
                     emitter.next(LogEvent.info(serverId, "Pulling image: " + request.getImage()));
 
@@ -258,6 +259,8 @@ public class DockerNodeManager extends NodeManager {
                 dockerClient.startContainerCmd(containerId).exec();
 
                 emitter.next(LogEvent.info(serverId, "Container " + containerId + " started"));
+            } catch (Exception error) {
+                emitter.next(LogEvent.error(serverId, "Error: " + error.getMessage()));
             } finally {
                 emitter.complete();
             }

@@ -86,6 +86,13 @@ public class ServerService {
         var serverId = request.getId();
         var serverGateway = gatewayService.of(serverId).getServer();
 
+        Flux<LogEvent> createFlux = nodeManager.create(request);
+        Flux<LogEvent> waitingOkFlux = Flux.concat(//
+                Mono.just(LogEvent.info(serverId, "Waiting for server to start")), //
+                serverGateway//
+                        .ok()
+                        .then(Mono.just(LogEvent.info(serverId, "Server started, waiting for hosting"))));
+
         Flux<LogEvent> hostFlux = serverGateway.isHosting().flatMapMany(isHosting -> {
 
             if (isHosting) {
@@ -121,13 +128,6 @@ public class ServerService {
 
             return Flux.concat(sendCommandFlux, sendHostFlux, waitForStatusFlux);
         });
-
-        Flux<LogEvent> createFlux = nodeManager.create(request);
-        Flux<LogEvent> waitingOkFlux = Flux.concat(//
-                Mono.just(LogEvent.info(serverId, "Waiting for server to start")), //
-                serverGateway//
-                        .ok()
-                        .then(Mono.just(LogEvent.info(serverId, "Server started, waiting for hosting"))));
 
         return Flux.concat(//
                 createFlux,

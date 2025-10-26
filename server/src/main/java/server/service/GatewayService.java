@@ -284,7 +284,8 @@ public class GatewayService {
 				return wrapError(webClient.method(HttpMethod.GET)
 						.uri("hosting")
 						.retrieve()
-						.bodyToMono(Boolean.class), Duration.ofMillis(100), "Check hosting");
+						.bodyToMono(Boolean.class)
+						.onErrorReturn(false), Duration.ofMillis(100), "Check hosting");
 			}
 
 			public Flux<ServerCommandDto> getCommands() {
