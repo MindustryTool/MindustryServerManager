@@ -30,7 +30,7 @@ jar{
         configurations.runtimeClasspath.collect{it.isDirectory() ? it : zipTree(it)}
     }
 
-    from(rootDir){
+    from(project.projectDir){
         include "plugin.json"
     }
 }
