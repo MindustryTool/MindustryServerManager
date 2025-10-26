@@ -225,7 +225,7 @@ public class GatewayService {
 						.uri("ok")
 						.retrieve()
 						.bodyToMono(Void.class), Duration.ofMillis(100), "Check ok")
-						.retryWhen(Retry.fixedDelay(10 * 2, Duration.ofMillis(100)));
+						.retryWhen(Retry.fixedDelay(10 * 4, Duration.ofMillis(100)));
 			}
 
 			public Mono<ServerStateDto> getState() {
@@ -287,6 +287,7 @@ public class GatewayService {
 						.uri("hosting")
 						.retrieve()
 						.bodyToMono(Boolean.class)
+						.retryWhen(Retry.fixedDelay(10 * 4, Duration.ofMillis(100)))
 						.onErrorReturn(false), Duration.ofMillis(100), "Check hosting");
 			}
 
