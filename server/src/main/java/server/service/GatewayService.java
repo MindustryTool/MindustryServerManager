@@ -97,10 +97,10 @@ public class GatewayService {
 							return Mono.empty();
 						}
 
-						var eventType = BaseEvent.eventTypeMap.get(name);
+						var eventType = BaseEvent.getEventMap().get(name);
 
 						if (eventType == null) {
-							Log.warn("Invalid event name: " + name + " in " + BaseEvent.eventTypeMap.keySet());
+							Log.warn("Invalid event name: " + name + " in " + BaseEvent.getEventMap().keySet());
 
 							return Mono.empty();
 						}

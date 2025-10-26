@@ -13,13 +13,17 @@ import lombok.experimental.Accessors;
 @ToString
 public abstract class BaseEvent {
 
-    public static final HashMap<String, Class<?>> eventTypeMap = new HashMap<>();
+    private static final HashMap<String, Class<?>> eventTypeMap = new HashMap<>();
 
-    {
-        eventTypeMap.put("start", StartEvent.class);
-        eventTypeMap.put("stop", StopEvent.class);
-        eventTypeMap.put("server-state", ServerStateEvent.class);
-        eventTypeMap.put("log", LogEvent.class);
+    public static HashMap<String, Class<?>> getEventMap() {
+        if (eventTypeMap.size() == 0) {
+            eventTypeMap.put("start", StartEvent.class);
+            eventTypeMap.put("stop", StopEvent.class);
+            eventTypeMap.put("server-state", ServerStateEvent.class);
+            eventTypeMap.put("log", LogEvent.class);
+        }
+
+        return eventTypeMap;
     }
 
     private UUID serverId;
