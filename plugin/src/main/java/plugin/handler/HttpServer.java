@@ -50,6 +50,7 @@ import dto.ServerCommandDto;
 import dto.StartServerDto;
 import dto.ServerStateDto;
 import dto.TeamDto;
+import events.ServerStateEvent;
 import events.StartEvent;
 import plugin.type.WorkflowContext;
 import plugin.utils.Utils;
@@ -70,7 +71,8 @@ public class HttpServer {
     private Javalin app;
 
     private final WeakReference<ServerController> context;
-    private final Queue<SseClient> eventConsumers = new ConcurrentLinkedQueue<>();
+
+    public final Queue<SseClient> eventConsumers = new ConcurrentLinkedQueue<>();
 
     public class RequestInfo {
         public final String method;
@@ -605,6 +607,13 @@ public class HttpServer {
         Utils.host(mapName, gameMode);
     }
 
+    public void sendStateUpdate() {
+        ServerStateDto state = getState();
+        ServerStateEvent event = new ServerStateEvent(ServerController.SERVER_ID, Arrays.asList(state));
+
+        eventConsumers.forEach(client -> client.sendEvent(event));
+    }
+
     private ServerStateDto getState() {
         mindustry.maps.Map map = Vars.state.map;
         String mapName = map != null ? map.name() : "";
@@ -650,12 +659,12 @@ public class HttpServer {
 
         return new ServerStateDto()//
                 .setServerId(ServerController.SERVER_ID)//
-                .setRamUsage(Core.app.getJavaHeap() / 1024 / 1024)
-                .setTotalRam(Runtime.getRuntime().maxMemory() / 1024 / 1024)//
+                // .setRamUsage(Core.app.getJavaHeap() / 1024 / 1024)
+                // .setTotalRam(Runtime.getRuntime().maxMemory() / 1024 / 1024)//
                 .setPlayers(p)//
                 .setMapName(mapName)
                 .setMods(mods)//
-                .setTps(Core.graphics.getFramesPerSecond())//
+                // .setTps(Core.graphics.getFramesPerSecond())//
                 .setHosting(Vars.state.isGame())
                 .setPaused(Vars.state.isPaused())//
                 .setVersion("V" + Version.number + "Build" + Version.build)

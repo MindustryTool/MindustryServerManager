@@ -11,9 +11,6 @@ import lombok.experimental.Accessors;
 @Accessors(chain = true)
 public class ServerStateDto {
     private UUID serverId;
-    private long tps = 0;
-    private long ramUsage = 0;
-    private long totalRam = 0;
     private List<PlayerDto> players = new ArrayList<>();
     private String mapName = "DEBUG";
     private List<ModDto> mods = new ArrayList<>();

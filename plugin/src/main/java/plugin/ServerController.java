@@ -21,7 +21,9 @@ import mindustry.game.EventType.PlayerConnect;
 import mindustry.game.EventType.PlayerJoin;
 import mindustry.game.EventType.PlayerLeave;
 import mindustry.game.EventType.ServerLoadEvent;
+import mindustry.game.EventType.StateChangeEvent;
 import mindustry.game.EventType.TapEvent;
+import mindustry.game.EventType.WorldLoadEvent;
 import mindustry.gen.Groups;
 import plugin.handler.ApiGateway;
 import plugin.handler.ClientCommandHandler;
@@ -133,9 +135,11 @@ public class ServerController extends Plugin implements MindustryToolPlugin {
 
             if (event instanceof PlayerJoin playerJoin) {
                 eventHandler.onPlayerJoin(playerJoin);
+                httpServer.sendStateUpdate();
             } else if (event instanceof PlayerLeave playerLeave) {
                 eventHandler.onPlayerLeave(playerLeave);
                 hudHandler.onPlayerLeave(playerLeave);
+                httpServer.sendStateUpdate();
             } else if (event instanceof PlayerChatEvent playerChat) {
                 eventHandler.onPlayerChat(playerChat);
             } else if (event instanceof ServerLoadEvent serverLoad) {
@@ -148,6 +152,10 @@ public class ServerController extends Plugin implements MindustryToolPlugin {
                 hudHandler.onMenuOptionChoose(menuOption);
             } else if (event instanceof GameOverEvent gameOverEvent) {
                 eventHandler.onGameOver(gameOverEvent);
+            } else if (event instanceof WorldLoadEvent) {
+                httpServer.sendStateUpdate();
+            } else if (event instanceof StateChangeEvent) {
+                httpServer.sendStateUpdate();
             }
 
             workflow.fire(event, false);
