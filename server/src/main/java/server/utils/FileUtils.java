@@ -22,8 +22,8 @@ public class FileUtils {
         return new Fi(Path.of(basePath, path).toFile());
     }
 
-    public static List<ServerFileDto> getFiles(String basePath, String path) {
-        var file = getFile(basePath, path);
+    public static List<ServerFileDto> getFiles(String path) {
+        var file = new Fi(path);
 
         if (file.length() > Const.MAX_FILE_SIZE) {
             throw new ApiError(HttpStatus.BAD_REQUEST, "File size exceeds max limit");
@@ -45,14 +45,14 @@ public class FileUtils {
                 .data(file.readString()));
     }
 
-    public static void writeFile(String basePath, String path, byte[] data) {
-        var file = getFile(basePath, path);
+    public static void writeFile(String path, byte[] data) {
+        var file = new Fi(path);
 
         file.writeBytes(data);
     }
 
-    public static boolean deleteFile(String basePath, String path) {
-        var file = getFile(basePath, path);
+    public static boolean deleteFile(String path) {
+        var file = new Fi(path);
 
         return deleteFile(file);
     }

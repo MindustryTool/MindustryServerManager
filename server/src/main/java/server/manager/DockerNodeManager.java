@@ -674,13 +674,13 @@ public class DockerNodeManager extends NodeManager {
     @Override
     public Flux<ServerFileDto> getFiles(UUID serverId, String path) {
         return getFile(serverId, path)
-                .flatMapIterable(folder -> FileUtils.getFiles(folder.absolutePath(), path));
+                .flatMapIterable(folder -> FileUtils.getFiles(folder.absolutePath()));
     }
 
     @Override
     public Mono<Void> writeFile(UUID serverId, String path, byte[] data) {
         return getFile(serverId, path)
-                .doOnNext(file -> FileUtils.writeFile(file.absolutePath(), path, data))
+                .doOnNext(file -> FileUtils.writeFile(file.absolutePath(), data))
                 .then();
     }
 }
