@@ -226,7 +226,7 @@ public class GatewayService {
 						.retrieve()
 						.bodyToMono(Void.class)
 						.retryWhen(Retry.fixedDelay(10 * 4, Duration.ofMillis(100))),
-						Duration.ofMillis(100), "Check ok");
+						Duration.ofSeconds(40), "Check ok");
 			}
 
 			public Mono<ServerStateDto> getState() {
