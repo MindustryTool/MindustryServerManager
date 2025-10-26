@@ -15,6 +15,7 @@ public class LogEvent extends BaseEvent {
 
     public static enum LogLevel {
         INFO,
+        WARNING,
         ERROR
     }
 
