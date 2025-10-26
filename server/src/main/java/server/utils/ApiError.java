@@ -27,6 +27,15 @@ public class ApiError extends RuntimeException {
         this.status = status;
     }
 
+    public String getMessage() {
+        return String.format("%s: %s", status, super.getMessage());
+    }
+
+    @Override
+    public String toString() {
+        return String.format("%s: %s", status, super.getMessage());
+    }
+
     public static <T> Mono<T> mono(HttpStatus status, String message) {
         return Mono.defer(() -> Mono.error(new ApiError(status, message)));
     }
