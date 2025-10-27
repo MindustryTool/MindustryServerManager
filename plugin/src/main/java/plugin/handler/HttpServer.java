@@ -630,54 +630,30 @@ public class HttpServer {
     private static ServerStateDto getState() {
         mindustry.maps.Map map = Vars.state.map;
         String mapName = map != null ? map.name() : "";
+
         List<ModDto> mods = Vars.mods == null //
                 ? Arrays.asList()
                 : Vars.mods.list().map(mod -> new ModDto()//
                         .setFilename(mod.file.name())//
                         .setName(mod.name)
-                        .setMeta(new ModMetaDto()//
-                                .setAuthor(mod.meta.author)//
-                                .setDependencies(mod.meta.dependencies.list())
-                                .setDescription(mod.meta.description)
-                                .setDisplayName(mod.meta.displayName)
-                                .setHidden(mod.meta.hidden)
-                                .setInternalName(mod.meta.internalName)
-                                .setJava(mod.meta.java)
-                                .setMain(mod.meta.main)
-                                .setMinGameVersion(mod.meta.minGameVersion)
-                                .setName(mod.meta.name)
-                                .setRepo(mod.meta.repo)
-                                .setSubtitle(mod.meta.subtitle)
-                                .setVersion(mod.meta.version)))
+                        .setMeta(ModMetaDto.from(mod.meta)))
                         .list();
 
         ArrayList<Player> players = new ArrayList<Player>();
         Groups.player.forEach(players::add);
 
-        List<PlayerDto> p = Utils
-                .appPostWithTimeout(() -> (players.stream()//
-                        .map(player -> new PlayerDto()//
-                                .setName(player.coloredName())//
-                                .setUuid(player.uuid())//
-                                .setIp(player.ip())
-                                .setLocale(player.locale())//
-                                .setIsAdmin(player.admin)//
-                                .setJoinedAt(SessionHandler.contains(player) //
-                                        ? SessionHandler.get(player).joinedAt
-                                        : Instant.now().toEpochMilli())
-                                .setTeam(new TeamDto()//
-                                        .setColor(player.team().color.toString())//
-                                        .setName(player.team().name)))
-                        .collect(Collectors.toList())));
+        List<PlayerDto> p = players.stream()//
+                .map(player -> PlayerDto.from(player)//
+                        .setJoinedAt(SessionHandler.contains(player) //
+                                ? SessionHandler.get(player).joinedAt
+                                : Instant.now().toEpochMilli()))
+                .collect(Collectors.toList());
 
         return new ServerStateDto()//
                 .setServerId(ServerController.SERVER_ID)//
-                // .setRamUsage(Core.app.getJavaHeap() / 1024 / 1024)
-                // .setTotalRam(Runtime.getRuntime().maxMemory() / 1024 / 1024)//
                 .setPlayers(p)//
                 .setMapName(mapName)
                 .setMods(mods)//
-                // .setTps(Core.graphics.getFramesPerSecond())//
                 .setHosting(Vars.state.isGame())
                 .setPaused(Vars.state.isPaused())//
                 .setVersion("V" + Version.number + "Build" + Version.build)

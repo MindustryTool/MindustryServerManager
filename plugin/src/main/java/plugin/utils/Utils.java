@@ -68,7 +68,7 @@ public class Utils {
             Log.info("Logic reset");
             Vars.logic.reset();
 
-            Log.info("Map reset");
+            Log.info("Load map");
             Vars.world.loadMap(result, result.applyRules(preset));
 
             Log.info("Apply rules");

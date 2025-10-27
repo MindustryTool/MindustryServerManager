@@ -81,7 +81,7 @@ public class ServerController extends Plugin implements MindustryToolPlugin {
             } catch (Exception e) {
                 Log.err(e);
             }
-        }, 10, TimeUnit.SECONDS);
+        }, 30, TimeUnit.SECONDS);
 
         BACKGROUND_SCHEDULER.schedule(() -> {
             if (!Vars.state.isPaused() && Groups.player.size() == 0) {

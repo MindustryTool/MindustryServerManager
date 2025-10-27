@@ -5,6 +5,7 @@ import java.util.List;
 
 import lombok.Data;
 import lombok.experimental.Accessors;
+import mindustry.mod.Mods.ModMeta;
 
 @Data
 @Accessors(chain = true)
@@ -16,4 +17,21 @@ public class ModMetaDto {
     private List<String> dependencies = new ArrayList<>();
     private boolean hidden;
     private boolean java;
+
+    public static ModMetaDto from(ModMeta meta) {
+        return new ModMetaDto()//
+                .setAuthor(meta.author)//
+                .setDependencies(meta.dependencies.list())
+                .setDescription(meta.description)
+                .setDisplayName(meta.displayName)
+                .setHidden(meta.hidden)
+                .setInternalName(meta.internalName)
+                .setJava(meta.java)
+                .setMain(meta.main)
+                .setMinGameVersion(meta.minGameVersion)
+                .setName(meta.name)
+                .setRepo(meta.repo)
+                .setSubtitle(meta.subtitle)
+                .setVersion(meta.version);
+    }
 }
