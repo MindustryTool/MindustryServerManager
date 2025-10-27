@@ -107,6 +107,8 @@ public class GatewayService {
 					.doFinally(_ignore -> cache.remove(id))
 					.subscribeOn(Schedulers.boundedElastic())
 					.subscribe();
+
+			Log.info("Create GatewayClient for server: " + id);
 		}
 
 		private static boolean handleStatus(HttpStatusCode status) {
