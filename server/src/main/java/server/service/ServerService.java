@@ -83,7 +83,7 @@ public class ServerService {
     private void scanServer() {
         nodeManager.list()
                 .filter(state -> state.meta.isPresent())
-                .map(state -> gatewayService.of(state.meta.get().getConfig().getId()))
+                .flatMap(state -> gatewayService.of(state.meta.get().getConfig().getId()))
                 .subscribeOn(Schedulers.boundedElastic())
                 .subscribe();
     }
@@ -118,13 +118,15 @@ public class ServerService {
     }
 
     public Mono<Boolean> pause(UUID serverId) {
-        return gatewayService.of(serverId).getServer().pause();
+        return gatewayService.of(serverId)//
+                .flatMap(client -> client.getServer().pause());
     }
 
     public Flux<LogEvent> host(ServerConfig request) {
         var serverId = request.getId();
 
-        Flux<LogEvent> callGatewayFlux = hostCallGateway(request, gatewayService.of(serverId));
+        Flux<LogEvent> callGatewayFlux = gatewayService.of(serverId)
+                .flatMapMany(gatewayClient -> hostCallGateway(request, gatewayClient));
 
         return Flux.concat(nodeManager.create(request), callGatewayFlux).doOnError(err -> Log.err(err));
     }
@@ -223,7 +225,7 @@ public class ServerService {
     }
 
     public Mono<Void> ok(UUID serverId) {
-        return gatewayService.of(serverId).getServer().ok();
+        return gatewayService.of(serverId).flatMap(client -> client.getServer().ok());
     }
 
     public Flux<NodeUsage> getUsage(UUID serverId) {
@@ -231,7 +233,8 @@ public class ServerService {
     }
 
     public Mono<ServerStateDto> state(UUID serverId) {
-        return gatewayService.of(serverId).getServer().getState()//
+        return gatewayService.of(serverId)//
+                .flatMap(client -> client.getServer().getState())//
                 .onErrorResume(error -> {
                     Log.err(error.getMessage());
                     return Mono.empty();
@@ -240,11 +243,12 @@ public class ServerService {
     }
 
     public Mono<byte[]> getImage(UUID serverId) {
-        return gatewayService.of(serverId).getServer().getImage();
+        return gatewayService.of(serverId)//
+                .flatMap(client -> client.getServer().getImage());
     }
 
     public Mono<Void> updatePlayer(UUID serverId, MindustryToolPlayerDto payload) {
-        return gatewayService.of(serverId).getServer().updatePlayer(payload);
+        return gatewayService.of(serverId).flatMap(client -> client.getServer().updatePlayer(payload));
     }
 
     private Mono<Void> checkRunningServer(ServerConfig config, boolean shouldAutoTurnOff) {
@@ -256,7 +260,8 @@ public class ServerService {
             return Mono.empty();
         }
 
-        return gatewayService.of(serverId).getServer().getState()//
+        return gatewayService.of(serverId)//
+                .flatMap(client -> client.getServer().getState())//
                 .flatMap(state -> {
                     boolean shouldKill = state.getPlayers().isEmpty();
 

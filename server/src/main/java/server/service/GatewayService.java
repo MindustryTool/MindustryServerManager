@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
 
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
@@ -47,10 +48,13 @@ public class GatewayService {
 
 	private final Const envConfig;
 	private final EventBus eventBus;
-	private final ConcurrentHashMap<UUID, GatewayClient> cache = new ConcurrentHashMap<>();
+	private final ConcurrentHashMap<UUID, Mono<GatewayClient>> cache = new ConcurrentHashMap<>();
 
-	public GatewayClient of(UUID serverId) {
-		return cache.computeIfAbsent(serverId, _id -> new GatewayClient(serverId, envConfig));
+	public Mono<GatewayClient> of(UUID serverId) {
+		return cache.computeIfAbsent(serverId,
+				_id -> Mono.<GatewayClient>create((emittor) -> new GatewayClient(serverId, envConfig, emittor::success))
+						.cache()
+						.timeout(Duration.ofMinutes(1)));
 	}
 
 	@RequiredArgsConstructor
@@ -64,7 +68,7 @@ public class GatewayService {
 
 		private boolean connected = false;
 
-		public GatewayClient(UUID id, Const envConfig) {
+		public GatewayClient(UUID id, Const envConfig, Consumer<GatewayClient> onConnect) {
 			this.id = id;
 
 			this.server = new Server();
@@ -75,6 +79,7 @@ public class GatewayService {
 
 						if (connected == false) {
 							connected = true;
+							onConnect.accept(this);
 						}
 
 						if (name == null) {
@@ -102,7 +107,6 @@ public class GatewayService {
 					.doOnError((error) -> Log.err(error.getMessage()))
 					.doFinally(_ignore -> {
 						cache.remove(id);
-						connected = false;
 						Log.info("Close GatewayClient for server: " + id);
 					})
 					.subscribeOn(Schedulers.boundedElastic())
