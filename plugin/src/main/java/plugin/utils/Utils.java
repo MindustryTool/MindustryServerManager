@@ -66,10 +66,15 @@ public class Utils {
                     Log.info("Randomized next map to be @.", result.plainName());
                 }
 
+                Log.info("Logic reset");
                 Vars.logic.reset();
+                Log.info("Map reset");
                 Vars.world.loadMap(result, result.applyRules(preset));
+                Log.info("Apply rules");
                 Vars.state.rules = result.applyRules(preset);
+                Log.info("Play logic");
                 Vars.logic.play();
+                Log.info("Open server");
                 Vars.netServer.openServer();
                 Log.info("Server started.");
             } catch (MapException event) {
