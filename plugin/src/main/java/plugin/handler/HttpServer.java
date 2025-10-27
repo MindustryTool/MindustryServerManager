@@ -669,7 +669,6 @@ public class HttpServer {
                 .setPlayers(p)//
                 .setMapName(mapName)
                 .setMods(mods)//
-                .setHosting(Vars.state.isGame())
                 .setPaused(Vars.state.isPaused())//
                 .setVersion(Version.combined())
                 .setKicks(kicks)//

@@ -17,7 +17,6 @@ public class ServerStateDto {
     private ServerStatus status = ServerStatus.UNSET;
     private int kicks = 0;
     private boolean isPaused = false;
-    private boolean isHosting = false;
     private String version = "custom";
     private Long startedAt = System.currentTimeMillis();
 }
