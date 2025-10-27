@@ -4,6 +4,7 @@ import java.net.ConnectException;
 import java.net.URI;
 import java.net.UnknownHostException;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -68,6 +69,8 @@ public class GatewayService {
 
 		private boolean connected = false;
 
+		private final Instant createdAt = Instant.now(); 
+
 		public GatewayClient(UUID id, Const envConfig, Consumer<GatewayClient> onConnect) {
 			this.id = id;
 
@@ -107,7 +110,7 @@ public class GatewayService {
 					.doOnError((error) -> Log.err(error.getMessage()))
 					.doFinally(_ignore -> {
 						cache.remove(id);
-						Log.info("Close GatewayClient for server: " + id);
+						Log.info("Close GatewayClient for server: " + id + " running for " + Duration.between(createdAt, Instant.now()).toString());
 					})
 					.subscribeOn(Schedulers.boundedElastic())
 					.subscribe();
