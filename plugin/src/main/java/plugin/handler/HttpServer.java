@@ -548,6 +548,8 @@ public class HttpServer {
             });
 
             if (eventListener != null) {
+                eventListener.close();
+                client.close();
                 throw new IllegalStateException("Only one event listener is allowed");
             }
 
@@ -623,10 +625,14 @@ public class HttpServer {
     }
 
     public void sendStateUpdate() {
-        ServerStateDto state = getState();
-        ServerStateEvent event = new ServerStateEvent(ServerController.SERVER_ID, Arrays.asList(state));
+        try {
+            ServerStateDto state = getState();
+            ServerStateEvent event = new ServerStateEvent(ServerController.SERVER_ID, Arrays.asList(state));
 
-        fire(event);
+            fire(event);
+        } catch (Exception error) {
+            Log.err(error);
+        }
     }
 
     private ServerStateDto getState() {
