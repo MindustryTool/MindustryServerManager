@@ -212,15 +212,21 @@ public class PluginLoader extends Plugin {
     }
 
     private void unloadPlugin(PluginData plugin) {
-        plugins.remove(plugin.getId());
+        try {
 
-        PluginWrapper loaded = pluginManager.getPlugin(plugin.getId());
+            plugins.remove(plugin.getId());
 
-        if (loaded != null) {
-            pluginManager.unloadPlugin(plugin.getId());
+            PluginWrapper loaded = pluginManager.getPlugin(plugin.getId());
+
+            if (loaded != null) {
+                pluginManager.unloadPlugin(plugin.getId());
+            }
+
+            Log.info("Unloaded plugin: " + plugin.getName());
+
+        } catch (Exception e) {
+            Log.err("Error while unloading plugin " + plugin.getName(), e);
         }
-
-        Log.info("Unloaded plugin: " + plugin.getName());
     }
 
     private void loadPlugin(PluginData plugin) {
