@@ -71,7 +71,7 @@ public class ServerService {
             });
 
             eventSinks.add(emitter);
-            
+
             Log.info("Client connected: " + eventSinks.size());
         });
 
@@ -83,9 +83,8 @@ public class ServerService {
         nodeManager.list()
                 .filter(state -> state.meta.isPresent())
                 .flatMap(state -> gatewayService.of(state.meta.get().getConfig().getId()))
-                .flatMap(gateway -> gateway.getServer().ok())
                 .subscribeOn(Schedulers.boundedElastic())
-                .blockLast();
+                .subscribe();
     }
 
     @Scheduled(fixedDelay = 5, timeUnit = TimeUnit.MINUTES)
