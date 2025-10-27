@@ -600,6 +600,14 @@ public class HttpServer {
         client.keepAlive();
         client.sendEvent(new StartEvent(ServerController.SERVER_ID));
 
+        List<Object> copy = new ArrayList<>(buffer);
+
+        buffer.clear();
+
+        for (Object event : copy) {
+            client.sendEvent(event);
+        }
+
         if (eventListener != null) {
             Log.info("Closing existing event listener with createdAt: " + eventListener.ctx().header("X-CREATED-AT")
                     + ", terminated: " + eventListener.terminated());
