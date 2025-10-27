@@ -6,7 +6,7 @@ import java.util.UUID;
 import lombok.Data;
 
 @Data
-public class WorkflowEvent<T extends Map> {
+public class WorkflowEvent<T extends Map<?, ?>> {
     private String id;
     private String nodeId;
     private String name;

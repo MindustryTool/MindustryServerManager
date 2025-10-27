@@ -8,35 +8,35 @@ import mindustry.gen.Player;
 import plugin.type.Session;
 
 public class SessionHandler {
-    private final HashMap<String, Session> data = new HashMap<>();
+    private static final HashMap<String, Session> data = new HashMap<>();
 
-    public HashMap<String, Session> get() {
+    public static HashMap<String, Session> get() {
         return data;
     }
 
-    public void load() {
-        Groups.player.each(this::put);
+    public static void load() {
+        Groups.player.each(SessionHandler::put);
     }
 
-    public void clear() {
+    public static void clear() {
         data.clear();
     }
 
-    public Session getByID(int id) {
+    public static Session getByID(int id) {
         return find(p -> p.playerId == id);
     }
 
-    public Session getByUuid(String uuid) {
+    public static Session getByUuid(String uuid) {
         return find(p -> p.playerUuid.equals(uuid));
     }
 
-    public Session get(Player p) {
+    public static Session get(Player p) {
         if (p == null)
             return null;
         return data.get(p.uuid());
     }
 
-    public Session put(Player p) {
+    public static Session put(Player p) {
         Session data_ = new Session(p);
 
         data.put(p.uuid(), data_);
@@ -44,7 +44,7 @@ public class SessionHandler {
         return data_;
     }
 
-    public Session remove(Player p) {
+    public static Session remove(Player p) {
         Session data_ = get(p);
 
         data.remove(p.uuid());
@@ -52,22 +52,22 @@ public class SessionHandler {
         return data_;
     }
 
-    public boolean contains(Player p) {
+    public static boolean contains(Player p) {
         return data.containsKey(p.uuid());
     }
 
-    public void each(Cons<Session> item) {
+    public static void each(Cons<Session> item) {
         data.forEach((k, v) -> item.get(v));
     }
 
-    public void each(Boolf<Session> pred, Cons<Session> item) {
+    public static void each(Boolf<Session> pred, Cons<Session> item) {
         data.forEach((k, v) -> {
             if (pred.get(v))
                 item.get(v);
         });
     }
 
-    public int count(Boolf<Session> pred) {
+    public static int count(Boolf<Session> pred) {
         int size = 0;
 
         for (Session p : data.values()) {
@@ -78,7 +78,7 @@ public class SessionHandler {
         return size;
     }
 
-    public Session find(Boolf<Session> pred) {
+    public static Session find(Boolf<Session> pred) {
         for (Session p : data.values()) {
             if (pred.get(p))
                 return p;

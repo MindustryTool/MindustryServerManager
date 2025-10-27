@@ -1,6 +1,5 @@
 package plugin.handler;
 
-import java.lang.ref.WeakReference;
 import java.net.URI;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
@@ -25,56 +24,49 @@ import dto.ServerDto;
 
 public class ApiGateway {
 
-    final WeakReference<ServerController> context;
-    private final ConcurrentHashMap<String, Object> locks = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<String, Object> locks = new ConcurrentHashMap<>();
 
-    public Cache<PaginationRequest, ServerDto> serverQueryCache = Caffeine.newBuilder()
+    public static Cache<PaginationRequest, ServerDto> serverQueryCache = Caffeine.newBuilder()
             .expireAfterWrite(Duration.ofSeconds(15))
             .maximumSize(10)
             .build();
 
-    public ApiGateway(WeakReference<ServerController> context) {
-        this.context = context;
-
-        Log.info("Api gateway handler created: " + this);
-    }
-
-    public void init() {
+    public static void init() {
         Log.info("Setup api gateway");
         Log.info("Setup api gateway done");
 
     }
 
-    public void unload() {
+    public static void unload() {
         serverQueryCache.invalidateAll();
         serverQueryCache = null;
     }
 
-    private String uri(String... path) {
+    private static String uri(String... path) {
         URI uri = URI.create("http://server-manager:8088/internal-api/v1/" + Strings.join("/", path));
         Log.debug("[REQUEST]: " + uri);
 
         return uri.toString();
     }
 
-    private HttpRequest get(String... path) {
+    private static HttpRequest get(String... path) {
         return Http.get(uri(path));
     }
 
-    private HttpRequest post(String... path) {
+    private static HttpRequest post(String... path) {
         return Http.post(uri(path));
     }
 
-    private void send(HttpRequest req) {
+    private static void send(HttpRequest req) {
         send(req, 2, Void.class);
     }
 
-    private <T> T send(HttpRequest req, Class<T> clazz) {
+    private static <T> T send(HttpRequest req, Class<T> clazz) {
         return send(req, 2, clazz);
     }
 
     @SuppressWarnings("unchecked")
-    private <T> T send(HttpRequest req, int timeout, Class<T> clazz) {
+    private static <T> T send(HttpRequest req, int timeout, Class<T> clazz) {
         CompletableFuture<T> res = new CompletableFuture<>();
         req
                 .header("X-SERVER-ID", ServerController.SERVER_ID.toString())
@@ -115,7 +107,7 @@ public class ApiGateway {
         }
     }
 
-    public MindustryPlayerDto setPlayer(PlayerDto payload) {
+    public static MindustryPlayerDto setPlayer(PlayerDto payload) {
         try {
             return send((post("players"))
                     .header("Content-Type", "application/json")//
@@ -125,7 +117,7 @@ public class ApiGateway {
         }
     }
 
-    public void sendPlayerLeave(PlayerDto payload) {
+    public static void sendPlayerLeave(PlayerDto payload) {
         try {
             send(post("players/leave")
                     .header("Content-Type", "application/json")//
@@ -136,7 +128,7 @@ public class ApiGateway {
 
     }
 
-    public int getTotalPlayer() {
+    public static int getTotalPlayer() {
         try {
             return send(get("total-player"), Integer.class);
         } catch (Exception e) {
@@ -146,7 +138,7 @@ public class ApiGateway {
 
     }
 
-    public void sendChatMessage(String chat) {
+    public static void sendChatMessage(String chat) {
         try {
             send(post("chat")
                     .header("Content-Type", "application/json")//
@@ -157,23 +149,26 @@ public class ApiGateway {
 
     }
 
-    public String host(String targetServerId) {
+    public static String host(String targetServerId) {
         Object lock = locks.computeIfAbsent(targetServerId, k -> new Object());
 
         synchronized (lock) {
+            Log.info("Hosting server: " + targetServerId);
             try {
                 return send(post("host")
                         .header("Content-Type", "text/plain")//
                         .content(targetServerId), 45, String.class);
             } catch (Exception e) {
+                Log.err("Error hosting server: " + targetServerId, e);
                 throw new RuntimeException(e);
             } finally {
                 locks.remove(targetServerId);
+                Log.info("Finish hosting server: " + targetServerId);
             }
         }
     }
 
-    public synchronized ServerDto getServers(PaginationRequest request) {
+    public static synchronized ServerDto getServers(PaginationRequest request) {
         return serverQueryCache.get(request, _ignore -> {
             try {
                 return send(
@@ -186,7 +181,7 @@ public class ApiGateway {
         });
     }
 
-    public String translate(String text, String targetLanguage) {
+    public static String translate(String text, String targetLanguage) {
         try {
             return send(post(String.format("translate/%s", targetLanguage))
                     .header("Content-Type", "text/plain")//

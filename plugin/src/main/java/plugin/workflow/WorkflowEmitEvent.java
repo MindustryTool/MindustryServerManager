@@ -34,7 +34,7 @@ public class WorkflowEmitEvent {
 
         vars.put(name, value);
 
-        context.sendWorkflowEvent(new WorkflowEvent(current.getId(), "SET", vars));
+        Workflow.sendWorkflowEvent(new WorkflowEvent<>(current.getId(), "SET", vars));
 
         return this;
     }
@@ -84,7 +84,7 @@ public class WorkflowEmitEvent {
             return;
         }
 
-        var nextNode = context.getNodes().get(nextId);
+        var nextNode = Workflow.getNodes().get(nextId);
 
         if (nextNode == null) {
             throw new IllegalStateException("Node not found, id: " + nextId);
@@ -96,13 +96,13 @@ public class WorkflowEmitEvent {
             Log.err(e);
             HashMap<String, Object> error = new HashMap<>();
             error.put("message", e.getMessage());
-            context.sendWorkflowEvent(new WorkflowEvent(nextNode.getId(), "ERROR", error));
+            Workflow.sendWorkflowEvent(new WorkflowEvent<>(nextNode.getId(), "ERROR", error));
         }
-        context.sendWorkflowEvent(new WorkflowEvent(nextNode.getId(), "EMIT", null));
+        Workflow.sendWorkflowEvent(new WorkflowEvent<>(nextNode.getId(), "EMIT", null));
     }
 
     public static WorkflowEmitEvent create(WorkflowNode current, Workflow context) {
-        context.sendWorkflowEvent(new WorkflowEvent(current.getId(), "EMIT", null));
+        Workflow.sendWorkflowEvent(new WorkflowEvent<>(current.getId(), "EMIT", null));
 
         return new WorkflowEmitEvent(0, current, context, new HashMap<>());
     }

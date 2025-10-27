@@ -10,7 +10,6 @@ import plugin.type.PlayerPressCallback;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 
-import java.lang.ref.WeakReference;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -27,23 +26,17 @@ public class HudHandler {
     public static final int LOGIN_UI = 3;
     public static final int SERVER_REDIRECT = 4;
 
-    private final WeakReference<ServerController> context;
-
-    public HudHandler(WeakReference<ServerController> context) {
-        this.context = context;
-    }
-
-    public Cache<String, LinkedList<MenuData>> menus = Caffeine.newBuilder()
+    public static Cache<String, LinkedList<MenuData>> menus = Caffeine.newBuilder()
             .expireAfterAccess(Duration.ofMinutes(10))
             .maximumSize(100)
             .build();
 
-    public void unload() {
+    public static void unload() {
         menus.invalidateAll();
         menus = null;
     }
 
-    public void onPlayerLeave(PlayerLeave event) {
+    public static void onPlayerLeave(PlayerLeave event) {
         var menu = menus.getIfPresent(event.player.uuid());
         if (menu != null) {
             for (var data : menu) {
@@ -57,13 +50,13 @@ public class HudHandler {
         return new HudOption(callback, text);
     }
 
-    public void showFollowDisplay(Player player, int id, String title, String description, Object state,
+    public static void showFollowDisplay(Player player, int id, String title, String description, Object state,
             List<HudOption> options) {
         showFollowDisplays(player, id, title, description, state,
                 options.stream().map(option -> Arrays.asList(option)).collect(Collectors.toList()));
     }
 
-    public synchronized void showFollowDisplays(Player player, int id, String title, String description,
+    public static synchronized void showFollowDisplays(Player player, int id, String title, String description,
             Object state,
             List<List<HudOption>> options) {
 
@@ -90,7 +83,7 @@ public class HudHandler {
         userMenu.addLast(new MenuData(id, title, description, optionTexts, callbacks, state));
     }
 
-    public void onMenuOptionChoose(MenuOptionChooseEvent event) {
+    public static void onMenuOptionChoose(MenuOptionChooseEvent event) {
         var menu = menus.getIfPresent(event.player.uuid());
 
         if (menu == null || menu.isEmpty()) {
@@ -111,12 +104,10 @@ public class HudHandler {
             return;
         }
 
-        context.get().BACKGROUND_TASK_EXECUTOR.execute(() -> {
-            callback.accept(event.player, data.getState());
-        });
+        ServerController.BACKGROUND_TASK_EXECUTOR.execute(() -> callback.accept(event.player, data.getState()));
     }
 
-    public synchronized void closeFollowDisplay(Player player, int id) {
+    public static synchronized void closeFollowDisplay(Player player, int id) {
         Call.hideFollowUpMenu(player.con, id);
 
         var menu = menus.getIfPresent(player.uuid());

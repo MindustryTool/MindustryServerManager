@@ -12,15 +12,20 @@ import mindustry.gen.Groups;
 import mindustry.gen.Player;
 import mindustry.maps.Map;
 
-public class RtvVoteHandler {
-    public HashMap<Integer, Seq<String>> votes = new HashMap<>();
-    public double ratio = 0.6;
+public class VoteHandler {
+    public static HashMap<Integer, Seq<String>> votes = new HashMap<>();
+    public static double ratio = 0.6;
 
-    public void reset() {
+    public static void unload() {
+        votes.clear();
+        votes = null;
+    }
+
+    public static void reset() {
         votes.clear();
     }
 
-    public void vote(Player player, int mapId) {
+    public static void vote(Player player, int mapId) {
         var vote = votes.get(mapId);
 
         if (vote == null) {
@@ -31,7 +36,7 @@ public class RtvVoteHandler {
         vote.add(player.uuid());
     }
 
-    public void removeVote(Player player, int mapId) {
+    public static void removeVote(Player player, int mapId) {
         var vote = votes.get(mapId);
 
         if (vote == null) {
@@ -41,7 +46,7 @@ public class RtvVoteHandler {
         vote.remove(player.uuid());
     }
 
-    public boolean isVoted(Player player, int mapId) {
+    public static boolean isVoted(Player player, int mapId) {
         var vote = votes.get(mapId);
 
         if (vote == null) {
@@ -50,11 +55,11 @@ public class RtvVoteHandler {
         return vote.contains(player.uuid());
     }
 
-    public int getRequire() {
+    public static int getRequire() {
         return (int) Math.min(Math.floor(ratio * Groups.player.size()) + 1, Groups.player.size());
     }
 
-    public int getVoteCount(int mapId) {
+    public static int getVoteCount(int mapId) {
         var vote = votes.get(mapId);
 
         if (vote == null) {
@@ -63,17 +68,17 @@ public class RtvVoteHandler {
         return vote.size;
     }
 
-    public void removeVote(Player player) {
+    public static void removeVote(Player player) {
         for (Seq<String> vote : votes.values()) {
             vote.remove(player.uuid());
         }
     }
 
-    public Seq<Map> getMaps() {
+    public static Seq<Map> getMaps() {
         return Vars.maps.customMaps();
     }
 
-    public void check(int mapId) {
+    public static void check(int mapId) {
         if (getVoteCount(mapId) >= getRequire()) {
             Call.sendMessage("[red]RTV: [green]Vote passed! Changing map...");
             Vars.maps.setNextMapOverride(getMaps().get(mapId));

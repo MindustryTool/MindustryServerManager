@@ -1,6 +1,5 @@
 package plugin.workflow;
 
-import java.lang.ref.WeakReference;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -37,37 +36,33 @@ import plugin.workflow.nodes.WorkflowNode;
 import plugin.type.WorkflowContext;
 
 public class Workflow {
-    private final HashMap<Object, Seq<Cons2<?, Boolean>>> events = new HashMap<>();
+    private static final HashMap<Object, Seq<Cons2<?, Boolean>>> events = new HashMap<>();
 
     @Getter
-    private final ExpressionParser expressionParser = new ExpressionParser();
+    private static final ExpressionParser expressionParser = new ExpressionParser();
 
     @Getter
-    private final HashMap<String, WorkflowNode> nodeTypes = new HashMap<>();
+    private static final HashMap<String, WorkflowNode> nodeTypes = new HashMap<>();
     @Getter
-    private final HashMap<String, WorkflowNode> nodes = new HashMap<>();
-    private final List<ScheduledFuture<?>> scheduledTasks = new ArrayList<>();
+    private static final HashMap<String, WorkflowNode> nodes = new HashMap<>();
+    private static final List<ScheduledFuture<?>> scheduledTasks = new ArrayList<>();
 
-    private final Fi WORKFLOW_DIR = Vars.dataDirectory.child("workflow");
-    private final Fi WORKFLOW_FILE = WORKFLOW_DIR.child("workflow.json");
-    private final Fi WORKFLOW_DATA_FILE = WORKFLOW_DIR.child("workflow_data.json");
+    private static final Fi WORKFLOW_DIR = Vars.dataDirectory.child("workflow");
+    private static final Fi WORKFLOW_FILE = WORKFLOW_DIR.child("workflow.json");
+    private static final Fi WORKFLOW_DATA_FILE = WORKFLOW_DIR.child("workflow_data.json");
+
+    private static final Workflow context = new Workflow();
 
     @Getter
-    public WorkflowContext workflowContext;
+    public static WorkflowContext workflowContext;
 
-    private final Queue<SseClient> workflowEventConsumers = new ConcurrentLinkedQueue<>();
+    private static final Queue<SseClient> workflowEventConsumers = new ConcurrentLinkedQueue<>();
 
-    private final WeakReference<ServerController> context;
-
-    public Workflow(WeakReference<ServerController> context) {
-        this.context = context;
-    }
-
-    public Queue<SseClient> getWorkflowEventConsumers() {
+    public static Queue<SseClient> getWorkflowEventConsumers() {
         return workflowEventConsumers;
     }
 
-    public void sendWorkflowEvent(WorkflowEvent event) {
+    public static void sendWorkflowEvent(WorkflowEvent<?> event) {
         try {
             workflowEventConsumers.forEach(consumer -> consumer.sendEvent(event));
         } catch (Exception e) {
@@ -75,7 +70,7 @@ public class Workflow {
         }
     }
 
-    public void init() {
+    public static void init() {
         try {
             register(new EventListenerWorkflow());
             register(new SendChatWorkflow());
@@ -96,7 +91,7 @@ public class Workflow {
             WORKFLOW_FILE.file().createNewFile();
             WORKFLOW_DATA_FILE.file().createNewFile();
 
-            context.get().BACKGROUND_SCHEDULER.scheduleWithFixedDelay(
+            ServerController.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(
                     () -> {
                         try {
                             workflowEventConsumers.forEach(client -> client.sendComment("heartbeat"));
@@ -112,15 +107,15 @@ public class Workflow {
         }
     }
 
-    public JsonNode readWorkflowData() {
+    public static JsonNode readWorkflowData() {
         return JsonUtils.readJson(WORKFLOW_DATA_FILE.readString());
     }
 
-    public void writeWorkflowData(JsonNode data) {
+    public static void writeWorkflowData(JsonNode data) {
         WORKFLOW_DATA_FILE.writeString(JsonUtils.toJsonString(data));
     }
 
-    private void loadWorkflowFromFile() {
+    private static void loadWorkflowFromFile() {
         String content = WORKFLOW_FILE.readString();
         if (!content.trim().isEmpty()) {
             workflowContext = JsonUtils.readJsonAsClass(content, WorkflowContext.class);
@@ -128,11 +123,11 @@ public class Workflow {
         }
     }
 
-    private void writeWorkflowToFile() {
+    private static void writeWorkflowToFile() {
         WORKFLOW_FILE.writeString(JsonUtils.toJsonString(workflowContext));
     }
 
-    private void register(WorkflowNode node) {
+    private static void register(WorkflowNode node) {
         if (nodeTypes.containsKey(node.getName())) {
             throw new IllegalStateException("Node already registered: " + node.getName());
         }
@@ -140,7 +135,7 @@ public class Workflow {
         nodeTypes.put(node.getName(), node);
     }
 
-    public void clear() {
+    public static void clear() {
         events.clear();
         nodeTypes.clear();
         nodes.clear();
@@ -156,10 +151,10 @@ public class Workflow {
         Log.info("Workflow unloaded");
     }
 
-    public void load(WorkflowContext workflowContext) {
+    public static void load(WorkflowContext workflowContext) {
         Log.info("Load workflow workflowContext" + workflowContext);
 
-        nodes.values().forEach(node -> node.unload(this));
+        nodes.values().forEach(node -> node.unload(context));
         nodes.clear();
         events.clear();
 
@@ -170,7 +165,7 @@ public class Workflow {
         });
         scheduledTasks.clear();
 
-        this.workflowContext = workflowContext;
+        Workflow.workflowContext = workflowContext;
         writeWorkflowToFile();
 
         for (var data : workflowContext.getNodes()) {
@@ -238,24 +233,24 @@ public class Workflow {
         }
 
         for (var node : nodes.values()) {
-            node.init(this);
+            node.init(context);
         }
 
         Log.info("Context loaded");
     }
 
-    public <T> Cons2<T, Boolean> on(Class<T> type, Cons2<T, Boolean> listener) {
+    public static <T> Cons2<T, Boolean> on(Class<T> type, Cons2<T, Boolean> listener) {
         events.computeIfAbsent(type, (_ignore) -> new Seq<>(Cons2.class)).add(listener);
 
         return listener;
     }
 
-    public <T> boolean remove(Class<T> type, Cons2<T, Boolean> listener) {
+    public static <T> boolean remove(Class<T> type, Cons2<T, Boolean> listener) {
         return events.computeIfAbsent(type, (_ignore) -> new Seq<>(Cons2.class)).remove(listener);
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    public <T extends Enum<T>> void fire(Enum<T> type, boolean before) {
+    public static <T extends Enum<T>> void fire(Enum<T> type, boolean before) {
         Seq<Cons2<?, Boolean>> listeners = events.get(type);
 
         if (listeners != null) {
@@ -268,12 +263,12 @@ public class Workflow {
     }
 
     /** Fires a non-enum event by class. */
-    public <T> void fire(T type, boolean before) {
+    public static <T> void fire(T type, boolean before) {
         fire(type.getClass(), type, before);
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    public <T> void fire(Class<?> ctype, T type, boolean before) {
+    public static <T> void fire(Class<?> ctype, T type, boolean before) {
         Seq<Cons2<?, Boolean>> listeners = events.get(ctype);
 
         if (listeners != null) {
@@ -285,7 +280,7 @@ public class Workflow {
         }
     }
 
-    private void tryRun(Runnable runnable) {
+    private static void tryRun(Runnable runnable) {
         try {
             runnable.run();
         } catch (Exception e) {
@@ -293,32 +288,32 @@ public class Workflow {
         }
     }
 
-    public void scheduleAtFixedRate(Runnable runnable, long delay, long period) {
+    public static void scheduleAtFixedRate(Runnable runnable, long delay, long period) {
         Log.debug("Schedule task at fixed rate: " + runnable.getClass().getName() +
                 " delay: " + delay +
                 " period: " + period);
 
         scheduledTasks
-                .add(context.get().BACKGROUND_SCHEDULER.scheduleAtFixedRate(() -> tryRun(runnable), delay, period,
+                .add(ServerController.BACKGROUND_SCHEDULER.scheduleAtFixedRate(() -> tryRun(runnable), delay, period,
                         TimeUnit.SECONDS));
     }
 
-    public void scheduleWithFixedDelay(Runnable runnable, long initialDelay, long delay) {
+    public static void scheduleWithFixedDelay(Runnable runnable, long initialDelay, long delay) {
         Log.debug("Schedule task with fixed delay: " +
                 runnable.getClass().getName() +
                 " initialDelay: " + initialDelay +
                 " delay: " + delay);
 
         scheduledTasks
-                .add(context.get().BACKGROUND_SCHEDULER.scheduleWithFixedDelay(() -> tryRun(runnable), initialDelay,
+                .add(ServerController.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(() -> tryRun(runnable), initialDelay,
                         delay,
                         TimeUnit.SECONDS));
     }
 
-    public void schedule(Runnable runnable, long delay) {
+    public static void schedule(Runnable runnable, long delay) {
         Log.debug("Schedule task: " + runnable.getClass().getName() + " delay: " + delay);
         scheduledTasks
-                .add(context.get().BACKGROUND_SCHEDULER.schedule(() -> tryRun(runnable), delay, TimeUnit.SECONDS));
+                .add(ServerController.BACKGROUND_SCHEDULER.schedule(() -> tryRun(runnable), delay, TimeUnit.SECONDS));
     }
 
 }

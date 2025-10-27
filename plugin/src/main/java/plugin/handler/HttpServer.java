@@ -1,6 +1,5 @@
 package plugin.handler;
 
-import java.lang.ref.WeakReference;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -54,6 +53,7 @@ import events.ServerStateEvent;
 import events.StartEvent;
 import plugin.type.WorkflowContext;
 import plugin.utils.Utils;
+import plugin.workflow.Workflow;
 import plugin.workflow.errors.WorkflowError;
 import plugin.workflow.nodes.WorkflowNode;
 import io.javalin.Javalin;
@@ -64,16 +64,11 @@ import io.javalin.http.sse.SseClient;
 
 public class HttpServer {
     private static final String MAP_PREVIEW_FILE_NAME = "MapPreview";
+    private static Javalin app;
+    private static SseClient eventListener = null;
+    private static List<Object> buffer = new ArrayList<>();
 
-    private Javalin app;
-
-    private final WeakReference<ServerController> context;
-
-    private SseClient eventListener = null;
-
-    private List<Object> buffer = new ArrayList<>();
-
-    public void fire(Object event) {
+    public static void fire(Object event) {
         if (eventListener == null) {
             buffer.add(event);
         } else {
@@ -81,7 +76,7 @@ public class HttpServer {
         }
     }
 
-    public class RequestInfo {
+    public static class RequestInfo {
         public final String method;
         public final String path;
         public final String ip;
@@ -95,11 +90,9 @@ public class HttpServer {
         }
     }
 
-    private final Map<String, RequestInfo> activeRequests = new ConcurrentHashMap<>();
+    private static final Map<String, RequestInfo> activeRequests = new ConcurrentHashMap<>();
 
-    public HttpServer(WeakReference<ServerController> context) {
-        this.context = context;
-
+    public static void init() {
         app = Javalin.create(config -> {
             config.showJavalinBanner = false;
             config.jsonMapper(new JavalinJackson().updateMapper(mapper -> {
@@ -145,19 +138,16 @@ public class HttpServer {
             }
         });
 
-        Log.info("Http server created: " + this);
-    }
-
-    public void init() {
         Log.info("Setup http server");
+
         app.get("state", ctx -> {
-            ServerStateDto state = Utils.appPostWithTimeout(this::getState);
+            ServerStateDto state = Utils.appPostWithTimeout(HttpServer::getState);
             ctx.contentType(ContentType.APPLICATION_JSON);
             ctx.json(state);
         });
 
         app.get("image", ctx -> {
-            byte[] mapPreview = Utils.appPostWithTimeout(this::mapPreview);
+            byte[] mapPreview = Utils.appPostWithTimeout(HttpServer::mapPreview);
             ctx.contentType(ContentType.IMAGE_PNG).result(mapPreview);
         });
 
@@ -223,8 +213,8 @@ public class HttpServer {
             }
 
             if (player != null) {
-                context.get().hudHandler.closeFollowDisplay(player, HudHandler.LOGIN_UI);
-                context.get().eventHandler.setPlayerData(request, player);
+                HudHandler.closeFollowDisplay(player, HudHandler.LOGIN_UI);
+                EventHandler.setPlayerData(request, player);
             }
             ctx.result();
 
@@ -243,8 +233,8 @@ public class HttpServer {
                                     .setIp(player.ip())
                                     .setLocale(player.locale())//
                                     .setIsAdmin(player.admin)//
-                                    .setJoinedAt(context.get().sessionHandler.contains(player) //
-                                            ? context.get().sessionHandler.get(player).joinedAt
+                                    .setJoinedAt(SessionHandler.contains(player) //
+                                            ? SessionHandler.get(player).joinedAt
                                             : Instant.now().toEpochMilli())
                                     .setTeam(new TeamDto()//
                                             .setColor(player.team().color.toString())//
@@ -320,9 +310,9 @@ public class HttpServer {
         });
 
         app.get("commands", ctx -> {
-            List<ServerCommandDto> commands = context.get().serverCommandHandler.getHandler() == null
+            List<ServerCommandDto> commands = ServerCommandHandler.getHandler() == null
                     ? Arrays.asList()
-                    : context.get().serverCommandHandler.getHandler()//
+                    : ServerCommandHandler.getHandler()//
                             .getCommandList()
                             .map(command -> new ServerCommandDto()
                                     .setText(command.text)
@@ -346,13 +336,13 @@ public class HttpServer {
                 for (String command : commands) {
                     Log.info("Execute command: " + command);
 
-                    context.get().serverCommandHandler.execute(command, response -> {
+                    ServerCommandHandler.execute(command, response -> {
                         if (response.type == ResponseType.unknownCommand) {
 
                             int minDst = 0;
                             Command closest = null;
 
-                            for (Command cmd : context.get().serverCommandHandler.getHandler().getCommandList()) {
+                            for (Command cmd : ServerCommandHandler.getHandler().getCommandList()) {
                                 int dst = Strings.levenshtein(cmd.text, response.runCommand);
 
                                 if (dst < 3 && (closest == null || dst < minDst)) {
@@ -391,13 +381,13 @@ public class HttpServer {
         });
 
         app.get("workflow/nodes", ctx -> {
-            ctx.json(context.get().workflow.getNodeTypes());
+            ctx.json(Workflow.getNodeTypes());
         });
 
         app.get("workflow/nodes/{id}/autocomplete", ctx -> {
             String id = ctx.pathParam("id");
             String input = ctx.queryParam("input");
-            WorkflowNode node = context.get().workflow.getNodes().get(id);
+            WorkflowNode node = Workflow.getNodes().get(id);
 
             if (node == null) {
                 ctx.status(404);
@@ -409,7 +399,7 @@ public class HttpServer {
         });
 
         app.get("workflow/version", ctx -> {
-            JsonNode data = context.get().workflow.readWorkflowData();
+            JsonNode data = Workflow.readWorkflowData();
             if (data == null || data.get("createdAt") == null) {
                 ctx.json(0L);
             } else {
@@ -418,19 +408,19 @@ public class HttpServer {
         });
 
         app.get("workflow", ctx -> {
-            ctx.json(context.get().workflow.readWorkflowData());
+            ctx.json(Workflow.readWorkflowData());
         });
 
         app.post("workflow", ctx -> {
             JsonNode payload = ctx.bodyAsClass(JsonNode.class);
-            context.get().workflow.writeWorkflowData(payload);
+            Workflow.writeWorkflowData(payload);
         });
 
         app.post("workflow/load", ctx -> {
             WorkflowContext payload = ctx.bodyAsClass(WorkflowContext.class);
             try {
-                context.get().workflow.load(payload);
-                ctx.json(context.get().workflow.getWorkflowContext());
+                Workflow.load(payload);
+                ctx.json(Workflow.getWorkflowContext());
             } catch (WorkflowError e) {
                 Log.err("Failed to load workflow", e);
                 HashMap<String, String> result = new HashMap<>();
@@ -445,8 +435,8 @@ public class HttpServer {
                 HashMap<String, Object> data = new HashMap<>();
 
                 data.put("state", getState());
-                data.put("session", context.get().sessionHandler.get());
-                data.put("hud", context.get().hudHandler.menus.asMap());
+                data.put("session", SessionHandler.get());
+                data.put("hud", HudHandler.menus.asMap());
                 data.put("isHub", Config.IS_HUB);
                 data.put("ip", Config.SERVER_IP);
                 data.put("units", Groups.unit.size());
@@ -465,8 +455,8 @@ public class HttpServer {
                 gameStats.put("wavesLasted", Vars.state.stats.wavesLasted);
 
                 HashMap<String, String> executors = new HashMap<>();
-                executors.put("backgroundExecutor", context.get().BACKGROUND_TASK_EXECUTOR.toString());
-                executors.put("backgroundScheduler", context.get().BACKGROUND_SCHEDULER.toString());
+                executors.put("backgroundExecutor", ServerController.BACKGROUND_TASK_EXECUTOR.toString());
+                executors.put("backgroundScheduler", ServerController.BACKGROUND_SCHEDULER.toString());
 
                 data.put("executors", executors);
 
@@ -512,7 +502,7 @@ public class HttpServer {
                             return info;
                         }).list());
                 data.put("mods", Vars.mods.list().map(mod -> mod.meta.toString()).list());
-                data.put("votes", context.get().voteHandler.votes);
+                data.put("votes", VoteHandler.votes);
 
                 HashMap<String, Object> settings = new HashMap<String, Object>();
 
@@ -533,13 +523,13 @@ public class HttpServer {
             client.sendComment("connected");
 
             client.onClose(() -> {
-                context.get().workflow.getWorkflowEventConsumers().remove(client);
+                Workflow.getWorkflowEventConsumers().remove(client);
             });
 
-            context.get().workflow.getWorkflowEventConsumers().add(client);
+            Workflow.getWorkflowEventConsumers().add(client);
         });
 
-        app.sse("events", this::onClientConnect);
+        app.sse("events", HttpServer::onClientConnect);
 
         app.exception(TimeoutException.class, (exception, ctx) -> {
             Log.warn("Timeout exception", exception);
@@ -584,7 +574,7 @@ public class HttpServer {
         Log.info("Setup http server done");
     }
 
-    private synchronized void onClientConnect(SseClient client) {
+    private static synchronized void onClientConnect(SseClient client) {
         client.onClose(() -> {
             eventListener = null;
         });
@@ -603,7 +593,7 @@ public class HttpServer {
         sendStateUpdate();
     }
 
-    private synchronized void host(StartServerDto request) {
+    private static synchronized void host(StartServerDto request) {
         if (Vars.state.isGame()) {
             Log.info("Already hosting. Type 'stop' to stop hosting first.");
             return;
@@ -617,7 +607,7 @@ public class HttpServer {
             String[] commandsArray = commands.split("\n");
             for (String command : commandsArray) {
                 Log.info("Host command: " + command);
-                context.get().serverCommandHandler.execute(command, (_ignore) -> {
+                ServerCommandHandler.execute(command, (_ignore) -> {
                 });
             }
             return;
@@ -626,7 +616,7 @@ public class HttpServer {
         Utils.host(mapName, gameMode);
     }
 
-    public void sendStateUpdate() {
+    public static void sendStateUpdate() {
         try {
             ServerStateDto state = getState();
             ServerStateEvent event = new ServerStateEvent(ServerController.SERVER_ID, Arrays.asList(state));
@@ -637,7 +627,7 @@ public class HttpServer {
         }
     }
 
-    private ServerStateDto getState() {
+    private static ServerStateDto getState() {
         mindustry.maps.Map map = Vars.state.map;
         String mapName = map != null ? map.name() : "";
         List<ModDto> mods = Vars.mods == null //
@@ -672,8 +662,8 @@ public class HttpServer {
                                 .setIp(player.ip())
                                 .setLocale(player.locale())//
                                 .setIsAdmin(player.admin)//
-                                .setJoinedAt(context.get().sessionHandler.contains(player) //
-                                        ? context.get().sessionHandler.get(player).joinedAt
+                                .setJoinedAt(SessionHandler.contains(player) //
+                                        ? SessionHandler.get(player).joinedAt
                                         : Instant.now().toEpochMilli())
                                 .setTeam(new TeamDto()//
                                         .setColor(player.team().color.toString())//
@@ -697,7 +687,7 @@ public class HttpServer {
                 .setStartedAt(Core.settings.getLong("startedAt", System.currentTimeMillis()));
     }
 
-    public byte[] mapPreview() {
+    public static byte[] mapPreview() {
         Pixmap pix = null;
         try {
             if (Vars.state.map != null) {
@@ -720,7 +710,7 @@ public class HttpServer {
         }
     }
 
-    public void unload() {
+    public static void unload() {
         app.stop();
         app = null;
 

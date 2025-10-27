@@ -171,7 +171,7 @@ public abstract class WorkflowNode {
             }
         }
 
-        @SuppressWarnings("rawtypes")
+        @SuppressWarnings({ "rawtypes", "unchecked" })
         public T asEnum() {
             if (!type.isEnum()) {
                 throw new WorkflowError("Type is not an enum: " + type.getName());
@@ -215,19 +215,19 @@ public abstract class WorkflowNode {
                 return null;
             }
 
-            return event.getContext().getExpressionParser().evaluate(type, value, event.getVariables());
+            return Workflow.getExpressionParser().evaluate(type, value, event.getVariables());
         }
 
         public Double asDouble(WorkflowEmitEvent event) {
-            return event.getContext().getExpressionParser().evaluateAsDouble(value, event.getVariables());
+            return Workflow.getExpressionParser().evaluateAsDouble(value, event.getVariables());
         }
 
         public Long asLong(WorkflowEmitEvent event) {
-            return event.getContext().getExpressionParser().evaluateAsDouble(value, event.getVariables()).longValue();
+            return Workflow.getExpressionParser().evaluateAsDouble(value, event.getVariables()).longValue();
         }
 
         public Float asFloat(WorkflowEmitEvent event) {
-            return event.getContext().getExpressionParser().evaluateAsDouble(value, event.getVariables()).floatValue();
+            return Workflow.getExpressionParser().evaluateAsDouble(value, event.getVariables()).floatValue();
         }
 
         public String asString(WorkflowEmitEvent event) {
@@ -254,7 +254,7 @@ public abstract class WorkflowNode {
                 String path = match.group(1);
 
                 result.append(value, lastEnd, match.start());
-                Object consumed = event.getContext().getExpressionParser().consume(path, event.getVariables());
+                Object consumed = Workflow.getExpressionParser().consume(path, event.getVariables());
                 result.append(consumed == null ? "null" : consumed.toString());
 
                 lastEnd = match.end();

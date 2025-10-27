@@ -1,6 +1,5 @@
 package plugin.handler;
 
-import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -15,45 +14,38 @@ import mindustry.gen.Call;
 import mindustry.gen.Groups;
 import mindustry.gen.Player;
 import mindustry.net.Packets.KickReason;
-import plugin.ServerController;
 import plugin.type.PrevCommand;
 
 public class ServerCommandHandler {
 
-    final WeakReference<ServerController> context;
-    private final List<String> registeredCommands = new ArrayList<>();
-
-    public ServerCommandHandler(WeakReference<ServerController> context) {
-        this.context = context;
-        Log.info("Server command handler created: " + this);
-    }
+    private static final List<String> registeredCommands = new ArrayList<>();
 
     @Getter
-    private CommandHandler handler;
+    private static CommandHandler handler;
 
-    private final List<PrevCommand> prevCommands = new ArrayList<>();
+    private static final List<PrevCommand> prevCommands = new ArrayList<>();
 
-    public void execute(String command, Consumer<CommandResponse> callback) {
-        if (this.handler == null) {
+    public static void execute(String command, Consumer<CommandResponse> callback) {
+        if (handler == null) {
             prevCommands.add(new PrevCommand(command, callback));
         } else {
-            callback.accept(this.handler.handleMessage(command));
+            callback.accept(handler.handleMessage(command));
         }
     }
 
-    private void register(String text, String params, String description, Cons<String[]> runner) {
+    private static void register(String text, String params, String description, Cons<String[]> runner) {
         handler.register(text, params, description, runner);
         registeredCommands.add(text);
     }
 
-    public void unload() {
+    public static void unload() {
         registeredCommands.forEach(command -> handler.removeCommand(command));
 
         Log.info("Server command unloaded");
     }
 
-    public void registerCommands(CommandHandler handler) {
-        this.handler = handler;
+    public static void registerCommands(CommandHandler handler) {
+        ServerCommandHandler.handler = handler;
 
         register("js", "<script...>", "Run arbitrary Javascript.", arg -> {
             Log.info("&fi&lw&fb" + Vars.mods.getScripts().runConsole(arg[0]));
