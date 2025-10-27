@@ -724,6 +724,8 @@ public class HttpServer {
     }
 
     public static void unload() {
+        eventListener.close();
+
         app.stop();
         app = null;
 
