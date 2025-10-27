@@ -28,7 +28,7 @@ import dto.ManagerModDto;
 import dto.MindustryToolPlayerDto;
 import dto.ServerFileDto;
 import server.manager.NodeManager;
-
+import server.service.GatewayService.GatewayClient;
 import server.utils.ApiError;
 import server.utils.Utils;
 import reactor.core.publisher.Flux;
@@ -118,15 +118,22 @@ public class ServerService {
 
     public Mono<Boolean> pause(UUID serverId) {
         return gatewayService.of(serverId)//
-                .getServer()//
-                .pause();
+                .flatMap(client -> client.getServer().pause());
     }
 
     public Flux<LogEvent> host(ServerConfig request) {
         var serverId = request.getId();
-        var serverGateway = gatewayService.of(serverId).getServer();
 
-        Flux<LogEvent> createFlux = nodeManager.create(request);
+        Flux<LogEvent> callGatewayFlux = gatewayService.of(serverId)
+                .flatMapMany(gatewayClient -> hostCallGateway(request, gatewayClient));
+
+        return Flux.concat(nodeManager.create(request), callGatewayFlux).doOnError(err -> Log.err(err));
+    }
+
+    private Flux<LogEvent> hostCallGateway(ServerConfig request, GatewayClient gatewayClient) {
+        var serverId = request.getId();
+        var serverGateway = gatewayClient.getServer();
+
         Flux<LogEvent> waitingOkFlux = Flux.concat(//
                 Mono.just(LogEvent.info(serverId, "Waiting for server to start")), //
                 serverGateway//
@@ -169,11 +176,7 @@ public class ServerService {
             return Flux.concat(sendCommandFlux, sendHostFlux, waitForStatusFlux);
         });
 
-        return Flux.concat(//
-                createFlux,
-                waitingOkFlux, //
-                hostFlux//
-        ).doOnError(err -> Log.err(err));
+        return Flux.concat(waitingOkFlux, hostFlux);
     }
 
     public Flux<ServerMisMatch> getMismatch(UUID serverId, ServerConfig config) {
@@ -221,7 +224,7 @@ public class ServerService {
     }
 
     public Mono<Void> ok(UUID serverId) {
-        return gatewayService.of(serverId).getServer().ok();
+        return gatewayService.of(serverId).flatMap(client -> client.getServer().ok());
     }
 
     public Flux<NodeUsage> getUsage(UUID serverId) {
@@ -230,8 +233,7 @@ public class ServerService {
 
     public Mono<ServerStateDto> state(UUID serverId) {
         return gatewayService.of(serverId)//
-                .getServer()//
-                .getState()//
+                .flatMap(client -> client.getServer().getState())//
                 .onErrorResume(error -> {
                     Log.err(error.getMessage());
                     return Mono.empty();
@@ -241,12 +243,11 @@ public class ServerService {
 
     public Mono<byte[]> getImage(UUID serverId) {
         return gatewayService.of(serverId)//
-                .getServer()//
-                .getImage();
+                .flatMap(client -> client.getServer().getImage());
     }
 
     public Mono<Void> updatePlayer(UUID serverId, MindustryToolPlayerDto payload) {
-        return gatewayService.of(serverId).getServer().updatePlayer(payload);
+        return gatewayService.of(serverId).flatMap(client -> client.getServer().updatePlayer(payload));
     }
 
     private Mono<Void> checkRunningServer(ServerConfig config, boolean shouldAutoTurnOff) {
@@ -259,8 +260,7 @@ public class ServerService {
         }
 
         return gatewayService.of(serverId)//
-                .getServer()//
-                .getState()
+                .flatMap(client -> client.getServer().getState())//
                 .flatMap(state -> {
                     boolean shouldKill = state.getPlayers().isEmpty();
 

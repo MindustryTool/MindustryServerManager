@@ -62,9 +62,6 @@ import io.javalin.json.JavalinJackson;
 import io.javalin.plugin.bundled.RouteOverviewPlugin;
 import io.javalin.http.sse.SseClient;
 
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
-
 public class HttpServer {
     private static final String MAP_PREVIEW_FILE_NAME = "MapPreview";
 
@@ -72,7 +69,17 @@ public class HttpServer {
 
     private final WeakReference<ServerController> context;
 
-    public final Queue<SseClient> eventConsumers = new ConcurrentLinkedQueue<>();
+    private SseClient eventListener = null;
+
+    private List<Object> buffer = new ArrayList<>();
+
+    public void fire(Object event) {
+        if (eventListener == null) {
+            buffer.add(event);
+        } else {
+            eventListener.sendEvent(event);
+        }
+    }
 
     public class RequestInfo {
         public final String method;
@@ -537,10 +544,14 @@ public class HttpServer {
             client.sendEvent(new StartEvent(ServerController.SERVER_ID));
 
             client.onClose(() -> {
-                eventConsumers.remove(client);
+                eventListener = null;
             });
 
-            eventConsumers.add(client);
+            if (eventListener != null) {
+                throw new IllegalStateException("Only one event listener is allowed");
+            }
+
+            eventListener = client;
 
             sendStateUpdate();
         });
@@ -615,7 +626,7 @@ public class HttpServer {
         ServerStateDto state = getState();
         ServerStateEvent event = new ServerStateEvent(ServerController.SERVER_ID, Arrays.asList(state));
 
-        eventConsumers.forEach(client -> client.sendEvent(event));
+        fire(event);
     }
 
     private ServerStateDto getState() {

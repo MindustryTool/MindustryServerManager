@@ -8,6 +8,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
+
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
@@ -45,10 +47,12 @@ public class GatewayService {
 
 	private final Const envConfig;
 	private final EventBus eventBus;
-	private final ConcurrentHashMap<UUID, GatewayClient> cache = new ConcurrentHashMap<>();
+	private final ConcurrentHashMap<UUID, Mono<GatewayClient>> cache = new ConcurrentHashMap<>();
 
-	public synchronized GatewayClient of(UUID serverId) {
-		return cache.computeIfAbsent(serverId, _id -> new GatewayClient(serverId, envConfig));
+	public synchronized Mono<GatewayClient> of(UUID serverId) {
+		return cache.computeIfAbsent(serverId,
+				_id -> Mono.create((emittor) -> new GatewayClient(serverId, envConfig, emittor::success)))
+				.timeout(Duration.ofMinutes(1));
 	}
 
 	@RequiredArgsConstructor
@@ -60,7 +64,9 @@ public class GatewayService {
 		@Getter
 		private final Server server;
 
-		public GatewayClient(UUID id, Const envConfig) {
+		private boolean connected = false;
+
+		public GatewayClient(UUID id, Const envConfig, Consumer<GatewayClient> onConnect) {
 			this.id = id;
 
 			this.server = new Server();
@@ -68,6 +74,11 @@ public class GatewayService {
 			this.server.getEvents()
 					.flatMap(event -> {
 						var name = event.get("name").asText(null);
+
+						if (connected == false) {
+							connected = true;
+							onConnect.accept(this);
+						}
 
 						if (name == null) {
 							Log.warn("Invalid event: " + event.asText());
