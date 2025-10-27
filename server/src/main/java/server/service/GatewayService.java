@@ -230,8 +230,7 @@ public class GatewayService {
 						.uri("ok")
 						.retrieve()
 						.bodyToMono(Void.class)
-						.retryWhen(Retry.fixedDelay(400, Duration.ofMillis(100))),
-						Duration.ofSeconds(40), "Check ok");
+						.retryWhen(Retry.fixedDelay(400, Duration.ofMillis(100))), Duration.ofSeconds(40), "Check ok");
 			}
 
 			public Mono<ServerStateDto> getState() {
