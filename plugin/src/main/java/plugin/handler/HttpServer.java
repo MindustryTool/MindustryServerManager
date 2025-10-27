@@ -183,11 +183,9 @@ public class HttpServer {
         });
 
         app.post("host", ctx -> {
-            Utils.appPostWithTimeout(() -> {
-                StartServerDto request = ctx.bodyAsClass(StartServerDto.class);
-                host(request);
-                ctx.result();
-            }, 50_000);
+            StartServerDto request = ctx.bodyAsClass(StartServerDto.class);
+            host(request);
+            ctx.result();
         });
 
         app.post("set-player", ctx -> {

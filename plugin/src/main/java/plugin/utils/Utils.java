@@ -89,10 +89,10 @@ public class Utils {
     }
 
     public static void appPostWithTimeout(Runnable r) {
-        appPostWithTimeout(r, 5000);
+        appPostWithTimeout(r, 100);
     }
 
-    public static void appPostWithTimeout(Runnable r, int timeout) {
+    private static void appPostWithTimeout(Runnable r, int timeout) {
         CompletableFuture<Void> v = new CompletableFuture<>();
         Core.app.post(() -> {
             try {
@@ -110,10 +110,10 @@ public class Utils {
     }
 
     public static <T> T appPostWithTimeout(Supplier<T> fn) {
-        return appPostWithTimeout(fn, 5000);
+        return appPostWithTimeout(fn, 100);
     }
 
-    public static <T> T appPostWithTimeout(Supplier<T> fn, int timeout) {
+    private static <T> T appPostWithTimeout(Supplier<T> fn, int timeout) {
         CompletableFuture<T> future = new CompletableFuture<T>();
         Core.app.post(() -> {
             try {
