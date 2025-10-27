@@ -203,6 +203,8 @@ public class PluginLoader extends Plugin {
 
         writeUpdatedAt(plugin, updatedAt);
 
+        Log.info("Downloaded: " + plugin.getName() + ":" + updatedAt);
+
         unloadPlugin(plugin);
         loadPlugin(plugin);
     }
@@ -211,21 +213,21 @@ public class PluginLoader extends Plugin {
         return Paths.get(PLUGIN_DIR, plugin.getName().replaceAll("[^a-zA-Z0-9_.-]", "_"));
     }
 
-    private void unloadPlugin(PluginData plugin) {
+    private void unloadPlugin(PluginData pluginData) {
         try {
 
-            plugins.remove(plugin.getId());
+            MindustryToolPlugin plugin = plugins.get(pluginData.getId()).get();
 
-            PluginWrapper loaded = pluginManager.getPlugin(plugin.getId());
-
-            if (loaded != null) {
-                pluginManager.unloadPlugin(plugin.getId());
+            if (plugin != null) {
+                plugin.unload();
             }
 
-            Log.info("Unloaded plugin: " + plugin.getName());
+            plugins.remove(pluginData.getId());
+            pluginManager.unloadPlugin(pluginData.getId());
 
+            Log.info("Unloaded plugin: " + pluginData.getName());
         } catch (Exception e) {
-            Log.err("Error while unloading plugin " + plugin.getName(), e);
+            Log.err("Error while unloading plugin " + pluginData.getName(), e);
         }
     }
 

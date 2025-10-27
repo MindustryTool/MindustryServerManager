@@ -132,6 +132,12 @@ public class HttpServer {
             });
         });
 
+        app.beforeMatched((ctx) -> {
+            if (ServerController.isUnloaded) {
+                throw new IllegalStateException("Server is unloaded");
+            }
+        });
+
         app.before(ctx -> {
             String reqId = UUID.randomUUID().toString();
             ctx.attribute("reqId", reqId);

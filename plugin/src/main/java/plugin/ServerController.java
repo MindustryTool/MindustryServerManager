@@ -140,10 +140,10 @@ public class ServerController extends Plugin implements MindustryToolPlugin {
     }
 
     @Override
-    public void stop() {
+    public void unload() {
         isUnloaded = true;
-        
-        Log.info("Stop signal received: " + this);
+
+        Log.info("Unload: " + this);
 
         EventHandler.unload();
         HttpServer.unload();
@@ -160,6 +160,11 @@ public class ServerController extends Plugin implements MindustryToolPlugin {
         BACKGROUND_SCHEDULER.shutdownNow();
 
         Log.info("Server controller stopped: " + this);
+    }
+
+    @Override
+    public void stop() {
+        Log.info("Stop: " + this);
     }
 
     @Override

@@ -248,7 +248,7 @@ public class ServerService {
                     Log.err(error.getMessage());
                     return Mono.empty();
                 })
-                .defaultIfEmpty(new ServerStateDto().setServerId(serverId).setStatus(ServerStatus.NOT_RESPONSE));
+                .defaultIfEmpty(new ServerStateDto().setServerId(serverId).setStatus(ServerStatus.PAUSED));
     }
 
     public Mono<byte[]> getImage(UUID serverId) {

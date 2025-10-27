@@ -10,6 +10,8 @@ public interface MindustryToolPlugin {
 
     public void registerClientCommands(CommandHandler handler);
 
+    public void unload();
+
     public default void onEvent(Object event) {
     }
 }
