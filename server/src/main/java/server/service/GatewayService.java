@@ -97,8 +97,6 @@ public class GatewayService {
 						// Parse JsonNode into clazz
 						BaseEvent data = (BaseEvent) Utils.readJsonAsClass(event, eventType);
 
-						Log.info("Event received: " + data.toString());
-
 						eventBus.fire(data);
 
 						return Mono.empty();
