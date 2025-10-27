@@ -173,7 +173,7 @@ public class ServerService {
                             .flatMap(b -> b //
                                     ? Mono.empty()
                                     : ApiError.badRequest("Server is not hosting yet"))//
-                            .retryWhen(Retry.fixedDelay(50, Duration.ofMillis(100)))
+                            .retryWhen(Retry.fixedDelay(600, Duration.ofMillis(100)))
                             .thenReturn(LogEvent.info(serverId, "Server hosting")));
 
             return Flux.concat(sendCommandFlux, sendHostFlux, waitForStatusFlux);
