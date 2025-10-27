@@ -104,7 +104,10 @@ public class GatewayService {
 					})
 					.retryWhen(Retry.fixedDelay(24, Duration.ofSeconds(10)))
 					.doOnError((error) -> Log.err(error.getMessage()))
-					.doFinally(_ignore -> cache.remove(id))
+					.doFinally(_ignore -> {
+						cache.remove(id);
+						Log.info("Close GatewayClient for server: " + id);
+					})
 					.subscribeOn(Schedulers.boundedElastic())
 					.subscribe();
 
