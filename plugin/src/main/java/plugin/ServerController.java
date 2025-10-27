@@ -142,8 +142,7 @@ public class ServerController extends Plugin implements MindustryToolPlugin {
     @Override
     public void stop() {
         isUnloaded = true;
-        BACKGROUND_TASK_EXECUTOR.shutdownNow();
-        BACKGROUND_SCHEDULER.shutdownNow();
+        Log.info("Stop signal received: " + this);
 
         EventHandler.unload();
         HttpServer.unload();
@@ -155,6 +154,9 @@ public class ServerController extends Plugin implements MindustryToolPlugin {
 
         HudHandler.unload();
         VoteHandler.unload();
+
+        BACKGROUND_TASK_EXECUTOR.shutdownNow();
+        BACKGROUND_SCHEDULER.shutdownNow();
 
         Log.info("Server controller stopped: " + this);
     }
