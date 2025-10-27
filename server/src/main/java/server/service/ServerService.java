@@ -7,6 +7,8 @@ import java.util.LinkedList;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+
+import org.springframework.http.HttpStatus;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -174,6 +176,8 @@ public class ServerService {
                                     ? Mono.empty()
                                     : ApiError.badRequest("Server is not hosting yet"))//
                             .retryWhen(Retry.fixedDelay(600, Duration.ofMillis(100)))
+                            .onErrorMap(IllegalStateException.class,
+                                    error -> new ApiError(HttpStatus.BAD_GATEWAY, "Can not host server"))
                             .thenReturn(LogEvent.info(serverId, "Server hosting")));
 
             return Flux.concat(sendCommandFlux, sendHostFlux, waitForStatusFlux);
