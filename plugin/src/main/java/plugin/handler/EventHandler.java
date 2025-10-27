@@ -168,6 +168,7 @@ public class EventHandler {
     }
 
     public static void unload() {
+        Log.info("Unloading EventHandler");
         if (updateServerTask != null) {
             updateServerTask.cancel(true);
             Log.info("Update server task cancelled");

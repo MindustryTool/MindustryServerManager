@@ -142,6 +142,7 @@ public class ServerController extends Plugin implements MindustryToolPlugin {
     @Override
     public void stop() {
         isUnloaded = true;
+        
         Log.info("Stop signal received: " + this);
 
         EventHandler.unload();
