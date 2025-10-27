@@ -38,6 +38,7 @@ import server.utils.ApiError;
 import server.utils.Utils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 import reactor.util.retry.Retry;
 
 @Slf4j
@@ -104,6 +105,7 @@ public class GatewayService {
 					.retryWhen(Retry.fixedDelay(24, Duration.ofSeconds(10)))
 					.doOnError((error) -> Log.err(error.getMessage()))
 					.doFinally(_ignore -> cache.remove(id))
+					.subscribeOn(Schedulers.boundedElastic())
 					.subscribe();
 		}
 
