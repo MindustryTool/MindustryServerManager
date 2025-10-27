@@ -221,8 +221,7 @@ public class GatewayService {
 								.uri("players")
 								.retrieve()
 								.bodyToFlux(PlayerDto.class),
-						Duration.ofSeconds(5),
-						"Get players");
+						Duration.ofSeconds(5), "Get players");
 			}
 
 			public Mono<Void> ok() {
