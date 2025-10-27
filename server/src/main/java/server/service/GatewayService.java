@@ -108,15 +108,17 @@ public class GatewayService {
 					})
 					.retryWhen(Retry.fixedDelay(24, Duration.ofSeconds(10)))
 					.doOnError((error) -> Log.err(error.getMessage()))
-					.doFinally(_ignore -> {
-						cache.remove(id);
-						Log.info("Close GatewayClient for server: " + id + " running for "
-								+ Utils.toReadableString(Duration.between(createdAt, Instant.now())));
-					})
+					.doFinally(_ignore -> close())
 					.subscribeOn(Schedulers.boundedElastic())
 					.subscribe();
 
 			Log.info("Create GatewayClient for server: " + id);
+		}
+
+		private void close() {
+			cache.remove(id);
+			Log.info("Close GatewayClient for server: " + id + " running for "
+					+ Utils.toReadableString(Duration.between(createdAt, Instant.now())));
 		}
 
 		private static boolean handleStatus(HttpStatusCode status) {

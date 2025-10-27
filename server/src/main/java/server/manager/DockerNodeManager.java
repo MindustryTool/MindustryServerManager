@@ -23,6 +23,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import arc.files.Fi;
 import arc.util.Log;
 import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import server.EnvConfig;
 import server.config.Const;
@@ -76,6 +77,7 @@ public class DockerNodeManager implements NodeManager {
     private final EventBus eventBus;
 
     private final Map<UUID, ResultCallback.Adapter<Frame>> logCallbacks = new ConcurrentHashMap<>();
+    private ResultCallback.Adapter<Event> eventCallback = null;
 
     private static final Fi SERVER_FOLDER = new Fi(Const.volumeFolderPath).child("servers");
 
@@ -375,11 +377,30 @@ public class DockerNodeManager implements NodeManager {
         }
     }
 
+    @PreDestroy
+    private void close() {
+        logCallbacks.values().forEach(callback -> {
+            try {
+                callback.close();
+            } catch (IOException _e) {
+                // Ignore
+            }
+        });
+
+        if (eventCallback != null) {
+            try {
+                eventCallback.close();
+            } catch (IOException _e) {
+                // Ignore
+            }
+        }
+    }
+
     @PostConstruct
     public void init() {
         final Set<String> ignoredEvents = Set.of("exec_create", "exec_start", "exec_die", "exec_detach");
 
-        dockerClient.eventsCmd()
+       eventCallback = dockerClient.eventsCmd()
                 .exec(new ResultCallback.Adapter<>() {
                     @Override
                     public void onNext(Event event) {
