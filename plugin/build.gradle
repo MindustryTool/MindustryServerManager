@@ -28,6 +28,7 @@ dependencies{
     implementation project(':dto')
 
     compileOnly project(':loader')
+    compileOnly "org.pf4j:pf4j:3.13.0"
     compileOnly 'org.projectlombok:lombok:1.18.30'
     compileOnly "com.github.Anuken.Arc:arc-core:$mindustryVersion"
     compileOnly "com.github.Anuken.Mindustry:core:$mindustryVersion"
