@@ -1,5 +1,6 @@
 package server.service;
 
+import java.net.ConnectException;
 import java.net.URI;
 import java.net.UnknownHostException;
 import java.time.Duration;
@@ -140,11 +141,24 @@ public class GatewayService {
 
 		public class Server {
 
+			public boolean isConnectionException(Throwable e) {
+				if (e == null) {
+					return false;
+				}
+
+				return e instanceof ConnectException || isConnectionException(e.getCause());
+			}
+
 			private <T> Mono<T> wrapError(Mono<T> publisher, Duration timeout, String message) {
 				return publisher
 						.onErrorMap(WebClientRequestException.class, error -> {
 							if (error.getCause() instanceof UnknownHostException) {
-								return new ApiError(HttpStatus.NOT_FOUND, "Server not found");
+								return new ApiError(HttpStatus.NOT_FOUND, "Server not found: " + error.getMessage());
+							}
+
+							if (isConnectionException(error.getCause())) {
+								return new ApiError(HttpStatus.BAD_REQUEST,
+										"Can not connect to server: " + error.getMessage());
 							}
 
 							return error;
