@@ -12,7 +12,8 @@ import events.BaseEvent;
 @Service
 public class EventBus {
 
-    private final List<Consumer<BaseEvent>> consumers = new ArrayList<>(List.of(event -> Log.info("Event: " + event)));
+    private final List<Consumer<BaseEvent>> consumers = new ArrayList<>(
+            List.of(event -> Log.info("Event: " + event.getClass().getSimpleName())));
 
     public Runnable on(Consumer<BaseEvent> consumer) {
         consumers.add(consumer);
