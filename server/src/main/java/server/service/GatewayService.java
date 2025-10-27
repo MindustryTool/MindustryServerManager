@@ -73,9 +73,7 @@ public class GatewayService {
 
 		public GatewayClient(UUID id, Const envConfig, Consumer<GatewayClient> onConnect) {
 			this.id = id;
-
 			this.server = new Server();
-
 			this.server.getEvents()
 					.flatMap(event -> {
 						var name = event.get("name").asText(null);
@@ -106,7 +104,7 @@ public class GatewayService {
 
 						return Mono.empty();
 					})
-					.retryWhen(Retry.fixedDelay(24, Duration.ofSeconds(10)))
+					.retryWhen(Retry.fixedDelay(6, Duration.ofSeconds(10)))
 					.doOnError((error) -> Log.err(error.getMessage()))
 					.doFinally(_ignore -> close())
 					.subscribeOn(Schedulers.boundedElastic())
