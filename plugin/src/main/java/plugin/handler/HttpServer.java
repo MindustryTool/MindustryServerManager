@@ -592,9 +592,6 @@ public class HttpServer {
         if (eventListener != null) {
             if (!eventListener.terminated()) {
                 eventListener.close();
-                client.close();
-                eventListener = null;
-                throw new IllegalStateException("Only one event listener is allowed");
             }
             eventListener = null;
         }
