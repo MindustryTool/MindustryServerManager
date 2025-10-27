@@ -395,7 +395,7 @@ public class GatewayService {
 						.uri("events")
 						.accept(MediaType.TEXT_EVENT_STREAM)
 						.retrieve()
-						.bodyToFlux(JsonNode.class), Duration.ofSeconds(10), "Get events");
+						.bodyToFlux(JsonNode.class), Duration.ofDays(365), "Get events");
 			}
 		}
 	}
