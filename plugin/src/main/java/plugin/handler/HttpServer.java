@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -94,6 +95,10 @@ public class HttpServer {
     private static final Map<String, RequestInfo> activeRequests = new ConcurrentHashMap<>();
 
     public static void init() {
+        ServerController.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(() -> {
+            sendStateUpdate();
+        }, 0, 1, TimeUnit.MINUTES);
+
         app = Javalin.create(config -> {
             config.showJavalinBanner = false;
             config.jsonMapper(new JavalinJackson().updateMapper(mapper -> {
