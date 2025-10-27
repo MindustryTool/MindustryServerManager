@@ -69,7 +69,7 @@ public class GatewayService {
 
 		private boolean connected = false;
 
-		private final Instant createdAt = Instant.now(); 
+		private final Instant createdAt = Instant.now();
 
 		public GatewayClient(UUID id, Const envConfig, Consumer<GatewayClient> onConnect) {
 			this.id = id;
@@ -110,7 +110,8 @@ public class GatewayService {
 					.doOnError((error) -> Log.err(error.getMessage()))
 					.doFinally(_ignore -> {
 						cache.remove(id);
-						Log.info("Close GatewayClient for server: " + id + " running for " + Duration.between(createdAt, Instant.now()).toString());
+						Log.info("Close GatewayClient for server: " + id + " running for "
+								+ Utils.toReadableString(Duration.between(createdAt, Instant.now())));
 					})
 					.subscribeOn(Schedulers.boundedElastic())
 					.subscribe();
