@@ -1,7 +1,6 @@
 package server.service;
 
 import java.time.Duration;
-import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.LinkedList;
 import java.util.UUID;
@@ -162,7 +161,8 @@ public class ServerService {
             };
 
             Flux<LogEvent> sendCommandFlux = Flux.concat(
-                    Mono.just(LogEvent.info(serverId, "Config server: " + Arrays.toString(preHostCommand))),
+                    Flux.fromArray(preHostCommand)
+                            .map(cmd -> LogEvent.info(serverId, cmd)),
                     serverGateway//
                             .sendCommand(preHostCommand)
                             .thenReturn(LogEvent.info(serverId, "Config done")));
