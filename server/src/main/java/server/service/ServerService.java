@@ -82,7 +82,8 @@ public class ServerService {
     private void scanServer() {
         nodeManager.list()
                 .filter(state -> state.meta.isPresent())
-                .map(state -> gatewayService.of(state.meta.get().getConfig().getId()))
+                .flatMap(state -> gatewayService.of(state.meta.get().getConfig().getId()))
+                .flatMap(gateway -> gateway.getServer().ok())
                 .subscribeOn(Schedulers.boundedElastic())
                 .blockLast();
     }
