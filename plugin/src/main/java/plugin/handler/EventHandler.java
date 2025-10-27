@@ -170,10 +170,12 @@ public class EventHandler {
     public static void unload() {
         if (updateServerTask != null) {
             updateServerTask.cancel(true);
+            Log.info("Update server task cancelled");
         }
 
         if (updateServerCore != null) {
             updateServerCore.cancel(true);
+            Log.info("Update server core task cancelled");
         }
 
         translationCache.invalidateAll();
