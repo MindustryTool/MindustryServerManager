@@ -79,6 +79,7 @@ public class ServerService {
     }
 
     @Scheduled(fixedDelay = 5, timeUnit = TimeUnit.SECONDS)
+    @PostConstruct
     private void scanServer() {
         nodeManager.list()
                 .filter(state -> state.meta.isPresent())
