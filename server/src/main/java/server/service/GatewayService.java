@@ -35,6 +35,7 @@ import dto.PlayerInfoDto;
 import dto.ServerCommandDto;
 import dto.ServerStateDto;
 import events.BaseEvent;
+import events.StopEvent;
 import server.utils.ApiError;
 import server.utils.Utils;
 import reactor.core.publisher.Flux;
@@ -117,6 +118,8 @@ public class GatewayService {
 			cache.remove(id);
 			Log.info("Close GatewayClient for server: " + id + " running for "
 					+ Utils.toReadableString(Duration.between(createdAt, Instant.now())));
+
+			eventBus.fire(new StopEvent(id));
 		}
 
 		private static boolean handleStatus(HttpStatusCode status) {
