@@ -649,6 +649,11 @@ public class HttpServer {
                                 : Instant.now().toEpochMilli()))
                 .collect(Collectors.toList());
 
+        int kicks = Vars.netServer.admins.kickedIPs
+                .values()
+                .toSeq()
+                .select(value -> Time.millis() - value < 0).size;
+
         return new ServerStateDto()//
                 .setServerId(ServerController.SERVER_ID)//
                 .setPlayers(p)//
@@ -656,9 +661,8 @@ public class HttpServer {
                 .setMods(mods)//
                 .setHosting(Vars.state.isGame())
                 .setPaused(Vars.state.isPaused())//
-                .setVersion("V" + Version.number + "Build" + Version.build)
-                .setKicks(Vars.netServer.admins.kickedIPs.values().toSeq()
-                        .select(value -> Time.millis() - value < 0).size)//
+                .setVersion(Version.combined())
+                .setKicks(kicks)//
                 .setStatus(Vars.state.isGame() ? "HOST" : "UP")
                 .setStartedAt(Core.settings.getLong("startedAt", System.currentTimeMillis()));
     }
