@@ -539,24 +539,7 @@ public class HttpServer {
             context.get().workflow.getWorkflowEventConsumers().add(client);
         });
 
-        app.sse("events", client -> {
-            client.keepAlive();
-            client.sendEvent(new StartEvent(ServerController.SERVER_ID));
-
-            client.onClose(() -> {
-                eventListener = null;
-            });
-
-            if (eventListener != null) {
-                eventListener.close();
-                client.close();
-                throw new IllegalStateException("Only one event listener is allowed");
-            }
-
-            eventListener = client;
-
-            sendStateUpdate();
-        });
+        app.sse("events", this::onClientConnect);
 
         app.exception(TimeoutException.class, (exception, ctx) -> {
             Log.warn("Timeout exception", exception);
@@ -599,6 +582,25 @@ public class HttpServer {
         }
 
         Log.info("Setup http server done");
+    }
+
+    private synchronized void onClientConnect(SseClient client) {
+        client.onClose(() -> {
+            eventListener = null;
+        });
+
+        client.keepAlive();
+        client.sendEvent(new StartEvent(ServerController.SERVER_ID));
+
+        if (eventListener != null) {
+            eventListener.close();
+            client.close();
+            throw new IllegalStateException("Only one event listener is allowed");
+        }
+
+        eventListener = client;
+
+        sendStateUpdate();
     }
 
     private synchronized void host(StartServerDto request) {
