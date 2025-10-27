@@ -92,7 +92,6 @@ public class GatewayService {
 
 						return Mono.empty();
 					})
-					.timeout(Duration.ofMinutes(5))
 					.retryWhen(Retry.fixedDelay(24, Duration.ofSeconds(10)))
 					.doOnError((error) -> Log.err(error.getMessage()))
 					.doFinally(_ignore -> cache.remove(id))
