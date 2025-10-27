@@ -48,6 +48,7 @@ import dto.PlayerDto;
 import dto.ServerCommandDto;
 import dto.StartServerDto;
 import dto.ServerStateDto;
+import dto.ServerStatus;
 import dto.TeamDto;
 import events.ServerStateEvent;
 import events.StartEvent;
@@ -661,7 +662,7 @@ public class HttpServer {
                 .setPaused(Vars.state.isPaused())//
                 .setVersion(Version.combined())
                 .setKicks(kicks)//
-                .setStatus(Vars.state.isGame() ? "HOST" : "UP")
+                .setStatus(Vars.state.isGame() ? ServerStatus.ONLINE : ServerStatus.STOP)
                 .setStartedAt(Core.settings.getLong("startedAt", System.currentTimeMillis()));
     }
 

@@ -16,6 +16,7 @@ import arc.util.Log;
 import dto.MapDto;
 import dto.ModDto;
 import dto.ServerStateDto;
+import dto.ServerStatus;
 import events.BaseEvent;
 import events.LogEvent;
 import jakarta.annotation.PostConstruct;
@@ -247,7 +248,7 @@ public class ServerService {
                     Log.err(error.getMessage());
                     return Mono.empty();
                 })
-                .defaultIfEmpty(new ServerStateDto().setServerId(serverId).setStatus("NOT_RESPONSE"));
+                .defaultIfEmpty(new ServerStateDto().setServerId(serverId).setStatus(ServerStatus.NOT_RESPONSE));
     }
 
     public Mono<byte[]> getImage(UUID serverId) {
