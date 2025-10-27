@@ -582,14 +582,21 @@ public class HttpServer {
     }
 
     private static synchronized void onClientConnect(SseClient client) {
+        String createdAt = client.ctx().header("X-CREATED-AT");
+
         client.onClose(() -> {
+            Log.info("Client disconnected with createdAt: " + createdAt);
             eventListener = null;
         });
+
+        Log.info("Client connected with createdAt: " + createdAt);
 
         client.keepAlive();
         client.sendEvent(new StartEvent(ServerController.SERVER_ID));
 
         if (eventListener != null) {
+            Log.info("Closing existing event listener with createdAt: " + eventListener.ctx().header("X-CREATED-AT")
+                    + ", terminated: " + eventListener.terminated());
             if (!eventListener.terminated()) {
                 eventListener.close();
             }

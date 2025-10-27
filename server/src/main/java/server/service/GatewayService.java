@@ -188,6 +188,10 @@ public class GatewayService {
 									? "http://localhost:9999/" //
 									: "http://" + id.toString() + ":9999/")
 							.toString())
+					.defaultHeaders(headers -> {
+						headers.set("X-SERVER-ID", id.toString());
+						headers.set("X-CREATED-AT", createdAt.toString());
+					})
 					.defaultStatusHandler(GatewayClient::handleStatus, GatewayClient::createError)
 					.build();
 
