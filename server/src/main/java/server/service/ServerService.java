@@ -128,7 +128,9 @@ public class ServerService {
         Flux<LogEvent> callGatewayFlux = gatewayService.of(serverId)
                 .flatMapMany(gatewayClient -> hostCallGateway(request, gatewayClient));
 
-        return Flux.concat(nodeManager.create(request), callGatewayFlux).doOnError(err -> Log.err(err));
+        return Flux.concat(nodeManager.create(request), callGatewayFlux)
+                .onErrorResume(err -> Mono.just(LogEvent.error(serverId, err.getMessage())).then(Mono.error(err)))
+                .doOnError(Log::err);
     }
 
     private Flux<LogEvent> hostCallGateway(ServerConfig request, GatewayClient gatewayClient) {
