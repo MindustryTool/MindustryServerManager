@@ -53,6 +53,7 @@ import reactor.core.publisher.FluxSink.OverflowStrategy;
 
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.async.ResultCallback;
+import com.github.dockerjava.api.exception.NotFoundException;
 import com.github.dockerjava.api.model.Bind;
 import com.github.dockerjava.api.model.Container;
 import com.github.dockerjava.api.model.Event;
@@ -90,9 +91,15 @@ public class DockerNodeManager implements NodeManager {
             try {
                 emitter.next(LogEvent.info(serverId, "Pulling image: " + request.getImage()));
 
-                dockerClient.pullImageCmd(request.getImage())
-                        .exec(new ResultCallback.Adapter<PullResponseItem>())
-                        .awaitCompletion();
+                try {
+                    dockerClient.pullImageCmd(request.getImage())
+                            .exec(new ResultCallback.Adapter<PullResponseItem>())
+                            .awaitCompletion();
+                } catch (NotFoundException ex) {
+                    emitter.next(LogEvent.error(serverId, "Image not found: " + request.getImage()));
+                    emitter.error(ex);
+                    return;
+                }
 
                 emitter.next(LogEvent.info(serverId, "Image pulled"));
 
