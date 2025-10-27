@@ -43,6 +43,7 @@ import reactor.util.retry.Retry;
 public class ServerService {
     private final GatewayService gatewayService;
     private final NodeManager nodeManager;
+    private final EventBus eventBus;
 
     private final ConcurrentHashMap<UUID, EnumSet<ServerFlag>> serverFlags = new ConcurrentHashMap<>();
     private final LinkedList<FluxSink<BaseEvent>> eventSinks = new LinkedList<>();
@@ -54,16 +55,7 @@ public class ServerService {
 
     @PostConstruct
     private void registerEventHandler() {
-        gatewayService.onEvent(event -> {
-            Log.info("Gateway event published: " + event);
-
-            eventSinks.forEach(sink -> {
-                if (!sink.isCancelled())
-                    sink.next(event);
-            });
-        });
-
-        nodeManager.onEvent(event -> {
+        eventBus.on(event -> {
             eventSinks.forEach(sink -> {
                 if (!sink.isCancelled())
                     sink.next(event);
@@ -275,21 +267,21 @@ public class ServerService {
                     if (shouldKill && shouldAutoTurnOff) {
                         if (flag != null && flag.contains(ServerFlag.KILL)) {
                             var event = LogEvent.info(serverId, "Auto shut down server");
-                            nodeManager.fire(event);
+                            eventBus.fire(event);
                             log.info(event.toString());
                             flag.remove(ServerFlag.KILL);
                             return remove(serverId);
                         } else {
                             flag.add(ServerFlag.KILL);
                             var event = LogEvent.info(serverId, "Server has no players, flag to kill");
-                            nodeManager.fire(event);
+                            eventBus.fire(event);
                             log.info(event.toString());
                             return Mono.empty();
                         }
                     } else {
                         if (flag.contains(ServerFlag.KILL)) {
                             var event = LogEvent.info(serverId, "Remove kill flag from server");
-                            nodeManager.fire(event);
+                            eventBus.fire(event);
                             log.info(event.toString());
                             flag.remove(ServerFlag.KILL);
                             return Mono.empty();
@@ -301,7 +293,7 @@ public class ServerService {
                 .retry(2)//
                 .onErrorResume(error -> {
                     var event = LogEvent.error(serverId, "Error: " + error.getMessage());
-                    nodeManager.fire(event);
+                    eventBus.fire(event);
                     log.error(event.toString());
 
                     return Mono.empty();

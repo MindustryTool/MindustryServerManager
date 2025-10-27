@@ -584,6 +584,7 @@ public class HttpServer {
             app.start(9999);
             Log.info("Http server started on port 9999");
         }
+
         Log.info("Setup http server done");
     }
 

@@ -4,15 +4,10 @@ import java.net.ConnectException;
 import java.net.URI;
 import java.net.UnknownHostException;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Consumer;
-
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
@@ -49,29 +44,11 @@ import reactor.util.retry.Retry;
 public class GatewayService {
 
 	private final Const envConfig;
+	private final EventBus eventBus;
 	private final ConcurrentHashMap<UUID, GatewayClient> cache = new ConcurrentHashMap<>();
-
-	private final List<Consumer<BaseEvent>> eventConsumers = new ArrayList<>(List.of(
-			event -> log.info("Event: {}", event)));
-
-	private final Map<Class<? extends BaseEvent>, List<Consumer<BaseEvent>>> eventConsumerMap = new HashMap<>();
 
 	public synchronized GatewayClient of(UUID serverId) {
 		return cache.computeIfAbsent(serverId, _id -> new GatewayClient(serverId, envConfig));
-	}
-
-	public Runnable onEvent(Consumer<BaseEvent> consumer) {
-		eventConsumers.add(consumer);
-		return () -> eventConsumers.remove(consumer);
-	}
-
-	public <T extends BaseEvent> Runnable on(Class<T> clazz, Consumer<T> consumer) {
-		List<Consumer<BaseEvent>> list = eventConsumerMap.computeIfAbsent(clazz, _clazz -> new ArrayList<>());
-		Consumer<BaseEvent> wrapper = ev -> consumer.accept(clazz.cast(ev));
-
-		list.add(wrapper);
-
-		return () -> list.remove(wrapper);
 	}
 
 	@RequiredArgsConstructor
@@ -111,9 +88,7 @@ public class GatewayService {
 
 						Log.info("Event received: " + data.toString());
 
-						eventConsumers.forEach(consumer -> consumer.accept(data));
-
-						eventConsumerMap.getOrDefault(eventType, List.of()).forEach(c -> c.accept(data));
+						eventBus.fire(data);
 
 						return Mono.empty();
 					})

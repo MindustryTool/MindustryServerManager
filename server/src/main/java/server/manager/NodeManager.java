@@ -1,10 +1,7 @@
 package server.manager;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.function.Consumer;
-
 import arc.files.Fi;
 import server.types.data.NodeUsage;
 import server.types.data.ServerConfig;
@@ -16,28 +13,11 @@ import dto.MapDto;
 import dto.ModDto;
 import dto.ServerFileDto;
 import dto.ServerStateDto;
-import events.BaseEvent;
 import events.LogEvent;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-public abstract class NodeManager {
-
-    private final ArrayList<Consumer<BaseEvent>> consumers = new ArrayList<>();
-
-    public Runnable onEvent(Consumer<BaseEvent> consumer) {
-        consumers.add(consumer);
-
-        return () -> consumers.remove(consumer);
-    };
-
-    public <T extends BaseEvent> T fire(T event) {
-        for (var consumer : consumers) {
-            consumer.accept(event);
-        }
-
-        return event;
-    }
+public interface NodeManager {
 
     public abstract Flux<LogEvent> create(ServerConfig config);
 
@@ -45,8 +25,12 @@ public abstract class NodeManager {
 
     public abstract Mono<Void> remove(UUID id);
 
-    public abstract Flux<ServerMisMatch> getMismatch(UUID id, ServerConfig config, ServerStateDto state,
-            List<ModDto> mods);
+    public abstract Flux<ServerMisMatch> getMismatch(//
+            UUID id, //
+            ServerConfig config, //
+            ServerStateDto state,
+            List<ModDto> mods//
+    );
 
     public abstract Flux<NodeUsage> getNodeUsage(UUID serverId);
 

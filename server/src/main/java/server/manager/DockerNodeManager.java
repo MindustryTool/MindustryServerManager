@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.nio.channels.AsynchronousCloseException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -21,15 +20,13 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import com.github.dockerjava.core.DefaultDockerClientConfig;
-import com.github.dockerjava.core.DockerClientImpl;
-import com.github.dockerjava.httpclient5.ApacheDockerHttpClient;
-
 import arc.files.Fi;
 import arc.util.Log;
 import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
 import server.EnvConfig;
 import server.config.Const;
+import server.service.EventBus;
 import server.types.data.NodeUsage;
 import server.types.data.ServerConfig;
 import server.types.data.ServerMetadata;
@@ -70,32 +67,18 @@ import com.github.dockerjava.api.model.Statistics;
 import com.github.dockerjava.api.model.Volume;
 
 @Service
-public class DockerNodeManager extends NodeManager {
+@RequiredArgsConstructor
+public class DockerNodeManager implements NodeManager {
     private final DockerClient dockerClient;
     private final EnvConfig envConfig;
     private final WebClient webClient;
+    private final EventBus eventBus;
 
     private final Map<UUID, ResultCallback.Adapter<Frame>> logCallbacks = new ConcurrentHashMap<>();
 
     private static final Fi SERVER_FOLDER = new Fi(Const.volumeFolderPath).child("servers");
 
-    public DockerNodeManager(EnvConfig envConfig, WebClient webClient) {
-        this.envConfig = envConfig;
-        this.webClient = webClient;
-
-        var dockerConfig = DefaultDockerClientConfig.createDefaultConfigBuilder()//
-                .withDockerHost("unix:///var/run/docker.sock")
-                .build();
-
-        var dockerHttpClient = new ApacheDockerHttpClient.Builder()
-                .dockerHost(dockerConfig.getDockerHost())//
-                .sslConfig(dockerConfig.getSSLConfig())//
-                .connectionTimeout(Duration.ofSeconds(2))//
-                .responseTimeout(Duration.ofSeconds(5))//
-                .build();
-
-        this.dockerClient = DockerClientImpl.getInstance(dockerConfig, dockerHttpClient);
-
+    static {
         SERVER_FOLDER.mkdirs();
     }
 
@@ -438,9 +421,9 @@ public class DockerNodeManager extends NodeManager {
                                         metadata.getConfig().getId(),
                                         id -> createLogCallack(containerId, id));
 
-                                fire(new StartEvent(serverId));
+                                eventBus.fire(new StartEvent(serverId));
                             } else if (stopEvents.stream().anyMatch(stop -> status.equalsIgnoreCase(stop))) {
-                                fire(new StopEvent(serverId));
+                                eventBus.fire(new StopEvent(serverId));
                             }
                         });
 
@@ -474,7 +457,7 @@ public class DockerNodeManager extends NodeManager {
                     return;
                 }
 
-                fire(LogEvent.info(serverId, message));
+                eventBus.fire(LogEvent.info(serverId, message));
             }
 
             @Override
