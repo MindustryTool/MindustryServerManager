@@ -73,6 +73,9 @@ public class HttpServer {
     public static void fire(Object event) {
         if (eventListener == null) {
             buffer.add(event);
+            if (buffer.size() > 1000) {
+                buffer.remove(0);
+            }
         } else {
             eventListener.sendEvent(event);
         }
