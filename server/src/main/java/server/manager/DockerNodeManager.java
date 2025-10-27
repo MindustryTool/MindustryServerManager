@@ -429,7 +429,8 @@ public class DockerNodeManager implements NodeManager {
 
                         String name = optional
                                 .map(meta -> meta.getConfig().getName())
-                                .orElse(event.getFrom());
+                                .or(() -> Optional.ofNullable(event.getFrom()))
+                                .orElse(event.getId());
 
                         String message = "Server %s %s %s".formatted(name, event.getStatus(), action);
 
