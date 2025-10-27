@@ -36,8 +36,10 @@ import dto.ServerCommandDto;
 import dto.ServerStateDto;
 import events.BaseEvent;
 import events.StopEvent;
+import jakarta.annotation.PreDestroy;
 import server.utils.ApiError;
 import server.utils.Utils;
+import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -59,6 +61,11 @@ public class GatewayService {
 						.timeout(Duration.ofMinutes(1)));
 	}
 
+	@PreDestroy
+	private void cancelAll() {
+		cache.values().forEach(mono -> mono.block(Duration.ofSeconds(25)).cancel());
+	}
+
 	@RequiredArgsConstructor
 	public class GatewayClient {
 
@@ -72,10 +79,13 @@ public class GatewayService {
 
 		private final Instant createdAt = Instant.now();
 
+		private final Disposable eventJob;
+
 		public GatewayClient(UUID id, Const envConfig, Consumer<GatewayClient> onConnect) {
 			this.id = id;
 			this.server = new Server();
-			this.server.getEvents()
+
+			this.eventJob = this.server.getEvents()
 					.flatMap(event -> {
 						var name = event.get("name").asText(null);
 
@@ -107,14 +117,18 @@ public class GatewayService {
 					})
 					.retryWhen(Retry.fixedDelay(6, Duration.ofSeconds(10)))
 					.doOnError((error) -> Log.err(error.getMessage()))
-					.doFinally(_ignore -> close())
+					.doFinally(_ignore -> remove())
 					.subscribeOn(Schedulers.boundedElastic())
 					.subscribe();
 
 			Log.info("Create GatewayClient for server: " + id);
 		}
 
-		private void close() {
+		public void cancel() {
+			eventJob.dispose();
+		}
+
+		private void remove() {
 			cache.remove(id);
 			Log.info("Close GatewayClient for server: " + id + " running for "
 					+ Utils.toReadableString(Duration.between(createdAt, Instant.now())));
