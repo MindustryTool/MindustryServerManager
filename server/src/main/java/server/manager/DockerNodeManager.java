@@ -205,17 +205,6 @@ public class DockerNodeManager implements NodeManager {
 
                 command.withExposedPorts(exposedPorts)//
                         .withEnv(env)
-                        // .withHealthcheck(
-                        // new HealthCheck()//
-                        // .withInterval(100000000000L)//
-                        // .withRetries(5)
-                        // .withTimeout(100000000000L) // 10 seconds
-                        // .withTest(List.of(
-                        // "CMD",
-                        // "sh",
-                        // "-c",
-                        // "wget --spider -q http://" + serverId.toString()
-                        // + ":9999/ok || exit 1")))
                         .withHostConfig(HostConfig.newHostConfig()//
                                 .withPortBindings(portBindings)//
                                 .withNetworkMode("mindustry-server")//
