@@ -1,6 +1,7 @@
 package server.service;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.LinkedList;
 import java.util.UUID;
@@ -55,13 +56,24 @@ public class ServerService {
         RESTART
     }
 
+    private final ArrayList<BaseEvent> buffer = new ArrayList<>();
+
     @PostConstruct
     private void registerEventHandler() {
         eventBus.on(event -> {
-            eventSinks.forEach(sink -> {
-                if (!sink.isCancelled())
-                    sink.next(event);
-            });
+            if (eventSinks.size() == 0) {
+                buffer.add(event);
+
+                if (buffer.size() > 1000) {
+                    buffer.remove(0);
+                }
+
+            } else {
+                eventSinks.forEach(sink -> {
+                    if (!sink.isCancelled())
+                        sink.next(event);
+                });
+            }
         });
     }
 
@@ -71,6 +83,14 @@ public class ServerService {
                 eventSinks.remove(emitter);
                 Log.info("Client disconnected: " + eventSinks.size());
             });
+
+            ArrayList<BaseEvent> copy = new ArrayList<>(buffer);
+
+            buffer.clear();
+
+            for (BaseEvent event : copy) {
+                emitter.next(event);
+            }
 
             eventSinks.add(emitter);
 
