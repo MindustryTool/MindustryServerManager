@@ -641,10 +641,12 @@ public class HttpServer {
 
         List<ModDto> mods = Vars.mods == null //
                 ? Arrays.asList()
-                : Vars.mods.list().map(mod -> new ModDto()//
-                        .setFilename(mod.file.name())//
-                        .setName(mod.name)
-                        .setMeta(ModMetaDto.from(mod.meta)))
+                : Vars.mods.list()
+                        .select((mod) -> mod.meta.hidden == false)
+                        .map(mod -> new ModDto()//
+                                .setFilename(mod.file.name())//
+                                .setName(mod.name)
+                                .setMeta(ModMetaDto.from(mod.meta)))
                         .list();
 
         ArrayList<Player> players = new ArrayList<Player>();
