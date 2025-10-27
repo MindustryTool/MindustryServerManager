@@ -669,10 +669,13 @@ public class HttpServer {
                 .setPlayers(p)//
                 .setMapName(mapName)
                 .setMods(mods)//
-                .setPaused(Vars.state.isPaused())//
                 .setVersion(Version.combined())
                 .setKicks(kicks)//
-                .setStatus(Vars.state.isGame() ? ServerStatus.ONLINE : ServerStatus.STOP)
+                .setStatus(Vars.state.isGame() //
+                        ? Vars.state.isPaused()//
+                                ? ServerStatus.PAUSED
+                                : ServerStatus.ONLINE
+                        : ServerStatus.STOP)
                 .setStartedAt(Core.settings.getLong("startedAt", System.currentTimeMillis()));
     }
 

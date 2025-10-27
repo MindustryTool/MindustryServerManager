@@ -16,7 +16,6 @@ public class ServerStateDto {
     private List<ModDto> mods = new ArrayList<>();
     private ServerStatus status = ServerStatus.UNSET;
     private int kicks = 0;
-    private boolean isPaused = false;
     private String version = "custom";
     private Long startedAt = System.currentTimeMillis();
 }

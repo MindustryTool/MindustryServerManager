@@ -6,5 +6,6 @@ public enum ServerStatus {
     ONLINE,
     OFFLINE,
     NOT_RESPONSE,
+    PAUSED,
     UNKNOWN,
 }
