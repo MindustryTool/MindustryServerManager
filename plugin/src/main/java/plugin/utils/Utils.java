@@ -45,7 +45,7 @@ public class Utils {
 
                 if (mode != null) {
                     try {
-                        preset = Gamemode.valueOf(mode);
+                        preset = Gamemode.valueOf(mode.toLowerCase());
                     } catch (IllegalArgumentException event) {
                         Log.err("No gamemode '@' found.", mode);
                         return;
@@ -97,7 +97,7 @@ public class Utils {
         try {
             v.get(timeout, TimeUnit.MILLISECONDS);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Time out when executing: " + r.toString() + " in " + timeout + "ms", e);
         }
     }
 
@@ -118,7 +118,7 @@ public class Utils {
         try {
             return future.get(timeout, TimeUnit.MILLISECONDS);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Time out when executing: " + fn.toString() + " in " + timeout + "ms", e);
         }
     }
 
