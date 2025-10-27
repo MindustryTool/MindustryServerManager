@@ -50,10 +50,11 @@ public class GatewayService {
 	private final EventBus eventBus;
 	private final ConcurrentHashMap<UUID, Mono<GatewayClient>> cache = new ConcurrentHashMap<>();
 
-	public synchronized Mono<GatewayClient> of(UUID serverId) {
+	public Mono<GatewayClient> of(UUID serverId) {
 		return cache.computeIfAbsent(serverId,
 				_id -> Mono.<GatewayClient>create((emittor) -> new GatewayClient(serverId, envConfig, emittor::success))
-						.timeout(Duration.ofMinutes(1)));
+						.timeout(Duration.ofMinutes(1)))
+				.cache();
 	}
 
 	@RequiredArgsConstructor
