@@ -9,7 +9,6 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import arc.util.Log;
@@ -60,8 +59,6 @@ public class EventHandler {
             .maximumSize(1000)
             .build();
 
-    private static ScheduledFuture<?> updateServerTask, updateServerCore;
-
     private static final List<String> icons = Arrays.asList(//
             "", "", "", "", "", "", "", "", "", "", //
             "", "", "", "", "", "", "", "", "", "", //
@@ -76,7 +73,7 @@ public class EventHandler {
         if (Config.IS_HUB) {
             setupCustomServerDiscovery();
 
-            updateServerTask = ServerController.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(() -> {
+            ServerController.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(() -> {
                 try {
                     var request = new PaginationRequest().setPage(page).setSize(size);
 
@@ -88,7 +85,7 @@ public class EventHandler {
                 }
             }, 0, 30, TimeUnit.SECONDS);
 
-            updateServerCore = ServerController.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(() -> {
+            ServerController.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(() -> {
                 try {
                     var map = Vars.state.map;
 
@@ -168,17 +165,6 @@ public class EventHandler {
     }
 
     public static void unload() {
-        Log.info("Unloading EventHandler");
-        if (updateServerTask != null) {
-            updateServerTask.cancel(true);
-            Log.info("Update server task cancelled");
-        }
-
-        if (updateServerCore != null) {
-            updateServerCore.cancel(true);
-            Log.info("Update server core task cancelled");
-        }
-
         translationCache.invalidateAll();
         translationCache = null;
 
