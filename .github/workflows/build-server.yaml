@@ -1,6 +1,12 @@
 name: Build server and push to GitHub Container Registry
 on:
   push:
+    paths:
+      - 'server/**'
+      - 'dto/**'
+      - 'build.gradle'
+      - 'settings.gradle'
+
 jobs:
   build:
     runs-on: ubuntu-latest

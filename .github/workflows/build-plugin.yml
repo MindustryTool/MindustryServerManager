@@ -1,6 +1,13 @@
 name: Build plugin jar
 
-on: [push]
+on: 
+  push:
+    paths:
+      - 'plugin/**'
+      - 'dto/**'
+      - 'build.gradle'
+      - 'settings.gradle'
+
 
 jobs:
    buildJar:

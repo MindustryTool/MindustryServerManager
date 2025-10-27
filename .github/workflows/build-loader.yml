@@ -1,6 +1,9 @@
 name: Build loader jar
 
-on: [push]
+on:
+  push:
+    paths:
+      - 'loader/**'
 
 jobs:
    buildJar:

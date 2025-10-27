@@ -70,9 +70,9 @@ public class ServerService {
                 Log.info("Client disconnected: " + eventSinks.size());
             });
 
-            Log.info("Client connected: " + eventSinks.size());
-
             eventSinks.add(emitter);
+            
+            Log.info("Client connected: " + eventSinks.size());
         });
 
         return eventSink;
