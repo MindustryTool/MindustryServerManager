@@ -104,7 +104,7 @@ public class ServerService {
     @PostConstruct
     private void scanServer() {
         nodeManager.list()
-                .filter(state -> state.meta.isPresent())
+                .filter(state -> state.meta.isPresent() && state.running())
                 .flatMap(state -> gatewayService.of(state.meta.get().getConfig().getId()))
                 .subscribeOn(Schedulers.boundedElastic())
                 .doOnError(ApiError.class, error -> Log.err(error.getMessage()))
