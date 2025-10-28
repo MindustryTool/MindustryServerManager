@@ -58,8 +58,7 @@ public class GatewayService {
 	public Mono<GatewayClient> of(UUID serverId) {
 		return cache.computeIfAbsent(serverId,
 				_id -> Mono.<GatewayClient>create((emittor) -> new GatewayClient(serverId, envConfig, emittor::success))
-						.cache()
-						.timeout(Duration.ofMinutes(30)));
+						.cache());
 	}
 
 	@PreDestroy
