@@ -661,14 +661,15 @@ public class DockerNodeManager implements NodeManager {
         }
 
         Fi baseFile = getBaseFile(serverId);
-        Fi newFile = baseFile.child(path);
+        String relative = path.replace(baseFile.absolutePath(), "");
+        Fi newFile = baseFile.child(relative);
 
         if (!newFile.absolutePath().contains(baseFile.absolutePath())) {
             throw new ApiError(HttpStatus.FORBIDDEN,
-                    "Path is not in server folder: " + path + ":" + newFile.absolutePath());
+                    "Path is not in server folder: " + relative + ":" + newFile.absolutePath());
         }
 
-        return Mono.just(baseFile.child(path));
+        return Mono.just(newFile);
 
     }
 
@@ -683,7 +684,7 @@ public class DockerNodeManager implements NodeManager {
         return getFile(serverId, path)
                 .map(file -> {
                     if (!file.exists()) {
-                        throw new ApiError(HttpStatus.NOT_FOUND, path);
+                        throw new ApiError(HttpStatus.NOT_FOUND, file.absolutePath());
                     }
 
                     String ext = file.extension();
