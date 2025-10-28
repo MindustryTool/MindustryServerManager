@@ -47,6 +47,11 @@ public class FileUtils {
 
     public static void writeFile(String path, byte[] data) {
         var file = new Fi(path);
+        var parent = file.parent();
+
+        if (!parent.exists()) {
+            parent.mkdirs();
+        }
 
         if (file.exists()) {
             deleteFile(file);

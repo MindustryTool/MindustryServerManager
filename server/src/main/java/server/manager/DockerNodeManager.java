@@ -659,7 +659,15 @@ public class DockerNodeManager implements NodeManager {
             return Mono.error(new IllegalArgumentException("Invalid path: " + path));
         }
 
-        return Mono.just(getBaseFile(serverId).child(path));
+        Fi baseFile = getBaseFile(serverId);
+        Fi newFile = baseFile.child(path);
+
+        if (!newFile.absolutePath().contains(baseFile.absolutePath())) {
+            throw new ApiError(HttpStatus.FORBIDDEN,
+                    "Path is not in server folder: " + path + ":" + newFile.absolutePath());
+        }
+
+        return Mono.just(baseFile.child(path));
 
     }
 
@@ -673,6 +681,10 @@ public class DockerNodeManager implements NodeManager {
     public Object getFiles(UUID serverId, String path) {
         return getFile(serverId, path)
                 .map(file -> {
+                    if (!file.exists()) {
+                        throw new ApiError(HttpStatus.NOT_FOUND, path);
+                    }
+
                     String ext = file.extension();
 
                     if (!file.isDirectory() && List.of("png", "jpg", "jpeg").contains(ext)) {

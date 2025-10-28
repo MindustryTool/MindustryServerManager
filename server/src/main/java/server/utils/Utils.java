@@ -207,7 +207,7 @@ public class Utils {
 
         return new MapDto()//
                 .setName(map.name())//
-                .setFilename(map.file.absolutePath().replace(baseFolder.absolutePath(), ""))
+                .setFilename(map.file.absolutePath())
                 .setCustom(map.custom)
                 .setHeight(map.height)
                 .setWidth(map.width);
