@@ -141,8 +141,6 @@ public class ServerController extends Plugin implements MindustryToolPlugin {
 
     @Override
     public void unload() {
-        isUnloaded = true;
-
         Log.info("Unload: " + this);
 
         HttpServer.unload();
@@ -151,13 +149,15 @@ public class ServerController extends Plugin implements MindustryToolPlugin {
         ApiGateway.unload();
         SessionHandler.clear();
         Workflow.clear();
-        
+
         EventHandler.unload();
         HudHandler.unload();
         VoteHandler.unload();
 
         BACKGROUND_TASK_EXECUTOR.shutdownNow();
         BACKGROUND_SCHEDULER.shutdownNow();
+
+        isUnloaded = true;
 
         Log.info("Server controller stopped: " + this);
     }
