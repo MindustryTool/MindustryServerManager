@@ -177,7 +177,6 @@ public class ServerService {
                     "config name %s".formatted(request.getName()), //
                     "config desc %s".formatted(request.getDescription()), //
                     "config port 6567", //
-                    "config",
                     "version"
             };
 

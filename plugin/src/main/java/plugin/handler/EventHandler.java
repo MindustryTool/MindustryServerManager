@@ -36,7 +36,7 @@ import dto.PlayerDto;
 import plugin.type.PlayerPressCallback;
 import plugin.type.ServerCore;
 import dto.TeamDto;
-import dto.ServerResponseData;
+import dto.ServerDto;
 import mindustry.net.Administration.PlayerInfo;
 import mindustry.world.Tile;
 import mindustry.world.blocks.campaign.Accelerator;
@@ -45,7 +45,7 @@ import java.time.Duration;
 
 public class EventHandler {
 
-    private static List<ServerResponseData> servers = new ArrayList<>();
+    private static List<ServerDto> servers = new ArrayList<>();
     private static final List<ServerCore> serverCores = new ArrayList<>();
 
     private static int page = 0;
@@ -77,8 +77,7 @@ public class EventHandler {
                 try {
                     var request = new PaginationRequest().setPage(page).setSize(size);
 
-                    var response = ApiGateway.getServers(request);
-                    servers = response.getServers();
+                    servers = ApiGateway.getServers(request);
 
                 } catch (Throwable e) {
                     e.printStackTrace();
@@ -200,7 +199,7 @@ public class EventHandler {
                     && tapY >= core.getY() - tapSize
                     && tapY <= core.getY() + tapSize//
             ) {
-                onServerChoose(event.player, core.getServer().id.toString(), core.getServer().name);
+                onServerChoose(event.player, core.getServer().getId().toString(), core.getServer().getName());
             }
         }
     }
@@ -423,11 +422,10 @@ public class EventHandler {
         }
     }
 
-    public static synchronized ServerResponseData getTopServer() {
+    public static synchronized ServerDto getTopServer() {
         try {
             var request = new PaginationRequest().setPage(0).setSize(1);
-            var response = ApiGateway.getServers(request);
-            var servers = response.getServers();
+            var servers = ApiGateway.getServers(request);
 
             if (servers.isEmpty()) {
                 return null;
@@ -460,14 +458,14 @@ public class EventHandler {
 
                 if (serverData != null //
                         && !serverData.getId().equals(ServerController.SERVER_ID)
-                        && serverData.players > 0//
+                        && serverData.getPlayers() > 0//
                 ) {
                     var options = Arrays.asList(//
                             HudHandler.option((p, state) -> {
                                 HudHandler.closeFollowDisplay(p, HudHandler.SERVER_REDIRECT);
                             }, "[red]No"),
                             HudHandler.option((p, state) -> {
-                                onServerChoose(p, serverData.id.toString(), serverData.name);
+                                onServerChoose(p, serverData.getId().toString(), serverData.getName());
                                 HudHandler.closeFollowDisplay(p, HudHandler.SERVER_REDIRECT);
                             }, "[green]Yes"));
                     HudHandler.showFollowDisplay(player, HudHandler.SERVER_REDIRECT, "Redirect",
@@ -544,8 +542,7 @@ public class EventHandler {
             var size = 8;
             var request = new PaginationRequest().setPage(page).setSize(size);
 
-            var response = ApiGateway.getServers(request);
-            var servers = response.getServers();
+            var servers = ApiGateway.getServers(request);
 
             PlayerPressCallback invalid = (p, s) -> {
                 sendServerList(p, (int) s);
@@ -554,7 +551,7 @@ public class EventHandler {
 
             List<List<HudOption>> options = new ArrayList<>();
 
-            servers.stream().sorted(Comparator.comparing(ServerResponseData::getPlayers).reversed()).forEach(server -> {
+            servers.stream().sorted(Comparator.comparing(ServerDto::getPlayers).reversed()).forEach(server -> {
                 PlayerPressCallback valid = (p, s) -> onServerChoose(p, server.getId().toString(),
                         server.getName());
 

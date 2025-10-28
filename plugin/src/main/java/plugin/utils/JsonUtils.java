@@ -1,6 +1,7 @@
 package plugin.utils;
 
 import java.io.IOException;
+import java.util.List;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -25,6 +26,14 @@ public class JsonUtils {
     public static <T> T readJsonAsClass(String data, Class<T> clazz) {
         try {
             return objectMapper.readValue(data, clazz);
+        } catch (Exception e) {
+            throw new RuntimeException("Can not parse to json: " + e.getMessage(), e);
+        }
+    }
+
+    public static <T> List<T> readJsonAsArrayClass(String data, Class<T> clazz) {
+        try {
+            return objectMapper.readerForArrayOf(clazz).readValue(data);
         } catch (Exception e) {
             throw new RuntimeException("Can not parse to json: " + e.getMessage(), e);
         }

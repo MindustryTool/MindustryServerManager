@@ -1,11 +1,11 @@
 package plugin.type;
 
 import lombok.Data;
-import dto.ServerResponseData;
+import dto.ServerDto;
 
 @Data
 public class ServerCore {
-    private final ServerResponseData server;
+    private final ServerDto server;
     private final int x;
     private final int y;
 }

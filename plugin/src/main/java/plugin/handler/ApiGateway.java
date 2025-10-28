@@ -2,6 +2,8 @@ package plugin.handler;
 
 import java.net.URI;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -15,7 +17,6 @@ import arc.util.Http.HttpStatusException;
 import arc.util.Log;
 import arc.util.Strings;
 import plugin.utils.JsonUtils;
-import plugin.utils.Utils;
 import plugin.ServerController;
 import dto.MindustryPlayerDto;
 import plugin.type.PaginationRequest;
@@ -26,7 +27,7 @@ public class ApiGateway {
 
     private static final ConcurrentHashMap<String, Object> locks = new ConcurrentHashMap<>();
 
-    public static Cache<PaginationRequest, ServerDto> serverQueryCache = Caffeine.newBuilder()
+    public static Cache<PaginationRequest, List<ServerDto>> serverQueryCache = Caffeine.newBuilder()
             .expireAfterWrite(Duration.ofSeconds(15))
             .maximumSize(10)
             .build();
@@ -58,19 +59,39 @@ public class ApiGateway {
     }
 
     private static void send(HttpRequest req) {
-        send(req, 2, Void.class);
+        send(req, 2000);
     }
 
     private static <T> T send(HttpRequest req, Class<T> clazz) {
-        return send(req, 2, clazz);
+        return send(req, 2000, clazz);
     }
 
     @SuppressWarnings("unchecked")
-    private static <T> T send(HttpRequest req, int timeout, Class<T> clazz) {
-        CompletableFuture<T> res = new CompletableFuture<>();
+    private static <T> T send(HttpRequest req, int timeoutMilis, Class<T> clazz) {
+        String response = send(req, timeoutMilis);
+
+        if (clazz.equals(Void.class)) {
+            return null;
+        }
+
+        if (clazz.equals(String.class)) {
+            return (T) response;
+        }
+
+        return JsonUtils.readJsonAsClass(response, clazz);
+
+    }
+
+    private static <T> List<T> sendList(HttpRequest req, int timeoutMilis, Class<T> clazz) {
+        String response = send(req, timeoutMilis);
+        return JsonUtils.readJsonAsArrayClass(response, clazz);
+    }
+
+    private static String send(HttpRequest req, int timeoutMilis) {
+        CompletableFuture<String> res = new CompletableFuture<>();
         req
                 .header("X-SERVER-ID", ServerController.SERVER_ID.toString())
-                .timeout(timeout * 1000)
+                .timeout(timeoutMilis)
                 .redirects(true)
                 .error(error -> {
                     if (error instanceof HttpStatusException) {
@@ -82,26 +103,10 @@ public class ApiGateway {
                     }
                 })
                 .submit(response -> {
-                    try {
-                        if (clazz.equals(Void.class)) {
-                            res.complete(null);
-                            return;
-                        }
-
-                        if (clazz.equals(String.class)) {
-                            res.complete((T) response.getResultAsString());
-                            return;
-                        }
-
-                        res.complete(JsonUtils
-                                .readJsonAsClass(Utils.readInputStreamAsString(response.getResultAsStream()), clazz));
-                    } catch (Exception e) {
-                        res.completeExceptionally(e);
-                    }
-
+                    res.complete(response.getResultAsString());
                 });
         try {
-            return res.get(timeout, TimeUnit.SECONDS);
+            return res.get(timeoutMilis, TimeUnit.MILLISECONDS);
         } catch (Throwable e) {
             throw new RuntimeException(req.method + " " + req.url, e);
         }
@@ -168,15 +173,16 @@ public class ApiGateway {
         }
     }
 
-    public static synchronized ServerDto getServers(PaginationRequest request) {
+    public static synchronized List<ServerDto> getServers(PaginationRequest request) {
         return serverQueryCache.get(request, _ignore -> {
             try {
-                return send(
+                return sendList(
                         get(String.format("servers?page=%s&size=%s", request.getPage(), request.getSize())),
+                        2000,
                         ServerDto.class);
             } catch (Exception e) {
                 e.printStackTrace();
-                return new ServerDto();
+                return new ArrayList<>();
             }
         });
     }

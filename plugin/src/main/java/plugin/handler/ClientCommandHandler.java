@@ -296,8 +296,7 @@ public class ClientCommandHandler {
                         .setPage(page)//
                         .setSize(size);
 
-                var response = ApiGateway.getServers(request);
-                var servers = response.getServers();
+                var servers = ApiGateway.getServers(request);
 
                 PlayerPressCallback invalid = (p, s) -> {
                     Call.infoToast(p.con, "Please don't click there", 10f);
