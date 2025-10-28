@@ -323,7 +323,6 @@ public class GatewayService {
 						.uri("hosting")
 						.retrieve()
 						.bodyToMono(Boolean.class)
-						.retryWhen(Retry.fixedDelay(10 * 4, Duration.ofMillis(100)))
 						.onErrorReturn(false), Duration.ofMillis(100), "Check hosting");
 			}
 
