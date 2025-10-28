@@ -18,7 +18,6 @@ import java.util.concurrent.TimeUnit;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
 
 import arc.files.Fi;
 import arc.util.Log;
@@ -32,7 +31,6 @@ import server.types.data.NodeUsage;
 import server.types.data.ServerConfig;
 import server.types.data.ServerMetadata;
 import server.types.data.ServerState;
-import server.types.data.WebhookMessage;
 import server.types.data.ServerMisMatch;
 import dto.ManagerMapDto;
 import dto.ManagerModDto;
@@ -73,7 +71,6 @@ import com.github.dockerjava.api.model.Volume;
 public class DockerNodeManager implements NodeManager {
     private final DockerClient dockerClient;
     private final EnvConfig envConfig;
-    private final WebClient webClient;
     private final EventBus eventBus;
 
     private final Map<UUID, ResultCallback.Adapter<Frame>> logCallbacks = new ConcurrentHashMap<>();
@@ -452,16 +449,6 @@ public class DockerNodeManager implements NodeManager {
                         String message = "Server %s %s %s".formatted(name, event.getStatus(), action);
 
                         Log.info(message);
-
-                        webClient.post()
-                                .uri(Const.discordWebhook)
-                                .bodyValue(new WebhookMessage(message))
-                                .retrieve()
-                                .bodyToMono(Void.class)
-                                .onErrorResume(Exception.class, ex -> {
-                                    ex.printStackTrace();
-                                    return Mono.empty();
-                                }).subscribe();
                     }
                 });
     }

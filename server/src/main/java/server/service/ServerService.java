@@ -107,6 +107,8 @@ public class ServerService {
                 .filter(state -> state.meta.isPresent())
                 .flatMap(state -> gatewayService.of(state.meta.get().getConfig().getId()))
                 .subscribeOn(Schedulers.boundedElastic())
+                .doOnError(ApiError.class, error -> Log.err(error.getMessage()))
+                .onErrorComplete(ApiError.class)
                 .subscribe();
     }
 
@@ -130,6 +132,8 @@ public class ServerService {
 
                     return Mono.empty();
                 })
+                .doOnError(ApiError.class, error -> Log.err(error.getMessage()))
+                .onErrorComplete(ApiError.class)
                 .timeout(Duration.ofMinutes(5))
                 .subscribeOn(Schedulers.boundedElastic())
                 .blockLast();

@@ -59,13 +59,18 @@ public class GatewayService {
 
 	public Mono<GatewayClient> of(UUID serverId) {
 		return cache.computeIfAbsent(serverId,
-				_id -> Mono.<GatewayClient>create((emittor) -> new GatewayClient(serverId, envConfig, emittor::success, emittor::error))
+				_id -> Mono.<GatewayClient>create(
+						(emittor) -> new GatewayClient(serverId, envConfig, emittor::success, emittor::error))
 						.cache());
 	}
 
 	@PreDestroy
 	private void cancelAll() {
-		cache.values().forEach(mono -> mono.block(Duration.ofSeconds(25)).cancel());
+		cache.values()
+				.forEach(mono -> mono
+						.doOnError(ApiError.class, error -> Log.err(error.getMessage()))
+						.onErrorComplete(ApiError.class)
+						.block(Duration.ofSeconds(25)).cancel());
 	}
 
 	@RequiredArgsConstructor
@@ -141,7 +146,10 @@ public class GatewayService {
 			Log.info("Close GatewayClient for server: " + id + " running for "
 					+ Utils.toReadableString(Duration.between(createdAt, Instant.now())));
 
-			nodeManager.remove(id).subscribe();
+			nodeManager.remove(id)
+					.doOnError(ApiError.class, error -> Log.err(error.getMessage()))
+					.onErrorComplete(ApiError.class)
+					.subscribe();
 			eventBus.fire(new StopEvent(id));
 		}
 
