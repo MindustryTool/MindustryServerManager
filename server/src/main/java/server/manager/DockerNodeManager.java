@@ -593,7 +593,7 @@ public class DockerNodeManager implements NodeManager {
         }
 
         return Flux.fromIterable(result.values()).map(entry -> {
-            var map = Utils.loadMap(entry.getT1());
+            var map = Utils.loadMap(getBaseFile(entry.getT2().get(0)), entry.getT1());
             var servers = entry.getT2();
 
             return new ManagerMapDto()//
@@ -636,7 +636,7 @@ public class DockerNodeManager implements NodeManager {
     public Flux<MapDto> getMaps(UUID serverId) {
         return getFile(serverId, "maps")
                 .filter(folder -> folder.exists())
-                .flatMapIterable(folder -> folder.findAll().map(Utils::loadMap));
+                .flatMapIterable(folder -> folder.findAll().map(file -> Utils.loadMap(getBaseFile(serverId), file)));
     }
 
     @Override
@@ -646,16 +646,20 @@ public class DockerNodeManager implements NodeManager {
                 .flatMapIterable(folder -> folder.findAll(Utils::isModFile).map(Utils::loadMod));
     }
 
+    public Fi getBaseFile(UUID serverId) {
+        var basePath = Paths.get(Const.volumeFolderPath, "servers", serverId.toString(), "config").toAbsolutePath()
+                .toString();
+
+        return new Fi(basePath);
+    }
+
     @Override
     public Mono<Fi> getFile(UUID serverId, String path) {
         if (path.contains("..") || path.contains("./")) {
             return Mono.error(new IllegalArgumentException("Invalid path: " + path));
         }
 
-        var basePath = Paths.get(Const.volumeFolderPath, "servers", serverId.toString(), "config")
-                .toAbsolutePath().toString();
-
-        return Mono.just(new Fi(basePath).child(path));
+        return Mono.just(getBaseFile(serverId).child(path));
 
     }
 

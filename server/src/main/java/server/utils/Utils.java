@@ -195,7 +195,7 @@ public class Utils {
         return file.extension().equalsIgnoreCase("msav");
     }
 
-    public static MapDto loadMap(Fi file) {
+    public static MapDto loadMap(Fi baseFolder, Fi file) {
         mindustry.maps.Map map = null;
 
         try {
@@ -207,7 +207,7 @@ public class Utils {
 
         return new MapDto()//
                 .setName(map.name())//
-                .setFilename(map.file.name())
+                .setFilename(map.file.absolutePath().replace(baseFolder.absolutePath(), ""))
                 .setCustom(map.custom)
                 .setHeight(map.height)
                 .setWidth(map.width);
