@@ -160,7 +160,7 @@ public class GatewayService {
 
 		public class Server {
 
-			public boolean isConnectionException(Throwable e) {
+			private boolean isConnectionException(Throwable e) {
 				if (e == null) {
 					return false;
 				}
@@ -256,14 +256,6 @@ public class GatewayService {
 						Duration.ofSeconds(5), "Get players");
 			}
 
-			public Mono<Void> ok() {
-				return wrapError(webClient.method(HttpMethod.GET)
-						.uri("ok")
-						.retrieve()
-						.bodyToMono(Void.class)
-						.retryWhen(Retry.fixedDelay(400, Duration.ofMillis(100))), Duration.ofSeconds(40), "Check ok");
-			}
-
 			public Mono<ServerStateDto> getState() {
 				return wrapError(
 						webClient.method(HttpMethod.GET)
@@ -322,8 +314,7 @@ public class GatewayService {
 				return wrapError(webClient.method(HttpMethod.GET)
 						.uri("hosting")
 						.retrieve()
-						.bodyToMono(Boolean.class)
-						.onErrorReturn(false), Duration.ofMillis(100), "Check hosting");
+						.bodyToMono(Boolean.class), Duration.ofMillis(100), "Check hosting");
 			}
 
 			public Flux<ServerCommandDto> getCommands() {

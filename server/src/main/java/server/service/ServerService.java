@@ -162,48 +162,50 @@ public class ServerService {
         Flux<LogEvent> waitingOkFlux = Flux.concat(//
                 Mono.just(LogEvent.info(serverId, "Waiting for server to start")), //
                 serverGateway//
-                        .ok()
+                        .isHosting()
+                        .retryWhen(Retry.fixedDelay(400, Duration.ofMillis(100)))
                         .thenReturn(LogEvent.info(serverId, "Server started, waiting for hosting")));
 
-        Flux<LogEvent> hostFlux = serverGateway.isHosting().flatMapMany(isHosting -> {
+        Flux<LogEvent> hostFlux = serverGateway.isHosting()
+                .flatMapMany(isHosting -> {
 
-            if (isHosting) {
-                var event = LogEvent.info(serverId, "Server is hosting, do nothing");
-                Log.info("Server is hosting, do nothing");
-                return Flux.just(event);
-            }
+                    if (isHosting) {
+                        var event = LogEvent.info(serverId, "Server is hosting, do nothing");
+                        Log.info("Server is hosting, do nothing");
+                        return Flux.just(event);
+                    }
 
-            String[] preHostCommand = { //
-                    "config name %s".formatted(request.getName()), //
-                    "config desc %s".formatted(request.getDescription()), //
-                    "config port 6567", //
-                    "version"
-            };
+                    String[] preHostCommand = { //
+                            "config name %s".formatted(request.getName()), //
+                            "config desc %s".formatted(request.getDescription()), //
+                            "config port 6567", //
+                            "version"
+                    };
 
-            Flux<LogEvent> sendCommandFlux = Flux.concat(
-                    Flux.fromArray(preHostCommand)
-                            .map(cmd -> LogEvent.info(serverId, cmd)),
-                    serverGateway//
-                            .sendCommand(preHostCommand)
-                            .thenReturn(LogEvent.info(serverId, "Config done")));
+                    Flux<LogEvent> sendCommandFlux = Flux.concat(
+                            Flux.fromArray(preHostCommand)
+                                    .map(cmd -> LogEvent.info(serverId, cmd)),
+                            serverGateway//
+                                    .sendCommand(preHostCommand)
+                                    .thenReturn(LogEvent.info(serverId, "Config done")));
 
-            Flux<LogEvent> sendHostFlux = Flux.concat(
-                    Mono.just(LogEvent.info(serverId, "Host server")),
-                    serverGateway.host(request).then(Mono.empty()));
+                    Flux<LogEvent> sendHostFlux = Flux.concat(
+                            Mono.just(LogEvent.info(serverId, "Host server")),
+                            serverGateway.host(request).then(Mono.empty()));
 
-            Flux<LogEvent> waitForStatusFlux = Flux.concat(
-                    Mono.just(LogEvent.info(serverId, "Wait for server status")),
-                    serverGateway.isHosting()//
-                            .flatMap(b -> b //
-                                    ? Mono.empty()
-                                    : ApiError.badRequest("Server is not hosting yet"))//
-                            .retryWhen(Retry.fixedDelay(600, Duration.ofMillis(100)))
-                            .onErrorMap(IllegalStateException.class,
-                                    error -> new ApiError(HttpStatus.BAD_GATEWAY, "Can not host server"))
-                            .thenReturn(LogEvent.info(serverId, "Server hosting")));
+                    Flux<LogEvent> waitForStatusFlux = Flux.concat(
+                            Mono.just(LogEvent.info(serverId, "Wait for server status")),
+                            serverGateway.isHosting()//
+                                    .flatMap(b -> b //
+                                            ? Mono.empty()
+                                            : ApiError.badRequest("Server is not hosting yet"))//
+                                    .retryWhen(Retry.fixedDelay(600, Duration.ofMillis(100)))
+                                    .onErrorMap(IllegalStateException.class,
+                                            error -> new ApiError(HttpStatus.BAD_GATEWAY, "Can not host server"))
+                                    .thenReturn(LogEvent.info(serverId, "Server hosting")));
 
-            return Flux.concat(sendCommandFlux, sendHostFlux, waitForStatusFlux);
-        });
+                    return Flux.concat(sendCommandFlux, sendHostFlux, waitForStatusFlux);
+                });
 
         return Flux.concat(waitingOkFlux, hostFlux);
     }
@@ -250,10 +252,6 @@ public class ServerService {
 
     public Mono<Boolean> deleteFile(UUID serverId, String path) {
         return nodeManager.deleteFile(serverId, path);
-    }
-
-    public Mono<Void> ok(UUID serverId) {
-        return gatewayService.of(serverId).flatMap(client -> client.getServer().ok());
     }
 
     public Flux<NodeUsage> getUsage(UUID serverId) {

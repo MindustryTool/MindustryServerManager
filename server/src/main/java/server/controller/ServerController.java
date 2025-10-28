@@ -155,11 +155,6 @@ public class ServerController {
         return serverService.getImage(serverId);
     }
 
-    @GetMapping("/servers/{id}/ok")
-    public Mono<Void> ok(@PathVariable("id") UUID serverId) {
-        return serverService.ok(serverId);
-    }
-
     @GetMapping("servers/{id}/mods")
     public Flux<ModDto> getMods(@PathVariable("id") UUID serverId) {
         return serverService.getMods(serverId);

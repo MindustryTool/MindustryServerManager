@@ -166,11 +166,6 @@ public class HttpServer {
             ctx.contentType(ContentType.IMAGE_PNG).result(mapPreview);
         });
 
-        app.get("ok", (ctx) -> {
-            ctx.contentType(ContentType.APPLICATION_JSON);
-            ctx.json("Ok");
-        });
-
         app.get("plugin-version", ctx -> {
             ctx.contentType(ContentType.APPLICATION_JSON);
             ctx.json(Config.PLUGIN_VERSION);
