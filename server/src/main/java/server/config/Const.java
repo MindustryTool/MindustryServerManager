@@ -69,7 +69,7 @@ public class Const implements WebFluxConfigurer {
                 .configure(DeserializationFeature.FAIL_ON_UNRESOLVED_OBJECT_IDS, false)//
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)//
                 .configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true)//
-                .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)//
+                .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, true)//
                 .setSerializationInclusion(JsonInclude.Include.NON_NULL)//
                 .registerModule(module);
     }
