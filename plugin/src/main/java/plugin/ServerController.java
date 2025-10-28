@@ -141,8 +141,6 @@ public class ServerController extends Plugin implements MindustryToolPlugin {
 
     @Override
     public void unload() {
-        Log.info("Unload: " + this);
-
         HttpServer.unload();
         ClientCommandHandler.unload();
         ServerCommandHandler.unload();
