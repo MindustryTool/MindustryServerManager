@@ -57,7 +57,7 @@ public class GatewayService {
 
 	public Mono<GatewayClient> of(UUID serverId) {
 		return cache.computeIfAbsent(serverId,
-				_id -> Mono.<GatewayClient>create((emittor) -> new GatewayClient(serverId, envConfig, emittor::success))
+				_id -> Mono.<GatewayClient>create((emittor) -> new GatewayClient(serverId, envConfig, emittor::success, emittor::error))
 						.cache());
 	}
 
@@ -81,7 +81,7 @@ public class GatewayService {
 
 		private final Disposable eventJob;
 
-		public GatewayClient(UUID id, Const envConfig, Consumer<GatewayClient> onConnect) {
+		public GatewayClient(UUID id, Const envConfig, Consumer<GatewayClient> onConnect, Consumer<Throwable> onError) {
 			this.id = id;
 			this.server = new Server();
 
@@ -121,7 +121,7 @@ public class GatewayService {
 					.onErrorMap(Exceptions::isRetryExhausted,
 							error -> new ApiError(HttpStatus.BAD_REQUEST,
 									"Fetch events timeout: " + error.getMessage()))
-					.doOnError((error) -> Log.err(error.getMessage()))
+					.doOnError((error) -> onError.accept(error))
 					.onErrorComplete(ApiError.class)
 					.doFinally(_ignore -> remove())
 					.subscribeOn(Schedulers.boundedElastic())
