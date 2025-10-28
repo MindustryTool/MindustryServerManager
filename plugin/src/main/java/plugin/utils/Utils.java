@@ -18,6 +18,7 @@ import mindustry.game.Gamemode;
 import mindustry.maps.Map;
 import mindustry.maps.MapException;
 import plugin.ServerController;
+import plugin.handler.HttpServer;
 
 public class Utils {
 
@@ -65,22 +66,14 @@ public class Utils {
                 Log.info("Randomized next map to be @.", result.plainName());
             }
 
-            Log.info("Logic reset");
             Vars.logic.reset();
-
-            Log.info("Load map");
             Vars.world.loadMap(result, result.applyRules(preset));
-
-            Log.info("Apply rules");
             Vars.state.rules = result.applyRules(preset);
-
-            Log.info("Play logic");
             Vars.logic.play();
-
-            Log.info("Open server");
             Vars.netServer.openServer();
 
-            Log.info("Server started.");
+            HttpServer.sendStateUpdate();
+
         } catch (MapException event) {
             Log.err("@: @", event.map.plainName(), event.getMessage());
         } finally {
