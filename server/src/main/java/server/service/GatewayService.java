@@ -58,7 +58,7 @@ public class GatewayService {
 		return cache.computeIfAbsent(serverId,
 				_id -> Mono.<GatewayClient>create((emittor) -> new GatewayClient(serverId, envConfig, emittor::success))
 						.cache()
-						.timeout(Duration.ofMinutes(1)));
+						.timeout(Duration.ofMinutes(30)));
 	}
 
 	@PreDestroy
@@ -115,7 +115,7 @@ public class GatewayService {
 
 						return Mono.empty();
 					})
-					.retryWhen(Retry.fixedDelay(6, Duration.ofSeconds(10)))
+					.retryWhen(Retry.fixedDelay(60, Duration.ofSeconds(1)))
 					.doOnError((error) -> Log.err(error.getMessage()))
 					.doFinally(_ignore -> remove())
 					.subscribeOn(Schedulers.boundedElastic())
