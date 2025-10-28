@@ -37,6 +37,7 @@ import plugin.type.PlayerPressCallback;
 import plugin.type.ServerCore;
 import dto.TeamDto;
 import dto.ServerDto;
+import dto.ServerStatus;
 import mindustry.net.Administration.PlayerInfo;
 import mindustry.world.Tile;
 import mindustry.world.blocks.campaign.Accelerator;
@@ -109,9 +110,10 @@ public class EventHandler {
                                     int messageX = map.width / 2 * 8 + offsetX;
                                     int messageY = map.height / 2 * 8 + offsetY + 25;
 
-                                    var serverStatus = server.getStatus().equals("HOST")
-                                            ? "[green]" + server.getStatus()
-                                            : "[red]" + server.getStatus();
+                                    var serverStatus = server.getStatus().equals(ServerStatus.ONLINE)
+                                            || server.getStatus().equals(ServerStatus.PAUSED)
+                                                    ? "[green]" + server.getStatus()
+                                                    : "[red]" + server.getStatus();
 
                                     var mods = server.getMods();
                                     mods.removeIf(m -> m.trim().equalsIgnoreCase("mindustrytoolplugin"));

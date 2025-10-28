@@ -19,7 +19,6 @@ import reactor.core.publisher.Mono;
 @Slf4j
 @RequiredArgsConstructor
 public class RequestFilter implements WebFilter {
-    @SuppressWarnings("null")
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
         var start = Instant.now();

@@ -50,7 +50,7 @@ public class Const implements WebFluxConfigurer {
     }
 
     @Override
-    public void configureHttpMessageCodecs(@SuppressWarnings("null") ServerCodecConfigurer configurer) {
+    public void configureHttpMessageCodecs(ServerCodecConfigurer configurer) {
         configurer.defaultCodecs().maxInMemorySize(16 * 1024 * 1024);
     }
 
