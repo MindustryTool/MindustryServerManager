@@ -30,7 +30,7 @@ public class ApiService {
 
         MultipartBodyBuilder builder = new MultipartBodyBuilder();
 
-        builder.part("data", mapData, MediaType.APPLICATION_OCTET_STREAM).filename("map");
+        builder.part("file", mapData, MediaType.APPLICATION_OCTET_STREAM).filename("map");
 
         return Utils.wrapError(webClient.method(HttpMethod.POST)//
                 .uri("maps/image")//
