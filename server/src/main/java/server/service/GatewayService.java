@@ -40,6 +40,7 @@ import jakarta.annotation.PreDestroy;
 import server.utils.ApiError;
 import server.utils.Utils;
 import reactor.core.Disposable;
+import reactor.core.Exceptions;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -116,7 +117,11 @@ public class GatewayService {
 						return Mono.empty();
 					})
 					.retryWhen(Retry.fixedDelay(60, Duration.ofSeconds(1)))
-					.onErrorMap(TimeoutException.class, error -> new RuntimeException("Fetch events timeout"))
+					.onErrorMap(TimeoutException.class,
+							error -> new ApiError(HttpStatus.BAD_REQUEST, "Fetch events timeout"))
+					.onErrorMap(Exceptions::isRetryExhausted,
+							error -> new ApiError(HttpStatus.BAD_REQUEST,
+									"Fetch events timeout: " + error.getMessage()))
 					.doOnError((error) -> Log.err(error.getMessage()))
 					.doFinally(_ignore -> remove())
 					.subscribeOn(Schedulers.boundedElastic())
