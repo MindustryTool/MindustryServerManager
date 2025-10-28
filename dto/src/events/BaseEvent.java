@@ -4,6 +4,8 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.UUID;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
@@ -30,6 +32,8 @@ public abstract class BaseEvent {
 
     private UUID serverId;
     private String name;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss.SSS", timezone="UTC")
     private Instant createdAt = Instant.now();
 
     public BaseEvent(UUID serverId, String name) {
