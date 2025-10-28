@@ -215,11 +215,13 @@ public class PluginLoader extends Plugin {
 
     private void unloadPlugin(PluginData pluginData) {
         try {
+            WeakReference<MindustryToolPlugin> ref = plugins.get(pluginData.getId());
 
-            MindustryToolPlugin plugin = plugins.get(pluginData.getId()).get();
-
-            if (plugin != null) {
-                plugin.unload();
+            if (ref != null) {
+                MindustryToolPlugin plugin = ref.get();
+                if (plugin != null) {
+                    plugin.unload();
+                }
             }
 
             plugins.remove(pluginData.getId());
