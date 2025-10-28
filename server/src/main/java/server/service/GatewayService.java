@@ -116,6 +116,7 @@ public class GatewayService {
 						return Mono.empty();
 					})
 					.retryWhen(Retry.fixedDelay(60, Duration.ofSeconds(1)))
+					.onErrorMap(TimeoutException.class, error -> new RuntimeException("Fetch events timeout"))
 					.doOnError((error) -> Log.err(error.getMessage()))
 					.doFinally(_ignore -> remove())
 					.subscribeOn(Schedulers.boundedElastic())
