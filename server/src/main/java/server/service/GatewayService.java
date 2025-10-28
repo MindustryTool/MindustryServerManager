@@ -28,6 +28,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import server.config.Const;
+import server.manager.NodeManager;
 import server.types.data.ServerConfig;
 import dto.MindustryToolPlayerDto;
 import dto.PlayerDto;
@@ -53,6 +54,7 @@ public class GatewayService {
 
 	private final Const envConfig;
 	private final EventBus eventBus;
+	private final NodeManager nodeManager;
 	private final ConcurrentHashMap<UUID, Mono<GatewayClient>> cache = new ConcurrentHashMap<>();
 
 	public Mono<GatewayClient> of(UUID serverId) {
@@ -139,6 +141,7 @@ public class GatewayService {
 			Log.info("Close GatewayClient for server: " + id + " running for "
 					+ Utils.toReadableString(Duration.between(createdAt, Instant.now())));
 
+			nodeManager.remove(id).subscribe();
 			eventBus.fire(new StopEvent(id));
 		}
 
