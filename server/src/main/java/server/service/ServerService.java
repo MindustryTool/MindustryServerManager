@@ -260,8 +260,8 @@ public class ServerService {
 
                             if (filename.endsWith("msav")) {
                                 apiService.getMapPreview(bytes)
-                                        .flatMap(previewBytes -> nodeManager.writeFile(serverId, path + ".png",
-                                                previewBytes))
+                                        .map(image -> Utils.toByteArray(Utils.toPreviewImage(Utils.fromBytes(image))))
+                                        .flatMap(image -> nodeManager.writeFile(serverId, path + ".png", image))
                                         .subscribeOn(Schedulers.boundedElastic())
                                         .doOnError(Log::err)
                                         .onErrorComplete()

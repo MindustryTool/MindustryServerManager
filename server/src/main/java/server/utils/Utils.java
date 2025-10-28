@@ -1,6 +1,9 @@
 package server.utils;
 
+import java.awt.Dimension;
+import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -50,10 +53,10 @@ public class Utils {
 
     public static final Json json = new Json();
 
-    public static synchronized byte[] toByteArray(BufferedImage image) {
+    public static byte[] toByteArray(BufferedImage image) {
         try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            ImageIO.write(image, "webp", baos);
+            ImageIO.write(image, "png", baos);
             return baos.toByteArray();
 
         } catch (IOException e) {
@@ -292,4 +295,37 @@ public class Utils {
                 .map(message -> new ApiError(HttpStatus.valueOf(response.statusCode().value()), message));
     }
 
+    public static BufferedImage fromBytes(byte[] data) {
+        try {
+            return ImageIO.read(new ByteArrayInputStream(data));
+        } catch (Exception e) {
+            throw new ApiError(HttpStatus.INTERNAL_SERVER_ERROR, "internal-server-error", e);
+        }
+    }
+
+    public static BufferedImage toPreviewImage(BufferedImage image) {
+        try {
+
+            var size = Math.max(image.getWidth(), image.getHeight());
+
+            var width = image.getWidth() * 360 / size;
+            var height = image.getHeight() * 360 / size;
+
+            var scaledSize = new Dimension(width, height);
+            var resizedImage = new BufferedImage(
+                    (int) scaledSize.getWidth(),
+                    (int) scaledSize.getHeight(),
+                    BufferedImage.TYPE_INT_ARGB//
+            );
+
+            Graphics2D g = resizedImage.createGraphics();
+
+            g.drawImage(image, 0, 0, (int) scaledSize.getWidth(), (int) scaledSize.getHeight(), null);
+            g.dispose();
+
+            return resizedImage;
+        } catch (Exception e) {
+            throw new ApiError(HttpStatus.INTERNAL_SERVER_ERROR, "internal-server-error", e);
+        }
+    }
 }
