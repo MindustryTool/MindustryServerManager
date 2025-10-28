@@ -636,7 +636,8 @@ public class DockerNodeManager implements NodeManager {
     public Flux<MapDto> getMaps(UUID serverId) {
         return getFile(serverId, "maps")
                 .filter(folder -> folder.exists())
-                .flatMapIterable(folder -> folder.findAll().map(file -> Utils.loadMap(getBaseFile(serverId), file)));
+                .flatMapIterable(folder -> folder.findAll(Utils::isMapFile)
+                        .map(file -> Utils.loadMap(getBaseFile(serverId), file)));
     }
 
     @Override
