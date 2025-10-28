@@ -176,7 +176,7 @@ public class PluginLoader extends Plugin {
         metaFile.writeString(meta.toPrettyString());
     }
 
-    private void checkAndUpdate(PluginData plugin) throws Exception {
+    private synchronized void checkAndUpdate(PluginData plugin) throws Exception {
         String updatedAt = plugin.getPluginVersion().getUpdatedAt();
         String currentUpdatedAt = readCurrentUpdatedAt(plugin);
 
