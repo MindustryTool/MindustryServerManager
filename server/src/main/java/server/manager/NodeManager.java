@@ -11,7 +11,6 @@ import dto.ManagerMapDto;
 import dto.ManagerModDto;
 import dto.MapDto;
 import dto.ModDto;
-import dto.ServerFileDto;
 import dto.ServerStateDto;
 import events.LogEvent;
 import reactor.core.publisher.Flux;
@@ -42,7 +41,7 @@ public interface NodeManager {
 
     public abstract Flux<ModDto> getMods(UUID serverId);
 
-    public abstract Flux<ServerFileDto> getFiles(UUID serverId, String path);
+    public abstract Object getFiles(UUID serverId, String path);
 
     public abstract Mono<Fi> getFile(UUID serverId, String path);
 

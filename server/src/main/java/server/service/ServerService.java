@@ -29,7 +29,6 @@ import server.types.data.ServerMisMatch;
 import dto.ManagerMapDto;
 import dto.ManagerModDto;
 import dto.MindustryToolPlayerDto;
-import dto.ServerFileDto;
 import server.manager.NodeManager;
 import server.service.GatewayService.GatewayClient;
 import server.utils.ApiError;
@@ -47,6 +46,7 @@ public class ServerService {
     private final GatewayService gatewayService;
     private final NodeManager nodeManager;
     private final EventBus eventBus;
+    private final ApiService apiService;
 
     private final ConcurrentHashMap<UUID, EnumSet<ServerFlag>> serverFlags = new ConcurrentHashMap<>();
     private final LinkedList<FluxSink<BaseEvent>> eventSinks = new LinkedList<>();
@@ -242,7 +242,7 @@ public class ServerService {
         return nodeManager.getMods(serverId);
     }
 
-    public Flux<ServerFileDto> getFiles(UUID serverId, String path) {
+    public Object getFiles(UUID serverId, String path) {
         return nodeManager.getFiles(serverId, path);
     }
 
@@ -251,7 +251,20 @@ public class ServerService {
     }
 
     public Mono<Void> writeFile(UUID serverId, String path, FilePart filePart) {
-        return Utils.readAllBytes(filePart).flatMap(bytes -> nodeManager.writeFile(serverId, path, bytes));
+
+        return Utils.readAllBytes(filePart)
+                .flatMap(bytes -> nodeManager.writeFile(serverId, path, bytes).then(Mono.fromRunnable(() -> {
+                    String filename = filePart.filename();
+
+                    if (filename.endsWith("msav")) {
+                        apiService.getMapPreview(bytes)
+                                .flatMap(previewBytes -> nodeManager.writeFile(serverId, path + ".png", previewBytes))
+                                .subscribeOn(Schedulers.boundedElastic())
+                                .doOnError(Log::err)
+                                .onErrorComplete()
+                                .subscribe();
+                    }
+                })));
     }
 
     public Mono<Boolean> deleteFile(UUID serverId, String path) {

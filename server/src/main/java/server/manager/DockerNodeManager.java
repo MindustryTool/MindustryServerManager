@@ -15,7 +15,10 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -36,7 +39,6 @@ import dto.ManagerMapDto;
 import dto.ManagerModDto;
 import dto.MapDto;
 import dto.ModDto;
-import dto.ServerFileDto;
 import dto.ServerStateDto;
 import events.LogEvent;
 import events.StartEvent;
@@ -664,9 +666,21 @@ public class DockerNodeManager implements NodeManager {
     }
 
     @Override
-    public Flux<ServerFileDto> getFiles(UUID serverId, String path) {
+    public Object getFiles(UUID serverId, String path) {
         return getFile(serverId, path)
-                .flatMapIterable(folder -> FileUtils.getFiles(folder.absolutePath()));
+                .map(file -> {
+                    String ext = file.extension();
+
+                    if (!file.isDirectory() && List.of("png", "jpg", "jpeg").contains(ext)) {
+                        byte[] data = file.readBytes();
+
+                        return ResponseEntity.ok()//
+                                .contentType(MediaType.parseMediaType("image/" + ext))//
+                                .cacheControl(CacheControl.maxAge(31536000, TimeUnit.SECONDS)).body(data);
+                    }
+
+                    return FileUtils.getFiles(file.absolutePath());
+                });
     }
 
     @Override

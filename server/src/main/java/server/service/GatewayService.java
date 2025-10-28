@@ -1,8 +1,6 @@
 package server.service;
 
-import java.net.ConnectException;
 import java.net.URI;
-import java.net.UnknownHostException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
@@ -14,13 +12,9 @@ import java.util.function.Consumer;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.reactive.function.client.WebClientRequestException;
-
 import com.fasterxml.jackson.databind.JsonNode;
 
 import arc.util.Log;
@@ -150,67 +144,11 @@ public class GatewayService {
 					.doOnError(ApiError.class, error -> Log.err(error.getMessage()))
 					.onErrorComplete(ApiError.class)
 					.subscribe();
+
 			eventBus.fire(new StopEvent(id));
 		}
 
-		private static boolean handleStatus(HttpStatusCode status) {
-			return switch (HttpStatus.valueOf(status.value())) {
-				case BAD_REQUEST, NOT_FOUND, UNPROCESSABLE_ENTITY, CONFLICT -> true;
-				default -> false;
-			};
-		}
-
-		private static Mono<Throwable> createError(ClientResponse response) {
-			return response.bodyToMono(JsonNode.class)
-					.map(message -> new ApiError(HttpStatus.valueOf(response.statusCode().value()),
-							message.has("message") //
-									? message.get("message").asText()
-									: message.toString()));
-		}
-
 		public class Server {
-
-			private boolean isConnectionException(Throwable e) {
-				if (e == null) {
-					return false;
-				}
-
-				return e instanceof ConnectException || isConnectionException(e.getCause());
-			}
-
-			private <T> Mono<T> wrapError(Mono<T> publisher, Duration timeout, String message) {
-				return publisher
-						.onErrorMap(WebClientRequestException.class, error -> {
-							if (error.getCause() instanceof UnknownHostException) {
-								return new ApiError(HttpStatus.NOT_FOUND, "Server not found: " + error.getMessage());
-							}
-
-							if (isConnectionException(error.getCause())) {
-								return new ApiError(HttpStatus.BAD_REQUEST,
-										"Can not connect to server: " + error.getMessage());
-							}
-
-							return error;
-						})
-						.timeout(timeout)
-						.onErrorMap(TimeoutException.class,
-								error -> new ApiError(HttpStatus.BAD_REQUEST, "Timeout error: " + message));
-			}
-
-			private <T> Flux<T> wrapError(Flux<T> publisher, Duration timeout, String message) {
-				return publisher
-						.onErrorMap(WebClientRequestException.class, error -> {
-							if (error.getCause() instanceof UnknownHostException) {
-								return new ApiError(HttpStatus.NOT_FOUND, "Server not found");
-							}
-
-							return error;
-						})
-						.timeout(timeout)
-						.onErrorMap(TimeoutException.class,
-								error -> new ApiError(HttpStatus.BAD_REQUEST, "Timeout error: " + message));
-			}
-
 			private final WebClient webClient = WebClient.builder()
 					.codecs(configurer -> configurer
 							.defaultCodecs()
@@ -224,25 +162,25 @@ public class GatewayService {
 						headers.set("X-SERVER-ID", id.toString());
 						headers.set("X-CREATED-AT", createdAt.toString());
 					})
-					.defaultStatusHandler(GatewayClient::handleStatus, GatewayClient::createError)
+					.defaultStatusHandler(Utils::handleStatus, Utils::createError)
 					.build();
 
 			public Mono<JsonNode> getJson() {
-				return wrapError(webClient.method(HttpMethod.GET)//
+				return Utils.wrapError(webClient.method(HttpMethod.GET)//
 						.uri("json")//
 						.retrieve()//
 						.bodyToMono(JsonNode.class), Duration.ofSeconds(5), "Get json");
 			}
 
 			public Mono<String> getPluginVersion() {
-				return wrapError(webClient.method(HttpMethod.GET)//
+				return Utils.wrapError(webClient.method(HttpMethod.GET)//
 						.uri("plugin-version")//
 						.retrieve()//
 						.bodyToMono(String.class), Duration.ofSeconds(5), "Get plugin version");
 			}
 
 			public Mono<Void> updatePlayer(MindustryToolPlayerDto request) {
-				return wrapError(webClient.method(HttpMethod.PUT)//
+				return Utils.wrapError(webClient.method(HttpMethod.PUT)//
 						.uri("players/" + request.getUuid())//
 						.bodyValue(request)//
 						.retrieve()//
@@ -251,14 +189,14 @@ public class GatewayService {
 			}
 
 			public Mono<Boolean> pause() {
-				return wrapError(webClient.method(HttpMethod.POST)
+				return Utils.wrapError(webClient.method(HttpMethod.POST)
 						.uri("pause")
 						.retrieve()
 						.bodyToMono(Boolean.class), Duration.ofSeconds(5), "Pause");
 			}
 
 			public Flux<PlayerDto> getPlayers() {
-				return wrapError(
+				return Utils.wrapError(
 						webClient.method(HttpMethod.GET)
 								.uri("players")
 								.retrieve()
@@ -267,7 +205,7 @@ public class GatewayService {
 			}
 
 			public Mono<ServerStateDto> getState() {
-				return wrapError(
+				return Utils.wrapError(
 						webClient.method(HttpMethod.GET)
 								.uri("state")
 								.retrieve()
@@ -277,7 +215,7 @@ public class GatewayService {
 			}
 
 			public Mono<byte[]> getImage() {
-				return wrapError(
+				return Utils.wrapError(
 						webClient.method(HttpMethod.GET)
 								.uri("image")
 								.accept(MediaType.IMAGE_PNG)
@@ -288,7 +226,7 @@ public class GatewayService {
 			}
 
 			public Mono<Void> sendCommand(String... command) {
-				return wrapError(
+				return Utils.wrapError(
 						webClient.method(HttpMethod.POST)
 								.uri("commands")
 								.bodyValue(command)
@@ -299,7 +237,7 @@ public class GatewayService {
 			}
 
 			public Mono<Void> say(String message) {
-				return wrapError(
+				return Utils.wrapError(
 						webClient.method(HttpMethod.POST)
 								.uri("say")
 								.bodyValue(message)
@@ -310,7 +248,7 @@ public class GatewayService {
 			}
 
 			public Mono<Void> host(ServerConfig request) {
-				return wrapError(
+				return Utils.wrapError(
 						webClient.method(HttpMethod.POST)
 								.uri("host")
 								.bodyValue(request)
@@ -321,21 +259,21 @@ public class GatewayService {
 			}
 
 			public Mono<Boolean> isHosting() {
-				return wrapError(webClient.method(HttpMethod.GET)
+				return Utils.wrapError(webClient.method(HttpMethod.GET)
 						.uri("hosting")
 						.retrieve()
 						.bodyToMono(Boolean.class), Duration.ofMillis(100), "Check hosting");
 			}
 
 			public Flux<ServerCommandDto> getCommands() {
-				return wrapError(webClient.method(HttpMethod.GET)
+				return Utils.wrapError(webClient.method(HttpMethod.GET)
 						.uri("commands")
 						.retrieve()
 						.bodyToFlux(ServerCommandDto.class), Duration.ofSeconds(10), "Get commands");
 			}
 
 			public Flux<PlayerInfoDto> getPlayers(int page, int size, Boolean banned, String filter) {
-				return wrapError(
+				return Utils.wrapError(
 						webClient.method(HttpMethod.GET)
 								.uri(builder -> builder.path("players-info")
 										.queryParam("page", page)
@@ -350,7 +288,7 @@ public class GatewayService {
 			}
 
 			public Mono<Map<String, Long>> getKickedIps() {
-				return wrapError(
+				return Utils.wrapError(
 						webClient.method(HttpMethod.GET)
 								.uri("kicked-ips")
 								.retrieve()
@@ -361,7 +299,7 @@ public class GatewayService {
 			}
 
 			public Mono<JsonNode> getRoutes() {
-				return wrapError(
+				return Utils.wrapError(
 						webClient.method(HttpMethod.GET)
 								.uri("routes")
 								.retrieve()
@@ -371,7 +309,7 @@ public class GatewayService {
 			}
 
 			public Mono<JsonNode> getWorkflowNodes() {
-				return wrapError(
+				return Utils.wrapError(
 						webClient.method(HttpMethod.GET)
 								.uri("workflow/nodes")
 								.retrieve()
@@ -381,7 +319,7 @@ public class GatewayService {
 			}
 
 			public Flux<JsonNode> getWorkflowEvents() {
-				return wrapError(
+				return Utils.wrapError(
 						webClient.method(HttpMethod.GET)
 								.uri("workflow/events")
 								.accept(MediaType.TEXT_EVENT_STREAM)
@@ -392,28 +330,28 @@ public class GatewayService {
 			}
 
 			public Mono<JsonNode> emitWorkflowNode(String nodeId) {
-				return wrapError(webClient.method(HttpMethod.GET)
+				return Utils.wrapError(webClient.method(HttpMethod.GET)
 						.uri("workflow/emit/" + nodeId)
 						.retrieve()
 						.bodyToMono(JsonNode.class), Duration.ofSeconds(10), "Emit workflow node");
 			}
 
 			public Mono<Long> getWorkflowVersion() {
-				return wrapError(webClient.method(HttpMethod.GET)
+				return Utils.wrapError(webClient.method(HttpMethod.GET)
 						.uri("/workflow/version")
 						.retrieve()
 						.bodyToMono(Long.class), Duration.ofSeconds(10), " Get workflow version");
 			}
 
 			public Mono<JsonNode> getWorkflow() {
-				return wrapError(webClient.method(HttpMethod.GET)
+				return Utils.wrapError(webClient.method(HttpMethod.GET)
 						.uri("/workflow")
 						.retrieve()
 						.bodyToMono(JsonNode.class), Duration.ofSeconds(10), "Get workflow");
 			}
 
 			public Mono<Void> saveWorkflow(JsonNode payload) {
-				return wrapError(webClient.method(HttpMethod.POST)
+				return Utils.wrapError(webClient.method(HttpMethod.POST)
 						.uri("/workflow")
 						.bodyValue(payload)
 						.retrieve()
@@ -421,7 +359,7 @@ public class GatewayService {
 			}
 
 			public Mono<JsonNode> loadWorkflow(JsonNode payload) {
-				return wrapError(webClient.method(HttpMethod.POST)
+				return Utils.wrapError(webClient.method(HttpMethod.POST)
 						.uri("/workflow/load")
 						.bodyValue(payload)
 						.retrieve()
@@ -429,7 +367,7 @@ public class GatewayService {
 			}
 
 			public Flux<JsonNode> getEvents() {
-				return wrapError(webClient.get()
+				return Utils.wrapError(webClient.get()
 						.uri("events")
 						.accept(MediaType.TEXT_EVENT_STREAM)
 						.retrieve()

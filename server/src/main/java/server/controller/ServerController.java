@@ -46,7 +46,6 @@ import events.BaseEvent;
 import events.LogEvent;
 import dto.PlayerInfoDto;
 import dto.ServerCommandDto;
-import dto.ServerFileDto;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -65,7 +64,7 @@ public class ServerController {
     }
 
     @GetMapping("/servers/{id}/files")
-    public Flux<ServerFileDto> getFiles(@PathVariable("id") UUID serverId, @RequestParam("path") String path) {
+    public Object getFiles(@PathVariable("id") UUID serverId, @RequestParam("path") String path) {
         return serverService.getFiles(serverId, URLDecoder.decode(path, StandardCharsets.UTF_8));
     }
 

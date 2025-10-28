@@ -4,14 +4,20 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.net.ConnectException;
+import java.net.UnknownHostException;
 import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.TimeoutException;
 
 import javax.imageio.ImageIO;
 
 import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.codec.multipart.FilePart;
+import org.springframework.web.reactive.function.client.ClientResponse;
+import org.springframework.web.reactive.function.client.WebClientRequestException;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -31,6 +37,7 @@ import dto.ModMetaDto;
 import mindustry.core.Version;
 import mindustry.io.MapIO;
 import mindustry.mod.Mods.ModMeta;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 public class Utils {
@@ -230,6 +237,62 @@ public class Utils {
 
         String result = sb.toString().trim();
         return result.isEmpty() ? "0s" : result;
+    }
+
+    public static boolean isConnectionException(Throwable e) {
+        if (e == null) {
+            return false;
+        }
+
+        return e instanceof ConnectException || isConnectionException(e.getCause());
+    }
+
+    public static <T> Mono<T> wrapError(Mono<T> publisher, Duration timeout, String message) {
+        return publisher
+                .onErrorMap(WebClientRequestException.class, error -> {
+                    if (error.getCause() instanceof UnknownHostException) {
+                        return new ApiError(HttpStatus.NOT_FOUND, "Server not found: " + error.getMessage());
+                    }
+
+                    if (isConnectionException(error.getCause())) {
+                        return new ApiError(HttpStatus.BAD_REQUEST,
+                                "Can not connect to server: " + error.getMessage());
+                    }
+
+                    return error;
+                })
+                .timeout(timeout)
+                .onErrorMap(TimeoutException.class,
+                        error -> new ApiError(HttpStatus.BAD_REQUEST, "Timeout error: " + message));
+    }
+
+    public static <T> Flux<T> wrapError(Flux<T> publisher, Duration timeout, String message) {
+        return publisher
+                .onErrorMap(WebClientRequestException.class, error -> {
+                    if (error.getCause() instanceof UnknownHostException) {
+                        return new ApiError(HttpStatus.NOT_FOUND, "Server not found");
+                    }
+
+                    return error;
+                })
+                .timeout(timeout)
+                .onErrorMap(TimeoutException.class,
+                        error -> new ApiError(HttpStatus.BAD_REQUEST, "Timeout error: " + message));
+    }
+
+    public static boolean handleStatus(HttpStatusCode status) {
+        return switch (HttpStatus.valueOf(status.value())) {
+            case BAD_REQUEST, NOT_FOUND, UNPROCESSABLE_ENTITY, CONFLICT -> true;
+            default -> false;
+        };
+    }
+
+    public static Mono<Throwable> createError(ClientResponse response) {
+        return response.bodyToMono(JsonNode.class)
+                .map(message -> new ApiError(HttpStatus.valueOf(response.statusCode().value()),
+                        message.has("message") //
+                                ? message.get("message").asText()
+                                : message.toString()));
     }
 
 }
