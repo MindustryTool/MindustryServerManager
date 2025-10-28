@@ -203,10 +203,10 @@ public class PluginLoader extends Plugin {
 
         unloadPlugin(plugin);
 
+        pluginFile.delete();
         pluginFile.writeBytes(data);
 
         writeUpdatedAt(plugin, updatedAt);
-
 
         loadPlugin(plugin);
     }
@@ -237,8 +237,11 @@ public class PluginLoader extends Plugin {
 
     private void loadPlugin(PluginData plugin) {
         if (plugins.containsKey(plugin.getId())) {
+            Log.info("Plugin already loaded: " + plugin.getName());
             return;
         }
+
+        Log.info("Loading plugin: " + plugin.getName());
 
         Path path = getPluginPath(plugin);
 
