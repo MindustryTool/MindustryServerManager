@@ -681,18 +681,18 @@ public class HttpServer {
                 .select(value -> Time.millis() - value < 0).size;
 
         return new ServerStateDto()//
-                .setServerId(ServerController.SERVER_ID)//
                 .setPlayers(p)//
-                .setMapName(mapName)
                 .setMods(mods)//
-                .setVersion(Version.combined())
                 .setKicks(kicks)//
+                .setMapName(mapName)
+                .setVersion(Version.combined())
+                .setStartedAt(Core.settings.getLong("startedAt", System.currentTimeMillis()))
+                .setServerId(ServerController.SERVER_ID)
                 .setStatus(Vars.state.isGame() //
                         ? Vars.state.isPaused()//
                                 ? ServerStatus.PAUSED
                                 : ServerStatus.ONLINE
-                        : ServerStatus.STOP)
-                .setStartedAt(Core.settings.getLong("startedAt", System.currentTimeMillis()));
+                        : ServerStatus.STOP);
     }
 
     public static byte[] mapPreview() {

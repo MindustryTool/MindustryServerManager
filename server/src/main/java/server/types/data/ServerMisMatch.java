@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.Accessors;
 import dto.ModDto;
 import dto.ServerStateDto;
+import dto.ServerStatus;
 
 @Data
 @Accessors(chain = true, fluent = true)
@@ -25,7 +26,7 @@ public class ServerMisMatch {
 			ServerStateDto state,
 			List<ModDto> mods//
 	) {
-		if (state.getStatus().equals("NOT_RESPONSE")) {
+		if (state.getStatus().equals(ServerStatus.NOT_RESPONSE)) {
 			throw new BadRequestException("Server not response");
 		}
 
