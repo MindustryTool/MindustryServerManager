@@ -288,11 +288,8 @@ public class Utils {
     }
 
     public static Mono<Throwable> createError(ClientResponse response) {
-        return response.bodyToMono(JsonNode.class)
-                .map(message -> new ApiError(HttpStatus.valueOf(response.statusCode().value()),
-                        message.has("message") //
-                                ? message.get("message").asText()
-                                : message.toString()));
+        return response.bodyToMono(String.class)
+                .map(message -> new ApiError(HttpStatus.valueOf(response.statusCode().value()), message));
     }
 
 }

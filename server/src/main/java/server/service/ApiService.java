@@ -21,7 +21,7 @@ public class ApiService {
             .codecs(configurer -> configurer
                     .defaultCodecs()
                     .maxInMemorySize(16 * 1024 * 1024))
-            .baseUrl(URI.create("http://api.mindustry-tool.com/api/v4/")
+            .baseUrl(URI.create("https://api.mindustry-tool.com/api/v4/")
                     .toString())
             .defaultStatusHandler(Utils::handleStatus, Utils::createError)
             .build();
