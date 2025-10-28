@@ -96,7 +96,12 @@ public class GlobalExceptionHandler {
                             .url(url)//
                             .build();
 
-                    exception.printStackTrace();
+                    if (status.is5xxServerError()) {
+                        log.error(data.toString());
+                        exception.printStackTrace();
+                    } else {
+                        log.error(data.toString());
+                    }
 
                     return ResponseEntity.status(status).body(data);
                 }).onErrorResume(error -> {

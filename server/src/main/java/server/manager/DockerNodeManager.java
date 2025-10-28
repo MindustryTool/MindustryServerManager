@@ -262,7 +262,7 @@ public class DockerNodeManager implements NodeManager {
         var optional = findContainerByServerId(id);
 
         if (optional.isEmpty()) {
-            return Mono.error(new IllegalArgumentException("Server not found"));
+            return ApiError.notFound(id, "Server not found");
         }
 
         var container = optional.get();
@@ -397,7 +397,7 @@ public class DockerNodeManager implements NodeManager {
     public void init() {
         final Set<String> ignoredEvents = Set.of("exec_create", "exec_start", "exec_die", "exec_detach");
 
-       eventCallback = dockerClient.eventsCmd()
+        eventCallback = dockerClient.eventsCmd()
                 .exec(new ResultCallback.Adapter<>() {
                     @Override
                     public void onNext(Event event) {
