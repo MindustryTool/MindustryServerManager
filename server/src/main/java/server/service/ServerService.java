@@ -254,18 +254,16 @@ public class ServerService {
     public Mono<Void> writeFile(UUID serverId, String path, FilePart filePart) {
 
         return Utils.readAllBytes(filePart)
-                .flatMap(bytes -> nodeManager.writeFile(serverId, path, bytes).then(Mono.fromRunnable(() -> {
+                .flatMap(bytes -> {
                     String filename = filePart.filename();
 
-                    if (filename.endsWith("msav")) {
-                        apiService.getMapPreview(bytes)
-                                .flatMap(previewBytes -> nodeManager.writeFile(serverId, path + ".png", previewBytes))
-                                .subscribeOn(Schedulers.boundedElastic())
-                                .doOnError(Log::err)
-                                .onErrorComplete()
-                                .subscribe();
-                    }
-                })));
+                    Mono<Void> createImage = filename.endsWith(".msav") //
+                            ? apiService.getMapPreview(bytes)
+                                    .flatMap(image -> nodeManager.writeFile(serverId, path + ".png", image))
+                            : Mono.empty();
+
+                    return Mono.zip(nodeManager.writeFile(serverId, path, bytes), createImage).then();
+                });
     }
 
     public Mono<Boolean> deleteFile(UUID serverId, String path) {
