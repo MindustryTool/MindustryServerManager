@@ -123,7 +123,7 @@ public class GatewayService {
 							error -> new ApiError(HttpStatus.BAD_REQUEST,
 									"Fetch events timeout: " + error.getMessage()))
 					.doOnError((error) -> Log.err(error.getMessage()))
-					.onErrorComplete()
+					.onErrorComplete(ApiError.class)
 					.doFinally(_ignore -> remove())
 					.subscribeOn(Schedulers.boundedElastic())
 					.subscribe();
