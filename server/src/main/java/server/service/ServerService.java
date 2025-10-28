@@ -9,6 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -242,7 +243,7 @@ public class ServerService {
         return nodeManager.getMods(serverId);
     }
 
-    public Object getFiles(UUID serverId, String path) {
+    public Mono<ResponseEntity<Object>> getFiles(UUID serverId, String path) {
         return nodeManager.getFiles(serverId, path);
     }
 

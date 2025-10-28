@@ -15,7 +15,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
-import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -680,7 +679,7 @@ public class DockerNodeManager implements NodeManager {
     }
 
     @Override
-    public Object getFiles(UUID serverId, String path) {
+    public Mono<ResponseEntity<Object>> getFiles(UUID serverId, String path) {
         return getFile(serverId, path)
                 .map(file -> {
                     if (!file.exists()) {
@@ -693,11 +692,13 @@ public class DockerNodeManager implements NodeManager {
                         byte[] data = file.readBytes();
 
                         return ResponseEntity.ok()//
-                                .contentType(MediaType.parseMediaType("image/" + ext))//
-                                .cacheControl(CacheControl.maxAge(31536000, TimeUnit.SECONDS)).body(data);
+                                .contentType(MediaType.parseMediaType("image/" + ext))
+                                .body(data);
                     }
 
-                    return FileUtils.getFiles(file.absolutePath());
+                    return ResponseEntity.ok()//
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .body(FileUtils.getFiles(file.absolutePath()));
                 });
     }
 

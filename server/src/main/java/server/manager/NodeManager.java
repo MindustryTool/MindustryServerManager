@@ -2,6 +2,9 @@ package server.manager;
 
 import java.util.List;
 import java.util.UUID;
+
+import org.springframework.http.ResponseEntity;
+
 import arc.files.Fi;
 import server.types.data.NodeUsage;
 import server.types.data.ServerConfig;
@@ -41,7 +44,7 @@ public interface NodeManager {
 
     public abstract Flux<ModDto> getMods(UUID serverId);
 
-    public abstract Object getFiles(UUID serverId, String path);
+    public abstract Mono<ResponseEntity<Object>> getFiles(UUID serverId, String path);
 
     public abstract Mono<Fi> getFile(UUID serverId, String path);
 

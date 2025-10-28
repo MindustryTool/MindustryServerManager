@@ -64,7 +64,7 @@ public class ServerController {
     }
 
     @GetMapping("/servers/{id}/files")
-    public Object getFiles(@PathVariable("id") UUID serverId, @RequestParam("path") String path) {
+    public Mono<ResponseEntity<Object>> getFiles(@PathVariable("id") UUID serverId, @RequestParam("path") String path) {
         return serverService.getFiles(serverId, URLDecoder.decode(path, StandardCharsets.UTF_8));
     }
 
