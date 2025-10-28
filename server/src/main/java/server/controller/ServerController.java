@@ -35,6 +35,7 @@ import server.types.data.NodeUsage;
 import server.types.data.PaginationRequest;
 import server.types.data.ServerConfig;
 import server.types.data.ServerMisMatch;
+import server.types.request.SendCommandBody;
 import dto.ManagerMapDto;
 import dto.ManagerModDto;
 import dto.MindustryToolPlayerDto;
@@ -114,8 +115,8 @@ public class ServerController {
     }
 
     @PostMapping("/servers/{id}/commands")
-    public Mono<Void> sendCommand(@PathVariable("id") UUID serverId, @RequestBody String command) {
-        return gatewayService.of(serverId).flatMap(client -> client.getServer().sendCommand(command));
+    public Mono<Void> sendCommand(@PathVariable("id") UUID serverId, @RequestBody() SendCommandBody command) {
+        return gatewayService.of(serverId).flatMap(client -> client.getServer().sendCommand(command.getCommand()));
     }
 
     @PostMapping(path = "/servers/{id}/host", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
@@ -181,7 +182,8 @@ public class ServerController {
             @RequestParam(name = "banned", required = false) Boolean banned, //
             @RequestParam(name = "filter", required = false) String filter//
     ) {
-        return gatewayService.of(serverId).flatMapMany(client -> client.getServer().getPlayers(request.getPage(), request.getSize(), banned, filter));
+        return gatewayService.of(serverId).flatMapMany(
+                client -> client.getServer().getPlayers(request.getPage(), request.getSize(), banned, filter));
     }
 
     @GetMapping("servers/{id}/json")
