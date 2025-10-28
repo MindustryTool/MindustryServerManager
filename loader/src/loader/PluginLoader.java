@@ -198,14 +198,16 @@ public class PluginLoader extends Plugin {
         Fi pluginFile = new Fi(path.toFile());
 
         byte[] data = plugin.download();
+        
+        Log.info("Downloaded: " + plugin.getName() + ":" + updatedAt);
+
+        unloadPlugin(plugin);
 
         pluginFile.writeBytes(data);
 
         writeUpdatedAt(plugin, updatedAt);
 
-        Log.info("Downloaded: " + plugin.getName() + ":" + updatedAt);
 
-        unloadPlugin(plugin);
         loadPlugin(plugin);
     }
 
