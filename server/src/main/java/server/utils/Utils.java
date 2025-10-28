@@ -2,6 +2,7 @@ package server.utils;
 
 import java.awt.Dimension;
 import java.awt.Graphics2D;
+import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -319,6 +320,8 @@ public class Utils {
             );
 
             Graphics2D g = resizedImage.createGraphics();
+
+            g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
 
             g.drawImage(image, 0, 0, (int) scaledSize.getWidth(), (int) scaledSize.getHeight(), null);
             g.dispose();
