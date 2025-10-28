@@ -290,6 +290,7 @@ public class ServerService {
 
         return gatewayService.of(serverId)//
                 .flatMap(client -> client.getServer().getState())//
+                .defaultIfEmpty(new ServerStateDto().setServerId(serverId).setStatus(ServerStatus.NOT_RESPONSE))
                 .flatMap(state -> {
                     boolean shouldKill = state.getPlayers().isEmpty();
 
