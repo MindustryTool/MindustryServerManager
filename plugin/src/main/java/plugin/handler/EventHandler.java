@@ -400,7 +400,6 @@ public class EventHandler {
             Player player = event.player;
 
             SessionHandler.remove(player);
-
             VoteHandler.removeVote(player);
 
             String playerName = event.player != null ? event.player.plainName() : "Unknown";
@@ -414,11 +413,11 @@ public class EventHandler {
                 }
             }, 5, TimeUnit.SECONDS);
 
-            Log.info(chat);
-
             ServerController.BACKGROUND_TASK_EXECUTOR.submit(() -> {
                 ApiGateway.sendChatMessage(chat);
             });
+
+            Log.info(chat);
         } catch (Throwable e) {
             e.printStackTrace();
         }
