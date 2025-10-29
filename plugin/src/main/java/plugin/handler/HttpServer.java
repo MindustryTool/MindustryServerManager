@@ -18,7 +18,6 @@ import plugin.controller.GeneralController;
 import plugin.controller.WorkflowController;
 import dto.ServerStateDto;
 import events.ServerStateEvent;
-import events.StartEvent;
 import plugin.utils.Utils;
 import io.javalin.Javalin;
 import io.javalin.json.JavalinJackson;
@@ -131,7 +130,6 @@ public class HttpServer {
         Log.info("Client connected with createdAt: " + createdAt);
 
         client.keepAlive();
-        client.sendEvent(new StartEvent(ServerController.SERVER_ID));
 
         List<Object> copy = new ArrayList<>(buffer);
 
