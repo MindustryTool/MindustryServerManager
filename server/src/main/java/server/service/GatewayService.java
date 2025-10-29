@@ -119,7 +119,7 @@ public class GatewayService {
 					})
 					.onErrorMap(TimeoutException.class,
 							error -> new ApiError(HttpStatus.BAD_REQUEST, "Fetch events timeout"))
-					.retryWhen(Retry.fixedDelay(180, Duration.ofSeconds(1)))
+					.retryWhen(Retry.fixedDelay(60, Duration.ofSeconds(3)))
 					.onErrorMap(Exceptions::isRetryExhausted,
 							error -> new ApiError(HttpStatus.BAD_REQUEST,
 									"Fetch events timeout: " + error.getMessage()))
