@@ -55,8 +55,6 @@ public class GatewayService {
 	private final NodeManager nodeManager;
 	private final ConcurrentHashMap<UUID, Mono<GatewayClient>> cache = new ConcurrentHashMap<>();
 
-	private boolean isKilled = false;
-
 	public Mono<GatewayClient> of(UUID serverId) {
 		return cache.computeIfAbsent(serverId,
 				_id -> Mono.<GatewayClient>create(
@@ -66,8 +64,6 @@ public class GatewayService {
 
 	@PreDestroy
 	private void cancelAll() {
-		isKilled = true;
-
 		cache.values()
 				.forEach(mono -> mono
 						.doOnError(ApiError.class, error -> Log.err(error.getMessage()))
@@ -156,19 +152,13 @@ public class GatewayService {
 						}
 					})
 					.retryWhen(Retry.fixedDelay(60 * 10, Duration.ofSeconds(1)))
+					.doOnError(Exceptions::isRetryExhausted, error -> remove())
 					.onErrorMap(Exceptions::isRetryExhausted,
 							error -> new ApiError(HttpStatus.BAD_REQUEST,
 									"Fetch events timeout: " + error.getMessage()))
 					.doOnError(error -> Log.err(error.getMessage()))
 					.doOnError((error) -> onError.accept(error))
 					.onErrorComplete(ApiError.class)
-					.doFinally(_ignore -> {
-						if (isKilled) {
-							return;
-						}
-
-						remove();
-					})
 					.subscribeOn(Schedulers.boundedElastic())
 					.subscribe();
 
