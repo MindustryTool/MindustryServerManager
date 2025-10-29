@@ -269,14 +269,18 @@ public class DockerNodeManager implements NodeManager {
 
         var container = optional.get();
 
+        var inspect = dockerClient.inspectConfigCmd(container.getId()).exec();
+
+        Log.info(inspect);
+
         if (container.getState().equalsIgnoreCase("running")) {
             dockerClient.stopContainerCmd(container.getId()).exec();
             Log.info("Stopped: " + container.getNames()[0]);
         }
 
-        // dockerClient.removeContainerCmd(container.getId())
-        // .withForce(true)
-        // .exec();
+        dockerClient.removeContainerCmd(container.getId())
+                .withForce(true)
+                .exec();
 
         Log.info("Removed: " + container.getNames()[0] + " for reason: " + reason);
 
@@ -374,7 +378,7 @@ public class DockerNodeManager implements NodeManager {
                     var metadata = optional.orElseThrow();
                     var serverId = metadata.getConfig().getId();
 
-                    logCallbacks.computeIfAbsent(serverId, _ignore ->  createLogCallack(container.getId(), serverId));
+                    logCallbacks.computeIfAbsent(serverId, _ignore -> createLogCallack(container.getId(), serverId));
                 }
             } catch (Exception e) {
                 Log.err(e.getMessage());
