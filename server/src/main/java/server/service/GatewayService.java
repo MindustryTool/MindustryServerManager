@@ -100,8 +100,6 @@ public class GatewayService {
 
 			this.eventJob = this.server.getEvents()
 					.flatMap(event -> {
-						var name = event.get("name").asText(null);
-
 						if (state != ConnectionState.CONNECTED) {
 							state = ConnectionState.CONNECTED;
 							disconnectedAt = null;
@@ -109,23 +107,26 @@ public class GatewayService {
 							onConnect.accept(this);
 						}
 
-						if (name == null) {
-							Log.warn("Invalid event: " + event.asText());
-
-							return Mono.empty();
-						}
-
-						var eventType = BaseEvent.getEventMap().get(name);
-
-						if (eventType == null) {
-							Log.warn("Invalid event name: " + name + " in " + BaseEvent.getEventMap().keySet());
-
-							return Mono.empty();
-						}
-
 						try {
+							var name = event.get("name").asText(null);
+
+							if (name == null) {
+								Log.warn("Invalid event: " + event.asText());
+
+								return Mono.empty();
+							}
+
+							var eventType = BaseEvent.getEventMap().get(name);
+
+							if (eventType == null) {
+								Log.warn("Invalid event name: " + name + " in " + BaseEvent.getEventMap().keySet());
+
+								return Mono.empty();
+							}
+
 							BaseEvent data = (BaseEvent) Utils.readJsonAsClass(event, eventType);
 							eventBus.fire(data);
+
 						} catch (Exception e) {
 							Log.err(e);
 						}
