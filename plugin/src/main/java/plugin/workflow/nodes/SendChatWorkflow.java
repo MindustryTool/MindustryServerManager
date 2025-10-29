@@ -9,7 +9,7 @@ public class SendChatWorkflow extends WorkflowNode {
     private final WorkflowField<Player, Void> playerField = new WorkflowField<Player, Void>("player")
             .consume(new FieldConsumer<>(Player.class).notRequired());
 
-    private final WorkflowField messageField = new WorkflowField("message")
+    private final WorkflowField<String, String> messageField = new WorkflowField<String, String>("message")
             .consume(new FieldConsumer<>(String.class)
                     .defaultValue("Hello"));
 
