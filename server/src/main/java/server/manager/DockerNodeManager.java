@@ -40,6 +40,7 @@ import dto.MapDto;
 import dto.ModDto;
 import dto.ServerStateDto;
 import events.LogEvent;
+import enums.NodeRemoveReason;
 import events.StartEvent;
 import events.StopEvent;
 import server.utils.ApiError;
@@ -259,7 +260,7 @@ public class DockerNodeManager implements NodeManager {
     }
 
     @Override
-    public Mono<Void> remove(UUID id) {
+    public Mono<Void> remove(UUID id, NodeRemoveReason reason) {
         var optional = findContainerByServerId(id);
 
         if (optional.isEmpty()) {
@@ -438,7 +439,7 @@ public class DockerNodeManager implements NodeManager {
 
                                 eventBus.fire(new StartEvent(serverId));
                             } else if (stopEvents.stream().anyMatch(stop -> status.equalsIgnoreCase(stop))) {
-                                eventBus.fire(new StopEvent(serverId));
+                                eventBus.fire(new StopEvent(serverId, NodeRemoveReason.UNKNOWN));
                             }
                         });
 

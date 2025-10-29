@@ -30,6 +30,7 @@ import dto.PlayerInfoDto;
 import dto.ServerCommandDto;
 import dto.ServerStateDto;
 import events.BaseEvent;
+import enums.NodeRemoveReason;
 import events.StopEvent;
 import jakarta.annotation.PreDestroy;
 import server.utils.ApiError;
@@ -140,12 +141,12 @@ public class GatewayService {
 			Log.info("Close GatewayClient for server: " + id + " running for "
 					+ Utils.toReadableString(Duration.between(createdAt, Instant.now())));
 
-			nodeManager.remove(id)
+			nodeManager.remove(id, NodeRemoveReason.FETCH_EVENT_TIMEOUT)
 					.doOnError(ApiError.class, error -> Log.err(error.getMessage()))
 					.onErrorComplete(ApiError.class)
 					.subscribe();
 
-			eventBus.fire(new StopEvent(id));
+			eventBus.fire(new StopEvent(id, NodeRemoveReason.FETCH_EVENT_TIMEOUT));
 		}
 
 		public class Server {

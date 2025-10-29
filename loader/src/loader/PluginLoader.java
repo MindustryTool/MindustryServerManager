@@ -182,13 +182,13 @@ public class PluginLoader extends Plugin {
 
         Path path = getPluginPath(plugin);
 
-        if (updatedAt == null && Files.exists(path)) {
+        if (updatedAt == null && Files.exists(path) && !plugins.contains(plugin.getId())) {
             // Use the current version if can not find the newest
             loadPlugin(plugin);
             return;
         }
 
-        if (Objects.equals(updatedAt, currentUpdatedAt) && Files.exists(path)) {
+        if (Objects.equals(updatedAt, currentUpdatedAt) && Files.exists(path) && !plugins.contains(plugin.getId())) {
             loadPlugin(plugin);
             return;
         }
@@ -198,7 +198,7 @@ public class PluginLoader extends Plugin {
         Fi pluginFile = new Fi(path.toFile());
 
         byte[] data = plugin.download();
-        
+
         Log.info("Downloaded: " + plugin.getName() + ":" + updatedAt);
 
         unloadPlugin(plugin);
@@ -237,8 +237,7 @@ public class PluginLoader extends Plugin {
 
     private void loadPlugin(PluginData plugin) {
         if (plugins.containsKey(plugin.getId())) {
-            Log.info("Plugin already loaded: " + plugin.getName());
-            return;
+            throw new RuntimeException("Plugin already loaded: " + plugin.getName());
         }
 
         Log.info("Loading plugin: " + plugin.getName());

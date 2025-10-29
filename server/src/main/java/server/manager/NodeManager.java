@@ -16,6 +16,7 @@ import dto.MapDto;
 import dto.ModDto;
 import dto.ServerStateDto;
 import events.LogEvent;
+import enums.NodeRemoveReason;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -25,7 +26,7 @@ public interface NodeManager {
 
     public abstract Flux<ServerState> list();
 
-    public abstract Mono<Void> remove(UUID id);
+    public abstract Mono<Void> remove(UUID id, NodeRemoveReason reason);
 
     public abstract Flux<ServerMisMatch> getMismatch(//
             UUID id, //

@@ -21,6 +21,7 @@ import dto.ServerStateDto;
 import dto.ServerStatus;
 import events.BaseEvent;
 import events.LogEvent;
+import enums.NodeRemoveReason;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -140,8 +141,8 @@ public class ServerService {
                 .blockLast();
     }
 
-    public Mono<Void> remove(UUID serverId) {
-        return nodeManager.remove(serverId);
+    public Mono<Void> remove(UUID serverId, NodeRemoveReason reason) {
+        return nodeManager.remove(serverId, reason);
     }
 
     public Mono<Boolean> pause(UUID serverId) {
@@ -313,12 +314,12 @@ public class ServerService {
                     boolean shouldKill = state.getPlayers().isEmpty();
 
                     if (shouldKill && shouldAutoTurnOff) {
-                        if (flag != null && flag.contains(ServerFlag.KILL)) {
+                        if (flag.contains(ServerFlag.KILL)) {
                             var event = LogEvent.info(serverId, "Auto shut down server");
                             eventBus.fire(event);
                             log.info(event.toString());
                             flag.remove(ServerFlag.KILL);
-                            return remove(serverId);
+                            return nodeManager.remove(serverId, NodeRemoveReason.NO_PLAYER);
                         } else {
                             flag.add(ServerFlag.KILL);
                             var event = LogEvent.info(serverId, "Server has no players, flag to kill");

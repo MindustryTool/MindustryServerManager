@@ -44,6 +44,7 @@ import dto.ModDto;
 import dto.ServerStateDto;
 import events.BaseEvent;
 import events.LogEvent;
+import enums.NodeRemoveReason;
 import dto.PlayerInfoDto;
 import dto.ServerCommandDto;
 import reactor.core.publisher.Flux;
@@ -141,7 +142,7 @@ public class ServerController {
 
     @DeleteMapping("/servers/{id}/remove")
     public Mono<Void> remove(@PathVariable("id") UUID serverId) {
-        return serverService.remove(serverId);
+        return serverService.remove(serverId, NodeRemoveReason.USER_REQUEST);
     }
 
     @PostMapping("/servers/{id}/pause")
