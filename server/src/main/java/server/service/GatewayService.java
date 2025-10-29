@@ -79,7 +79,7 @@ public class GatewayService {
 	public class GatewayClient {
 
 		enum ConnectionState {
-			CONNECTED, DISCONNECTED
+			CONNECTED, DISCONNECTED, CONNECTING
 		}
 
 		@Getter
@@ -90,7 +90,7 @@ public class GatewayService {
 
 		private final Instant createdAt = Instant.now();
 		private Instant disconnectedAt = null;
-		private ConnectionState state = ConnectionState.DISCONNECTED;
+		private ConnectionState state = ConnectionState.CONNECTING;
 
 		private final Disposable eventJob;
 
@@ -102,7 +102,7 @@ public class GatewayService {
 					.flatMap(event -> {
 						var name = event.get("name").asText(null);
 
-						if (state == ConnectionState.DISCONNECTED) {
+						if (state != ConnectionState.CONNECTED) {
 							state = ConnectionState.CONNECTED;
 							disconnectedAt = null;
 							eventBus.fire(new StartEvent(id));
@@ -147,7 +147,7 @@ public class GatewayService {
 							disconnectedAt = Instant.now();
 						}
 
-						if (state == ConnectionState.CONNECTED) {
+						if (state != ConnectionState.DISCONNECTED) {
 							state = ConnectionState.DISCONNECTED;
 							eventBus.fire(new StopEvent(id, NodeRemoveReason.FETCH_EVENT_TIMEOUT));
 						}
