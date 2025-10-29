@@ -253,16 +253,17 @@ public class PluginLoader extends Plugin {
         Path path = getPluginPath(pluginData);
 
         try {
-            String pluginId = pluginManager.loadPlugin(path);
-            PluginWrapper wrapper = pluginManager.getPlugin(pluginId);
+            pluginManager.loadPlugin(path);
+
+            PluginWrapper wrapper = pluginManager.getPlugin(pluginData.getId());
 
             if (wrapper == null) {
-                throw new RuntimeException("Plugin not found: " + pluginId);
+                throw new RuntimeException("Plugin not found: " + pluginData.getId());
             }
 
             Log.info("State: " + wrapper.getPluginState().name());
+            Log.info("State: " + pluginManager.startPlugin(pluginData.getId()));
 
-            pluginManager.startPlugin(pluginId);
             org.pf4j.Plugin instance = wrapper.getPlugin();
 
             if (instance instanceof MindustryToolPlugin) {
