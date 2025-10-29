@@ -79,6 +79,7 @@ public class GatewayService {
 		private boolean connected = false;
 
 		private final Instant createdAt = Instant.now();
+		private Instant disconnectedAt = null;
 
 		private final Disposable eventJob;
 
@@ -92,6 +93,7 @@ public class GatewayService {
 
 						if (connected == false) {
 							connected = true;
+							disconnectedAt = null;
 							onConnect.accept(this);
 						}
 
@@ -116,6 +118,11 @@ public class GatewayService {
 
 						return Mono.empty();
 					})
+					.doOnError(_ignore -> {
+						if (disconnectedAt == null) {
+							disconnectedAt = Instant.now();
+						}
+					})
 					.retryWhen(Retry.fixedDelay(100, Duration.ofSeconds(2)))
 					.onErrorMap(Exceptions::isRetryExhausted,
 							error -> new ApiError(HttpStatus.BAD_REQUEST,
@@ -136,9 +143,12 @@ public class GatewayService {
 
 		private void remove() {
 			cache.remove(id);
-			Log.info("Close GatewayClient for server: " + id + " running for "
-					+ Utils.toReadableString(Duration.between(createdAt, Instant.now())));
-
+			Log.info("Close GatewayClient: " + id);
+			Log.info("Running for: " + Utils.toReadableString(Duration.between(createdAt, Instant.now())));
+			if (disconnectedAt != null) {
+				Log.info(
+						"Disconnected for: " + Utils.toReadableString(Duration.between(disconnectedAt, Instant.now())));
+			}
 			nodeManager.remove(id, NodeRemoveReason.FETCH_EVENT_TIMEOUT)
 					.doOnError(ApiError.class, error -> Log.err(error.getMessage()))
 					.onErrorComplete(ApiError.class)
