@@ -119,7 +119,7 @@ public class GatewayService {
 					})
 					.onErrorMap(TimeoutException.class,
 							error -> new ApiError(HttpStatus.BAD_REQUEST, "Fetch events timeout"))
-					.retryWhen(Retry.fixedDelay(60, Duration.ofSeconds(3)))
+					.retryWhen(Retry.fixedDelay(20, Duration.ofSeconds(10)))
 					.onErrorMap(Exceptions::isRetryExhausted,
 							error -> new ApiError(HttpStatus.BAD_REQUEST,
 									"Fetch events timeout: " + error.getMessage()))
@@ -142,10 +142,10 @@ public class GatewayService {
 			Log.info("Close GatewayClient for server: " + id + " running for "
 					+ Utils.toReadableString(Duration.between(createdAt, Instant.now())));
 
-			// nodeManager.remove(id, NodeRemoveReason.FETCH_EVENT_TIMEOUT)
-			// 		.doOnError(ApiError.class, error -> Log.err(error.getMessage()))
-			// 		.onErrorComplete(ApiError.class)
-			// 		.subscribe();
+			nodeManager.remove(id, NodeRemoveReason.FETCH_EVENT_TIMEOUT)
+					.doOnError(ApiError.class, error -> Log.err(error.getMessage()))
+					.onErrorComplete(ApiError.class)
+					.subscribe();
 
 			eventBus.fire(new StopEvent(id, NodeRemoveReason.FETCH_EVENT_TIMEOUT));
 		}
