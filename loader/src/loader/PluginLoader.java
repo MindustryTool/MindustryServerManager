@@ -37,7 +37,7 @@ public class PluginLoader extends Plugin {
     public final UUID SERVER_ID = UUID.fromString(System.getenv("SERVER_ID"));
 
     private final PluginManager pluginManager;
-    private final ConcurrentHashMap<String, WeakReference<MindustryToolPlugin>> plugins = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<PluginData, WeakReference<MindustryToolPlugin>> plugins = new ConcurrentHashMap<>();
     private final ScheduledExecutorService BACKGROUND_SCHEDULER = Executors.newSingleThreadScheduledExecutor();
 
     private final List<PluginData> PLUGINS = Arrays.asList(
@@ -176,39 +176,36 @@ public class PluginLoader extends Plugin {
         metaFile.writeString(meta.toPrettyString());
     }
 
-    private synchronized void checkAndUpdate(PluginData plugin) throws Exception {
-        String updatedAt = plugin.getPluginVersion().getUpdatedAt();
-        String currentUpdatedAt = readCurrentUpdatedAt(plugin);
+    private synchronized void checkAndUpdate(PluginData pluginData) throws Exception {
+        String updatedAt = pluginData.getPluginVersion().getUpdatedAt();
+        String currentUpdatedAt = readCurrentUpdatedAt(pluginData);
 
-        Path path = getPluginPath(plugin);
+        Path path = getPluginPath(pluginData);
 
-        if (updatedAt == null && Files.exists(path) && !plugins.contains(plugin.getId())) {
-            // Use the current version if can not find the newest
-            loadPlugin(plugin);
+        boolean hasFile = Files.exists(path);
+        boolean isPluginLoaded = plugins.containsKey(pluginData);
+
+        if (Objects.equals(updatedAt, currentUpdatedAt) && hasFile && !isPluginLoaded) {
+            loadPlugin(pluginData);
             return;
         }
 
-        if (Objects.equals(updatedAt, currentUpdatedAt) && Files.exists(path) && !plugins.contains(plugin.getId())) {
-            loadPlugin(plugin);
-            return;
-        }
-
-        Log.info("Downloading updated plugin: " + plugin.getName());
+        Log.info("Downloading updated plugin: " + pluginData.getName());
 
         Fi pluginFile = new Fi(path.toFile());
 
-        byte[] data = plugin.download();
+        byte[] data = pluginData.download();
 
-        Log.info("Downloaded: " + plugin.getName() + ":" + updatedAt);
+        Log.info("Downloaded: " + pluginData.getName() + ":" + updatedAt);
 
-        unloadPlugin(plugin);
+        unloadPlugin(pluginData);
 
         pluginFile.delete();
         pluginFile.writeBytes(data);
 
-        writeUpdatedAt(plugin, updatedAt);
+        writeUpdatedAt(pluginData, updatedAt);
 
-        loadPlugin(plugin);
+        loadPlugin(pluginData);
     }
 
     private Path getPluginPath(PluginData plugin) {
@@ -217,16 +214,17 @@ public class PluginLoader extends Plugin {
 
     private void unloadPlugin(PluginData pluginData) {
         try {
-            WeakReference<MindustryToolPlugin> ref = plugins.get(pluginData.getId());
+            WeakReference<MindustryToolPlugin> ref = plugins.get(pluginData);
 
             if (ref != null) {
                 MindustryToolPlugin plugin = ref.get();
                 if (plugin != null) {
                     plugin.unload();
+                    ref.clear();
                 }
             }
 
-            plugins.remove(pluginData.getId());
+            plugins.remove(pluginData);
             pluginManager.unloadPlugin(pluginData.getId());
 
             Log.info("Unloaded plugin: " + pluginData.getName());
@@ -235,14 +233,14 @@ public class PluginLoader extends Plugin {
         }
     }
 
-    private void loadPlugin(PluginData plugin) {
-        if (plugins.containsKey(plugin.getId())) {
-            throw new RuntimeException("Plugin already loaded: " + plugin.getName());
+    private synchronized void loadPlugin(PluginData pluginData) {
+        if (plugins.containsKey(pluginData)) {
+            throw new RuntimeException("Plugin already loaded: " + pluginData.getName());
         }
 
-        Log.info("Loading plugin: " + plugin.getName());
+        Log.info("Loading plugin: " + pluginData.getName());
 
-        Path path = getPluginPath(plugin);
+        Path path = getPluginPath(pluginData);
 
         try {
             String pluginId = pluginManager.loadPlugin(path);
@@ -272,21 +270,21 @@ public class PluginLoader extends Plugin {
                     mindustryToolPlugin.registerServerCommands(serverCommandHandler);
                 }
 
-                plugins.put(pluginId, new WeakReference<>(mindustryToolPlugin));
+                plugins.put(pluginData, new WeakReference<>(mindustryToolPlugin));
 
-                Log.info("Plugin updated and reloaded: " + plugin.getName());
+                Log.info("Plugin updated and reloaded: " + pluginData.getName());
             } else {
                 Log.info("Invalid plugin: " + instance.getClass().getName());
             }
 
         } catch (PluginRuntimeException e) {
-            plugins.remove(plugin.getId());
-            getPluginPath(plugin).toFile().delete();
+            plugins.remove(pluginData);
+            getPluginPath(pluginData).toFile().delete();
         } catch (Exception e) {
-            plugins.remove(plugin.getId());
+            plugins.remove(pluginData);
             Log.err(e);
 
-            throw new RuntimeException("Failed to load plugin: " + plugin.getName(), e);
+            throw new RuntimeException("Failed to load plugin: " + pluginData.getName(), e);
         }
     }
 }
