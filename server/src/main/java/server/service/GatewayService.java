@@ -117,12 +117,13 @@ public class GatewayService {
 
 						return Mono.empty();
 					})
-					.retryWhen(Retry.fixedDelay(60, Duration.ofSeconds(1)))
 					.onErrorMap(TimeoutException.class,
 							error -> new ApiError(HttpStatus.BAD_REQUEST, "Fetch events timeout"))
+					.retryWhen(Retry.fixedDelay(60, Duration.ofSeconds(1)))
 					.onErrorMap(Exceptions::isRetryExhausted,
 							error -> new ApiError(HttpStatus.BAD_REQUEST,
 									"Fetch events timeout: " + error.getMessage()))
+					.doOnError(error -> Log.err(error.getMessage()))
 					.doOnError((error) -> onError.accept(error))
 					.onErrorComplete(ApiError.class)
 					.doFinally(_ignore -> remove())
