@@ -45,14 +45,13 @@ public class GeneralController {
 
     public static void init(Javalin app) {
         app.get("state", ctx -> {
-            ServerStateDto state = Utils.appPostWithTimeout(Utils::getState);
+            ServerStateDto state = Utils.appPostWithTimeout(Utils::getState, "Get state");
             ctx.contentType(ContentType.APPLICATION_JSON);
             ctx.json(state);
         });
 
         app.get("image", ctx -> {
-            byte[] mapPreview = Utils.appPostWithTimeout(Utils::mapPreview);
-            ctx.contentType(ContentType.IMAGE_PNG).result(mapPreview);
+            ctx.contentType(ContentType.IMAGE_PNG).result(Utils.mapPreview());
         });
 
         app.get("plugin-version", ctx -> {
@@ -136,7 +135,7 @@ public class GeneralController {
                                     .setTeam(new TeamDto()//
                                             .setColor(player.team().color.toString())//
                                             .setName(player.team().name)))
-                            .collect(Collectors.toList())));
+                            .collect(Collectors.toList())), "Get players");
 
             ctx.json(result);
         });
@@ -186,7 +185,7 @@ public class GeneralController {
                                 .setAdmin(ban.admin)
                                 .setLastKicked(ban.lastKicked))
                         .collect(Collectors.toList());
-            });
+            }, "Get player info");
 
             ctx.json(result);
         });
@@ -201,7 +200,7 @@ public class GeneralController {
                     }
                 }
                 return res;
-            });
+            }, "Get kicks");
 
             ctx.json(result);
         });
@@ -359,7 +358,7 @@ public class GeneralController {
                 data.put("settings", settings);
 
                 return data;
-            });
+            }, "Get server info");
 
             ctx.json(res);
         });

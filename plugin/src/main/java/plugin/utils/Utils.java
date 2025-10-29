@@ -98,11 +98,13 @@ public class Utils {
         }
     }
 
-    public static void appPostWithTimeout(Runnable r) {
-        appPostWithTimeout(r, 100);
+    public static void appPostWithTimeout(Runnable r, String taskName) {
+        appPostWithTimeout(r, 100, taskName);
     }
 
-    private static void appPostWithTimeout(Runnable r, int timeout) {
+    private static void appPostWithTimeout(Runnable r, int timeout, String taskName) {
+        Log.info("Start task: " + taskName);
+
         CompletableFuture<Void> v = new CompletableFuture<>();
         Core.app.post(() -> {
             try {
@@ -119,11 +121,13 @@ public class Utils {
         }
     }
 
-    public static <T> T appPostWithTimeout(Supplier<T> fn) {
-        return appPostWithTimeout(fn, 100);
+    public static <T> T appPostWithTimeout(Supplier<T> fn, String taskName) {
+        return appPostWithTimeout(fn, 100, taskName);
     }
 
-    private static <T> T appPostWithTimeout(Supplier<T> fn, int timeout) {
+    private static <T> T appPostWithTimeout(Supplier<T> fn, int timeout, String taskName) {
+        Log.info("Start task: " + taskName);
+
         CompletableFuture<T> future = new CompletableFuture<T>();
         Core.app.post(() -> {
             try {
