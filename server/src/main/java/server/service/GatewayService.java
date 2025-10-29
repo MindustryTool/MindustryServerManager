@@ -105,8 +105,8 @@ public class GatewayService {
 						if (state == ConnectionState.DISCONNECTED) {
 							state = ConnectionState.CONNECTED;
 							disconnectedAt = null;
-							onConnect.accept(this);
 							eventBus.fire(new StartEvent(id));
+							onConnect.accept(this);
 						}
 
 						if (name == null) {
@@ -147,8 +147,10 @@ public class GatewayService {
 							disconnectedAt = Instant.now();
 						}
 
-						state = ConnectionState.DISCONNECTED;
-						eventBus.fire(new StopEvent(id, NodeRemoveReason.FETCH_EVENT_TIMEOUT));
+						if (state == ConnectionState.CONNECTED) {
+							state = ConnectionState.DISCONNECTED;
+							eventBus.fire(new StopEvent(id, NodeRemoveReason.FETCH_EVENT_TIMEOUT));
+						}
 					})
 					.retryWhen(Retry.fixedDelay(60 * 10, Duration.ofSeconds(1)))
 					.onErrorMap(Exceptions::isRetryExhausted,
