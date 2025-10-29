@@ -5,7 +5,7 @@ import plugin.workflow.WorkflowGroup;
 
 public class SetWorkflow extends WorkflowNode {
 
-    private final WorkflowField<String, Void> nameField = new WorkflowField("name")
+    private final WorkflowField<String, Void> nameField = new WorkflowField<String, Void>("name")
             .consume(new FieldConsumer<>(String.class)
                     .defaultValue("a"));
 
