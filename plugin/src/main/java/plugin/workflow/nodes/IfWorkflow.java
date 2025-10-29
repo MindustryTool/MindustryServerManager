@@ -1,5 +1,6 @@
 package plugin.workflow.nodes;
 
+import plugin.workflow.Workflow;
 import plugin.workflow.WorkflowEmitEvent;
 import plugin.workflow.WorkflowGroup;
 
@@ -17,7 +18,7 @@ public class IfWorkflow extends WorkflowNode {
 
     @Override
     public void execute(WorkflowEmitEvent event) {
-        Boolean condition = event.getContext()
+        Boolean condition = Workflow
                 .getExpressionParser()
                 .evaluateAsBoolean(conditionField.getConsumer().getValue(), event.getVariables());
 
