@@ -1,5 +1,7 @@
 package server;
 
+import java.util.concurrent.TimeoutException;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -60,6 +62,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ApiError.class)
     Mono<ResponseEntity<ErrorResponse>> handle(ServerWebExchange exchange, ApiError exception) {
         return createResponse(exchange, exception.getStatus(), exception, exception.getMessage());
+    }
+ 
+    @ExceptionHandler(TimeoutException.class)
+    Mono<ResponseEntity<ErrorResponse>> handle(ServerWebExchange exchange, TimeoutException exception) {
+        return createResponse(exchange, HttpStatus.BAD_REQUEST, exception, exception.getMessage());
     }
 
     @ExceptionHandler({ Exception.class, DnsNameResolverTimeoutException.class })

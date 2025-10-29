@@ -278,7 +278,7 @@ public class DockerNodeManager implements NodeManager {
                 .withForce(true)
                 .exec();
 
-        Log.info("Removed: " + container.getNames()[0]);
+        Log.info("Removed: " + container.getNames()[0] + " for reason: " + reason);
 
         return Mono.empty();
     }

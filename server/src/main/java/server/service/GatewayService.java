@@ -6,7 +6,6 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
 import org.springframework.core.ParameterizedTypeReference;
@@ -117,11 +116,10 @@ public class GatewayService {
 
 						return Mono.empty();
 					})
-					.onErrorMap(TimeoutException.class,
-							error -> new ApiError(HttpStatus.BAD_REQUEST, "Fetch events timeout"))
 					.retryWhen(Retry.fixedDelay(100, Duration.ofSeconds(2)))
-					.onErrorMap(Exceptions::isRetryExhausted, error -> new ApiError(HttpStatus.BAD_REQUEST,
-							"Fetch events timeout: " + error.getMessage()))
+					.onErrorMap(Exceptions::isRetryExhausted,
+							error -> new ApiError(HttpStatus.BAD_REQUEST,
+									"Fetch events timeout: " + error.getMessage()))
 					.doOnError(error -> Log.err(error.getMessage()))
 					.doOnError((error) -> onError.accept(error))
 					.onErrorComplete(ApiError.class)
@@ -141,12 +139,12 @@ public class GatewayService {
 			Log.info("Close GatewayClient for server: " + id + " running for "
 					+ Utils.toReadableString(Duration.between(createdAt, Instant.now())));
 
-			eventBus.fire(new StopEvent(id, NodeRemoveReason.FETCH_EVENT_TIMEOUT));
-
 			nodeManager.remove(id, NodeRemoveReason.FETCH_EVENT_TIMEOUT)
 					.doOnError(ApiError.class, error -> Log.err(error.getMessage()))
 					.onErrorComplete(ApiError.class)
 					.subscribe();
+
+			eventBus.fire(new StopEvent(id, NodeRemoveReason.FETCH_EVENT_TIMEOUT));
 		}
 
 		public class Server {

@@ -319,7 +319,7 @@ public class ServerService {
                             eventBus.fire(event);
                             log.info(event.toString());
                             flag.remove(ServerFlag.KILL);
-                            return nodeManager.remove(serverId, NodeRemoveReason.NO_PLAYER);
+                            return remove(serverId, NodeRemoveReason.NO_PLAYER);
                         } else {
                             flag.add(ServerFlag.KILL);
                             var event = LogEvent.info(serverId, "Server has no players, flag to kill");
@@ -339,7 +339,6 @@ public class ServerService {
 
                     return Mono.empty();
                 })//
-                .retry(2)//
                 .onErrorResume(error -> {
                     var event = LogEvent.error(serverId, "Error: " + error.getMessage());
                     eventBus.fire(event);
