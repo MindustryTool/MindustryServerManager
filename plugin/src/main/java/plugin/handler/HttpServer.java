@@ -45,9 +45,7 @@ public class HttpServer {
             app.stop();
         }
 
-        ServerController.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(() -> {
-            sendStateUpdate();
-        }, 0, 60, TimeUnit.SECONDS);
+        ServerController.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(() -> sendStateUpdate(), 0, 60, TimeUnit.SECONDS);
 
         app = Javalin.create(config -> {
             config.showJavalinBanner = false;
