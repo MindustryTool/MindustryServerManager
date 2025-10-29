@@ -142,8 +142,7 @@ public class GatewayService {
 							disconnectedAt = Instant.now();
 						}
 					})
-					.retryWhen(Retry.fixedDelay(30, Duration.ofSeconds(1))
-							.filter(error -> !(error instanceof ApiError)))
+					.retryWhen(Retry.fixedDelay(30, Duration.ofSeconds(1)))
 					.onErrorMap(Exceptions::isRetryExhausted,
 							error -> new ApiError(HttpStatus.BAD_REQUEST,
 									"Fetch events timeout: " + error.getMessage()))
