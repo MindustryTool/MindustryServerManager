@@ -269,7 +269,7 @@ public class DockerNodeManager implements NodeManager {
 
         var container = optional.get();
 
-        if (!container.getState().equalsIgnoreCase("stopped")) {
+        if (container.getState().equalsIgnoreCase("running")) {
             dockerClient.stopContainerCmd(container.getId()).exec();
             Log.info("Stopped: " + container.getNames()[0]);
         }
