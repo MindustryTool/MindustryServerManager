@@ -275,8 +275,8 @@ public class DockerNodeManager implements NodeManager {
         }
 
         // dockerClient.removeContainerCmd(container.getId())
-        //         .withForce(true)
-        //         .exec();
+        // .withForce(true)
+        // .exec();
 
         Log.info("Removed: " + container.getNames()[0] + " for reason: " + reason);
 
@@ -298,6 +298,8 @@ public class DockerNodeManager implements NodeManager {
                         .withForce(true)
                         .exec();
 
+                Log.info("Removed: " + container.getNames()[0] + ", invalid config " + label);
+
                 return Optional.empty();
             }
 
@@ -306,6 +308,10 @@ public class DockerNodeManager implements NodeManager {
             dockerClient.removeContainerCmd(container.getId())
                     .withForce(true)
                     .exec();
+
+            Log.info("Removed: " + container.getNames()[0] + ", invalid config ");
+
+            Log.err(_e);
 
             return Optional.empty();
         }

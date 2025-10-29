@@ -10,7 +10,7 @@ public class SetWorkflow extends WorkflowNode {
                     .defaultValue("a"));
 
     private final WorkflowField valueField = new WorkflowField("value")
-            .consume(new FieldConsumer<>(Object.class)
+            .consume(new FieldConsumer<Object>(Object.class)
                     .defaultValue("0"));
 
     public SetWorkflow() {
