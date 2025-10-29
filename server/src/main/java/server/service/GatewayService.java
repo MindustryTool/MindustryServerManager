@@ -139,8 +139,7 @@ public class GatewayService {
 						}
 					})
 					.retryWhen(Retry.fixedDelay(30, Duration.ofSeconds(1))
-							.filter(error -> !(error instanceof WebClientRequestException
-									&& error.getCause() instanceof UnknownHostException)))
+							.filter(error -> !(error instanceof ApiError)))
 					.onErrorMap(Exceptions::isRetryExhausted,
 							error -> new ApiError(HttpStatus.BAD_REQUEST,
 									"Fetch events timeout: " + error.getMessage()))
