@@ -274,9 +274,9 @@ public class DockerNodeManager implements NodeManager {
             Log.info("Stopped: " + container.getNames()[0]);
         }
 
-        dockerClient.removeContainerCmd(container.getId())
-                .withForce(true)
-                .exec();
+        // dockerClient.removeContainerCmd(container.getId())
+        //         .withForce(true)
+        //         .exec();
 
         Log.info("Removed: " + container.getNames()[0] + " for reason: " + reason);
 
