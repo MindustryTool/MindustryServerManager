@@ -23,7 +23,11 @@ public class EventBus {
 
     public <T extends BaseEvent> T fire(T event) {
         for (var consumer : consumers) {
-            consumer.accept(event);
+            try {
+                consumer.accept(event);
+            } catch (Exception e) {
+                Log.err("Error while handling event: " + event.getClass().getSimpleName(), e);
+            }
         }
 
         return event;
