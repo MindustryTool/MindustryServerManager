@@ -65,10 +65,12 @@ import io.javalin.plugin.bundled.RouteOverviewPlugin;
 import io.javalin.http.sse.SseClient;
 
 public class HttpServer {
-    private static final String MAP_PREVIEW_FILE_NAME = "MapPreview";
+    private static final String MAP_PREVIEW_FILE_NAME = "map-preview.png";
+    private static final List<Object> buffer = new ArrayList<>();
     private static Javalin app;
     private static SseClient eventListener = null;
-    private static List<Object> buffer = new ArrayList<>();
+
+    private static final Map<String, RequestInfo> activeRequests = new ConcurrentHashMap<>();
 
     public static void fire(Object event) {
         if (eventListener == null) {
@@ -80,22 +82,6 @@ public class HttpServer {
             eventListener.sendEvent(event);
         }
     }
-
-    public static class RequestInfo {
-        public final String method;
-        public final String path;
-        public final String ip;
-        public final long timestamp;
-
-        public RequestInfo(String method, String path, String ip, long timestamp) {
-            this.method = method;
-            this.path = path;
-            this.ip = ip;
-            this.timestamp = timestamp;
-        }
-    }
-
-    private static final Map<String, RequestInfo> activeRequests = new ConcurrentHashMap<>();
 
     public static void init() {
         ServerController.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(() -> {
@@ -720,10 +706,25 @@ public class HttpServer {
 
     public static void unload() {
         eventListener.close();
+        buffer.clear();
 
         app.stop();
         app = null;
 
         Log.info("Stop http server");
+    }
+
+    public static class RequestInfo {
+        public final String method;
+        public final String path;
+        public final String ip;
+        public final long timestamp;
+
+        public RequestInfo(String method, String path, String ip, long timestamp) {
+            this.method = method;
+            this.path = path;
+            this.ip = ip;
+            this.timestamp = timestamp;
+        }
     }
 }
