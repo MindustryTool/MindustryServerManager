@@ -10,6 +10,8 @@ import plugin.type.PlayerPressCallback;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 
+import arc.util.Log;
+
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -34,6 +36,8 @@ public class HudHandler {
     public static void unload() {
         menus.invalidateAll();
         menus = null;
+
+        Log.info("Hud handler unloaded");
     }
 
     public static void onPlayerLeave(PlayerLeave event) {

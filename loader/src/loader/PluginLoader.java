@@ -185,12 +185,22 @@ public class PluginLoader extends Plugin {
         boolean hasFile = Files.exists(path);
         boolean isPluginLoaded = plugins.containsKey(pluginData);
 
-        if (Objects.equals(updatedAt, currentUpdatedAt) && hasFile && !isPluginLoaded) {
-            loadPlugin(pluginData);
-            return;
+        if (Objects.equals(updatedAt, currentUpdatedAt)) {
+            if (isPluginLoaded)
+                return;
+
+            if (hasFile) {
+                loadPlugin(pluginData);
+                Log.info("Load cached plugin: " + pluginData.getName());
+                return;
+            }
+        } else {
+            Log.info("Detect new version of plugin: " + pluginData.getName());
+            Log.info("Old: " + currentUpdatedAt);
+            Log.info("New: " + updatedAt);
         }
 
-        Log.info("Downloading updated plugin: " + pluginData.getName());
+        Log.info("Downloading plugin: " + pluginData.getName());
 
         Fi pluginFile = new Fi(path.toFile());
 
@@ -272,7 +282,7 @@ public class PluginLoader extends Plugin {
 
                 plugins.put(pluginData, new WeakReference<>(mindustryToolPlugin));
 
-                Log.info("Plugin updated and reloaded: " + pluginData.getName());
+                Log.info("Plugin loaded: " + pluginData.getName());
             } else {
                 Log.info("Invalid plugin: " + instance.getClass().getName());
             }

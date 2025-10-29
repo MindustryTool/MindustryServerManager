@@ -41,6 +41,8 @@ public class ApiGateway {
     public static void unload() {
         serverQueryCache.invalidateAll();
         serverQueryCache = null;
+
+        Log.info("Api gateway unloaded");
     }
 
     private static String uri(String... path) {

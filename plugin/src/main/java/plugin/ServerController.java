@@ -142,21 +142,22 @@ public class ServerController extends Plugin implements MindustryToolPlugin {
     @Override
     public void unload() {
         isUnloaded = true;
-        
+
         ClientCommandHandler.unload();
         ServerCommandHandler.unload();
         SessionHandler.clear();
-        HttpServer.unload();
-        ApiGateway.unload();
         Workflow.clear();
-
         EventHandler.unload();
         HudHandler.unload();
         VoteHandler.unload();
+        
+        ApiGateway.unload();
+        HttpServer.unload();
 
         BACKGROUND_TASK_EXECUTOR.shutdownNow();
+        Log.info("Background task executor shutdown");
         BACKGROUND_SCHEDULER.shutdownNow();
-
+        Log.info("Background scheduler shutdown");
 
         Log.info("Server controller stopped: " + this);
     }

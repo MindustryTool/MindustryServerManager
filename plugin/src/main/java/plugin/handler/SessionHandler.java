@@ -3,6 +3,7 @@ package plugin.handler;
 import java.util.HashMap;
 import arc.func.Boolf;
 import arc.func.Cons;
+import arc.util.Log;
 import mindustry.gen.Groups;
 import mindustry.gen.Player;
 import plugin.type.Session;
@@ -20,6 +21,8 @@ public class SessionHandler {
 
     public static void clear() {
         data.clear();
+
+        Log.info("Session handler cleared");
     }
 
     public static Session getByID(int id) {

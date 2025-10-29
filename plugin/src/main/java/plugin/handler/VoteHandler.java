@@ -4,6 +4,7 @@ import java.util.HashMap;
 
 import arc.Events;
 import arc.struct.Seq;
+import arc.util.Log;
 import mindustry.Vars;
 import mindustry.game.EventType;
 import mindustry.game.Team;
@@ -19,6 +20,8 @@ public class VoteHandler {
     public static void unload() {
         votes.clear();
         votes = null;
+
+        Log.info("Vote handler unloaded");
     }
 
     public static void reset() {
