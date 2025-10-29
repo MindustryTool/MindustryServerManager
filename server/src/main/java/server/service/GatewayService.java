@@ -1,6 +1,7 @@
 package server.service;
 
 import java.net.URI;
+import java.net.UnknownHostException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
@@ -14,6 +15,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientRequestException;
+
 import com.fasterxml.jackson.databind.JsonNode;
 
 import arc.util.Log;
@@ -123,7 +126,9 @@ public class GatewayService {
 							disconnectedAt = Instant.now();
 						}
 					})
-					.retryWhen(Retry.fixedDelay(30, Duration.ofSeconds(1)))
+					.retryWhen(Retry.fixedDelay(30, Duration.ofSeconds(1))
+							.filter(error -> !(error instanceof WebClientRequestException
+									&& error.getCause() instanceof UnknownHostException)))
 					.onErrorMap(Exceptions::isRetryExhausted,
 							error -> new ApiError(HttpStatus.BAD_REQUEST,
 									"Fetch events timeout: " + error.getMessage()))
