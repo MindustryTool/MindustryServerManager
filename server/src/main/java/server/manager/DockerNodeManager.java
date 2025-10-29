@@ -439,7 +439,7 @@ public class DockerNodeManager implements NodeManager {
 
                                 eventBus.fire(new StartEvent(serverId));
                             } else if (stopEvents.stream().anyMatch(stop -> status.equalsIgnoreCase(stop))) {
-                                eventBus.fire(new StopEvent(serverId, NodeRemoveReason.UNKNOWN));
+                                eventBus.fire(new StopEvent(serverId, status.toUpperCase()));
                             }
                         });
 
