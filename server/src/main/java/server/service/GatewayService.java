@@ -149,10 +149,10 @@ public class GatewayService {
 				Log.info(
 						"Disconnected for: " + Utils.toReadableString(Duration.between(disconnectedAt, Instant.now())));
 			}
-			// nodeManager.remove(id, NodeRemoveReason.FETCH_EVENT_TIMEOUT)
-			// 		.doOnError(ApiError.class, error -> Log.err(error.getMessage()))
-			// 		.onErrorComplete(ApiError.class)
-			// 		.subscribe();
+			nodeManager.remove(id, NodeRemoveReason.FETCH_EVENT_TIMEOUT)
+					.doOnError(ApiError.class, error -> Log.err(error.getMessage()))
+					.onErrorComplete(ApiError.class)
+					.subscribe();
 
 			eventBus.fire(new StopEvent(id, NodeRemoveReason.FETCH_EVENT_TIMEOUT));
 		}
