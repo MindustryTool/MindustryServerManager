@@ -412,7 +412,7 @@ public class EventHandler {
                     Vars.state.set(State.paused);
                     Log.info("No player: paused");
                 }
-            }, 10, TimeUnit.SECONDS);
+            }, 5, TimeUnit.SECONDS);
 
             Log.info(chat);
 
