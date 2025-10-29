@@ -68,9 +68,9 @@ public class ServerController extends Plugin implements MindustryToolPlugin {
     public void init() {
 
         HttpServer.init();
+        Workflow.init();
         EventHandler.init();
         ApiGateway.init();
-        Workflow.init();
 
         BACKGROUND_SCHEDULER.schedule(() -> {
             try {
@@ -150,7 +150,7 @@ public class ServerController extends Plugin implements MindustryToolPlugin {
         EventHandler.unload();
         HudHandler.unload();
         VoteHandler.unload();
-        
+
         ApiGateway.unload();
         HttpServer.unload();
 
