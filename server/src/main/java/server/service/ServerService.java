@@ -72,7 +72,7 @@ public class ServerService {
 
             } else {
                 eventSinks.forEach(sink -> {
-                    if (!sink.isCancelled())
+                    if (sink != null && !sink.isCancelled())
                         sink.next(event);
                 });
             }
@@ -94,9 +94,11 @@ public class ServerService {
                 emitter.next(event);
             }
 
-            eventSinks.add(emitter);
+            if (!emitter.isCancelled()) {
+                eventSinks.add(emitter);
 
-            Log.info("Client connected: " + eventSinks.size());
+                Log.info("Client connected: " + eventSinks.size());
+            }
         });
 
         return eventSink;
