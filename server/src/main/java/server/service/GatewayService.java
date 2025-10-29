@@ -121,6 +121,18 @@ public class GatewayService {
 
 						return Mono.empty();
 					})
+					.onErrorMap(WebClientRequestException.class, error -> {
+						if (error.getCause() instanceof UnknownHostException) {
+							return new ApiError(HttpStatus.NOT_FOUND, "Server not found: " + error.getMessage());
+						}
+
+						if (Utils.isConnectionException(error.getCause())) {
+							return new ApiError(HttpStatus.BAD_REQUEST,
+									"Can not connect to server: " + error.getMessage());
+						}
+
+						return error;
+					})
 					.doOnError(_ignore -> {
 						if (disconnectedAt == null) {
 							disconnectedAt = Instant.now();
@@ -381,11 +393,11 @@ public class GatewayService {
 			}
 
 			public Flux<JsonNode> getEvents() {
-				return Utils.wrapError(webClient.get()
+				return webClient.get()
 						.uri("events")
 						.accept(MediaType.TEXT_EVENT_STREAM)
 						.retrieve()
-						.bodyToFlux(JsonNode.class), Duration.ofDays(365), "Get events");
+						.bodyToFlux(JsonNode.class);
 			}
 		}
 	}
