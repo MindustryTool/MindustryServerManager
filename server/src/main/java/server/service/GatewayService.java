@@ -123,10 +123,12 @@ public class GatewayService {
 							return Mono.empty();
 						}
 
-						// Parse JsonNode into clazz
-						BaseEvent data = (BaseEvent) Utils.readJsonAsClass(event, eventType);
-
-						eventBus.fire(data);
+						try {
+							BaseEvent data = (BaseEvent) Utils.readJsonAsClass(event, eventType);
+							eventBus.fire(data);
+						} catch (Exception e) {
+							Log.err(e);
+						}
 
 						return Mono.empty();
 					})
