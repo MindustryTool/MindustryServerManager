@@ -128,7 +128,7 @@ public class PluginLoader extends Plugin {
         for (PluginData plugin : PLUGINS) {
             try {
                 checkAndUpdate(plugin);
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 Log.err("Error while checking and updating plugin " + plugin.getName(), e);
             }
         }
