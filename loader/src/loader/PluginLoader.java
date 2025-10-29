@@ -207,9 +207,13 @@ public class PluginLoader extends Plugin {
 
         unloadPlugin(pluginData);
 
+        Log.info("Deleting old plugin file: " + pluginFile);
         pluginFile.delete();
+
+        Log.info("Writing new plugin file: " + pluginFile);
         pluginFile.writeBytes(data);
 
+        Log.info("Updating metadata: " + pluginData.getName());
         writeUpdatedAt(pluginData, updatedAt);
 
         loadPlugin(pluginData);
