@@ -10,7 +10,7 @@ public class EventListenerWorkflow extends WorkflowNode {
             .consume(new FieldConsumer<>(Boolean.class)
                     .defaultValue(true));
 
-    private final WorkflowField<Class, Void> classField = new WorkflowField<Class, Void>("class")
+    private final WorkflowField<Class<?>, Void> classField = new WorkflowField<Class, Void>("class")
             .consume(new FieldConsumer<>(Class.class))
             .produce(new FieldProducer("event", Class.class));
 
