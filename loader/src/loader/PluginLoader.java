@@ -26,7 +26,6 @@ import arc.util.Log;
 import mindustry.game.EventType;
 
 import java.io.IOException;
-import java.lang.ref.WeakReference;
 import java.nio.file.*;
 import java.util.Arrays;
 import java.util.List;
@@ -37,7 +36,7 @@ public class PluginLoader extends Plugin {
     public final UUID SERVER_ID = UUID.fromString(System.getenv("SERVER_ID"));
 
     private final PluginManager pluginManager;
-    private final ConcurrentHashMap<PluginData, WeakReference<MindustryToolPlugin>> plugins = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<PluginData, MindustryToolPlugin> plugins = new ConcurrentHashMap<>();
     private final ScheduledExecutorService BACKGROUND_SCHEDULER = Executors.newSingleThreadScheduledExecutor();
 
     private final List<PluginData> PLUGINS = Arrays.asList(
@@ -102,8 +101,6 @@ public class PluginLoader extends Plugin {
     public void forEachPlugin(Consumer<MindustryToolPlugin> consumer) {
         plugins.values()
                 .stream()
-                .map(value -> value.get())
-                .filter(value -> value != null)
                 .forEach(consumer);
     }
 
@@ -224,17 +221,14 @@ public class PluginLoader extends Plugin {
 
     private void unloadPlugin(PluginData pluginData) {
         try {
-            WeakReference<MindustryToolPlugin> ref = plugins.get(pluginData);
+            MindustryToolPlugin plugin = plugins.get(pluginData);
 
-            if (ref != null) {
-                MindustryToolPlugin plugin = ref.get();
-                if (plugin != null) {
-                    plugin.unload();
-                    ref.clear();
-                }
+            if (plugin != null) {
+                plugin.unload();
             }
 
             plugins.remove(pluginData);
+            pluginManager.stopPlugin(pluginData.getId());
             pluginManager.unloadPlugin(pluginData.getId());
 
             Log.info("Unloaded plugin: " + pluginData.getName());
@@ -281,7 +275,7 @@ public class PluginLoader extends Plugin {
                     mindustryToolPlugin.registerServerCommands(serverCommandHandler);
                 }
 
-                plugins.put(pluginData, new WeakReference<>(mindustryToolPlugin));
+                plugins.put(pluginData, mindustryToolPlugin);
 
                 Log.info("Plugin loaded: " + pluginData.getName());
             } else {
