@@ -34,11 +34,11 @@ public class IntervalWorkflow extends WorkflowNode {
     @Override
     public void init(Workflow context) {
         if (typeField.getConsumer().asEnum() == IntervalType.FIXED_RATE) {
-            context.scheduleAtFixedRate(() -> {
+            Workflow.scheduleAtFixedRate(() -> {
                 WorkflowEmitEvent.create(this, context).next();
             }, delayField.getConsumer().asLong(), intervalField.getConsumer().asLong());
         } else {
-            context.scheduleWithFixedDelay(() -> {
+            Workflow.scheduleWithFixedDelay(() -> {
                 WorkflowEmitEvent.create(this, context).next();
             }, delayField.getConsumer().asLong(), intervalField.getConsumer().asLong());
         }
