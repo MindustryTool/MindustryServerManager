@@ -32,6 +32,7 @@ import dto.PlayerInfoDto;
 import dto.ServerCommandDto;
 import dto.ServerStateDto;
 import events.BaseEvent;
+import events.StartEvent;
 import enums.NodeRemoveReason;
 import events.StopEvent;
 import jakarta.annotation.PreDestroy;
@@ -77,16 +78,19 @@ public class GatewayService {
 	@RequiredArgsConstructor
 	public class GatewayClient {
 
+		enum ConnectionState {
+			CONNECTED, DISCONNECTED
+		}
+
 		@Getter
 		private final UUID id;
 
 		@Getter
 		private final Server server;
 
-		private boolean connected = false;
-
 		private final Instant createdAt = Instant.now();
 		private Instant disconnectedAt = null;
+		private ConnectionState state = ConnectionState.DISCONNECTED;
 
 		private final Disposable eventJob;
 
@@ -98,10 +102,11 @@ public class GatewayService {
 					.flatMap(event -> {
 						var name = event.get("name").asText(null);
 
-						if (connected == false) {
-							connected = true;
+						if (state == ConnectionState.DISCONNECTED) {
+							state = ConnectionState.CONNECTED;
 							disconnectedAt = null;
 							onConnect.accept(this);
+							eventBus.fire(new StartEvent(id));
 						}
 
 						if (name == null) {
@@ -141,8 +146,11 @@ public class GatewayService {
 						if (disconnectedAt == null) {
 							disconnectedAt = Instant.now();
 						}
+
+						state = ConnectionState.DISCONNECTED;
+						eventBus.fire(new StopEvent(id, NodeRemoveReason.FETCH_EVENT_TIMEOUT));
 					})
-					.retryWhen(Retry.fixedDelay(30, Duration.ofSeconds(1)))
+					.retryWhen(Retry.fixedDelay(60 * 10, Duration.ofSeconds(1)))
 					.onErrorMap(Exceptions::isRetryExhausted,
 							error -> new ApiError(HttpStatus.BAD_REQUEST,
 									"Fetch events timeout: " + error.getMessage()))
@@ -162,14 +170,12 @@ public class GatewayService {
 			Log.info("Create GatewayClient for server: " + id);
 		}
 
-		public void cancel() {
-			eventJob.dispose();
-		}
-
 		private void remove() {
 			cache.remove(id);
+
 			Log.info("Close GatewayClient: " + id);
 			Log.info("Running for: " + Utils.toReadableString(Duration.between(createdAt, Instant.now())));
+
 			if (disconnectedAt != null) {
 				Log.info(
 						"Disconnected for: " + Utils.toReadableString(Duration.between(disconnectedAt, Instant.now())));
@@ -180,6 +186,10 @@ public class GatewayService {
 					.subscribe();
 
 			eventBus.fire(new StopEvent(id, NodeRemoveReason.FETCH_EVENT_TIMEOUT));
+		}
+
+		public void cancel() {
+			eventJob.dispose();
 		}
 
 		public class Server {
