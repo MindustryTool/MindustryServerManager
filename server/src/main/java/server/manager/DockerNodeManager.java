@@ -370,11 +370,11 @@ public class DockerNodeManager implements NodeManager {
         for (var container : containers) {
             var optional = readMetadataFromContainer(container);
             try {
-                if (optional.isPresent()) {
+                if (optional.isPresent() && container.getState().equalsIgnoreCase("running")) {
                     var metadata = optional.orElseThrow();
                     var serverId = metadata.getConfig().getId();
 
-                    logCallbacks.computeIfAbsent(serverId, _ignore -> createLogCallack(container.getId(), serverId));
+                    logCallbacks.computeIfAbsent(serverId, _ignore ->  createLogCallack(container.getId(), serverId));
                 }
             } catch (Exception e) {
                 Log.err(e.getMessage());
