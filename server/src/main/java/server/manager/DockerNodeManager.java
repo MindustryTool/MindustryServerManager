@@ -255,7 +255,7 @@ public class DockerNodeManager implements NodeManager {
 
         return Flux.fromIterable(containers)
                 .map(container -> new ServerState()//
-                        .running(container.getState().equals("running"))//
+                        .running(container.getState().equalsIgnoreCase("running"))//
                         .meta(readMetadataFromContainer(container)));
     }
 

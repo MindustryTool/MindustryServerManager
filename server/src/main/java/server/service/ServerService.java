@@ -110,9 +110,9 @@ public class ServerService {
         nodeManager.list()
                 .filter(state -> state.meta.isPresent() && state.running())
                 .flatMap(state -> gatewayService.of(state.meta.get().getConfig().getId()))
-                .subscribeOn(Schedulers.boundedElastic())
                 .doOnError(ApiError.class, error -> Log.err(error.getMessage()))
                 .onErrorComplete(ApiError.class)
+                .subscribeOn(Schedulers.boundedElastic())
                 .subscribe();
     }
 
