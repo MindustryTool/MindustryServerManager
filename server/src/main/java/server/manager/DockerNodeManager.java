@@ -672,20 +672,7 @@ public class DockerNodeManager implements NodeManager {
 
     @Override
     public Mono<Fi> getFile(UUID serverId, String path) {
-        if (path.contains("..") || path.contains("./")) {
-            return Mono.error(new IllegalArgumentException("Invalid path: " + path));
-        }
-
-        Fi baseFile = getBaseFile(serverId);
-        String relative = path.replace(baseFile.absolutePath(), "");
-        Fi newFile = baseFile.child(relative);
-
-        if (!newFile.absolutePath().contains(baseFile.absolutePath())) {
-            throw new ApiError(HttpStatus.FORBIDDEN,
-                    "Path is not in server folder: " + relative + ":" + newFile.absolutePath());
-        }
-
-        return Mono.just(newFile);
+        return Mono.just(FileUtils.getFile(getBaseFile(serverId), path));
 
     }
 

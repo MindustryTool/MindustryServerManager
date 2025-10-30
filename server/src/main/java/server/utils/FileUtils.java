@@ -1,6 +1,5 @@
 package server.utils;
 
-import java.nio.file.Path;
 import java.util.List;
 
 import org.springframework.http.HttpStatus;
@@ -19,7 +18,16 @@ public class FileUtils {
             throw new ApiError(HttpStatus.BAD_REQUEST, "Invalid file path");
         }
 
-        return new Fi(Path.of(basePath, path).toFile());
+        Fi baseFile = new Fi(basePath);
+        String relative = path.replace(baseFile.absolutePath(), "");
+        Fi newFile = baseFile.child(relative);
+
+        if (!newFile.absolutePath().contains(baseFile.absolutePath())) {
+            throw new ApiError(HttpStatus.FORBIDDEN,
+                    "Path is not in server folder: " + relative + ":" + newFile.absolutePath());
+        }
+
+        return newFile;
     }
 
     public static List<ServerFileDto> getFiles(String path) {
