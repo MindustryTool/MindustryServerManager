@@ -141,8 +141,6 @@ public class ServerController extends Plugin implements MindustryToolPlugin {
 
     @Override
     public void unload() {
-        isUnloaded = true;
-
         ClientCommandHandler.unload();
         ServerCommandHandler.unload();
         SessionHandler.clear();
@@ -150,7 +148,6 @@ public class ServerController extends Plugin implements MindustryToolPlugin {
         EventHandler.unload();
         HudHandler.unload();
         VoteHandler.unload();
-
         ApiGateway.unload();
         HttpServer.unload();
 
@@ -158,7 +155,8 @@ public class ServerController extends Plugin implements MindustryToolPlugin {
         Log.info("Background task executor shutdown");
         BACKGROUND_SCHEDULER.shutdownNow();
         Log.info("Background scheduler shutdown");
-
+        
+        isUnloaded = true;
         Log.info("Server controller stopped: " + this);
     }
 
