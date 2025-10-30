@@ -67,6 +67,10 @@ public class FileUtils {
     }
 
     public static boolean deleteFile(Fi file) {
+        if (!file.exists()) {
+            throw new ApiError(HttpStatus.NOT_FOUND, "File not exists: " + file.absolutePath());
+        }
+
         if (file.isDirectory()) {
             for (Fi child : file.list()) {
                 deleteFile(child);
