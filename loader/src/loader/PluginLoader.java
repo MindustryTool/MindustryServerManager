@@ -23,6 +23,7 @@ import arc.Core;
 import arc.Events;
 import arc.files.Fi;
 import arc.util.Log;
+import arc.util.Http.HttpStatusException;
 import mindustry.game.EventType;
 
 import java.io.IOException;
@@ -128,6 +129,8 @@ public class PluginLoader extends Plugin {
         for (PluginData plugin : PLUGINS) {
             try {
                 checkAndUpdate(plugin);
+            } catch (HttpStatusException e) {
+                Log.err("Error while checking and updating plugin " + plugin.getName() + ": " + e.getMessage());
             } catch (Throwable e) {
                 Log.err("Error while checking and updating plugin " + plugin.getName(), e);
             }
