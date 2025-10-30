@@ -1,5 +1,6 @@
 package dto;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -17,5 +18,5 @@ public class ServerStateDto {
     private ServerStatus status = ServerStatus.UNSET;
     private int kicks = 0;
     private String version = "custom";
-    private Long startedAt = System.currentTimeMillis();
+    private Long startedAt = Instant.now().toEpochMilli();
 }
