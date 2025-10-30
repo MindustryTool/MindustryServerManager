@@ -162,7 +162,7 @@ public class Utils {
                 : Vars.mods.list()
                         .select((mod) -> mod.meta.hidden == false)
                         .map(mod -> new ModDto()//
-                                .setFilename(mod.file.name())//
+                                .setFilename(mod.file.absolutePath())//
                                 .setName(mod.name)
                                 .setMeta(ModMetaDto.from(mod.meta)))
                         .list();

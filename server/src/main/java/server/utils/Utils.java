@@ -154,7 +154,7 @@ public class Utils {
                 }
 
                 return new ModDto()//
-                        .setFilename(sourceFile.name())//
+                        .setFilename(sourceFile.absolutePath())//
                         .setName(meta.name)
                         .setMeta(new ModMetaDto()//
                                 .setAuthor(meta.author)//
@@ -182,7 +182,7 @@ public class Utils {
         } catch (Exception error) {
             error.printStackTrace();
             return new ModDto()
-                    .setFilename(sourceFile.name())//
+                    .setFilename(sourceFile.absolutePath())//
                     .setName("Error")
                     .setMeta(new ModMetaDto()//
                             .setAuthor("Error")
