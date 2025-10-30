@@ -79,7 +79,7 @@ public class HttpServer {
 
         app.beforeMatched((ctx) -> {
             if (ServerController.isUnloaded) {
-                throw new IllegalStateException("Server is unloaded");
+                throw new ServerUnloadedException();
             }
         });
 
@@ -94,6 +94,12 @@ public class HttpServer {
             Log.warn("Timeout exception", exception);
             HashMap<String, Object> result = new HashMap<>();
             result.put("message", exception.getMessage() == null ? "Unknown error" : exception.getMessage());
+            ctx.status(400).json(result);
+        });
+
+        app.exception(ServerUnloadedException.class, (exception, ctx) -> {
+            HashMap<String, Object> result = new HashMap<>();
+            result.put("message", "Server is unloaded");
             ctx.status(400).json(result);
         });
 
@@ -185,6 +191,12 @@ public class HttpServer {
             this.path = path;
             this.ip = ip;
             this.timestamp = timestamp;
+        }
+    }
+
+    public static class ServerUnloadedException extends IllegalStateException {
+        public ServerUnloadedException() {
+            super("Server is unloaded");
         }
     }
 }
