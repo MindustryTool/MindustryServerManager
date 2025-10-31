@@ -107,6 +107,7 @@ public class ServerService {
     @Scheduled(fixedDelay = 5, timeUnit = TimeUnit.SECONDS)
     @PostConstruct
     private void scanServer() {
+        Log.info("Scan server");
         nodeManager.list()
                 .doOnNext((data) -> Log.info("Scan: " + data))
                 .filter(state -> state.meta.isPresent() && state.running())
