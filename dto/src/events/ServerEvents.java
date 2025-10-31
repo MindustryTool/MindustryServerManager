@@ -16,17 +16,25 @@ import lombok.experimental.Accessors;
 public class ServerEvents {
     private static final HashMap<String, Class<?>> eventTypeMap = new HashMap<>();
 
-    public static HashMap<String, Class<?>> getEventMap() {
-        if (eventTypeMap.size() == 0) {
-            for (Class<?> clazz : ServerEvents.class.getDeclaredClasses()) {
-                String className = clazz.getSimpleName()
-                        .replace("Event", "")
-                        .replaceAll("([a-z])([A-Z]+)", "$1-$2")
-                        .toLowerCase();
+    static {
+        init();
+    }
 
-                eventTypeMap.put(className, clazz);
-                Log.info("Register @ events", className);
-            }
+    public static void init() {
+        for (Class<?> clazz : ServerEvents.class.getDeclaredClasses()) {
+            String className = clazz.getSimpleName()
+                    .replace("Event", "")
+                    .replaceAll("([a-z])([A-Z]+)", "$1-$2")
+                    .toLowerCase();
+
+            eventTypeMap.put(className, clazz);
+            Log.info("Register @ events", className);
+        }
+    }
+
+    public static synchronized HashMap<String, Class<?>> getEventMap() {
+        if (eventTypeMap.size() == 0) {
+            init();
         }
 
         return eventTypeMap;
