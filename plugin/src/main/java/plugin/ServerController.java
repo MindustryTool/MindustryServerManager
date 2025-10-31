@@ -155,7 +155,7 @@ public class ServerController extends Plugin implements MindustryToolPlugin {
         Log.info("Background task executor shutdown");
         BACKGROUND_SCHEDULER.shutdownNow();
         Log.info("Background scheduler shutdown");
-        
+
         isUnloaded = true;
         Log.info("Server controller stopped: " + this);
     }
