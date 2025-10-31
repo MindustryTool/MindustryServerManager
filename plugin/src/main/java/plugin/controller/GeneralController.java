@@ -338,7 +338,7 @@ public class GeneralController {
                             HashMap<String, Object> info = new HashMap<>();
                             info.put("name", map.name()); //
                             info.put("author", map.author()); //
-                            info.put("file", map.file.absolutePath());
+                            info.put("file", toRelativeToServer(map.file.absolutePath()));
                             info.put("tags", map.tags);
                             info.put("description", map.description());
                             info.put("width", map.width);
@@ -385,5 +385,17 @@ public class GeneralController {
         }
 
         Utils.host(mapName, gameMode);
+    }
+
+    public static String toRelativeToServer(String path) {
+        String config = "config";
+
+        int index = path.indexOf(config);
+
+        if (index == -1) {
+            return path;
+        }
+
+        return path.substring(index + config.length());
     }
 }

@@ -154,7 +154,7 @@ public class Utils {
                 }
 
                 return new ModDto()//
-                        .setFilename(sourceFile.absolutePath())//
+                        .setFilename(FileUtils.toRelativeToServer(sourceFile.absolutePath()))//
                         .setName(meta.name)
                         .setMeta(new ModMetaDto()//
                                 .setAuthor(meta.author)//
@@ -183,7 +183,7 @@ public class Utils {
             Log.err("Can not load mod from: " + sourceFile.name() + ", " + error.getMessage());
 
             return new ModDto()
-                    .setFilename(sourceFile.absolutePath())//
+                    .setFilename(FileUtils.toRelativeToServer(sourceFile.absolutePath()))//
                     .setName("Error")
                     .setMeta(new ModMetaDto()//
                             .setAuthor("Error")
@@ -212,7 +212,7 @@ public class Utils {
 
         return new MapDto()//
                 .setName(map.name())//
-                .setFilename(map.file.absolutePath())
+                .setFilename(FileUtils.toRelativeToServer(map.file.absolutePath()))
                 .setCustom(map.custom)
                 .setHeight(map.height)
                 .setWidth(map.width);

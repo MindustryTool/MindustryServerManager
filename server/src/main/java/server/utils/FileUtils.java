@@ -40,14 +40,14 @@ public class FileUtils {
         if (file.isDirectory()) {
             return file.seq()
                     .map(child -> new ServerFileDto()//
-                            .path(child.absolutePath())//
+                            .path(toRelativeToServer(child.absolutePath()))//
                             .size(child.length())//
                             .directory(child.isDirectory()))//
                     .list();
         }
 
         return List.of(new ServerFileDto()//
-                .path(file.absolutePath())//
+                .path(toRelativeToServer(file.absolutePath()))//
                 .directory(file.isDirectory())//
                 .size(file.length())//
                 .data(file.readString()));
@@ -76,7 +76,7 @@ public class FileUtils {
 
     public static boolean deleteFile(Fi file) {
         if (!file.exists()) {
-            throw new ApiError(HttpStatus.NOT_FOUND, "File not exists: " + file.absolutePath());
+            throw new ApiError(HttpStatus.NOT_FOUND, "File not exists: " + file.path());
         }
 
         if (file.isDirectory()) {
@@ -85,5 +85,17 @@ public class FileUtils {
             }
         }
         return file.delete();
+    }
+
+    public static String toRelativeToServer(String path) {
+        String config = "config";
+
+        int index = path.indexOf(config);
+
+        if (index == -1) {
+            return path;
+        }
+
+        return path.substring(index + config.length());
     }
 }
