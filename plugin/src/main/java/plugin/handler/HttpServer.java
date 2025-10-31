@@ -169,7 +169,10 @@ public class HttpServer {
     }
 
     public static void unload() {
-        eventListener.close();
+        if (eventListener != null) {
+            eventListener.close();
+        }
+
         buffer.clear();
 
         Log.info("Event listener closed");

@@ -196,28 +196,28 @@ public class PluginLoader extends Plugin {
                 return;
             }
         } else {
-            Log.info("Detect new version of plugin: " + pluginData.getName());
-            Log.info("Old: " + currentUpdatedAt);
-            Log.info("New: " + updatedAt);
+            Log.info("[green]Detect new version of plugin: " + pluginData.getName());
+            Log.info("[yellow]Old: " + currentUpdatedAt);
+            Log.info("[green]New: " + updatedAt);
         }
 
-        Log.info("Downloading plugin: " + pluginData.getName());
+        Log.info("[cyan]Downloading plugin: " + pluginData.getName());
 
         Fi pluginFile = new Fi(path.toFile());
 
         byte[] data = pluginData.download();
 
-        Log.info("Downloaded: " + pluginData.getName() + ":" + updatedAt);
+        Log.info("[cyan]Downloaded: " + pluginData.getName() + ":" + updatedAt);
 
         unloadPlugin(pluginData);
 
-        Log.info("Deleting old plugin file: " + pluginFile);
+        Log.info("[cyan]Deleting old plugin file: " + pluginFile);
         pluginFile.delete();
 
-        Log.info("Writing new plugin file: " + pluginFile);
+        Log.info("[cyan]Writing new plugin file: " + pluginFile);
         pluginFile.writeBytes(data);
 
-        Log.info("Updating metadata: " + pluginData.getName());
+        Log.info("[cyan]Updating metadata: " + pluginData.getName());
         writeUpdatedAt(pluginData, updatedAt);
 
         loadPlugin(pluginData);
@@ -238,9 +238,9 @@ public class PluginLoader extends Plugin {
             pluginManager.stopPlugin(pluginData.getId());
             pluginManager.unloadPlugin(pluginData.getId());
 
-            Log.info("Unloaded plugin: " + pluginData.getName());
+            Log.info("[green]Unloaded plugin: " + pluginData.getName());
         } catch (Exception e) {
-            Log.err("Error while unloading plugin " + pluginData.getName(), e);
+            Log.err("[red]Error while unloading plugin " + pluginData.getName(), e);
         }
     }
 
@@ -249,7 +249,7 @@ public class PluginLoader extends Plugin {
             throw new RuntimeException("Plugin already loaded: " + pluginData.getName());
         }
 
-        Log.info("Loading plugin: " + pluginData.getName());
+        Log.info("[green]Loading plugin: " + pluginData.getName());
 
         Path path = getPluginPath(pluginData);
 
@@ -262,15 +262,14 @@ public class PluginLoader extends Plugin {
                 throw new RuntimeException("Plugin not found: " + pluginData.getId());
             }
 
-            Log.info("State: " + wrapper.getPluginState().name());
-            Log.info("State: " + pluginManager.startPlugin(pluginData.getId()));
+            pluginManager.startPlugin(pluginData.getId());
 
             org.pf4j.Plugin instance = wrapper.getPlugin();
 
             if (instance instanceof MindustryToolPlugin) {
                 MindustryToolPlugin mindustryToolPlugin = (MindustryToolPlugin) instance;
 
-                Log.info("Init plugin: " + mindustryToolPlugin.getClass().getName());
+                Log.info("[green]Init plugin: " + mindustryToolPlugin.getClass().getName());
 
                 mindustryToolPlugin.init();
 
@@ -284,9 +283,9 @@ public class PluginLoader extends Plugin {
 
                 plugins.put(pluginData, mindustryToolPlugin);
 
-                Log.info("Plugin loaded: " + pluginData.getName());
+                Log.info("[green]Plugin loaded: " + pluginData.getName());
             } else {
-                Log.info("Invalid plugin: " + instance.getClass().getName());
+                Log.info("[red]Invalid plugin: " + instance.getClass().getName());
             }
 
         } catch (PluginRuntimeException e) {
