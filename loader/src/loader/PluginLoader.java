@@ -67,14 +67,15 @@ public class PluginLoader extends Plugin {
 
         pluginManager = new DefaultPluginManager();
 
-        Log.logger = (level1, text) -> {
-            String result = Log.format(tags[level1.ordinal()] + " " + text + "&fr");
-            System.out.println(result);
-        };
     }
 
     @Override
     public void init() {
+        Log.logger = (level1, text) -> {
+            String result = Log.format(tags[level1.ordinal()] + " " + text + "&fr");
+            System.out.println(result);
+        };
+
         Core.settings.put("startedAt", System.currentTimeMillis());
 
         registerEventListener();
