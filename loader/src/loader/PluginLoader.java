@@ -27,6 +27,7 @@ import arc.util.Http.HttpStatusException;
 import mindustry.game.EventType;
 
 import java.io.IOException;
+import java.net.SocketTimeoutException;
 import java.nio.file.*;
 import java.util.Arrays;
 import java.util.List;
@@ -129,7 +130,7 @@ public class PluginLoader extends Plugin {
         for (PluginData plugin : PLUGINS) {
             try {
                 checkAndUpdate(plugin);
-            } catch (HttpStatusException e) {
+            } catch (HttpStatusException | SocketTimeoutException e) {
                 Log.err("Error while checking and updating plugin " + plugin.getName() + ": " + e.getMessage());
             } catch (Throwable e) {
                 Log.err("Error while checking and updating plugin " + plugin.getName(), e);
