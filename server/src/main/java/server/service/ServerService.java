@@ -104,7 +104,7 @@ public class ServerService {
         return eventSink;
     }
 
-    @Scheduled(fixedDelay = 5, timeUnit = TimeUnit.SECONDS)
+    @Scheduled(fixedDelay = 10, timeUnit = TimeUnit.SECONDS)
     @PostConstruct
     private void scanServer() {
         nodeManager.list()
