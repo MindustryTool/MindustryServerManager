@@ -108,8 +108,8 @@ public class ServerService {
     @PostConstruct
     private void scanServer() {
         nodeManager.list()
-                .doOnNext((data) -> Log.info("Scan: " + data))
                 .filter(state -> state.meta.isPresent() && state.running())
+                .doOnNext((data) -> Log.info("Scan: " + data.meta.get().getConfig().getName()))
                 .flatMap(state -> gatewayService.of(state.meta.get().getConfig().getId()))
                 .doOnError(ApiError.class, error -> Log.err(error.getMessage()))
                 .onErrorComplete(ApiError.class)
