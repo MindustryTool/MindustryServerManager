@@ -130,6 +130,10 @@ public class ServerService {
 
         nodeManager.list()
                 .flatMap(state -> {
+                    state.meta.ifPresent(meta -> {
+                        Log.info("Checking server: " + meta.getConfig().getId() + ", running: " + state.running());
+                    });
+
                     if (state.running()) {
                         return checkRunningServer(state.meta().orElseThrow().getConfig(), true);
                     }
