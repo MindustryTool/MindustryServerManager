@@ -18,7 +18,7 @@ public class ServerEvents {
 
     public static HashMap<String, Class<?>> getEventMap() {
         if (eventTypeMap.size() == 0) {
-            for (var clazz : ServerEvents.class.getDeclaredClasses()) {
+            for (Class<?> clazz : ServerEvents.class.getDeclaredClasses()) {
                 if (clazz.isInstance(clazz)) {
                     String className = clazz.getSimpleName()
                             .replace("Event", "")
