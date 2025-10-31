@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.UUID;
 
 import arc.util.Log;
+import dto.PlayerDto;
 import dto.ServerStateDto;
 import enums.NodeRemoveReason;
 import lombok.Data;
@@ -19,7 +20,11 @@ public class ServerEvents {
         if (eventTypeMap.size() == 0) {
             for (var clazz : ServerEvents.class.getDeclaredClasses()) {
                 if (clazz.isInstance(clazz)) {
-                    String className = clazz.getName().replaceAll("([a-z])([A-Z]+)", "$1-$2").toLowerCase();
+                    String className = clazz.getSimpleName()
+                            .replace("Event", "")
+                            .replaceAll("([a-z])([A-Z]+)", "$1-$2")
+                            .toLowerCase();
+
                     eventTypeMap.put(className, clazz);
                     Log.info("Register @ events", className);
                 }
@@ -98,6 +103,46 @@ public class ServerEvents {
         public static LogEvent error(UUID serverId, String data) {
             return new LogEvent(serverId).setLevel(LogLevel.error).setData(data);
         }
-
     }
+
+    @Accessors(chain = true)
+    @Data
+    @EqualsAndHashCode(callSuper = false)
+    @NoArgsConstructor
+    public static class ChatEvent extends BaseEvent {
+        private String data;
+
+        public ChatEvent(UUID serverId, String data) {
+            super(serverId, "chat");
+            this.data = data;
+        }
+    }
+
+    @Accessors(chain = true)
+    @Data
+    @EqualsAndHashCode(callSuper = false)
+    @NoArgsConstructor
+    public static class PlayerJoinEvent extends BaseEvent {
+        private PlayerDto player;
+
+        public PlayerJoinEvent(UUID serverId, PlayerDto player) {
+            super(serverId, "player-join");
+            this.player = player;
+        }
+    }
+
+    @Accessors(chain = true)
+    @Data
+    @EqualsAndHashCode(callSuper = false)
+    @NoArgsConstructor
+    public static class PlayerLeaveEvent extends BaseEvent {
+        private PlayerDto player;
+
+        public PlayerLeaveEvent(UUID serverId, PlayerDto player) {
+            super(serverId, "player-leave");
+            this.player = player;
+        }
+    }
+
+    
 }
