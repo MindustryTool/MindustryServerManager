@@ -43,7 +43,7 @@ import dto.MapDto;
 import dto.ModDto;
 import dto.ServerStateDto;
 import events.BaseEvent;
-import events.LogEvent;
+import events.ServerEvents.LogEvent;
 import enums.NodeRemoveReason;
 import dto.PlayerInfoDto;
 import dto.ServerCommandDto;

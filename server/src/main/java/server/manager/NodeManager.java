@@ -15,7 +15,7 @@ import dto.ManagerModDto;
 import dto.MapDto;
 import dto.ModDto;
 import dto.ServerStateDto;
-import events.LogEvent;
+import events.ServerEvents.LogEvent;
 import enums.NodeRemoveReason;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;

@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 
 import arc.util.Log;
 import events.BaseEvent;
-import events.LogEvent;
+import events.ServerEvents.LogEvent;
 
 @Service
 public class EventBus {

@@ -20,7 +20,7 @@ import dto.ModDto;
 import dto.ServerStateDto;
 import dto.ServerStatus;
 import events.BaseEvent;
-import events.LogEvent;
+import events.ServerEvents.LogEvent;
 import enums.NodeRemoveReason;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;

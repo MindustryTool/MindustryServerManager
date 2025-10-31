@@ -32,9 +32,10 @@ import dto.PlayerInfoDto;
 import dto.ServerCommandDto;
 import dto.ServerStateDto;
 import events.BaseEvent;
-import events.StartEvent;
+import events.ServerEvents;
+import events.ServerEvents.StartEvent;
 import enums.NodeRemoveReason;
-import events.StopEvent;
+import events.ServerEvents.StopEvent;
 import jakarta.annotation.PreDestroy;
 import server.utils.ApiError;
 import server.utils.Utils;
@@ -112,10 +113,10 @@ public class GatewayService {
 								return Mono.empty();
 							}
 
-							var eventType = BaseEvent.getEventMap().get(name);
+							var eventType = ServerEvents.getEventMap().get(name);
 
 							if (eventType == null) {
-								Log.warn("Invalid event name: " + name + " in " + BaseEvent.getEventMap().keySet());
+								Log.warn("Invalid event name: " + name + " in " + ServerEvents.getEventMap().keySet());
 
 								return Mono.empty();
 							}

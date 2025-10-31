@@ -17,7 +17,7 @@ import plugin.ServerController;
 import plugin.controller.GeneralController;
 import plugin.controller.WorkflowController;
 import dto.ServerStateDto;
-import events.ServerStateEvent;
+import events.ServerEvents.ServerStateEvent;
 import plugin.utils.Utils;
 import io.javalin.Javalin;
 import io.javalin.json.JavalinJackson;
