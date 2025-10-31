@@ -126,9 +126,7 @@ public class ApiGateway {
 
     public static void sendPlayerLeave(PlayerDto payload) {
         try {
-            send(post("players/leave")
-                    .header("Content-Type", "application/json")//
-                    .content(JsonUtils.toJsonString(payload)));
+          
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -147,9 +145,7 @@ public class ApiGateway {
 
     public static void sendChatMessage(String chat) {
         try {
-            send(post("chat")
-                    .header("Content-Type", "application/json")//
-                    .content(JsonUtils.toJsonString(chat)));
+           
         } catch (Exception e) {
             e.printStackTrace();
         }
