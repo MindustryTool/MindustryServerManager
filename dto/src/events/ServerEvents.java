@@ -63,6 +63,16 @@ public class ServerEvents {
     @Data
     @EqualsAndHashCode(callSuper = false)
     @NoArgsConstructor
+    public static class DisconnectEvent extends BaseEvent {
+        public DisconnectEvent(UUID serverId) {
+            super(serverId, "disconnect");
+        }
+    }
+
+    @Accessors(chain = true)
+    @Data
+    @EqualsAndHashCode(callSuper = false)
+    @NoArgsConstructor
     public static class StopEvent extends BaseEvent {
 
         private String reason;

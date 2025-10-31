@@ -33,6 +33,7 @@ import dto.ServerCommandDto;
 import dto.ServerStateDto;
 import events.BaseEvent;
 import events.ServerEvents;
+import events.ServerEvents.DisconnectEvent;
 import events.ServerEvents.StartEvent;
 import enums.NodeRemoveReason;
 import events.ServerEvents.StopEvent;
@@ -149,14 +150,15 @@ public class GatewayService {
 
 						if (state != ConnectionState.DISCONNECTED) {
 							state = ConnectionState.DISCONNECTED;
-							eventBus.fire(new StopEvent(id, NodeRemoveReason.FETCH_EVENT_TIMEOUT));
+							eventBus.fire(new DisconnectEvent(id));
 						}
 					})
 					.retryWhen(Retry.fixedDelay(60 * 10, Duration.ofSeconds(1)))
 					.doOnError(Exceptions::isRetryExhausted, error -> remove())
 					.onErrorMap(Exceptions::isRetryExhausted,
-							error -> new ApiError(HttpStatus.BAD_REQUEST,
-									"Fetch events timeout: " + error.getMessage()))
+							error -> new ApiError(HttpStatus.BAD_REQUEST, "Events timeout: " + error.getMessage()))
+					.doOnError(ApiError.class,
+							error -> eventBus.fire(new StopEvent(id, NodeRemoveReason.FETCH_EVENT_TIMEOUT)))
 					.doOnError(error -> Log.err(error.getMessage()))
 					.doOnError((error) -> onError.accept(error))
 					.onErrorComplete(ApiError.class)
