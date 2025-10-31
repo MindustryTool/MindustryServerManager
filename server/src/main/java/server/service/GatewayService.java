@@ -154,9 +154,9 @@ public class GatewayService {
 						}
 					})
 					.retryWhen(Retry.fixedDelay(60 * 10, Duration.ofSeconds(1)))
-					.doOnError(Exceptions::isRetryExhausted, error -> remove())
 					.onErrorMap(Exceptions::isRetryExhausted,
 							error -> new ApiError(HttpStatus.BAD_REQUEST, "Events timeout: " + error.getMessage()))
+					.doOnError(error -> remove())
 					.doOnError(ApiError.class,
 							error -> eventBus.fire(new StopEvent(id, NodeRemoveReason.FETCH_EVENT_TIMEOUT)))
 					.doOnError(error -> Log.err(error.getMessage()))
