@@ -54,6 +54,7 @@ public class PluginLoader extends Plugin {
     private CommandHandler serverCommandHandler;
 
     public static final ObjectMapper objectMapper = new ObjectMapper();
+    protected static String[] tags = { "&lc&fb[D]&fr", "&lb&fb[I]&fr", "&ly&fb[W]&fr", "&lr&fb[E]", "" };
 
     public PluginLoader() {
         try {
@@ -65,6 +66,11 @@ public class PluginLoader extends Plugin {
         }
 
         pluginManager = new DefaultPluginManager();
+
+        Log.logger = (level1, text) -> {
+            String result = Log.format(tags[level1.ordinal()] + " " + text + "&fr");
+            System.out.println(result);
+        };
     }
 
     @Override
