@@ -497,7 +497,7 @@ public class DockerNodeManager implements NodeManager {
                 if (!(throwable instanceof AsynchronousCloseException)) {
                     System.err
                             .println("[" + serverId + "] Log stream error: " + throwable.getMessage());
-                    throwable.printStackTrace();
+                    Log.err(throwable);
                 }
             }
         };
@@ -580,7 +580,7 @@ public class DockerNodeManager implements NodeManager {
                     try {
                         callback.close();
                     } catch (IOException e) {
-                        e.printStackTrace();
+                        Log.err(e);
                     }
                 });
 

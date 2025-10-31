@@ -19,6 +19,8 @@ import reactor.util.context.Context;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 
+import arc.util.Log;
+
 @Component
 @Order(200)
 @Slf4j
@@ -77,8 +79,7 @@ public class SecurityFilter implements WebFilter {
 
             return chain.filter(exchange).contextWrite(withRequest(Mono.just(data)));
         } catch (Exception e) {
-            e.printStackTrace();
-            log.error("Invalid token: " + token + " security key: " + securityKey, e);
+            Log.err("Invalid token: " + token + " security key: " + securityKey, e);
             return ApiError.forbidden("Invalid token or security key");
         }
     }

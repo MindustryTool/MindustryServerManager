@@ -180,7 +180,8 @@ public class Utils {
                 throw new RuntimeException("Can not load mod from: " + sourceFile.name(), e);
             }
         } catch (Exception error) {
-            error.printStackTrace();
+            Log.err("Can not load mod from: " + sourceFile.name() + ", " + error.getMessage());
+
             return new ModDto()
                     .setFilename(sourceFile.absolutePath())//
                     .setName("Error")
@@ -205,7 +206,7 @@ public class Utils {
         try {
             map = MapIO.createMap(file, true);
         } catch (Throwable e) {
-            e.printStackTrace();
+            Log.err("Can not read map data: " + e.getMessage());
             map = new mindustry.maps.Map(file, 0, 0, new StringMap(), true, 0, Version.build);
         }
 

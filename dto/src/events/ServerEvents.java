@@ -143,6 +143,4 @@ public class ServerEvents {
             this.player = player;
         }
     }
-
-    
 }

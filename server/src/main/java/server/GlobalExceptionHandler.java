@@ -13,6 +13,7 @@ import org.springframework.web.reactive.function.client.WebClientRequestExceptio
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.server.ServerWebExchange;
 
+import arc.util.Log;
 import io.netty.resolver.dns.DnsNameResolverTimeoutException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -104,10 +105,9 @@ public class GlobalExceptionHandler {
                             .build();
 
                     if (status.is5xxServerError()) {
-                        log.error(data.toString());
-                        exception.printStackTrace();
+                        Log.err(data.toString(), exception);
                     } else {
-                        log.error(data.toString());
+                        Log.err(data.toString());
                     }
 
                     return ResponseEntity.status(status).body(data);
