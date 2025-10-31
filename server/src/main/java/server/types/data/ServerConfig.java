@@ -29,7 +29,6 @@ public class ServerConfig {
     @Size(max = 256)
     private String mode;
 
-    @Size(max = 256)
     
     @Min(1000)
     @Max(900000)
@@ -41,6 +40,7 @@ public class ServerConfig {
     @Size(max = 256)
     private String image;
     
+    @Size(max = 256)
     private String hostCommand;
 
     private boolean isHub;
