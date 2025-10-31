@@ -66,7 +66,6 @@ public class ServerController extends Plugin implements MindustryToolPlugin {
 
     @Override
     public void init() {
-
         HttpServer.init();
         Workflow.init();
         EventHandler.init();
@@ -106,6 +105,10 @@ public class ServerController extends Plugin implements MindustryToolPlugin {
     @Override
     public void onEvent(Object event) {
         try {
+            if (isUnloaded) {
+                return;
+            }
+
             Workflow.fire(event, true);
 
             if (event instanceof PlayerJoin playerJoin) {
@@ -141,6 +144,8 @@ public class ServerController extends Plugin implements MindustryToolPlugin {
 
     @Override
     public void unload() {
+        isUnloaded = true;
+        
         ClientCommandHandler.unload();
         ServerCommandHandler.unload();
         SessionHandler.clear();
@@ -156,7 +161,6 @@ public class ServerController extends Plugin implements MindustryToolPlugin {
         BACKGROUND_SCHEDULER.shutdownNow();
         Log.info("Background scheduler shutdown");
 
-        isUnloaded = true;
         Log.info("Server controller stopped: " + this);
     }
 
