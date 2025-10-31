@@ -19,15 +19,13 @@ public class ServerEvents {
     public static HashMap<String, Class<?>> getEventMap() {
         if (eventTypeMap.size() == 0) {
             for (Class<?> clazz : ServerEvents.class.getDeclaredClasses()) {
-                if (clazz.isInstance(BaseEvent.class)) {
-                    String className = clazz.getSimpleName()
-                            .replace("Event", "")
-                            .replaceAll("([a-z])([A-Z]+)", "$1-$2")
-                            .toLowerCase();
+                String className = clazz.getSimpleName()
+                        .replace("Event", "")
+                        .replaceAll("([a-z])([A-Z]+)", "$1-$2")
+                        .toLowerCase();
 
-                    eventTypeMap.put(className, clazz);
-                    Log.info("Register @ events", className);
-                }
+                eventTypeMap.put(className, clazz);
+                Log.info("Register @ events", className);
             }
         }
 
