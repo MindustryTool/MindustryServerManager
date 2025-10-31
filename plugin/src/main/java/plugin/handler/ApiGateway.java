@@ -60,10 +60,6 @@ public class ApiGateway {
         return Http.post(uri(path));
     }
 
-    private static void send(HttpRequest req) {
-        send(req, 2000);
-    }
-
     private static <T> T send(HttpRequest req, Class<T> clazz) {
         return send(req, 2000, clazz);
     }
