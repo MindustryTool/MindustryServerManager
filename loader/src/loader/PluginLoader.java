@@ -229,13 +229,12 @@ public class PluginLoader extends Plugin {
 
     private void unloadPlugin(PluginData pluginData) {
         try {
-            MindustryToolPlugin plugin = plugins.get(pluginData);
+            MindustryToolPlugin plugin = plugins.remove(pluginData);
 
             if (plugin != null) {
                 plugin.unload();
             }
 
-            plugins.remove(pluginData);
             pluginManager.stopPlugin(pluginData.getId());
             pluginManager.unloadPlugin(pluginData.getId());
 
