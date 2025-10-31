@@ -18,7 +18,6 @@ import arc.util.Log;
 import arc.util.Strings;
 import plugin.utils.JsonUtils;
 import plugin.ServerController;
-import dto.MindustryPlayerDto;
 import plugin.type.PaginationRequest;
 import dto.PlayerDto;
 import dto.ServerDto;
@@ -107,16 +106,6 @@ public class ApiGateway {
             return res.get(timeoutMilis, TimeUnit.MILLISECONDS);
         } catch (Throwable e) {
             throw new RuntimeException(req.method + " " + req.url, e);
-        }
-    }
-
-    public static MindustryPlayerDto setPlayer(PlayerDto payload) {
-        try {
-            return send((post("players"))
-                    .header("Content-Type", "application/json")//
-                    .content(JsonUtils.toJsonString(payload)), MindustryPlayerDto.class);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
         }
     }
 

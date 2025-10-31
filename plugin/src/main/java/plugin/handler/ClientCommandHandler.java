@@ -19,11 +19,8 @@ import mindustry.gen.Player;
 import mindustry.maps.Map;
 import plugin.ServerController;
 import plugin.type.HudOption;
-import dto.MindustryPlayerDto;
 import plugin.type.PaginationRequest;
-import dto.PlayerDto;
 import plugin.type.PlayerPressCallback;
-import dto.TeamDto;
 
 public class ClientCommandHandler {
 
@@ -136,24 +133,24 @@ public class ClientCommandHandler {
 
         register("login", "", "Login", (args, player) -> {
             try {
-                var team = player.team();
-                var request = new PlayerDto()//
-                        .setName(player.coloredName())//
-                        .setIp(player.ip())//
-                        .setUuid(player.uuid())//
-                        .setTeam(new TeamDto()//
-                                .setName(team.name)//
-                                .setColor(team.color.toString()));
+                // var team = player.team();
+                // var request = new PlayerDto()//
+                //         .setName(player.coloredName())//
+                //         .setIp(player.ip())//
+                //         .setUuid(player.uuid())//
+                //         .setTeam(new TeamDto()//
+                //                 .setName(team.name)//
+                //                 .setColor(team.color.toString()));
 
-                MindustryPlayerDto playerData = ApiGateway.setPlayer(request);
+                // MindustryPlayerDto playerData = ApiGateway.setPlayer(request);
 
-                var loginLink = playerData.getLoginLink();
+                // var loginLink = playerData.getLoginLink();
 
-                if (loginLink != null && !loginLink.isEmpty()) {
-                    Call.openURI(player.con, loginLink);
-                } else {
-                    player.sendMessage("Already logged in");
-                }
+                // if (loginLink != null && !loginLink.isEmpty()) {
+                //     Call.openURI(player.con, loginLink);
+                // } else {
+                //     player.sendMessage("Already logged in");
+                // }
             } catch (Exception e) {
                 Log.err(e);
             }

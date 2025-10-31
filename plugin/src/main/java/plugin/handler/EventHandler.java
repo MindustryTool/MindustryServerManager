@@ -484,15 +484,15 @@ public class EventHandler {
             String chat = Strings.format("@ joined the server, current players: @", playerName,
                     Groups.player.size());
 
-            var team = player.team();
-            var request = new PlayerDto()//
-                    .setName(player.coloredName())//
-                    .setIp(player.ip())//
-                    .setLocale(player.locale())//
-                    .setUuid(player.uuid())//
-                    .setTeam(new TeamDto()//
-                            .setName(team.name)//
-                            .setColor(team.color.toString()));
+            // var team = player.team();
+            // var request = new PlayerDto()//
+            //         .setName(player.coloredName())//
+            //         .setIp(player.ip())//
+            //         .setLocale(player.locale())//
+            //         .setUuid(player.uuid())//
+            //         .setTeam(new TeamDto()//
+            //                 .setName(team.name)//
+            //                 .setColor(team.color.toString()));
 
             Log.info(chat);
 
@@ -500,13 +500,13 @@ public class EventHandler {
                 ApiGateway.sendChatMessage(chat);
             });
 
-            var playerData = ApiGateway.setPlayer(request);
+            // var playerData = ApiGateway.setPlayer(request);
 
-            if (Config.IS_HUB) {
-                sendHub(event.player, playerData.getLoginLink());
-            }
+            // if (Config.IS_HUB) {
+            //     sendHub(event.player, playerData.getLoginLink());
+            // }
 
-            setPlayerData(playerData, player);
+            // setPlayerData(playerData, player);
 
         } catch (Throwable e) {
             e.printStackTrace();
