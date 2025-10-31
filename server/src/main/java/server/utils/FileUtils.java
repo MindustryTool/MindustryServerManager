@@ -1,7 +1,5 @@
 package server.utils;
 
-import java.util.List;
-
 import org.springframework.http.HttpStatus;
 import arc.files.Fi;
 import dto.ServerFileDto;
@@ -30,7 +28,7 @@ public class FileUtils {
         return newFile;
     }
 
-    public static List<ServerFileDto> getFiles(String path) {
+    public static Object getFiles(String path) {
         var file = new Fi(path);
 
         if (file.length() > Const.MAX_FILE_SIZE) {
@@ -46,11 +44,7 @@ public class FileUtils {
                     .list();
         }
 
-        return List.of(new ServerFileDto()//
-                .path(toRelativeToServer(file.absolutePath()))//
-                .directory(file.isDirectory())//
-                .size(file.length())//
-                .data(file.readString()));
+        return file.readBytes();
     }
 
     public static void writeFile(String path, byte[] data) {
