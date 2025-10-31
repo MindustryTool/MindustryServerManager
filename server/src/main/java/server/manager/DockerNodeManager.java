@@ -197,7 +197,7 @@ public class DockerNodeManager implements NodeManager {
                         "-XX:MaxHeapFreeRatio=20",
                         "-XX:MinHeapFreeRatio=10",
                         "-XX:GCTimeRatio=99",
-                        "-XX:MaxRAM=" + request.getPlan().getRam() + "m");
+                        "-XX:MaxRAM=" + request.getMemory() + "m");
 
                 env.addAll(request.getEnv().entrySet().stream().map(v -> v.getKey() + "=" + v.getValue()).toList());
                 env.add("IS_HUB=" + request.isHub());
@@ -218,7 +218,7 @@ public class DockerNodeManager implements NodeManager {
                                 .withNetworkMode("mindustry-server")//
                                 // in bytes
                                 .withCpuPeriod(100000l)
-                                .withCpuQuota((long) ((request.getPlan().getCpu() * 100000)))
+                                .withCpuQuota((long) ((request.getCpu() * 100000)))
                                 .withRestartPolicy(request.isAutoTurnOff()//
                                         ? RestartPolicy.noRestart()
                                         : RestartPolicy.unlessStoppedRestart())

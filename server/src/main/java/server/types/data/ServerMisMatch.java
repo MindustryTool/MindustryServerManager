@@ -123,28 +123,21 @@ public class ServerMisMatch {
 							expectedConfig.getHostCommand()));
 		}
 
-		if (!expectedConfig.getPlan().getName().equals(currentConfig.getPlan().getName())) {
-			result.add(
-					new ServerMisMatch(
-							"Plan mismatch",
-							currentConfig.getPlan().getName(),
-							expectedConfig.getPlan().getName()));
-		}
 
-		if (expectedConfig.getPlan().getCpu() != currentConfig.getPlan().getCpu()) {
+		if (expectedConfig.getCpu() != currentConfig.getCpu()) {
 			result.add(
 					new ServerMisMatch(
 							"Plan cpu mismatch",
-							currentConfig.getPlan().getCpu() + "",
-							expectedConfig.getPlan().getCpu() + ""));
+							currentConfig.getCpu() + "",
+							expectedConfig.getCpu() + ""));
 		}
 
-		if (expectedConfig.getPlan().getRam() != currentConfig.getPlan().getRam()) {
+		if (expectedConfig.getMemory() != currentConfig.getMemory()) {
 			result.add(
 					new ServerMisMatch(
 							"Plan ram mismatch",
-							currentConfig.getPlan().getRam() + "",
-							expectedConfig.getPlan().getRam() + ""));
+							currentConfig.getMemory() + "",
+							expectedConfig.getMemory() + ""));
 		}
 
 		return result;
