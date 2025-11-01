@@ -259,6 +259,10 @@ public class ServerService {
     }
 
     public Mono<Void> writeFile(UUID serverId, String path, FilePart filePart) {
+        if (filePart == null) {
+            return nodeManager.writeFile(serverId, path, new byte[0]);
+        }
+
         return Utils.readAllBytes(filePart)
                 .flatMap(bytes -> nodeManager.writeFile(serverId, path, bytes)
                         .then(Mono.fromRunnable(() -> {

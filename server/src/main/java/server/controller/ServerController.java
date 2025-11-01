@@ -99,7 +99,7 @@ public class ServerController {
     @PostMapping(value = "/servers/{id}/files", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     Mono<Void> writeFile(
             @PathVariable("id") UUID serverId, @RequestPart("path") String path,
-            @RequestPart("file") FilePart file) {
+            @RequestPart(value = "file", required = false) FilePart file) {
 
         return serverService.writeFile(serverId, path, file);
     }

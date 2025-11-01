@@ -2,6 +2,7 @@ package server.utils;
 
 import org.springframework.http.HttpStatus;
 import arc.files.Fi;
+import arc.util.Log;
 import dto.ServerFileDto;
 import server.config.Const;
 
@@ -57,6 +58,16 @@ public class FileUtils {
 
         if (file.exists()) {
             deleteFile(file);
+        }
+
+        try {
+            file.file().createNewFile();
+        } catch (Exception e) {
+            Log.err(e.getMessage());
+        }
+
+        if (data.length == 0) {
+            return;
         }
 
         file.writeBytes(data);
