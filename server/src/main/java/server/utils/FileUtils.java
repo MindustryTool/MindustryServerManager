@@ -64,13 +64,12 @@ public class FileUtils {
             deleteFile(file);
         }
 
-        try {
-            file.file().createNewFile();
-        } catch (Exception e) {
-            Log.err(e.getMessage());
-        }
-
         if (data.length == 0) {
+            try {
+                file.file().createNewFile();
+            } catch (Exception e) {
+                Log.err(e.getMessage());
+            }
             return;
         }
 
