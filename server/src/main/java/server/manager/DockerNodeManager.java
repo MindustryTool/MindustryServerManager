@@ -667,7 +667,15 @@ public class DockerNodeManager implements NodeManager {
         var basePath = Paths.get(Const.volumeFolderPath, "servers", serverId.toString(), "config").toAbsolutePath()
                 .toString();
 
-        return new Fi(basePath);
+        var file = new Fi(basePath);
+
+        if (!file.isDirectory()) {
+            file.delete();
+        }
+
+        file.mkdirs();
+
+        return file;
     }
 
     @Override
