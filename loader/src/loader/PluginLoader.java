@@ -71,6 +71,7 @@ public class PluginLoader extends Plugin {
 
     @Override
     public void init() {
+        Log.useColors = false;
         Log.logger = (level1, text) -> {
             String result = Log.format(tags[level1.ordinal()] + text + "&fr");
             System.out.println(result);
