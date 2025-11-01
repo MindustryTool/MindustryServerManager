@@ -56,6 +56,10 @@ public class FileUtils {
             parent.mkdirs();
         }
 
+        if (file.isDirectory()) {
+            throw new ApiError(HttpStatus.BAD_REQUEST, "Path is a directory: " + path);
+        }
+
         if (file.exists()) {
             deleteFile(file);
         }
