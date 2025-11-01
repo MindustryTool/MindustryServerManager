@@ -716,4 +716,10 @@ public class DockerNodeManager implements NodeManager {
                 .doOnNext(file -> FileUtils.writeFile(file.absolutePath(), data))
                 .then();
     }
+
+    @Override
+    public Mono<Boolean> createFolder(UUID serverId, String path) {
+        return getFile(serverId, path)
+                .map(file -> file.mkdirs());
+    }
 }

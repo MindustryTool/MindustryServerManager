@@ -259,7 +259,6 @@ public class ServerService {
     }
 
     public Mono<Void> writeFile(UUID serverId, String path, FilePart filePart) {
-
         return Utils.readAllBytes(filePart)
                 .flatMap(bytes -> nodeManager.writeFile(serverId, path, bytes)
                         .then(Mono.fromRunnable(() -> {
@@ -275,6 +274,10 @@ public class ServerService {
                                         .subscribe();
                             }
                         })));
+    }
+
+    public Mono<Boolean> createFolder(UUID serverId, String path) {
+        return nodeManager.createFolder(serverId, path);
     }
 
     public Mono<Boolean> deleteFile(UUID serverId, String path) {

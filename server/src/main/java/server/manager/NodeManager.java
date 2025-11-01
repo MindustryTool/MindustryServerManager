@@ -51,5 +51,7 @@ public interface NodeManager {
 
     public abstract Mono<Void> writeFile(UUID serverId, String path, byte[] data);
 
+    public abstract Mono<Boolean> createFolder(UUID serverId, String path);
+
     public abstract Mono<Boolean> deleteFile(UUID serverId, String path);
 }

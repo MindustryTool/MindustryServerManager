@@ -104,6 +104,11 @@ public class ServerController {
         return serverService.writeFile(serverId, path, file);
     }
 
+    @PostMapping(value = "/servers/{id}/folders")
+    Mono<Boolean> createFolder(@PathVariable("id") UUID serverId, @RequestParam("path") String path) {
+        return serverService.createFolder(serverId, URLDecoder.decode(path, StandardCharsets.UTF_8));
+    }
+
     @DeleteMapping("/servers/{id}/files")
     Mono<Boolean> deleteFile(@PathVariable("id") UUID serverId, @RequestParam("path") String path) {
         return serverService.deleteFile(serverId, URLDecoder.decode(path, StandardCharsets.UTF_8));
