@@ -70,7 +70,7 @@ public class GatewayService {
 				.forEach(mono -> mono
 						.doOnError(ApiError.class, error -> Log.err(error.getMessage()))
 						.onErrorComplete(ApiError.class)
-						.block(Duration.ofSeconds(25)).cancel());
+						.block(Duration.ofSeconds(5)).cancel());
 	}
 
 	@RequiredArgsConstructor
@@ -156,34 +156,34 @@ public class GatewayService {
 					.retryWhen(Retry.fixedDelay(60 * 10, Duration.ofSeconds(1)))
 					.onErrorMap(Exceptions::isRetryExhausted,
 							error -> new ApiError(HttpStatus.BAD_REQUEST, "Events timeout: " + error.getMessage()))
-					.doOnError(error -> remove())
-					.doOnError(ApiError.class,
-							error -> eventBus.fire(new StopEvent(id, NodeRemoveReason.FETCH_EVENT_TIMEOUT)))
+					.doOnError(_ignore -> {
+						nodeManager.remove(id, NodeRemoveReason.FETCH_EVENT_TIMEOUT)
+								.doOnError(ApiError.class, error -> Log.err(error.getMessage()))
+								.onErrorComplete(ApiError.class)
+								.subscribe();
+
+						eventBus.fire(new StopEvent(id, NodeRemoveReason.FETCH_EVENT_TIMEOUT));
+					})
 					.doOnError(error -> Log.err(error.getMessage()))
 					.doOnError((error) -> onError.accept(error))
 					.onErrorComplete(ApiError.class)
+					.doFinally(signal -> {
+						cache.remove(id);
+
+						Log.info("Close GatewayClient: " + id + " with signal: " + signal);
+						Log.info("Running for: " + Utils.toReadableString(Duration.between(createdAt, Instant.now())));
+
+						if (disconnectedAt != null) {
+							Log.info(
+									"Disconnected for: "
+											+ Utils.toReadableString(Duration.between(disconnectedAt, Instant.now())));
+						}
+
+					})
 					.subscribeOn(Schedulers.boundedElastic())
 					.subscribe();
 
 			Log.info("Create GatewayClient for server: " + id);
-		}
-
-		private void remove() {
-			cache.remove(id);
-
-			Log.info("Close GatewayClient: " + id);
-			Log.info("Running for: " + Utils.toReadableString(Duration.between(createdAt, Instant.now())));
-
-			if (disconnectedAt != null) {
-				Log.info(
-						"Disconnected for: " + Utils.toReadableString(Duration.between(disconnectedAt, Instant.now())));
-			}
-			nodeManager.remove(id, NodeRemoveReason.FETCH_EVENT_TIMEOUT)
-					.doOnError(ApiError.class, error -> Log.err(error.getMessage()))
-					.onErrorComplete(ApiError.class)
-					.subscribe();
-
-			eventBus.fire(new StopEvent(id, NodeRemoveReason.FETCH_EVENT_TIMEOUT));
 		}
 
 		public void cancel() {
