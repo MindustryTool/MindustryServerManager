@@ -2,6 +2,7 @@ package server.utils;
 
 import org.springframework.http.HttpStatus;
 import arc.files.Fi;
+import arc.util.ArcRuntimeException;
 import arc.util.Log;
 import dto.ServerFileDto;
 import server.config.Const;
@@ -73,7 +74,12 @@ public class FileUtils {
             return;
         }
 
-        file.writeBytes(data);
+        try {
+
+            file.writeBytes(data);
+        } catch (ArcRuntimeException e) {
+            throw new ApiError(HttpStatus.INTERNAL_SERVER_ERROR, "Error writing file: " + file.absolutePath());
+        }
     }
 
     public static boolean deleteFile(String path) {
