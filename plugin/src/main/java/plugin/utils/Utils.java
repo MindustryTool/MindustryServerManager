@@ -11,6 +11,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -212,12 +213,12 @@ public class Utils {
             tempFile.delete();
             SaveIO.save(tempFile);
             String boundary = UUID.randomUUID().toString(); // unique boundary
-            byte[] multipartBody = buildMultipartBody(boundary, "file", MAP_PREVIEW_FILE_NAME, tempFile.readBytes());
+            String multipartBody = buildMultipartBody(boundary, "file", MAP_PREVIEW_FILE_NAME, tempFile.readBytes());
 
             HttpRequest request = HttpUtils
                     .post("https://api.mindustry-tool.com", "api", "v4", "maps", "image")
                     .header("Content-Type", "multipart/form-data; boundary=" + boundary)
-                    .content(new ByteArrayInputStream(multipartBody), multipartBody.length);
+                    .content(multipartBody);
 
             return HttpUtils.send(request, byte[].class);
 
@@ -228,35 +229,22 @@ public class Utils {
         }
     }
 
-    private static byte[] buildMultipartBody(String boundary, String fieldName, String fileName, byte[] fileBytes)
-            throws IOException {
-
+    private static String buildMultipartBody(String boundary, String fieldName, String fileName, byte[] fileBytes) {
         String LINE_FEED = "\r\n";
 
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        OutputStreamWriter writer = new OutputStreamWriter(out, StandardCharsets.UTF_8);
+        StringBuilder sb = new StringBuilder();
+        sb.append("--").append(boundary).append(LINE_FEED);
+        sb.append("Content-Disposition: form-data; name=\"").append(fieldName)
+                .append("\"; filename=\"").append(fileName).append("\"").append(LINE_FEED);
+        sb.append("Content-Type: application/octet-stream").append(LINE_FEED);
+        sb.append("Content-Transfer-Encoding: base64").append(LINE_FEED);
+        sb.append(LINE_FEED);
 
-        // --- Start multipart ---
-        writer.append("--").append(boundary).append(LINE_FEED);
-        writer.append("Content-Disposition: form-data; name=\"")
-                .append(fieldName)
-                .append("\"; filename=\"")
-                .append(fileName)
-                .append("\"")
-                .append(LINE_FEED);
-        writer.append("Content-Type: application/octet-stream").append(LINE_FEED);
-        writer.append("Content-Transfer-Encoding: binary").append(LINE_FEED);
-        writer.append(LINE_FEED);
-        writer.flush();
+        // Encode file as base64 text (since content() is String-based)
+        String encoded = Base64.getEncoder().encodeToString(fileBytes);
+        sb.append(encoded).append(LINE_FEED);
 
-        // --- File content ---
-        out.write(fileBytes);
-        out.flush();
-
-        writer.append(LINE_FEED);
-        writer.append("--").append(boundary).append("--").append(LINE_FEED);
-        writer.flush();
-
-        return out.toByteArray();
+        sb.append("--").append(boundary).append("--").append(LINE_FEED);
+        return sb.toString();
     }
 }
