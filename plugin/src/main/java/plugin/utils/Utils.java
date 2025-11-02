@@ -1,12 +1,18 @@
 package plugin.utils;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -16,10 +22,10 @@ import java.util.stream.Collectors;
 
 import arc.Core;
 import arc.files.Fi;
-import arc.graphics.Pixmap;
 import arc.util.Log;
 import arc.util.Strings;
 import arc.util.Time;
+import arc.util.Http.HttpRequest;
 import dto.ModDto;
 import dto.ModMetaDto;
 import dto.PlayerDto;
@@ -30,7 +36,7 @@ import mindustry.core.Version;
 import mindustry.game.Gamemode;
 import mindustry.gen.Groups;
 import mindustry.gen.Player;
-import mindustry.io.MapIO;
+import mindustry.io.SaveIO;
 import mindustry.maps.Map;
 import mindustry.maps.MapException;
 import plugin.ServerController;
@@ -197,28 +203,59 @@ public class Utils {
                         : ServerStatus.STOP);
     }
 
-    private static final String MAP_PREVIEW_FILE_NAME = "map-preview.png";
+    private static final String MAP_PREVIEW_FILE_NAME = "map-preview.msav";
 
     public static byte[] mapPreview() {
-        Pixmap pix = null;
+        Fi tempFile = new Fi(MAP_PREVIEW_FILE_NAME);
+
         try {
-            if (Vars.state.map != null) {
-                pix = MapIO.generatePreview(Vars.world.tiles);
-                Fi file = Vars.dataDirectory.child(MAP_PREVIEW_FILE_NAME);
-                file.writePng(pix);
-                pix.dispose();
+            SaveIO.save(tempFile);
+            String boundary = UUID.randomUUID().toString(); // unique boundary
+            byte[] multipartBody = buildMultipartBody(boundary, "file", MAP_PREVIEW_FILE_NAME, tempFile.readBytes());
 
-                return file.readBytes();
-            }
+            HttpRequest request = HttpUtils
+                    .post("https://api.mindustry-tool.com", "api", "v4", "maps", "image")
+                    .header("Content-Type", "multipart/form-data; boundary=" + boundary)
+                    .content(new ByteArrayInputStream(multipartBody), multipartBody.length);
 
-            return new byte[] {};
-        } catch (Exception e) {
-            e.printStackTrace();
-            return new byte[] {};
-        } finally {
-            if (pix != null) {
-                pix.dispose();
-            }
+            return HttpUtils.send(request, byte[].class);
+
+        } catch (Throwable throwable) {
+            Log.err(throwable);
+
+            return new byte[0];
         }
+    }
+
+    private static byte[] buildMultipartBody(String boundary, String fieldName, String fileName, byte[] fileBytes)
+            throws IOException {
+
+        String LINE_FEED = "\r\n";
+
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        OutputStreamWriter writer = new OutputStreamWriter(out, StandardCharsets.UTF_8);
+
+        // --- Start multipart ---
+        writer.append("--").append(boundary).append(LINE_FEED);
+        writer.append("Content-Disposition: form-data; name=\"")
+                .append(fieldName)
+                .append("\"; filename=\"")
+                .append(fileName)
+                .append("\"")
+                .append(LINE_FEED);
+        writer.append("Content-Type: application/octet-stream").append(LINE_FEED);
+        writer.append("Content-Transfer-Encoding: binary").append(LINE_FEED);
+        writer.append(LINE_FEED);
+        writer.flush();
+
+        // --- File content ---
+        out.write(fileBytes);
+        out.flush();
+
+        writer.append(LINE_FEED);
+        writer.append("--").append(boundary).append("--").append(LINE_FEED);
+        writer.flush();
+
+        return out.toByteArray();
     }
 }
