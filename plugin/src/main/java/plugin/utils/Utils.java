@@ -212,22 +212,34 @@ public class Utils {
 
         try {
             tempFile.file().createNewFile();
-            Utils.appPostWithTimeout(() -> SaveIO.save(tempFile), 1000, "Generate save");
-            String boundary = UUID.randomUUID().toString(); // unique boundary
-            String multipartBody = buildMultipartBody(boundary, "file", MAP_PREVIEW_FILE_NAME, tempFile.readBytes());
+            boolean saveSuccess = Utils.appPostWithTimeout(() -> {
+                try {
+                    SaveIO.save(tempFile);
+                    return true;
+                } catch (Exception e) {
+                    Log.err(e);
+                    return false;
+                }
+            }, 1000, "Generate save");
+            if (saveSuccess) {
 
-            HttpRequest request = HttpUtils
-                    .post("https://api.mindustry-tool.com", "api", "v4", "maps", "image")
-                    .header("Content-Type", "multipart/form-data; boundary=" + boundary)
-                    .content(multipartBody);
+                String boundary = UUID.randomUUID().toString(); // unique boundary
+                String multipartBody = buildMultipartBody(boundary, "file", MAP_PREVIEW_FILE_NAME,
+                        tempFile.readBytes());
 
-            return HttpUtils.send(request, byte[].class);
+                HttpRequest request = HttpUtils
+                        .post("https://api.mindustry-tool.com", "api", "v4", "maps", "image")
+                        .header("Content-Type", "multipart/form-data; boundary=" + boundary)
+                        .content(multipartBody);
+
+                return HttpUtils.send(request, byte[].class);
+            }
 
         } catch (Throwable throwable) {
             Log.err(throwable);
-
-            return new byte[0];
         }
+
+        return new byte[0];
     }
 
     private static String buildMultipartBody(String boundary, String fieldName, String fileName, byte[] fileBytes) {
