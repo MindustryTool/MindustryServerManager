@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
 
 import arc.Core;
 import arc.files.Fi;
+import arc.graphics.Pixmap;
 import arc.util.Log;
 import arc.util.Strings;
 import arc.util.Time;
@@ -31,6 +32,7 @@ import mindustry.core.Version;
 import mindustry.game.Gamemode;
 import mindustry.gen.Groups;
 import mindustry.gen.Player;
+import mindustry.io.MapIO;
 import mindustry.io.SaveIO;
 import mindustry.maps.Map;
 import mindustry.maps.MapException;
@@ -198,9 +200,34 @@ public class Utils {
                         : ServerStatus.STOP);
     }
 
-    private static final String MAP_PREVIEW_FILE_NAME = "map-preview.msav";
+    private static final String MAP_PREVIEW_IMAGE_FILE_NAME = "map-preview.png";
 
     public static byte[] mapPreview() {
+        Pixmap pix = null;
+        try {
+            if (Vars.state.map != null) {
+                pix = MapIO.generatePreview(Vars.world.tiles);
+                Fi file = Vars.dataDirectory.child(MAP_PREVIEW_IMAGE_FILE_NAME);
+                file.writePng(pix);
+                pix.dispose();
+
+                return file.readBytes();
+            }
+
+            return new byte[] {};
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new byte[] {};
+        } finally {
+            if (pix != null) {
+                pix.dispose();
+            }
+        }
+    }
+
+    private static final String MAP_PREVIEW_FILE_NAME = "map-preview.msav";
+
+    public static byte[] mapPreview2() {
         Fi tempFile = new Fi(MAP_PREVIEW_FILE_NAME);
 
         if (tempFile.isDirectory()) {
@@ -220,8 +247,8 @@ public class Utils {
                     return false;
                 }
             }, 1000, "Generate save");
-            if (saveSuccess) {
 
+            if (saveSuccess) {
                 String boundary = UUID.randomUUID().toString(); // unique boundary
                 String multipartBody = buildMultipartBody(boundary, tempFile.readBytes());
 
