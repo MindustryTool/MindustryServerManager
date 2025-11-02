@@ -224,7 +224,7 @@ public class Utils {
             if (saveSuccess) {
 
                 String boundary = UUID.randomUUID().toString(); // unique boundary
-                String multipartBody = buildMultipartBody(boundary, "file", MAP_PREVIEW_FILE_NAME,
+                String multipartBody = buildMultipartBody(boundary, "data", MAP_PREVIEW_FILE_NAME,
                         tempFile.readBytes());
 
                 HttpRequest request = HttpUtils
