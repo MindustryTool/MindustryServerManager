@@ -126,7 +126,7 @@ public class Utils {
     }
 
     private static <T> T appPostWithTimeout(Supplier<T> fn, int timeout, String taskName) {
-        Log.info("Start task: " + taskName);
+        Log.debug("Start task: " + taskName);
 
         CompletableFuture<T> future = new CompletableFuture<T>();
         Core.app.post(() -> {
