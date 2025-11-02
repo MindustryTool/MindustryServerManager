@@ -35,7 +35,6 @@ import plugin.type.PaginationRequest;
 import dto.PlayerDto;
 import plugin.type.PlayerPressCallback;
 import plugin.type.ServerCore;
-import dto.TeamDto;
 import events.ServerEvents;
 import dto.ServerDto;
 import dto.ServerStatus;
@@ -44,6 +43,7 @@ import mindustry.world.Tile;
 import mindustry.world.blocks.campaign.Accelerator;
 
 import java.time.Duration;
+import java.time.Instant;
 
 public class EventHandler {
 
@@ -376,15 +376,10 @@ public class EventHandler {
     public static void onPlayerLeave(PlayerLeave event) {
         try {
             var player = event.player;
-            var team = player.team();
-            var request = new PlayerDto()//
-                    .setName(player.coloredName())//
-                    .setIp(player.ip())//
-                    .setLocale(player.locale())//
-                    .setUuid(player.uuid())//
-                    .setTeam(new TeamDto()//
-                            .setName(team.name)//
-                            .setColor(team.color.toString()));
+            var request = PlayerDto.from(player)
+                    .setJoinedAt(SessionHandler.contains(player) //
+                            ? SessionHandler.get(player).joinedAt
+                            : Instant.now().toEpochMilli());
 
             HttpServer.fire(new ServerEvents.PlayerLeaveEvent(ServerController.SERVER_ID, request));
         } catch (Throwable e) {
@@ -444,10 +439,15 @@ public class EventHandler {
                 Log.info("Player join: unpaused");
             }
 
+            
             var player = event.player;
-
+            
             SessionHandler.put(player);
-
+            
+            HttpServer.fire(new ServerEvents.PlayerJoinEvent(ServerController.SERVER_ID, PlayerDto.from(event.player)
+                    .setJoinedAt(SessionHandler.contains(player) //
+                            ? SessionHandler.get(player).joinedAt
+                            : Instant.now().toEpochMilli())));
             if (Config.IS_HUB) {
                 var serverData = getTopServer();
 

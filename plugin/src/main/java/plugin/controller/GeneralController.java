@@ -36,7 +36,6 @@ import dto.PlayerDto;
 import dto.ServerCommandDto;
 import dto.StartServerDto;
 import dto.ServerStateDto;
-import dto.TeamDto;
 import plugin.utils.Utils;
 import io.javalin.Javalin;
 import io.javalin.http.ContentType;
@@ -123,18 +122,10 @@ public class GeneralController {
 
             List<PlayerDto> result = Utils
                     .appPostWithTimeout(() -> (players.stream()//
-                            .map(player -> new PlayerDto()//
-                                    .setName(player.coloredName())//
-                                    .setUuid(player.uuid())//
-                                    .setIp(player.ip())
-                                    .setLocale(player.locale())//
-                                    .setIsAdmin(player.admin)//
+                            .map(player -> PlayerDto.from(player)//
                                     .setJoinedAt(SessionHandler.contains(player) //
                                             ? SessionHandler.get(player).joinedAt
-                                            : Instant.now().toEpochMilli())
-                                    .setTeam(new TeamDto()//
-                                            .setColor(player.team().color.toString())//
-                                            .setName(player.team().name)))
+                                            : Instant.now().toEpochMilli()))
                             .collect(Collectors.toList())), "Get players");
 
             ctx.json(result);
