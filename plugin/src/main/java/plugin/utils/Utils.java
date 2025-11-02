@@ -1,13 +1,8 @@
 package plugin.utils;
 
 import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -211,7 +206,7 @@ public class Utils {
 
         try {
             tempFile.delete();
-            SaveIO.save(tempFile);
+            Utils.appPostWithTimeout(() -> SaveIO.save(tempFile), "Generate save");
             String boundary = UUID.randomUUID().toString(); // unique boundary
             String multipartBody = buildMultipartBody(boundary, "file", MAP_PREVIEW_FILE_NAME, tempFile.readBytes());
 
