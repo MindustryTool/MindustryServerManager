@@ -254,7 +254,7 @@ public class Utils {
                 body.put("data", Base64.getEncoder().encodeToString(tempFile.readBytes()));
 
                 HttpRequest request = HttpUtils
-                        .post("https://api.mindustry-tool.com", "api", "v4", "maps", "image")
+                        .post("https://api.mindustry-tool.com", "api", "v4", "maps", "image-json")
                         .header("Content-Type", "application/json")
                         .content(JsonUtils.toJsonString(body));
 
