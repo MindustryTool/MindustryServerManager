@@ -17,6 +17,7 @@ import arc.files.Fi;
 import arc.util.Log;
 import dto.MapDto;
 import dto.ModDto;
+import dto.PlayerDto;
 import dto.ServerStateDto;
 import dto.ServerStatus;
 import events.BaseEvent;
@@ -305,6 +306,12 @@ public class ServerService {
     public Mono<byte[]> getImage(UUID serverId) {
         return gatewayService.of(serverId)//
                 .flatMap(client -> client.getServer().getImage());
+    }
+
+    public Flux<PlayerDto> getPlayers(UUID serverId) {
+        return gatewayService.of(serverId)
+                .flatMap(client -> client.getServer().getState())
+                .flatMapIterable(state -> state.getPlayers());
     }
 
     public Mono<Void> updatePlayer(UUID serverId, MindustryToolPlayerDto payload) {

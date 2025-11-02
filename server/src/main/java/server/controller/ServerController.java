@@ -41,6 +41,7 @@ import dto.ManagerModDto;
 import dto.MindustryToolPlayerDto;
 import dto.MapDto;
 import dto.ModDto;
+import dto.PlayerDto;
 import dto.ServerStateDto;
 import events.BaseEvent;
 import events.ServerEvents.LogEvent;
@@ -127,6 +128,11 @@ public class ServerController {
     @PostMapping(path = "/servers/{id}/host", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<LogEvent> host(@Validated @RequestBody ServerConfig request) {
         return serverService.host(request);
+    }
+
+    @GetMapping("/servers/{id}/players")
+    public Flux<PlayerDto> getPlayers(@PathVariable("id") UUID serverId) {
+        return serverService.getPlayers(serverId);
     }
 
     @PostMapping("/servers/{id}/players/{playerId}")
