@@ -209,6 +209,7 @@ public class Utils {
         Fi tempFile = new Fi(MAP_PREVIEW_FILE_NAME);
 
         try {
+            tempFile.delete();
             SaveIO.save(tempFile);
             String boundary = UUID.randomUUID().toString(); // unique boundary
             byte[] multipartBody = buildMultipartBody(boundary, "file", MAP_PREVIEW_FILE_NAME, tempFile.readBytes());
