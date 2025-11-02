@@ -137,20 +137,24 @@ public class GatewayService {
 						}
 
 						if (Utils.isConnectionException(error.getCause())) {
-							return new ApiError(HttpStatus.BAD_REQUEST,
-									"Can not connect to server: " + error.getMessage());
+							return new ApiError(HttpStatus.NOT_FOUND, "Can not connect: " + error.getMessage());
 						}
 
 						return error;
 					})
-					.doOnError(_ignore -> {
+					.doOnError(error -> {
 						if (disconnectedAt == null) {
 							disconnectedAt = Instant.now();
 						}
 
 						if (state != ConnectionState.DISCONNECTED) {
 							state = ConnectionState.DISCONNECTED;
-							eventBus.fire(new DisconnectEvent(id));
+
+							if (error instanceof ApiError apiError && apiError.status == HttpStatus.NOT_FOUND) {
+								eventBus.fire(new StopEvent(id, NodeRemoveReason.FETCH_EVENT_TIMEOUT));
+							} else {
+								eventBus.fire(new DisconnectEvent(id));
+							}
 						}
 					})
 					.retryWhen(Retry.fixedDelay(60 * 10, Duration.ofSeconds(1)))
