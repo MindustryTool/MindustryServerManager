@@ -6,7 +6,6 @@ import java.io.InputStreamReader;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -224,8 +223,7 @@ public class Utils {
             if (saveSuccess) {
 
                 String boundary = UUID.randomUUID().toString(); // unique boundary
-                String multipartBody = buildMultipartBody(boundary, "data", MAP_PREVIEW_FILE_NAME,
-                        tempFile.readBytes());
+                String multipartBody = buildMultipartBody(boundary, tempFile.readBytes());
 
                 HttpRequest request = HttpUtils
                         .post("https://api.mindustry-tool.com", "api", "v4", "maps", "image")
@@ -242,22 +240,18 @@ public class Utils {
         return new byte[0];
     }
 
-    private static String buildMultipartBody(String boundary, String fieldName, String fileName, byte[] fileBytes) {
+    private static String buildMultipartBody(String boundary, byte[] fileBytes) {
         String LINE_FEED = "\r\n";
+        String base64 = java.util.Base64.getEncoder().encodeToString(fileBytes);
 
         StringBuilder sb = new StringBuilder();
         sb.append("--").append(boundary).append(LINE_FEED);
-        sb.append("Content-Disposition: form-data; name=\"").append(fieldName)
-                .append("\"; filename=\"").append(fileName).append("\"").append(LINE_FEED);
-        sb.append("Content-Type: application/octet-stream").append(LINE_FEED);
-        sb.append("Content-Transfer-Encoding: base64").append(LINE_FEED);
+        sb.append("Content-Disposition: form-data; name=\"data\"").append(LINE_FEED);
+        sb.append("Content-Type: text/plain; charset=UTF-8").append(LINE_FEED);
         sb.append(LINE_FEED);
-
-        // Encode file as base64 text (since content() is String-based)
-        String encoded = Base64.getEncoder().encodeToString(fileBytes);
-        sb.append(encoded).append(LINE_FEED);
-
+        sb.append(base64).append(LINE_FEED);
         sb.append("--").append(boundary).append("--").append(LINE_FEED);
+
         return sb.toString();
     }
 }
