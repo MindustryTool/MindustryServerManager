@@ -206,7 +206,7 @@ public class Utils {
 
         try {
             tempFile.delete();
-            Utils.appPostWithTimeout(() -> SaveIO.save(tempFile), "Generate save");
+            Utils.appPostWithTimeout(() -> SaveIO.save(tempFile), 1000, "Generate save");
             String boundary = UUID.randomUUID().toString(); // unique boundary
             String multipartBody = buildMultipartBody(boundary, "file", MAP_PREVIEW_FILE_NAME, tempFile.readBytes());
 
