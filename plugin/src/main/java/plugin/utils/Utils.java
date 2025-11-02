@@ -204,8 +204,14 @@ public class Utils {
     public static byte[] mapPreview() {
         Fi tempFile = new Fi(MAP_PREVIEW_FILE_NAME);
 
-        try {
+        if (tempFile.isDirectory()) {
+            tempFile.deleteDirectory();
+        } else {
             tempFile.delete();
+        }
+
+        try {
+            tempFile.file().createNewFile();
             Utils.appPostWithTimeout(() -> SaveIO.save(tempFile), 1000, "Generate save");
             String boundary = UUID.randomUUID().toString(); // unique boundary
             String multipartBody = buildMultipartBody(boundary, "file", MAP_PREVIEW_FILE_NAME, tempFile.readBytes());
