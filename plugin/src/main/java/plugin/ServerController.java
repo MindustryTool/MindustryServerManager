@@ -87,6 +87,10 @@ public class ServerController extends Plugin implements MindustryToolPlugin {
                 Vars.state.set(State.paused);
                 Log.info("No player: paused");
             }
+
+            if (HttpServer.isConnected()) {
+                ApiGateway.requestConnection();
+            }
         }, 10, TimeUnit.SECONDS);
 
         Log.info("Server controller initialized.");
@@ -151,7 +155,7 @@ public class ServerController extends Plugin implements MindustryToolPlugin {
     @Override
     public void unload() {
         isUnloaded = true;
-        
+
         ClientCommandHandler.unload();
         ServerCommandHandler.unload();
         SessionHandler.clear();

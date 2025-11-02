@@ -9,7 +9,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping()
 @RequiredArgsConstructor
-public class APIController {
+public class ApiController {
 
     @GetMapping()
     public String getServers() {

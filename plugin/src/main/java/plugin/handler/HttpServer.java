@@ -168,6 +168,10 @@ public class HttpServer {
         }
     }
 
+    public static boolean isConnected() {
+        return eventListener != null && !eventListener.terminated();
+    }
+
     public static void unload() {
         if (eventListener != null) {
             eventListener.close();

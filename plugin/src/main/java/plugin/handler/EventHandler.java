@@ -36,6 +36,7 @@ import dto.PlayerDto;
 import plugin.type.PlayerPressCallback;
 import plugin.type.ServerCore;
 import dto.TeamDto;
+import events.ServerEvents;
 import dto.ServerDto;
 import dto.ServerStatus;
 import mindustry.net.Administration.PlayerInfo;
@@ -390,7 +391,7 @@ public class EventHandler {
                             .setName(team.name)//
                             .setColor(team.color.toString()));
 
-            ApiGateway.sendPlayerLeave(request);
+            HttpServer.fire(new ServerEvents.PlayerLeaveEvent(ServerController.SERVER_ID, request));
         } catch (Throwable e) {
             e.printStackTrace();
         }
@@ -486,13 +487,13 @@ public class EventHandler {
 
             // var team = player.team();
             // var request = new PlayerDto()//
-            //         .setName(player.coloredName())//
-            //         .setIp(player.ip())//
-            //         .setLocale(player.locale())//
-            //         .setUuid(player.uuid())//
-            //         .setTeam(new TeamDto()//
-            //                 .setName(team.name)//
-            //                 .setColor(team.color.toString()));
+            // .setName(player.coloredName())//
+            // .setIp(player.ip())//
+            // .setLocale(player.locale())//
+            // .setUuid(player.uuid())//
+            // .setTeam(new TeamDto()//
+            // .setName(team.name)//
+            // .setColor(team.color.toString()));
 
             Log.info(chat);
 
@@ -503,7 +504,7 @@ public class EventHandler {
             // var playerData = ApiGateway.setPlayer(request);
 
             // if (Config.IS_HUB) {
-            //     sendHub(event.player, playerData.getLoginLink());
+            // sendHub(event.player, playerData.getLoginLink());
             // }
 
             // setPlayerData(playerData, player);
