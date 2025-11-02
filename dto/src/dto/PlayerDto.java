@@ -12,7 +12,7 @@ public class PlayerDto {
     private String locale;
     private String ip;
     private TeamDto team;
-    private boolean isAdmin;
+    private Boolean isAdmin;
     private Long joinedAt;
 
     private PlayerDto() {
@@ -25,7 +25,7 @@ public class PlayerDto {
                 .setUuid(player.uuid())//
                 .setIp(player.ip())
                 .setLocale(player.locale())//
-                .setAdmin(player.admin)//
+                .setIsAdmin(player.admin)//
                 .setTeam(new TeamDto()//
                         .setColor(player.team().color.toString())//
                         .setName(player.team().name));
