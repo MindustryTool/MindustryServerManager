@@ -6,8 +6,9 @@ import java.io.InputStreamReader;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
+import java.util.HashMap;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -202,7 +203,7 @@ public class Utils {
 
     private static final String MAP_PREVIEW_IMAGE_FILE_NAME = "map-preview.png";
 
-    public static byte[] mapPreview() {
+    public static byte[] mapPreview2() {
         Pixmap pix = null;
         try {
             if (Vars.state.map != null) {
@@ -227,7 +228,7 @@ public class Utils {
 
     private static final String MAP_PREVIEW_FILE_NAME = "map-preview.msav";
 
-    public static byte[] mapPreview2() {
+    public static byte[] mapPreview() {
         Fi tempFile = new Fi(MAP_PREVIEW_FILE_NAME);
 
         if (tempFile.isDirectory()) {
@@ -249,13 +250,13 @@ public class Utils {
             }, 1000, "Generate save");
 
             if (saveSuccess) {
-                String boundary = UUID.randomUUID().toString(); // unique boundary
-                String multipartBody = buildMultipartBody(boundary, tempFile.readBytes());
+                HashMap<String, String> body = new HashMap<>();
+                body.put("data", Base64.getEncoder().encodeToString(tempFile.readBytes()));
 
                 HttpRequest request = HttpUtils
                         .post("https://api.mindustry-tool.com", "api", "v4", "maps", "image")
-                        .header("Content-Type", "multipart/form-data; boundary=" + boundary)
-                        .content(multipartBody);
+                        .header("Content-Type", "application/json")
+                        .content(JsonUtils.toJsonString(body));
 
                 return HttpUtils.send(request, byte[].class);
             }
@@ -265,20 +266,5 @@ public class Utils {
         }
 
         return new byte[0];
-    }
-
-    private static String buildMultipartBody(String boundary, byte[] fileBytes) {
-        String LINE_FEED = "\r\n";
-        String base64 = java.util.Base64.getEncoder().encodeToString(fileBytes);
-
-        StringBuilder sb = new StringBuilder();
-        sb.append("--").append(boundary).append(LINE_FEED);
-        sb.append("Content-Disposition: form-data; name=\"data\"").append(LINE_FEED);
-        sb.append("Content-Type: text/plain; charset=UTF-8").append(LINE_FEED);
-        sb.append(LINE_FEED);
-        sb.append(base64).append(LINE_FEED);
-        sb.append("--").append(boundary).append("--").append(LINE_FEED);
-
-        return sb.toString();
     }
 }
