@@ -340,13 +340,7 @@ public class EventHandler {
                 return;
             }
 
-            ServerController.BACKGROUND_TASK_EXECUTOR.execute(() -> {
-                try {
-                    ApiGateway.sendChatMessage(chat);
-                } catch (Throwable e) {
-                    Log.err(e);
-                }
-            });
+            HttpServer.fire(new ServerEvents.ChatEvent(ServerController.SERVER_ID, chat));
 
             HashMap<String, List<Player>> groupByLocale = new HashMap<>();
 
@@ -363,10 +357,11 @@ public class EventHandler {
                                 continue;
                             }
 
-                            p.sendMessage("[white][Translation] " + player.name() + "[]: " + translatedMessage);
-                            ApiGateway.sendChatMessage(
-                                    "[white][Translation] " + player.name() + "[]: " + translatedMessage);
+                            String translatedChat = "[white][Translation] " + player.name() + "[]: "
+                                    + translatedMessage;
+                            p.sendMessage(translatedChat);
 
+                            HttpServer.fire(new ServerEvents.ChatEvent(ServerController.SERVER_ID, translatedChat));
                         }
                     } catch (Throwable e) {
                         Log.err(e);
@@ -414,9 +409,7 @@ public class EventHandler {
                 }
             }, 5, TimeUnit.SECONDS);
 
-            ServerController.BACKGROUND_TASK_EXECUTOR.submit(() -> {
-                ApiGateway.sendChatMessage(chat);
-            });
+            HttpServer.fire(new ServerEvents.ChatEvent(ServerController.SERVER_ID, chat));
 
             Log.info(chat);
         } catch (Throwable e) {
@@ -497,9 +490,7 @@ public class EventHandler {
 
             Log.info(chat);
 
-            ServerController.BACKGROUND_TASK_EXECUTOR.submit(() -> {
-                ApiGateway.sendChatMessage(chat);
-            });
+            HttpServer.fire(new ServerEvents.ChatEvent(ServerController.SERVER_ID, chat));
 
             // var playerData = ApiGateway.setPlayer(request);
 

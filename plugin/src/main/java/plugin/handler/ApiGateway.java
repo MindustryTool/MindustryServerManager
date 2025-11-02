@@ -20,7 +20,7 @@ public class ApiGateway {
 
     private static final ConcurrentHashMap<String, Object> locks = new ConcurrentHashMap<>();
 
-    public static Cache<PaginationRequest, List<ServerDto>> serverQueryCache = Caffeine.newBuilder()
+    private static Cache<PaginationRequest, List<ServerDto>> serverQueryCache = Caffeine.newBuilder()
             .expireAfterWrite(Duration.ofSeconds(15))
             .maximumSize(10)
             .build();
@@ -35,14 +35,6 @@ public class ApiGateway {
         } catch (Exception e) {
             e.printStackTrace();
             return 0;
-        }
-    }
-
-    public static void sendChatMessage(String chat) {
-        try {
-
-        } catch (Exception e) {
-            e.printStackTrace();
         }
     }
 
