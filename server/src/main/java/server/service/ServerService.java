@@ -105,18 +105,6 @@ public class ServerService {
         return eventSink;
     }
 
-    @Scheduled(fixedDelay = 10, timeUnit = TimeUnit.SECONDS)
-    @PostConstruct
-    private void scanServer() {
-        nodeManager.list()
-                .filter(state -> state.meta.isPresent() && state.running())
-                .flatMap(state -> gatewayService.of(state.meta.get().getConfig().getId()))
-                .doOnError(ApiError.class, error -> Log.err(error.getMessage()))
-                .onErrorComplete(ApiError.class)
-                .subscribeOn(Schedulers.boundedElastic())
-                .subscribe();
-    }
-
     public Mono<Void> remove(UUID serverId, NodeRemoveReason reason) {
         return nodeManager.remove(serverId, reason);
     }
@@ -287,6 +275,18 @@ public class ServerService {
         return gatewayService.of(serverId).flatMap(client -> client.getServer().updatePlayer(payload));
     }
 
+    @Scheduled(fixedDelay = 10, timeUnit = TimeUnit.SECONDS)
+    @PostConstruct
+    private void scanServer() {
+        nodeManager.list()
+                .filter(state -> state.meta.isPresent() && state.running())
+                .flatMap(state -> gatewayService.of(state.meta.get().getConfig().getId()))
+                .doOnError(ApiError.class, error -> Log.err(error.getMessage()))
+                .onErrorComplete(ApiError.class)
+                .subscribeOn(Schedulers.boundedElastic())
+                .subscribe();
+    }
+
     @Scheduled(fixedDelay = 5, timeUnit = TimeUnit.MINUTES)
     private void cron() {
         // var runningWithAutoTurnOff = containers.stream()//
@@ -313,12 +313,12 @@ public class ServerService {
         var serverId = config.getId();
         var flag = serverFlags.computeIfAbsent(serverId, (_ignore) -> EnumSet.noneOf(ServerFlag.class));
 
+        Log.info("Check running server @ with flag @", serverId, flag);
+
         if (config.isAutoTurnOff() == false) {
             // TODO: Restart when detect mismatch
             return Mono.empty();
         }
-
-        Log.info("Check running server @ with flag @", serverId, flag);
 
         return gatewayService.of(serverId)//
                 .flatMap(client -> client.getServer().getState())//
