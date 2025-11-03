@@ -313,7 +313,7 @@ public class ServerService {
         var serverId = config.getId();
         var flag = serverFlags.computeIfAbsent(serverId, (_ignore) -> EnumSet.noneOf(ServerFlag.class));
 
-        Log.info("Check running server @ with flag @", serverId, flag);
+        Log.info("Check running server @ with flag @", config, flag);
 
         if (config.isAutoTurnOff() == false) {
             // TODO: Restart when detect mismatch
