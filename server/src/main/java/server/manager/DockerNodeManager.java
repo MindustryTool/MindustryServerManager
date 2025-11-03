@@ -443,7 +443,7 @@ public class DockerNodeManager implements NodeManager {
 
                         var optional = readMetadataFromContainer(container);
 
-                        optional.ifPresent(metadata -> {
+                        optional.ifPresentOrElse(metadata -> {
                             var serverId = metadata.getConfig().getId();
                             var stopEvents = List.of("stop", "die", "kill", "destroy");
 
@@ -457,6 +457,10 @@ public class DockerNodeManager implements NodeManager {
                             } else if (stopEvents.stream().anyMatch(stop -> status.equalsIgnoreCase(stop))) {
                                 eventBus.fire(new StopEvent(serverId, status.toUpperCase()));
                             }
+                        }, () -> {
+                            var serverIdString = container.getLabels().get(Const.serverIdLabel);
+                            UUID serverId = UUID.fromString(serverIdString);
+                            eventBus.fire(new StopEvent(serverId, status.toUpperCase()));
                         });
 
                         String name = optional
