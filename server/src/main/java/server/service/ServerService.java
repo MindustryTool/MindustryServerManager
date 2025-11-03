@@ -321,9 +321,7 @@ public class ServerService {
         Log.info("Check server @ with flag @", config, flag);
 
         return gatewayService.of(serverId)//
-                .log()
                 .flatMap(client -> client.getServer().getState())//
-                .log()
                 .defaultIfEmpty(new ServerStateDto().setServerId(serverId).setStatus(ServerStatus.NOT_RESPONSE))
                 .flatMap(state -> {
                     boolean shouldKill = state.getPlayers().isEmpty();

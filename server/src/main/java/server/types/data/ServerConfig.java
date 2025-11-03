@@ -3,6 +3,8 @@ package server.types.data;
 import java.util.Map;
 import java.util.UUID;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
@@ -29,22 +31,26 @@ public class ServerConfig {
     @Size(max = 256)
     private String mode;
 
-    
     @Min(1000)
     @Max(900000)
     private int port;
-    
+
     private Map<String, String> env;
 
     @NotEmpty
     @Size(max = 256)
     private String image;
-    
+
     @Size(max = 256)
     private String hostCommand;
 
+    @JsonProperty("isHub")
     private boolean isHub;
+
+    @JsonProperty("isAutoTurnOff")
     private boolean isAutoTurnOff;
+
+    @JsonProperty("isDefault")
     private boolean isDefault;
 
     private float cpu;
