@@ -11,6 +11,7 @@ import java.util.concurrent.TimeUnit;
 
 import arc.util.Http;
 import arc.util.Log;
+import arc.util.Http.HttpStatusException;
 
 public class PluginData {
     private static final String PLUGIN_API_URL = "https://api.mindustry-tool.com";
@@ -50,24 +51,29 @@ public class PluginData {
     }
 
     public PluginVersion getPluginVersion() throws Exception {
-        int timeout = 5000;
-        CompletableFuture<PluginVersion> result = new CompletableFuture<>();
+        try {
 
-        Http.get(URI.create(PLUGIN_API_URL + "/api/v4/plugins/version?owner=" + this.owner + "&repo=" + this.repo
-                + "&tag=" + this.tag).toString())
-                .error(error -> {
-                    result.completeExceptionally(error);
-                    Log.err(error);
-                })
-                .timeout(timeout)
-                .submit(res -> {
-                    String version = res.getResultAsString();
-                    PluginVersion pluginVersion = PluginLoader.objectMapper.readValue(version, PluginVersion.class);
+            int timeout = 5000;
+            CompletableFuture<PluginVersion> result = new CompletableFuture<>();
 
-                    result.complete(pluginVersion);
-                });
+            Http.get(URI.create(PLUGIN_API_URL + "/api/v4/plugins/version?owner=" + this.owner + "&repo=" + this.repo
+                    + "&tag=" + this.tag).toString())
+                    .error(error -> {
+                        result.completeExceptionally(error);
+                        Log.err(error);
+                    })
+                    .timeout(timeout)
+                    .submit(res -> {
+                        String version = res.getResultAsString();
+                        PluginVersion pluginVersion = PluginLoader.objectMapper.readValue(version, PluginVersion.class);
 
-        return result.get(timeout, TimeUnit.MILLISECONDS);
+                        result.complete(pluginVersion);
+                    });
+
+            return result.get(timeout, TimeUnit.MILLISECONDS);
+        } catch (HttpStatusException e) {
+            throw new RuntimeException("Error while getting plugin version " + this.id + ", " + e.getMessage());
+        }
     }
 
     public byte[] download() {
