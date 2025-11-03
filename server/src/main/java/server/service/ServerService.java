@@ -318,6 +318,8 @@ public class ServerService {
             return Mono.empty();
         }
 
+        Log.info("Check server @ with flag @", config, flag);
+
         return gatewayService.of(serverId)//
                 .log()
                 .flatMap(client -> client.getServer().getState())//
