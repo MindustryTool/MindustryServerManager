@@ -105,7 +105,7 @@ public class HttpServer {
 
         app.exception(Exception.class, (exception, ctx) -> {
             try {
-                Log.err("Unhandled api exception", exception);
+                Log.err("Unhandled api exception at " + ctx.method() + " " + ctx.url(), exception);
                 HashMap<String, Object> result = new HashMap<>();
                 result.put("message", exception.getMessage() == null ? "Unknown error" : exception.getMessage());
                 ctx.status(500).json(result);
