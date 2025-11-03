@@ -147,13 +147,15 @@ public class ServerService {
 
                     String[] preHostCommand = { //
                             "config name %s".formatted(request.getName()), //
-                            "config desc %s".formatted(request.getDescription()), //
+                            request.getDescription().length() == 0 ? ""
+                                    : "config desc %s".formatted(request.getDescription()), //
                             "config port 6567", //
                             "version"
                     };
 
                     Flux<LogEvent> sendCommandFlux = Flux.concat(
                             Flux.fromArray(preHostCommand)
+                                    .filter(cmd -> cmd.length() > 0)
                                     .map(cmd -> LogEvent.info(serverId, cmd)),
                             serverGateway//
                                     .sendCommand(preHostCommand)

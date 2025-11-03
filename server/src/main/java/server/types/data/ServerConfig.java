@@ -22,7 +22,6 @@ public class ServerConfig {
     @Size(max = 128)
     private String name;
 
-    @NotEmpty
     @Size(max = 2048)
     private String description;
 
