@@ -303,14 +303,14 @@ public class DockerNodeManager implements NodeManager {
 
             var metadata = Utils.readJsonAsClass(label, ServerMetadata.class);
 
-            if (metadata == null || metadata.getConfig() == null) {
-                dockerClient.removeContainerCmd(container.getId())
-                        .withForce(true)
-                        .exec();
-
-                Log.info("Removed: " + container.getNames()[0] + ", invalid config " + label);
-
-                return Optional.empty();
+            if (//
+            metadata == null //
+                    || metadata.getConfig() == null//
+                    || metadata.getConfig().getIsAutoTurnOff() == null//
+                    || metadata.getConfig().getIsDefault() == null
+                    || metadata.getConfig().getIsHub() == null//
+            ) {
+                throw new IllegalArgumentException("Invalid config: " + label);
             }
 
             return Optional.of(metadata);
