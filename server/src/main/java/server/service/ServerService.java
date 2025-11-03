@@ -318,6 +318,8 @@ public class ServerService {
             return Mono.empty();
         }
 
+        Log.info("Check running server @ with flag @", serverId, flag);
+
         return gatewayService.of(serverId)//
                 .flatMap(client -> client.getServer().getState())//
                 .defaultIfEmpty(new ServerStateDto().setServerId(serverId).setStatus(ServerStatus.NOT_RESPONSE))
@@ -326,26 +328,23 @@ public class ServerService {
 
                     if (shouldKill && shouldAutoTurnOff) {
                         if (flag.contains(ServerFlag.KILL)) {
-                            eventBus.fire(LogEvent.info(serverId, "[red][Orchestrator] Auto shut down server"));
-
                             flag.remove(ServerFlag.KILL);
+
+                            eventBus.fire(LogEvent.info(serverId, "[red][Orchestrator] Auto shut down server"));
 
                             return remove(serverId, NodeRemoveReason.NO_PLAYER);
                         } else {
                             flag.add(ServerFlag.KILL);
 
                             eventBus.fire(LogEvent.info(serverId, "[red][Orchestrator] No players, flag to kill"));
-
-                            return Mono.empty();
                         }
                     } else {
                         if (flag.contains(ServerFlag.KILL)) {
+                            flag.remove(ServerFlag.KILL);
+
                             eventBus.fire(
                                     LogEvent.info(serverId, "[green][Orchestrator] Remove kill flag from server"));
 
-                            flag.remove(ServerFlag.KILL);
-
-                            return Mono.empty();
                         }
                     }
 
