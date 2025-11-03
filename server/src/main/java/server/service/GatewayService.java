@@ -256,7 +256,7 @@ public class GatewayService {
 								.uri("state")
 								.retrieve()
 								.bodyToMono(ServerStateDto.class),
-						Duration.ofMillis(1000),
+						Duration.ofSeconds(1),
 						"Get state");
 			}
 
