@@ -59,12 +59,12 @@ public class ServerMisMatch {
 			}
 		}
 
-		if (expectedConfig.isAutoTurnOff() != currentConfig.isAutoTurnOff()) {
+		if (expectedConfig.getIsAutoTurnOff() != currentConfig.getIsAutoTurnOff()) {
 			result.add(
 					new ServerMisMatch(
 							"Auto turn off mismatch",
-							currentConfig.isAutoTurnOff() + "",
-							expectedConfig.isAutoTurnOff() + ""));
+							currentConfig.getIsAutoTurnOff() + "",
+							expectedConfig.getIsAutoTurnOff() + ""));
 		}
 
 		if (!expectedConfig.getMode().equals(currentConfig.getMode())) {
@@ -99,12 +99,12 @@ public class ServerMisMatch {
 			}
 		}
 
-		if (expectedConfig.isHub() != currentConfig.isHub()) {
+		if (expectedConfig.getIsHub() != currentConfig.getIsHub()) {
 			result.add(
 					new ServerMisMatch(
 							"Hub mismatch",
-							currentConfig.isHub() + "",
-							expectedConfig.isHub() + ""));
+							currentConfig.getIsHub() + "",
+							expectedConfig.getIsHub() + ""));
 		}
 
 		if (expectedConfig.getPort() != currentConfig.getPort()) {
@@ -122,7 +122,6 @@ public class ServerMisMatch {
 							currentConfig.getHostCommand(),
 							expectedConfig.getHostCommand()));
 		}
-
 
 		if (expectedConfig.getCpu() != currentConfig.getCpu()) {
 			result.add(

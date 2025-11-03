@@ -3,11 +3,10 @@ package server.types.data;
 import java.util.Map;
 import java.util.UUID;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -44,14 +43,14 @@ public class ServerConfig {
     @Size(max = 256)
     private String hostCommand;
 
-    @JsonProperty("isHub")
-    private boolean isHub;
+    @NotNull
+    private Boolean isHub;
 
-    @JsonProperty("isAutoTurnOff")
-    private boolean isAutoTurnOff;
+    @NotNull
+    private Boolean isAutoTurnOff;
 
-    @JsonProperty("isDefault")
-    private boolean isDefault;
+    @NotNull
+    private Boolean isDefault;
 
     private float cpu;
     private int memory;

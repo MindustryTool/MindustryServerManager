@@ -200,7 +200,7 @@ public class DockerNodeManager implements NodeManager {
                         "-XX:MaxRAM=" + request.getMemory() + "m");
 
                 env.addAll(request.getEnv().entrySet().stream().map(v -> v.getKey() + "=" + v.getValue()).toList());
-                env.add("IS_HUB=" + request.isHub());
+                env.add("IS_HUB=" + request.getIsHub());
                 env.add("SERVER_ID=" + serverId);
                 env.add("JAVA_TOOL_OPTIONS=" + String.join(" ", args));
 
@@ -219,10 +219,10 @@ public class DockerNodeManager implements NodeManager {
                                 // in bytes
                                 .withCpuPeriod(100000l)
                                 .withCpuQuota((long) ((request.getCpu() * 100000)))
-                                .withRestartPolicy(request.isAutoTurnOff()//
+                                .withRestartPolicy(request.getIsAutoTurnOff()//
                                         ? RestartPolicy.noRestart()
                                         : RestartPolicy.unlessStoppedRestart())
-                                .withAutoRemove(request.isAutoTurnOff())
+                                .withAutoRemove(request.getIsAutoTurnOff())
                                 .withLogConfig(new LogConfig(LogConfig.LoggingType.JSON_FILE, Map.of(
                                         "max-size", "100m",
                                         "max-file", "5"//

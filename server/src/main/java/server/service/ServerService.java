@@ -313,7 +313,7 @@ public class ServerService {
         var serverId = config.getId();
         var flag = serverFlags.computeIfAbsent(serverId, (_ignore) -> EnumSet.noneOf(ServerFlag.class));
 
-        if (config.isAutoTurnOff() == false) {
+        if (config.getIsAutoTurnOff() == false) {
             // TODO: Restart when detect mismatch
             return Mono.empty();
         }
