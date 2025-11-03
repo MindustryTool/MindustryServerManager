@@ -117,37 +117,6 @@ public class ServerService {
                 .subscribe();
     }
 
-    @Scheduled(fixedDelay = 5, timeUnit = TimeUnit.MINUTES)
-    private void cron() {
-        // var runningWithAutoTurnOff = containers.stream()//
-        // .filter(container -> container.getState().equalsIgnoreCase("running"))//
-        // .filter(container ->
-        // readMetadataFromContainer(container).map(ServerMetadata::getInit).map(
-        // ServerConfig::isAutoTurnOff).orElse(false))//
-        // .collect(Collectors.toList())
-        // .size();
-
-        // var shouldAutoTurnOff = runningWithAutoTurnOff > 2;
-
-        nodeManager.list()
-                .flatMap(state -> {
-                    state.meta.ifPresent(meta -> {
-                        Log.info("Checking server: " + meta.getConfig().getId() + ", running: " + state.running());
-                    });
-
-                    if (state.running()) {
-                        return checkRunningServer(state.meta().orElseThrow().getConfig(), true);
-                    }
-
-                    return Mono.empty();
-                })
-                .doOnError(ApiError.class, error -> Log.err(error.getMessage()))
-                .onErrorComplete(ApiError.class)
-                .timeout(Duration.ofMinutes(5))
-                .subscribeOn(Schedulers.boundedElastic())
-                .blockLast();
-    }
-
     public Mono<Void> remove(UUID serverId, NodeRemoveReason reason) {
         return nodeManager.remove(serverId, reason);
     }
@@ -318,6 +287,28 @@ public class ServerService {
         return gatewayService.of(serverId).flatMap(client -> client.getServer().updatePlayer(payload));
     }
 
+    @Scheduled(fixedDelay = 5, timeUnit = TimeUnit.MINUTES)
+    private void cron() {
+        // var runningWithAutoTurnOff = containers.stream()//
+        // .filter(container -> container.getState().equalsIgnoreCase("running"))//
+        // .filter(container ->
+        // readMetadataFromContainer(container).map(ServerMetadata::getInit).map(
+        // ServerConfig::isAutoTurnOff).orElse(false))//
+        // .collect(Collectors.toList())
+        // .size();
+
+        // var shouldAutoTurnOff = runningWithAutoTurnOff > 2;
+
+        nodeManager.list()
+                .filter(state -> state.meta.isPresent() && state.running())
+                .flatMap(state -> checkRunningServer(state.meta().orElseThrow().getConfig(), true))
+                .doOnError(error -> Log.err(error.getMessage()))
+                .onErrorComplete(ApiError.class)
+                .timeout(Duration.ofSeconds(10))
+                .subscribeOn(Schedulers.boundedElastic())
+                .subscribe();
+    }
+
     private Mono<Void> checkRunningServer(ServerConfig config, boolean shouldAutoTurnOff) {
         var serverId = config.getId();
         var flag = serverFlags.computeIfAbsent(serverId, (_ignore) -> EnumSet.noneOf(ServerFlag.class));
@@ -335,36 +326,32 @@ public class ServerService {
 
                     if (shouldKill && shouldAutoTurnOff) {
                         if (flag.contains(ServerFlag.KILL)) {
-                            var event = LogEvent.info(serverId, "Auto shut down server");
-                            eventBus.fire(event);
-                            log.info(event.toString());
+                            eventBus.fire(LogEvent.info(serverId, "[red][Orchestrator] Auto shut down server"));
+
                             flag.remove(ServerFlag.KILL);
+
                             return remove(serverId, NodeRemoveReason.NO_PLAYER);
                         } else {
                             flag.add(ServerFlag.KILL);
-                            var event = LogEvent.info(serverId, "Server has no players, flag to kill");
-                            eventBus.fire(event);
-                            log.info(event.toString());
+
+                            eventBus.fire(LogEvent.info(serverId, "[red][Orchestrator] No players, flag to kill"));
+
                             return Mono.empty();
                         }
                     } else {
                         if (flag.contains(ServerFlag.KILL)) {
-                            var event = LogEvent.info(serverId, "Remove kill flag from server");
-                            eventBus.fire(event);
-                            log.info(event.toString());
+                            eventBus.fire(
+                                    LogEvent.info(serverId, "[green][Orchestrator] Remove kill flag from server"));
+
                             flag.remove(ServerFlag.KILL);
+
                             return Mono.empty();
                         }
                     }
 
                     return Mono.empty();
                 })//
-                .onErrorResume(error -> {
-                    var event = LogEvent.error(serverId, "Error: " + error.getMessage());
-                    eventBus.fire(event);
-                    log.error(event.toString());
-
-                    return Mono.empty();
-                });
+                .doOnError(error -> log.error(error.getMessage()))
+                .onErrorComplete();
     }
 }
