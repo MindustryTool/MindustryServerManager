@@ -313,8 +313,6 @@ public class ServerService {
         var serverId = config.getId();
         var flag = serverFlags.computeIfAbsent(serverId, (_ignore) -> EnumSet.noneOf(ServerFlag.class));
 
-        Log.info("Check running server @ with flag @", config, flag);
-
         if (config.isAutoTurnOff() == false) {
             // TODO: Restart when detect mismatch
             return Mono.empty();
@@ -325,6 +323,8 @@ public class ServerService {
                 .defaultIfEmpty(new ServerStateDto().setServerId(serverId).setStatus(ServerStatus.NOT_RESPONSE))
                 .flatMap(state -> {
                     boolean shouldKill = state.getPlayers().isEmpty();
+
+                    Log.info(state);
 
                     if (shouldKill && shouldAutoTurnOff) {
                         if (flag.contains(ServerFlag.KILL)) {
