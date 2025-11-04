@@ -277,7 +277,7 @@ public class ServerService {
         return gatewayService.of(serverId).flatMap(client -> client.getServer().updatePlayer(payload));
     }
 
-    @Scheduled(fixedDelay = 10, timeUnit = TimeUnit.SECONDS)
+    @Scheduled(fixedDelay = 3, timeUnit = TimeUnit.SECONDS)
     @PostConstruct
     private void scanServer() {
         nodeManager.list()
