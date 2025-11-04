@@ -135,7 +135,6 @@ public class ServerController extends Plugin implements MindustryToolPlugin {
             } else if (event instanceof GameOverEvent gameOverEvent) {
                 EventHandler.onGameOver(gameOverEvent);
             } else if (event instanceof WorldLoadEvent) {
-                HttpServer.sendStateUpdate();
                 BACKGROUND_SCHEDULER.schedule(() -> {
                     if (!Vars.state.isPaused() && Groups.player.size() == 0) {
                         Vars.state.set(State.paused);
