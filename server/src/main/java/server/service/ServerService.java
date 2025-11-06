@@ -106,6 +106,7 @@ public class ServerService {
     }
 
     public Mono<Void> remove(UUID serverId, NodeRemoveReason reason) {
+        eventBus.emit(ServerEvents.StopEvent(serverId, reason));
         return nodeManager.remove(serverId, reason);
     }
 
@@ -277,18 +278,7 @@ public class ServerService {
         return gatewayService.of(serverId).flatMap(client -> client.getServer().updatePlayer(payload));
     }
 
-    @Scheduled(fixedDelay = 3, timeUnit = TimeUnit.SECONDS)
     @PostConstruct
-    private void scanServer() {
-        nodeManager.list()
-                .filter(state -> state.meta.isPresent() && state.running())
-                .flatMap(state -> gatewayService.of(state.meta.get().getConfig().getId()))
-                .doOnError(ApiError.class, error -> Log.err(error.getMessage()))
-                .onErrorComplete(ApiError.class)
-                .subscribeOn(Schedulers.boundedElastic())
-                .subscribe();
-    }
-
     @Scheduled(fixedDelay = 5, timeUnit = TimeUnit.MINUTES)
     private void cron() {
         // var runningWithAutoTurnOff = containers.stream()//
