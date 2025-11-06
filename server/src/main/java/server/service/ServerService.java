@@ -21,6 +21,7 @@ import dto.PlayerDto;
 import dto.ServerStateDto;
 import dto.ServerStatus;
 import events.BaseEvent;
+import events.ServerEvents;
 import events.ServerEvents.LogEvent;
 import enums.NodeRemoveReason;
 import jakarta.annotation.PostConstruct;
@@ -106,7 +107,7 @@ public class ServerService {
     }
 
     public Mono<Void> remove(UUID serverId, NodeRemoveReason reason) {
-        eventBus.emit(ServerEvents.StopEvent(serverId, reason));
+        eventBus.emit(new ServerEvents.StopEvent(serverId, reason));
         return nodeManager.remove(serverId, reason);
     }
 
@@ -324,19 +325,19 @@ public class ServerService {
                         if (flag.contains(ServerFlag.KILL)) {
                             flag.remove(ServerFlag.KILL);
 
-                            eventBus.fire(LogEvent.info(serverId, "[red][Orchestrator] Auto shut down server"));
+                            eventBus.emit(LogEvent.info(serverId, "[red][Orchestrator] Auto shut down server"));
 
                             return remove(serverId, NodeRemoveReason.NO_PLAYER);
                         } else {
                             flag.add(ServerFlag.KILL);
 
-                            eventBus.fire(LogEvent.info(serverId, "[red][Orchestrator] No players, flag to kill"));
+                            eventBus.emit(LogEvent.info(serverId, "[red][Orchestrator] No players, flag to kill"));
                         }
                     } else {
                         if (flag.contains(ServerFlag.KILL)) {
                             flag.remove(ServerFlag.KILL);
 
-                            eventBus.fire(
+                            eventBus.emit(
                                     LogEvent.info(serverId, "[green][Orchestrator] Remove kill flag from server"));
 
                         }

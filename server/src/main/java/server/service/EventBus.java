@@ -21,7 +21,7 @@ public class EventBus {
         return () -> consumers.remove(consumer);
     }
 
-    public <T extends BaseEvent> T fire(T event) {
+    public <T extends BaseEvent> T emit(T event) {
         for (var consumer : consumers) {
             try {
                 consumer.accept(event);

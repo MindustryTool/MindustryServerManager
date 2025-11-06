@@ -453,14 +453,14 @@ public class DockerNodeManager implements NodeManager {
                                         metadata.getConfig().getId(),
                                         id -> createLogCallack(containerId, id));
 
-                                eventBus.fire(new StartEvent(serverId));
+                                eventBus.emit(new StartEvent(serverId));
                             } else if (stopEvents.stream().anyMatch(stop -> status.equalsIgnoreCase(stop))) {
-                                eventBus.fire(new StopEvent(serverId, status.toUpperCase()));
+                                eventBus.emit(new StopEvent(serverId, status.toUpperCase()));
                             }
                         }, () -> {
                             var serverIdString = container.getLabels().get(Const.serverIdLabel);
                             UUID serverId = UUID.fromString(serverIdString);
-                            eventBus.fire(new StopEvent(serverId, status.toUpperCase()));
+                            eventBus.emit(new StopEvent(serverId, status.toUpperCase()));
                         });
 
                         String name = optional
@@ -484,7 +484,7 @@ public class DockerNodeManager implements NodeManager {
                     return;
                 }
 
-                eventBus.fire(LogEvent.info(serverId, message));
+                eventBus.emit(LogEvent.info(serverId, message));
             }
 
             @Override

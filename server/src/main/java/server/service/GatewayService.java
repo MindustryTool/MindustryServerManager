@@ -101,7 +101,7 @@ public class GatewayService {
 						if (state != ConnectionState.CONNECTED) {
 							state = ConnectionState.CONNECTED;
 							disconnectedAt = null;
-							eventBus.fire(new StartEvent(id));
+							eventBus.emit(new StartEvent(id));
 							onConnect.accept(this);
 						}
 
@@ -123,7 +123,7 @@ public class GatewayService {
 							}
 
 							BaseEvent data = (BaseEvent) Utils.readJsonAsClass(event, eventType);
-							eventBus.fire(data);
+							eventBus.emit(data);
 
 						} catch (Exception e) {
 							Log.err(e);
@@ -151,9 +151,9 @@ public class GatewayService {
 							state = ConnectionState.DISCONNECTED;
 
 							if (error instanceof ApiError apiError && apiError.status == HttpStatus.NOT_FOUND) {
-								eventBus.fire(new StopEvent(id, NodeRemoveReason.FETCH_EVENT_TIMEOUT));
+								eventBus.emit(new StopEvent(id, NodeRemoveReason.FETCH_EVENT_TIMEOUT));
 							} else {
-								eventBus.fire(new DisconnectEvent(id));
+								eventBus.emit(new DisconnectEvent(id));
 							}
 						}
 					})
@@ -166,7 +166,7 @@ public class GatewayService {
 								.onErrorComplete(ApiError.class)
 								.subscribe();
 
-						eventBus.fire(new StopEvent(id, NodeRemoveReason.FETCH_EVENT_TIMEOUT));
+						eventBus.emit(new StopEvent(id, NodeRemoveReason.FETCH_EVENT_TIMEOUT));
 					})
 					.doOnError(error -> Log.err(error.getMessage()))
 					.doOnError((error) -> onError.accept(error))
