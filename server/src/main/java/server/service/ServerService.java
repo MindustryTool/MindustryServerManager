@@ -281,6 +281,16 @@ public class ServerService {
 
     @PostConstruct
     @Scheduled(fixedDelay = 5, timeUnit = TimeUnit.MINUTES)
+    private void scan() {
+        nodeManager.list()
+                .filter(state -> state.meta.isPresent() && state.running())
+                .flatMap(state -> gatewayService.of(state.meta().get().getConfig().getId()))
+                .subscribeOn(Schedulers.boundedElastic())
+                .subscribe();
+    }
+
+    @PostConstruct
+    @Scheduled(fixedDelay = 5, timeUnit = TimeUnit.MINUTES)
     private void cron() {
         // var runningWithAutoTurnOff = containers.stream()//
         // .filter(container -> container.getState().equalsIgnoreCase("running"))//
