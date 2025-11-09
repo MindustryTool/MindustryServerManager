@@ -280,7 +280,7 @@ public class ServerService {
     }
 
     @PostConstruct
-    @Scheduled(fixedDelay = 5, timeUnit = TimeUnit.MINUTES)
+    @Scheduled(fixedDelay = 5, timeUnit = TimeUnit.SECONDS)
     private void scan() {
         nodeManager.list()
                 .filter(state -> state.meta.isPresent() && state.running())
@@ -290,7 +290,7 @@ public class ServerService {
     }
 
     @PostConstruct
-    @Scheduled(fixedDelay = 5, timeUnit = TimeUnit.SECONDS)
+    @Scheduled(fixedDelay = 5, timeUnit = TimeUnit.MINUTES)
     private void cron() {
         // var runningWithAutoTurnOff = containers.stream()//
         // .filter(container -> container.getState().equalsIgnoreCase("running"))//
@@ -328,8 +328,6 @@ public class ServerService {
                 .defaultIfEmpty(new ServerStateDto().setServerId(serverId).setStatus(ServerStatus.NOT_RESPONSE))
                 .flatMap(state -> {
                     boolean shouldKill = state.getPlayers().isEmpty();
-
-                    Log.info(state);
 
                     if (shouldKill && shouldAutoTurnOff) {
                         if (flag.contains(ServerFlag.KILL)) {
