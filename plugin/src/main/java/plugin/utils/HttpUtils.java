@@ -34,26 +34,30 @@ public class HttpUtils {
 
     @SuppressWarnings("unchecked")
     public static <T> T send(HttpRequest req, int timeoutMilis, Class<T> clazz) {
-        String response = send(req, timeoutMilis);
+        byte[] response = send(req, timeoutMilis);
 
         if (clazz.equals(Void.class)) {
             return null;
         }
 
         if (clazz.equals(String.class)) {
+            return (T) new String(response);
+        }
+
+        if (clazz.equals(byte[].class)) {
             return (T) response;
         }
 
-        return JsonUtils.readJsonAsClass(response, clazz);
+        return JsonUtils.readJsonAsClass(new String(response), clazz);
     }
 
     public static <T> List<T> sendList(HttpRequest req, int timeoutMilis, Class<T> clazz) {
-        String response = send(req, timeoutMilis);
-        return JsonUtils.readJsonAsArrayClass(response, clazz);
+        byte[] response = send(req, timeoutMilis);
+        return JsonUtils.readJsonAsArrayClass(new String(response), clazz);
     }
 
-    public static String send(HttpRequest req, int timeoutMilis) {
-        CompletableFuture<String> res = new CompletableFuture<>();
+    public static byte[] send(HttpRequest req, int timeoutMilis) {
+        CompletableFuture<byte[]> res = new CompletableFuture<>();
         req
                 .header("X-SERVER-ID", ServerController.SERVER_ID.toString())
                 .timeout(timeoutMilis)
@@ -68,7 +72,7 @@ public class HttpUtils {
                     }
                 })
                 .submit(response -> {
-                    res.complete(response.getResultAsString());
+                    res.complete(response.getResult());
                 });
         try {
             return res.get(timeoutMilis, TimeUnit.MILLISECONDS);
