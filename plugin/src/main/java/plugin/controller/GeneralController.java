@@ -85,7 +85,7 @@ public class GeneralController {
             ctx.result();
         });
 
-        app.put("players/:uuid", ctx -> {
+        app.put("players/{uuid}", ctx -> {
             String uuid = ctx.pathParam("uuid");
             LoginDto request = ctx.bodyAsClass(LoginDto.class);
             Boolean isAdmin = request.getIsAdmin();
