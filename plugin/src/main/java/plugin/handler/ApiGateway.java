@@ -19,7 +19,7 @@ import mindustry.gen.Player;
 
 public class ApiGateway {
 
-    private static final String GATEWAY_URL = "http://server-manager:8088/gateway/v2/";
+    private static final String GATEWAY_URL = "http://server-manager-v2:8088/gateway/v2/";
     private static final String SERVER_ID = ServerController.SERVER_ID.toString();
 
     private static final ConcurrentHashMap<String, Object> locks = new ConcurrentHashMap<>();
@@ -52,7 +52,7 @@ public class ApiGateway {
                 .send(HttpUtils
                         .post(GATEWAY_URL, "servers", SERVER_ID, "login")
                         .header("Content-Type", "application/json")//
-                        .content(JsonUtils.toJsonString(body)),5000, LoginDto.class);
+                        .content(JsonUtils.toJsonString(body)), 5000, LoginDto.class);
 
     }
 
