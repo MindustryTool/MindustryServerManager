@@ -73,7 +73,7 @@ public class HttpUtils {
         try {
             return res.get(timeoutMilis, TimeUnit.MILLISECONDS);
         } catch (Throwable e) {
-            throw new RuntimeException(req.method + " " + req.url, e);
+            throw new RuntimeException(req.method + " " + req.url + " timeout in " + timeoutMilis + "ms", e);
         }
     }
 }
