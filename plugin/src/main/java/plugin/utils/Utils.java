@@ -203,7 +203,7 @@ public class Utils {
 
     private static final String MAP_PREVIEW_IMAGE_FILE_NAME = "map-preview.png";
 
-    public static byte[] mapPreview() {
+    public static byte[] mapPreview2() {
         Pixmap pix = null;
         try {
             if (Vars.state.map != null) {
@@ -228,7 +228,7 @@ public class Utils {
 
     private static final String MAP_PREVIEW_FILE_NAME = "map-preview.msav";
 
-    public static byte[] mapPreview2() {
+    public static byte[] mapPreview() {
         Fi tempFile = new Fi(MAP_PREVIEW_FILE_NAME);
 
         if (tempFile.isDirectory()) {
