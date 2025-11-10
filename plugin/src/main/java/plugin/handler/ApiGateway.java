@@ -35,7 +35,7 @@ public class ApiGateway {
 
     public static int getTotalPlayer() {
         try {
-            return HttpUtils.send(HttpUtils.get("total-player"), Integer.class);
+            return HttpUtils.send(HttpUtils.get(GATEWAY_URL, "total-player"), Integer.class);
         } catch (Exception e) {
             e.printStackTrace();
             return 0;
@@ -51,7 +51,7 @@ public class ApiGateway {
 
             return HttpUtils
                     .send(HttpUtils
-                            .post("servers", SERVER_ID, "login")
+                            .post(GATEWAY_URL, "servers", SERVER_ID, "login")
                             .header("Content-Type", "application/json")//
                             .content(JsonUtils.toJsonString(body)), LoginDto.class);
         } catch (Exception e) {
@@ -68,7 +68,7 @@ public class ApiGateway {
             try {
                 return HttpUtils
                         .send(HttpUtils
-                                .post("host")
+                                .post(GATEWAY_URL, "host")
                                 .header("Content-Type", "text/plain")//
                                 .content(targetServerId), 45, String.class);
             } catch (Exception e) {
@@ -86,7 +86,7 @@ public class ApiGateway {
             try {
                 return HttpUtils
                         .sendList(
-                                HttpUtils.get(
+                                HttpUtils.get(GATEWAY_URL,
                                         String.format("servers?page=%s&size=%s", request.getPage(), request.getSize())),
                                 2000,
                                 ServerDto.class);
@@ -101,7 +101,7 @@ public class ApiGateway {
         try {
             return HttpUtils
                     .send(HttpUtils
-                            .post(String.format("translate/%s", targetLanguage))
+                            .post(GATEWAY_URL, String.format("translate/%s", targetLanguage))
                             .header("Content-Type", "text/plain")//
                             .content(text), String.class);
         } catch (Exception e) {
