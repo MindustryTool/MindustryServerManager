@@ -40,7 +40,7 @@ public class Const implements WebFluxConfigurer {
     public static String serverIdLabel = "com.mindustry-tool.server.id.v2";
     public static File volumeFolder = new File(volumeFolderPath);
     public static String discordWebhook = "https://discord.com/api/webhooks/1412106054308728953/oDrnWfbyPMtg-Co6UPYcXcS_AEtHcSFTuZ-gSKOdQaSLdVDkRG3SEhODUdH4NVXuanmL";
-    public static String API_URL = "https://api.mindustry-tool.com/api/v2/";
+    public static String API_URL = "https://api.mindustry-tool.com/api/v4/";
 
     public static final String MANAGER_VERSION = "0.0.1";
     public static final Long MAX_FILE_SIZE = 5000000l;
