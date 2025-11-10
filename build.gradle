@@ -3,7 +3,7 @@ allprojects {
 	version = '0.0.1-SNAPSHOT'
 
     ext {
-        mindustryVersion = 'v146'
+        mindustryVersion = 'v153'
         jabelVersion = "93fde537c7"
     }
 
