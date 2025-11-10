@@ -19,7 +19,7 @@ import mindustry.gen.Player;
 
 public class ApiGateway {
 
-    private static final String GATEWAY_URL = "http://server-manager-v2:8088/gateway/v2/";
+    private static final String GATEWAY_URL = "http://server-manager-v2:8088/gateway/v2";
     private static final String SERVER_ID = ServerController.SERVER_ID.toString();
 
     private static final ConcurrentHashMap<String, Object> locks = new ConcurrentHashMap<>();

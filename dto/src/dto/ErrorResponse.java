@@ -16,6 +16,7 @@ public class ErrorResponse implements Serializable {
     private final int status;
     private final String message;
     private final String url;
+    private final String method;
 
     private final Date createdAt = new Date();
 }

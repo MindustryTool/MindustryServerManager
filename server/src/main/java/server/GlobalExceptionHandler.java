@@ -64,7 +64,7 @@ public class GlobalExceptionHandler {
     Mono<ResponseEntity<ErrorResponse>> handle(ServerWebExchange exchange, ApiError exception) {
         return createResponse(exchange, exception.getStatus(), exception, exception.getMessage());
     }
- 
+
     @ExceptionHandler(TimeoutException.class)
     Mono<ResponseEntity<ErrorResponse>> handle(ServerWebExchange exchange, TimeoutException exception) {
         return createResponse(exchange, HttpStatus.BAD_REQUEST, exception, exception.getMessage());
@@ -83,6 +83,7 @@ public class GlobalExceptionHandler {
         }
 
         var request = exchange.getRequest();
+        var method = request.getMethod().name();
 
         Mono<String> urlMono = Mono.just(request)//
                 .map(r -> r.getURI().toString())//
@@ -100,8 +101,9 @@ public class GlobalExceptionHandler {
 
                     var data = ErrorResponse.builder()//
                             .status(status.value())//
-                            .message(message)//
+                            .message( exception.getClass().getSimpleName() + ": " + message)//
                             .url(url)//
+                            .method(method)
                             .build();
 
                     if (status.is5xxServerError()) {
