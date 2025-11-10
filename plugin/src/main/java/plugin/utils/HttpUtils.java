@@ -29,7 +29,7 @@ public class HttpUtils {
     }
 
     public static <T> T send(HttpRequest req, Class<T> clazz) {
-        return send(req, 2000, clazz);
+        return send(req, 10000, clazz);
     }
 
     @SuppressWarnings("unchecked")

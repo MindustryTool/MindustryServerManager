@@ -52,7 +52,7 @@ public class ApiGateway {
                 .send(HttpUtils
                         .post(GATEWAY_URL, "servers", SERVER_ID, "login")
                         .header("Content-Type", "application/json")//
-                        .content(JsonUtils.toJsonString(body)), LoginDto.class);
+                        .content(JsonUtils.toJsonString(body)),5000, LoginDto.class);
 
     }
 
