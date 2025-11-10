@@ -101,7 +101,7 @@ public class GlobalExceptionHandler {
 
                     var data = ErrorResponse.builder()//
                             .status(status.value())//
-                            .message( exception.getClass().getSimpleName() + ": " + message)//
+                            .message(exception.getClass().getSimpleName() + ": " + message)//
                             .url(url)//
                             .method(method)
                             .build();
