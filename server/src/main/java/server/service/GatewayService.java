@@ -130,7 +130,7 @@ public class GatewayService {
 						.uri("/servers/" + serverId + "/login")
 						.bodyValue(body)
 						.retrieve()
-						.bodyToMono(JsonNode.class), Duration.ofSeconds(5), "Login");
+						.bodyToMono(JsonNode.class), Duration.ofSeconds(3), "Login");
 			}
 		}
 
