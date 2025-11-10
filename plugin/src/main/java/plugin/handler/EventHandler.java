@@ -633,7 +633,7 @@ public class EventHandler {
 
     public static void setPlayerData(LoginDto playerData, Player player) {
         var uuid = playerData.getUuid();
-        var exp = playerData.getStats().at("exp").asLong(0);
+        var exp = playerData.getStats().path("exp").asLong(0);
         var name = playerData.getName();
         var isLoggedIn = playerData.getLoginLink() == null;
 
