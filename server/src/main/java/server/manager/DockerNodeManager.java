@@ -459,6 +459,10 @@ public class DockerNodeManager implements NodeManager {
                             }
                         }, () -> {
                             var serverIdString = container.getLabels().get(Const.serverIdLabel);
+                            if (serverIdString == null) {
+                                return;
+                            }
+
                             UUID serverId = UUID.fromString(serverIdString);
                             eventBus.emit(new StopEvent(serverId, status.toUpperCase()));
                         });
