@@ -85,11 +85,10 @@ public class GeneralController {
             ctx.result();
         });
 
-        app.post("players", ctx -> {
+        app.put("players/:uuid", ctx -> {
+            String uuid = ctx.pathParam("uuid");
             LoginDto request = ctx.bodyAsClass(LoginDto.class);
-
-            String uuid = request.getUuid();
-            boolean isAdmin = request.getIsAdmin();
+            Boolean isAdmin = request.getIsAdmin();
 
             PlayerInfo target = Vars.netServer.admins.getInfoOptional(uuid);
             Player player = Groups.player.find(p -> p.getInfo() == target);

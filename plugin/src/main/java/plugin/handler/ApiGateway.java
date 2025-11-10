@@ -51,7 +51,7 @@ public class ApiGateway {
 
             return HttpUtils
                     .send(HttpUtils
-                            .post("login")
+                            .post("servers", SERVER_ID, "login")
                             .header("Content-Type", "application/json")//
                             .content(JsonUtils.toJsonString(body)), LoginDto.class);
         } catch (Exception e) {

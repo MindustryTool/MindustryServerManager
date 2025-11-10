@@ -28,7 +28,7 @@ import server.EnvConfig;
 import server.config.Const;
 import server.manager.NodeManager;
 import server.types.data.ServerConfig;
-import dto.MindustryToolPlayerDto;
+import dto.LoginDto;
 import dto.PlayerDto;
 import dto.PlayerInfoDto;
 import dto.ServerCommandDto;
@@ -165,9 +165,9 @@ public class GatewayService {
 						.bodyToMono(String.class), Duration.ofSeconds(5), "Get plugin version");
 			}
 
-			public Mono<Void> updatePlayer(MindustryToolPlayerDto request) {
+			public Mono<Void> updatePlayer(String uuid, LoginDto request) {
 				return Utils.wrapError(webClient.method(HttpMethod.PUT)//
-						.uri("players/" + request.getUuid())//
+						.uri("players/" + uuid)//
 						.bodyValue(request)//
 						.retrieve()//
 						.bodyToMono(String.class), Duration.ofSeconds(5), "Set player")

@@ -30,9 +30,9 @@ import lombok.extern.slf4j.Slf4j;
 import server.types.data.NodeUsage;
 import server.types.data.ServerConfig;
 import server.types.data.ServerMisMatch;
+import dto.LoginDto;
 import dto.ManagerMapDto;
 import dto.ManagerModDto;
-import dto.MindustryToolPlayerDto;
 import server.manager.NodeManager;
 import server.service.GatewayService.GatewayClient;
 import server.utils.ApiError;
@@ -275,8 +275,8 @@ public class ServerService {
                 .flatMapIterable(state -> state.getPlayers());
     }
 
-    public Mono<Void> updatePlayer(UUID serverId, MindustryToolPlayerDto payload) {
-        return gatewayService.of(serverId).flatMap(client -> client.server().updatePlayer(payload));
+    public Mono<Void> updatePlayer(UUID serverId, String uuid, LoginDto payload) {
+        return gatewayService.of(serverId).flatMap(client -> client.server().updatePlayer(uuid, payload));
     }
 
     @PostConstruct
