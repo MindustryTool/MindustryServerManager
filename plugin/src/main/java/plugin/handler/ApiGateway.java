@@ -43,21 +43,17 @@ public class ApiGateway {
     }
 
     public static LoginDto login(Player player) {
-        try {
-            var body = new LoginRequestDto()
-                    .setUuid(player.uuid())
-                    .setName(player.name())
-                    .setIp(player.ip());
+        var body = new LoginRequestDto()
+                .setUuid(player.uuid())
+                .setName(player.name())
+                .setIp(player.ip());
 
-            return HttpUtils
-                    .send(HttpUtils
-                            .post(GATEWAY_URL, "servers", SERVER_ID, "login")
-                            .header("Content-Type", "application/json")//
-                            .content(JsonUtils.toJsonString(body)), LoginDto.class);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
+        return HttpUtils
+                .send(HttpUtils
+                        .post(GATEWAY_URL, "servers", SERVER_ID, "login")
+                        .header("Content-Type", "application/json")//
+                        .content(JsonUtils.toJsonString(body)), LoginDto.class);
+
     }
 
     public static String host(String targetServerId) {
