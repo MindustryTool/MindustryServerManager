@@ -9,9 +9,13 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 
 import arc.util.Log;
 import plugin.utils.HttpUtils;
+import plugin.utils.JsonUtils;
 import plugin.ServerController;
 import plugin.type.PaginationRequest;
+import dto.LoginDto;
+import dto.LoginRequestDto;
 import dto.ServerDto;
+import mindustry.gen.Player;
 
 public class ApiGateway {
 
@@ -35,6 +39,24 @@ public class ApiGateway {
         } catch (Exception e) {
             e.printStackTrace();
             return 0;
+        }
+    }
+
+    public static LoginDto login(Player player) {
+        try {
+            var body = new LoginRequestDto()
+                    .setUuid(player.uuid())
+                    .setName(player.name())
+                    .setIp(player.ip());
+
+            return HttpUtils
+                    .send(HttpUtils
+                            .post("login")
+                            .header("Content-Type", "application/json")//
+                            .content(JsonUtils.toJsonString(body)), LoginDto.class);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
         }
     }
 

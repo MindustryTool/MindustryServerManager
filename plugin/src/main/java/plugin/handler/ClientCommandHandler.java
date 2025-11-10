@@ -9,6 +9,7 @@ import arc.math.Mathf;
 import arc.struct.Seq;
 import arc.util.CommandHandler;
 import arc.util.CommandHandler.CommandRunner;
+import dto.LoginDto;
 import arc.util.Log;
 import arc.util.Strings;
 import lombok.Getter;
@@ -133,24 +134,15 @@ public class ClientCommandHandler {
 
         register("login", "", "Login", (args, player) -> {
             try {
-                // var team = player.team();
-                // var request = new PlayerDto()//
-                //         .setName(player.coloredName())//
-                //         .setIp(player.ip())//
-                //         .setUuid(player.uuid())//
-                //         .setTeam(new TeamDto()//
-                //                 .setName(team.name)//
-                //                 .setColor(team.color.toString()));
+                LoginDto login = ApiGateway.login(player);
 
-                // MindustryPlayerDto playerData = ApiGateway.setPlayer(request);
+                var loginLink = login.getLoginLink();
 
-                // var loginLink = playerData.getLoginLink();
-
-                // if (loginLink != null && !loginLink.isEmpty()) {
-                //     Call.openURI(player.con, loginLink);
-                // } else {
-                //     player.sendMessage("Already logged in");
-                // }
+                if (loginLink != null && !loginLink.isEmpty()) {
+                    Call.openURI(player.con, loginLink);
+                } else {
+                    player.sendMessage("Already logged in");
+                }
             } catch (Exception e) {
                 Log.err(e);
             }

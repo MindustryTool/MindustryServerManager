@@ -31,7 +31,7 @@ import plugin.handler.SessionHandler;
 import plugin.handler.VoteHandler;
 import dto.PlayerInfoDto;
 import dto.CommandParamDto;
-import dto.MindustryPlayerDto;
+import dto.LoginDto;
 import dto.PlayerDto;
 import dto.ServerCommandDto;
 import dto.StartServerDto;
@@ -85,11 +85,11 @@ public class GeneralController {
             ctx.result();
         });
 
-        app.post("set-player", ctx -> {
-            MindustryPlayerDto request = ctx.bodyAsClass(MindustryPlayerDto.class);
+        app.post("players", ctx -> {
+            LoginDto request = ctx.bodyAsClass(LoginDto.class);
 
             String uuid = request.getUuid();
-            boolean isAdmin = request.isAdmin();
+            boolean isAdmin = request.getIsAdmin();
 
             PlayerInfo target = Vars.netServer.admins.getInfoOptional(uuid);
             Player player = Groups.player.find(p -> p.getInfo() == target);

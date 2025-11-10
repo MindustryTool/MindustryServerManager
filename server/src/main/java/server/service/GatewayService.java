@@ -22,7 +22,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import arc.util.Log;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
+import server.EnvConfig;
 import server.config.Const;
 import server.manager.NodeManager;
 import server.types.data.ServerConfig;
@@ -52,7 +54,7 @@ import reactor.util.retry.Retry;
 @RequiredArgsConstructor
 public class GatewayService {
 
-	private final Const envConfig;
+	private final EnvConfig envConfig;
 	private final EventBus eventBus;
 	private final NodeManager nodeManager;
 	private final ConcurrentHashMap<UUID, Mono<GatewayClient>> cache = new ConcurrentHashMap<>();
@@ -60,7 +62,7 @@ public class GatewayService {
 	public Mono<GatewayClient> of(UUID serverId) {
 		return cache.computeIfAbsent(serverId,
 				_id -> Mono.<GatewayClient>create(
-						(emittor) -> new GatewayClient(serverId, envConfig, emittor::success, emittor::error))
+						(emittor) -> new GatewayClient(serverId, emittor::success, emittor::error))
 						.cache());
 	}
 
@@ -74,6 +76,7 @@ public class GatewayService {
 	}
 
 	@RequiredArgsConstructor
+	@Accessors(fluent = true)
 	public class GatewayClient {
 
 		enum ConnectionState {
@@ -86,112 +89,49 @@ public class GatewayService {
 		@Getter
 		private final Server server;
 
+		@Getter
+		private final Api api;
+
 		private final Instant createdAt = Instant.now();
 		private Instant disconnectedAt = null;
 		private ConnectionState state = ConnectionState.CONNECTING;
 
 		private final Disposable eventJob;
 
-		public GatewayClient(UUID id, Const envConfig, Consumer<GatewayClient> onConnect, Consumer<Throwable> onError) {
+		public GatewayClient(UUID id, Consumer<GatewayClient> onConnect, Consumer<Throwable> onError) {
 			this.id = id;
 			this.server = new Server();
-
-			this.eventJob = this.server.getEvents()
-					.flatMap(event -> {
-						if (state != ConnectionState.CONNECTED) {
-							state = ConnectionState.CONNECTED;
-							disconnectedAt = null;
-							eventBus.emit(new StartEvent(id));
-							onConnect.accept(this);
-						}
-
-						try {
-							var name = event.get("name").asText(null);
-
-							if (name == null) {
-								Log.warn("Invalid event: " + event.asText());
-
-								return Mono.empty();
-							}
-
-							var eventType = ServerEvents.getEventMap().get(name);
-
-							if (eventType == null) {
-								Log.warn("Invalid event name: " + name + " in " + ServerEvents.getEventMap().keySet());
-
-								return Mono.empty();
-							}
-
-							BaseEvent data = (BaseEvent) Utils.readJsonAsClass(event, eventType);
-							eventBus.emit(data);
-
-						} catch (Exception e) {
-							Log.err(e);
-						}
-
-						return Mono.empty();
-					})
-					.onErrorMap(WebClientRequestException.class, error -> {
-						if (error.getCause() instanceof UnknownHostException) {
-							return new ApiError(HttpStatus.NOT_FOUND, "Server not found: " + error.getMessage());
-						}
-
-						if (Utils.isConnectionException(error.getCause())) {
-							return new ApiError(HttpStatus.NOT_FOUND, "Can not connect: " + error.getMessage());
-						}
-
-						return error;
-					})
-					.doOnError(error -> {
-						if (disconnectedAt == null) {
-							disconnectedAt = Instant.now();
-						}
-
-						if (state != ConnectionState.DISCONNECTED) {
-							state = ConnectionState.DISCONNECTED;
-
-							if (error instanceof ApiError apiError && apiError.status == HttpStatus.NOT_FOUND) {
-								eventBus.emit(new StopEvent(id, NodeRemoveReason.FETCH_EVENT_TIMEOUT));
-							} else {
-								eventBus.emit(new DisconnectEvent(id));
-							}
-						}
-					})
-					.retryWhen(Retry.fixedDelay(60 * 10, Duration.ofSeconds(1)))
-					.onErrorMap(Exceptions::isRetryExhausted,
-							error -> new ApiError(HttpStatus.BAD_REQUEST, "Events timeout: " + error.getMessage()))
-					.doOnError(_ignore -> {
-						nodeManager.remove(id, NodeRemoveReason.FETCH_EVENT_TIMEOUT)
-								.doOnError(ApiError.class, error -> Log.err(error.getMessage()))
-								.onErrorComplete(ApiError.class)
-								.subscribe();
-
-						eventBus.emit(new StopEvent(id, NodeRemoveReason.FETCH_EVENT_TIMEOUT));
-					})
-					.doOnError(error -> Log.err(error.getMessage()))
-					.doOnError((error) -> onError.accept(error))
-					.onErrorComplete(ApiError.class)
-					.doFinally(signal -> {
-						cache.remove(id);
-
-						Log.info("Close GatewayClient: " + id + " with signal: " + signal);
-						Log.info("Running for: " + Utils.toReadableString(Duration.between(createdAt, Instant.now())));
-
-						if (disconnectedAt != null) {
-							Log.info(
-									"Disconnected for: "
-											+ Utils.toReadableString(Duration.between(disconnectedAt, Instant.now())));
-						}
-
-					})
-					.subscribeOn(Schedulers.boundedElastic())
-					.subscribe();
+			this.api = new Api();
+			this.eventJob = createFetchEventJob(onConnect, onError);
 
 			Log.info("Create GatewayClient for server: " + id);
 		}
 
 		public void cancel() {
 			eventJob.dispose();
+		}
+
+		public class Api {
+			private final WebClient webClient = WebClient.builder()
+					.codecs(configurer -> configurer
+							.defaultCodecs()
+							.maxInMemorySize(16 * 1024 * 1024))
+					.baseUrl(URI.create(Const.API_URL).toString())
+					.defaultHeaders(headers -> {
+						headers.set("X-SERVER-ID", id.toString());
+						headers.set("X-CREATED-AT", createdAt.toString());
+						headers.set("X-MANAGER-AUTH", envConfig.serverConfig().accessToken());
+					})
+					.defaultStatusHandler(Utils::handleStatus, Utils::createError)
+					.build();
+
+			public Mono<JsonNode> login(UUID serverId, JsonNode body) {
+				return Utils.wrapError(webClient.method(HttpMethod.POST)
+						.uri("/servers/" + serverId + "/login")
+						.bodyValue(body)
+						.retrieve()
+						.bodyToMono(JsonNode.class), Duration.ofSeconds(5), "Login");
+			}
 		}
 
 		public class Server {
@@ -419,6 +359,99 @@ public class GatewayService {
 						.retrieve()
 						.bodyToFlux(JsonNode.class);
 			}
+		}
+
+		private Disposable createFetchEventJob(Consumer<GatewayClient> onConnect, Consumer<Throwable> onError) {
+			return this.server.getEvents()
+					.flatMap(event -> {
+						if (state != ConnectionState.CONNECTED) {
+							state = ConnectionState.CONNECTED;
+							disconnectedAt = null;
+							eventBus.emit(new StartEvent(id));
+							onConnect.accept(this);
+						}
+
+						try {
+							var name = event.get("name").asText(null);
+
+							if (name == null) {
+								Log.warn("Invalid event: " + event.asText());
+
+								return Mono.empty();
+							}
+
+							var eventType = ServerEvents.getEventMap().get(name);
+
+							if (eventType == null) {
+								Log.warn("Invalid event name: " + name + " in " + ServerEvents.getEventMap().keySet());
+
+								return Mono.empty();
+							}
+
+							BaseEvent data = (BaseEvent) Utils.readJsonAsClass(event, eventType);
+							eventBus.emit(data);
+
+						} catch (Exception e) {
+							Log.err(e);
+						}
+
+						return Mono.empty();
+					})
+					.onErrorMap(WebClientRequestException.class, error -> {
+						if (error.getCause() instanceof UnknownHostException) {
+							return new ApiError(HttpStatus.NOT_FOUND, "Server not found: " + error.getMessage());
+						}
+
+						if (Utils.isConnectionException(error.getCause())) {
+							return new ApiError(HttpStatus.NOT_FOUND, "Can not connect: " + error.getMessage());
+						}
+
+						return error;
+					})
+					.doOnError(error -> {
+						if (disconnectedAt == null) {
+							disconnectedAt = Instant.now();
+						}
+
+						if (state != ConnectionState.DISCONNECTED) {
+							state = ConnectionState.DISCONNECTED;
+
+							if (error instanceof ApiError apiError && apiError.status == HttpStatus.NOT_FOUND) {
+								eventBus.emit(new StopEvent(id, NodeRemoveReason.FETCH_EVENT_TIMEOUT));
+							} else {
+								eventBus.emit(new DisconnectEvent(id));
+							}
+						}
+					})
+					.retryWhen(Retry.fixedDelay(60 * 10, Duration.ofSeconds(1)))
+					.onErrorMap(Exceptions::isRetryExhausted,
+							error -> new ApiError(HttpStatus.BAD_REQUEST, "Events timeout: " + error.getMessage()))
+					.doOnError(_ignore -> {
+						nodeManager.remove(id, NodeRemoveReason.FETCH_EVENT_TIMEOUT)
+								.doOnError(ApiError.class, error -> Log.err(error.getMessage()))
+								.onErrorComplete(ApiError.class)
+								.subscribe();
+
+						eventBus.emit(new StopEvent(id, NodeRemoveReason.FETCH_EVENT_TIMEOUT));
+					})
+					.doOnError(error -> Log.err(error.getMessage()))
+					.doOnError((error) -> onError.accept(error))
+					.onErrorComplete(ApiError.class)
+					.doFinally(signal -> {
+						cache.remove(id);
+
+						Log.info("Close GatewayClient: " + id + " with signal: " + signal);
+						Log.info("Running for: " + Utils.toReadableString(Duration.between(createdAt, Instant.now())));
+
+						if (disconnectedAt != null) {
+							Log.info(
+									"Disconnected for: "
+											+ Utils.toReadableString(Duration.between(disconnectedAt, Instant.now())));
+						}
+
+					})
+					.subscribeOn(Schedulers.boundedElastic())
+					.subscribe();
 		}
 	}
 }

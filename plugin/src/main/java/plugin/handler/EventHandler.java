@@ -30,7 +30,7 @@ import mindustry.gen.Player;
 import plugin.Config;
 import plugin.ServerController;
 import plugin.type.HudOption;
-import dto.MindustryPlayerDto;
+import dto.LoginDto;
 import plugin.type.PaginationRequest;
 import dto.PlayerDto;
 import plugin.type.PlayerPressCallback;
@@ -439,11 +439,10 @@ public class EventHandler {
                 Log.info("Player join: unpaused");
             }
 
-            
             var player = event.player;
-            
+
             SessionHandler.put(player);
-            
+
             HttpServer.fire(new ServerEvents.PlayerJoinEvent(ServerController.SERVER_ID, PlayerDto.from(event.player)
                     .setJoinedAt(SessionHandler.contains(player) //
                             ? SessionHandler.get(player).joinedAt
@@ -492,13 +491,13 @@ public class EventHandler {
 
             HttpServer.fire(new ServerEvents.ChatEvent(ServerController.SERVER_ID, chat));
 
-            // var playerData = ApiGateway.setPlayer(request);
+            var playerData = ApiGateway.login(player);
 
-            // if (Config.IS_HUB) {
-            // sendHub(event.player, playerData.getLoginLink());
-            // }
+            if (Config.IS_HUB) {
+                sendHub(event.player, playerData.getLoginLink());
+            }
 
-            // setPlayerData(playerData, player);
+            setPlayerData(playerData, player);
 
         } catch (Throwable e) {
             e.printStackTrace();
@@ -632,14 +631,14 @@ public class EventHandler {
         });
     }
 
-    public static void setPlayerData(MindustryPlayerDto playerData, Player player) {
+    public static void setPlayerData(LoginDto playerData, Player player) {
         var uuid = playerData.getUuid();
-        var exp = playerData.getExp();
+        var exp = playerData.getStats().get("exp").asLong(0);
         var name = playerData.getName();
         var isLoggedIn = playerData.getLoginLink() == null;
 
         PlayerInfo target = Vars.netServer.admins.getInfoOptional(player.uuid());
-        var isAdmin = playerData.isAdmin();
+        var isAdmin = playerData.getIsAdmin();
 
         if (uuid == null) {
             Log.warn("Player with null uuid: " + playerData);

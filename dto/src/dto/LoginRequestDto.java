@@ -5,10 +5,8 @@ import lombok.experimental.Accessors;
 
 @Data
 @Accessors(chain = true)
-public class MindustryPlayerDto {
+public class LoginRequestDto {
     String uuid;
-    boolean admin;
     String name;
-    String loginLink;
-    long exp;
+    String ip;
 }

@@ -113,7 +113,7 @@ public class ServerService {
 
     public Mono<Boolean> pause(UUID serverId) {
         return gatewayService.of(serverId)//
-                .flatMap(client -> client.getServer().pause());
+                .flatMap(client -> client.server().pause());
     }
 
     public Flux<LogEvent> host(ServerConfig request) {
@@ -129,7 +129,7 @@ public class ServerService {
 
     private Flux<LogEvent> hostCallGateway(ServerConfig request, GatewayClient gatewayClient) {
         var serverId = request.getId();
-        var serverGateway = gatewayClient.getServer();
+        var serverGateway = gatewayClient.server();
 
         Flux<LogEvent> waitingOkFlux = Flux.concat(//
                 Mono.just(LogEvent.info(serverId, "Waiting for server to start")), //
@@ -256,7 +256,7 @@ public class ServerService {
 
     public Mono<ServerStateDto> state(UUID serverId) {
         return gatewayService.of(serverId)//
-                .flatMap(client -> client.getServer().getState())//
+                .flatMap(client -> client.server().getState())//
                 .onErrorResume(error -> {
                     Log.err(error.getMessage());
                     return Mono.empty();
@@ -266,17 +266,17 @@ public class ServerService {
 
     public Mono<byte[]> getImage(UUID serverId) {
         return gatewayService.of(serverId)//
-                .flatMap(client -> client.getServer().getImage());
+                .flatMap(client -> client.server().getImage());
     }
 
     public Flux<PlayerDto> getPlayers(UUID serverId) {
         return gatewayService.of(serverId)
-                .flatMap(client -> client.getServer().getState())
+                .flatMap(client -> client.server().getState())
                 .flatMapIterable(state -> state.getPlayers());
     }
 
     public Mono<Void> updatePlayer(UUID serverId, MindustryToolPlayerDto payload) {
-        return gatewayService.of(serverId).flatMap(client -> client.getServer().updatePlayer(payload));
+        return gatewayService.of(serverId).flatMap(client -> client.server().updatePlayer(payload));
     }
 
     @PostConstruct
@@ -324,7 +324,7 @@ public class ServerService {
         Log.info("Check server @ with flag @", config, flag);
 
         return gatewayService.of(serverId)//
-                .flatMap(client -> client.getServer().getState())//
+                .flatMap(client -> client.server().getState())//
                 .defaultIfEmpty(new ServerStateDto().setServerId(serverId).setStatus(ServerStatus.NOT_RESPONSE))
                 .flatMap(state -> {
                     boolean shouldKill = state.getPlayers().isEmpty();

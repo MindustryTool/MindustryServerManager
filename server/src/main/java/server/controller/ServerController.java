@@ -61,7 +61,7 @@ public class ServerController {
     private final GatewayService gatewayService;
 
     @GetMapping(path = "/events", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<BaseEvent> getServers() {
+    public Flux<BaseEvent> servers() {
         return serverService.getEvents();
     }
 
@@ -117,12 +117,12 @@ public class ServerController {
 
     @GetMapping("/servers/{id}/commands")
     public Flux<ServerCommandDto> getCommand(@PathVariable("id") UUID serverId) {
-        return gatewayService.of(serverId).flatMapMany(client -> client.getServer().getCommands());
+        return gatewayService.of(serverId).flatMapMany(client -> client.server().getCommands());
     }
 
     @PostMapping("/servers/{id}/commands")
     public Mono<Void> sendCommand(@PathVariable("id") UUID serverId, @RequestBody() SendCommandBody command) {
-        return gatewayService.of(serverId).flatMap(client -> client.getServer().sendCommand(command.getCommand()));
+        return gatewayService.of(serverId).flatMap(client -> client.server().sendCommand(command.getCommand()));
     }
 
     @PostMapping(path = "/servers/{id}/host", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
@@ -178,7 +178,7 @@ public class ServerController {
 
     @GetMapping("servers/{id}/kicks")
     public Mono<Map<String, Long>> getKicks(@PathVariable("id") UUID serverId) {
-        return gatewayService.of(serverId).flatMap(client -> client.getServer().getKickedIps());
+        return gatewayService.of(serverId).flatMap(client -> client.server().getKickedIps());
     }
 
     @GetMapping("servers/{id}/player-infos")
@@ -189,12 +189,12 @@ public class ServerController {
             @RequestParam(name = "filter", required = false) String filter//
     ) {
         return gatewayService.of(serverId).flatMapMany(
-                client -> client.getServer().getPlayers(request.getPage(), request.getSize(), banned, filter));
+                client -> client.server().getPlayers(request.getPage(), request.getSize(), banned, filter));
     }
 
     @GetMapping("servers/{id}/json")
     public Mono<JsonNode> getJson(@PathVariable("id") UUID serverId) {
-        return gatewayService.of(serverId).flatMap(client -> client.getServer().getJson());
+        return gatewayService.of(serverId).flatMap(client -> client.server().getJson());
     }
 
     @PostMapping("servers/{id}/mismatch")
@@ -217,37 +217,37 @@ public class ServerController {
 
     @GetMapping(path = "/servers/{id}/workflow/events", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<JsonNode> getWorkflowEvents(@PathVariable("id") UUID serverId) {
-        return gatewayService.of(serverId).flatMapMany(client -> client.getServer().getWorkflowEvents());
+        return gatewayService.of(serverId).flatMapMany(client -> client.server().getWorkflowEvents());
     }
 
     @GetMapping("servers/{id}/workflow/nodes")
     public Mono<JsonNode> getWorkflowNodes(@PathVariable("id") UUID serverId) {
-        return gatewayService.of(serverId).flatMap(client -> client.getServer().getWorkflowNodes());
+        return gatewayService.of(serverId).flatMap(client -> client.server().getWorkflowNodes());
     }
 
     @PostMapping("servers/{id}/workflow/nodes/{nodeId}/emit")
     public Mono<JsonNode> getWorkflowNodes(@PathVariable("id") UUID serverId, @PathVariable("nodeId") String nodeId) {
-        return gatewayService.of(serverId).flatMap(client -> client.getServer().getWorkflowNodes());
+        return gatewayService.of(serverId).flatMap(client -> client.server().getWorkflowNodes());
     }
 
     @GetMapping("servers/{id}/workflow/version")
     public Mono<Long> getWorkflowVersion(@PathVariable("id") UUID serverId) {
-        return gatewayService.of(serverId).flatMap(client -> client.getServer().getWorkflowVersion());
+        return gatewayService.of(serverId).flatMap(client -> client.server().getWorkflowVersion());
     }
 
     @GetMapping("servers/{id}/workflow")
     public Mono<JsonNode> getWorkflow(@PathVariable("id") UUID serverId) {
-        return gatewayService.of(serverId).flatMap(client -> client.getServer().getWorkflow());
+        return gatewayService.of(serverId).flatMap(client -> client.server().getWorkflow());
     }
 
     @PostMapping("servers/{id}/workflow")
     public Mono<Void> saveWorkflow(@PathVariable("id") UUID serverId, @Validated @RequestBody JsonNode payload) {
-        return gatewayService.of(serverId).flatMap(client -> client.getServer().saveWorkflow(payload));
+        return gatewayService.of(serverId).flatMap(client -> client.server().saveWorkflow(payload));
     }
 
     @PostMapping("servers/{id}/workflow/load")
     public Mono<JsonNode> loadWorkflow(@PathVariable("id") UUID serverId, @Validated @RequestBody JsonNode payload) {
-        return gatewayService.of(serverId).flatMap(client -> client.getServer().loadWorkflow(payload));
+        return gatewayService.of(serverId).flatMap(client -> client.server().loadWorkflow(payload));
     }
 
 }
