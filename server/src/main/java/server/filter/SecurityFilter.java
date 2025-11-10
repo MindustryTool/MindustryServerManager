@@ -55,7 +55,7 @@ public class SecurityFilter implements WebFilter {
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
         String uri = exchange.getRequest().getURI().getPath();
 
-        if (uri.isEmpty() || uri.equals("/")) {
+        if (uri.isEmpty() || uri.equals("/") || uri.startsWith("gateway/v2")|| uri.startsWith("/gateway/v2")) {
             return chain.filter(exchange);
         }
 
