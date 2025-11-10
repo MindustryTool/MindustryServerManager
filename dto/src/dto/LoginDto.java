@@ -1,6 +1,7 @@
 package dto;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -12,5 +13,5 @@ public class LoginDto {
     Boolean isAdmin;
     String name;
     String loginLink;
-    JsonNode stats;
+    JsonNode stats = new ObjectMapper().createObjectNode();
 }
