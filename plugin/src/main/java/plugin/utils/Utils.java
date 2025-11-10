@@ -103,7 +103,7 @@ public class Utils {
     }
 
     public static void appPostWithTimeout(Runnable r, String taskName) {
-        appPostWithTimeout(r, 100, taskName);
+        appPostWithTimeout(r, 500, taskName);
     }
 
     private static void appPostWithTimeout(Runnable r, int timeout, String taskName) {
@@ -126,7 +126,7 @@ public class Utils {
     }
 
     public static <T> T appPostWithTimeout(Supplier<T> fn, String taskName) {
-        return appPostWithTimeout(fn, 200, taskName);
+        return appPostWithTimeout(fn, 500, taskName);
     }
 
     private static <T> T appPostWithTimeout(Supplier<T> fn, int timeout, String taskName) {
