@@ -106,7 +106,7 @@ public class Utils {
         appPostWithTimeout(r, 500, taskName);
     }
 
-    private static void appPostWithTimeout(Runnable r, int timeout, String taskName) {
+    private static synchronized void appPostWithTimeout(Runnable r, int timeout, String taskName) {
         Log.info("Start task: " + taskName);
 
         CompletableFuture<Void> v = new CompletableFuture<>();
@@ -129,7 +129,7 @@ public class Utils {
         return appPostWithTimeout(fn, 500, taskName);
     }
 
-    private static <T> T appPostWithTimeout(Supplier<T> fn, int timeout, String taskName) {
+    private static synchronized <T> T appPostWithTimeout(Supplier<T> fn, int timeout, String taskName) {
         Log.debug("Start task: " + taskName);
 
         CompletableFuture<T> future = new CompletableFuture<T>();
