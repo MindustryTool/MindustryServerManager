@@ -247,7 +247,7 @@ public class Utils {
                     Log.err(e);
                     return false;
                 }
-            }, 1000, "Generate save");
+            }, 2000, "Generate save");
 
             if (saveSuccess) {
                 HashMap<String, String> body = new HashMap<>();
