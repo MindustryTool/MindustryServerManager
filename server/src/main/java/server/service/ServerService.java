@@ -283,8 +283,20 @@ public class ServerService {
     @Scheduled(fixedDelay = 5, timeUnit = TimeUnit.SECONDS)
     private void scan() {
         nodeManager.list()
-                .filter(state -> state.meta.isPresent() && state.running())
-                .flatMap(state -> gatewayService.of(state.meta().get().getConfig().getId()))
+                .filter(state -> state.meta.isPresent())
+                .flatMap(state -> {
+                    if (state.running()) {
+                        return gatewayService.of(state.meta().get().getConfig().getId());
+                    }
+
+                    var config = state.meta().get().getConfig();
+                    
+                    if (config.getIsAutoTurnOff() == false) {
+                        return host(config);
+                    }
+
+                    return Mono.empty();
+                })
                 .subscribeOn(Schedulers.boundedElastic())
                 .subscribe();
     }
