@@ -251,7 +251,13 @@ public class Utils {
 
             if (saveSuccess) {
                 HashMap<String, String> body = new HashMap<>();
-                body.put("data", Base64.getEncoder().encodeToString(tempFile.readBytes()));
+                byte[] bytes = tempFile.readBytes();
+
+                if (bytes.length == 0) {
+                    return new byte[0];
+                }
+
+                body.put("data", Base64.getEncoder().encodeToString(bytes));
 
                 HttpRequest request = HttpUtils
                         .post("https://api.mindustry-tool.com", "api", "v4", "maps", "image-json")
