@@ -108,6 +108,7 @@ public class ServerService {
 
     public Mono<Void> remove(UUID serverId, NodeRemoveReason reason) {
         eventBus.emit(new ServerEvents.StopEvent(serverId, reason));
+
         return nodeManager.remove(serverId, reason);
     }
 
@@ -290,7 +291,7 @@ public class ServerService {
                     }
 
                     var config = state.meta().get().getConfig();
-                    
+
                     if (config.getIsAutoTurnOff() == false) {
                         return host(config);
                     }
