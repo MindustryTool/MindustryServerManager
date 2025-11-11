@@ -228,7 +228,7 @@ public class Utils {
 
     private static final String MAP_PREVIEW_FILE_NAME = "map-preview.msav";
 
-    public static synchronized byte[] mapPreview() {
+    public static byte[] mapPreview() {
         Fi tempFile = new Fi(MAP_PREVIEW_FILE_NAME);
 
         if (tempFile.isDirectory()) {
