@@ -218,7 +218,7 @@ public class DockerNodeManager implements NodeManager {
                                 .withNetworkMode("mindustry-server")//
                                 // in bytes
                                 .withCpuPeriod(100000l)
-                                .withCpuQuota((long) ((request.getCpu() * 100000)))
+                                .withCpuQuota((long) ((request.getCpu() * 100000l)))
                                 .withRestartPolicy(request.getIsAutoTurnOff()//
                                         ? RestartPolicy.noRestart()
                                         : RestartPolicy.unlessStoppedRestart())
