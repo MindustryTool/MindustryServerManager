@@ -13,6 +13,7 @@ import org.springframework.web.server.WebFilterChain;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
+import server.utils.Utils;
 
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
@@ -29,14 +30,19 @@ public class RequestFilter implements WebFilter {
                     String requestUrl = request.getURI().toString();
                     var status = exchange.getResponse().getStatusCode();
                     var method = request.getMethod();
-                    var duration = Duration.between(start, Instant.now()).toMillis();
 
-                    if (duration < 200) {
-                        return;
+                    var message = "[%s] [%s] %s %s".formatted(
+                            Utils.toReadableString(Duration.between(start, Instant.now())),
+                            status == null ? "Unknown" : status.value(),
+                            method.toString().toUpperCase(), requestUrl);
+
+                    if (status.value() >= 500) {
+                        log.error(message);
+                    } else if (status.value() >= 400) {
+                        log.warn(message);
+                    } else {
+                        log.info(message);
                     }
-
-                    log.info("[%dms] [%s] %s %s".formatted(duration, status == null ? "Unknown" : status.value(),
-                            method.toString().toUpperCase(), requestUrl));
                 });
     }
 
