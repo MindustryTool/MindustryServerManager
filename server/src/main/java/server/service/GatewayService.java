@@ -417,7 +417,7 @@ public class GatewayService {
 							state = ConnectionState.DISCONNECTED;
 
 							if (error instanceof ApiError apiError && apiError.status == HttpStatus.NOT_FOUND) {
-								eventBus.emit(new StopEvent(id, NodeRemoveReason.FETCH_EVENT_TIMEOUT));
+								eventBus.emit(new StopEvent(id, NodeRemoveReason.FETCH_EVENT_FAILED));
 							} else {
 								eventBus.emit(new DisconnectEvent(id));
 							}
