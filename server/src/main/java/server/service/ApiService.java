@@ -10,13 +10,18 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
+import server.EnvConfig;
 import server.utils.Utils;
 
 @Service
 @RequiredArgsConstructor
 public class ApiService {
+
+    private final EnvConfig envConfig;
+
     private final WebClient webClient = WebClient.builder()
             .codecs(configurer -> configurer
                     .defaultCodecs()
@@ -25,6 +30,15 @@ public class ApiService {
                     .toString())
             .defaultStatusHandler(Utils::handleStatus, Utils::createError)
             .build();
+
+    @PostConstruct
+    private void init() {
+        Utils.wrapError(webClient.method(HttpMethod.GET)
+                .uri("managers/request-connection")
+                .header("Authorization", "Bearer " + envConfig.serverConfig().accessToken())
+                .retrieve()
+                .bodyToMono(Void.class), Duration.ofSeconds(5), "Request connection").subscribe();
+    }
 
     public final Mono<byte[]> getMapPreview(byte[] mapData) {
 
