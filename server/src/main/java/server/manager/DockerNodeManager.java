@@ -544,42 +544,78 @@ public class DockerNodeManager implements NodeManager {
                         return;
                     }
 
-                    float cpu = 0f;
+                    double cpuPercent = 0.0;
 
-                    Long cpuDelta = currentStats.getCpuStats().getCpuUsage().getTotalUsage()
-                            - lastStats.getCpuStats().getCpuUsage().getTotalUsage();
+                    Long prevTotal = Optional.ofNullable(lastStats.getCpuStats())
+                            .map(s -> s.getCpuUsage())
+                            .map(u -> u.getTotalUsage())
+                            .orElse(0L);
 
-                    Long systemDelta = Optional.ofNullable(currentStats.getCpuStats().getSystemCpuUsage())
-                            .orElse(0L)
-                            - Optional.ofNullable(lastStats.getCpuStats().getSystemCpuUsage()).orElse(0L);
+                    Long currTotal = Optional.ofNullable(currentStats.getCpuStats())
+                            .map(s -> s.getCpuUsage())
+                            .map(u -> u.getTotalUsage())
+                            .orElse(0L);
 
-                    Long cpuCores = currentStats.getCpuStats().getOnlineCpus();
+                    Long prevSystem = Optional.ofNullable(lastStats.getCpuStats())
+                            .map(s -> s.getSystemCpuUsage())
+                            .orElse(0L);
 
-                    if (systemDelta != null && systemDelta > 0 && cpuCores != null && cpuCores > 0) {
-                        cpu = ((float) cpuDelta / systemDelta * cpuCores * 100.0f);
+                    Long currSystem = Optional.ofNullable(currentStats.getCpuStats())
+                            .map(s -> s.getSystemCpuUsage())
+                            .orElse(0L);
+
+                    long cpuDelta = currTotal - prevTotal;
+                    long systemDelta = currSystem - prevSystem;
+
+                    Long onlineCpus = Optional.ofNullable(currentStats.getCpuStats())
+                            .map(s -> s.getOnlineCpus())
+                            .orElse(null);
+
+                    long cpuCount = 0;
+                    if (onlineCpus != null && onlineCpus > 0) {
+                        cpuCount = onlineCpus;
+                    } else {
+                        List<Long> perCpu = Optional.ofNullable(currentStats.getCpuStats())
+                                .map(s -> s.getCpuUsage())
+                                .map(u -> u.getPercpuUsage())
+                                .orElse(null);
+                        if (perCpu != null && !perCpu.isEmpty()) {
+                            cpuCount = perCpu.size();
+                        } else {
+                            cpuCount = Runtime.getRuntime().availableProcessors();
+                        }
                     }
 
-                    long ram = Optional.ofNullable(currentStats.getMemoryStats().getUsage()).orElse(0L); // bytes
+                    if (systemDelta > 0 && cpuDelta >= 0 && cpuCount > 0) {
+                        cpuPercent = ((double) cpuDelta / (double) systemDelta) * cpuCount * 100.0;
+                        if (cpuPercent < 0)
+                            cpuPercent = 0;
+                        if (cpuPercent > cpuCount * 100.0)
+                            cpuPercent = cpuCount * 100.0;
+                    } else {
+                        cpuPercent = 0.0;
+                    }
 
-                    emitter.next(new NodeUsage(cpu, ram, Instant.now()));
+                    long ram = Optional.ofNullable(currentStats.getMemoryStats())
+                            .map(m -> m.getUsage())
+                            .orElse(0L);
+
+                    emitter.next(new NodeUsage(cpuPercent, ram, Instant.now()));
+                    lastStats = currentStats; 
                 }
 
                 @Override
                 public void onComplete() {
                     Log.info("[" + serverId + "] Stats stream ended.");
-
-                    if (emitter.isCancelled() == false) {
+                    if (!emitter.isCancelled())
                         emitter.complete();
-                    }
                 }
 
                 @Override
                 public void onError(Throwable throwable) {
                     Log.info("[" + serverId + "] Stats stream error: " + throwable.getMessage());
-
-                    if (emitter.isCancelled() == false) {
+                    if (!emitter.isCancelled())
                         emitter.error(throwable);
-                    }
                 }
             };
 
