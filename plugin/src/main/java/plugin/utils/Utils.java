@@ -264,7 +264,7 @@ public class Utils {
                         .header("Content-Type", "application/json")
                         .content(JsonUtils.toJsonString(body));
 
-                return HttpUtils.send(request, byte[].class);
+                return HttpUtils.send(request, 30000, byte[].class);
             }
 
         } catch (Throwable throwable) {
