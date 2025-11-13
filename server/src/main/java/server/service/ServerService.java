@@ -326,13 +326,13 @@ public class ServerService {
     }
 
     private Mono<Void> checkRunningServer(ServerConfig config, boolean shouldAutoTurnOff) {
-        var serverId = config.getId();
-        var flag = serverFlags.computeIfAbsent(serverId, (_ignore) -> EnumSet.noneOf(ServerFlag.class));
 
         if (config.getIsAutoTurnOff() == false) {
-            // TODO: Restart when detect mismatch
             return Mono.empty();
         }
+
+        var serverId = config.getId();
+        var flag = serverFlags.computeIfAbsent(serverId, (_ignore) -> EnumSet.noneOf(ServerFlag.class));
 
         Log.info("Check server @ with flag @", config, flag);
 
