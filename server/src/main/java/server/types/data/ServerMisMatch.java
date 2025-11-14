@@ -47,9 +47,9 @@ public class ServerMisMatch {
 		for (var runningMod : state.getMods()) {
 			if (mods.stream().noneMatch(mod -> mod.getName().equals(runningMod.getName()))) {
 				result.add(new ServerMisMatch()
-						.setField("Mod " + runningMod.getName() + " is not running, path: " + runningMod.getFilename())
+						.setField("Mod " + runningMod.getName() + " is deleted, path: " + runningMod.getFilename())
 						.setCurrent(runningMod.getName())
-						.setExpected("N/A"));
+						.setExpected("Deleted"));
 			}
 		}
 
