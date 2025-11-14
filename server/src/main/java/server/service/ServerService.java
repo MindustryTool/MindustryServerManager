@@ -188,7 +188,7 @@ public class ServerService {
     public Flux<ServerMisMatch> getMismatch(UUID serverId, ServerConfig config) {
         return Mono.zipDelayError(//
                 state(serverId), //
-                getMods(serverId).collectList()//
+                getMods(serverId).filter(mod -> !mod.getName().equals("PluginLoader")).collectList()//
         ).flatMapMany(zip -> {
             var state = zip.getT1();
             var mods = zip.getT2();
