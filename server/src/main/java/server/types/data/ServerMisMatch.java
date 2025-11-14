@@ -44,7 +44,7 @@ public class ServerMisMatch {
 			}
 		}
 
-		for (var runningMod : state.getMods()) {
+		for (var runningMod : state.getMods().stream().filter(mod -> !mod.getName().equals("PluginLoader")).toList()) {
 			if (mods.stream().noneMatch(mod -> mod.getName().equals(runningMod.getName()))) {
 				result.add(new ServerMisMatch()
 						.setField("Mod " + runningMod.getName() + " is deleted, path: " + runningMod.getFilename())
