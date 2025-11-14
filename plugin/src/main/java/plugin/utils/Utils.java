@@ -166,7 +166,7 @@ public class Utils {
                 : Vars.mods.list()
                         .map(mod -> new ModDto()//
                                 .setFilename(mod.file.absolutePath())//
-                                .setName(mod.name)
+                                .setName(mod.meta.name)
                                 .setMeta(ModMetaDto.from(mod.meta)))
                         .list();
 
