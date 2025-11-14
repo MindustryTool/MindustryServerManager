@@ -2,6 +2,7 @@ package server.types.data;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import com.github.dockerjava.api.exception.BadRequestException;
 
@@ -59,7 +60,7 @@ public class ServerMisMatch {
 			}
 		}
 
-		if (expectedConfig.getIsAutoTurnOff() != currentConfig.getIsAutoTurnOff()) {
+		if  (!Objects.equals(expectedConfig.getIsAutoTurnOff(), currentConfig.getIsAutoTurnOff())) {
 			result.add(
 					new ServerMisMatch(
 							"Auto turn off mismatch",
@@ -67,7 +68,7 @@ public class ServerMisMatch {
 							expectedConfig.getIsAutoTurnOff() + ""));
 		}
 
-		if (!expectedConfig.getMode().equals(currentConfig.getMode())) {
+		if (!Objects.equals(expectedConfig.getMode(), currentConfig.getMode())) {
 			result.add(
 					new ServerMisMatch(
 							"Mode mismatch",
@@ -75,7 +76,7 @@ public class ServerMisMatch {
 							expectedConfig.getMode()));
 		}
 
-		if (!expectedConfig.getImage().equals(currentConfig.getImage())) {
+		if (!Objects.equals(expectedConfig.getImage(), currentConfig.getImage())) {
 			result.add(
 					new ServerMisMatch(
 							"Image mismatch",
@@ -99,7 +100,7 @@ public class ServerMisMatch {
 			}
 		}
 
-		if (expectedConfig.getIsHub() != currentConfig.getIsHub()) {
+		if (!Objects.equals(expectedConfig.getIsHub(), currentConfig.getIsHub())) {
 			result.add(
 					new ServerMisMatch(
 							"Hub mismatch",
@@ -107,7 +108,7 @@ public class ServerMisMatch {
 							expectedConfig.getIsHub() + ""));
 		}
 
-		if (expectedConfig.getPort() != currentConfig.getPort()) {
+		if (!Objects.equals(expectedConfig.getPort(), currentConfig.getPort())) {
 			result.add(
 					new ServerMisMatch(
 							"Port mismatch",
@@ -115,7 +116,7 @@ public class ServerMisMatch {
 							expectedConfig.getPort() + ""));
 		}
 
-		if (!expectedConfig.getHostCommand().equals(currentConfig.getHostCommand())) {
+		if (!Objects.equals(expectedConfig.getHostCommand(), currentConfig.getHostCommand())) {
 			result.add(
 					new ServerMisMatch(
 							"Host command mismatch",
@@ -123,7 +124,7 @@ public class ServerMisMatch {
 							expectedConfig.getHostCommand()));
 		}
 
-		if (expectedConfig.getCpu() != currentConfig.getCpu()) {
+		if (!Objects.equals(expectedConfig.getCpu(), currentConfig.getCpu())) {
 			result.add(
 					new ServerMisMatch(
 							"Plan cpu mismatch",
@@ -131,7 +132,7 @@ public class ServerMisMatch {
 							expectedConfig.getCpu() + ""));
 		}
 
-		if (expectedConfig.getMemory() != currentConfig.getMemory()) {
+		if (!Objects.equals(expectedConfig.getMemory(), currentConfig.getMemory())) {
 			result.add(
 					new ServerMisMatch(
 							"Plan ram mismatch",
