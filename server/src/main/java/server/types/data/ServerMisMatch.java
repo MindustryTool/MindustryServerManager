@@ -14,7 +14,7 @@ import dto.ServerStateDto;
 import dto.ServerStatus;
 
 @Data
-@Accessors(chain = true, fluent = true)
+@Accessors(chain = true)
 @RequiredArgsConstructor
 public class ServerMisMatch {
 	private final String field;
