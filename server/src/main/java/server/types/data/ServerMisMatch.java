@@ -37,25 +37,25 @@ public class ServerMisMatch {
 
 		for (var mod : mods) {
 			if (state.getMods().stream()
-					.noneMatch(runningMod -> runningMod.getFilename().equals(mod.getFilename()))) {
+					.noneMatch(runningMod -> runningMod.getName().equals(mod.getName()))) {
 				result.add(
 						new ServerMisMatch(
-								"Mod " + mod.getName() + ":" + mod.getFilename()
-										+ " is not loaded",
+								"Mod " + mod.getName() + ":" + mod.getName()
+										+ " is not loaded, path: " + mod.getFilename(),
 								"N/A",
-								mod.getFilename()));
+								mod.getName()));
 			}
 		}
 
 		for (var runningMod : state.getMods()) {
 			if (mods.stream()
-					.noneMatch(mod -> mod.getFilename().equals(runningMod.getFilename()))) {
+					.noneMatch(mod -> mod.getName().equals(runningMod.getName()))) {
 				result.add(
 						new ServerMisMatch(
 								"Mod " + runningMod.getName() + ":"
-										+ runningMod.getFilename()
-										+ " is not running",
-								runningMod.getFilename(),
+										+ runningMod.getName()
+										+ " is not running, path: " + runningMod.getFilename(),
+								runningMod.getName(),
 								"N/A"));
 			}
 		}
