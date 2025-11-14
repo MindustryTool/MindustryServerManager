@@ -359,7 +359,10 @@ public class DockerNodeManager implements NodeManager {
         var serverImage = dockerClient.inspectImageCmd(meta.getConfig().getImage()).exec();
 
         if (!meta.getServerImageHash().equals(serverImage.getId())) {
-            result.add(new ServerMisMatch("serverImage", serverImage.getId(), meta.getServerImageHash()));
+            result.add(new ServerMisMatch()
+                    .setField("Server image mismatch")
+                    .setExpected(serverImage.getId())
+                    .setCurrent(meta.getServerImageHash()));
         }
 
         return Flux.fromIterable(result);
@@ -601,7 +604,7 @@ public class DockerNodeManager implements NodeManager {
                             .orElse(0L);
 
                     emitter.next(new NodeUsage(cpuPercent, ram, Instant.now()));
-                    lastStats = currentStats; 
+                    lastStats = currentStats;
                 }
 
                 @Override
