@@ -164,7 +164,6 @@ public class Utils {
         List<ModDto> mods = Vars.mods == null //
                 ? Arrays.asList()
                 : Vars.mods.list()
-                        .select((mod) -> mod.meta.hidden == false)
                         .map(mod -> new ModDto()//
                                 .setFilename(mod.file.absolutePath())//
                                 .setName(mod.name)
