@@ -17,9 +17,9 @@ import dto.ServerStatus;
 @Accessors(chain = true)
 @RequiredArgsConstructor
 public class ServerMisMatch {
-	private final String field;
-	private final String current;
-	private final String expected;
+	private String field;
+	private String current;
+	private String expected;
 
 	public static List<ServerMisMatch> from(
 			ServerMetadata meta,
@@ -36,108 +36,91 @@ public class ServerMisMatch {
 		List<ServerMisMatch> result = new ArrayList<>();
 
 		for (var mod : mods) {
-			if (state.getMods().stream()
-					.noneMatch(runningMod -> runningMod.getName().equals(mod.getName()))) {
-				result.add(
-						new ServerMisMatch(
-								"Mod " + mod.getName() + ":" + mod.getName()
-										+ " is not loaded, path: " + mod.getFilename(),
-								"N/A",
-								mod.getName()));
+			if (state.getMods().stream().noneMatch(runningMod -> runningMod.getName().equals(mod.getName()))) {
+				result.add(new ServerMisMatch()
+						.setField("Mod " + mod.getName() + " is not loaded, path: " + mod.getFilename())
+						.setCurrent("N/A")
+						.setExpected(mod.getName()));
 			}
 		}
 
 		for (var runningMod : state.getMods()) {
-			if (mods.stream()
-					.noneMatch(mod -> mod.getName().equals(runningMod.getName()))) {
-				result.add(
-						new ServerMisMatch(
-								"Mod " + runningMod.getName() + ":"
-										+ runningMod.getName()
-										+ " is not running, path: " + runningMod.getFilename(),
-								runningMod.getName(),
-								"N/A"));
+			if (mods.stream().noneMatch(mod -> mod.getName().equals(runningMod.getName()))) {
+				result.add(new ServerMisMatch()
+						.setField("Mod " + runningMod.getName() + " is not running, path: " + runningMod.getFilename())
+						.setCurrent(runningMod.getName())
+						.setExpected("N/A"));
 			}
 		}
 
-		if  (!Objects.equals(expectedConfig.getIsAutoTurnOff(), currentConfig.getIsAutoTurnOff())) {
-			result.add(
-					new ServerMisMatch(
-							"Auto turn off mismatch",
-							currentConfig.getIsAutoTurnOff() + "",
-							expectedConfig.getIsAutoTurnOff() + ""));
+		if (!Objects.equals(expectedConfig.getIsAutoTurnOff(), currentConfig.getIsAutoTurnOff())) {
+			result.add(new ServerMisMatch()
+					.setField("Auto turn off mismatch")
+					.setCurrent(currentConfig.getIsAutoTurnOff() + "")
+					.setExpected(expectedConfig.getIsAutoTurnOff() + ""));
 		}
 
 		if (!Objects.equals(expectedConfig.getMode(), currentConfig.getMode())) {
-			result.add(
-					new ServerMisMatch(
-							"Mode mismatch",
-							currentConfig.getMode(),
-							expectedConfig.getMode()));
+			result.add(new ServerMisMatch()
+					.setField("Mode mismatch")
+					.setCurrent(currentConfig.getMode())
+					.setExpected(expectedConfig.getMode()));
 		}
 
 		if (!Objects.equals(expectedConfig.getImage(), currentConfig.getImage())) {
-			result.add(
-					new ServerMisMatch(
-							"Image mismatch",
-							currentConfig.getImage(),
-							expectedConfig.getImage()));
+			result.add(new ServerMisMatch()
+					.setField("Image mismatch")
+					.setCurrent(currentConfig.getImage())
+					.setExpected(expectedConfig.getImage()));
 		}
 
 		for (var entry : expectedConfig.getEnv().entrySet()) {
 			if (!currentConfig.getEnv().containsKey(entry.getKey())) {
-				result.add(
-						new ServerMisMatch(
-								"Env " + entry.getKey() + " is not set",
-								"N/A",
-								entry.getValue()));
+				result.add(new ServerMisMatch()
+						.setField("Env " + entry.getKey() + " is not set")
+						.setCurrent("N/A")
+						.setExpected(entry.getValue()));
 			} else if (!currentConfig.getEnv().get(entry.getKey()).equals(entry.getValue())) {
-				result.add(
-						new ServerMisMatch(
-								"Env " + entry.getKey() + " mismatch",
-								currentConfig.getEnv().get(entry.getKey()),
-								entry.getValue()));
+				result.add(new ServerMisMatch()
+						.setField("Env " + entry.getKey() + " mismatch")
+						.setCurrent(currentConfig.getEnv().get(entry.getKey()))
+						.setExpected(entry.getValue()));
 			}
 		}
 
 		if (!Objects.equals(expectedConfig.getIsHub(), currentConfig.getIsHub())) {
-			result.add(
-					new ServerMisMatch(
-							"Hub mismatch",
-							currentConfig.getIsHub() + "",
-							expectedConfig.getIsHub() + ""));
+			result.add(new ServerMisMatch()
+					.setField("Hub mismatch")
+					.setCurrent(currentConfig.getIsHub() + "")
+					.setExpected(expectedConfig.getIsHub() + ""));
 		}
 
 		if (!Objects.equals(expectedConfig.getPort(), currentConfig.getPort())) {
-			result.add(
-					new ServerMisMatch(
-							"Port mismatch",
-							currentConfig.getPort() + "",
-							expectedConfig.getPort() + ""));
+			result.add(new ServerMisMatch()
+					.setField("Port mismatch")
+					.setCurrent(currentConfig.getPort() + "")
+					.setExpected(expectedConfig.getPort() + ""));
 		}
 
 		if (!Objects.equals(expectedConfig.getHostCommand(), currentConfig.getHostCommand())) {
-			result.add(
-					new ServerMisMatch(
-							"Host command mismatch",
-							currentConfig.getHostCommand(),
-							expectedConfig.getHostCommand()));
+			result.add(new ServerMisMatch()
+					.setField("Host command mismatch")
+					.setCurrent(currentConfig.getHostCommand())
+					.setExpected(expectedConfig.getHostCommand()));
 		}
 
 		if (!Objects.equals(expectedConfig.getCpu(), currentConfig.getCpu())) {
-			result.add(
-					new ServerMisMatch(
-							"Plan cpu mismatch",
-							currentConfig.getCpu() + "",
-							expectedConfig.getCpu() + ""));
+			result.add(new ServerMisMatch()
+					.setField("Plan cpu mismatch")
+					.setCurrent(currentConfig.getCpu() + "")
+					.setExpected(expectedConfig.getCpu() + ""));
 		}
 
 		if (!Objects.equals(expectedConfig.getMemory(), currentConfig.getMemory())) {
-			result.add(
-					new ServerMisMatch(
-							"Plan ram mismatch",
-							currentConfig.getMemory() + "",
-							expectedConfig.getMemory() + ""));
+			result.add(new ServerMisMatch()
+					.setField("Plan ram mismatch")
+					.setCurrent(currentConfig.getMemory() + "")
+					.setExpected(expectedConfig.getMemory() + ""));
 		}
 
 		return result;
