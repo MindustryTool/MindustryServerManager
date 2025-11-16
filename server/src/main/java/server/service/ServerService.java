@@ -62,6 +62,8 @@ public class ServerService {
 
     private final ArrayList<BaseEvent> buffer = new ArrayList<>();
 
+    private static final int MAX_RUNNING_SERVERS = 10;
+
     @PostConstruct
     private void registerEventHandler() {
         eventBus.on(event -> {
@@ -317,7 +319,14 @@ public class ServerService {
 
         nodeManager.list()
                 .filter(state -> state.meta.isPresent() && state.running())
-                .flatMap(state -> checkRunningServer(state.meta().orElseThrow().getConfig(), true))
+                .map(state -> state.meta().orElseThrow().getConfig())
+                .collectList()
+                .flatMapMany(servers -> {
+                    boolean shouldAutoTurnOff = servers.size() > MAX_RUNNING_SERVERS;
+
+                    return Flux.fromIterable(servers)
+                            .flatMap(config -> checkRunningServer(config, shouldAutoTurnOff));
+                })
                 .doOnError(error -> Log.err(error.getMessage()))
                 .onErrorComplete(ApiError.class)
                 .timeout(Duration.ofSeconds(10))
