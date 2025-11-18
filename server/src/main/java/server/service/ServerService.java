@@ -322,10 +322,10 @@ public class ServerService {
                 .map(state -> state.meta().orElseThrow().getConfig())
                 .collectList()
                 .flatMapMany(servers -> {
-                    boolean shouldAutoTurnOff = servers.size() > MAX_RUNNING_SERVERS;
+                    // boolean shouldAutoTurnOff = servers.size() > MAX_RUNNING_SERVERS;
 
                     return Flux.fromIterable(servers)
-                            .flatMap(config -> checkRunningServer(config, shouldAutoTurnOff));
+                            .flatMap(config -> checkRunningServer(config, true));
                 })
                 .doOnError(error -> Log.err(error.getMessage()))
                 .onErrorComplete(ApiError.class)
