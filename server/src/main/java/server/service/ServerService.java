@@ -62,7 +62,7 @@ public class ServerService {
 
     private final ArrayList<BaseEvent> buffer = new ArrayList<>();
 
-    private static final int MAX_RUNNING_SERVERS = 10;
+    // private static final int MAX_RUNNING_SERVERS = 10;
 
     @PostConstruct
     private void registerEventHandler() {
