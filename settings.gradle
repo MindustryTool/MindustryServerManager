@@ -1,1 +1,3 @@
 rootProject.name = 'MindustryServerManager'
+
+include 'server', 'loader', 'plugin', 'dto'

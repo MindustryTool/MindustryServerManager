@@ -1,25 +1,27 @@
 # MindustryServerManager
 
-Server manager:
+## Features
 
--  Auto translate chat
--  Server cluster:
+-  Host Mindustry servers with configurable `port`, `mode`, `image`, `env`
+-  Start/stop lifecycle with real-time SSE events
+-  Live server state: players, map, mods, status, chat, logs
+-  Resource usage metrics: CPU and RAM
+-  Console commands: list available and execute commands
+-  Player management: list players and update admin/login info
+-  File management: upload, list, delete files; create folders
+-  Maps inventory: list installed maps
+-  Mods inventory: list installed mods
+-  Config diff: detect mismatches between desired and running config
 
-   -  Server cluster hub
-   -  Admin managment, ban user, ip ban, user info
-   -  File managment
-   -  Custom command, command auto complete
+## Requirements
 
--  Server auto backup (file)
--  Anti grief, nsfw
--  Transfer server
+-  Docker latest version
+-  SSL and HTTPS is required for security
+-  At least 4GB of ram
 
 ## Setup server
 
--  Install docker
--  Pull mindustry server image: `docker pull ghcr.io/mindustrytool/mindustry-server-v7b146:latest`
--  Run server manager: `docker compose up`
+-  Run setup.sh: `./setup.sh`
 -  Go to mindustry-tool.com, create a new server manager, get SECURITY_KEY, ACCESS_TOKEN
 -  Update docker-compose.yml with SECURITY_KEY, ACCESS_TOKEN (you should keep it secret, you can use .env or edit vps env)
 -  Rerun server manager: ` docker compose down` `docker compose up`
-

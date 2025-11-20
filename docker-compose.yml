@@ -1,18 +1,29 @@
 services:
-  server-manager:
-    image: ghcr.io/mindustrytool/mindustry-server-manager:latest
-    container_name: server-manager
-    restart: always
-    networks:
-      - server-manager
-      - mindustry-server
-    environment:
-      SECURITY_KEY: # Get this from mindustry-tool.com
-      ACCESS_TOKEN: # Get this from mindustry-tool.com
-    volumes:
+  image: ghcr.io/mindustrytool/mindustry-server-manager:latest
+  container_name: server-manager
+  restart: unless-stopped
+  labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+  volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - /root/.docker/config.json:/config.json
-      - /data:/data
+      - /home/ubuntu/.docker/config.json:/root/.docker/config.json:ro
+      - /home/ubuntu/data/mindustry-servers:/home/ubuntu/data/mindustry-servers
+  ports:
+      - "8088:8088"
+  env_file: ./config/.env
+  networks:
+      - server-manager
+      - mindustry-server
+
+  watchtower:
+    image: containrrr/watchtower:latest
+    container_name: watchtower
+    restart: unless-stopped
+    volumes:
+        - /var/run/docker.sock:/var/run/docker.sock
+        - /root/.docker/config.json:/config.json
+    env_file: ./config/.env
 
 networks:
   mindustry-server:
