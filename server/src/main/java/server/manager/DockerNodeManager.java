@@ -757,11 +757,17 @@ public class DockerNodeManager implements NodeManager {
 
                     Object data = FileUtils.getFiles(file.absolutePath());
 
-                    return ResponseEntity.ok()//
-                            .contentType(data instanceof ArrayList //
-                                    ? MediaType.APPLICATION_JSON
-                                    : MediaType.APPLICATION_OCTET_STREAM)
-                            .body(data);
+                    var res = ResponseEntity.ok();//
+
+                    if (data instanceof ArrayList) {
+                        res.contentType(MediaType.APPLICATION_JSON);
+                    } else {
+                        res.contentType(MediaType.APPLICATION_OCTET_STREAM)
+                                .header("Content-Disposition", "attachment; filename=\"" + file.name() + "\"");
+
+                    }
+
+                    return res.body(data);
                 });
     }
 
