@@ -100,6 +100,8 @@ public class DockerNodeManager implements NodeManager {
                     emitter.next(LogEvent.error(serverId, "Image not found: " + request.getImage()));
                     emitter.error(ex);
                     return;
+                } catch (Exception ex) {
+                    emitter.next(LogEvent.error(serverId, ex.getMessage()));
                 }
 
                 emitter.next(LogEvent.info(serverId, "Image pulled"));
