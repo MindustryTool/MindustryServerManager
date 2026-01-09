@@ -138,7 +138,7 @@ public class ServerService {
                 Mono.just(LogEvent.info(serverId, "Waiting for server to start")), //
                 serverGateway//
                         .isHosting()
-                        .retryWhen(Retry.fixedDelay(400, Duration.ofMillis(100)))
+                        .retryWhen(Retry.fixedDelay(1200, Duration.ofMillis(100)))
                         .thenReturn(LogEvent.info(serverId, "Server started, waiting for hosting")));
 
         Flux<LogEvent> hostFlux = serverGateway.isHosting()
