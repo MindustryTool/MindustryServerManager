@@ -267,7 +267,7 @@ public class Utils {
             }
 
         } catch (Throwable throwable) {
-            Log.err(throwable);
+            Log.err(throwable.getMessage());
         }
 
         return new byte[0];
