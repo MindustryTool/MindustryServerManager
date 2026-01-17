@@ -40,6 +40,7 @@ import server.utils.Utils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.retry.Retry;
 
@@ -51,6 +52,7 @@ public class ServerService {
     private final NodeManager nodeManager;
     private final EventBus eventBus;
     private final ApiService apiService;
+    private final Scheduler scheduler = Schedulers.newSingle("server-service");
 
     private final ConcurrentHashMap<UUID, EnumSet<ServerFlag>> serverFlags = new ConcurrentHashMap<>();
     private final LinkedList<FluxSink<BaseEvent>> eventSinks = new LinkedList<>();
@@ -330,7 +332,7 @@ public class ServerService {
                 .doOnError(error -> Log.err(error.getMessage()))
                 .onErrorComplete(ApiError.class)
                 .timeout(Duration.ofSeconds(10))
-                .subscribeOn(Schedulers.boundedElastic())
+                .subscribeOn(scheduler)
                 .subscribe();
     }
 
