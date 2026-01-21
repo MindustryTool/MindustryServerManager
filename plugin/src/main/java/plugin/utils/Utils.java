@@ -87,6 +87,8 @@ public class Utils {
                 Log.info("Randomized next map to be @.", result.plainName());
             }
 
+            Log.info("Hosting map '@' with mode '@'.", result.plainName(), preset);
+
             Vars.logic.reset();
             Vars.world.loadMap(result, result.applyRules(preset));
             Vars.state.rules = result.applyRules(preset);
