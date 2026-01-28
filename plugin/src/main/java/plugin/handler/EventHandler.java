@@ -326,6 +326,8 @@ public class EventHandler {
 
             HttpServer.fire(new ServerEvents.ChatEvent(ServerController.SERVER_ID, chat));
 
+            Log.info(chat);
+
             HashMap<Locale, List<Player>> groupByLocale = new HashMap<>();
 
             Groups.player.forEach(
