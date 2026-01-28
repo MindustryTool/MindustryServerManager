@@ -132,7 +132,7 @@ public class ApiGateway {
                     .send(HttpUtils
                             .post("https://api.mindustry-tool.com/api/v4/libre")
                             .header("Content-Type", "text/plain")//
-                            .content(JsonUtils.toJsonString(body)), TranslationDto.class);
+                            .content(JsonUtils.toJsonString(body)), 5000, TranslationDto.class);
 
             translationCache.put(cacheKey, result.getTranslatedText());
 
@@ -187,9 +187,9 @@ public class ApiGateway {
         }
 
         try {
-            CompletableFuture.allOf(result.toArray(new CompletableFuture[0])).get(10, TimeUnit.SECONDS);
+            CompletableFuture.allOf(result.toArray(new CompletableFuture[0])).get(5, TimeUnit.SECONDS);
 
-            return Seq.with(result).map(r -> r.join());
+            return Seq.with(result).map(r -> r.getNow("This should never happen"));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
