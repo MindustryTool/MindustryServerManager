@@ -13,7 +13,7 @@ public class Config {
     public static final boolean IS_DEVELOPMENT = ENV != null && ENV.equals("DEV");
 
     public static final String SERVER_IP = "103.20.96.24";
-    public static final String DISCORD_INVITE_URL = "https://discord.com/invite/DCX5yrRUyp";
+    public static final String DISCORD_INVITE_URL = "https://discord.gg/Jx5qfU2xmC";
     public static final String MINDUSTRY_TOOL_URL = "https://mindustry-tool.com";
     public static final String RULE_URL = MINDUSTRY_TOOL_URL + "/rules";
 
@@ -30,5 +30,11 @@ public class Config {
     public static final String CHOOSE_SERVER_MESSAGE = """
             [accent]Click[] [orange]any server data[] to [lime]play[]
             [accent]Click[] to [scarlet]offline server[] to [lime]starting & play[] this.
+            """;
+
+    public static final String WELCOME_MESSAGE = """
+            [accent]Welcome to the server!
+            [lightgray]Play fair, have fun, and enjoy your stay.
+            [cyan]Powered by MindustryTool
             """;
 }

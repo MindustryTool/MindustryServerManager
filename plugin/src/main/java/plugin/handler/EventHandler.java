@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
+import arc.struct.Seq;
 import arc.util.Log;
 import arc.util.Strings;
 import mindustry.Vars;
@@ -27,6 +28,7 @@ import mindustry.game.EventType.TapEvent;
 import mindustry.game.Team;
 import mindustry.gen.Call;
 import mindustry.gen.Groups;
+import mindustry.gen.Iconc;
 import mindustry.gen.Player;
 import plugin.Config;
 import plugin.ServerController;
@@ -449,6 +451,7 @@ public class EventHandler {
                     .setJoinedAt(SessionHandler.contains(player) //
                             ? SessionHandler.get(player).joinedAt
                             : Instant.now().toEpochMilli())));
+
             if (Config.IS_HUB) {
                 var serverData = getTopServer();
 
@@ -489,17 +492,51 @@ public class EventHandler {
             // .setName(team.name)//
             // .setColor(team.color.toString()));
 
-            Log.info(chat);
+            ServerController.BACKGROUND_TASK_EXECUTOR.submit(() -> {
+                HttpServer.fire(new ServerEvents.ChatEvent(ServerController.SERVER_ID, chat));
 
-            HttpServer.fire(new ServerEvents.ChatEvent(ServerController.SERVER_ID, chat));
+                var playerData = ApiGateway.login(player);
 
-            var playerData = ApiGateway.login(player);
+                if (Config.IS_HUB) {
+                    sendHub(event.player, playerData.getLoginLink());
+                }
 
-            if (Config.IS_HUB) {
-                sendHub(event.player, playerData.getLoginLink());
-            }
+                setPlayerData(playerData, player);
+            });
 
-            setPlayerData(playerData, player);
+            ServerController.BACKGROUND_TASK_EXECUTOR.submit(() -> {
+                var translated = ApiGateway.translate(Config.WELCOME_MESSAGE, Locale.forLanguageTag(player.locale()));
+
+                player.sendMessage(translated);
+            });
+
+            ServerController.BACKGROUND_TASK_EXECUTOR.submit(() -> {
+                var translated = ApiGateway.translate(Config.WELCOME_MESSAGE, Locale.forLanguageTag(player.locale()));
+
+                player.sendMessage(translated);
+            });
+
+            ServerController.BACKGROUND_TASK_EXECUTOR.submit(() -> {
+                var options = new ArrayList<HudOption>();
+
+                Seq<String> translated = ApiGateway.translate(Seq.with("Rules", "Website", "Discord", "Close"),
+                        Locale.forLanguageTag(player.locale()));
+
+                options.add(HudHandler.option((p, state) -> Call.openURI(player.con, Config.RULE_URL),
+                        Iconc.book + "[green]" + translated.get(0)));
+
+                options.add(HudHandler.option((p, state) -> Call.openURI(player.con, Config.MINDUSTRY_TOOL_URL),
+                        Iconc.link + "[green]" + translated.get(1)));
+
+                options.add(HudHandler.option((p, state) -> Call.openURI(player.con, Config.DISCORD_INVITE_URL),
+                        Iconc.discord + "[blue]" + translated.get(2)));
+
+                options.add(HudHandler.option((p, state) -> {
+                    HudHandler.closeFollowDisplay(p, HudHandler.WELCOME);
+                }, Iconc.cancel + "[red]" + translated.get(3)));
+
+                HudHandler.showFollowDisplay(player, HudHandler.WELCOME, "MindustryTool", "", null, options);
+            });
 
         } catch (Throwable e) {
             e.printStackTrace();

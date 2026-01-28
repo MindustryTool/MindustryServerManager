@@ -5,10 +5,15 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 
+import arc.struct.Seq;
+import arc.util.Http;
 import arc.util.Log;
 import plugin.utils.HttpUtils;
 import plugin.utils.JsonUtils;
@@ -33,8 +38,8 @@ public class ApiGateway {
             .build();
 
     private static Cache<String, String> translationCache = Caffeine.newBuilder()
-            .expireAfterWrite(Duration.ofMinutes(5))
-            .maximumSize(100)
+            .expireAfterWrite(Duration.ofMinutes(30))
+            .maximumSize(500)
             .build();
 
     public static void requestConnection() {
@@ -132,6 +137,59 @@ public class ApiGateway {
             translationCache.put(cacheKey, result.getTranslatedText());
 
             return result.getTranslatedText();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static Seq<String> translate(Seq<String> texts, Locale targetLanguage) {
+        var languageCode = targetLanguage.getLanguage();
+
+        if (languageCode == null || languageCode.isEmpty()) {
+            languageCode = "en";
+        }
+
+        List<CompletableFuture<String>> result = new ArrayList<>();
+
+        for (var text : texts) {
+            var future = new CompletableFuture<String>();
+
+            result.add(future);
+
+            var cacheKey = String.format("%s:%s", text, languageCode);
+
+            var cached = translationCache.getIfPresent(cacheKey);
+
+            if (cached != null) {
+                future.complete(cached);
+                continue;
+            }
+
+            HashMap<String, Object> body = new HashMap<>();
+
+            body.put("q", text);
+            body.put("source", "auto");
+            body.put("target", languageCode);
+
+            Http.post(cached, JsonUtils.toJsonString(body))
+                    .error(future::completeExceptionally)
+                    .submit(res -> {
+                        try {
+                            var translated = JsonUtils.readJsonAsClass(res.getResultAsString(), TranslationDto.class)
+                                    .getTranslatedText();
+
+                            translationCache.put(cacheKey, translated);
+                            future.complete(translated);
+                        } catch (Throwable e) {
+                            future.completeExceptionally(e);
+                        }
+                    });
+        }
+
+        try {
+            CompletableFuture.allOf(result.toArray(new CompletableFuture[0])).get(10, TimeUnit.SECONDS);
+
+            return Seq.with(result).map(r -> r.join());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

@@ -27,6 +27,7 @@ public class HudHandler {
     public static final int SERVERS_UI = 2;
     public static final int LOGIN_UI = 3;
     public static final int SERVER_REDIRECT = 4;
+    public static final int WELCOME = 5;
 
     public static Cache<String, LinkedList<MenuData>> menus = Caffeine.newBuilder()
             .expireAfterAccess(Duration.ofMinutes(10))
