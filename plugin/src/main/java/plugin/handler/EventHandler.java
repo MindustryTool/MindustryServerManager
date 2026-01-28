@@ -491,9 +491,9 @@ public class EventHandler {
             // .setTeam(new TeamDto()//
             // .setName(team.name)//
             // .setColor(team.color.toString()));
+            HttpServer.fire(new ServerEvents.ChatEvent(ServerController.SERVER_ID, chat));
 
             ServerController.BACKGROUND_TASK_EXECUTOR.submit(() -> {
-                HttpServer.fire(new ServerEvents.ChatEvent(ServerController.SERVER_ID, chat));
 
                 var playerData = ApiGateway.login(player);
 
