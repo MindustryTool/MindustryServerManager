@@ -9,6 +9,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 import arc.util.Log;
@@ -342,9 +343,10 @@ public class EventHandler {
 
             HttpServer.fire(new ServerEvents.ChatEvent(ServerController.SERVER_ID, chat));
 
-            HashMap<String, List<Player>> groupByLocale = new HashMap<>();
+            HashMap<Locale, List<Player>> groupByLocale = new HashMap<>();
 
-            Groups.player.forEach(p -> groupByLocale.getOrDefault(p.locale(), new ArrayList<>()).add(p));
+            Groups.player.forEach(
+                    p -> groupByLocale.getOrDefault(Locale.forLanguageTag(p.locale()), new ArrayList<>()).add(p));
 
             groupByLocale.forEach((locale, ps) -> {
                 ServerController.BACKGROUND_TASK_EXECUTOR.execute(() -> {

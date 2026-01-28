@@ -2,7 +2,9 @@ package plugin.handler;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.ConcurrentHashMap;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -12,6 +14,7 @@ import plugin.utils.HttpUtils;
 import plugin.utils.JsonUtils;
 import plugin.ServerController;
 import plugin.type.PaginationRequest;
+import plugin.type.TranslationDto;
 import dto.LoginDto;
 import dto.LoginRequestDto;
 import dto.ServerDto;
@@ -27,6 +30,11 @@ public class ApiGateway {
     private static Cache<PaginationRequest, List<ServerDto>> serverQueryCache = Caffeine.newBuilder()
             .expireAfterWrite(Duration.ofSeconds(15))
             .maximumSize(10)
+            .build();
+
+    private static Cache<String, String> translationCache = Caffeine.newBuilder()
+            .expireAfterWrite(Duration.ofMinutes(5))
+            .maximumSize(100)
             .build();
 
     public static void requestConnection() {
@@ -93,13 +101,37 @@ public class ApiGateway {
         });
     }
 
-    public static String translate(String text, String targetLanguage) {
+    public static String translate(String text, Locale targetLanguage) {
+        var languageCode = targetLanguage.getLanguage();
+
+        if (languageCode == null || languageCode.isEmpty()) {
+            languageCode = "en";
+        }
+
+        var cacheKey = String.format("%s:%s", text, languageCode);
+
+        var cached = translationCache.getIfPresent(cacheKey);
+
+        if (cached != null) {
+            return cached;
+        }
+
+        HashMap<String, Object> body = new HashMap<>();
+
+        body.put("q", text);
+        body.put("source", "auto");
+        body.put("target", languageCode);
+
         try {
-            return HttpUtils
+            var result = HttpUtils
                     .send(HttpUtils
-                            .post(GATEWAY_URL, String.format("translate/%s", targetLanguage))
+                            .post("https://api.mindustry-tool.com/api/v4/libre")
                             .header("Content-Type", "text/plain")//
-                            .content(text), String.class);
+                            .content(JsonUtils.toJsonString(body)), TranslationDto.class);
+
+            translationCache.put(cacheKey, result.getTranslatedText());
+
+            return result.getTranslatedText();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
