@@ -529,6 +529,8 @@ public class EventHandler {
                     HudHandler.closeFollowDisplay(p, HudHandler.WELCOME);
                 }, Iconc.cancel + "[red]" + translated.get(3)));
 
+                Log.info(translated);
+
                 HudHandler.showFollowDisplay(player, HudHandler.WELCOME, "MindustryTool", "", null, options);
             });
 
