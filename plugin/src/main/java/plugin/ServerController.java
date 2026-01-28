@@ -4,8 +4,6 @@ import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import org.pf4j.Plugin;
@@ -40,12 +38,17 @@ public class ServerController extends Plugin implements MindustryToolPlugin {
     public static final UUID SERVER_ID = UUID.fromString(System.getenv("SERVER_ID"));
     public static boolean isUnloaded = false;
 
-    public static final ExecutorService BACKGROUND_TASK_EXECUTOR = new ThreadPoolExecutor(
-            0,
-            20,
-            5,
-            TimeUnit.SECONDS,
-            new SynchronousQueue<Runnable>());
+    private static final ExecutorService BACKGROUND_TASK_EXECUTOR = Executors.newWorkStealingPool();
+
+    public static void backgroundTask(Runnable r) {
+        BACKGROUND_TASK_EXECUTOR.submit(() -> {
+            try {
+                r.run();
+            } catch (Exception e) {
+                Log.err(e);
+            }
+        });
+    }
 
     public static final ScheduledExecutorService BACKGROUND_SCHEDULER = Executors
             .newSingleThreadScheduledExecutor();

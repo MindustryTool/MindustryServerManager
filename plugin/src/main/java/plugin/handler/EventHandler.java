@@ -351,7 +351,7 @@ public class EventHandler {
                     p -> groupByLocale.getOrDefault(Locale.forLanguageTag(p.locale()), new ArrayList<>()).add(p));
 
             groupByLocale.forEach((locale, ps) -> {
-                ServerController.BACKGROUND_TASK_EXECUTOR.execute(() -> {
+                ServerController.backgroundTask(() -> {
                     try {
                         String translatedMessage = translationCache.get(locale + message,
                                 _ignore -> ApiGateway.translate(message, locale));
@@ -493,7 +493,7 @@ public class EventHandler {
             // .setColor(team.color.toString()));
             HttpServer.fire(new ServerEvents.ChatEvent(ServerController.SERVER_ID, chat));
 
-            ServerController.BACKGROUND_TASK_EXECUTOR.submit(() -> {
+            ServerController.backgroundTask(() -> {
 
                 var playerData = ApiGateway.login(player);
 
@@ -504,14 +504,14 @@ public class EventHandler {
                 setPlayerData(playerData, player);
             });
 
-            ServerController.BACKGROUND_TASK_EXECUTOR.submit(() -> {
+            ServerController.backgroundTask(() -> {
                 Log.info("Welcome message: " + Config.WELCOME_MESSAGE);
                 var translated = ApiGateway.translate(Config.WELCOME_MESSAGE, Locale.forLanguageTag(player.locale()));
                 Log.info("Translated welcome message: " + translated);
                 player.sendMessage(translated);
             });
 
-            ServerController.BACKGROUND_TASK_EXECUTOR.submit(() -> {
+            ServerController.backgroundTask(() -> {
                 var options = new ArrayList<HudOption>();
 
                 Seq<String> translated = ApiGateway.translate(Seq.with("Rules", "Website", "Discord", "Close"),
@@ -529,8 +529,6 @@ public class EventHandler {
                 options.add(HudHandler.option((p, state) -> {
                     HudHandler.closeFollowDisplay(p, HudHandler.WELCOME);
                 }, Iconc.cancel + "[red]" + translated.get(3)));
-
-                Log.info(translated);
 
                 HudHandler.showFollowDisplay(player, HudHandler.WELCOME, "MindustryTool", "", null, options);
             });
@@ -634,7 +632,7 @@ public class EventHandler {
     public static void onServerChoose(Player player, String id, String name) {
         HudHandler.closeFollowDisplay(player, HudHandler.SERVERS_UI);
 
-        ServerController.BACKGROUND_TASK_EXECUTOR.submit(() -> {
+        ServerController.backgroundTask(() -> {
             try {
                 player.sendMessage(String.format(
                         "[green]Starting server [white]%s, [white]this can take up to 1 minutes, please wait", name));

@@ -131,7 +131,7 @@ public class ApiGateway {
             var result = HttpUtils
                     .send(HttpUtils
                             .post("https://api.mindustry-tool.com/api/v4/libre")
-                            .header("Content-Type", "text/plain")//
+                            .header("Content-Type", "application/json")//
                             .content(JsonUtils.toJsonString(body)), 5000, TranslationDto.class);
 
             translationCache.put(cacheKey, result.getTranslatedText());
@@ -172,6 +172,7 @@ public class ApiGateway {
             body.put("target", languageCode);
 
             Http.post("https://api.mindustry-tool.com/api/v4/libre", JsonUtils.toJsonString(body))
+                    .header("Content-Type", "application/json")//
                     .error(future::completeExceptionally)
                     .submit(res -> {
                         try {

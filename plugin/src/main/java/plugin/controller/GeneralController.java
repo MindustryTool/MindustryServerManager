@@ -23,7 +23,6 @@ import mindustry.gen.Groups;
 import mindustry.gen.Player;
 import mindustry.net.Administration.PlayerInfo;
 import plugin.Config;
-import plugin.ServerController;
 import plugin.handler.EventHandler;
 import plugin.handler.HudHandler;
 import plugin.handler.ServerCommandHandler;
@@ -290,12 +289,6 @@ public class GeneralController {
                 gameStats.put("placedBlockCount", Vars.state.stats.placedBlockCount);
                 gameStats.put("unitsCreated", Vars.state.stats.unitsCreated);
                 gameStats.put("wavesLasted", Vars.state.stats.wavesLasted);
-
-                HashMap<String, String> executors = new HashMap<>();
-                executors.put("backgroundExecutor", ServerController.BACKGROUND_TASK_EXECUTOR.toString());
-                executors.put("backgroundScheduler", ServerController.BACKGROUND_SCHEDULER.toString());
-
-                data.put("executors", executors);
 
                 data.put("gameStats", gameStats);
                 data.put("locales", Vars.locales);

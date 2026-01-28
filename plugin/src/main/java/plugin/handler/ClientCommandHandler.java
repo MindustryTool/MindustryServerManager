@@ -244,7 +244,7 @@ public class ClientCommandHandler {
                 String.format("[green]Starting server [white]%s, [white]redirection will happen soon", name));
 
         try {
-            ServerController.BACKGROUND_TASK_EXECUTOR.submit(() -> {
+            ServerController.backgroundTask(() -> {
                 var data = ApiGateway.host(id);
                 player.sendMessage("[green]Redirecting");
                 Call.sendMessage(
@@ -278,7 +278,7 @@ public class ClientCommandHandler {
     }
 
     public static void sendRedirectServerList(Player player, int page) {
-        ServerController.BACKGROUND_TASK_EXECUTOR.submit(() -> {
+        ServerController.backgroundTask(() -> {
             try {
                 var size = 8;
                 var request = new PaginationRequest()//

@@ -109,7 +109,7 @@ public class HudHandler {
             return;
         }
 
-        ServerController.BACKGROUND_TASK_EXECUTOR.execute(() -> callback.accept(event.player, data.getState()));
+        ServerController.backgroundTask(() -> callback.accept(event.player, data.getState()));
     }
 
     public static synchronized void closeFollowDisplay(Player player, int id) {
