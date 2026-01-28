@@ -210,25 +210,6 @@ public class EventHandler {
         }
     }
 
-    private static void setName(Player player, String name, int level) {
-        try {
-            var icon = getIconBaseOnLevel(level);
-            var newName = String.format("[white]%s [%s] %s", icon, level, name);
-
-            if (!newName.equals(player.name)) {
-                var hasLevelInName = player.name.matches("\\[\\d+\\]");
-
-                player.name(newName);
-
-                if (hasLevelInName) {
-                    player.sendMessage(String.format("You have leveled up to level %s", level));
-                }
-            }
-        } catch (Throwable e) {
-            e.printStackTrace();
-        }
-    }
-
     public static String getIconBaseOnLevel(int level) {
         var index = level / 3;
 
@@ -505,9 +486,7 @@ public class EventHandler {
             });
 
             ServerController.backgroundTask(() -> {
-                Log.info("Welcome message: " + Config.WELCOME_MESSAGE);
                 var translated = ApiGateway.translate(Config.WELCOME_MESSAGE, Locale.forLanguageTag(player.locale()));
-                Log.info("Translated welcome message: " + translated);
                 player.sendMessage(translated);
             });
 
@@ -667,7 +646,6 @@ public class EventHandler {
 
     public static void setPlayerData(LoginDto playerData, Player player) {
         var uuid = playerData.getUuid();
-        var exp = playerData.getStats().path("exp").asLong(0);
         var name = playerData.getName();
         var isLoggedIn = playerData.getLoginLink() == null;
 
@@ -693,7 +671,6 @@ public class EventHandler {
         }
 
         if (isLoggedIn) {
-            setName(player, name, (int) Math.sqrt(exp));
             player.sendMessage("Logged in as " + name);
         } else {
             player.sendMessage("You are not logged in, consider log in via MindustryTool using /login");
