@@ -505,8 +505,9 @@ public class EventHandler {
             });
 
             ServerController.BACKGROUND_TASK_EXECUTOR.submit(() -> {
+                Log.info("Welcome message: " + Config.WELCOME_MESSAGE);
                 var translated = ApiGateway.translate(Config.WELCOME_MESSAGE, Locale.forLanguageTag(player.locale()));
-
+                Log.info("Translated welcome message: " + translated);
                 player.sendMessage(translated);
             });
 

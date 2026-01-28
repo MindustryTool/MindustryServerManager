@@ -171,7 +171,7 @@ public class ApiGateway {
             body.put("source", "auto");
             body.put("target", languageCode);
 
-            Http.post(cached, JsonUtils.toJsonString(body))
+            Http.post("https://api.mindustry-tool.com/api/v4/libre", JsonUtils.toJsonString(body))
                     .error(future::completeExceptionally)
                     .submit(res -> {
                         try {
