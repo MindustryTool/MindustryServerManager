@@ -511,12 +511,6 @@ public class EventHandler {
             });
 
             ServerController.BACKGROUND_TASK_EXECUTOR.submit(() -> {
-                var translated = ApiGateway.translate(Config.WELCOME_MESSAGE, Locale.forLanguageTag(player.locale()));
-
-                player.sendMessage(translated);
-            });
-
-            ServerController.BACKGROUND_TASK_EXECUTOR.submit(() -> {
                 var options = new ArrayList<HudOption>();
 
                 Seq<String> translated = ApiGateway.translate(Seq.with("Rules", "Website", "Discord", "Close"),
