@@ -97,6 +97,9 @@ public class HudHandler {
 
     private static void onMenuOptionChoose(MenuOptionChooseEvent event) {
         var menu = menus.getIfPresent(event.player.uuid());
+        int menuId = event.menuId;
+
+        closeFollowDisplay(event.player, menuId);
 
         if (menu == null || menu.isEmpty()) {
             return;
