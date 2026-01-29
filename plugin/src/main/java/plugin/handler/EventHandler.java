@@ -227,7 +227,6 @@ public class EventHandler {
 
         if (rateMap != null) {
             ServerController.backgroundTask(() -> {
-                Log.info("Each player");
                 Utils.forEachPlayerLocale((locale, players) -> {
                     var options = new ArrayList<HudOption>();
 

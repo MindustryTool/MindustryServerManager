@@ -99,8 +99,6 @@ public class HudHandler {
         var menu = menus.getIfPresent(event.player.uuid());
         int menuId = event.menuId;
 
-        closeFollowDisplay(event.player, menuId);
-
         if (menu == null || menu.isEmpty()) {
             return;
         }
@@ -119,7 +117,11 @@ public class HudHandler {
             return;
         }
 
-        ServerController.backgroundTask(() -> callback.accept(event.player, data.getState()));
+        ServerController.backgroundTask(() -> {
+            callback.accept(event.player, data.getState());
+            closeFollowDisplay(event.player, menuId);
+        });
+
     }
 
     public static synchronized void closeFollowDisplay(Player player, int id) {
