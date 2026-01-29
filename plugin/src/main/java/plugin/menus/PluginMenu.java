@@ -31,7 +31,7 @@ public abstract class PluginMenu<T> {
                 return;
             }
 
-            ServerController.backgroundTask(() -> {
+            ServerController.backgroundTask("Menu Option Choose", () -> {
                 synchronized (event.player) {
                     HudOption<Object> selectedOption = null;
 
@@ -141,7 +141,7 @@ public abstract class PluginMenu<T> {
             copy.state = state;
             copy.options = new Seq<>();
 
-            ServerController.backgroundTask(() -> {
+            ServerController.backgroundTask("Show Menu", () -> {
                 copy.build(player, state);
 
                 copy.options.removeAll(op -> op.size == 0);

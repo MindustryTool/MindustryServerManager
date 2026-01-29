@@ -412,7 +412,7 @@ public class EventHandler {
 
         Log.info(chat);
 
-        ServerController.backgroundTask(() -> {
+        ServerController.backgroundTask("Chat Event", () -> {
             try {
                 Utils.forEachPlayerLocale((locale, ps) -> {
                     String translatedMessage = translationCache.get(locale + message,
@@ -545,7 +545,7 @@ public class EventHandler {
             // .setColor(team.color.toString()));
             HttpServer.fire(new ServerEvents.ChatEvent(ServerController.SERVER_ID, chat));
 
-            ServerController.backgroundTask(() -> {
+            ServerController.backgroundTask("Player Join", () -> {
                 var playerData = ApiGateway.login(player);
 
                 if (Config.IS_HUB) {
@@ -557,7 +557,7 @@ public class EventHandler {
 
             Core.bundle.getLocale();
 
-            ServerController.backgroundTask(() -> {
+            ServerController.backgroundTask("Welcome Message", () -> {
                 var translated = ApiGateway.translate(Config.WELCOME_MESSAGE, Utils.parseLocale(player.locale()));
                 player.sendMessage(translated);
             });
@@ -580,7 +580,7 @@ public class EventHandler {
     }
 
     public static void onServerChoose(Player player, String id, String name) {
-        ServerController.backgroundTask(() -> {
+        ServerController.backgroundTask("Server Choose", () -> {
             try {
                 player.sendMessage(String.format(
                         "[green]Starting server [white]%s, [white]this can take up to 1 minutes, please wait", name));

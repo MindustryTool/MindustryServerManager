@@ -59,7 +59,7 @@ public class ClientCommandHandler {
                 String.format("[green]Starting server [white]%s, [white]redirection will happen soon", name));
 
         try {
-            ServerController.backgroundTask(() -> {
+            ServerController.backgroundTask("Redirect Server",() -> {
                 var data = ApiGateway.host(id);
                 player.sendMessage("[green]Redirecting");
                 Call.sendMessage(

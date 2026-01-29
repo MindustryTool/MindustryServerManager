@@ -30,12 +30,12 @@ public class ServerController extends Plugin implements MindustryToolPlugin {
 
     public static final ExecutorService BACKGROUND_TASK_EXECUTOR = Executors.newWorkStealingPool();
 
-    public static void backgroundTask(Runnable r) {
+    public static void backgroundTask(String name, Runnable r) {
         BACKGROUND_TASK_EXECUTOR.submit(() -> {
             try {
                 r.run();
             } catch (Exception e) {
-                Log.err("Failed to execute background task", e);
+                Log.err("Failed to execute background task: " + name, e);
             }
         });
     }
