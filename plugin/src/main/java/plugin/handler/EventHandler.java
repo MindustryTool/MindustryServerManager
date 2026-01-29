@@ -218,12 +218,19 @@ public class EventHandler {
     private static void onGameOver(GameOverEvent event) {
         var rateMap = Vars.state.map;
 
+        Log.info("Game over: " + rateMap);
+
         if (rateMap != null) {
             ServerController.backgroundTask(() -> {
+                Log.info("Each player");
                 Utils.forEachPlayerLocale((locale, players) -> {
                     var options = new ArrayList<HudOption>();
 
+                    Log.info("Translate");
+
                     String translated = ApiGateway.translate("Rate last map", locale);
+
+                    Log.info("Translated");
 
                     for (int i = 0; i < 5; i++) {
                         var star = i + 1;
@@ -235,6 +242,7 @@ public class EventHandler {
                     }
 
                     for (var player : players) {
+                        Log.info("send to : " + player.name);
                         HudHandler.showFollowDisplay(player, HudHandler.RATE_LAST_MAP, translated, "", null, options);
                     }
                 });
