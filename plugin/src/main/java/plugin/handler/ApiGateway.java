@@ -28,6 +28,7 @@ import mindustry.gen.Player;
 public class ApiGateway {
 
     private static final String GATEWAY_URL = "http://server-manager-v2:8088/gateway/v2";
+    private static final String API_URL = "https://api.mindustry-tool.com/api/v4/";
     private static final String SERVER_ID = ServerController.SERVER_ID.toString();
 
     private static final ConcurrentHashMap<String, Object> locks = new ConcurrentHashMap<>();
@@ -95,7 +96,7 @@ public class ApiGateway {
             try {
                 return HttpUtils
                         .sendList(
-                                HttpUtils.get(GATEWAY_URL,
+                                HttpUtils.get(API_URL,
                                         String.format("servers?page=%s&size=%s", request.getPage(), request.getSize())),
                                 2000,
                                 ServerDto.class);
