@@ -87,7 +87,7 @@ public class ServerListMenu extends PluginMenu<Integer> {
             row();
             text("[scarlet]Close");
         } catch (Throwable e) {
-            Log.err(e);
+            Log.err("Failed to build server list menu", e);
         }
     }
 }

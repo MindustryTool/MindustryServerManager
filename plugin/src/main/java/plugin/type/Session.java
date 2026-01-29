@@ -34,7 +34,7 @@ public class Session {
             this.locale = Locale.forLanguageTag(p.locale().replace('_', '-'));
         } catch (Throwable e) {
             this.locale = Locale.ENGLISH;
-            Log.err(e);
+            Log.err("Failed to parse locale for player " + p.name, e);
         }
     }
 

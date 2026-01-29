@@ -258,7 +258,7 @@ public class Utils {
                     SaveIO.save(tempFile);
                     return true;
                 } catch (Exception e) {
-                    Log.err(e);
+                    Log.err("Failed to generate save file", e);
                     return false;
                 }
             }, 2000, "Generate save");

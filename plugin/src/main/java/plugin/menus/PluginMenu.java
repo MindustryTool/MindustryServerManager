@@ -45,6 +45,10 @@ public abstract class PluginMenu<T> {
                         }
                     }
 
+                    if (selectedOption == null){
+                        Log.err("Failed to find selected option for menu @ with id @", targetMenu, event.option);
+                    }
+
                     if (selectedOption != null && selectedOption.callback != null) {
                         selectedOption.callback.accept(event.player, targetMenu.state);
                     }

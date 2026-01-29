@@ -26,7 +26,7 @@ public class LoginCommand extends PluginCommand {
                 player.sendMessage("Already logged in");
             }
         } catch (Exception e) {
-            Log.err(e);
+            Log.err("Failed to login", e);
         }
     }
 }

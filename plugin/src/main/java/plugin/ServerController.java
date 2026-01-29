@@ -35,7 +35,7 @@ public class ServerController extends Plugin implements MindustryToolPlugin {
             try {
                 r.run();
             } catch (Exception e) {
-                Log.err(e);
+                Log.err("Failed to execute background task", e);
             }
         });
     }
@@ -73,7 +73,7 @@ public class ServerController extends Plugin implements MindustryToolPlugin {
                     ApiGateway.host(SERVER_ID.toString());
                 }
             } catch (Exception e) {
-                Log.err(e);
+                Log.err("Failed to host server", e);
             }
         }, 30, TimeUnit.SECONDS);
 

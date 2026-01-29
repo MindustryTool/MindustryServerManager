@@ -93,7 +93,7 @@ public class GlobalServerListMenu extends PluginMenu<Integer> {
 
             text("[red]Close");
         } catch (Exception e) {
-            Log.err(e);
+            Log.err("Failed to build global server list menu", e);
         }
     }
 }

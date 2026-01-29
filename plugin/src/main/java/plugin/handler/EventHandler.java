@@ -139,7 +139,7 @@ public class EventHandler {
             Core.settings.put(RATING_PERSIT_KEY, JsonUtils.toJsonString(maps));
 
         } catch (Exception e) {
-            Log.err(e);
+            Log.err("Failed to update map rating", e);
         }
     }
 
@@ -203,7 +203,7 @@ public class EventHandler {
 
             return sb.toString();
         } catch (Exception e) {
-            Log.err(e);
+            Log.err("Failed to get map star display", e);
             return "Error";
         }
     }
@@ -433,7 +433,7 @@ public class EventHandler {
                     }
                 });
             } catch (Throwable e) {
-                Log.err(e);
+                Log.err("Failed to send chat event", e);
             }
         });
     }

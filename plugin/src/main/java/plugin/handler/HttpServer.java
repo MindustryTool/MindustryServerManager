@@ -172,7 +172,7 @@ public class HttpServer {
 
             fire(event);
         } catch (Exception error) {
-            Log.err(error);
+            Log.err("Failed to send state update", error);
         }
     }
 

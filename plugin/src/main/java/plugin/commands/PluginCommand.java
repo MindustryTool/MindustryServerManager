@@ -111,7 +111,7 @@ public abstract class PluginCommand {
             if (player != null) {
                 player.sendMessage("Error: " + e.getMessage());
             }
-            Log.err(e);
+            Log.err("Failed to execute command " + name, e);
         }
     }
 
