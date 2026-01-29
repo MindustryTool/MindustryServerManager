@@ -318,7 +318,7 @@ public class EventHandler {
             return Locale.ENGLISH;
         }
 
-        String[] parts = locale.split("_|-");
+        String[] parts = locale.replace("_", "-").split("-");
         return parts.length > 0 ? Locale.forLanguageTag(parts[0]) : Locale.ENGLISH;
     }
 
@@ -500,7 +500,7 @@ public class EventHandler {
             Core.bundle.getLocale();
 
             ServerController.backgroundTask(() -> {
-                var translated = ApiGateway.translate(Config.WELCOME_MESSAGE, Locale.forLanguageTag(player.locale()));
+                var translated = ApiGateway.translate(Config.WELCOME_MESSAGE, parseLocale(player.locale()));
                 player.sendMessage(translated);
             });
 
@@ -508,7 +508,7 @@ public class EventHandler {
                 var options = new ArrayList<HudOption>();
 
                 Seq<String> translated = ApiGateway.translate(Seq.with("Rules", "Website", "Discord", "Close"),
-                        Locale.forLanguageTag(player.locale()));
+                        parseLocale(player.locale()));
 
                 options.add(HudHandler.option((p, state) -> Call.openURI(player.con, Config.RULE_URL),
                         Iconc.book + "[green]" + translated.get(0)));
