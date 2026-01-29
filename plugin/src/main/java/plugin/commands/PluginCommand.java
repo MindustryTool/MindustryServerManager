@@ -1,5 +1,7 @@
 package plugin.commands;
 
+import java.util.function.Function;
+
 import arc.struct.Seq;
 import arc.util.CommandHandler;
 import arc.util.Log;
@@ -35,19 +37,19 @@ public abstract class PluginCommand {
     }
 
     protected Param optional(String name) {
-        Param p = new Param(name, ParamType.Optional);
+        Param p = new Param(name, ParamType.Optional, new Seq<>());
         params.add(p);
         return p;
     }
 
     protected Param required(String name) {
-        Param p = new Param(name, ParamType.Required);
+        Param p = new Param(name, ParamType.Required, new Seq<>());
         params.add(p);
         return p;
     }
 
     protected Param variadic(String name) {
-        Param p = new Param(name, ParamType.Variadic);
+        Param p = new Param(name, ParamType.Variadic, new Seq<>());
         params.add(p);
         return p;
     }
@@ -107,9 +109,13 @@ public abstract class PluginCommand {
     private void wrapper(Runnable runnable) {
         try {
             ServerController.BACKGROUND_TASK_EXECUTOR.submit(runnable);
+        } catch (ParamException e) {
+            if (player != null) {
+                player.sendMessage(e.getMessage());
+            }
         } catch (Exception e) {
             if (player != null) {
-                player.sendMessage("Error: " + e.getMessage());
+                player.sendMessage("Error");
             }
             Log.err("Failed to execute command " + name, e);
         }
@@ -123,22 +129,45 @@ public abstract class PluginCommand {
         throw new UnsupportedOperationException("run");
     }
 
+    public static class ParamException extends IllegalArgumentException {
+        public ParamException(Param param, String message) {
+            super(message + "\n" + param.toParamText() + "=" + param.value);
+        }
+    }
+
     public static class Param {
         private String name;
         private ParamType type;
         private String value;
 
+        private Seq<Function<Param, Boolean>> validators = new Seq<>();
+
         public void setValue(String value) {
             this.value = value;
+
+            if (type == ParamType.Optional) {
+                return;
+            }
+
+            if (type == ParamType.Required) {
+                notNull();
+            }
+
+            for (Function<Param, Boolean> validator : validators) {
+                if (!validator.apply(this)) {
+                    throw new ParamException(this, "Invalid value");
+                }
+            }
         }
 
-        private Param(String name, ParamType type) {
+        private Param(String name, ParamType type, Seq<Function<Param, Boolean>> validators) {
             this.name = name;
             this.type = type;
+            this.validators = validators;
         }
 
         public Param copy() {
-            return new Param(name, type);
+            return new Param(name, type, validators);
         }
 
         public String toParamText() {
@@ -162,21 +191,69 @@ public abstract class PluginCommand {
         }
 
         public Long asLong() {
-            return Long.parseLong(value);
+            try {
+                return Long.parseLong(value);
+            } catch (NumberFormatException e) {
+                throw new ParamException(this, "Invalid int value");
+            }
         }
 
         public Integer asInt() {
-            return Integer.parseInt(value);
+            try {
+                return Integer.parseInt(value);
+            } catch (NumberFormatException e) {
+                throw new ParamException(this, "Invalid int value");
+            }
+        }
+
+        public Double asDouble() {
+            try {
+                return Double.parseDouble(value);
+            } catch (NumberFormatException e) {
+                throw new ParamException(this, "Invalid double value");
+            }
         }
 
         public Float asFloat() {
-            return Float.parseFloat(value);
+            try {
+                return Float.parseFloat(value);
+            } catch (NumberFormatException e) {
+                throw new ParamException(this, "Invalid float value");
+            }
         }
 
-        public void checkMissing() {
+        public boolean hasValue() {
+            return value != null;
+        }
+
+        public boolean isNull() {
+            return value == null;
+        }
+
+        public void notNull() {
             if (value == null) {
-                throw new IllegalArgumentException("Missing parameter: " + name);
+                throw new ParamException(this, "Missing can not be null" + name);
             }
+        }
+
+        public Param minLength(int min) {
+            validators.add(param -> param.value.length() >= min);
+            return this;
+        }
+
+        public Param maxLength(int max) {
+            validators.add(param -> param.value.length() <= max);
+            return this;
+        }
+
+        public Param min(double min) {
+            validators.add(param -> param.asDouble() >= min);
+            return this;
+        }
+
+        public Param max(double max) {
+            validators.add(param -> param.asDouble() <= max);
+            return this;
         }
     }
 
