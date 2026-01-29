@@ -64,6 +64,7 @@ public class ServerController extends Plugin implements MindustryToolPlugin {
         EventHandler.init();
         ApiGateway.init();
         PluginMenu.init();
+        SessionHandler.init();
 
         BACKGROUND_SCHEDULER.schedule(() -> {
             try {

@@ -15,7 +15,7 @@ public class SessionHandler {
         return data;
     }
 
-    public static void load() {
+    public static void init() {
         Groups.player.each(SessionHandler::put);
     }
 
