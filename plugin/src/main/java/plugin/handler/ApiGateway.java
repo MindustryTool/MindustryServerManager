@@ -140,7 +140,8 @@ public class ApiGateway {
 
             return result.getTranslatedText();
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            Log.err("Failed to translate text: " + text, e);
+            return text;
         }
     }
 
@@ -205,7 +206,8 @@ public class ApiGateway {
 
             return Seq.with(result).map(r -> r.getNow("This should never happen"));
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            Log.err("Failed to translate texts: " + texts, e);
+            return texts;
         }
     }
 

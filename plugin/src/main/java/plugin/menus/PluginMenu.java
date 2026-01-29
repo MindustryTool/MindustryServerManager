@@ -19,7 +19,7 @@ import plugin.ServerController;
 public abstract class PluginMenu<T> {
     private static final AtomicInteger ID_GEN = new AtomicInteger(1000);
     private static final ConcurrentHashMap<Class<?>, Integer> CLASS_IDS = new ConcurrentHashMap<>();
-    private static final Seq<PluginMenu<?>> menus = new Seq<>(new Seq<>());
+    private static final Seq<PluginMenu<?>> menus = new Seq<>();
 
     public static void init() {
         PluginEvents.on(MenuOptionChooseEvent.class, event -> {
@@ -105,10 +105,16 @@ public abstract class PluginMenu<T> {
     }
 
     public void option(String text, PlayerPressCallback<T> callback) {
+        if (options.size == 0) {
+            row();
+        }
         options.get(options.size - 1).add(new HudOption<>(callback, text));
     }
 
     public void text(String text) {
+        if (options.size == 0) {
+            row();
+        }
         options.get(options.size - 1).add(new HudOption<>(null, text));
     }
 
@@ -139,7 +145,7 @@ public abstract class PluginMenu<T> {
             copy.description = description;
             copy.player = player;
             copy.state = state;
-            copy.options = new Seq<>();
+            copy.options = new Seq<>(new Seq<>());
 
             ServerController.backgroundTask("Show Menu: " + getMenuId(), () -> {
                 try {
