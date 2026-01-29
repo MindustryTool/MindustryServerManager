@@ -294,6 +294,7 @@ public class Utils {
         }
 
         String[] parts = locale.replace("_", "-").split("-");
+
         return parts.length > 0 ? Locale.forLanguageTag(parts[0]) : Locale.ENGLISH;
     }
 

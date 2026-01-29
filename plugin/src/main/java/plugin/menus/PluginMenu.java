@@ -91,7 +91,7 @@ public abstract class PluginMenu<T> {
 
     public final Instant createdAt = Instant.now();
 
-    private Seq<Seq<HudOption<T>>> options = new Seq<>();
+    private Seq<Seq<HudOption<T>>> options = new Seq<>(new Seq<>());
 
     public PluginMenu() {
     }
