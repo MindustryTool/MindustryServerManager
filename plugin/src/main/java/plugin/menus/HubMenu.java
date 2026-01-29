@@ -12,20 +12,19 @@ public class HubMenu extends PluginMenu<String> {
         this.description = Config.HUB_MESSAGE;
 
         if (loginLink != null && !loginLink.isEmpty()) {
-            row();
             option("[green]Login via MindustryTool", (p, s) -> Call.openURI(p.con, s));
+            row();
         }
 
-        row();
         option("[green]Rules", (p, s) -> Call.openURI(p.con, Config.RULE_URL));
-        
         row();
+
         option("[green]Website", (p, s) -> Call.openURI(p.con, Config.MINDUSTRY_TOOL_URL));
-        
         row();
+
         option("[blue]Discord", (p, s) -> Call.openURI(p.con, Config.DISCORD_INVITE_URL));
-        
         row();
+
         option("[red]Close", (p, s) -> EventHandler.sendServerList(p, 0));
     }
 }

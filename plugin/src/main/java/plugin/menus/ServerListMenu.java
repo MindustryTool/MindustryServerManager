@@ -16,6 +16,7 @@ public class ServerListMenu extends PluginMenu<Integer> {
     public void build(Player player, Integer page) {
         try {
             int size = 8;
+
             PaginationRequest request = new PaginationRequest().setPage(page).setSize(size);
             List<ServerDto> servers = ApiGateway.getServers(request);
 
@@ -25,30 +26,39 @@ public class ServerListMenu extends PluginMenu<Integer> {
             servers.stream().sorted(Comparator.comparing(ServerDto::getPlayers).reversed()).forEach(server -> {
                 row();
                 var mods = server.getMods();
+
                 if (mods != null) {
                     mods.removeIf(m -> m.trim().equalsIgnoreCase("mindustrytoolplugin"));
                 }
 
                 if (server.getMapName() == null) {
-                    option(String.format("[yellow]%s", server.getName()), (p, s) -> EventHandler.onServerChoose(p, server.getId().toString(), server.getName()));
-                    option("[scarlet]Server offline.", (p, s) -> EventHandler.onServerChoose(p, server.getId().toString(), server.getName()));
+                    option(String.format("[yellow]%s", server.getName()),
+                            (p, s) -> EventHandler.onServerChoose(p, server.getId().toString(), server.getName()));
+                    option("[scarlet]Server offline.",
+                            (p, s) -> EventHandler.onServerChoose(p, server.getId().toString(), server.getName()));
                 } else {
-                    option(server.getName(), (p, s) -> EventHandler.onServerChoose(p, server.getId().toString(), server.getName()));
-                    option(String.format("[lime]Players:[] %d", server.getPlayers()), (p, s) -> EventHandler.onServerChoose(p, server.getId().toString(), server.getName()));
+                    option(server.getName(),
+                            (p, s) -> EventHandler.onServerChoose(p, server.getId().toString(), server.getName()));
+                    option(String.format("[lime]Players:[] %d", server.getPlayers()),
+                            (p, s) -> EventHandler.onServerChoose(p, server.getId().toString(), server.getName()));
 
                     row();
-                    option(String.format("[cyan]Gamemode:[] %s", server.getMode().toLowerCase()), (p, s) -> EventHandler.onServerChoose(p, server.getId().toString(), server.getName()));
-                    option(String.format("[blue]Map:[] %s", server.getMapName()), (p, s) -> EventHandler.onServerChoose(p, server.getId().toString(), server.getName()));
+                    option(String.format("[cyan]Gamemode:[] %s", server.getMode().toLowerCase()),
+                            (p, s) -> EventHandler.onServerChoose(p, server.getId().toString(), server.getName()));
+                    option(String.format("[blue]Map:[] %s", server.getMapName()),
+                            (p, s) -> EventHandler.onServerChoose(p, server.getId().toString(), server.getName()));
                 }
 
                 if (server.getMods() != null && !server.getMods().isEmpty()) {
                     row();
-                    option(String.format("[purple]Mods:[] %s", String.join(", ", mods)), (p, s) -> EventHandler.onServerChoose(p, server.getId().toString(), server.getName()));
+                    option(String.format("[purple]Mods:[] %s", String.join(", ", mods)),
+                            (p, s) -> EventHandler.onServerChoose(p, server.getId().toString(), server.getName()));
                 }
 
                 if (server.getDescription() != null && !server.getDescription().trim().isEmpty()) {
                     row();
-                    option(String.format("[grey]%s", server.getDescription()), (p, s) -> EventHandler.onServerChoose(p, server.getId().toString(), server.getName()));
+                    option(String.format("[grey]%s", server.getDescription()),
+                            (p, s) -> EventHandler.onServerChoose(p, server.getId().toString(), server.getName()));
                 }
 
                 row();
@@ -78,7 +88,7 @@ public class ServerListMenu extends PluginMenu<Integer> {
             }
 
             row();
-            option("[scarlet]Close", (p, s) -> {});
+            text("[scarlet]Close");
         } catch (Throwable e) {
             Log.err(e);
         }

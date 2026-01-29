@@ -18,6 +18,7 @@ public class RateMapMenu extends PluginMenu<Map> {
 
         for (int i = 0; i < 5; i++) {
             int star = i + 1;
+
             option(EventHandler.getStarDisplay(star), (p, s) -> {
                 EventHandler.updateMapRatting(s, star);
             });
