@@ -18,6 +18,7 @@ import plugin.handler.EventHandler;
 import plugin.handler.HttpServer;
 import plugin.handler.HudHandler;
 import plugin.handler.VoteHandler;
+import plugin.menus.PluginMenu;
 import plugin.handler.ServerCommandHandler;
 import plugin.handler.SessionHandler;
 import plugin.workflow.Workflow;
@@ -64,6 +65,7 @@ public class ServerController extends Plugin implements MindustryToolPlugin {
         EventHandler.init();
         ApiGateway.init();
         HudHandler.init();
+        PluginMenu.init();
 
         BACKGROUND_SCHEDULER.schedule(() -> {
             try {
