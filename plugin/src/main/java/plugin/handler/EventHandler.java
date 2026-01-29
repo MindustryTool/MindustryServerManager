@@ -418,8 +418,8 @@ public class EventHandler {
                     String translatedMessage = translationCache.get(locale + message,
                             _ignore -> ApiGateway.translate(message, locale));
 
-                    String translatedChat = "[sky][" + LanguageDialog.getDisplayName(locale) + "] "
-                            + player.name() + "[]: "
+                    String translatedChat = "[sky][" + LanguageDialog.getDisplayName(locale) + "][] "
+                            + player.name + "[]: "
                             + translatedMessage;
 
                     for (var p : ps) {
@@ -562,6 +562,8 @@ public class EventHandler {
                 var translated = ApiGateway.translate(Config.WELCOME_MESSAGE, Utils.parseLocale(player.locale()));
                 player.sendMessage(translated);
             });
+
+            player.sendMessage("[cyan]Powered by MindustryTool");
 
             new WelcomeMenu().send(player, null);
 

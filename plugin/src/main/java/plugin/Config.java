@@ -35,6 +35,5 @@ public class Config {
     public static final String WELCOME_MESSAGE = """
             [accent]Welcome to the server!
             [lightgray]Play fair, have fun, and enjoy your stay.
-            [cyan]Powered by MindustryTool
             """;
 }
