@@ -116,9 +116,12 @@ public class EventHandler {
 
     private synchronized static void updateMapRatting(Map map, int stars) {
         try {
+            Log.info("Update star");
             String mapId = map.file.nameWithoutExtension();
 
             String json = Core.settings.getString(RATING_PERSIT_KEY, "{}");
+
+            Log.info("Json: " + json);
 
             ObjectNode maps = (ObjectNode) JsonUtils.readJson(json);
 
@@ -129,6 +132,8 @@ public class EventHandler {
             ObjectNode mapJson = (ObjectNode) maps.get(mapId);
             String starString = String.valueOf(stars);
             String countString = "count";
+
+            Log.info("Map json: " + mapJson);
 
             if (!mapJson.has(countString)) {
                 mapJson.put(countString, 0);
@@ -143,6 +148,8 @@ public class EventHandler {
 
             var currentStars = mapJson.get(starString).asInt();
             mapJson.put(starString, currentStars + 1);
+
+            Log.info("Map json new: " + mapJson);
 
             Core.settings.put(RATING_PERSIT_KEY, JsonUtils.toJsonString(maps));
 
@@ -218,19 +225,13 @@ public class EventHandler {
     private static void onGameOver(GameOverEvent event) {
         var rateMap = Vars.state.map;
 
-        Log.info("Game over: " + rateMap);
-
         if (rateMap != null) {
             ServerController.backgroundTask(() -> {
                 Log.info("Each player");
                 Utils.forEachPlayerLocale((locale, players) -> {
                     var options = new ArrayList<HudOption>();
 
-                    Log.info("Translate");
-
                     String translated = ApiGateway.translate("Rate last map", locale);
-
-                    Log.info("Translated");
 
                     for (int i = 0; i < 5; i++) {
                         var star = i + 1;
@@ -242,8 +243,8 @@ public class EventHandler {
                     }
 
                     for (var player : players) {
-                        Log.info("send to : " + player.name);
-                        HudHandler.showFollowDisplay(player, HudHandler.RATE_LAST_MAP, translated, "", null, options);
+                        HudHandler.showFollowDisplay(player, HudHandler.RATE_LAST_MAP, translated, rateMap.name(), null,
+                                options);
                     }
                 });
             });
