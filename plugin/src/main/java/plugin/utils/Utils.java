@@ -22,6 +22,7 @@ import arc.Core;
 import arc.files.Fi;
 import arc.graphics.Pixmap;
 import arc.util.Log;
+import arc.util.Reflect;
 import arc.util.Strings;
 import arc.util.Time;
 import arc.util.Http.HttpRequest;
@@ -57,6 +58,7 @@ public class Utils {
             Log.warn("Server unloaded, can not host");
             return;
         }
+
         if (Vars.state.isGame()) {
             Log.warn("Already hosting. Type 'stop' to stop hosting first.");
             return;
@@ -69,7 +71,17 @@ public class Utils {
                 try {
                     preset = Gamemode.valueOf(mode.toLowerCase());
                     Core.settings.put("lastServerMode", preset.name());
-                } catch (IllegalArgumentException event) {
+
+                    Class<?> clazz = Class.forName("mindustry.server.ServerControl");
+
+                    for (var listener : Core.app.getListeners()) {
+                        if (listener.getClass().equals(clazz)) {
+                            Reflect.set(clazz, listener, "lastMode", preset);
+                            Log.info("Set gamemode to: " + preset.name());
+                            break;
+                        }
+                    }
+                } catch (Exception event) {
                     Log.err("No gamemode '@' found.", mode);
                     return;
                 }

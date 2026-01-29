@@ -1,5 +1,7 @@
 package plugin.handler;
 
+import lombok.Getter;
+import lombok.Setter;
 import mindustry.gen.Call;
 import mindustry.gen.Player;
 import plugin.PluginEvents;
@@ -22,7 +24,41 @@ import java.util.stream.Collectors;
 import mindustry.game.EventType.MenuOptionChooseEvent;
 import mindustry.game.EventType.PlayerLeave;
 
-public class HudHandler {
+public abstract class HudHandler {
+
+    @Getter
+    @Setter
+    private String name;
+
+    @Getter
+    @Setter
+    private String description;
+
+    @Getter
+    @Setter
+    private Player player;
+
+    public void handleClient(Player player) {
+        throw new UnsupportedOperationException("run");
+    }
+
+    public void handleServer() {
+        throw new UnsupportedOperationException("run");
+    }
+
+    protected HudHandler newInstance(Player player) {
+        try {
+            HudHandler copy = this.getClass().getDeclaredConstructor().newInstance();
+
+            copy.name = this.name;
+            copy.description = this.description;
+            copy.player = player;
+
+            return copy;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to clone hud handler", e);
+        }
+    }
 
     public static final int HUB_UI = 1;
     public static final int SERVERS_UI = 2;
