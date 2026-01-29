@@ -171,7 +171,7 @@ public class EventHandler {
 
                 if (mapJson.has(starString)) {
                     current = mapJson.get(starString).asInt(0);
-                    total += current;
+                    total += current * i;
 
                 }
 
