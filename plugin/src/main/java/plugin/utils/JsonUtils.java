@@ -31,6 +31,10 @@ public class JsonUtils {
         }
     }
 
+    public static JsonNode createObjectNode() {
+        return objectMapper.createObjectNode();
+    }
+
     public static <T> List<T> readJsonAsArrayClass(String data, Class<T> clazz) {
         try {
             return objectMapper.readerForArrayOf(clazz).readValue(data);

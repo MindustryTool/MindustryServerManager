@@ -11,16 +11,6 @@ import org.pf4j.Plugin;
 import arc.util.*;
 import mindustry.Vars;
 import mindustry.core.GameState.State;
-import mindustry.game.EventType.GameOverEvent;
-import mindustry.game.EventType.MenuOptionChooseEvent;
-import mindustry.game.EventType.PlayerChatEvent;
-import mindustry.game.EventType.PlayerConnect;
-import mindustry.game.EventType.PlayerJoin;
-import mindustry.game.EventType.PlayerLeave;
-import mindustry.game.EventType.ServerLoadEvent;
-import mindustry.game.EventType.StateChangeEvent;
-import mindustry.game.EventType.TapEvent;
-import mindustry.game.EventType.WorldLoadEvent;
 import mindustry.gen.Groups;
 import plugin.handler.ApiGateway;
 import plugin.handler.ClientCommandHandler;
@@ -73,6 +63,7 @@ public class ServerController extends Plugin implements MindustryToolPlugin {
         Workflow.init();
         EventHandler.init();
         ApiGateway.init();
+        HudHandler.init();
 
         BACKGROUND_SCHEDULER.schedule(() -> {
             try {
@@ -117,38 +108,9 @@ public class ServerController extends Plugin implements MindustryToolPlugin {
             }
 
             Workflow.fire(event, true);
-
-            if (event instanceof PlayerJoin playerJoin) {
-                EventHandler.onPlayerJoin(playerJoin);
-                HttpServer.sendStateUpdate();
-            } else if (event instanceof PlayerLeave playerLeave) {
-                EventHandler.onPlayerLeave(playerLeave);
-                HudHandler.onPlayerLeave(playerLeave);
-                HttpServer.sendStateUpdate();
-            } else if (event instanceof PlayerChatEvent playerChat) {
-                EventHandler.onPlayerChat(playerChat);
-            } else if (event instanceof ServerLoadEvent serverLoad) {
-                EventHandler.onServerLoad(serverLoad);
-            } else if (event instanceof PlayerConnect playerConnect) {
-                EventHandler.onPlayerConnect(playerConnect);
-            } else if (event instanceof TapEvent tapEvent) {
-                EventHandler.onTap(tapEvent);
-            } else if (event instanceof MenuOptionChooseEvent menuOption) {
-                HudHandler.onMenuOptionChoose(menuOption);
-            } else if (event instanceof GameOverEvent gameOverEvent) {
-                EventHandler.onGameOver(gameOverEvent);
-            } else if (event instanceof WorldLoadEvent) {
-                BACKGROUND_SCHEDULER.schedule(() -> {
-                    if (!Vars.state.isPaused() && Groups.player.size() == 0) {
-                        Vars.state.set(State.paused);
-                        Log.info("No player: paused");
-                    }
-                }, 10, TimeUnit.SECONDS);
-            } else if (event instanceof StateChangeEvent) {
-                HttpServer.sendStateUpdate();
-            }
-
+            PluginEvents.fire(event);
             Workflow.fire(event, false);
+
         } catch (Exception e) {
             e.printStackTrace();
         }

@@ -9,10 +9,12 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -38,7 +40,6 @@ import mindustry.io.SaveIO;
 import mindustry.maps.Map;
 import mindustry.maps.MapException;
 import plugin.ServerController;
-import plugin.handler.HttpServer;
 import plugin.handler.SessionHandler;
 
 public class Utils {
@@ -94,8 +95,6 @@ public class Utils {
             Vars.state.rules = result.applyRules(preset);
             Vars.logic.play();
             Vars.netServer.openServer();
-
-            HttpServer.sendStateUpdate();
 
         } catch (MapException event) {
             Log.err("@: @", event.map.plainName(), event.getMessage());
@@ -273,5 +272,23 @@ public class Utils {
         }
 
         return new byte[0];
+    }
+
+    public static Locale parseLocale(String locale) {
+        if (locale == null) {
+            return Locale.ENGLISH;
+        }
+
+        String[] parts = locale.replace("_", "-").split("-");
+        return parts.length > 0 ? Locale.forLanguageTag(parts[0]) : Locale.ENGLISH;
+    }
+
+    public static void forEachPlayerLocale(BiConsumer<Locale, List<Player>> cons) {
+        HashMap<Locale, List<Player>> groupByLocale = new HashMap<>();
+
+        Groups.player.forEach(
+                p -> groupByLocale.getOrDefault(parseLocale(p.locale()), new ArrayList<>()).add(p));
+
+        groupByLocale.forEach(cons);
     }
 }

@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import arc.util.Log;
+import plugin.PluginEvents;
 import plugin.ServerController;
 import plugin.controller.GeneralController;
 import plugin.controller.WorkflowController;
@@ -22,6 +23,9 @@ import plugin.utils.Utils;
 import io.javalin.Javalin;
 import io.javalin.json.JavalinJackson;
 import io.javalin.plugin.bundled.RouteOverviewPlugin;
+import mindustry.game.EventType.PlayerJoin;
+import mindustry.game.EventType.PlayerLeave;
+import mindustry.game.EventType.StateChangeEvent;
 import io.javalin.http.sse.SseClient;
 
 public class HttpServer {
@@ -115,6 +119,10 @@ public class HttpServer {
             }
         });
 
+        PluginEvents.run(PlayerJoin.class, HttpServer::sendStateUpdate);
+        PluginEvents.run(PlayerLeave.class, HttpServer::sendStateUpdate);
+        PluginEvents.run(StateChangeEvent.class, HttpServer::sendStateUpdate);
+
         if (!ServerController.isUnloaded) {
             app.start(9999);
             Log.info("Http server started on port 9999");
@@ -157,7 +165,7 @@ public class HttpServer {
         sendStateUpdate();
     }
 
-    public static void sendStateUpdate() {
+    private static void sendStateUpdate() {
         try {
             ServerStateDto state = Utils.getState();
             ServerStateEvent event = new ServerStateEvent(ServerController.SERVER_ID, Arrays.asList(state));

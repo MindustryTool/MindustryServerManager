@@ -2,6 +2,7 @@ package plugin.handler;
 
 import mindustry.gen.Call;
 import mindustry.gen.Player;
+import plugin.PluginEvents;
 import plugin.ServerController;
 import plugin.type.HudOption;
 import plugin.type.MenuData;
@@ -28,11 +29,17 @@ public class HudHandler {
     public static final int LOGIN_UI = 3;
     public static final int SERVER_REDIRECT = 4;
     public static final int WELCOME = 5;
+    public static final int RATE_LAST_MAP = 5;
 
     public static Cache<String, LinkedList<MenuData>> menus = Caffeine.newBuilder()
             .expireAfterAccess(Duration.ofMinutes(10))
             .maximumSize(100)
             .build();
+
+    public static void init() {
+        PluginEvents.on(PlayerLeave.class, HudHandler::onPlayerLeave);
+        PluginEvents.on(MenuOptionChooseEvent.class, HudHandler::onMenuOptionChoose);
+    }
 
     public static void unload() {
         menus.invalidateAll();
@@ -41,7 +48,7 @@ public class HudHandler {
         Log.info("Hud handler unloaded");
     }
 
-    public static void onPlayerLeave(PlayerLeave event) {
+    private static void onPlayerLeave(PlayerLeave event) {
         var menu = menus.getIfPresent(event.player.uuid());
         if (menu != null) {
             for (var data : menu) {
@@ -88,7 +95,7 @@ public class HudHandler {
         userMenu.addLast(new MenuData(id, title, description, optionTexts, callbacks, state));
     }
 
-    public static void onMenuOptionChoose(MenuOptionChooseEvent event) {
+    private static void onMenuOptionChoose(MenuOptionChooseEvent event) {
         var menu = menus.getIfPresent(event.player.uuid());
 
         if (menu == null || menu.isEmpty()) {

@@ -1,5 +1,6 @@
 package plugin.handler;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 
@@ -7,9 +8,7 @@ import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 import arc.Core;
@@ -26,12 +25,15 @@ import mindustry.game.EventType.PlayerJoin;
 import mindustry.game.EventType.PlayerLeave;
 import mindustry.game.EventType.ServerLoadEvent;
 import mindustry.game.EventType.TapEvent;
+import mindustry.game.EventType.WorldLoadEndEvent;
 import mindustry.game.Team;
 import mindustry.gen.Call;
 import mindustry.gen.Groups;
 import mindustry.gen.Iconc;
 import mindustry.gen.Player;
+import mindustry.maps.Map;
 import plugin.Config;
+import plugin.PluginEvents;
 import plugin.ServerController;
 import plugin.type.HudOption;
 import dto.LoginDto;
@@ -39,6 +41,8 @@ import plugin.type.PaginationRequest;
 import dto.PlayerDto;
 import plugin.type.PlayerPressCallback;
 import plugin.type.ServerCore;
+import plugin.utils.JsonUtils;
+import plugin.utils.Utils;
 import events.ServerEvents;
 import dto.ServerDto;
 import dto.ServerStatus;
@@ -53,12 +57,15 @@ public class EventHandler {
 
     private static List<ServerDto> servers = new ArrayList<>();
     private static final List<ServerCore> serverCores = new ArrayList<>();
+    private static Map lastMap = null;
 
     private static int page = 0;
     private static int gap = 50;
     private static int rows = 4;
     private static int size = 40;
     private static int columns = size / rows;
+
+    private static final String RATING_PERSIT_KEY = "server.map-rating";
 
     private static Cache<String, String> translationCache = Caffeine.newBuilder()
             .expireAfterAccess(Duration.ofMinutes(2))
@@ -80,93 +87,23 @@ public class EventHandler {
             setupCustomServerDiscovery();
 
             ServerController.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(() -> {
-                try {
-                    var request = new PaginationRequest().setPage(page).setSize(size);
-
-                    servers = ApiGateway.getServers(request);
-
-                } catch (Throwable e) {
-                    e.printStackTrace();
-                }
+                refreshServerList();
             }, 0, 30, TimeUnit.SECONDS);
 
             ServerController.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(() -> {
-                try {
-                    var map = Vars.state.map;
-
-                    serverCores.clear();
-
-                    if (map != null) {
-
-                        Call.label(Config.HUB_MESSAGE, 5, map.width / 2 * 8, map.height / 2 * 8);
-
-                        for (int x = 0; x < columns; x++) {
-                            for (int y = 0; y < rows; y++) {
-                                var index = x + y * columns;
-                                int coreX = (x - columns / 2) * gap + map.width / 2;
-                                int coreY = (y - rows / 2) * gap + map.height / 2;
-
-                                if (servers != null && index < servers.size()) {
-                                    var server = servers.get(index);
-
-                                    int offsetX = (x - columns / 2) * gap * 8;
-                                    int offsetY = (y - rows / 2) * gap * 8;
-
-                                    int messageX = map.width / 2 * 8 + offsetX;
-                                    int messageY = map.height / 2 * 8 + offsetY + 25;
-
-                                    var serverStatus = server.getStatus().equals(ServerStatus.ONLINE)
-                                            || server.getStatus().equals(ServerStatus.PAUSED)
-                                                    ? "[green]" + server.getStatus()
-                                                    : "[red]" + server.getStatus();
-
-                                    var mods = server.getMods();
-                                    mods.removeIf(m -> m.trim().equalsIgnoreCase("mindustrytoolplugin"));
-
-                                    String message = //
-                                            String.format("%s (Tap core to join)\n\n", server.getName()) //
-                                                    + String.format("[white]Status: %s\n", serverStatus)//
-                                                    + String.format("[white]Players: %s\n", server.getPlayers())//
-                                                    + String.format("[white]Map: %s\n", server.getMapName())//
-                                                    + String.format("[white]Mode: %s\n", server.getMode())//
-                                                    + String.format("[white]Description: %s\n", server.getDescription())//
-                                                    + (mods.isEmpty() ? "" : String.format("[white]Mods: %s", mods));
-
-                                    Tile tile = Vars.world.tile(coreX, coreY);
-
-                                    if (tile != null) {
-                                        if (tile.build == null || !(tile.block() instanceof Accelerator)) {
-                                            tile.setBlock(Blocks.interplanetaryAccelerator, Team.sharded, 0);
-
-                                            var block = tile.block();
-                                            var build = tile.build;
-                                            if (block == null || build == null)
-                                                return;
-
-                                            for (var item : Vars.content.items()) {
-                                                if (block.consumesItem(item) && build.items.get(item) < 10000) {
-                                                    build.items.add(item, 10000);
-                                                }
-                                            }
-                                        }
-                                        serverCores.add(new ServerCore(server, coreX, coreY));
-                                    }
-
-                                    Call.label(message, 5, messageX, messageY);
-                                } else {
-                                    Tile tile = Vars.world.tile(coreX, coreY);
-                                    if (tile != null && tile.build != null) {
-                                        tile.build.kill();
-                                    }
-                                }
-                            }
-                        }
-                    }
-                } catch (Throwable e) {
-                    e.printStackTrace();
-                }
+                setupCoreLabels();
             }, 0, 5, TimeUnit.SECONDS);
         }
+
+        PluginEvents.on(PlayerJoin.class, EventHandler::onPlayerJoin);
+        PluginEvents.on(PlayerLeave.class, EventHandler::onPlayerLeave);
+        PluginEvents.on(PlayerChatEvent.class, EventHandler::onPlayerChat);
+        PluginEvents.on(ServerLoadEvent.class, EventHandler::onServerLoad);
+        PluginEvents.on(PlayerConnect.class, EventHandler::onPlayerConnect);
+        PluginEvents.on(TapEvent.class, EventHandler::onTap);
+        PluginEvents.on(GameOverEvent.class, EventHandler::onGameOver);
+        PluginEvents.on(WorldLoadEndEvent.class, EventHandler::onWorldLoadEnd);
+
         Log.info("Setup event handler done");
     }
 
@@ -177,10 +114,155 @@ public class EventHandler {
         Log.info("Event handler unloaded");
     }
 
-    public static void onGameOver(GameOverEvent event) {
+    private synchronized static void updateMapRatting(Map map, int stars) {
+        try {
+            String mapId = map.file.nameWithoutExtension();
+
+            String json = Core.settings.getString(RATING_PERSIT_KEY, "{}");
+
+            ObjectNode maps = (ObjectNode) JsonUtils.readJson(json);
+
+            if (!maps.has(mapId)) {
+                maps.set(mapId, JsonUtils.createObjectNode());
+            }
+
+            ObjectNode mapJson = (ObjectNode) maps.get(mapId);
+            String starString = String.valueOf(stars);
+            String countString = "count";
+
+            if (!mapJson.has(countString)) {
+                mapJson.put(countString, 0);
+            }
+
+            var currentCount = mapJson.get(countString).asInt();
+            mapJson.put(countString, currentCount + 1);
+
+            if (!mapJson.has(starString)) {
+                mapJson.put(starString, 0);
+            }
+
+            var currentStars = mapJson.get(starString).asInt();
+            mapJson.put(starString, currentStars + 1);
+
+            Core.settings.put(RATING_PERSIT_KEY, JsonUtils.toJsonString(maps));
+
+        } catch (Exception e) {
+            Log.err(e);
+        }
     }
 
-    public static void onTap(TapEvent event) {
+    private static String getDisplayMapStar(Map map) {
+        try {
+            String mapId = map.file.nameWithoutExtension();
+            String json = Core.settings.getString(RATING_PERSIT_KEY, "{}");
+
+            StringBuilder sb = new StringBuilder(map.name() + "\n");
+
+            ObjectNode maps = (ObjectNode) JsonUtils.readJson(json);
+
+            if (!maps.has(mapId)) {
+                return sb.toString();
+            }
+
+            ObjectNode mapJson = (ObjectNode) maps.get(mapId);
+            String countString = "count";
+            int total = 0;
+            int count = 0;
+
+            if (mapJson.has(countString)) {
+                count = mapJson.get(countString).asInt(0);
+            }
+
+            for (int i = 1; i < 6; i++) {
+                String starString = String.valueOf(i);
+                int current = 0;
+
+                if (mapJson.has(starString)) {
+                    current = mapJson.get(starString).asInt(0);
+                    total += current;
+
+                }
+
+                sb.append(getStarDisplay(i));
+                sb.append(" ").append(current).append("\n");
+            }
+
+            float avg = total / count;
+
+            sb.append("Rated: ").append(count).append(" times").append("\n");
+            sb.append("Average rating: ").append(avg).append("gold").append(Iconc.star).append("\n");
+
+            return sb.toString();
+        } catch (Exception e) {
+            Log.err(e);
+            return "Error";
+        }
+    }
+
+    private static String getStarDisplay(int star) {
+        StringBuilder sb = new StringBuilder("[gold]");
+
+        for (int i = 0; i < star; i++) {
+            sb.append(Iconc.star);
+        }
+
+        sb.append("[gray]");
+
+        for (int i = 0; i < 5 - star; i++) {
+            sb.append(Iconc.star);
+        }
+
+        return sb.toString();
+    }
+
+    private static void onGameOver(GameOverEvent event) {
+        var rateMap = lastMap;
+
+        if (rateMap != null) {
+            ServerController.backgroundTask(() -> {
+                Utils.forEachPlayerLocale((locale, players) -> {
+                    var options = new ArrayList<HudOption>();
+
+                    String translated = ApiGateway.translate("Rate last map", locale);
+
+                    for (int i = 0; i < 5; i++) {
+                        var star = i + 1;
+
+                        options.add(HudHandler.option((p, state) -> {
+                            updateMapRatting(rateMap, star);
+                            HudHandler.closeFollowDisplay(p, HudHandler.RATE_LAST_MAP);
+                        }, getStarDisplay(star)));
+                    }
+
+                    for (var player : players) {
+                        HudHandler.showFollowDisplay(player, HudHandler.RATE_LAST_MAP, translated, "", null, options);
+                    }
+                });
+            });
+        }
+    }
+
+    private static void onWorldLoadEnd(WorldLoadEndEvent event) {
+        ServerController.BACKGROUND_SCHEDULER.schedule(() -> {
+            if (!Vars.state.isPaused() && Groups.player.size() == 0) {
+                Vars.state.set(State.paused);
+                Log.info("No player: paused");
+            }
+
+            var currentMap = Vars.state.map;
+
+            if (currentMap != null) {
+                Call.sendMessage(getDisplayMapStar(currentMap));
+            }
+
+        }, 10, TimeUnit.SECONDS);
+
+        if (Vars.state.map != null) {
+            lastMap = Vars.state.map;
+        }
+    }
+
+    private static void onTap(TapEvent event) {
         if (!plugin.Config.IS_HUB) {
             return;
         }
@@ -221,7 +303,7 @@ public class EventHandler {
         return icons.get(index);
     }
 
-    public static void onPlayerConnect(PlayerConnect event) {
+    private static void onPlayerConnect(PlayerConnect event) {
         try {
             var player = event.player;
 
@@ -309,20 +391,11 @@ public class EventHandler {
     // buffer.put(bytes);
     // }
 
-    public static void onServerLoad(ServerLoadEvent event) {
+    private static void onServerLoad(ServerLoadEvent event) {
         Config.isLoaded = true;
     }
 
-    public static Locale parseLocale(String locale) {
-        if (locale == null) {
-            return Locale.ENGLISH;
-        }
-
-        String[] parts = locale.replace("_", "-").split("-");
-        return parts.length > 0 ? Locale.forLanguageTag(parts[0]) : Locale.ENGLISH;
-    }
-
-    public static void onPlayerChat(PlayerChatEvent event) {
+    private static void onPlayerChat(PlayerChatEvent event) {
         try {
             Player player = event.player;
             String message = event.message;
@@ -338,12 +411,7 @@ public class EventHandler {
 
             Log.info(chat);
 
-            HashMap<Locale, List<Player>> groupByLocale = new HashMap<>();
-
-            Groups.player.forEach(
-                    p -> groupByLocale.getOrDefault(parseLocale(p.locale()), new ArrayList<>()).add(p));
-
-            groupByLocale.forEach((locale, ps) -> {
+            Utils.forEachPlayerLocale((locale, ps) -> {
                 ServerController.backgroundTask(() -> {
                     try {
                         String translatedMessage = translationCache.get(locale + message,
@@ -370,7 +438,7 @@ public class EventHandler {
         }
     }
 
-    public static void onPlayerLeave(PlayerLeave event) {
+    private static void onPlayerLeave(PlayerLeave event) {
         try {
             var player = event.player;
             var request = PlayerDto.from(player)
@@ -429,7 +497,7 @@ public class EventHandler {
         }
     }
 
-    public static void onPlayerJoin(PlayerJoin event) {
+    private static void onPlayerJoin(PlayerJoin event) {
         try {
             if (Vars.state.isPaused()) {
                 Vars.state.set(State.playing);
@@ -500,7 +568,7 @@ public class EventHandler {
             Core.bundle.getLocale();
 
             ServerController.backgroundTask(() -> {
-                var translated = ApiGateway.translate(Config.WELCOME_MESSAGE, parseLocale(player.locale()));
+                var translated = ApiGateway.translate(Config.WELCOME_MESSAGE, Utils.parseLocale(player.locale()));
                 player.sendMessage(translated);
             });
 
@@ -508,7 +576,7 @@ public class EventHandler {
                 var options = new ArrayList<HudOption>();
 
                 Seq<String> translated = ApiGateway.translate(Seq.with("Rules", "Website", "Discord", "Close"),
-                        parseLocale(player.locale()));
+                        Utils.parseLocale(player.locale()));
 
                 options.add(HudHandler.option((p, state) -> Call.openURI(player.con, Config.RULE_URL),
                         Iconc.book + "[green]" + translated.get(0)));
@@ -691,4 +759,91 @@ public class EventHandler {
         }
     }
 
+    private static void setupCoreLabels() {
+        try {
+            var map = Vars.state.map;
+
+            serverCores.clear();
+
+            if (map != null) {
+
+                Call.label(Config.HUB_MESSAGE, 5, map.width / 2 * 8, map.height / 2 * 8);
+
+                for (int x = 0; x < columns; x++) {
+                    for (int y = 0; y < rows; y++) {
+                        var index = x + y * columns;
+                        int coreX = (x - columns / 2) * gap + map.width / 2;
+                        int coreY = (y - rows / 2) * gap + map.height / 2;
+
+                        if (servers != null && index < servers.size()) {
+                            var server = servers.get(index);
+
+                            int offsetX = (x - columns / 2) * gap * 8;
+                            int offsetY = (y - rows / 2) * gap * 8;
+
+                            int messageX = map.width / 2 * 8 + offsetX;
+                            int messageY = map.height / 2 * 8 + offsetY + 25;
+
+                            var serverStatus = server.getStatus().equals(ServerStatus.ONLINE)
+                                    || server.getStatus().equals(ServerStatus.PAUSED)
+                                            ? "[green]" + server.getStatus()
+                                            : "[red]" + server.getStatus();
+
+                            var mods = server.getMods();
+                            mods.removeIf(m -> m.trim().equalsIgnoreCase("mindustrytoolplugin"));
+
+                            String message = //
+                                    String.format("%s (Tap core to join)\n\n", server.getName()) //
+                                            + String.format("[white]Status: %s\n", serverStatus)//
+                                            + String.format("[white]Players: %s\n", server.getPlayers())//
+                                            + String.format("[white]Map: %s\n", server.getMapName())//
+                                            + String.format("[white]Mode: %s\n", server.getMode())//
+                                            + String.format("[white]Description: %s\n", server.getDescription())//
+                                            + (mods.isEmpty() ? "" : String.format("[white]Mods: %s", mods));
+
+                            Tile tile = Vars.world.tile(coreX, coreY);
+
+                            if (tile != null) {
+                                if (tile.build == null || !(tile.block() instanceof Accelerator)) {
+                                    tile.setBlock(Blocks.interplanetaryAccelerator, Team.sharded, 0);
+
+                                    var block = tile.block();
+                                    var build = tile.build;
+                                    if (block == null || build == null)
+                                        return;
+
+                                    for (var item : Vars.content.items()) {
+                                        if (block.consumesItem(item) && build.items.get(item) < 10000) {
+                                            build.items.add(item, 10000);
+                                        }
+                                    }
+                                }
+                                serverCores.add(new ServerCore(server, coreX, coreY));
+                            }
+
+                            Call.label(message, 5, messageX, messageY);
+                        } else {
+                            Tile tile = Vars.world.tile(coreX, coreY);
+                            if (tile != null && tile.build != null) {
+                                tile.build.kill();
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Throwable e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void refreshServerList() {
+        try {
+            var request = new PaginationRequest().setPage(page).setSize(size);
+
+            servers = ApiGateway.getServers(request);
+
+        } catch (Throwable e) {
+            e.printStackTrace();
+        }
+    }
 }
