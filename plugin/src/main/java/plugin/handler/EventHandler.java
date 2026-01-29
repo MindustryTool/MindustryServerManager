@@ -116,12 +116,9 @@ public class EventHandler {
 
     private synchronized static void updateMapRatting(Map map, int stars) {
         try {
-            Log.info("Update star");
             String mapId = map.file.nameWithoutExtension();
 
             String json = Core.settings.getString(RATING_PERSIT_KEY, "{}");
-
-            Log.info("Json: " + json);
 
             ObjectNode maps = (ObjectNode) JsonUtils.readJson(json);
 
@@ -132,8 +129,6 @@ public class EventHandler {
             ObjectNode mapJson = (ObjectNode) maps.get(mapId);
             String starString = String.valueOf(stars);
             String countString = "count";
-
-            Log.info("Map json: " + mapJson);
 
             if (!mapJson.has(countString)) {
                 mapJson.put(countString, 0);
@@ -148,8 +143,6 @@ public class EventHandler {
 
             var currentStars = mapJson.get(starString).asInt();
             mapJson.put(starString, currentStars + 1);
-
-            Log.info("Map json new: " + mapJson);
 
             Core.settings.put(RATING_PERSIT_KEY, JsonUtils.toJsonString(maps));
 
@@ -196,8 +189,25 @@ public class EventHandler {
 
             float avg = total / count;
 
+            sb.append("[gray]");
             sb.append("Rated: ").append(count).append(" times").append("\n");
-            sb.append("Average rating: ").append(avg).append("gold").append(Iconc.star).append("\n");
+            sb.append("Average rating: ");
+
+            if (avg < 1) {
+                sb.append("[scarlet]");
+            } else if (avg < 2) {
+                sb.append("[orange]");
+            } else if (avg < 3) {
+                sb.append("[yellow]");
+            } else if (avg < 4) {
+                sb.append("[lime]");
+            } else {
+                sb.append("[green]");
+            }
+
+            sb.append(avg);
+
+            sb.append("[gold]").append(Iconc.star).append("\n");
 
             return sb.toString();
         } catch (Exception e) {
