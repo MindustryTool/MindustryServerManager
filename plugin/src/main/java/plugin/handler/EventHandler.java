@@ -16,8 +16,8 @@ import arc.struct.Seq;
 import arc.util.Log;
 import arc.util.Strings;
 import mindustry.Vars;
-import mindustry.content.Blocks;
 import mindustry.core.GameState.State;
+import mindustry.game.Team;
 import mindustry.game.EventType.GameOverEvent;
 import mindustry.game.EventType.PlayerChatEvent;
 import mindustry.game.EventType.PlayerConnect;
@@ -26,7 +26,6 @@ import mindustry.game.EventType.PlayerLeave;
 import mindustry.game.EventType.ServerLoadEvent;
 import mindustry.game.EventType.TapEvent;
 import mindustry.game.EventType.WorldLoadEndEvent;
-import mindustry.game.Team;
 import mindustry.gen.Call;
 import mindustry.gen.Groups;
 import mindustry.gen.Iconc;
@@ -48,24 +47,16 @@ import dto.ServerDto;
 import dto.ServerStatus;
 import mindustry.net.Administration.PlayerInfo;
 import mindustry.ui.dialogs.LanguageDialog;
-import mindustry.world.Tile;
-import mindustry.world.blocks.campaign.Accelerator;
 
 import java.time.Duration;
 import java.time.Instant;
 
 public class EventHandler {
 
-    private static List<ServerDto> servers = new ArrayList<>();
+    private static final String RATING_PERSIT_KEY = "server.map-rating";
     private static final List<ServerCore> serverCores = new ArrayList<>();
 
-    private static int page = 0;
-    private static int gap = 50;
-    private static int rows = 4;
-    private static int size = 40;
-    private static int columns = size / rows;
-
-    private static final String RATING_PERSIT_KEY = "server.map-rating";
+    private static List<ServerDto> servers = new ArrayList<>();
 
     private static Cache<String, String> translationCache = Caffeine.newBuilder()
             .expireAfterAccess(Duration.ofMinutes(2))
@@ -91,7 +82,7 @@ public class EventHandler {
             }, 0, 30, TimeUnit.SECONDS);
 
             ServerController.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(() -> {
-                setupCoreLabels();
+                renderServerLabels();
             }, 0, 5, TimeUnit.SECONDS);
         }
 
@@ -275,6 +266,19 @@ public class EventHandler {
 
         }, 10, TimeUnit.SECONDS);
 
+        if (plugin.Config.IS_HUB) {
+            serverCores.clear();
+
+            var cores = Team.sharded.cores();
+
+            for (int i = 0; i < cores.size; i++) {
+                var core = cores.get(i);
+
+                if (i < servers.size()) {
+                    serverCores.add(new ServerCore(servers.get(i), core.getX(), core.getY()));
+                }
+            }
+        }
     }
 
     private static void onTap(TapEvent event) {
@@ -772,86 +776,55 @@ public class EventHandler {
         }
     }
 
-    private static void setupCoreLabels() {
-        try {
-            var map = Vars.state.map;
+    private static void renderServerLabels() {
+        var map = Vars.state.map;
 
-            serverCores.clear();
-
-            if (map != null) {
-
-                Call.label(Config.HUB_MESSAGE, 5, map.width / 2 * 8, map.height / 2 * 8);
-
-                for (int x = 0; x < columns; x++) {
-                    for (int y = 0; y < rows; y++) {
-                        var index = x + y * columns;
-                        int coreX = (x - columns / 2) * gap + map.width / 2;
-                        int coreY = (y - rows / 2) * gap + map.height / 2;
-
-                        if (servers != null && index < servers.size()) {
-                            var server = servers.get(index);
-
-                            int offsetX = (x - columns / 2) * gap * 8;
-                            int offsetY = (y - rows / 2) * gap * 8;
-
-                            int messageX = map.width / 2 * 8 + offsetX;
-                            int messageY = map.height / 2 * 8 + offsetY + 25;
-
-                            var serverStatus = server.getStatus().equals(ServerStatus.ONLINE)
-                                    || server.getStatus().equals(ServerStatus.PAUSED)
-                                            ? "[green]" + server.getStatus()
-                                            : "[red]" + server.getStatus();
-
-                            var mods = server.getMods();
-                            mods.removeIf(m -> m.trim().equalsIgnoreCase("mindustrytoolplugin"));
-
-                            String message = //
-                                    String.format("%s (Tap core to join)\n\n", server.getName()) //
-                                            + String.format("[white]Status: %s\n", serverStatus)//
-                                            + String.format("[white]Players: %s\n", server.getPlayers())//
-                                            + String.format("[white]Map: %s\n", server.getMapName())//
-                                            + String.format("[white]Mode: %s\n", server.getMode())//
-                                            + String.format("[white]Description: %s\n", server.getDescription())//
-                                            + (mods.isEmpty() ? "" : String.format("[white]Mods: %s", mods));
-
-                            Tile tile = Vars.world.tile(coreX, coreY);
-
-                            if (tile != null) {
-                                if (tile.build == null || !(tile.block() instanceof Accelerator)) {
-                                    tile.setBlock(Blocks.interplanetaryAccelerator, Team.sharded, 0);
-
-                                    var block = tile.block();
-                                    var build = tile.build;
-                                    if (block == null || build == null)
-                                        return;
-
-                                    for (var item : Vars.content.items()) {
-                                        if (block.consumesItem(item) && build.items.get(item) < 10000) {
-                                            build.items.add(item, 10000);
-                                        }
-                                    }
-                                }
-                                serverCores.add(new ServerCore(server, coreX, coreY));
-                            }
-
-                            Call.label(message, 5, messageX, messageY);
-                        } else {
-                            Tile tile = Vars.world.tile(coreX, coreY);
-                            if (tile != null && tile.build != null) {
-                                tile.build.kill();
-                            }
-                        }
-                    }
-                }
-            }
-        } catch (Throwable e) {
-            e.printStackTrace();
+        if (map == null) {
+            return;
         }
+
+        Call.label(
+                Config.HUB_MESSAGE,
+                5,
+                map.width / 2f * Vars.tilesize,
+                map.height / 2f * Vars.tilesize);
+
+        for (var core : serverCores) {
+            renderServerLabel(core);
+        }
+    }
+
+    private static void renderServerLabel(ServerCore core) {
+        ServerDto server = core.getServer();
+
+        float labelX = core.getX();
+        float labelY = core.getY() + 25;
+
+        var status = server.getStatus();
+        String coloredStatus = (status == ServerStatus.ONLINE || status == ServerStatus.PAUSED)
+                ? "[green]" + status
+                : "[red]" + status;
+
+        var mods = new ArrayList<>(server.getMods());
+
+        mods.removeIf(m -> m.trim().equalsIgnoreCase("mindustrytoolplugin"));
+
+        String message = server.getName() + " (Tap core to join)\n\n" +
+                "[white]Status: " + coloredStatus + "\n" +
+                "[white]Players: " + server.getPlayers() + "\n" +
+                "[white]Map: " + server.getMapName() + "\n" +
+                "[white]Mode: " + server.getMode() + "\n" +
+                "[white]Description: " + server.getDescription() + "\n" +
+                (mods.isEmpty() ? "" : "[white]Mods: " + mods);
+
+        Call.label(message, 5, labelX, labelY);
     }
 
     private static void refreshServerList() {
         try {
-            var request = new PaginationRequest().setPage(page).setSize(size);
+            var request = new PaginationRequest()
+                    .setPage(0)
+                    .setSize(40);
 
             servers = ApiGateway.getServers(request);
 
