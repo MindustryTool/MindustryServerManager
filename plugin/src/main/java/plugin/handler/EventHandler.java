@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
+import arc.Core;
 import arc.struct.Seq;
 import arc.util.Log;
 import arc.util.Strings;
@@ -312,6 +313,15 @@ public class EventHandler {
         Config.isLoaded = true;
     }
 
+    public static Locale parseLocale(String locale) {
+        if (locale == null) {
+            return Locale.ENGLISH;
+        }
+
+        String[] parts = locale.split("_|-");
+        return parts.length > 0 ? Locale.forLanguageTag(parts[0]) : Locale.ENGLISH;
+    }
+
     public static void onPlayerChat(PlayerChatEvent event) {
         try {
             Player player = event.player;
@@ -331,7 +341,7 @@ public class EventHandler {
             HashMap<Locale, List<Player>> groupByLocale = new HashMap<>();
 
             Groups.player.forEach(
-                    p -> groupByLocale.getOrDefault(Locale.forLanguageTag(p.locale()), new ArrayList<>()).add(p));
+                    p -> groupByLocale.getOrDefault(parseLocale(p.locale()), new ArrayList<>()).add(p));
 
             groupByLocale.forEach((locale, ps) -> {
                 ServerController.backgroundTask(() -> {
@@ -486,6 +496,8 @@ public class EventHandler {
 
                 setPlayerData(playerData, player);
             });
+
+            Core.bundle.getLocale();
 
             ServerController.backgroundTask(() -> {
                 var translated = ApiGateway.translate(Config.WELCOME_MESSAGE, Locale.forLanguageTag(player.locale()));
