@@ -47,6 +47,7 @@ import events.ServerEvents;
 import dto.ServerDto;
 import dto.ServerStatus;
 import mindustry.net.Administration.PlayerInfo;
+import mindustry.ui.dialogs.LanguageDialog;
 import mindustry.world.Tile;
 import mindustry.world.blocks.campaign.Accelerator;
 
@@ -396,46 +397,44 @@ public class EventHandler {
     }
 
     private static void onPlayerChat(PlayerChatEvent event) {
-        try {
-            Player player = event.player;
-            String message = event.message;
+        Player player = event.player;
+        String message = event.message;
 
-            String chat = Strings.format("[@] => @", player.plainName(), message);
+        String chat = Strings.format("[@] => @", player.plainName(), message);
 
-            // Filter all commands
-            if (message.startsWith("/")) {
-                return;
-            }
+        // Filter all commands
+        if (message.startsWith("/")) {
+            return;
+        }
 
-            HttpServer.fire(new ServerEvents.ChatEvent(ServerController.SERVER_ID, chat));
+        HttpServer.fire(new ServerEvents.ChatEvent(ServerController.SERVER_ID, chat));
 
-            Log.info(chat);
+        Log.info(chat);
 
-            Utils.forEachPlayerLocale((locale, ps) -> {
-                ServerController.backgroundTask(() -> {
-                    try {
-                        String translatedMessage = translationCache.get(locale + message,
-                                _ignore -> ApiGateway.translate(message, locale));
+        ServerController.backgroundTask(() -> {
+            try {
+                Utils.forEachPlayerLocale((locale, ps) -> {
+                    String translatedMessage = translationCache.get(locale + message,
+                            _ignore -> ApiGateway.translate(message, locale));
 
-                        for (var p : ps) {
-                            if (p.id == player.id) {
-                                continue;
-                            }
+                    String translatedChat = "[sky][" + LanguageDialog.getDisplayName(locale) + "] "
+                            + player.name() + "[]: "
+                            + translatedMessage;
 
-                            String translatedChat = "[white][Translation] " + player.name() + "[]: "
-                                    + translatedMessage;
-                            p.sendMessage(translatedChat);
-
-                            HttpServer.fire(new ServerEvents.ChatEvent(ServerController.SERVER_ID, translatedChat));
+                    for (var p : ps) {
+                        if (p.id == player.id) {
+                            continue;
                         }
-                    } catch (Throwable e) {
-                        Log.err(e);
+
+                        p.sendMessage(translatedChat);
+
+                        HttpServer.fire(new ServerEvents.ChatEvent(ServerController.SERVER_ID, translatedChat));
                     }
                 });
-            });
-        } catch (Throwable e) {
-            e.printStackTrace();
-        }
+            } catch (Throwable e) {
+                Log.err(e);
+            }
+        });
     }
 
     private static void onPlayerLeave(PlayerLeave event) {
