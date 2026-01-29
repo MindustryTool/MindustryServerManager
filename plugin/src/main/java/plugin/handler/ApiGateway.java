@@ -98,8 +98,7 @@ public class ApiGateway {
                         .sendList(
                                 HttpUtils.get(API_URL,
                                         String.format("servers?page=%s&size=%s", request.getPage(), request.getSize())),
-                                2000,
-                                ServerDto.class);
+                                2000, ServerDto.class);
             } catch (Exception e) {
                 e.printStackTrace();
                 return new ArrayList<>();
