@@ -142,7 +142,12 @@ public abstract class PluginMenu<T> {
             copy.options = new Seq<>();
 
             ServerController.backgroundTask("Show Menu: " + getMenuId(), () -> {
-                copy.build(player, state);
+                try {
+                    copy.build(player, state);
+                } catch (Exception e) {
+                    Log.err("Failed to build menu @ for player @ with state @", copy, player, state);
+                    return;
+                }
 
                 copy.options.removeAll(op -> op.size == 0);
 
