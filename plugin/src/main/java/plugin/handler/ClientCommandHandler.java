@@ -28,12 +28,6 @@ public class ClientCommandHandler {
     @Getter
     private static CommandHandler handler;
 
-    public static void unload() {
-        commands.forEach(command -> handler.removeCommand(command.getName()));
-        commands.clear();
-        Log.info("Client command unloaded");
-    }
-
     public static void registerCommands(CommandHandler handler) {
         ClientCommandHandler.handler = handler;
 
@@ -49,6 +43,12 @@ public class ClientCommandHandler {
         for (PluginCommand command : commands) {
             command.register(handler, true);
         }
+    }
+
+    public static void unload() {
+        commands.forEach(command -> handler.removeCommand(command.getName()));
+        commands.clear();
+        Log.info("Client command unloaded");
     }
 
     public static void onServerChoose(Player player, String id, String name) {

@@ -198,7 +198,6 @@ public class ApiGateway {
 
     public static void init() {
         Log.info("Setup api gateway done");
-
     }
 
     public static void unload() {

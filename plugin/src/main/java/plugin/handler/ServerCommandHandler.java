@@ -31,13 +31,6 @@ public class ServerCommandHandler {
         }
     }
 
-    public static void unload() {
-        commands.forEach(command -> handler.removeCommand(command.getName()));
-        commands.clear();
-
-        Log.info("Server command unloaded");
-    }
-
     public static void registerCommands(CommandHandler handler) {
         ServerCommandHandler.handler = handler;
 
@@ -51,5 +44,12 @@ public class ServerCommandHandler {
 
         prevCommands.forEach(prev -> prev.getCallback().accept(handler.handleMessage(prev.getCommand())));
         prevCommands.clear();
+    }
+
+    public static void unload() {
+        commands.forEach(command -> handler.removeCommand(command.getName()));
+        commands.clear();
+
+        Log.info("Server command unloaded");
     }
 }
