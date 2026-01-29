@@ -72,7 +72,15 @@ public abstract class PluginMenu<T> {
         });
 
         ServerController.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(() -> {
-            menus.removeAll(m -> Instant.now().isAfter(m.createdAt.plusSeconds(60 * 5)));
+            menus.removeAll(m -> {
+                var delete = Instant.now().isAfter(m.createdAt.plusSeconds(60 * 5));
+
+                if (delete && m.player.con != null && m.player.con.isConnected()) {
+                    Call.hideFollowUpMenu(m.player.con, m.getMenuId());
+                }
+
+                return delete;
+            });
         }, 0, 1, TimeUnit.MINUTES);
     }
 
