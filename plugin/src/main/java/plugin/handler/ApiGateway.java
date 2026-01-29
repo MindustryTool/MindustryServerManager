@@ -201,7 +201,7 @@ public class ApiGateway {
         }
 
         try {
-            CompletableFuture.allOf(result.toArray(new CompletableFuture[0])).get(10, TimeUnit.SECONDS);
+            CompletableFuture.allOf(result.toArray(new CompletableFuture[texts.size])).get(10, TimeUnit.SECONDS);
 
             return Seq.with(result).map(r -> r.getNow("This should never happen"));
         } catch (Exception e) {
