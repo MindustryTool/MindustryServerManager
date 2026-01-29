@@ -58,7 +58,6 @@ public class EventHandler {
 
     private static List<ServerDto> servers = new ArrayList<>();
     private static final List<ServerCore> serverCores = new ArrayList<>();
-    private static Map lastMap = null;
 
     private static int page = 0;
     private static int gap = 50;
@@ -217,7 +216,7 @@ public class EventHandler {
     }
 
     private static void onGameOver(GameOverEvent event) {
-        var rateMap = lastMap;
+        var rateMap = Vars.state.map;
 
         if (rateMap != null) {
             ServerController.backgroundTask(() -> {
@@ -258,9 +257,6 @@ public class EventHandler {
 
         }, 10, TimeUnit.SECONDS);
 
-        if (Vars.state.map != null) {
-            lastMap = Vars.state.map;
-        }
     }
 
     private static void onTap(TapEvent event) {
