@@ -1,5 +1,6 @@
 package plugin.utils;
 
+import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -63,8 +64,10 @@ public class HttpUtils {
                 .timeout(timeoutMilis)
                 .redirects(true)
                 .error(error -> {
-                    if (error instanceof HttpStatusException) {
-                        HttpStatusException e = (HttpStatusException) error;
+                    if (error instanceof SocketTimeoutException) {
+                        res.completeExceptionally(
+                                new RuntimeException(req.url + " timeout in " + timeoutMilis + "ms", error));
+                    } else if (error instanceof HttpStatusException e) {
                         res.completeExceptionally(
                                 new RuntimeException(req.url + " " + e.response.getResultAsString(), e));
                     } else {

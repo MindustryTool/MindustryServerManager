@@ -1,5 +1,6 @@
 package plugin.handler;
 
+import java.net.SocketTimeoutException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -14,6 +15,7 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 
 import arc.struct.Seq;
 import arc.util.Http;
+import arc.util.Http.HttpStatusException;
 import arc.util.Log;
 import plugin.utils.HttpUtils;
 import plugin.utils.JsonUtils;
@@ -173,7 +175,18 @@ public class ApiGateway {
 
             Http.post("https://api.mindustry-tool.com/api/v4/libre", JsonUtils.toJsonString(body))
                     .header("Content-Type", "application/json")//
-                    .error(future::completeExceptionally)
+                    .error(error -> {
+                        if (error instanceof SocketTimeoutException) {
+                            future.completeExceptionally(
+                                    new RuntimeException("Timeout in 10s while translating: " + text, error));
+                        } else if (error instanceof HttpStatusException e) {
+                            future.completeExceptionally(new RuntimeException(
+                                    "Error while translating: " + text + "\n" + e.response.getResultAsString(), e));
+                        } else {
+                            future.completeExceptionally(
+                                    new RuntimeException("Error while translating: " + text, error));
+                        }
+                    })
                     .submit(res -> {
                         try {
                             var translated = JsonUtils.readJsonAsClass(res.getResultAsString(), TranslationDto.class)
