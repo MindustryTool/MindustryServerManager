@@ -30,6 +30,7 @@ public class Session {
     public Session(Player p) {
         this.playerId = p.id();
         this.playerUuid = p.uuid();
+
         try {
             this.locale = Locale.forLanguageTag(p.locale().replace('_', '-'));
         } catch (Throwable e) {
@@ -41,5 +42,4 @@ public class Session {
     public boolean spectate() {
         return this.spectate != null;
     }
-
 }

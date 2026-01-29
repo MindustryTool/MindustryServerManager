@@ -48,6 +48,9 @@ public class ClientCommandHandler {
     public static void unload() {
         commands.forEach(command -> handler.removeCommand(command.getName()));
         commands.clear();
+
+        handler = null;
+
         Log.info("Client command unloaded");
     }
 

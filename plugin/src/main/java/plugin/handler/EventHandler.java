@@ -546,7 +546,6 @@ public class EventHandler {
             HttpServer.fire(new ServerEvents.ChatEvent(ServerController.SERVER_ID, chat));
 
             ServerController.backgroundTask(() -> {
-
                 var playerData = ApiGateway.login(player);
 
                 if (Config.IS_HUB) {

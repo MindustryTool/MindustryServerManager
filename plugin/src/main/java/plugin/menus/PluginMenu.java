@@ -2,6 +2,7 @@ package plugin.menus;
 
 import java.time.Instant;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import arc.struct.Seq;
@@ -45,7 +46,7 @@ public abstract class PluginMenu<T> {
                         }
                     }
 
-                    if (selectedOption == null){
+                    if (selectedOption == null) {
                         Log.err("Failed to find selected option for menu @ with id @", targetMenu, event.option);
                     }
 
@@ -69,6 +70,10 @@ public abstract class PluginMenu<T> {
         PluginEvents.on(PlayerLeave.class, event -> {
             menus.removeAll(m -> m.player == event.player);
         });
+
+        ServerController.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(() -> {
+            menus.removeAll(m -> Instant.now().isAfter(m.createdAt.plusSeconds(60 * 5)));
+        }, 0, 1, TimeUnit.MINUTES);
     }
 
     public String title = "";
