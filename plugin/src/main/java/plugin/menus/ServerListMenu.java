@@ -62,11 +62,6 @@ public class ServerListMenu extends PluginMenu<Integer> {
                 }
 
                 row();
-                option("-----------------", (p, s) -> {
-                    new ServerListMenu().send(p, s);
-                    Call.infoToast(p.con, "Please don't click there", 10f);
-                });
-                row();
                 text("");
             });
 
