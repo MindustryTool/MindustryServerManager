@@ -1,7 +1,6 @@
 package plugin.handler;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import arc.util.CommandHandler;
@@ -20,9 +19,7 @@ import plugin.commands.client.RedirectCommand;
 import plugin.commands.client.RtvCommand;
 import plugin.commands.client.ServersCommand;
 import plugin.commands.client.VnwCommand;
-import plugin.type.HudOption;
-import plugin.type.PaginationRequest;
-import plugin.type.PlayerPressCallback;
+import plugin.menus.GlobalServerListMenu;
 
 public class ClientCommandHandler {
 
@@ -55,7 +52,6 @@ public class ClientCommandHandler {
     }
 
     public static void onServerChoose(Player player, String id, String name) {
-        HudHandler.closeFollowDisplay(player, HudHandler.SERVERS_UI);
         player.sendMessage(
                 String.format("[green]Starting server [white]%s, [white]redirection will happen soon", name));
 
@@ -94,78 +90,7 @@ public class ClientCommandHandler {
     }
 
     public static void sendRedirectServerList(Player player, int page) {
-        ServerController.backgroundTask(() -> {
-            try {
-                var size = 8;
-                var request = new PaginationRequest()//
-                        .setPage(page)//
-                        .setSize(size);
-
-                var servers = ApiGateway.getServers(request);
-
-                PlayerPressCallback invalid = (p, s) -> {
-                    Call.infoToast(p.con, "Please don't click there", 10f);
-                    sendRedirectServerList(p, (int) s);
-                };
-
-                List<List<HudOption>> options = new ArrayList<>(Arrays.asList(
-                        Arrays.asList(HudHandler.option(invalid, "[#FFD700]Server name"),
-                                HudHandler.option(invalid, "[#FFD700]Players playing")),
-                        Arrays.asList(HudHandler.option(invalid, "[#87CEEB]Server Gamemode"),
-                                HudHandler.option(invalid, "[#FFA500]Map Playing")),
-                        Arrays.asList(HudHandler.option(invalid, "[#DA70D6]Server Mods")),
-                        Arrays.asList(HudHandler.option(invalid, "[#B0B0B0]Server Description"))));
-
-                servers.forEach(server -> {
-                    PlayerPressCallback valid = (p, s) -> //
-                    onServerChoose(p, server.getId().toString(), server.getName());
-
-                    options.add(Arrays.asList(HudHandler.option(invalid, "-----------------")));
-                    options.add(Arrays.asList(HudHandler.option(valid, String.format("[#FFD700]%s", server.getName())),
-                            HudHandler.option(valid, String.format("[#32CD32]Players: %d", server.getPlayers()))));
-                    options.add(Arrays.asList(
-                            HudHandler.option(valid, String.format("[#87CEEB]Gamemode: %s", server.getMode())),
-                            HudHandler.option(valid, String.format("[#1E90FF]Map: %s",
-                                    server.getMapName() != null ? server.getMapName() : "[#FF4500]Server offline"))));
-
-                    if (server.getMods() != null && !server.getMods().isEmpty()) {
-                        options.add(Arrays.asList(HudHandler.option(valid,
-                                String.format("[#DA70D6]Mods: %s", String.join(", ", server.getMods())))));
-                    }
-
-                    if (server.getDescription() != null && !server.getDescription().trim().isEmpty()) {
-                        options.add(
-                                Arrays.asList(
-                                        HudHandler.option(valid,
-                                                String.format("[#B0B0B0]%s", server.getDescription()))));
-                    }
-
-                });
-
-                options.add(Arrays.asList(//
-                        page > 0//
-                                ? HudHandler.option((p, state) -> {
-                                    sendRedirectServerList(player, (int) state - 1);
-                                    HudHandler.closeFollowDisplay(p, HudHandler.SERVERS_UI);
-                                }, "[yellow]Previous")
-                                : HudHandler.option(invalid, "First page"), //
-                        servers.size() == size//
-                                ? HudHandler.option((p, state) -> {
-                                    sendRedirectServerList(player, (int) state + 1);
-                                    HudHandler.closeFollowDisplay(p, HudHandler.SERVERS_UI);
-                                }, "[green]Next")
-                                : HudHandler.option(invalid, "No more")));
-
-                options.add(Arrays.asList(HudHandler.option(
-                        (p, state) -> HudHandler.closeFollowDisplay(p, HudHandler.SERVERS_UI),
-                        "[red]Close")));
-
-                HudHandler.showFollowDisplays(player, HudHandler.SERVERS_UI, "Servers", "",
-                        Integer.valueOf(page), options);
-            } catch (Exception e) {
-                Log.err(e);
-            }
-        });
+        new GlobalServerListMenu().send(player, page);
     }
 
 }

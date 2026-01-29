@@ -22,31 +22,43 @@ public abstract class PluginMenu<T> {
 
     public static void init() {
         PluginEvents.on(MenuOptionChooseEvent.class, event -> {
-            var menus = getMenus(event.player);
+            var playerMenus = getMenus(event.player);
 
-            var targetMenu = menus.find(m -> m.getMenuId() == event.menuId);
+            var targetMenu = playerMenus.find(m -> m.getMenuId() == event.menuId);
 
             if (targetMenu == null) {
                 return;
             }
 
             ServerController.backgroundTask(() -> {
-                HudOption<Object> selectedOption = null;
+                synchronized (event.player) {
+                    HudOption<Object> selectedOption = null;
 
-                int i = 0;
-                for (var ops : targetMenu.options) {
-                    for (var op : ops) {
-                        if (i == event.option) {
-                            selectedOption = (HudOption<Object>) op;
-                            break;
+                    int i = 0;
+                    for (var ops : targetMenu.options) {
+                        for (var op : ops) {
+                            if (i == event.option) {
+                                selectedOption = (HudOption<Object>) op;
+                                break;
+                            }
+                            i++;
                         }
-                        i++;
+                    }
+
+                    if (selectedOption != null && selectedOption.callback != null) {
+                        selectedOption.callback.accept(event.player, targetMenu.state);
+                    }
+
+                    menus.remove(targetMenu);
+                    Call.hideFollowUpMenu(event.player.con, targetMenu.getMenuId());
+
+                    var remainingMenus = getMenus(event.player);
+
+                    if (remainingMenus.size > 0) {
+                        var nextMenu = remainingMenus.first();
+                        nextMenu.show();
                     }
                 }
-
-                selectedOption.callback.accept(event.player, targetMenu.state);
-                menus.remove(targetMenu);
-                Call.hideFollowUpMenu(event.player.con, targetMenu.getMenuId());
             });
         });
 
@@ -68,11 +80,19 @@ public abstract class PluginMenu<T> {
     }
 
     public final int getMenuId() {
-        return CLASS_IDS.computeIfAbsent(getClass(), cls -> ID_GEN.getAndIncrement());
+        return CLASS_IDS.computeIfAbsent(getClass(), cls -> {
+            var id = ID_GEN.getAndIncrement();
+            Log.info("Register menu @ with id @", cls, id);
+            return id;
+        });
     }
 
     public void option(String text, PlayerPressCallback<T> callback) {
         options.get(options.size - 1).add(new HudOption<>(callback, text));
+    }
+
+    public void text(String text) {
+        options.get(options.size - 1).add(new HudOption<>(null, text));
     }
 
     public void row() {
@@ -81,6 +101,18 @@ public abstract class PluginMenu<T> {
     }
 
     public abstract void build(Player player, T state);
+
+    private void show() {
+        String[][] optionTexts = new String[options.size][];
+
+        for (int i = 0; i < options.size; i++) {
+            var op = options.get(i);
+
+            optionTexts[i] = op.map(data -> data.getText()).toArray(String.class);
+        }
+
+        Call.menu(player.con, getMenuId(), title, description, optionTexts);
+    }
 
     public synchronized void send(Player player, T state) {
         try {
@@ -95,22 +127,14 @@ public abstract class PluginMenu<T> {
             ServerController.backgroundTask(() -> {
                 copy.build(player, state);
 
-                options.removeAll(op -> op.size == 0);
-
-                String[][] optionTexts = new String[options.size][];
-
-                for (int i = 0; i < options.size; i++) {
-                    var op = options.get(i);
-
-                    optionTexts[i] = op.map(data -> data.getText()).toArray(String.class);
-                }
-
-                menus.add(copy);
+                copy.options.removeAll(op -> op.size == 0);
 
                 var playerMenus = getMenus(player);
 
+                menus.add(copy);
+
                 if (playerMenus.size == 0) {
-                    Call.menu(player.con, getMenuId(), title, description, optionTexts);
+                    copy.show();
                 }
             });
         } catch (Exception e) {

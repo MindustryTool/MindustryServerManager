@@ -7,12 +7,10 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import arc.Core;
-import arc.struct.Seq;
 import arc.util.Log;
 import arc.util.Strings;
 import mindustry.Vars;
@@ -34,11 +32,14 @@ import mindustry.maps.Map;
 import plugin.Config;
 import plugin.PluginEvents;
 import plugin.ServerController;
-import plugin.type.HudOption;
 import dto.LoginDto;
 import plugin.type.PaginationRequest;
 import dto.PlayerDto;
-import plugin.type.PlayerPressCallback;
+import plugin.menus.HubMenu;
+import plugin.menus.RateMapMenu;
+import plugin.menus.ServerListMenu;
+import plugin.menus.ServerRedirectMenu;
+import plugin.menus.WelcomeMenu;
 import plugin.type.ServerCore;
 import plugin.utils.JsonUtils;
 import plugin.utils.Utils;
@@ -105,7 +106,7 @@ public class EventHandler {
         Log.info("Event handler unloaded");
     }
 
-    private synchronized static void updateMapRatting(Map map, int stars) {
+    public synchronized static void updateMapRatting(Map map, int stars) {
         try {
             String mapId = map.file.nameWithoutExtension();
 
@@ -207,7 +208,7 @@ public class EventHandler {
         }
     }
 
-    private static String getStarDisplay(int star) {
+    public static String getStarDisplay(int star) {
         StringBuilder sb = new StringBuilder("[gold]");
 
         for (int i = 0; i < star; i++) {
@@ -227,27 +228,9 @@ public class EventHandler {
         var rateMap = Vars.state.map;
 
         if (rateMap != null) {
-            ServerController.backgroundTask(() -> {
-                Utils.forEachPlayerLocale((locale, players) -> {
-                    var options = new ArrayList<HudOption>();
-
-                    String translated = ApiGateway.translate("Rate last map", locale);
-
-                    for (int i = 0; i < 5; i++) {
-                        var star = i + 1;
-
-                        options.add(HudHandler.option((p, state) -> {
-                            updateMapRatting(rateMap, star);
-                            HudHandler.closeFollowDisplay(p, HudHandler.RATE_LAST_MAP);
-                        }, getStarDisplay(star)));
-                    }
-
-                    for (var player : players) {
-                        HudHandler.showFollowDisplay(player, HudHandler.RATE_LAST_MAP, translated, rateMap.name(), null,
-                                options);
-                    }
-                });
-            });
+            for (var player : Groups.player) {
+                new RateMapMenu().send(player, rateMap);
+            }
         }
     }
 
@@ -537,16 +520,7 @@ public class EventHandler {
                         && !serverData.getId().equals(ServerController.SERVER_ID)
                         && serverData.getPlayers() > 0//
                 ) {
-                    var options = Arrays.asList(//
-                            HudHandler.option((p, state) -> {
-                                HudHandler.closeFollowDisplay(p, HudHandler.SERVER_REDIRECT);
-                            }, "[red]No"),
-                            HudHandler.option((p, state) -> {
-                                onServerChoose(p, serverData.getId().toString(), serverData.getName());
-                                HudHandler.closeFollowDisplay(p, HudHandler.SERVER_REDIRECT);
-                            }, "[green]Yes"));
-                    HudHandler.showFollowDisplay(player, HudHandler.SERVER_REDIRECT, "Redirect",
-                            "Do you want to go to server: " + serverData.getName(), null, options);
+                    new ServerRedirectMenu().send(player, serverData);
                 }
             }
 
@@ -589,27 +563,7 @@ public class EventHandler {
                 player.sendMessage(translated);
             });
 
-            ServerController.backgroundTask(() -> {
-                var options = new ArrayList<HudOption>();
-
-                Seq<String> translated = ApiGateway.translate(Seq.with("Rules", "Website", "Discord", "Close"),
-                        Utils.parseLocale(player.locale()));
-
-                options.add(HudHandler.option((p, state) -> Call.openURI(player.con, Config.RULE_URL),
-                        Iconc.book + "[green]" + translated.get(0)));
-
-                options.add(HudHandler.option((p, state) -> Call.openURI(player.con, Config.MINDUSTRY_TOOL_URL),
-                        Iconc.link + "[green]" + translated.get(1)));
-
-                options.add(HudHandler.option((p, state) -> Call.openURI(player.con, Config.DISCORD_INVITE_URL),
-                        Iconc.discord + "[blue]" + translated.get(2)));
-
-                options.add(HudHandler.option((p, state) -> {
-                    HudHandler.closeFollowDisplay(p, HudHandler.WELCOME);
-                }, Iconc.cancel + "[red]" + translated.get(3)));
-
-                HudHandler.showFollowDisplay(player, HudHandler.WELCOME, "MindustryTool", "", null, options);
-            });
+            new WelcomeMenu().send(player, null);
 
         } catch (Throwable e) {
             e.printStackTrace();
@@ -617,99 +571,14 @@ public class EventHandler {
     }
 
     public static void sendHub(Player player, String loginLink) {
-        var options = new ArrayList<HudOption>();
-
-        if (loginLink != null && !loginLink.isEmpty()) {
-            options.add(HudHandler.option((trigger, state) -> {
-                Call.openURI(trigger.con, loginLink);
-                HudHandler.closeFollowDisplay(trigger, HudHandler.HUB_UI);
-
-            }, "[green]Login via MindustryTool"));
-        }
-
-        options.add(HudHandler.option((p, state) -> Call.openURI(player.con, Config.RULE_URL), "[green]Rules"));
-        options.add(
-                HudHandler.option((p, state) -> Call.openURI(player.con, Config.MINDUSTRY_TOOL_URL), "[green]Website"));
-        options.add(
-                HudHandler.option((p, state) -> Call.openURI(player.con, Config.DISCORD_INVITE_URL), "[blue]Discord"));
-        options.add(HudHandler.option((p, state) -> {
-            sendServerList(player, 0);
-            HudHandler.closeFollowDisplay(p, HudHandler.HUB_UI);
-        }, "[red]Close"));
-
-        HudHandler.showFollowDisplay(player, HudHandler.HUB_UI, "Servers", Config.HUB_MESSAGE, null,
-                options);
+        new HubMenu().send(player, loginLink);
     }
 
     public static void sendServerList(Player player, int page) {
-        try {
-            var size = 8;
-            var request = new PaginationRequest().setPage(page).setSize(size);
-
-            var servers = ApiGateway.getServers(request);
-
-            PlayerPressCallback invalid = (p, s) -> {
-                sendServerList(p, (int) s);
-                Call.infoToast(p.con, "Please don't click there", 10f);
-            };
-
-            List<List<HudOption>> options = new ArrayList<>();
-
-            servers.stream().sorted(Comparator.comparing(ServerDto::getPlayers).reversed()).forEach(server -> {
-                PlayerPressCallback valid = (p, s) -> onServerChoose(p, server.getId().toString(),
-                        server.getName());
-
-                var mods = server.getMods();
-                mods.removeIf(m -> m.trim().equalsIgnoreCase("mindustrytoolplugin"));
-
-                if (server.getMapName() == null) {
-                    options.add(Arrays.asList(HudHandler.option(valid, String.format("[yellow]%s", server.getName())),
-                            HudHandler.option(valid, "[scarlet]Server offline.")));
-                } else {
-                    options.add(Arrays.asList(HudHandler.option(valid, server.getName()),
-                            HudHandler.option(valid, String.format("[lime]Players:[] %d", server.getPlayers()))));
-
-                    options.add(Arrays.asList(
-                            HudHandler.option(valid,
-                                    String.format("[cyan]Gamemode:[] %s", server.getMode().toLowerCase())),
-                            HudHandler.option(valid, String.format("[blue]Map:[] %s", server.getMapName()))));
-                }
-
-                if (server.getMods() != null && !server.getMods().isEmpty()) {
-                    options.add(Arrays.asList(HudHandler.option(valid,
-                            String.format("[purple]Mods:[] %s", String.join(", ", mods)))));
-                }
-
-                if (server.getDescription() != null && !server.getDescription().trim().isEmpty()) {
-                    options.add(Arrays
-                            .asList(HudHandler.option(valid, String.format("[grey]%s", server.getDescription()))));
-                }
-
-                options.add(Arrays.asList(HudHandler.option(invalid, "-----------------")));
-            });
-
-            options.add(Arrays.asList(page > 0 ? HudHandler.option((p, state) -> {
-                sendServerList(player, (int) state - 1);
-            }, "[orange]Previous") : HudHandler.option(invalid, "First page"),
-                    servers.size() == size ? HudHandler.option((p, state) -> {
-                        sendServerList(player, (int) state + 1);
-                    }, "[lime]Next") : HudHandler.option(invalid, "No more")));
-
-            options.add(Arrays.asList(
-                    HudHandler.option(
-                            (p, state) -> HudHandler.closeFollowDisplay(p, HudHandler.SERVERS_UI),
-                            "[scarlet]Close")));
-
-            HudHandler.showFollowDisplays(player, HudHandler.SERVERS_UI, "List of all servers",
-                    Config.CHOOSE_SERVER_MESSAGE, Integer.valueOf(page), options);
-        } catch (Throwable e) {
-            Log.err(e);
-        }
+        new ServerListMenu().send(player, page);
     }
 
     public static void onServerChoose(Player player, String id, String name) {
-        HudHandler.closeFollowDisplay(player, HudHandler.SERVERS_UI);
-
         ServerController.backgroundTask(() -> {
             try {
                 player.sendMessage(String.format(

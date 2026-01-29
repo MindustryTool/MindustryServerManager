@@ -24,7 +24,6 @@ import mindustry.gen.Player;
 import mindustry.net.Administration.PlayerInfo;
 import plugin.Config;
 import plugin.handler.EventHandler;
-import plugin.handler.HudHandler;
 import plugin.handler.ServerCommandHandler;
 import plugin.handler.SessionHandler;
 import plugin.handler.VoteHandler;
@@ -106,7 +105,6 @@ public class GeneralController {
             }
 
             if (player != null) {
-                HudHandler.closeFollowDisplay(player, HudHandler.LOGIN_UI);
                 EventHandler.setPlayerData(request, player);
             }
             ctx.result();
@@ -272,7 +270,6 @@ public class GeneralController {
 
                 data.put("state", Utils.getState());
                 data.put("session", SessionHandler.get());
-                data.put("hud", HudHandler.menus.asMap());
                 data.put("isHub", Config.IS_HUB);
                 data.put("ip", Config.SERVER_IP);
                 data.put("units", Groups.unit.size());
