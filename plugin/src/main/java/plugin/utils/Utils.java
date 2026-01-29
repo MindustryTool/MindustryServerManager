@@ -287,7 +287,7 @@ public class Utils {
         HashMap<Locale, List<Player>> groupByLocale = new HashMap<>();
 
         Groups.player.forEach(
-                p -> groupByLocale.getOrDefault(parseLocale(p.locale()), new ArrayList<>()).add(p));
+                p -> groupByLocale.computeIfAbsent(parseLocale(p.locale()), k -> new ArrayList<>()).add(p));
 
         groupByLocale.forEach(cons);
     }
