@@ -107,9 +107,7 @@ public class ServerController extends Plugin implements MindustryToolPlugin {
                 return;
             }
 
-            Workflow.fire(event, true);
             PluginEvents.fire(event);
-            Workflow.fire(event, false);
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -129,6 +127,7 @@ public class ServerController extends Plugin implements MindustryToolPlugin {
         VoteHandler.unload();
         ApiGateway.unload();
         HttpServer.unload();
+        PluginEvents.clear();
 
         BACKGROUND_TASK_EXECUTOR.shutdownNow();
         Log.info("Background task executor shutdown");

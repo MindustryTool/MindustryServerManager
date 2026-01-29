@@ -239,47 +239,6 @@ public class Workflow {
         Log.info("Context loaded");
     }
 
-    public static <T> Cons2<T, Boolean> on(Class<T> type, Cons2<T, Boolean> listener) {
-        events.computeIfAbsent(type, (_ignore) -> new Seq<>(Cons2.class)).add(listener);
-
-        return listener;
-    }
-
-    public static <T> boolean remove(Class<T> type, Cons2<T, Boolean> listener) {
-        return events.computeIfAbsent(type, (_ignore) -> new Seq<>(Cons2.class)).remove(listener);
-    }
-
-    @SuppressWarnings({ "rawtypes", "unchecked" })
-    public static <T extends Enum<T>> void fire(Enum<T> type, boolean before) {
-        Seq<Cons2<?, Boolean>> listeners = events.get(type);
-
-        if (listeners != null) {
-            int len = listeners.size;
-            Cons2[] items = listeners.items;
-            for (int i = 0; i < len; i++) {
-                items[i].get(type, before);
-            }
-        }
-    }
-
-    /** Fires a non-enum event by class. */
-    public static <T> void fire(T type, boolean before) {
-        fire(type.getClass(), type, before);
-    }
-
-    @SuppressWarnings({ "rawtypes", "unchecked" })
-    public static <T> void fire(Class<?> ctype, T type, boolean before) {
-        Seq<Cons2<?, Boolean>> listeners = events.get(ctype);
-
-        if (listeners != null) {
-            int len = listeners.size;
-            Cons2[] items = listeners.items;
-            for (int i = 0; i < len; i++) {
-                items[i].get(type, before);
-            }
-        }
-    }
-
     private static void tryRun(Runnable runnable) {
         try {
             runnable.run();
