@@ -141,7 +141,7 @@ public abstract class PluginMenu<T> {
             copy.state = state;
             copy.options = new Seq<>();
 
-            ServerController.backgroundTask("Show Menu", () -> {
+            ServerController.backgroundTask("Show Menu: " + getMenuId(), () -> {
                 copy.build(player, state);
 
                 copy.options.removeAll(op -> op.size == 0);
