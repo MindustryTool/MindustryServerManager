@@ -2,9 +2,11 @@ package plugin.commands;
 
 import arc.struct.Seq;
 import arc.util.CommandHandler;
+import arc.util.Log;
 import lombok.Getter;
 import lombok.Setter;
 import mindustry.gen.Player;
+import plugin.ServerController;
 
 public abstract class PluginCommand {
     @Getter
@@ -16,6 +18,8 @@ public abstract class PluginCommand {
     private String description;
 
     private Seq<Param> params = new Seq<>();
+
+    private Player player;
 
     private PluginCommand handleParams(String[] args) {
         for (int i = 0; i < params.size; i++) {
@@ -48,12 +52,13 @@ public abstract class PluginCommand {
         return p;
     }
 
-    protected PluginCommand newInstance() {
+    protected PluginCommand newInstance(Player player) {
         try {
             PluginCommand copy = this.getClass().getDeclaredConstructor().newInstance();
 
             copy.name = this.name;
             copy.description = this.description;
+            copy.player = player;
 
             for (Param p : this.params) {
                 copy.params.add(p.copy());
@@ -82,16 +87,31 @@ public abstract class PluginCommand {
 
         if (isClient) {
             handler.register(name, paramText.toString(), description, (args, player) -> {
-                this.newInstance()
-                        .handleParams(args)
-                        .handleClient((Player) player);
+                wrapper(() -> {
+                    this.newInstance((Player) player)
+                            .handleParams(args)
+                            .handleClient((Player) player);
+                });
             });
         } else {
-            handler.register(name, paramText.toString(), description, (args) -> {
-                this.newInstance()
-                        .handleParams(args)
-                        .handleServer();
+            wrapper(() -> {
+                handler.register(name, paramText.toString(), description, (args) -> {
+                    this.newInstance(null)
+                            .handleParams(args)
+                            .handleServer();
+                });
             });
+        }
+    }
+
+    private void wrapper(Runnable runnable) {
+        try {
+            ServerController.BACKGROUND_TASK_EXECUTOR.submit(runnable);
+        } catch (Exception e) {
+            if (player != null) {
+                player.sendMessage("Error: " + e.getMessage());
+            }
+            Log.err(e);
         }
     }
 
@@ -151,6 +171,12 @@ public abstract class PluginCommand {
 
         public Float asFloat() {
             return Float.parseFloat(value);
+        }
+
+        public void checkMissing() {
+            if (value == null) {
+                throw new IllegalArgumentException("Missing parameter: " + name);
+            }
         }
     }
 

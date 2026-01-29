@@ -28,7 +28,7 @@ public class ServerController extends Plugin implements MindustryToolPlugin {
     public static final UUID SERVER_ID = UUID.fromString(System.getenv("SERVER_ID"));
     public static boolean isUnloaded = false;
 
-    private static final ExecutorService BACKGROUND_TASK_EXECUTOR = Executors.newWorkStealingPool();
+    public static final ExecutorService BACKGROUND_TASK_EXECUTOR = Executors.newWorkStealingPool();
 
     public static void backgroundTask(Runnable r) {
         BACKGROUND_TASK_EXECUTOR.submit(() -> {

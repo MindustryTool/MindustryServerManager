@@ -40,6 +40,7 @@ public class RtvCommand extends PluginCommand {
             VoteHandler.removeVote(player, mapId);
             return;
         }
+
         VoteHandler.vote(player, mapId);
         Call.sendMessage("[red]RTV: [accent]" + player.name() + " [white]Want to change map to [yellow]"
                 + maps.get(mapId).name());

@@ -68,6 +68,7 @@ public class Utils {
             if (mode != null) {
                 try {
                     preset = Gamemode.valueOf(mode.toLowerCase());
+                    Core.settings.put("lastServerMode", preset.name());
                 } catch (IllegalArgumentException event) {
                     Log.err("No gamemode '@' found.", mode);
                     return;
@@ -75,6 +76,7 @@ public class Utils {
             }
 
             Map result;
+
             if (mapName != null) {
                 result = Vars.maps.all().find(map -> map.plainName().replace('_', ' ')
                         .equalsIgnoreCase(Strings.stripColors(mapName).replace('_', ' ')));
