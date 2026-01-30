@@ -20,24 +20,18 @@ public class GlobalServerListMenu extends PluginMenu<Integer> {
             this.title = "Servers";
             this.description = "";
 
-            option("[#FFD700]Server name", (p, s) -> {
-            });
-            option("[#FFD700]Players playing", (p, s) -> {
-            });
+            text("[#FFD700]Server name");
+            text("[#FFD700]Players playing");
             row();
 
-            option("[#87CEEB]Server Gamemode", (p, s) -> {
-            });
-            option("[#FFA500]Map Playing", (p, s) -> {
-            });
+            text("[#87CEEB]Server Gamemode");
+            text("[#FFA500]Map Playing");
             row();
 
-            option("[#DA70D6]Server Mods", (p, s) -> {
-            });
+            text("[#DA70D6]Server Mods");
             row();
 
-            option("[#B0B0B0]Server Description", (p, s) -> {
-            });
+            text("[#B0B0B0]Server Description");
             row();
 
             servers.forEach(server -> {
