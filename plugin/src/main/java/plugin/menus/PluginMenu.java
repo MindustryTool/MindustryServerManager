@@ -25,9 +25,6 @@ public abstract class PluginMenu<T> {
         PluginEvents.on(MenuOptionChooseEvent.class, event -> {
             var targetMenu = menus.find(m -> m.getMenuId() == event.menuId && m.player == event.player);
 
-            Log.info(event);
-            Log.info(targetMenu);
-
             if (targetMenu == null) {
                 return;
             }
@@ -43,7 +40,6 @@ public abstract class PluginMenu<T> {
 
                 if (event.option >= 0) {
                     for (var op : targetMenu.options.flatten()) {
-                        Log.info(op);
                         if (i == event.option) {
                             selectedOption = (HudOption<Object>) op;
                             break;
@@ -55,8 +51,6 @@ public abstract class PluginMenu<T> {
                         Log.err("Failed to find selected option for menu @ with id @", targetMenu, event.option);
                     }
                 }
-
-                Log.info(selectedOption);
 
                 synchronized (event.player) {
                     if (selectedOption != null && selectedOption.callback != null) {
@@ -144,7 +138,6 @@ public abstract class PluginMenu<T> {
         }
 
         Call.menu(player.con, getMenuId(), title, description, optionTexts);
-        Log.info("Show menu: " + getClass());
     }
 
     public synchronized void send(Player player, T state) {
