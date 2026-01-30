@@ -48,8 +48,7 @@ public abstract class PluginMenu<T> {
                     }
 
                     if (selectedOption == null) {
-                        Log.err("Failed to find selected option for menu @ with id @", targetMenu,
-                                event.option);
+                        Log.err("Failed to find selected option for menu @ with id @", targetMenu, event.option);
                     }
                 }
 
