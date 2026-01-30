@@ -55,10 +55,10 @@ public abstract class PluginMenu<T> {
                 synchronized (event.player) {
                     if (selectedOption != null && selectedOption.callback != null) {
                         selectedOption.callback.accept(event.player, targetMenu.state);
+                        Call.hideFollowUpMenu(event.player.con, targetMenu.getMenuId());
                     }
 
                     menus.remove(targetMenu);
-                    Call.hideFollowUpMenu(event.player.con, targetMenu.getMenuId());
 
                     var remainingMenus = getMenus(event.player);
 
