@@ -35,7 +35,9 @@ public class RtvMenu extends PluginMenu<Integer> {
             float rating = MapRating.getAvg(map);
             String ratingColor = MapRating.avgScoreColor(rating);
 
-            String text = String.format("%s%.2f [gold]%c [white]%s", ratingColor, rating, Iconc.star, map.name());
+            String voted = VoteHandler.isVoted(player, map.file.nameWithoutExtension()) ? "[accent]Voted" : "";
+            String text = String.format("%s%s%.2f [gold]%c [white]%s", voted, ratingColor, rating, Iconc.star,
+                    map.name());
 
             option(text, (p, s) -> {
                 VoteHandler.handleVote(player, map);
