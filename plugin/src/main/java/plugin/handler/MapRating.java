@@ -86,7 +86,7 @@ public class MapRating {
 
     public static String getAvgString(Map map) {
         float score = getAvg(map);
-        
+
         return String.format(avgScoreColor(score) + "%.2f" + "[gold]" + Iconc.star, score);
     }
 

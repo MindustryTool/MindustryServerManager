@@ -2,6 +2,7 @@ package plugin.menus;
 
 import java.util.Locale;
 
+import mindustry.gen.Call;
 import mindustry.gen.Player;
 import mindustry.maps.Map;
 import plugin.handler.ApiGateway;
@@ -21,6 +22,7 @@ public class RateMapMenu extends PluginMenu<Map> {
 
             option(MapRating.getStarDisplay(star), (p, s) -> {
                 MapRating.updateMapRating(s, star);
+                Call.sendChatMessage("@ voted " + (star + 1) + " on map " + map.name());
             });
             row();
         }
