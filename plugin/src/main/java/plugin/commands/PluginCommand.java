@@ -23,6 +23,10 @@ public abstract class PluginCommand {
 
     private Player player;
 
+    @Setter
+    @Getter
+    private boolean admin = true;
+
     private PluginCommand handleParams(String[] args) {
         for (int i = 0; i < params.size; i++) {
             Param param = params.get(i);
@@ -88,12 +92,21 @@ public abstract class PluginCommand {
         }
 
         if (isClient) {
-            handler.register(name, paramText.toString(), description, (args, player) -> {
-                wrapper(() -> {
-                    this.newInstance((Player) player)
-                            .handleParams(args)
-                            .handleClient((Player) player);
-                });
+            handler.register(name, paramText.toString(), description, (args, p) -> {
+                if (p instanceof Player player) {
+                    if (admin && !player.admin) {
+                        player.sendMessage("[scarlet]You must be admin to use this command.");
+                        return;
+                    }
+
+                    wrapper(() -> {
+                        this.newInstance((Player) player)
+                                .handleParams(args)
+                                .handleClient((Player) player);
+                    });
+                } else {
+                    throw new IllegalArgumentException("Player expected");
+                }
             });
         } else {
             wrapper(() -> {

@@ -10,17 +10,14 @@ public class JsCommand extends PluginCommand {
     public JsCommand() {
         setName("js");
         setDescription("Execute JavaScript code.");
+
         codeParam = variadic("code");
     }
 
     @Override
     public void handleClient(Player player) {
-        if (player.admin) {
-            String output = Vars.mods.getScripts().runConsole(codeParam.asString());
-            player.sendMessage("> " + (isError(output) ? "[#ff341c]" + output : output));
-        } else {
-            player.sendMessage("[scarlet]You must be admin to use this command.");
-        }
+        String output = Vars.mods.getScripts().runConsole(codeParam.asString());
+        player.sendMessage("> " + (isError(output) ? "[#ff341c]" + output : output));
     }
 
     private boolean isError(String output) {

@@ -11,6 +11,7 @@ public class RtvCommand extends PluginCommand {
     public RtvCommand() {
         setName("rtv");
         setDescription("Vote to change map");
+        setAdmin(false);
 
         followParam = optional("yes");
     }

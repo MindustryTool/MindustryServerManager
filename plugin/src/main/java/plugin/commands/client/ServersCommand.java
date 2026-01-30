@@ -8,6 +8,8 @@ public class ServersCommand extends PluginCommand {
     public ServersCommand() {
         setName("servers");
         setDescription("Display available servers");
+        setAdmin(false);
+
     }
 
     @Override

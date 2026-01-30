@@ -8,6 +8,7 @@ public class HubCommand extends PluginCommand {
     public HubCommand() {
         setName("hub");
         setDescription("Display available servers");
+        setAdmin(false);
     }
 
     @Override

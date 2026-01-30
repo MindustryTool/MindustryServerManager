@@ -21,6 +21,8 @@ public class VnwCommand extends PluginCommand {
     public VnwCommand() {
         setName("vnw");
         setDescription("Vote for sending a New Wave");
+        setAdmin(false);
+
         numberParam = optional("number");
     }
 

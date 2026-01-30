@@ -11,6 +11,8 @@ public class LoginCommand extends PluginCommand {
     public LoginCommand() {
         setName("login");
         setDescription("Login");
+        setAdmin(false);
+
     }
 
     @Override

@@ -12,10 +12,6 @@ public class RedirectCommand extends PluginCommand {
 
     @Override
     public void handleClient(Player player) {
-        if (player.admin) {
-            ClientCommandHandler.sendRedirectServerList(player, 0);
-        } else {
-            player.sendMessage("[scarlet]You must be admin to use this command.");
-        }
+        ClientCommandHandler.sendRedirectServerList(player, 0);
     }
 }
