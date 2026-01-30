@@ -42,14 +42,13 @@ public abstract class PluginMenu<T> {
                 int i = 0;
 
                 if (event.option >= 0) {
-                    for (var ops : targetMenu.options) {
-                        for (var op : ops) {
-                            if (i == event.option) {
-                                selectedOption = (HudOption<Object>) op;
-                                break;
-                            }
-                            i++;
+                    for (var op : targetMenu.options.flatten()) {
+                        Log.info(op);
+                        if (i == event.option) {
+                            selectedOption = (HudOption<Object>) op;
+                            break;
                         }
+                        i++;
                     }
 
                     if (selectedOption == null) {
