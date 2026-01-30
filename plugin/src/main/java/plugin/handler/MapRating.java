@@ -98,7 +98,7 @@ public class MapRating {
             MapRatingEntry entry = data.mapRatings.get(mapId);
 
             if (entry == null) {
-                return map.name() + "\n";
+                entry = new MapRatingEntry();
             }
 
             StringBuilder sb = new StringBuilder(map.name()).append("\n");
