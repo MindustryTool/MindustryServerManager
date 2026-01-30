@@ -23,9 +23,7 @@ public abstract class PluginMenu<T> {
 
     public static void init() {
         PluginEvents.on(MenuOptionChooseEvent.class, event -> {
-            var playerMenus = getMenus(event.player);
-
-            var targetMenu = playerMenus.find(m -> m.getMenuId() == event.menuId);
+            var targetMenu = menus.find(m -> m.getMenuId() == event.menuId && m.player == event.player);
 
             if (targetMenu == null) {
                 return;
@@ -138,6 +136,7 @@ public abstract class PluginMenu<T> {
         }
 
         Call.menu(player.con, getMenuId(), title, description, optionTexts);
+        Log.info("Show menu: " + getClass());
     }
 
     public synchronized void send(Player player, T state) {
