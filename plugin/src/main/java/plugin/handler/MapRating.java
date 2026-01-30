@@ -71,19 +71,23 @@ public class MapRating {
         }
     }
 
-    public static String getAvg(Map map) {
+    public static float getAvg(Map map) {
         try {
             String mapId = map.file.nameWithoutExtension();
             MapRatingData data = load();
 
             MapRatingEntry entry = data.mapRatings.getOrDefault(mapId, new MapRatingEntry());
-            float score = entry.avg();
-
-            return String.format(avgScoreColor(score) + "%.2f" + "[gold]" + Iconc.star, score);
+            return entry.avg();
         } catch (Exception e) {
             Log.err(e);
-            return "0";
+            return 0;
         }
+    }
+
+    public static String getAvgString(Map map) {
+        float score = getAvg(map);
+        
+        return String.format(avgScoreColor(score) + "%.2f" + "[gold]" + Iconc.star, score);
     }
 
     public static String getDisplayString(Map map) {

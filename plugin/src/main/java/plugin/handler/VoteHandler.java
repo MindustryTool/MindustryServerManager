@@ -14,8 +14,9 @@ import mindustry.gen.Player;
 import mindustry.maps.Map;
 
 public class VoteHandler {
-    public static HashMap<Integer, Seq<String>> votes = new HashMap<>();
+    public static HashMap<String, Seq<String>> votes = new HashMap<>();
     public static double ratio = 0.6;
+    public static Map lastMap = null;
 
     public static void unload() {
         votes.clear();
@@ -26,9 +27,10 @@ public class VoteHandler {
 
     public static void reset() {
         votes.clear();
+        lastMap = null;
     }
 
-    public static void vote(Player player, int mapId) {
+    public static void vote(Player player, String mapId) {
         var vote = votes.get(mapId);
 
         if (vote == null) {
@@ -37,9 +39,11 @@ public class VoteHandler {
         }
 
         vote.add(player.uuid());
+
+        check(mapId);
     }
 
-    public static void removeVote(Player player, int mapId) {
+    public static void removeVote(Player player, String mapId) {
         var vote = votes.get(mapId);
 
         if (vote == null) {
@@ -49,7 +53,7 @@ public class VoteHandler {
         vote.remove(player.uuid());
     }
 
-    public static boolean isVoted(Player player, int mapId) {
+    public static boolean isVoted(Player player, String mapId) {
         var vote = votes.get(mapId);
 
         if (vote == null) {
@@ -62,7 +66,7 @@ public class VoteHandler {
         return (int) Math.min(Math.floor(ratio * Groups.player.size()) + 1, Groups.player.size());
     }
 
-    public static int getVoteCount(int mapId) {
+    public static int getVoteCount(String mapId) {
         var vote = votes.get(mapId);
 
         if (vote == null) {
@@ -81,12 +85,47 @@ public class VoteHandler {
         return Vars.maps.customMaps();
     }
 
-    public static void check(int mapId) {
+    public static void check(String mapId) {
         if (getVoteCount(mapId) >= getRequire()) {
             Call.sendMessage("[red]RTV: [green]Vote passed! Changing map...");
-            Vars.maps.setNextMapOverride(getMaps().get(mapId));
-            reset();
+            var map = getMaps().find(m -> m.file.nameWithoutExtension().equals(mapId));
+
+            if (map == null) {
+                Call.sendMessage("Map with id: " + mapId + " not exists");
+                return;
+            }
+
+            Vars.maps.setNextMapOverride(map);
             Events.fire(new EventType.GameOverEvent(Team.crux));
+            reset();
         }
+    }
+
+    public static void handleVote(Player player) {
+        if (lastMap != null) {
+            handleVote(player, lastMap);
+        }
+    }
+
+    public static void handleVote(Player player, Map map) {
+        String mapId = map.file.nameWithoutExtension();
+
+        if (isVoted(player, mapId)) {
+            Call.sendMessage("[red]RTV: " + player.name + " [accent]removed their vote for [yellow]"
+                    + map.name());
+            removeVote(player, mapId);
+            return;
+        }
+
+        Call.sendMessage(
+                "[red]RTV: [accent]" + player.name() + " [white]Want to change map to [yellow]" + map.name());
+        Call.sendMessage(
+                "[red]RTV: [white]Current Vote for [yellow]" + map.name() + "[white]: [green]"
+                        + getVoteCount(mapId) + "/"
+                        + getRequire());
+        Call.sendMessage(
+                "[red]RTV: [white]Use [yellow]/rtv " + mapId + " [white]to add your vote to this map !");
+
+        vote(player, mapId);
     }
 }

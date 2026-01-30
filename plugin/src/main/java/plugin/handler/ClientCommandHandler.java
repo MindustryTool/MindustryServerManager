@@ -14,7 +14,6 @@ import plugin.commands.PluginCommand;
 import plugin.commands.client.HubCommand;
 import plugin.commands.client.JsCommand;
 import plugin.commands.client.LoginCommand;
-import plugin.commands.client.MapsCommand;
 import plugin.commands.client.RedirectCommand;
 import plugin.commands.client.RtvCommand;
 import plugin.commands.client.ServersCommand;
@@ -32,7 +31,6 @@ public class ClientCommandHandler {
         ClientCommandHandler.handler = handler;
 
         commands.add(new RtvCommand());
-        commands.add(new MapsCommand());
         commands.add(new ServersCommand());
         commands.add(new HubCommand());
         commands.add(new JsCommand());
@@ -59,7 +57,7 @@ public class ClientCommandHandler {
                 String.format("[green]Starting server [white]%s, [white]redirection will happen soon", name));
 
         try {
-            ServerController.backgroundTask("Redirect Server",() -> {
+            ServerController.backgroundTask("Redirect Server", () -> {
                 var data = ApiGateway.host(id);
                 player.sendMessage("[green]Redirecting");
                 Call.sendMessage(
