@@ -5,7 +5,7 @@ import java.util.Locale;
 import mindustry.gen.Player;
 import mindustry.maps.Map;
 import plugin.handler.ApiGateway;
-import plugin.handler.EventHandler;
+import plugin.handler.MapRating;
 import plugin.utils.Utils;
 
 public class RateMapMenu extends PluginMenu<Map> {
@@ -19,8 +19,8 @@ public class RateMapMenu extends PluginMenu<Map> {
         for (int i = 0; i < 5; i++) {
             int star = i + 1;
 
-            option(EventHandler.getStarDisplay(star), (p, s) -> {
-                EventHandler.updateMapRatting(s, star);
+            option(MapRating.getStarDisplay(star), (p, s) -> {
+                MapRating.updateMapRating(s, star);
             });
             row();
         }

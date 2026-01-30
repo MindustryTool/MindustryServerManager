@@ -1,6 +1,5 @@
 package plugin.handler;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 
@@ -26,22 +25,19 @@ import mindustry.game.EventType.TapEvent;
 import mindustry.game.EventType.WorldLoadEndEvent;
 import mindustry.gen.Call;
 import mindustry.gen.Groups;
-import mindustry.gen.Iconc;
 import mindustry.gen.Player;
-import mindustry.maps.Map;
 import plugin.Config;
 import plugin.PluginEvents;
 import plugin.ServerController;
-import dto.LoginDto;
-import plugin.type.PaginationRequest;
-import dto.PlayerDto;
 import plugin.menus.HubMenu;
 import plugin.menus.RateMapMenu;
 import plugin.menus.ServerListMenu;
 import plugin.menus.ServerRedirectMenu;
 import plugin.menus.WelcomeMenu;
+import dto.LoginDto;
+import plugin.type.PaginationRequest;
+import dto.PlayerDto;
 import plugin.type.ServerCore;
-import plugin.utils.JsonUtils;
 import plugin.utils.Utils;
 import events.ServerEvents;
 import dto.ServerDto;
@@ -54,7 +50,6 @@ import java.time.Instant;
 
 public class EventHandler {
 
-    private static final String RATING_PERSIT_KEY = "server.map-rating";
     private static final List<ServerCore> serverCores = new ArrayList<>();
 
     private static List<ServerDto> servers = new ArrayList<>();
@@ -106,124 +101,6 @@ public class EventHandler {
         Log.info("Event handler unloaded");
     }
 
-    public synchronized static void updateMapRatting(Map map, int stars) {
-        try {
-            String mapId = map.file.nameWithoutExtension();
-
-            String json = Core.settings.getString(RATING_PERSIT_KEY, "{}");
-
-            ObjectNode maps = (ObjectNode) JsonUtils.readJson(json);
-
-            if (!maps.has(mapId)) {
-                maps.set(mapId, JsonUtils.createObjectNode());
-            }
-
-            ObjectNode mapJson = (ObjectNode) maps.get(mapId);
-            String starString = String.valueOf(stars);
-            String countString = "count";
-
-            if (!mapJson.has(countString)) {
-                mapJson.put(countString, 0);
-            }
-
-            var currentCount = mapJson.get(countString).asInt();
-            mapJson.put(countString, currentCount + 1);
-
-            if (!mapJson.has(starString)) {
-                mapJson.put(starString, 0);
-            }
-
-            var currentStars = mapJson.get(starString).asInt();
-            mapJson.put(starString, currentStars + 1);
-
-            Core.settings.put(RATING_PERSIT_KEY, JsonUtils.toJsonString(maps));
-
-        } catch (Exception e) {
-            Log.err("Failed to update map rating", e);
-        }
-    }
-
-    private static String getDisplayMapStar(Map map) {
-        try {
-            String mapId = map.file.nameWithoutExtension();
-            String json = Core.settings.getString(RATING_PERSIT_KEY, "{}");
-
-            StringBuilder sb = new StringBuilder(map.name() + "\n");
-
-            ObjectNode maps = (ObjectNode) JsonUtils.readJson(json);
-
-            if (!maps.has(mapId)) {
-                return sb.toString();
-            }
-
-            ObjectNode mapJson = (ObjectNode) maps.get(mapId);
-            String countString = "count";
-            int total = 0;
-            int count = 0;
-
-            if (mapJson.has(countString)) {
-                count = mapJson.get(countString).asInt(0);
-            }
-
-            for (int i = 1; i < 6; i++) {
-                String starString = String.valueOf(i);
-                int current = 0;
-
-                if (mapJson.has(starString)) {
-                    current = mapJson.get(starString).asInt(0);
-                    total += current * i;
-
-                }
-
-                sb.append(getStarDisplay(i));
-                sb.append(" ").append(current).append("\n");
-            }
-
-            float avg = total / count;
-
-            sb.append("[gray]");
-            sb.append("Rated: ").append(count).append(" times").append("\n");
-            sb.append("Average rating: ");
-
-            if (avg < 1) {
-                sb.append("[scarlet]");
-            } else if (avg < 2) {
-                sb.append("[orange]");
-            } else if (avg < 3) {
-                sb.append("[yellow]");
-            } else if (avg < 4) {
-                sb.append("[lime]");
-            } else {
-                sb.append("[green]");
-            }
-
-            sb.append(avg);
-
-            sb.append("[gold]").append(Iconc.star).append("\n");
-
-            return sb.toString();
-        } catch (Exception e) {
-            Log.err("Failed to get map star display", e);
-            return "Error";
-        }
-    }
-
-    public static String getStarDisplay(int star) {
-        StringBuilder sb = new StringBuilder("[gold]");
-
-        for (int i = 0; i < star; i++) {
-            sb.append(Iconc.star);
-        }
-
-        sb.append("[gray]");
-
-        for (int i = 0; i < 5 - star; i++) {
-            sb.append(Iconc.star);
-        }
-
-        return sb.toString();
-    }
-
     private static void onGameOver(GameOverEvent event) {
         var rateMap = Vars.state.map;
 
@@ -244,7 +121,7 @@ public class EventHandler {
             var currentMap = Vars.state.map;
 
             if (currentMap != null) {
-                Call.sendMessage(getDisplayMapStar(currentMap));
+                Call.sendMessage(MapRating.getDisplayString(currentMap));
             }
 
         }, 10, TimeUnit.SECONDS);

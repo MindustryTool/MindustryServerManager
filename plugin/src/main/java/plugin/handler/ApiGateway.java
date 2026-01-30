@@ -96,11 +96,9 @@ public class ApiGateway {
     public static synchronized List<ServerDto> getServers(PaginationRequest request) {
         return serverQueryCache.get(request, _ignore -> {
             try {
-                return HttpUtils
-                        .sendList(
-                                HttpUtils.get(API_URL,
-                                        String.format("servers?page=%s&size=%s", request.getPage(), request.getSize())),
-                                2000, ServerDto.class);
+                String query = String.format("servers?page=%s&size=%s", request.getPage(), request.getSize());
+
+                return HttpUtils.sendList(HttpUtils.get(API_URL, query), 2000, ServerDto.class);
             } catch (Exception e) {
                 e.printStackTrace();
                 return new ArrayList<>();
