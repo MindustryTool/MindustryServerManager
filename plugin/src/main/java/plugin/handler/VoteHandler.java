@@ -124,7 +124,7 @@ public class VoteHandler {
                         + getVoteCount(mapId) + "/"
                         + getRequire());
         Call.sendMessage(
-                "[red]RTV: [white]Use [yellow]/rtv " + mapId + " [white]to add your vote to this map !");
+                "[red]RTV: [white]Use [yellow]/rtv yes to add your vote to this map !");
 
         vote(player, mapId);
     }
