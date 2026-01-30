@@ -23,7 +23,6 @@ import mindustry.gen.Groups;
 import mindustry.gen.Player;
 import mindustry.net.Administration.PlayerInfo;
 import plugin.Config;
-import plugin.handler.EventHandler;
 import plugin.handler.ServerCommandHandler;
 import plugin.handler.SessionHandler;
 import plugin.handler.VoteHandler;
@@ -34,6 +33,7 @@ import dto.PlayerDto;
 import dto.ServerCommandDto;
 import dto.StartServerDto;
 import dto.ServerStateDto;
+import plugin.utils.AdminUtils;
 import plugin.utils.Utils;
 import io.javalin.Javalin;
 import io.javalin.http.ContentType;
@@ -105,7 +105,7 @@ public class GeneralController {
             }
 
             if (player != null) {
-                EventHandler.setPlayerData(request, player);
+                AdminUtils.setPlayerData(request, player);
             }
             ctx.result();
 

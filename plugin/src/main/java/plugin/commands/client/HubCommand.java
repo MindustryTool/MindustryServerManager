@@ -2,7 +2,7 @@ package plugin.commands.client;
 
 import mindustry.gen.Player;
 import plugin.commands.PluginCommand;
-import plugin.handler.EventHandler;
+import plugin.menus.HubMenu;
 
 public class HubCommand extends PluginCommand {
     public HubCommand() {
@@ -12,6 +12,7 @@ public class HubCommand extends PluginCommand {
 
     @Override
     public void handleClient(Player player) {
-        EventHandler.sendHub(player, null);
+        new HubMenu().send(player, null);
+
     }
 }

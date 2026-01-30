@@ -2,7 +2,7 @@ package plugin.commands.client;
 
 import mindustry.gen.Player;
 import plugin.commands.PluginCommand;
-import plugin.handler.EventHandler;
+import plugin.menus.ServerListMenu;
 
 public class ServersCommand extends PluginCommand {
     public ServersCommand() {
@@ -12,6 +12,6 @@ public class ServersCommand extends PluginCommand {
 
     @Override
     public void handleClient(Player player) {
-        EventHandler.sendServerList(player, 0);
+        new ServerListMenu().send(player, 0);
     }
 }

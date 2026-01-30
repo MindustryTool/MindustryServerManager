@@ -1,26 +1,20 @@
-package plugin.menus;
-
-import mindustry.gen.Call;
-import mindustry.gen.Player;
-import plugin.ServerController;
-import plugin.handler.ApiGateway;
+package plugin.utils;
 
 import java.net.InetAddress;
 
 import arc.util.Log;
 import dto.ServerDto;
+import mindustry.gen.Call;
+import mindustry.gen.Player;
+import plugin.ServerController;
+import plugin.handler.ApiGateway;
 
-public class ServerRedirectMenu extends PluginMenu<ServerDto> {
-    @Override
-    public void build(Player player, ServerDto serverData) {
-        this.title = "Redirect";
-        this.description = "Do you want to go to server: " + serverData.getName();
+public class ServerUtils {
 
-        text("[red]No");
-        option("[green]Yes", (p, s) -> onServerChoose(p, s.getId().toString(), s.getName()));
-    }
+    public static void redirect(Player player, ServerDto server) {
+        String id = server.getId().toString();
+        String name = server.getName();
 
-    public void onServerChoose(Player player, String id, String name) {
         ServerController.backgroundTask("Server Choose", () -> {
             try {
                 player.sendMessage(String.format(

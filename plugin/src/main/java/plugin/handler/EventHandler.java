@@ -3,7 +3,6 @@ package plugin.handler;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 
-import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -31,13 +30,13 @@ import plugin.PluginEvents;
 import plugin.ServerController;
 import plugin.menus.HubMenu;
 import plugin.menus.RateMapMenu;
-import plugin.menus.ServerListMenu;
 import plugin.menus.ServerRedirectMenu;
 import plugin.menus.WelcomeMenu;
-import dto.LoginDto;
 import plugin.type.PaginationRequest;
 import dto.PlayerDto;
 import plugin.type.ServerCore;
+import plugin.utils.AdminUtils;
+import plugin.utils.ServerUtils;
 import plugin.utils.Utils;
 import events.ServerEvents;
 import dto.ServerDto;
@@ -167,7 +166,7 @@ public class EventHandler {
                     && tapY >= core.getY() - tapSize
                     && tapY <= core.getY() + tapSize//
             ) {
-                onServerChoose(event.player, core.getServer().getId().toString(), core.getServer().getName());
+                ServerUtils.redirect(event.player, core.getServer());
             }
         }
     }
@@ -426,10 +425,10 @@ public class EventHandler {
                 var playerData = ApiGateway.login(player);
 
                 if (Config.IS_HUB) {
-                    sendHub(event.player, playerData.getLoginLink());
+                    new HubMenu().send(event.player, playerData.getLoginLink());
                 }
 
-                setPlayerData(playerData, player);
+                AdminUtils.setPlayerData(playerData, player);
             });
 
             Core.bundle.getLocale();
@@ -445,81 +444,6 @@ public class EventHandler {
 
         } catch (Throwable e) {
             e.printStackTrace();
-        }
-    }
-
-    public static void sendHub(Player player, String loginLink) {
-        new HubMenu().send(player, loginLink);
-    }
-
-    public static void sendServerList(Player player, int page) {
-        new ServerListMenu().send(player, page);
-    }
-
-    public static void onServerChoose(Player player, String id, String name) {
-        ServerController.backgroundTask("Server Choose", () -> {
-            try {
-                player.sendMessage(String.format(
-                        "[green]Starting server [white]%s, [white]this can take up to 1 minutes, please wait", name));
-                Log.info(String.format("Send host command to server %s %S", name, id));
-                var data = ApiGateway.host(id);
-                player.sendMessage("[green]Redirecting");
-                Call.sendMessage(
-                        String.format("%s [green]redirecting to server [white]%s, use [green]/servers[white] to follow",
-                                player.coloredName(), name));
-
-                String host = "";
-                int port = 6567;
-
-                var colon = data.lastIndexOf(":");
-
-                if (colon > 0) {
-                    host = data.substring(0, colon);
-                    port = Integer.parseInt(data.substring(colon + 1).trim());
-                } else {
-                    host = data;
-                }
-
-                Log.info("Redirecting " + player.name + " to " + host + ":" + port);
-
-                Call.connect(player.con, InetAddress.getByName(host.trim()).getHostAddress(), port);
-            } catch (Throwable e) {
-                player.sendMessage("Error: Can not load server");
-                e.printStackTrace();
-            }
-        });
-    }
-
-    public static void setPlayerData(LoginDto playerData, Player player) {
-        var uuid = playerData.getUuid();
-        var name = playerData.getName();
-        var isLoggedIn = playerData.getLoginLink() == null;
-
-        PlayerInfo target = Vars.netServer.admins.getInfoOptional(player.uuid());
-        var isAdmin = playerData.getIsAdmin();
-
-        if (uuid == null) {
-            Log.warn("Player with null uuid: " + playerData);
-            return;
-        }
-
-        Player playert = Groups.player.find(p -> p.getInfo() == target);
-
-        if (target != null) {
-            if (isAdmin) {
-                Vars.netServer.admins.adminPlayer(target.id,
-                        playert == null ? target.adminUsid : playert.usid());
-            } else {
-                Vars.netServer.admins.unAdminPlayer(target.id);
-            }
-            if (playert != null)
-                playert.admin = isAdmin;
-        }
-
-        if (isLoggedIn) {
-            player.sendMessage("Logged in as " + name);
-        } else {
-            player.sendMessage("You are not logged in, consider log in via MindustryTool using /login");
         }
     }
 

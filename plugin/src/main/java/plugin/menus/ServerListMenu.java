@@ -5,9 +5,10 @@ import mindustry.gen.Call;
 import mindustry.gen.Player;
 import plugin.Config;
 import plugin.handler.ApiGateway;
-import plugin.handler.EventHandler;
 import plugin.type.PaginationRequest;
+import plugin.utils.ServerUtils;
 import dto.ServerDto;
+
 import java.util.Comparator;
 import java.util.List;
 
@@ -33,32 +34,32 @@ public class ServerListMenu extends PluginMenu<Integer> {
 
                 if (server.getMapName() == null) {
                     option(String.format("[yellow]%s", server.getName()),
-                            (p, s) -> EventHandler.onServerChoose(p, server.getId().toString(), server.getName()));
+                            (p, s) -> ServerUtils.redirect(p, server));
                     option("[scarlet]Server offline.",
-                            (p, s) -> EventHandler.onServerChoose(p, server.getId().toString(), server.getName()));
+                            (p, s) -> ServerUtils.redirect(p, server));
                 } else {
                     option(server.getName(),
-                            (p, s) -> EventHandler.onServerChoose(p, server.getId().toString(), server.getName()));
+                            (p, s) -> ServerUtils.redirect(p, server));
                     option(String.format("[lime]Players:[] %d", server.getPlayers()),
-                            (p, s) -> EventHandler.onServerChoose(p, server.getId().toString(), server.getName()));
+                            (p, s) -> ServerUtils.redirect(p, server));
 
                     row();
                     option(String.format("[cyan]Gamemode:[] %s", server.getMode().toLowerCase()),
-                            (p, s) -> EventHandler.onServerChoose(p, server.getId().toString(), server.getName()));
+                            (p, s) -> ServerUtils.redirect(p, server));
                     option(String.format("[blue]Map:[] %s", server.getMapName()),
-                            (p, s) -> EventHandler.onServerChoose(p, server.getId().toString(), server.getName()));
+                            (p, s) -> ServerUtils.redirect(p, server));
                 }
 
                 if (server.getMods() != null && !server.getMods().isEmpty()) {
                     row();
                     option(String.format("[purple]Mods:[] %s", String.join(", ", mods)),
-                            (p, s) -> EventHandler.onServerChoose(p, server.getId().toString(), server.getName()));
+                            (p, s) -> ServerUtils.redirect(p, server));
                 }
 
                 if (server.getDescription() != null && !server.getDescription().trim().isEmpty()) {
                     row();
                     option(String.format("[grey]%s", server.getDescription()),
-                            (p, s) -> EventHandler.onServerChoose(p, server.getId().toString(), server.getName()));
+                            (p, s) -> ServerUtils.redirect(p, server));
                 }
 
                 row();
