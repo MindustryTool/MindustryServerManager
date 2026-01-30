@@ -1,7 +1,6 @@
 package plugin.menus;
 
 import arc.struct.Seq;
-import mindustry.gen.Call;
 import mindustry.gen.Iconc;
 import mindustry.gen.Player;
 import mindustry.maps.Map;

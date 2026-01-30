@@ -32,10 +32,11 @@ public abstract class PluginMenu<T> {
             }
 
             ServerController.backgroundTask("Menu Option Choose", () -> {
-                synchronized (event.player) {
-                    HudOption<Object> selectedOption = null;
+                HudOption<Object> selectedOption = null;
 
-                    int i = 0;
+                int i = 0;
+
+                if (event.option >= 0) {
                     for (var ops : targetMenu.options) {
                         for (var op : ops) {
                             if (i == event.option) {
@@ -47,9 +48,12 @@ public abstract class PluginMenu<T> {
                     }
 
                     if (selectedOption == null) {
-                        Log.err("Failed to find selected option for menu @ with id @", targetMenu, event.option);
+                        Log.err("Failed to find selected option for menu @ with id @", targetMenu,
+                                event.option);
                     }
+                }
 
+                synchronized (event.player) {
                     if (selectedOption != null && selectedOption.callback != null) {
                         selectedOption.callback.accept(event.player, targetMenu.state);
                     }
