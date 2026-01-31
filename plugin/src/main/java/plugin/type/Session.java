@@ -33,6 +33,10 @@ public class Session {
         this.originalName = player.name().replace("\\[[A-Z][A-Z]\\] <[0-9]+>", "");
         this.locale = Locale.forLanguageTag(player.locale().split("_|-")[0]);
         this.data = data;
+
+        update();
+
+        Log.info("Session created for player @: @", player.name, this);
     }
 
     public void setAdmin(boolean isAdmin) {
@@ -47,7 +51,6 @@ public class Session {
             } else {
                 Vars.netServer.admins.unAdminPlayer(target.id);
             }
-
         }
     }
 

@@ -57,8 +57,8 @@ public class SessionHandler {
 
     public static Session put(Player p) {
         var session = new Session(p, readSessionData(p));
-        session.update();
         data.put(p.uuid(), session);
+
         return session;
     }
 
