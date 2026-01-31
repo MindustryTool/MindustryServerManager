@@ -14,6 +14,5 @@ public class HubCommand extends PluginCommand {
     @Override
     public void handleClient(Player player) {
         new HubMenu().send(player, null);
-
     }
 }
