@@ -5,12 +5,16 @@ import java.util.Locale;
 
 import arc.util.Log;
 import arc.util.Reflect;
+import arc.util.Strings;
 import mindustry.Vars;
 import mindustry.gen.Groups;
 import mindustry.gen.Iconc;
 import mindustry.gen.Player;
 import mindustry.net.Administration.PlayerInfo;
 import mindustry.type.UnitType;
+import plugin.Config;
+import plugin.ServerController;
+import plugin.handler.ApiGateway;
 import plugin.utils.ExpUtils;
 
 public class Session {
@@ -18,18 +22,16 @@ public class Session {
     public final Locale locale;
     public final Player player;
     public final String originalName;
-
     public final SessionData data;
 
     public boolean votedVNW = false;
+    public int currentLevel = 0;
 
     public Session(Player player, SessionData data) {
         this.player = player;
         this.originalName = player.name();
         this.locale = Locale.forLanguageTag(player.locale().split("_|-")[0]);
         this.data = data;
-
-        updatePlayerName();
     }
 
     public void setAdmin(boolean isAdmin) {
@@ -47,18 +49,27 @@ public class Session {
         }
     }
 
-    public void updatePlayerName() {
+    public void update() {
         var level = ExpUtils.levelFromTotalExp(getExp());
 
-        player.name(getPlayerName(player, level));
+        if (level != currentLevel) {
+            ServerController.backgroundTask("Update level", () -> {
+                String message = ApiGateway.translate("Level up", locale);
+
+                player.name(getPlayerName(player, level));
+                player.sendMessage("[green]" + message + Strings.format(" @ => @", currentLevel, level));
+
+                currentLevel = level;
+            });
+        }
     }
 
     public String getPlayerName(Player player, long level) {
         String[] parts = player.locale.split("-|_");
         String locale = parts.length > 0 ? parts[0] : player.locale;
+        String playerName = level > Config.COLOR_NAME_LEVEL ? originalName : Strings.stripColors(originalName);
 
-        return "[" + locale.toUpperCase() + "] " + "<" + "[accent]" + level + ">" + "[] "
-                + this.originalName;
+        return "[" + locale.toUpperCase() + "] " + "<" + "[accent]" + level + ">" + "[] " + playerName;
     }
 
     public void reset() {
@@ -69,8 +80,6 @@ public class Session {
         assert amount > 0 : "Kill amount must be greater than 0";
 
         data.kills.put(unit.id, data.kills.getOrDefault(unit.id, 0L) + amount);
-
-        Log.info("Player @ killed @ @ times", player.name, unit.localizedName, amount);
     }
 
     public long getExp() {
@@ -118,9 +127,5 @@ public class Session {
         }
 
         return info.toString();
-    }
-
-    public void save() {
-
     }
 }

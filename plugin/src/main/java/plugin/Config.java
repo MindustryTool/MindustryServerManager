@@ -36,4 +36,6 @@ public class Config {
             [accent]Welcome to the server!
             [lightgray]Play fair, have fun, and enjoy your stay.
             """;
+
+    public static final int COLOR_NAME_LEVEL = 10;
 }

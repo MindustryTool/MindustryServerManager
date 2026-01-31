@@ -2,13 +2,16 @@ package plugin.handler;
 
 import java.util.HashMap;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
+import arc.Core;
 import arc.func.Boolf;
 import arc.func.Cons;
 import arc.util.Log;
 import mindustry.gen.Groups;
 import mindustry.gen.Player;
 import plugin.PluginEvents;
+import plugin.ServerController;
 import plugin.event.PlayerKillUnitEvent;
 import plugin.type.Session;
 import plugin.type.SessionData;
@@ -26,6 +29,12 @@ public class SessionHandler {
         PluginEvents.on(PlayerKillUnitEvent.class, event -> {
             get(event.getPlayer()).ifPresent(session -> session.addKill(event.getUnitType(), 1));
         });
+
+        ServerController.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(SessionHandler::update, 0, 10, TimeUnit.SECONDS);
+    }
+
+    private static void update() {
+        each(Session::update);
     }
 
     public static void clear() {
@@ -45,11 +54,32 @@ public class SessionHandler {
     }
 
     public static Session put(Player p) {
-        Session data_ = new Session(p, new SessionData());
+        var session = new Session(p, readSessionData(p));
+        session.update();
+        data.put(p.uuid(), session);
+        return session;
+    }
 
-        data.put(p.uuid(), data_);
+    public static SessionData readSessionData(Player p) {
+        SessionData pdata = new SessionData();
 
-        return data_;
+        try {
+            if (Core.settings.has(p.uuid())) {
+                pdata = Core.settings.getJson(p.uuid(), SessionData.class, SessionData::new);
+            }
+        } catch (Exception e) {
+            Log.err("Error while loading session data for player @: @", p.name, e);
+        }
+
+        return pdata;
+    }
+
+    public static void writeSessionData(Player p, SessionData pdata) {
+        try {
+            Core.settings.putJson(p.uuid(), pdata);
+        } catch (Exception e) {
+            Log.err("Error while saving session data for player @: @", p.name, e);
+        }
     }
 
     public static void remove(Player p) {
