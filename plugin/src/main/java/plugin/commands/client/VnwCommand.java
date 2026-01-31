@@ -16,6 +16,7 @@ import plugin.handler.SessionHandler;
 public class VnwCommand extends PluginCommand {
     private static int waveVoted = -1;
     private static ScheduledFuture<?> voteTimeout;
+    private static ScheduledFuture<?> voteCountDown;
 
     private Param numberParam;
 
@@ -48,6 +49,9 @@ public class VnwCommand extends PluginCommand {
                 Call.sendMessage("[scarlet]Vote failed, not enough votes.");
                 waveVoted = -1;
             }, 60, TimeUnit.SECONDS);
+
+            startCountDown(50);
+
         }
 
         session.votedVNW = true;
@@ -64,6 +68,7 @@ public class VnwCommand extends PluginCommand {
         }
 
         voteTimeout.cancel(false);
+        voteCountDown.cancel(false);
         SessionHandler.each(s -> s.votedVNW = false);
 
         Call.sendMessage("[green]Vote passed. Sending new wave.");
@@ -79,5 +84,16 @@ public class VnwCommand extends PluginCommand {
         Vars.state.wavetime = 0f;
 
         ServerController.BACKGROUND_SCHEDULER.schedule(() -> sendWave(wave - 1), 1, TimeUnit.SECONDS);
+    }
+
+    private void startCountDown(int time) {
+        if (time <= 0) {
+            return;
+        }
+
+        voteCountDown = ServerController.BACKGROUND_SCHEDULER.schedule(() -> {
+            Call.sendMessage(Strings.format("[orange]Vote new wave timeout in @ seconds.", time));
+            startCountDown(time - 10);
+        }, 10, TimeUnit.SECONDS);
     }
 }

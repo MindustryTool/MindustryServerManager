@@ -27,6 +27,7 @@ public class Session {
     public final SessionData data;
 
     public boolean votedVNW = false;
+    public boolean votedGrief = false;
     public int currentLevel = 0;
 
     public Session(Player player, SessionData data) {

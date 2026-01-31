@@ -22,6 +22,7 @@ import plugin.handler.EventHandler;
 import plugin.handler.HttpServer;
 import plugin.handler.VoteHandler;
 import plugin.menus.PluginMenu;
+import plugin.utils.AdminUtils;
 import plugin.utils.Utils;
 import plugin.handler.ServerCommandHandler;
 import plugin.handler.SessionHandler;
@@ -56,6 +57,7 @@ public class ServerController extends Plugin implements MindustryToolPlugin {
             PluginMenu.init();
             SessionHandler.init();
             SnapshotHandler.init();
+            AdminUtils.init();
 
             BACKGROUND_SCHEDULER.schedule(ServerController::autoHost, 30, TimeUnit.SECONDS);
             BACKGROUND_SCHEDULER.schedule(ServerController::autoPause, 10, TimeUnit.SECONDS);
@@ -108,6 +110,7 @@ public class ServerController extends Plugin implements MindustryToolPlugin {
         PluginEvents.clear();
         PluginMenu.unload();
         SnapshotHandler.unload();
+        AdminUtils.unload();
 
         BACKGROUND_TASK_EXECUTOR.shutdownNow();
         Log.info("Background task executor shutdown");

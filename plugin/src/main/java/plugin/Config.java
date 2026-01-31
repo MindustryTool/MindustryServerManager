@@ -38,4 +38,5 @@ public class Config {
             """;
 
     public static final int COLOR_NAME_LEVEL = 10;
+    public static final int GRIEF_REPORT_COOLDOWN = 60;
 }
