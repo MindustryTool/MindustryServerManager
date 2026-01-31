@@ -31,7 +31,7 @@ public class Session {
 
     public Session(Player player, SessionData data) {
         this.player = player;
-        this.originalName = player.name().replaceAll("\\|[A-Z]{2}\\| <\\[[^]]+\\]\\d+>", "");
+        this.originalName = player.name().replaceAll("\\|[A-Z]{2}\\| <\\[[^]]+\\]\\d+>", "").trim();
         this.locale = Locale.forLanguageTag(player.locale().split("_|-")[0]);
         this.data = data;
 
@@ -87,7 +87,7 @@ public class Session {
         boolean hasColor = level > Config.COLOR_NAME_LEVEL || player.admin;
         String playerName = hasColor ? originalName : Strings.stripColors(originalName);
 
-        return "|" + locale.toUpperCase() + "| " + "<" + "[accent]" + level + "[]>" + playerName;
+        return "|" + locale.toUpperCase() + "| " + "<" + "[accent]" + level + "[]> " + playerName;
     }
 
     public void reset() {
