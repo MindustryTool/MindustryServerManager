@@ -11,7 +11,7 @@ public class PlayerInfoMenu extends PluginMenu<Player> {
 
         Groups.player.each(p -> {
             option(p.name, (_p, s) -> {
-                SessionHandler.get(player).ifPresent(session -> caller.sendMessage(session.info()));
+                SessionHandler.get(p).ifPresent(session -> caller.sendMessage(session.info()));
             });
             row();
         });
