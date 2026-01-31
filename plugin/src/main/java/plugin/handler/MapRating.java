@@ -75,8 +75,8 @@ public class MapRating {
         try {
             String mapId = map.file.nameWithoutExtension();
             MapRatingData data = load();
-
             MapRatingEntry entry = data.mapRatings.getOrDefault(mapId, new MapRatingEntry());
+
             return entry.avg();
         } catch (Exception e) {
             Log.err(e);
