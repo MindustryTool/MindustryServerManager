@@ -30,7 +30,7 @@ public class Session {
 
     public Session(Player player, SessionData data) {
         this.player = player;
-        this.originalName = player.name();
+        this.originalName = player.name().replace("\\[[A-Z][A-Z]\\] <[0-9]+>", "");
         this.locale = Locale.forLanguageTag(player.locale().split("_|-")[0]);
         this.data = data;
     }
