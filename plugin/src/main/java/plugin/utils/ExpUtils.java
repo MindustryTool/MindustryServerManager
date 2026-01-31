@@ -6,11 +6,11 @@ public class ExpUtils {
         if (totalExp <= 0)
             return 1;
 
-        double a = 0.08; // quadratic weight
-        double b = 0.002; // cubic weight
+        double a = 0.08;
+        double b = 0.002;
 
-        double level = Math.cbrt(totalExp * b) + Math.sqrt(totalExp * a);
-        return Math.max(1, (int) level);
+        double raw = Math.cbrt(totalExp * b) + Math.sqrt(totalExp * a);
+        return Math.max(1, (int) Math.floor(raw));
     }
 
     public static long totalExpForLevel(int targetLevel) {
@@ -43,12 +43,6 @@ public class ExpUtils {
         int level = levelFromTotalExp(totalExp);
         long levelStartExp = totalExpForLevel(level);
         return Math.max(0, totalExp - levelStartExp);
-    }
-
-    public static long expToNextLevel(long totalExp) {
-        int level = levelFromTotalExp(totalExp);
-        long nextLevelExp = totalExpForLevel(level + 1);
-        return Math.max(0, nextLevelExp - totalExp);
     }
 
     public static long expCapOfLevel(int level) {

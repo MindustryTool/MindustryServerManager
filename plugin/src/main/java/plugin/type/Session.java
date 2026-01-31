@@ -111,11 +111,14 @@ public class Session {
 
         info.append("Player: ").append(player.name).append("[white]\n");
 
-        info.append("Level: ").append(ExpUtils.levelFromTotalExp(exp))
+        int level = ExpUtils.levelFromTotalExp(exp);
+        long excess = ExpUtils.excessExp(exp);
+
+        info.append("Level: ").append(level)
                 .append(" (")
-                .append(exp)
+                .append(excess)
                 .append("/")
-                .append(ExpUtils.expCapOfLevel(ExpUtils.levelFromTotalExp(exp)))
+                .append(ExpUtils.expCapOfLevel(level))
                 .append(")")
                 .append("[]\n");
 
