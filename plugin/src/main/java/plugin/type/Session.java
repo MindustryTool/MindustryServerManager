@@ -63,10 +63,12 @@ public class Session {
                             player.name + " [green]" + message + Strings.format(" @ => @", currentLevel, level));
                 }
 
-                player.name(getPlayerName(player, level));
                 currentLevel = level;
+
+                player.name(getPlayerName(player, level));
             });
         }
+
     }
 
     public String getPlayerName(Player player, long level) {
