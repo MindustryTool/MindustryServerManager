@@ -61,7 +61,7 @@ public class Session {
                     Call.sendMessage(
                             player.name + " [green]" + message + Strings.format(" @ => @", currentLevel, level));
                 }
-    
+
                 player.name(getPlayerName(player, level));
                 currentLevel = level;
             });
@@ -74,7 +74,7 @@ public class Session {
         String playerName = (level > Config.COLOR_NAME_LEVEL || player.admin) ? originalName
                 : Strings.stripColors(originalName);
 
-        return "[" + locale.toUpperCase() + "] " + "<" + "[accent]" + level + ">" + "[] " + playerName;
+        return "[" + locale.toUpperCase() + "] " + "<" + "[accent]" + level + "[]>" + playerName;
     }
 
     public void reset() {
