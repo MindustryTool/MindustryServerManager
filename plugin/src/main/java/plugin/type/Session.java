@@ -57,7 +57,7 @@ public class Session {
         String[] parts = player.locale.split("-|_");
         String locale = parts.length > 0 ? parts[0] : player.locale;
 
-        return "[" + locale.toUpperCase() + "] " + Iconc.leftOpen + "[accent]" + level + Iconc.rightOpen + "[] "
+        return "[" + locale.toUpperCase() + "] " + "<" + "[accent]" + level + ">" + "[] "
                 + this.originalName;
     }
 
