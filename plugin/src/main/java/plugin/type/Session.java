@@ -141,8 +141,8 @@ public class Session {
             }
 
             try {
-                char icon = Reflect.get(Iconc.class,
-                        "unit" + unit.name.substring(0, 1).toUpperCase() + unit.name.substring(1));
+
+                char icon = Reflect.get(Iconc.class, "unit" + Strings.capitalize(unit.name));
                 info.append(icon).append(": ").append(entry.getValue()).append("\n");
             } catch (Exception e) {
                 Log.err("Error while appending kill info for unit @: @", unit.localizedName, e);
