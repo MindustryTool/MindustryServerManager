@@ -33,17 +33,6 @@ public class HttpServer {
     private static Javalin app;
     private static SseClient eventListener = null;
 
-    public static void fire(Object event) {
-        if (eventListener == null) {
-            buffer.add(event);
-            if (buffer.size() > 1000) {
-                buffer.remove(0);
-            }
-        } else {
-            eventListener.sendEvent(event);
-        }
-    }
-
     public static void init() {
         ServerController.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(() -> sendStateUpdate(), 0, 30, TimeUnit.SECONDS);
 
@@ -125,6 +114,17 @@ public class HttpServer {
         }
 
         Log.info("Setup http server done");
+    }
+
+    public static void fire(Object event) {
+        if (eventListener == null) {
+            buffer.add(event);
+            if (buffer.size() > 1000) {
+                buffer.remove(0);
+            }
+        } else {
+            eventListener.sendEvent(event);
+        }
     }
 
     private static synchronized void onClientConnect(SseClient client) {
