@@ -70,7 +70,8 @@ public class Session {
     public String getPlayerName(Player player, long level) {
         String[] parts = player.locale.split("-|_");
         String locale = parts.length > 0 ? parts[0] : player.locale;
-        String playerName = level > Config.COLOR_NAME_LEVEL ? originalName : Strings.stripColors(originalName);
+        String playerName = (level > Config.COLOR_NAME_LEVEL || player.admin) ? originalName
+                : Strings.stripColors(originalName);
 
         return "[" + locale.toUpperCase() + "] " + "<" + "[accent]" + level + ">" + "[] " + playerName;
     }
