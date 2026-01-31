@@ -181,4 +181,9 @@ public class Session {
 
         return info.toString();
     }
+
+    @Override
+    public String toString() {
+        return info();
+    }
 }
