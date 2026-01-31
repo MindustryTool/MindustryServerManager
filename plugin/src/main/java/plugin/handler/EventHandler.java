@@ -35,7 +35,6 @@ import plugin.menus.WelcomeMenu;
 import plugin.type.PaginationRequest;
 import dto.PlayerDto;
 import plugin.type.ServerCore;
-import plugin.utils.AdminUtils;
 import plugin.utils.ServerUtils;
 import plugin.utils.Utils;
 import events.ServerEvents;
@@ -319,7 +318,7 @@ public class EventHandler {
             var player = event.player;
             var request = PlayerDto.from(player)
                     .setJoinedAt(SessionHandler.contains(player) //
-                            ? SessionHandler.get(player).joinedAt
+                            ? SessionHandler.get(player).get().joinedAt
                             : Instant.now().toEpochMilli());
 
             HttpServer.fire(new ServerEvents.PlayerLeaveEvent(ServerController.SERVER_ID, request));
@@ -386,7 +385,7 @@ public class EventHandler {
 
             HttpServer.fire(new ServerEvents.PlayerJoinEvent(ServerController.SERVER_ID, PlayerDto.from(event.player)
                     .setJoinedAt(SessionHandler.contains(player) //
-                            ? SessionHandler.get(player).joinedAt
+                            ? SessionHandler.get(player).get().joinedAt
                             : Instant.now().toEpochMilli())));
 
             if (Config.IS_HUB) {
@@ -428,7 +427,14 @@ public class EventHandler {
                     new HubMenu().send(event.player, playerData.getLoginLink());
                 }
 
-                AdminUtils.setPlayerData(playerData, player);
+                SessionHandler.get(player).ifPresent(session -> session.setAdmin(playerData.getIsAdmin()));
+
+                var isLoggedIn = playerData.getLoginLink() == null;
+                if (isLoggedIn) {
+                    player.sendMessage("Logged in as " + playerData.getName());
+                } else {
+                    player.sendMessage("You are not logged in, consider log in via MindustryTool using /login");
+                }
             });
 
             Core.bundle.getLocale();

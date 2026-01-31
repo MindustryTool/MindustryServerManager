@@ -39,9 +39,10 @@ public abstract class PluginMenu<T> {
                 int i = 0;
 
                 if (event.option >= 0) {
-                    for (var op : targetMenu.options.flatten()) {
+                    Seq<HudOption<Object>> flatten = targetMenu.options.flatten();
+                    for (var op : flatten) {
                         if (i == event.option) {
-                            selectedOption = (HudOption<Object>) op;
+                            selectedOption = op;
                             break;
                         }
                         i++;
@@ -142,6 +143,7 @@ public abstract class PluginMenu<T> {
 
     public synchronized void send(Player player, T state) {
         try {
+            @SuppressWarnings("unchecked")
             PluginMenu<T> copy = getClass().getDeclaredConstructor().newInstance();
 
             copy.title = title;

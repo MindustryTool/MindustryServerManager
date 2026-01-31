@@ -28,7 +28,7 @@ public class VnwCommand extends PluginCommand {
 
     @Override
     public void handleClient(Player player) {
-        var session = SessionHandler.get(player);
+        var session = SessionHandler.get(player).get();
 
         if (Groups.player.size() < 3 && !player.admin) {
             player.sendMessage("[scarlet]3 players are required or be an admin to start a vote.");

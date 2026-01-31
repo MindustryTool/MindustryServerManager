@@ -22,7 +22,7 @@ public class RateMapMenu extends PluginMenu<Map> {
 
             option(MapRating.getStarDisplay(star), (p, s) -> {
                 MapRating.updateMapRating(s, star);
-                Call.sendMessage(p.name() + " voted " + star + " on map " + map.name());
+                Call.sendMessage(p.name() + " []voted " + star + " on map " + map.name());
             });
             row();
         }

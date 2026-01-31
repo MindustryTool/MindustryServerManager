@@ -1,6 +1,8 @@
 package plugin.handler;
 
 import java.util.HashMap;
+import java.util.Optional;
+
 import arc.func.Boolf;
 import arc.func.Cons;
 import arc.util.Log;
@@ -25,18 +27,12 @@ public class SessionHandler {
         Log.info("Session handler cleared");
     }
 
-    public static Session getByID(int id) {
-        return find(p -> p.playerId == id);
+    public static Optional<Session> getByUuid(String uuid) {
+        return Optional.ofNullable(find(p -> p.player.uuid().equals(uuid)));
     }
 
-    public static Session getByUuid(String uuid) {
-        return find(p -> p.playerUuid.equals(uuid));
-    }
-
-    public static Session get(Player p) {
-        if (p == null)
-            return null;
-        return data.get(p.uuid());
+    public static Optional<Session> get(Player p) {
+        return Optional.ofNullable(data.get(p.uuid()));
     }
 
     public static Session put(Player p) {
@@ -47,12 +43,8 @@ public class SessionHandler {
         return data_;
     }
 
-    public static Session remove(Player p) {
-        Session data_ = get(p);
-
+    public static void remove(Player p) {
         data.remove(p.uuid());
-
-        return data_;
     }
 
     public static boolean contains(Player p) {

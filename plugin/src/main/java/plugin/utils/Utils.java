@@ -191,7 +191,7 @@ public class Utils {
         List<PlayerDto> p = players.stream()//
                 .map(player -> PlayerDto.from(player)//
                         .setJoinedAt(SessionHandler.contains(player) //
-                                ? SessionHandler.get(player).joinedAt
+                                ? SessionHandler.get(player).get().joinedAt
                                 : Instant.now().toEpochMilli()))
                 .collect(Collectors.toList());
 

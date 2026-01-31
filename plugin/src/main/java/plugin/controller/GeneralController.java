@@ -33,7 +33,6 @@ import dto.PlayerDto;
 import dto.ServerCommandDto;
 import dto.StartServerDto;
 import dto.ServerStateDto;
-import plugin.utils.AdminUtils;
 import plugin.utils.Utils;
 import io.javalin.Javalin;
 import io.javalin.http.ContentType;
@@ -105,7 +104,7 @@ public class GeneralController {
             }
 
             if (player != null) {
-                AdminUtils.setPlayerData(request, player);
+                SessionHandler.getByUuid(uuid).ifPresent(session -> session.setAdmin(request.getIsAdmin()));
             }
             ctx.result();
 
@@ -120,7 +119,7 @@ public class GeneralController {
                     .appPostWithTimeout(() -> (players.stream()//
                             .map(player -> PlayerDto.from(player)//
                                     .setJoinedAt(SessionHandler.contains(player) //
-                                            ? SessionHandler.get(player).joinedAt
+                                            ? SessionHandler.get(player).get().joinedAt
                                             : Instant.now().toEpochMilli()))
                             .collect(Collectors.toList())), "Get players");
 
