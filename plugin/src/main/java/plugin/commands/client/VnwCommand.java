@@ -14,13 +14,13 @@ import plugin.handler.SessionHandler;
 
 public class VnwCommand extends PluginCommand {
     private static boolean isPreparingForNewWave = false;
-    private static short waveVoted = 1;
+    private static int waveVoted = -1;
 
     private Param numberParam;
 
     public VnwCommand() {
         setName("vnw");
-        setDescription("Vote for sending a New Wave");
+        setDescription("Vote for sending a new Wave");
         setAdmin(false);
 
         numberParam = optional("number").min(1);
@@ -28,80 +28,73 @@ public class VnwCommand extends PluginCommand {
 
     @Override
     public void handleClient(Player player) {
-        var session = SessionHandler.get(player).get();
+        var session = SessionHandler.get(player).orElse(null);
 
-        if (Groups.player.size() < 3 && !player.admin) {
-            player.sendMessage("[scarlet]3 players are required or be an admin to start a vote.");
+        if (session == null) {
             return;
+        }
 
-        } else if (session.votedVNW) {
+        if (isPreparingForNewWave) {
+            player.sendMessage("Sending waves!");
+            return;
+        }
+
+        if (session.votedVNW) {
             player.sendMessage("You have Voted already.");
             return;
         }
 
-        String arg = numberParam.asString();
+        boolean isVoting = waveVoted != -1;
 
-        if (arg != null) {
-            if (!isPreparingForNewWave) {
-                if (player.admin) {
-                    if (Strings.canParseInt(arg)) {
-                        waveVoted = (short) Strings.parseInt(arg);
-                        if (waveVoted <= 0){
-                            waveVoted = 1;
-                        }
-                    } else {
-                        player.sendMessage("Please select number of wave want to skip");
-                        return;
-                    }
+        if (isVoting == false) {
+            ServerController.BACKGROUND_SCHEDULER.schedule(() -> {
+                SessionHandler.each(s -> s.votedVNW = false);
+                Call.sendMessage("[scarlet]Failed to vote for new waves, not enough votes.");
+                waveVoted = -1;
+            }, 60, TimeUnit.SECONDS);
+        }
 
-                }
-            } else {
+        if (numberParam.hasValue()) {
+            if (isVoting) {
                 player.sendMessage("A vote to skip wave is already in progress!");
                 return;
+            } else {
+                waveVoted = numberParam.asInt();
             }
-        } else if (!isPreparingForNewWave) {
+        } else {
             waveVoted = 1;
         }
 
         session.votedVNW = true;
 
-        int cur = SessionHandler.count(p -> p.votedVNW),
-                req = Mathf.ceil(0.6f * Groups.player.size());
+        int votedCount = SessionHandler.count(p -> p.votedVNW);
 
-        Call.sendMessage(player.name + "[orange] has voted to "
-                + (waveVoted == 1 ? "send a new wave" : "skip [green]" + waveVoted + " waves") + ". [lightgray]("
-                + (req - cur) + " votes missing)");
+        int requiredCount = Mathf.ceil(0.6f * Groups.player.size());
 
-        if (!isPreparingForNewWave)
-            ServerController.BACKGROUND_SCHEDULER.schedule(() -> {
-                Call.sendMessage("[scarlet]Vote for "
-                        + (waveVoted == 1 ? "sending a new wave"
-                                : "skipping [scarlet]" + waveVoted + "[] waves")
-                        + " failed! []Not enough votes.");
-                waveVoted = 0;
-                SessionHandler.each(s -> s.votedVNW = false);
-            }, 60, TimeUnit.SECONDS);
+        if (votedCount < requiredCount) {
+            Call.sendMessage(Strings.format(
+                    "@[orange] has voted to skip [green]@ waves. [lightgray](@ votes missing)",
+                    player.name,
+                    waveVoted,
+                    requiredCount - votedCount));
+        } else {
+            Call.sendMessage("[green]Vote for sending a new wave is passed. New wave will be spawned.");
+            SessionHandler.each(s -> s.votedVNW = false);
+            sendWave(waveVoted);
+        }
+    }
 
-        if (cur < req)
+    private void sendWave(int wave) {
+        isPreparingForNewWave = true;
+
+        if (wave <= 0) {
+            isPreparingForNewWave = false;
             return;
+        }
 
-        Call.sendMessage("[green]Vote for "
-                + (waveVoted == 1 ? "sending a new wave" : "skiping [scarlet]" + waveVoted + "[] waves")
-                + " is Passed. New Wave will be Spawned.");
+        Vars.state.wavetime = 0f;
 
-        SessionHandler.each(s -> s.votedVNW = false);
+        ServerController.BACKGROUND_SCHEDULER.schedule(() -> sendWave(wave - 1), 1, TimeUnit.SECONDS);
 
-        if (waveVoted > 0) {
-            while (waveVoted-- > 0) {
-                try {
-                    Vars.state.wavetime = 0f;
-                    Thread.sleep(30);
-                } catch (Exception e) {
-                    break;
-                }
-            }
-
-        } else
-            Vars.state.wave += waveVoted;
     }
 }
