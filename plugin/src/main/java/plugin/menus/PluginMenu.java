@@ -88,6 +88,10 @@ public abstract class PluginMenu<T> {
         }, 0, 1, TimeUnit.MINUTES);
     }
 
+    public static void unload() {
+        menus.clear();
+    }
+
     public String title = "";
     public String description = "";
     public Player player = null;

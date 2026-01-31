@@ -20,6 +20,7 @@ import plugin.handler.VoteHandler;
 import plugin.menus.PluginMenu;
 import plugin.handler.ServerCommandHandler;
 import plugin.handler.SessionHandler;
+import plugin.handler.SnaphotHandler;
 import plugin.workflow.Workflow;
 import loader.MindustryToolPlugin;
 
@@ -65,6 +66,7 @@ public class ServerController extends Plugin implements MindustryToolPlugin {
         ApiGateway.init();
         PluginMenu.init();
         SessionHandler.init();
+        SnaphotHandler.init();
 
         BACKGROUND_SCHEDULER.schedule(() -> {
             try {
@@ -128,6 +130,8 @@ public class ServerController extends Plugin implements MindustryToolPlugin {
         ApiGateway.unload();
         HttpServer.unload();
         PluginEvents.clear();
+        PluginMenu.unload();
+        SnaphotHandler.unload();
 
         BACKGROUND_TASK_EXECUTOR.shutdownNow();
         Log.info("Background task executor shutdown");

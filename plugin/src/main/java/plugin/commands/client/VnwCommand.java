@@ -23,7 +23,7 @@ public class VnwCommand extends PluginCommand {
         setDescription("Vote for sending a New Wave");
         setAdmin(false);
 
-        numberParam = optional("number");
+        numberParam = optional("number").min(1);
     }
 
     @Override
@@ -61,8 +61,10 @@ public class VnwCommand extends PluginCommand {
         }
 
         session.votedVNW = true;
+
         int cur = SessionHandler.count(p -> p.votedVNW),
                 req = Mathf.ceil(0.6f * Groups.player.size());
+
         Call.sendMessage(player.name + "[orange] has voted to "
                 + (waveVoted == 1 ? "send a new wave" : "skip [green]" + waveVoted + " waves") + ". [lightgray]("
                 + (req - cur) + " votes missing)");
@@ -82,6 +84,8 @@ public class VnwCommand extends PluginCommand {
         Call.sendMessage("[green]Vote for "
                 + (waveVoted == 1 ? "sending a new wave" : "skiping [scarlet]" + waveVoted + "[] waves")
                 + " is Passed. New Wave will be Spawned.");
+
+        SessionHandler.each(s -> s.votedVNW = false);
 
         if (waveVoted > 0) {
             while (waveVoted-- > 0) {

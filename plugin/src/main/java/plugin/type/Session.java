@@ -13,11 +13,13 @@ public class Session {
     public final Long joinedAt = Instant.now().toEpochMilli();
     public final Locale locale;
     public final Player player;
+    public final String originalName;
 
     public boolean votedVNW = false;
 
     public Session(Player player) {
         this.player = player;
+        this.originalName = player.name();
         this.locale = Locale.forLanguageTag(player.locale().split("_|-")[0]);
 
         updatePlayerName();
@@ -46,6 +48,11 @@ public class Session {
         String[] parts = player.locale.split("-|_");
         String locale = parts.length > 0 ? parts[0] : player.locale;
 
-        return "[" + locale.toUpperCase() + "] " + Iconc.left + "[accent]" + Iconc.ok + level + "[] " + player.name;
+        return "[" + locale.toUpperCase() + "] " + Iconc.leftOpen + "[accent]" + level + Iconc.rightOpen + "[] "
+                + player.name;
+    }
+
+    public void reset() {
+        player.name(originalName);
     }
 }

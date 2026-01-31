@@ -4,7 +4,6 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -56,14 +55,6 @@ public class EventHandler {
             .expireAfterAccess(Duration.ofMinutes(2))
             .maximumSize(1000)
             .build();
-
-    private static final List<String> icons = Arrays.asList(//
-            "", "", "", "", "", "", "", "", "", "", //
-            "", "", "", "", "", "", "", "", "", "", //
-            "", "", "", "", "", "", "", "", "", "", //
-            "", "", "", "", "", "", "", "", "", "", //
-            "", "", "", "", "", "", "", "", "", ""//
-    );
 
     public static void init() {
         Log.info("Setup event handler");
@@ -168,16 +159,6 @@ public class EventHandler {
                 ServerUtils.redirect(event.player, core.getServer());
             }
         }
-    }
-
-    public static String getIconBaseOnLevel(int level) {
-        var index = level / 3;
-
-        if (index >= icons.size()) {
-            index = icons.size() - 1;
-        }
-
-        return icons.get(index);
     }
 
     private static void onPlayerConnect(PlayerConnect event) {

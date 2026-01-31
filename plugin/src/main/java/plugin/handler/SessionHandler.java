@@ -22,6 +22,8 @@ public class SessionHandler {
     }
 
     public static void clear() {
+        each(s -> s.reset());
+
         data.clear();
 
         Log.info("Session handler cleared");
