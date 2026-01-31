@@ -38,6 +38,7 @@ public class SessionHandler {
     }
 
     public static void clear() {
+        each(s -> writeSessionData(s.player, s.data));
         each(s -> s.reset());
 
         data.clear();
