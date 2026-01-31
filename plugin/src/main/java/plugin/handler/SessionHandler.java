@@ -11,7 +11,7 @@ import arc.util.Log;
 import mindustry.gen.Groups;
 import mindustry.gen.Player;
 import plugin.PluginEvents;
-import plugin.ServerController;
+import plugin.ServerControl;
 import plugin.event.PlayerKillUnitEvent;
 import plugin.type.Session;
 import plugin.type.SessionData;
@@ -27,8 +27,8 @@ public class SessionHandler {
     public static void init() {
         Core.app.post(() -> Groups.player.each(SessionHandler::put));
 
-        ServerController.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(SessionHandler::create, 10, 10, TimeUnit.SECONDS);
-        ServerController.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(SessionHandler::update, 0, 10, TimeUnit.SECONDS);
+        ServerControl.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(SessionHandler::create, 10, 10, TimeUnit.SECONDS);
+        ServerControl.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(SessionHandler::update, 0, 10, TimeUnit.SECONDS);
 
         PluginEvents.on(PlayerKillUnitEvent.class, event -> {
             get(event.getPlayer()).ifPresent(session -> session.addKill(event.getUnit().type, 1));

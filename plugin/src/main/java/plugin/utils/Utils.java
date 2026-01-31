@@ -40,7 +40,7 @@ import mindustry.io.MapIO;
 import mindustry.io.SaveIO;
 import mindustry.maps.Map;
 import mindustry.maps.MapException;
-import plugin.ServerController;
+import plugin.ServerControl;
 import plugin.handler.SessionHandler;
 
 public class Utils {
@@ -54,7 +54,7 @@ public class Utils {
 
         isHosting = true;
 
-        if (ServerController.isUnloaded) {
+        if (ServerControl.isUnloaded) {
             Log.warn("Server unloaded, can not host");
             return;
         }
@@ -207,7 +207,7 @@ public class Utils {
                 .setMapName(mapName)
                 .setVersion(Version.combined())
                 .setStartedAt(Core.settings.getLong("startedAt", System.currentTimeMillis()))
-                .setServerId(ServerController.SERVER_ID)
+                .setServerId(ServerControl.SERVER_ID)
                 .setStatus(Vars.state.isGame() //
                         ? Vars.state.isPaused()//
                                 ? ServerStatus.PAUSED

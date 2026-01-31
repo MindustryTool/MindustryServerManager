@@ -25,7 +25,7 @@ import mindustry.gen.Groups;
 import mindustry.gen.Player;
 import plugin.Config;
 import plugin.PluginEvents;
-import plugin.ServerController;
+import plugin.ServerControl;
 import plugin.event.PlayerKillUnitEvent;
 import plugin.menus.HubMenu;
 import plugin.menus.RateMapMenu;
@@ -54,11 +54,11 @@ public class EventHandler {
         if (Config.IS_HUB) {
             setupCustomServerDiscovery();
 
-            ServerController.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(() -> {
+            ServerControl.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(() -> {
                 refreshServerList();
             }, 0, 30, TimeUnit.SECONDS);
 
-            ServerController.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(() -> {
+            ServerControl.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(() -> {
                 renderServerLabels();
             }, 0, 5, TimeUnit.SECONDS);
         }
@@ -115,7 +115,7 @@ public class EventHandler {
     }
 
     private static void onWorldLoadEnd(WorldLoadEndEvent event) {
-        ServerController.BACKGROUND_SCHEDULER.schedule(() -> {
+        ServerControl.BACKGROUND_SCHEDULER.schedule(() -> {
             if (!Vars.state.isPaused() && Groups.player.size() == 0) {
                 Vars.state.set(State.paused);
                 Log.info("No player: paused");
@@ -278,11 +278,11 @@ public class EventHandler {
             return;
         }
 
-        HttpServer.fire(new ServerEvents.ChatEvent(ServerController.SERVER_ID, chat));
+        HttpServer.fire(new ServerEvents.ChatEvent(ServerControl.SERVER_ID, chat));
 
         Log.info(chat);
 
-        ServerController.backgroundTask("Chat Event", () -> {
+        ServerControl.backgroundTask("Chat Event", () -> {
             try {
                 Utils.forEachPlayerLocale((locale, ps) -> {
                     var result = ApiGateway.translate(locale, Strings.stripColors(message));
@@ -302,7 +302,7 @@ public class EventHandler {
 
                         p.sendMessage(translatedChat + "\n");
 
-                        HttpServer.fire(new ServerEvents.ChatEvent(ServerController.SERVER_ID, translatedChat));
+                        HttpServer.fire(new ServerEvents.ChatEvent(ServerControl.SERVER_ID, translatedChat));
                     }
                 });
             } catch (Throwable e) {
@@ -319,7 +319,7 @@ public class EventHandler {
                             ? SessionHandler.get(player).get().joinedAt
                             : Instant.now().toEpochMilli());
 
-            HttpServer.fire(new ServerEvents.PlayerLeaveEvent(ServerController.SERVER_ID, request));
+            HttpServer.fire(new ServerEvents.PlayerLeaveEvent(ServerControl.SERVER_ID, request));
         } catch (Throwable e) {
             e.printStackTrace();
         }
@@ -335,14 +335,14 @@ public class EventHandler {
             String chat = Strings.format("@ leaved the server, current players: @", playerName,
                     Math.max(Groups.player.size() - 1, 0));
 
-            ServerController.BACKGROUND_SCHEDULER.schedule(() -> {
+            ServerControl.BACKGROUND_SCHEDULER.schedule(() -> {
                 if (!Vars.state.isPaused() && Groups.player.size() == 0) {
                     Vars.state.set(State.paused);
                     Log.info("No player: paused");
                 }
             }, 5, TimeUnit.SECONDS);
 
-            HttpServer.fire(new ServerEvents.ChatEvent(ServerController.SERVER_ID, chat));
+            HttpServer.fire(new ServerEvents.ChatEvent(ServerControl.SERVER_ID, chat));
 
             Log.info(chat);
         } catch (Throwable e) {
@@ -381,7 +381,7 @@ public class EventHandler {
 
             SessionHandler.put(player);
 
-            HttpServer.fire(new ServerEvents.PlayerJoinEvent(ServerController.SERVER_ID, PlayerDto.from(event.player)
+            HttpServer.fire(new ServerEvents.PlayerJoinEvent(ServerControl.SERVER_ID, PlayerDto.from(event.player)
                     .setJoinedAt(SessionHandler.contains(player) //
                             ? SessionHandler.get(player).get().joinedAt
                             : Instant.now().toEpochMilli())));
@@ -390,7 +390,7 @@ public class EventHandler {
                 var serverData = getTopServer();
 
                 if (serverData != null //
-                        && !serverData.getId().equals(ServerController.SERVER_ID)
+                        && !serverData.getId().equals(ServerControl.SERVER_ID)
                         && serverData.getPlayers() > 0//
                 ) {
                     new ServerRedirectMenu().send(player, serverData);
@@ -416,9 +416,9 @@ public class EventHandler {
             // .setTeam(new TeamDto()//
             // .setName(team.name)//
             // .setColor(team.color.toString()));
-            HttpServer.fire(new ServerEvents.ChatEvent(ServerController.SERVER_ID, chat));
+            HttpServer.fire(new ServerEvents.ChatEvent(ServerControl.SERVER_ID, chat));
 
-            ServerController.backgroundTask("Player Join", () -> {
+            ServerControl.backgroundTask("Player Join", () -> {
                 var playerData = ApiGateway.login(player);
 
                 if (Config.IS_HUB) {
@@ -437,7 +437,7 @@ public class EventHandler {
 
             Core.bundle.getLocale();
 
-            ServerController.backgroundTask("Welcome Message", () -> {
+            ServerControl.backgroundTask("Welcome Message", () -> {
                 var translated = ApiGateway.translate(Config.WELCOME_MESSAGE, Utils.parseLocale(player.locale()));
                 player.sendMessage(translated);
             });

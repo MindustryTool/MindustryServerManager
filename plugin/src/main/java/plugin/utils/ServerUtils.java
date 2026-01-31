@@ -6,7 +6,7 @@ import arc.util.Log;
 import dto.ServerDto;
 import mindustry.gen.Call;
 import mindustry.gen.Player;
-import plugin.ServerController;
+import plugin.ServerControl;
 import plugin.handler.ApiGateway;
 
 public class ServerUtils {
@@ -15,7 +15,7 @@ public class ServerUtils {
         String id = server.getId().toString();
         String name = server.getName();
 
-        ServerController.backgroundTask("Server Choose", () -> {
+        ServerControl.backgroundTask("Server Choose", () -> {
             try {
                 player.sendMessage(String.format(
                         "[green]Starting server [white]%s, [white]this can take up to 1 minutes, please wait", name));

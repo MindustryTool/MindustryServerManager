@@ -16,7 +16,7 @@ import mindustry.gen.Player;
 import mindustry.net.Packets.KickReason;
 import plugin.Config;
 import plugin.PluginEvents;
-import plugin.ServerController;
+import plugin.ServerControl;
 import plugin.handler.SessionHandler;
 
 public class AdminUtils {
@@ -120,7 +120,7 @@ public class AdminUtils {
         Call.sendMessage("[red]Player " + player.name + " reported player " + target.name
                 + " for griefing. Use /grief to kick this player.");
 
-        voteTimeout = ServerController.BACKGROUND_SCHEDULER.schedule(() -> {
+        voteTimeout = ServerControl.BACKGROUND_SCHEDULER.schedule(() -> {
             Call.sendMessage("[scarlet]Vote failed, not enough votes.");
             target.team(originalTeam);
             reset();

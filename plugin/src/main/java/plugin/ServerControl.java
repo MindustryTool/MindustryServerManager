@@ -30,7 +30,7 @@ import plugin.handler.SnapshotHandler;
 import plugin.workflow.Workflow;
 import loader.MindustryToolPlugin;
 
-public class ServerController extends Plugin implements MindustryToolPlugin {
+public class ServerControl extends Plugin implements MindustryToolPlugin {
 
     public static boolean isUnloaded = false;
 
@@ -38,7 +38,7 @@ public class ServerController extends Plugin implements MindustryToolPlugin {
     public static final ExecutorService BACKGROUND_TASK_EXECUTOR = Executors.newWorkStealingPool();
     public static final ScheduledExecutorService BACKGROUND_SCHEDULER = Executors.newSingleThreadScheduledExecutor();
 
-    public ServerController() {
+    public ServerControl() {
         Log.info("Server controller created: " + this);
     }
 
@@ -59,9 +59,9 @@ public class ServerController extends Plugin implements MindustryToolPlugin {
             SnapshotHandler.init();
             AdminUtils.init();
 
-            BACKGROUND_SCHEDULER.schedule(ServerController::autoHost, 30, TimeUnit.SECONDS);
-            BACKGROUND_SCHEDULER.schedule(ServerController::autoPause, 10, TimeUnit.SECONDS);
-            BACKGROUND_SCHEDULER.scheduleWithFixedDelay(ServerController::sendTips, 0, 3, TimeUnit.MINUTES);
+            BACKGROUND_SCHEDULER.schedule(ServerControl::autoHost, 30, TimeUnit.SECONDS);
+            BACKGROUND_SCHEDULER.schedule(ServerControl::autoPause, 10, TimeUnit.SECONDS);
+            BACKGROUND_SCHEDULER.scheduleWithFixedDelay(ServerControl::sendTips, 0, 3, TimeUnit.MINUTES);
 
             Call.sendMessage("[scarlet]Server controller restarted");
             Log.info("Server controller initialized.");
@@ -175,13 +175,14 @@ public class ServerController extends Plugin implements MindustryToolPlugin {
         tips.add((locale) -> ApiGateway.translate("Use '/vnw' to skip a wave", locale));
         tips.add((locale) -> ApiGateway.translate("Use '/rtv' to change map", locale));
         tips.add((locale) -> ApiGateway.translate("Use '/me' to see your stats", locale));
+        tips.add((locale) -> ApiGateway.translate("Use '/grief' to report a player", locale));
 
         var tip = tips.random();
 
         backgroundTask("Send tip", () -> {
             Utils.forEachPlayerLocale((locale, players) -> {
                 for (var player : players) {
-                    player.sendMessage("[accent]" + tip.get(locale));
+                    player.sendMessage("[sky]" + tip.get(locale));
                 }
             });
         });

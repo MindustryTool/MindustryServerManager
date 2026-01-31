@@ -18,7 +18,7 @@ import arc.util.Log;
 import io.javalin.http.sse.SseClient;
 import lombok.Getter;
 import mindustry.Vars;
-import plugin.ServerController;
+import plugin.ServerControl;
 import plugin.utils.JsonUtils;
 import plugin.workflow.errors.WorkflowError;
 import plugin.workflow.expressions.ExpressionParser;
@@ -91,7 +91,7 @@ public class Workflow {
             WORKFLOW_FILE.file().createNewFile();
             WORKFLOW_DATA_FILE.file().createNewFile();
 
-            ServerController.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(
+            ServerControl.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(
                     () -> {
                         try {
                             workflowEventConsumers.forEach(client -> client.sendComment("heartbeat"));
@@ -253,7 +253,7 @@ public class Workflow {
                 " period: " + period);
 
         scheduledTasks
-                .add(ServerController.BACKGROUND_SCHEDULER.scheduleAtFixedRate(() -> tryRun(runnable), delay, period,
+                .add(ServerControl.BACKGROUND_SCHEDULER.scheduleAtFixedRate(() -> tryRun(runnable), delay, period,
                         TimeUnit.SECONDS));
     }
 
@@ -264,7 +264,7 @@ public class Workflow {
                 " delay: " + delay);
 
         scheduledTasks
-                .add(ServerController.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(() -> tryRun(runnable), initialDelay,
+                .add(ServerControl.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(() -> tryRun(runnable), initialDelay,
                         delay,
                         TimeUnit.SECONDS));
     }
@@ -272,7 +272,7 @@ public class Workflow {
     public static void schedule(Runnable runnable, long delay) {
         Log.debug("Schedule task: " + runnable.getClass().getName() + " delay: " + delay);
         scheduledTasks
-                .add(ServerController.BACKGROUND_SCHEDULER.schedule(() -> tryRun(runnable), delay, TimeUnit.SECONDS));
+                .add(ServerControl.BACKGROUND_SCHEDULER.schedule(() -> tryRun(runnable), delay, TimeUnit.SECONDS));
     }
 
 }

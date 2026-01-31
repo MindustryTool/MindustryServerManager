@@ -9,7 +9,7 @@ import lombok.Getter;
 import mindustry.gen.Call;
 import mindustry.gen.Groups;
 import mindustry.gen.Player;
-import plugin.ServerController;
+import plugin.ServerControl;
 import plugin.commands.PluginCommand;
 import plugin.commands.client.HubCommand;
 import plugin.commands.client.JsCommand;
@@ -62,7 +62,7 @@ public class ClientCommandHandler {
                 String.format("[green]Starting server [white]%s, [white]redirection will happen soon", name));
 
         try {
-            ServerController.backgroundTask("Redirect Server", () -> {
+            ServerControl.backgroundTask("Redirect Server", () -> {
                 var data = ApiGateway.host(id);
                 player.sendMessage("[green]Redirecting");
                 Call.sendMessage(

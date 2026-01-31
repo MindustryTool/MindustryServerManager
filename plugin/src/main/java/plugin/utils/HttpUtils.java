@@ -10,7 +10,7 @@ import arc.util.Http;
 import arc.util.Http.HttpRequest;
 import arc.util.Http.HttpStatusException;
 import arc.util.Strings;
-import plugin.ServerController;
+import plugin.ServerControl;
 
 public class HttpUtils {
     private static String toPath(Object... path) {
@@ -60,7 +60,7 @@ public class HttpUtils {
     public static byte[] send(HttpRequest req, int timeoutMilis) {
         CompletableFuture<byte[]> res = new CompletableFuture<>();
         req
-                .header("X-SERVER-ID", ServerController.SERVER_ID.toString())
+                .header("X-SERVER-ID", ServerControl.SERVER_ID.toString())
                 .timeout(timeoutMilis)
                 .redirects(true)
                 .error(error -> {

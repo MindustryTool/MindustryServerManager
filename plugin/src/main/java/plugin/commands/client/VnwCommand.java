@@ -9,7 +9,7 @@ import mindustry.Vars;
 import mindustry.gen.Call;
 import mindustry.gen.Groups;
 import mindustry.gen.Player;
-import plugin.ServerController;
+import plugin.ServerControl;
 import plugin.commands.PluginCommand;
 import plugin.handler.SessionHandler;
 
@@ -44,7 +44,7 @@ public class VnwCommand extends PluginCommand {
         if (!voting) {
             waveVoted = numberParam.hasValue() ? numberParam.asInt() : 1;
 
-            voteTimeout = ServerController.BACKGROUND_SCHEDULER.schedule(() -> {
+            voteTimeout = ServerControl.BACKGROUND_SCHEDULER.schedule(() -> {
                 SessionHandler.each(s -> s.votedVNW = false);
                 Call.sendMessage("[scarlet]Vote failed, not enough votes.");
                 waveVoted = -1;
@@ -83,7 +83,7 @@ public class VnwCommand extends PluginCommand {
 
         Vars.state.wavetime = 0f;
 
-        ServerController.BACKGROUND_SCHEDULER.schedule(() -> sendWave(wave - 1), 1, TimeUnit.SECONDS);
+        ServerControl.BACKGROUND_SCHEDULER.schedule(() -> sendWave(wave - 1), 1, TimeUnit.SECONDS);
     }
 
     private void startCountDown(int time) {
@@ -91,7 +91,7 @@ public class VnwCommand extends PluginCommand {
             return;
         }
 
-        voteCountDown = ServerController.BACKGROUND_SCHEDULER.schedule(() -> {
+        voteCountDown = ServerControl.BACKGROUND_SCHEDULER.schedule(() -> {
             Call.sendMessage(Strings.format("[orange]Vote new wave timeout in @ seconds.", time));
             startCountDown(time - 10);
         }, 10, TimeUnit.SECONDS);

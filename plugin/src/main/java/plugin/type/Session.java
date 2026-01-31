@@ -15,7 +15,7 @@ import mindustry.gen.Player;
 import mindustry.net.Administration.PlayerInfo;
 import mindustry.type.UnitType;
 import plugin.Config;
-import plugin.ServerController;
+import plugin.ServerControl;
 import plugin.handler.ApiGateway;
 import plugin.utils.ExpUtils;
 
@@ -67,7 +67,7 @@ public class Session {
                 var oldLevel = currentLevel;
                 var newLevel = level;
 
-                ServerController.backgroundTask("Update level", () -> {
+                ServerControl.backgroundTask("Update level", () -> {
                     String message = ApiGateway.translate("Level up", locale);
 
                     Call.sendMessage(

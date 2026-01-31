@@ -14,7 +14,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import arc.util.Log;
 import plugin.PluginEvents;
-import plugin.ServerController;
+import plugin.ServerControl;
 import plugin.controller.GeneralController;
 import plugin.controller.WorkflowController;
 import dto.ServerStateDto;
@@ -34,7 +34,7 @@ public class HttpServer {
     private static SseClient eventListener = null;
 
     public static void init() {
-        ServerController.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(() -> sendStateUpdate(), 0, 30, TimeUnit.SECONDS);
+        ServerControl.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(() -> sendStateUpdate(), 0, 30, TimeUnit.SECONDS);
 
         app = Javalin.create(config -> {
             config.showJavalinBanner = false;
@@ -67,7 +67,7 @@ public class HttpServer {
         });
 
         app.beforeMatched((ctx) -> {
-            if (ServerController.isUnloaded) {
+            if (ServerControl.isUnloaded) {
                 throw new ServerUnloadedException();
             }
         });
@@ -108,7 +108,7 @@ public class HttpServer {
         PluginEvents.run(PlayerLeave.class, HttpServer::sendStateUpdate);
         PluginEvents.run(StateChangeEvent.class, HttpServer::sendStateUpdate);
 
-        if (!ServerController.isUnloaded) {
+        if (!ServerControl.isUnloaded) {
             app.start(9999);
             Log.info("Http server started on port 9999");
         }
@@ -164,7 +164,7 @@ public class HttpServer {
     private static void sendStateUpdate() {
         try {
             ServerStateDto state = Utils.getState();
-            ServerStateEvent event = new ServerStateEvent(ServerController.SERVER_ID, Arrays.asList(state));
+            ServerStateEvent event = new ServerStateEvent(ServerControl.SERVER_ID, Arrays.asList(state));
 
             fire(event);
         } catch (Exception error) {

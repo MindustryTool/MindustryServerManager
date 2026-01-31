@@ -2,7 +2,7 @@ package plugin.menus;
 
 import mindustry.gen.Call;
 import mindustry.gen.Player;
-import plugin.ServerController;
+import plugin.ServerControl;
 import plugin.handler.ApiGateway;
 
 import java.net.InetAddress;
@@ -21,7 +21,7 @@ public class ServerRedirectMenu extends PluginMenu<ServerDto> {
     }
 
     public void onServerChoose(Player player, String id, String name) {
-        ServerController.backgroundTask("Server Choose", () -> {
+        ServerControl.backgroundTask("Server Choose", () -> {
             try {
                 player.sendMessage(String.format(
                         "[green]Starting server [white]%s, [white]this can take up to 1 minutes, please wait", name));

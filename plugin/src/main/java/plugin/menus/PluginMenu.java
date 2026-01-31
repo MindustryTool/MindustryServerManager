@@ -14,7 +14,7 @@ import mindustry.game.EventType.PlayerLeave;
 import mindustry.gen.Call;
 import mindustry.gen.Player;
 import plugin.PluginEvents;
-import plugin.ServerController;
+import plugin.ServerControl;
 
 public abstract class PluginMenu<T> {
     private static final AtomicInteger ID_GEN = new AtomicInteger(1000);
@@ -33,7 +33,7 @@ public abstract class PluginMenu<T> {
                 return;
             }
 
-            ServerController.backgroundTask("Menu Option Choose", () -> {
+            ServerControl.backgroundTask("Menu Option Choose", () -> {
                 HudOption<Object> selectedOption = null;
 
                 int i = 0;
@@ -75,7 +75,7 @@ public abstract class PluginMenu<T> {
             menus.removeAll(m -> m.player == event.player);
         });
 
-        ServerController.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(() -> {
+        ServerControl.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(() -> {
             menus.removeAll(m -> {
                 var delete = Instant.now().isAfter(m.createdAt.plusSeconds(60 * 5));
 
@@ -156,7 +156,7 @@ public abstract class PluginMenu<T> {
             copy.state = state;
             copy.options = new Seq<>(new Seq<>());
 
-            ServerController.backgroundTask("Show Menu: " + getMenuId(), () -> {
+            ServerControl.backgroundTask("Show Menu: " + getMenuId(), () -> {
                 try {
                     copy.build(player, state);
                 } catch (Exception e) {

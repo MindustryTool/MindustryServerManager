@@ -8,7 +8,7 @@ import arc.util.Log;
 import lombok.Getter;
 import lombok.Setter;
 import mindustry.gen.Player;
-import plugin.ServerController;
+import plugin.ServerControl;
 
 public abstract class PluginCommand {
     @Getter
@@ -121,7 +121,7 @@ public abstract class PluginCommand {
 
     private void wrapper(Runnable runnable) {
         try {
-            ServerController.BACKGROUND_TASK_EXECUTOR.submit(runnable);
+            ServerControl.BACKGROUND_TASK_EXECUTOR.submit(runnable);
         } catch (ParamException e) {
             if (player != null) {
                 player.sendMessage(e.getMessage());
