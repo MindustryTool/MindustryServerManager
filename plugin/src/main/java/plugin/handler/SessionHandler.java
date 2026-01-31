@@ -25,7 +25,8 @@ public class SessionHandler {
     }
 
     public static void init() {
-        Groups.player.each(SessionHandler::put);
+        ServerController.BACKGROUND_SCHEDULER.schedule(() -> Groups.player.each(SessionHandler::put), 1,
+                TimeUnit.SECONDS);
 
         PluginEvents.on(PlayerKillUnitEvent.class, event -> {
             get(event.getPlayer()).ifPresent(session -> session.addKill(event.getUnit().type, 1));
@@ -55,11 +56,8 @@ public class SessionHandler {
         return Optional.ofNullable(data.get(p.uuid()));
     }
 
-    public static Session put(Player p) {
-        var session = new Session(p, readSessionData(p));
-        data.put(p.uuid(), session);
-
-        return session;
+    public static void put(Player p) {
+        data.put(p.uuid(), new Session(p, readSessionData(p)));
     }
 
     public static SessionData readSessionData(Player p) {
