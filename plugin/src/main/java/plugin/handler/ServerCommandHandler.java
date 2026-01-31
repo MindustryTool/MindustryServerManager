@@ -40,6 +40,7 @@ public class ServerCommandHandler {
 
         for (PluginCommand command : commands) {
             command.register(handler, false);
+            Log.info("Server command registered: " + command.getName());
         }
 
         prevCommands.forEach(prev -> prev.getCallback().accept(handler.handleMessage(prev.getCommand())));

@@ -28,7 +28,7 @@ public class SessionHandler {
         Groups.player.each(SessionHandler::put);
 
         PluginEvents.on(PlayerKillUnitEvent.class, event -> {
-            get(event.getPlayer()).ifPresent(session -> session.addKill(event.getUnitType(), 1));
+            get(event.getPlayer()).ifPresent(session -> session.addKill(event.getUnit().type, 1));
         });
 
         ServerController.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(SessionHandler::update, 0, 10, TimeUnit.SECONDS);

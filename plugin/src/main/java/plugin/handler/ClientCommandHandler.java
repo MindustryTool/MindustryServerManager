@@ -44,6 +44,7 @@ public class ClientCommandHandler {
 
         for (PluginCommand command : commands) {
             command.register(handler, true);
+            Log.info("Client command registered: " + command.getName());
         }
     }
 

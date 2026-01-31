@@ -111,9 +111,9 @@ public class EventHandler {
 
         if (bullet.owner() instanceof Building building) {
             SnapshotHandler.getBuiltBy(building)
-                    .ifPresent(buildBy -> PluginEvents.fire(new PlayerKillUnitEvent(buildBy, unit.type)));
+                    .ifPresent(buildBy -> PluginEvents.fire(new PlayerKillUnitEvent(buildBy, unit)));
         } else if (bullet.owner() instanceof Player player) {
-            PluginEvents.fire(new PlayerKillUnitEvent(player, unit.type));
+            PluginEvents.fire(new PlayerKillUnitEvent(player, unit));
         }
     }
 

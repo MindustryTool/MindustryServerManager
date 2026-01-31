@@ -98,7 +98,7 @@ public class Session {
             var unit = Vars.content.unit(entry.getKey());
 
             return unit.health * entry.getValue();
-        }).sum() / 2000);
+        }).sum() / 500);
 
         return exp;
     }
