@@ -1,5 +1,6 @@
 package plugin.commands.client;
 
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import arc.math.Mathf;
@@ -15,6 +16,7 @@ import plugin.handler.SessionHandler;
 public class VnwCommand extends PluginCommand {
     private static boolean isPreparingForNewWave = false;
     private static int waveVoted = -1;
+    private static ScheduledFuture<?> votingTask;
 
     private Param numberParam;
 
@@ -27,15 +29,10 @@ public class VnwCommand extends PluginCommand {
     }
 
     @Override
-    public void handleClient(Player player) {
+    public synchronized void handleClient(Player player) {
         var session = SessionHandler.get(player).orElse(null);
 
         if (session == null) {
-            return;
-        }
-
-        if (isPreparingForNewWave) {
-            player.sendMessage("Sending waves!");
             return;
         }
 
@@ -44,25 +41,25 @@ public class VnwCommand extends PluginCommand {
             return;
         }
 
+        if (isPreparingForNewWave) {
+            player.sendMessage("Sending waves!");
+            return;
+        }
+
         boolean isVoting = waveVoted != -1;
 
         if (isVoting == false) {
-            ServerController.BACKGROUND_SCHEDULER.schedule(() -> {
+            votingTask = ServerController.BACKGROUND_SCHEDULER.schedule(() -> {
                 SessionHandler.each(s -> s.votedVNW = false);
                 Call.sendMessage("[scarlet]Failed to vote for new waves, not enough votes.");
                 waveVoted = -1;
             }, 60, TimeUnit.SECONDS);
-        }
 
-        if (numberParam.hasValue()) {
-            if (isVoting) {
-                player.sendMessage("A vote to skip wave is already in progress!");
-                return;
-            } else {
+            if (numberParam.hasValue()) {
                 waveVoted = numberParam.asInt();
+            } else {
+                waveVoted = 1;
             }
-        } else {
-            waveVoted = 1;
         }
 
         session.votedVNW = true;
@@ -78,6 +75,7 @@ public class VnwCommand extends PluginCommand {
                     waveVoted,
                     requiredCount - votedCount));
         } else {
+            votingTask.cancel(false);
             Call.sendMessage("[green]Vote for sending a new wave is passed. New wave will be spawned.");
             SessionHandler.each(s -> s.votedVNW = false);
             sendWave(waveVoted);
@@ -89,12 +87,12 @@ public class VnwCommand extends PluginCommand {
 
         if (wave <= 0) {
             isPreparingForNewWave = false;
+            waveVoted = -1;
             return;
         }
 
         Vars.state.wavetime = 0f;
 
         ServerController.BACKGROUND_SCHEDULER.schedule(() -> sendWave(wave - 1), 1, TimeUnit.SECONDS);
-
     }
 }
