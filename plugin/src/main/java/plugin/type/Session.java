@@ -59,11 +59,13 @@ public class Session {
 
         if (level != currentLevel) {
             if (currentLevel != 0) {
+                var oldLevel = currentLevel;
+                var newLevel = level;
                 ServerController.backgroundTask("Update level", () -> {
                     String message = ApiGateway.translate("Level up", locale);
 
                     Call.sendMessage(
-                            player.name + " [green]" + message + Strings.format(" @ => @", currentLevel, level));
+                            player.name + " [green]" + message + Strings.format(" @ => @", oldLevel, newLevel));
                 });
             }
 
