@@ -8,7 +8,10 @@ import arc.func.Cons;
 import arc.util.Log;
 import mindustry.gen.Groups;
 import mindustry.gen.Player;
+import plugin.PluginEvents;
+import plugin.event.PlayerKillUnitEvent;
 import plugin.type.Session;
+import plugin.type.SessionData;
 
 public class SessionHandler {
     private static final HashMap<String, Session> data = new HashMap<>();
@@ -19,6 +22,10 @@ public class SessionHandler {
 
     public static void init() {
         Groups.player.each(SessionHandler::put);
+
+        PluginEvents.on(PlayerKillUnitEvent.class, event -> {
+            get(event.getPlayer()).ifPresent(session -> session.data.addKill(event.getUnitType(), 1));
+        });
     }
 
     public static void clear() {
@@ -38,7 +45,7 @@ public class SessionHandler {
     }
 
     public static Session put(Player p) {
-        Session data_ = new Session(p);
+        Session data_ = new Session(p, new SessionData());
 
         data.put(p.uuid(), data_);
 

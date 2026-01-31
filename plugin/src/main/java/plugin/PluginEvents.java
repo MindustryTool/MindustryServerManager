@@ -1,6 +1,7 @@
 package plugin;
 
 import arc.struct.Seq;
+import arc.util.Log;
 import arc.struct.ObjectMap;
 import arc.func.Cons;
 
@@ -32,12 +33,17 @@ public class PluginEvents {
     public static <T extends Enum<T>> void fire(Enum<T> type) {
         Seq<Cons<?>> listeners = events.get(type);
 
-        if (listeners != null) {
-            int len = listeners.size;
-            Cons[] items = listeners.items;
-            for (int i = 0; i < len; i++) {
-                items[i].get(type);
+        try {
+
+            if (listeners != null) {
+                int len = listeners.size;
+                Cons[] items = listeners.items;
+                for (int i = 0; i < len; i++) {
+                    items[i].get(type);
+                }
             }
+        } catch (Exception e) {
+            Log.err("Failed to fire event: " + type, e);
         }
     }
 
@@ -49,12 +55,16 @@ public class PluginEvents {
     public static <T> void fire(Class<?> ctype, T type) {
         Seq<Cons<?>> listeners = events.get(ctype);
 
-        if (listeners != null) {
-            int len = listeners.size;
-            Cons[] items = listeners.items;
-            for (int i = 0; i < len; i++) {
-                items[i].get(type);
+        try {
+            if (listeners != null) {
+                int len = listeners.size;
+                Cons[] items = listeners.items;
+                for (int i = 0; i < len; i++) {
+                    items[i].get(type);
+                }
             }
+        } catch (Exception e) {
+            Log.err("Failed to fire event: " + type, e);
         }
     }
 

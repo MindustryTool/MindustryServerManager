@@ -20,13 +20,16 @@ import mindustry.game.EventType.PlayerJoin;
 import mindustry.game.EventType.PlayerLeave;
 import mindustry.game.EventType.ServerLoadEvent;
 import mindustry.game.EventType.TapEvent;
+import mindustry.game.EventType.UnitBulletDestroyEvent;
 import mindustry.game.EventType.WorldLoadEndEvent;
+import mindustry.gen.Building;
 import mindustry.gen.Call;
 import mindustry.gen.Groups;
 import mindustry.gen.Player;
 import plugin.Config;
 import plugin.PluginEvents;
 import plugin.ServerController;
+import plugin.event.PlayerKillUnitEvent;
 import plugin.menus.HubMenu;
 import plugin.menus.RateMapMenu;
 import plugin.menus.ServerRedirectMenu;
@@ -41,7 +44,6 @@ import dto.ServerDto;
 import dto.ServerStatus;
 import mindustry.net.Administration.PlayerInfo;
 import mindustry.ui.dialogs.LanguageDialog;
-
 import java.time.Duration;
 import java.time.Instant;
 
@@ -79,6 +81,7 @@ public class EventHandler {
         PluginEvents.on(TapEvent.class, EventHandler::onTap);
         PluginEvents.on(GameOverEvent.class, EventHandler::onGameOver);
         PluginEvents.on(WorldLoadEndEvent.class, EventHandler::onWorldLoadEnd);
+        PluginEvents.on(UnitBulletDestroyEvent.class, EventHandler::onUnitBulletDestroy);
 
         Log.info("Setup event handler done");
     }
@@ -88,6 +91,30 @@ public class EventHandler {
         translationCache = null;
 
         Log.info("Event handler unloaded");
+    }
+
+    private static void onUnitBulletDestroy(UnitBulletDestroyEvent event) {
+        var unit = event.unit;
+        var bullet = event.bullet;
+
+        if (unit == null || bullet == null) {
+            return;
+        }
+
+        if (unit.isPlayer()) {
+            return;
+        }
+
+        if (bullet.owner() == null) {
+            return;
+        }
+
+        if (bullet.owner() instanceof Building building) {
+            SnapshotHandler.getBuiltBy(building)
+                    .ifPresent(buildBy -> PluginEvents.fire(new PlayerKillUnitEvent(buildBy, unit.type)));
+        } else if (bullet.owner() instanceof Player player) {
+            PluginEvents.fire(new PlayerKillUnitEvent(player, unit.type));
+        }
     }
 
     private static void onGameOver(GameOverEvent event) {
@@ -283,7 +310,7 @@ public class EventHandler {
                             continue;
                         }
 
-                        p.sendMessage(translatedChat);
+                        p.sendMessage(translatedChat + "\n");
 
                         HttpServer.fire(new ServerEvents.ChatEvent(ServerController.SERVER_ID, translatedChat));
                     }

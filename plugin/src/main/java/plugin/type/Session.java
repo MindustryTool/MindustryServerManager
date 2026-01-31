@@ -15,12 +15,15 @@ public class Session {
     public final Player player;
     public final String originalName;
 
+    public final SessionData data;
+
     public boolean votedVNW = false;
 
-    public Session(Player player) {
+    public Session(Player player, SessionData data) {
         this.player = player;
         this.originalName = player.name();
         this.locale = Locale.forLanguageTag(player.locale().split("_|-")[0]);
+        this.data = data;
 
         updatePlayerName();
     }
@@ -54,5 +57,9 @@ public class Session {
 
     public void reset() {
         player.name(originalName);
+    }
+
+    public void save() {
+
     }
 }
