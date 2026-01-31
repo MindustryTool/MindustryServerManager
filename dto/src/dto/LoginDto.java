@@ -10,7 +10,7 @@ import lombok.experimental.Accessors;
 @Accessors(chain = true)
 public class LoginDto {
     String uuid;
-    Boolean isAdmin;
+    Boolean isAdmin = false;
     String name;
     String loginLink;
     JsonNode stats = new ObjectMapper().createObjectNode();

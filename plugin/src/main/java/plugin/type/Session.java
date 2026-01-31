@@ -38,6 +38,7 @@ public class Session {
     public void setAdmin(boolean isAdmin) {
         player.admin = isAdmin;
         PlayerInfo target = Vars.netServer.admins.getInfoOptional(player.uuid());
+
         if (target != null) {
             Player playert = Groups.player.find(p -> p.getInfo() == target);
 
