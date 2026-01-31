@@ -106,6 +106,28 @@ public class ApiGateway {
         });
     }
 
+    public static TranslationDto translate(Locale targetLanguage, String text) {
+        var languageCode = targetLanguage.getLanguage();
+
+        if (languageCode == null || languageCode.isEmpty()) {
+            languageCode = "en";
+        }
+
+        HashMap<String, Object> body = new HashMap<>();
+
+        body.put("q", text);
+        body.put("source", "auto");
+        body.put("target", languageCode);
+
+        var result = HttpUtils
+                .send(HttpUtils
+                        .post("https://api.mindustry-tool.com/api/v4/libre")
+                        .header("Content-Type", "application/json")//
+                        .content(JsonUtils.toJsonString(body)), 10000, TranslationDto.class);
+
+        return result;
+    }
+
     public static String translate(String text, Locale targetLanguage) {
         var languageCode = targetLanguage.getLanguage();
 
@@ -121,18 +143,8 @@ public class ApiGateway {
             return cached;
         }
 
-        HashMap<String, Object> body = new HashMap<>();
-
-        body.put("q", text);
-        body.put("source", "auto");
-        body.put("target", languageCode);
-
         try {
-            var result = HttpUtils
-                    .send(HttpUtils
-                            .post("https://api.mindustry-tool.com/api/v4/libre")
-                            .header("Content-Type", "application/json")//
-                            .content(JsonUtils.toJsonString(body)), 10000, TranslationDto.class);
+            var result = translate(targetLanguage, text);
 
             translationCache.put(cacheKey, result.getTranslatedText());
 

@@ -1,8 +1,5 @@
 package plugin.handler;
 
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -44,19 +41,12 @@ import dto.ServerDto;
 import dto.ServerStatus;
 import mindustry.net.Administration.PlayerInfo;
 import mindustry.ui.dialogs.LanguageDialog;
-import java.time.Duration;
 import java.time.Instant;
 
 public class EventHandler {
 
     private static final List<ServerCore> serverCores = new ArrayList<>();
-
     private static List<ServerDto> servers = new ArrayList<>();
-
-    private static Cache<String, String> translationCache = Caffeine.newBuilder()
-            .expireAfterAccess(Duration.ofMinutes(2))
-            .maximumSize(1000)
-            .build();
 
     public static void init() {
         Log.info("Setup event handler");
@@ -87,9 +77,6 @@ public class EventHandler {
     }
 
     public static void unload() {
-        translationCache.invalidateAll();
-        translationCache = null;
-
         Log.info("Event handler unloaded");
     }
 
@@ -298,12 +285,15 @@ public class EventHandler {
         ServerController.backgroundTask("Chat Event", () -> {
             try {
                 Utils.forEachPlayerLocale((locale, ps) -> {
-                    String translatedMessage = translationCache.get(locale + message,
-                            _ignore -> ApiGateway.translate(message, locale));
+                    var result = ApiGateway.translate(locale, message);
+
+                    if (result.getDetectedLanguage().getLanguage().equalsIgnoreCase(locale.getLanguage())) {
+                        return;
+                    }
 
                     String translatedChat = "[sky][" + LanguageDialog.getDisplayName(locale) + "][] "
                             + player.name + "[]: "
-                            + translatedMessage;
+                            + result.getTranslatedText();
 
                     for (var p : ps) {
                         if (p.id == player.id) {
