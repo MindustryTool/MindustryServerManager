@@ -162,10 +162,10 @@ public class ServerController extends Plugin implements MindustryToolPlugin {
     private static void sendTips() {
         Seq<Func<Locale, String>> tips = new Seq<>();
 
-        tips.add((locale) -> ApiGateway.translate("Powered by `MindustryTool`", locale));
-        tips.add((locale) -> ApiGateway.translate("Use `/discord` to join our `Discord` server", locale));
-        tips.add((locale) -> ApiGateway.translate("Use `/vnw` to skip a wave", locale));
-        tips.add((locale) -> ApiGateway.translate("Use `/rtv` to change map", locale));
+        tips.add((locale) -> ApiGateway.translate("Powered by 'MindustryTool'", locale));
+        tips.add((locale) -> ApiGateway.translate("Use '/discord' to join our Discord server", locale));
+        tips.add((locale) -> ApiGateway.translate("Use '/vnw' to skip a wave", locale));
+        tips.add((locale) -> ApiGateway.translate("Use '/rtv' to change map", locale));
 
         var tip = tips.random();
 
