@@ -47,6 +47,10 @@ public class Session {
         Core.app.post(() -> {
             player.admin = isAdmin;
 
+            if (isAdmin) {
+                Call.sendMessage("[accent]An admin logged in:[] " + player.name);
+            }
+
             PlayerInfo target = Vars.netServer.admins.getInfoOptional(player.uuid());
 
             if (target != null) {
@@ -57,6 +61,9 @@ public class Session {
                 } else {
                     Vars.netServer.admins.unAdminPlayer(target.id);
                 }
+            } else {
+                player.admin = false;
+                Log.info("Player @ is no longer an admin", player.name);
             }
         });
     }
