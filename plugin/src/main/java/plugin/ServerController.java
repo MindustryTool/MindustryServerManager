@@ -11,6 +11,7 @@ import org.pf4j.Plugin;
 import arc.util.*;
 import mindustry.Vars;
 import mindustry.core.GameState.State;
+import mindustry.gen.Call;
 import mindustry.gen.Groups;
 import plugin.handler.ApiGateway;
 import plugin.handler.ClientCommandHandler;
@@ -89,6 +90,8 @@ public class ServerController extends Plugin implements MindustryToolPlugin {
                 ApiGateway.requestConnection();
             }
         }, 10, TimeUnit.SECONDS);
+
+        Call.sendMessage("[scarlet]Server controller restarted");
 
         Log.info("Server controller initialized.");
     }
