@@ -14,6 +14,7 @@ import plugin.commands.PluginCommand;
 import plugin.commands.client.HubCommand;
 import plugin.commands.client.JsCommand;
 import plugin.commands.client.LoginCommand;
+import plugin.commands.client.MeCommand;
 import plugin.commands.client.PlayerInfoCommand;
 import plugin.commands.client.RedirectCommand;
 import plugin.commands.client.RtvCommand;
@@ -39,6 +40,7 @@ public class ClientCommandHandler {
         commands.add(new VnwCommand());
         commands.add(new RedirectCommand());
         commands.add(new PlayerInfoCommand());
+        commands.add(new MeCommand());
 
         for (PluginCommand command : commands) {
             command.register(handler, true);
