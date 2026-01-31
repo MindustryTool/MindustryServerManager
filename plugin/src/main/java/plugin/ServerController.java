@@ -48,20 +48,25 @@ public class ServerController extends Plugin implements MindustryToolPlugin {
 
     @Override
     public void init() {
-        HttpServer.init();
-        Workflow.init();
-        EventHandler.init();
-        ApiGateway.init();
-        PluginMenu.init();
-        SessionHandler.init();
-        SnapshotHandler.init();
+        try {
+            HttpServer.init();
+            Workflow.init();
+            EventHandler.init();
+            ApiGateway.init();
+            PluginMenu.init();
+            SessionHandler.init();
+            SnapshotHandler.init();
 
-        BACKGROUND_SCHEDULER.schedule(ServerController::autoHost, 30, TimeUnit.SECONDS);
-        BACKGROUND_SCHEDULER.schedule(ServerController::autoPause, 10, TimeUnit.SECONDS);
-        BACKGROUND_SCHEDULER.scheduleWithFixedDelay(ServerController::sendTips, 0, 1, TimeUnit.MINUTES);
+            BACKGROUND_SCHEDULER.schedule(ServerController::autoHost, 30, TimeUnit.SECONDS);
+            BACKGROUND_SCHEDULER.schedule(ServerController::autoPause, 10, TimeUnit.SECONDS);
+            BACKGROUND_SCHEDULER.scheduleWithFixedDelay(ServerController::sendTips, 0, 1, TimeUnit.MINUTES);
 
-        Call.sendMessage("[scarlet]Server controller restarted");
-        Log.info("Server controller initialized.");
+            Call.sendMessage("[scarlet]Server controller restarted");
+            Log.info("Server controller initialized.");
+        } catch (Exception e) {
+            Log.err(e);
+            unload();
+        }
     }
 
     @Override

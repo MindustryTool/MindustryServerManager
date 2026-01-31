@@ -45,10 +45,6 @@ public class HttpServer {
     }
 
     public static void init() {
-        if (app != null) {
-            app.stop();
-        }
-
         ServerController.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(() -> sendStateUpdate(), 0, 30, TimeUnit.SECONDS);
 
         app = Javalin.create(config -> {
