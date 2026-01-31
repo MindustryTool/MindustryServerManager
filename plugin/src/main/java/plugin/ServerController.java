@@ -58,7 +58,7 @@ public class ServerController extends Plugin implements MindustryToolPlugin {
 
         BACKGROUND_SCHEDULER.schedule(ServerController::autoHost, 30, TimeUnit.SECONDS);
         BACKGROUND_SCHEDULER.schedule(ServerController::autoPause, 10, TimeUnit.SECONDS);
-        BACKGROUND_SCHEDULER.schedule(ServerController::sendTips, 1, TimeUnit.MINUTES);
+        BACKGROUND_SCHEDULER.scheduleWithFixedDelay(ServerController::sendTips, 0, 1, TimeUnit.MINUTES);
 
         Call.sendMessage("[scarlet]Server controller restarted");
         Log.info("Server controller initialized.");
