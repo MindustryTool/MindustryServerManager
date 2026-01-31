@@ -25,7 +25,10 @@ public class SessionHandler {
     }
 
     public static void init() {
-        Groups.player.each(SessionHandler::put);
+        Groups.player.each(p -> {
+            Log.info(p);
+            put(p);
+        });
 
         PluginEvents.on(PlayerKillUnitEvent.class, event -> {
             get(event.getPlayer()).ifPresent(session -> session.addKill(event.getUnit().type, 1));
