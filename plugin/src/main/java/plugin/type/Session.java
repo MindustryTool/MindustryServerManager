@@ -119,7 +119,7 @@ public class Session {
 
         info.append("Player: ").append(player.name)
                 .append("[]\n")
-                .append("Level: ")
+                .append("[sky]Level: ")
                 .append(level)
                 .append(" (")
                 .append(excess)
