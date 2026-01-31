@@ -216,7 +216,7 @@ public class GeneralController {
 
             if (commands != null) {
                 for (String command : commands) {
-                    Log.info("Execute command: " + command);
+                    Log.info("[scarlet]Execute command: " + command);
 
                     ServerCommandHandler.execute(command, response -> {
                         if (response.type == ResponseType.unknownCommand) {
