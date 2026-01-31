@@ -113,13 +113,12 @@ public class Session {
     public String info() {
         StringBuilder info = new StringBuilder();
         long exp = getExp();
-
-        info.append("Player: ").append(player.name).append("\n");
-
         int level = ExpUtils.levelFromTotalExp(exp);
         long excess = ExpUtils.excessExp(exp);
 
-        info.append("[]Level: ")
+        info.append("Player: ").append(player.name)
+                .append("[]\n")
+                .append("Level: ")
                 .append(level)
                 .append(" (")
                 .append(excess)
