@@ -107,7 +107,7 @@ public class Session {
         StringBuilder info = new StringBuilder();
         long exp = getExp();
 
-        info.append("Player: ").append(player.name).append("\n");
+        info.append("Player: ").append(player.name).append("[]\n");
 
         info.append("Level: ").append(ExpUtils.levelFromTotalExp(exp))
                 .append(" (")
@@ -115,7 +115,7 @@ public class Session {
                 .append("/")
                 .append(ExpUtils.expCapOfLevel(ExpUtils.levelFromTotalExp(exp)))
                 .append(")")
-                .append("\n");
+                .append("[]\n");
 
         for (var entry : data.kills.entrySet()) {
             var unit = Vars.content.unit(entry.getKey());
