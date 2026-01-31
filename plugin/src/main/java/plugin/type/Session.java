@@ -109,7 +109,7 @@ public class Session {
         StringBuilder info = new StringBuilder();
         long exp = getExp();
 
-        info.append("Player: ").append(player.name).append("[]\n");
+        info.append("Player: ").append(player.name).append("[white]\n");
 
         info.append("Level: ").append(ExpUtils.levelFromTotalExp(exp))
                 .append(" (")
