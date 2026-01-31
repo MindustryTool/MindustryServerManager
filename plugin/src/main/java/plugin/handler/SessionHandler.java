@@ -25,9 +25,11 @@ public class SessionHandler {
     }
 
     public static void init() {
-        Groups.player.each(p -> {
-            Log.info(p);
-            put(p);
+        Core.app.post(() -> {
+            Groups.player.each(p -> {
+                Log.info(p);
+                put(p);
+            });
         });
 
         PluginEvents.on(PlayerKillUnitEvent.class, event -> {

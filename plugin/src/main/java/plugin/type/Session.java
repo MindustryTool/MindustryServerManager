@@ -59,9 +59,9 @@ public class Session {
 
         if (level != currentLevel) {
             if (currentLevel != 0) {
-                var oldLevel = currentLevel;
-                var newLevel = level;
                 ServerController.backgroundTask("Update level", () -> {
+                    var oldLevel = currentLevel;
+                    var newLevel = level;
                     String message = ApiGateway.translate("Level up", locale);
 
                     Call.sendMessage(
