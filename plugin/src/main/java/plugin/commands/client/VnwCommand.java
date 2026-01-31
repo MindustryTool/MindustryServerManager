@@ -14,7 +14,7 @@ import plugin.handler.SessionHandler;
 
 public class VnwCommand extends PluginCommand {
     private static boolean isPreparingForNewWave = false;
-    private static short waveVoted = 0;
+    private static short waveVoted = 1;
 
     private Param numberParam;
 
@@ -46,6 +46,9 @@ public class VnwCommand extends PluginCommand {
                 if (player.admin) {
                     if (Strings.canParseInt(arg)) {
                         waveVoted = (short) Strings.parseInt(arg);
+                        if (waveVoted <= 0){
+                            waveVoted = 1;
+                        }
                     } else {
                         player.sendMessage("Please select number of wave want to skip");
                         return;
