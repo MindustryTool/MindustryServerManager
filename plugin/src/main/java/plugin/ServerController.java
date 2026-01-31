@@ -166,6 +166,7 @@ public class ServerController extends Plugin implements MindustryToolPlugin {
         tips.add((locale) -> ApiGateway.translate("Use '/discord' to join our Discord server", locale));
         tips.add((locale) -> ApiGateway.translate("Use '/vnw' to skip a wave", locale));
         tips.add((locale) -> ApiGateway.translate("Use '/rtv' to change map", locale));
+        tips.add((locale) -> ApiGateway.translate("Use '/me' to see your stats", locale));
 
         var tip = tips.random();
 
