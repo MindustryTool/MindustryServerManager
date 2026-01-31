@@ -58,10 +58,11 @@ public class Session {
                 if (currentLevel != 0) {
                     String message = ApiGateway.translate("Level up", locale);
 
-                    player.name(getPlayerName(player, level));
                     Call.sendMessage(
                             player.name + " [green]" + message + Strings.format(" @ => @", currentLevel, level));
                 }
+    
+                player.name(getPlayerName(player, level));
                 currentLevel = level;
             });
         }
