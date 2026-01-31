@@ -25,19 +25,14 @@ public class SessionHandler {
     }
 
     public static void init() {
-        Core.app.post(() -> {
-            Groups.player.each(p -> {
-                Log.info(p);
-                put(p);
-            });
-        });
+        Core.app.post(() -> Groups.player.each(SessionHandler::put));
+
+        ServerController.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(SessionHandler::create, 10, 10, TimeUnit.SECONDS);
+        ServerController.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(SessionHandler::update, 0, 10, TimeUnit.SECONDS);
 
         PluginEvents.on(PlayerKillUnitEvent.class, event -> {
             get(event.getPlayer()).ifPresent(session -> session.addKill(event.getUnit().type, 1));
         });
-
-        ServerController.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(SessionHandler::create, 10, 10, TimeUnit.SECONDS);
-        ServerController.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(SessionHandler::update, 0, 10, TimeUnit.SECONDS);
     }
 
     private static void create() {
