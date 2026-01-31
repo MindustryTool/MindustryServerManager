@@ -158,12 +158,12 @@ public abstract class PluginCommand {
         public void setValue(String value) {
             this.value = value;
 
-            if (type == ParamType.Optional) {
-                return;
-            }
-
             if (type == ParamType.Required) {
                 notNull();
+            }
+
+            if (type == ParamType.Optional && value == null) {
+                return;
             }
 
             for (Function<Param, Boolean> validator : validators) {
