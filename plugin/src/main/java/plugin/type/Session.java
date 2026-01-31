@@ -171,7 +171,6 @@ public class Session {
             }
 
             try {
-
                 char icon = Reflect.get(Iconc.class, "unit" + Strings.capitalize(unit.name));
                 info.append("[]").append(icon).append(": ").append(entry.getValue()).append("\n");
             } catch (Exception e) {

@@ -10,8 +10,8 @@ public class GriefMenu extends PluginMenu<Player> {
         this.title = "Grief Report";
 
         if (target == null) {
-            Groups.player.each(p -> {
-                option(p.name, (_p, s) -> new GriefMenu().send(player, s));
+            Groups.player.each(t -> {
+                option(t.name, (_p, s) -> new GriefMenu().send(player, t));
                 row();
             });
 
