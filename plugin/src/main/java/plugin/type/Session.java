@@ -58,18 +58,18 @@ public class Session {
         var level = ExpUtils.levelFromTotalExp(getExp());
 
         if (level != currentLevel) {
-            ServerController.backgroundTask("Update level", () -> {
-                if (currentLevel != 0) {
+            if (currentLevel != 0) {
+                ServerController.backgroundTask("Update level", () -> {
                     String message = ApiGateway.translate("Level up", locale);
 
                     Call.sendMessage(
                             player.name + " [green]" + message + Strings.format(" @ => @", currentLevel, level));
-                }
+                });
+            }
 
-                currentLevel = level;
+            currentLevel = level;
 
-                player.name(getPlayerName(player, level));
-            });
+            player.name(getPlayerName(player, level));
         }
 
     }
