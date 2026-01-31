@@ -15,6 +15,7 @@ import plugin.ServerController;
 import plugin.event.PlayerKillUnitEvent;
 import plugin.type.Session;
 import plugin.type.SessionData;
+import plugin.utils.JsonUtils;
 
 public class SessionHandler {
     private static final HashMap<String, Session> data = new HashMap<>();
@@ -66,7 +67,7 @@ public class SessionHandler {
 
         try {
             if (Core.settings.has(p.uuid())) {
-                pdata = Core.settings.getJson(p.uuid(), SessionData.class, SessionData::new);
+                pdata = JsonUtils.readJsonAsClass(Core.settings.getString(p.uuid()), SessionData.class);
             }
         } catch (Exception e) {
             Log.err("Error while loading session data for player @: @", p.name, e);
@@ -77,7 +78,7 @@ public class SessionHandler {
 
     public static void writeSessionData(Player p, SessionData pdata) {
         try {
-            Core.settings.putJson(p.uuid(), pdata);
+            Core.settings.put(p.uuid(), JsonUtils.toJsonString(pdata));
         } catch (Exception e) {
             Log.err("Error while saving session data for player @: @", p.name, e);
         }
