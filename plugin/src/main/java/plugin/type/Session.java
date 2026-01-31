@@ -3,6 +3,7 @@ package plugin.type;
 import java.time.Instant;
 import java.util.Locale;
 
+import arc.Core;
 import arc.util.Log;
 import arc.util.Reflect;
 import arc.util.Strings;
@@ -40,18 +41,21 @@ public class Session {
     }
 
     public void setAdmin(boolean isAdmin) {
-        player.admin = isAdmin;
-        PlayerInfo target = Vars.netServer.admins.getInfoOptional(player.uuid());
+        Core.app.post(() -> {
+            player.admin = isAdmin;
 
-        if (target != null) {
-            Player playert = Groups.player.find(p -> p.getInfo() == target);
+            PlayerInfo target = Vars.netServer.admins.getInfoOptional(player.uuid());
 
-            if (isAdmin) {
-                Vars.netServer.admins.adminPlayer(target.id, playert == null ? target.adminUsid : playert.usid());
-            } else {
-                Vars.netServer.admins.unAdminPlayer(target.id);
+            if (target != null) {
+                Player playert = Groups.player.find(p -> p.getInfo() == target);
+
+                if (isAdmin) {
+                    Vars.netServer.admins.adminPlayer(target.id, playert == null ? target.adminUsid : playert.usid());
+                } else {
+                    Vars.netServer.admins.unAdminPlayer(target.id);
+                }
             }
-        }
+        });
     }
 
     public void update() {
