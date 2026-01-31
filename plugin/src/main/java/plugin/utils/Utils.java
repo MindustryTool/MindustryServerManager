@@ -253,33 +253,29 @@ public class Utils {
 
         try {
             tempFile.file().createNewFile();
-            boolean saveSuccess = Utils.appPostWithTimeout(() -> {
+            Core.app.post(() -> {
                 try {
                     SaveIO.save(tempFile);
-                    return true;
                 } catch (Exception e) {
                     Log.err("Failed to generate save file", e);
-                    return false;
                 }
-            }, 2000, "Generate save");
+            });
 
-            if (saveSuccess) {
-                HashMap<String, String> body = new HashMap<>();
-                byte[] bytes = tempFile.readBytes();
+            HashMap<String, String> body = new HashMap<>();
+            byte[] bytes = tempFile.readBytes();
 
-                if (bytes.length == 0) {
-                    return new byte[0];
-                }
-
-                body.put("data", Base64.getEncoder().encodeToString(bytes));
-
-                HttpRequest request = HttpUtils
-                        .post("https://api.mindustry-tool.com", "api", "v4", "maps", "image-json")
-                        .header("Content-Type", "application/json")
-                        .content(JsonUtils.toJsonString(body));
-
-                return HttpUtils.send(request, 30000, byte[].class);
+            if (bytes.length == 0) {
+                return new byte[0];
             }
+
+            body.put("data", Base64.getEncoder().encodeToString(bytes));
+
+            HttpRequest request = HttpUtils
+                    .post("https://api.mindustry-tool.com", "api", "v4", "maps", "image-json")
+                    .header("Content-Type", "application/json")
+                    .content(JsonUtils.toJsonString(body));
+
+            return HttpUtils.send(request, 30000, byte[].class);
 
         } catch (Throwable throwable) {
             Log.err(throwable.getMessage());
