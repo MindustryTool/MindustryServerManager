@@ -80,7 +80,7 @@ public class Session {
         boolean hasColor = level > Config.COLOR_NAME_LEVEL || player.admin;
         String playerName = hasColor ? originalName : Strings.stripColors(originalName);
 
-        return "[" + locale.toUpperCase() + "] " + "<" + "[accent]" + level + "[]>" + playerName;
+        return "|" + locale.toUpperCase() + "| " + "<" + "[accent]" + level + "[]>" + playerName;
     }
 
     public void reset() {
