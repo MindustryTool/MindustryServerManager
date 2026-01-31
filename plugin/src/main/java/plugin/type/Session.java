@@ -8,6 +8,7 @@ import arc.util.Log;
 import arc.util.Reflect;
 import arc.util.Strings;
 import mindustry.Vars;
+import mindustry.content.UnitTypes;
 import mindustry.gen.Call;
 import mindustry.gen.Groups;
 import mindustry.gen.Iconc;
@@ -29,6 +30,7 @@ public class Session {
     public boolean votedVNW = false;
     public boolean votedGrief = false;
     public int currentLevel = 0;
+    public Instant lastUpdate = Instant.now();
 
     public Session(Player player, SessionData data) {
         this.player = player;
@@ -60,6 +62,8 @@ public class Session {
     }
 
     public void update() {
+        data.playTime += Instant.now().toEpochMilli() - lastUpdate.toEpochMilli();
+        lastUpdate = Instant.now();
         var level = ExpUtils.levelFromTotalExp(getExp());
 
         if (level != currentLevel) {
@@ -102,11 +106,16 @@ public class Session {
     }
 
     public long getExp() {
+        // Used flare hp as the baseline
+
         long exp = (long) (data.kills.entrySet().stream().mapToDouble(entry -> {
             var unit = Vars.content.unit(entry.getKey());
 
             return unit.health * entry.getValue();
-        }).sum() / 500);
+        }).sum() / UnitTypes.flare.health);
+
+        // Killing 1 flare = 5 seconds of play time
+        exp += data.playTime / UnitTypes.flare.health / 5 / 5;
 
         return exp;
     }
@@ -126,6 +135,20 @@ public class Session {
                 .append("/")
                 .append(ExpUtils.expCapOfLevel(level))
                 .append(")")
+                .append("[]\n");
+
+        // in millis
+        long seconds = data.playTime / 1000;
+        long minutes = seconds / 60;
+        long hours = minutes / 60;
+
+        info.append("[accent]Play Time: ")
+                .append(hours)
+                .append("h ")
+                .append(minutes % 60)
+                .append("m ")
+                .append(seconds % 60)
+                .append("s")
                 .append("[]\n");
 
         for (var entry : data.kills.entrySet()) {
