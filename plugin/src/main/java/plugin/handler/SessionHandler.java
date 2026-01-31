@@ -64,7 +64,7 @@ public class SessionHandler {
     }
 
     public static void put(Player p) {
-        data.putIfAbsent(p.uuid(), new Session(p, readSessionData(p)));
+        data.computeIfAbsent(p.uuid(), (k) -> new Session(p, readSessionData(p)));
     }
 
     public static SessionData readSessionData(Player p) {
