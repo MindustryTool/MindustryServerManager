@@ -34,9 +34,9 @@ public class Session {
         this.locale = Locale.forLanguageTag(player.locale().split("_|-")[0]);
         this.data = data;
 
-        update();
-
         Log.info("Session created for player @: @", player.name, this);
+
+        update();
     }
 
     public void setAdmin(boolean isAdmin) {
