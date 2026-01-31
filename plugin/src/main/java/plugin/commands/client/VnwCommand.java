@@ -14,9 +14,8 @@ import plugin.commands.PluginCommand;
 import plugin.handler.SessionHandler;
 
 public class VnwCommand extends PluginCommand {
-    private static boolean isPreparingForNewWave = false;
     private static int waveVoted = -1;
-    private static ScheduledFuture<?> votingTask;
+    private static ScheduledFuture<?> voteTimeout;
 
     private Param numberParam;
 
@@ -31,62 +30,48 @@ public class VnwCommand extends PluginCommand {
     @Override
     public synchronized void handleClient(Player player) {
         var session = SessionHandler.get(player).orElse(null);
-
-        if (session == null) {
+        if (session == null)
             return;
-        }
 
         if (session.votedVNW) {
-            player.sendMessage("You have Voted already.");
+            player.sendMessage("You already voted.");
             return;
         }
 
-        if (isPreparingForNewWave) {
-            player.sendMessage("Sending waves!");
-            return;
-        }
+        boolean voting = waveVoted != -1;
 
-        boolean isVoting = waveVoted != -1;
+        if (!voting) {
+            waveVoted = numberParam.hasValue() ? numberParam.asInt() : 1;
 
-        if (isVoting == false) {
-            votingTask = ServerController.BACKGROUND_SCHEDULER.schedule(() -> {
+            voteTimeout = ServerController.BACKGROUND_SCHEDULER.schedule(() -> {
                 SessionHandler.each(s -> s.votedVNW = false);
-                Call.sendMessage("[scarlet]Failed to vote for new waves, not enough votes.");
+                Call.sendMessage("[scarlet]Vote failed, not enough votes.");
                 waveVoted = -1;
             }, 60, TimeUnit.SECONDS);
-
-            if (numberParam.hasValue()) {
-                waveVoted = numberParam.asInt();
-            } else {
-                waveVoted = 1;
-            }
         }
 
         session.votedVNW = true;
 
-        int votedCount = SessionHandler.count(p -> p.votedVNW);
+        int voted = SessionHandler.count(s -> s.votedVNW);
+        int required = Mathf.ceil(0.6f * Groups.player.size());
 
-        int requiredCount = Mathf.ceil(0.6f * Groups.player.size());
-
-        if (votedCount < requiredCount) {
+        if (voted < required) {
             Call.sendMessage(Strings.format(
-                    "@[orange] has voted to skip [green]@ waves. [lightgray](@ votes missing)",
+                    "@[orange] voted to send a new wave. [lightgray](@ votes missing)",
                     player.name,
-                    waveVoted,
-                    requiredCount - votedCount));
-        } else {
-            votingTask.cancel(false);
-            Call.sendMessage("[green]Vote for sending a new wave is passed. New wave will be spawned.");
-            SessionHandler.each(s -> s.votedVNW = false);
-            sendWave(waveVoted);
+                    required - voted));
+            return;
         }
+
+        voteTimeout.cancel(false);
+        SessionHandler.each(s -> s.votedVNW = false);
+
+        Call.sendMessage("[green]Vote passed. Sending new wave.");
+        sendWave(waveVoted);
     }
 
     private void sendWave(int wave) {
-        isPreparingForNewWave = true;
-
         if (wave <= 0) {
-            isPreparingForNewWave = false;
             waveVoted = -1;
             return;
         }
