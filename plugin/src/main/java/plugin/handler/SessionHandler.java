@@ -71,6 +71,7 @@ public class SessionHandler {
             }
         } catch (Exception e) {
             Log.err("Error while loading session data for player @: @", p.name, e);
+            Core.settings.remove(p.uuid());
         }
 
         return pdata;
