@@ -24,7 +24,7 @@ public class SessionHandler {
         Groups.player.each(SessionHandler::put);
 
         PluginEvents.on(PlayerKillUnitEvent.class, event -> {
-            get(event.getPlayer()).ifPresent(session -> session.data.addKill(event.getUnitType(), 1));
+            get(event.getPlayer()).ifPresent(session -> session.addKill(event.getUnitType(), 1));
         });
     }
 
