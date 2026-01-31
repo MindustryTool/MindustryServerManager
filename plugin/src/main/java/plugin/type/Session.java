@@ -7,6 +7,7 @@ import arc.util.Log;
 import arc.util.Reflect;
 import arc.util.Strings;
 import mindustry.Vars;
+import mindustry.gen.Call;
 import mindustry.gen.Groups;
 import mindustry.gen.Iconc;
 import mindustry.gen.Player;
@@ -57,7 +58,7 @@ public class Session {
                 String message = ApiGateway.translate("Level up", locale);
 
                 player.name(getPlayerName(player, level));
-                player.sendMessage("[green]" + message + Strings.format(" @ => @", currentLevel, level));
+                Call.sendMessage("[green]" + message + Strings.format(" @ => @", currentLevel, level));
 
                 currentLevel = level;
             });
