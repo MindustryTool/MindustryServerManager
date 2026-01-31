@@ -11,6 +11,7 @@ import mindustry.gen.Groups;
 import mindustry.gen.Player;
 import plugin.ServerControl;
 import plugin.commands.PluginCommand;
+import plugin.commands.client.GriefCommand;
 import plugin.commands.client.HubCommand;
 import plugin.commands.client.JsCommand;
 import plugin.commands.client.LoginCommand;
@@ -41,6 +42,7 @@ public class ClientCommandHandler {
         commands.add(new RedirectCommand());
         commands.add(new PlayerInfoCommand());
         commands.add(new MeCommand());
+        commands.add(new GriefCommand());
 
         for (PluginCommand command : commands) {
             command.register(handler, true);
