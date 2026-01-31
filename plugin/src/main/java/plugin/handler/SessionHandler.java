@@ -1,7 +1,7 @@
 package plugin.handler;
 
-import java.util.HashMap;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 import arc.Core;
@@ -18,15 +18,14 @@ import plugin.type.SessionData;
 import plugin.utils.JsonUtils;
 
 public class SessionHandler {
-    private static final HashMap<String, Session> data = new HashMap<>();
+    private static final ConcurrentHashMap<String, Session> data = new ConcurrentHashMap<>();
 
-    public static HashMap<String, Session> get() {
+    public static ConcurrentHashMap<String, Session> get() {
         return data;
     }
 
     public static void init() {
-        ServerController.BACKGROUND_SCHEDULER.schedule(() -> Groups.player.each(SessionHandler::put), 1,
-                TimeUnit.SECONDS);
+        Groups.player.each(SessionHandler::put);
 
         PluginEvents.on(PlayerKillUnitEvent.class, event -> {
             get(event.getPlayer()).ifPresent(session -> session.addKill(event.getUnit().type, 1));
