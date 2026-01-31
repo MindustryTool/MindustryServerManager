@@ -79,6 +79,7 @@ public class VnwCommand extends PluginCommand {
                                 : "skipping [scarlet]" + waveVoted + "[] waves")
                         + " failed! []Not enough votes.");
                 waveVoted = 0;
+                SessionHandler.each(s -> s.votedVNW = false);
             }, 60, TimeUnit.SECONDS);
 
         if (cur < req)
