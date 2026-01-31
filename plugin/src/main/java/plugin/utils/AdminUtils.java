@@ -4,6 +4,7 @@ import arc.util.Log;
 import dto.LoginDto;
 import mindustry.Vars;
 import mindustry.gen.Groups;
+import mindustry.gen.Iconc;
 import mindustry.gen.Player;
 import mindustry.net.Administration.PlayerInfo;
 
@@ -36,6 +37,7 @@ public class AdminUtils {
 
         if (isLoggedIn) {
             player.sendMessage("Logged in as " + name);
+            player.name(Iconc.left + "[accent]" + Iconc.ok + Iconc.right + "[] " + name);
         } else {
             player.sendMessage("You are not logged in, consider log in via MindustryTool using /login");
         }
