@@ -34,7 +34,12 @@ public class SessionHandler {
             get(event.getPlayer()).ifPresent(session -> session.addKill(event.getUnit().type, 1));
         });
 
+        ServerController.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(SessionHandler::create, 10, 10, TimeUnit.SECONDS);
         ServerController.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(SessionHandler::update, 0, 10, TimeUnit.SECONDS);
+    }
+
+    private static void create() {
+        Groups.player.each(SessionHandler::put);
     }
 
     private static void update() {
@@ -59,7 +64,7 @@ public class SessionHandler {
     }
 
     public static void put(Player p) {
-        data.put(p.uuid(), new Session(p, readSessionData(p)));
+        data.putIfAbsent(p.uuid(), new Session(p, readSessionData(p)));
     }
 
     public static SessionData readSessionData(Player p) {
