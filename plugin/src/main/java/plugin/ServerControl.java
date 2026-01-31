@@ -182,7 +182,7 @@ public class ServerControl extends Plugin implements MindustryToolPlugin {
         backgroundTask("Send tip", () -> {
             Utils.forEachPlayerLocale((locale, players) -> {
                 for (var player : players) {
-                    player.sendMessage("[sky]" + tip.get(locale));
+                    player.sendMessage("\n[sky]" + tip.get(locale) + "[]\n");
                 }
             });
         });
