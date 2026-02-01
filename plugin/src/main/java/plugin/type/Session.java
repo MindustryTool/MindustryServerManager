@@ -163,7 +163,7 @@ public class Session {
                 .append(seconds % 60)
                 .append("s")
                 .append(" (")
-                .append((int) (data.playTime / UnitTypes.flare.health / 5 / 5))
+                .append(playTimeToExp(data.playTime))
                 .append("exp)")
                 .append("[]\n");
 
@@ -183,7 +183,7 @@ public class Session {
                 char icon = Reflect.get(Iconc.class, "unit" + Strings.capitalize(unit.name));
                 info.append("[]").append(icon).append(": ").append(entry.getValue())
                         .append(" (")
-                        .append((int) (unit.health * entry.getValue() / UnitTypes.flare.health))
+                        .append(unitHealthToExp(unit.health * entry.getValue()))
                         .append("exp)")
                         .append("\n");
             } catch (Exception e) {

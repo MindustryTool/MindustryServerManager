@@ -177,14 +177,16 @@ public class ServerControl extends Plugin implements MindustryToolPlugin {
         tips.add((locale) -> ApiGateway.translate("Use '/rtv' to change map", locale));
         tips.add((locale) -> ApiGateway.translate("Use '/me' to see your stats", locale));
         tips.add((locale) -> ApiGateway.translate("Use '/grief' to report a player", locale));
-        tips.add((locale) -> ApiGateway.translate("Use `/website` to visit our website for schematics and maps", locale));
+        tips.add((locale) -> ApiGateway.translate("Use `/website` to visit our website for schematics and maps",
+                locale));
         tips.add((locale) -> ApiGateway.translate("Remember to respect other players", locale));
         tips.add((locale) -> ApiGateway.translate("Remember to dowload and update MindustryTool mod", locale));
-        tips.add((locale) -> ApiGateway.translate("If you find this helpful please give us a star", locale) + " " + Config.GITHUB_URL);
+        tips.add((locale) -> ApiGateway.translate("If you find this helpful please give us a star", locale) + " "
+                + Config.GITHUB_URL);
         tips.add((locale) -> ApiGateway.translate("Be respectful — toxic behavior may lead to punishment", locale));
         tips.add((locale) -> ApiGateway.translate("Report griefers instead of arguing in chat", locale));
         tips.add((locale) -> ApiGateway.translate("Admins are here to help — ask nicely", locale));
-        tips.add((locale) -> ApiGateway.translate("Router chains", locale) + Iconc.blockRouter);
+        tips.add((locale) -> ApiGateway.translate("Router chains", locale) + "  " + Iconc.blockRouter);
         tips.add((locale) -> ApiGateway.translate("Have fun!!!", locale));
         tips.add((locale) -> ApiGateway.translate("The factory must grow!!!", locale));
 
