@@ -27,8 +27,10 @@ public class TrailHandler {
     public static void toogle(Session session) {
         if (playerTrails.contains(session)) {
             playerTrails.remove(session);
+            session.player.sendMessage("[scarlet]Trail disabled");
         } else {
             playerTrails.put(session, trails.first());
+            session.player.sendMessage("[green]Trail enabled");
         }
     }
 
