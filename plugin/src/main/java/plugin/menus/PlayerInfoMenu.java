@@ -10,7 +10,7 @@ public class PlayerInfoMenu extends PluginMenu<Session> {
 
         SessionHandler.each(p -> {
             option(p.player.name, (t, s) -> {
-                caller.player.sendMessage(t.info());
+                caller.player.sendMessage(p.info());
             });
             row();
         });

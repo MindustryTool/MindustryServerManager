@@ -6,7 +6,7 @@ import plugin.type.Session;
 
 public class PlayerInfoCommand extends PluginCommand {
     public PlayerInfoCommand() {
-        setName("playerinfo");
+        setName("pinfo");
         setDescription("Display player info");
         setAdmin(false);
     }

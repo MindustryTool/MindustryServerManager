@@ -19,6 +19,7 @@ import plugin.Config;
 import plugin.ServerControl;
 import plugin.handler.ApiGateway;
 import plugin.utils.ExpUtils;
+import plugin.utils.Utils;
 
 public class Session {
     public final Long joinedAt = Instant.now().toEpochMilli();
@@ -79,10 +80,12 @@ public class Session {
                 var newLevel = level;
 
                 ServerControl.backgroundTask("Update level", () -> {
-                    String message = ApiGateway.translate("Level up", locale);
+                    Utils.forEachPlayerLocale((locale, players) -> {
+                        String message = ApiGateway.translate("Level up", locale);
 
-                    Call.sendMessage(
-                            player.name + " [green]" + message + Strings.format(" @ -> @", oldLevel, newLevel));
+                        players.forEach(player -> player.sendMessage(
+                                player.name + " [green]" + message + Strings.format(" @ -> @", oldLevel, newLevel)));
+                    });
                 });
             }
 
