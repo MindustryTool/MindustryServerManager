@@ -70,7 +70,7 @@ public class ServerControl extends Plugin implements MindustryToolPlugin {
         BACKGROUND_SCHEDULER.schedule(ServerControl::autoPause, 10, TimeUnit.SECONDS);
         BACKGROUND_SCHEDULER.scheduleWithFixedDelay(ServerControl::sendTips, 0, 3, TimeUnit.MINUTES);
 
-        PluginEvents.on(ServerLoadEvent.class, event -> isUnloaded = true);
+        PluginEvents.on(ServerLoadEvent.class, event -> isUnloaded = false);
 
         Call.sendMessage("[scarlet]Server controller restarted");
         Log.info("Server controller initialized.");
@@ -102,6 +102,7 @@ public class ServerControl extends Plugin implements MindustryToolPlugin {
 
     @Override
     public void unload() {
+        Log.info("Unload");
         isUnloaded = true;
 
         ClientCommandHandler.unload();
