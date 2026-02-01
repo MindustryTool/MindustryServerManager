@@ -1,8 +1,8 @@
 package plugin.commands.client;
 
 import mindustry.Vars;
-import mindustry.gen.Player;
 import plugin.commands.PluginCommand;
+import plugin.type.Session;
 
 public class JsCommand extends PluginCommand {
     private Param codeParam;
@@ -15,9 +15,9 @@ public class JsCommand extends PluginCommand {
     }
 
     @Override
-    public void handleClient(Player player) {
+    public void handleClient(Session session) {
         String output = Vars.mods.getScripts().runConsole(codeParam.asString());
-        player.sendMessage("> " + (isError(output) ? "[#ff341c]" + output : output));
+        session.player.sendMessage("> " + (isError(output) ? "[#ff341c]" + output : output));
     }
 
     private boolean isError(String output) {

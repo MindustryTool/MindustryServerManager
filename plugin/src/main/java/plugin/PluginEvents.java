@@ -32,9 +32,7 @@ public class PluginEvents {
     /** Fires an enum trigger. */
     public static <T extends Enum<T>> void fire(Enum<T> type) {
         Seq<Cons<?>> listeners = events.get(type);
-
         try {
-
             if (listeners != null) {
                 int len = listeners.size;
                 Cons[] items = listeners.items;

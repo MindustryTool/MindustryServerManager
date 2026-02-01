@@ -8,7 +8,6 @@ import arc.util.Log;
 import lombok.Getter;
 import mindustry.gen.Call;
 import mindustry.gen.Groups;
-import mindustry.gen.Player;
 import plugin.ServerControl;
 import plugin.commands.PluginCommand;
 import plugin.commands.client.GriefCommand;
@@ -22,6 +21,7 @@ import plugin.commands.client.RtvCommand;
 import plugin.commands.client.ServersCommand;
 import plugin.commands.client.VnwCommand;
 import plugin.menus.GlobalServerListMenu;
+import plugin.type.Session;
 
 public class ClientCommandHandler {
 
@@ -59,17 +59,17 @@ public class ClientCommandHandler {
         Log.info("Client command unloaded");
     }
 
-    public static void onServerChoose(Player player, String id, String name) {
-        player.sendMessage(
+    public static void onServerChoose(Session session, String id, String name) {
+        session.player.sendMessage(
                 String.format("[green]Starting server [white]%s, [white]redirection will happen soon", name));
 
         try {
             ServerControl.backgroundTask("Redirect Server", () -> {
                 var data = ApiGateway.host(id);
-                player.sendMessage("[green]Redirecting");
+                session.player.sendMessage("[green]Redirecting");
                 Call.sendMessage(
                         String.format("%s [green]redirecting to server [white]%s, use [green]/servers[white] to follow",
-                                player.coloredName(), name));
+                                session.player.coloredName(), name));
 
                 String host = "";
                 int port = 6567;
@@ -92,13 +92,13 @@ public class ClientCommandHandler {
                 });
             });
         } catch (Exception e) {
-            player.sendMessage("Error: Can not load server");
+            session.player.sendMessage("Error: Can not load server");
             e.printStackTrace();
         }
     }
 
-    public static void sendRedirectServerList(Player player, int page) {
-        new GlobalServerListMenu().send(player, page);
+    public static void sendRedirectServerList(Session session, int page) {
+        new GlobalServerListMenu().send(session, page);
     }
 
 }

@@ -1,9 +1,9 @@
 package plugin.commands.client;
 
 import mindustry.gen.Call;
-import mindustry.gen.Player;
 import plugin.Config;
 import plugin.commands.PluginCommand;
+import plugin.type.Session;
 
 public class WebsiteCommand extends PluginCommand {
     public WebsiteCommand() {
@@ -13,7 +13,7 @@ public class WebsiteCommand extends PluginCommand {
     }
 
     @Override
-    public void handleClient(Player player) {
-        Call.openURI(player.con, Config.MINDUSTRY_TOOL_URL);
+    public void handleClient(Session session) {
+        Call.openURI(session.player.con, Config.MINDUSTRY_TOOL_URL);
     }
 }

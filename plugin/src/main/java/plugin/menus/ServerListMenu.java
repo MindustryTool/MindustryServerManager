@@ -2,10 +2,10 @@ package plugin.menus;
 
 import arc.util.Log;
 import mindustry.gen.Call;
-import mindustry.gen.Player;
 import plugin.Config;
 import plugin.handler.ApiGateway;
 import plugin.type.PaginationRequest;
+import plugin.type.Session;
 import plugin.utils.ServerUtils;
 import dto.ServerDto;
 
@@ -14,7 +14,7 @@ import java.util.List;
 
 public class ServerListMenu extends PluginMenu<Integer> {
     @Override
-    public void build(Player player, Integer page) {
+    public void build(Session session, Integer page) {
         try {
             int size = 5;
 
@@ -34,32 +34,32 @@ public class ServerListMenu extends PluginMenu<Integer> {
 
                 if (server.getMapName() == null) {
                     option(String.format("[yellow]%s", server.getName()),
-                            (p, s) -> ServerUtils.redirect(p, server));
+                            (p, s) -> ServerUtils.redirect(p.player, server));
                     option("[scarlet]Server offline.",
-                            (p, s) -> ServerUtils.redirect(p, server));
+                            (p, s) -> ServerUtils.redirect(p.player, server));
                 } else {
                     option(server.getName(),
-                            (p, s) -> ServerUtils.redirect(p, server));
+                            (p, s) -> ServerUtils.redirect(p.player, server));
                     option(String.format("[lime]Players:[] %d", server.getPlayers()),
-                            (p, s) -> ServerUtils.redirect(p, server));
+                            (p, s) -> ServerUtils.redirect(p.player, server));
 
                     row();
                     option(String.format("[cyan]Gamemode:[] %s", server.getMode().toLowerCase()),
-                            (p, s) -> ServerUtils.redirect(p, server));
+                            (p, s) -> ServerUtils.redirect(p.player, server));
                     option(String.format("[blue]Map:[] %s", server.getMapName()),
-                            (p, s) -> ServerUtils.redirect(p, server));
+                            (p, s) -> ServerUtils.redirect(p.player, server));
                 }
 
                 if (server.getMods() != null && !server.getMods().isEmpty()) {
                     row();
                     option(String.format("[purple]Mods:[] %s", String.join(", ", mods)),
-                            (p, s) -> ServerUtils.redirect(p, server));
+                            (p, s) -> ServerUtils.redirect(p.player, server));
                 }
 
                 if (server.getDescription() != null && !server.getDescription().trim().isEmpty()) {
                     row();
                     option(String.format("[grey]%s", server.getDescription()),
-                            (p, s) -> ServerUtils.redirect(p, server));
+                            (p, s) -> ServerUtils.redirect(p.player, server));
                 }
 
                 row();
@@ -72,7 +72,7 @@ public class ServerListMenu extends PluginMenu<Integer> {
             } else {
                 option("First page", (p, s) -> {
                     new ServerListMenu().send(p, s);
-                    Call.infoToast(p.con, "Please don't click there", 10f);
+                    Call.infoToast(p.player.con, "Please don't click there", 10f);
                 });
             }
 
@@ -81,7 +81,7 @@ public class ServerListMenu extends PluginMenu<Integer> {
             } else {
                 option("No more", (p, s) -> {
                     new ServerListMenu().send(p, s);
-                    Call.infoToast(p.con, "Please don't click there", 10f);
+                    Call.infoToast(p.player.con, "Please don't click there", 10f);
                 });
             }
 

@@ -1,9 +1,9 @@
 package plugin.commands.client;
 
-import mindustry.gen.Player;
 import plugin.commands.PluginCommand;
 import plugin.handler.VoteHandler;
 import plugin.menus.RtvMenu;
+import plugin.type.Session;
 
 public class RtvCommand extends PluginCommand {
     Param followParam;
@@ -17,11 +17,11 @@ public class RtvCommand extends PluginCommand {
     }
 
     @Override
-    public void handleClient(Player player) {
+    public void handleClient(Session session) {
         if (followParam.hasValue() && followParam.asString().equalsIgnoreCase("yes")) {
-            VoteHandler.handleVote(player);
+            VoteHandler.handleVote(session.player);
         } else {
-            new RtvMenu().send(player, 0);
+            new RtvMenu().send(session, 0);
         }
     }
 }

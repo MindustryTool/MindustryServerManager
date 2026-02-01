@@ -3,7 +3,6 @@ package plugin.utils;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
@@ -188,11 +187,10 @@ public class Utils {
         ArrayList<Player> players = new ArrayList<Player>();
         Groups.player.forEach(players::add);
 
-        List<PlayerDto> p = players.stream()//
-                .map(player -> PlayerDto.from(player)//
-                        .setJoinedAt(SessionHandler.contains(player) //
-                                ? SessionHandler.get(player).get().joinedAt
-                                : Instant.now().toEpochMilli()))
+        List<PlayerDto> p = SessionHandler.get()
+                .values()
+                .stream()
+                .map(session -> PlayerDto.from(session.player).setJoinedAt(session.joinedAt))
                 .collect(Collectors.toList());
 
         int kicks = Vars.netServer.admins.kickedIPs

@@ -1,8 +1,8 @@
 package plugin.commands.client;
 
-import mindustry.gen.Player;
 import plugin.commands.PluginCommand;
 import plugin.menus.PlayerInfoMenu;
+import plugin.type.Session;
 
 public class PlayerInfoCommand extends PluginCommand {
     public PlayerInfoCommand() {
@@ -12,7 +12,7 @@ public class PlayerInfoCommand extends PluginCommand {
     }
 
     @Override
-    public void handleClient(Player player) {
-        new PlayerInfoMenu().send(player, player);
+    public void handleClient(Session session) {
+        new PlayerInfoMenu().send(session, session);
     }
 }

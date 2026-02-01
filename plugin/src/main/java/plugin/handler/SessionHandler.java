@@ -15,6 +15,8 @@ import mindustry.gen.Player;
 import plugin.PluginEvents;
 import plugin.ServerControl;
 import plugin.event.PlayerKillUnitEvent;
+import plugin.event.SessionCreatedEvent;
+import plugin.event.SessionRemovedEvent;
 import plugin.type.Session;
 import plugin.type.SessionData;
 import plugin.utils.JsonUtils;
@@ -33,14 +35,14 @@ public class SessionHandler {
         ServerControl.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(SessionHandler::update, 0, 1, TimeUnit.SECONDS);
 
         PluginEvents.on(PlayerKillUnitEvent.class, event -> {
-            get(event.getPlayer()).ifPresent(session -> session.addKill(event.getUnit().type, 1));
+            var session = get(event.getPlayer());
+            session.addKill(event.getUnit().type, 1);
         });
 
         PluginEvents.on(PlayerLeave.class, event -> {
-            get(event.player).ifPresent(session -> {
-                writeSessionData(session.player, session.data);
-                remove(session.player);
-            });
+            var session = get(event.player);
+            writeSessionData(session.player, session.data);
+            remove(session.player);
         });
 
         PluginEvents.on(PlayerJoin.class, event -> {
@@ -69,12 +71,26 @@ public class SessionHandler {
         return Optional.ofNullable(find(p -> p.player.uuid().equals(uuid)));
     }
 
-    public static Optional<Session> get(Player p) {
-        return Optional.ofNullable(data.get(p.uuid()));
+    public static Session get(Player p) {
+        var session = data.get(p.uuid());
+
+        if (session == null) {
+            Log.err("Session can not be null");
+            Thread.dumpStack();
+            session = new Session(p, new SessionData());
+        }
+
+        return session;
     }
 
     public static void put(Player p) {
-        data.computeIfAbsent(p.uuid(), (k) -> new Session(p, readSessionData(p)));
+        data.computeIfAbsent(p.uuid(), (k) -> {
+            var session = new Session(p, readSessionData(p));
+
+            PluginEvents.fire(new SessionCreatedEvent(session));
+
+            return session;
+        });
     }
 
     public static SessionData readSessionData(Player p) {
@@ -101,7 +117,10 @@ public class SessionHandler {
     }
 
     public static void remove(Player p) {
-        data.remove(p.uuid());
+        var previous = data.remove(p.uuid());
+        if (previous != null) {
+            PluginEvents.fire(new SessionRemovedEvent(previous));
+        }
     }
 
     public static boolean contains(Player p) {

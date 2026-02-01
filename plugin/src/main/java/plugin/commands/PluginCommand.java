@@ -9,6 +9,8 @@ import lombok.Getter;
 import lombok.Setter;
 import mindustry.gen.Player;
 import plugin.ServerControl;
+import plugin.handler.SessionHandler;
+import plugin.type.Session;
 
 public abstract class PluginCommand {
     @Getter
@@ -21,7 +23,7 @@ public abstract class PluginCommand {
 
     private Seq<Param> params = new Seq<>();
 
-    private Player player;
+    private Session session;
 
     @Setter
     @Getter
@@ -58,13 +60,13 @@ public abstract class PluginCommand {
         return p;
     }
 
-    protected PluginCommand newInstance(Player player) {
+    protected PluginCommand newInstance(Session session) {
         try {
             PluginCommand copy = this.getClass().getDeclaredConstructor().newInstance();
 
             copy.name = this.name;
             copy.description = this.description;
-            copy.player = player;
+            copy.session = session;
 
             for (Param p : this.params) {
                 copy.params.add(p.copy());
@@ -99,10 +101,12 @@ public abstract class PluginCommand {
                         return;
                     }
 
+                    var session = SessionHandler.get(player);
+
                     wrapper(() -> {
-                        this.newInstance((Player) player)
+                        this.newInstance(session)
                                 .handleParams(args)
-                                .handleClient((Player) player);
+                                .handleClient(session);
                     });
                 } else {
                     throw new IllegalArgumentException("Player expected");
@@ -123,18 +127,18 @@ public abstract class PluginCommand {
         try {
             ServerControl.BACKGROUND_TASK_EXECUTOR.submit(runnable);
         } catch (ParamException e) {
-            if (player != null) {
-                player.sendMessage(e.getMessage());
+            if (session != null) {
+                session.player.sendMessage(e.getMessage());
             }
         } catch (Exception e) {
-            if (player != null) {
-                player.sendMessage("Error");
+            if (session != null) {
+                session.player.sendMessage("Error");
             }
             Log.err("Failed to execute command " + name, e);
         }
     }
 
-    public void handleClient(Player player) {
+    public void handleClient(Session session) {
         throw new UnsupportedOperationException("run");
     }
 

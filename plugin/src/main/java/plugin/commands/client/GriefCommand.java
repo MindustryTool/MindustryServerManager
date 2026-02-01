@@ -1,8 +1,8 @@
 package plugin.commands.client;
 
-import mindustry.gen.Player;
 import plugin.commands.PluginCommand;
 import plugin.menus.GriefMenu;
+import plugin.type.Session;
 import plugin.utils.AdminUtils;
 
 public class GriefCommand extends PluginCommand {
@@ -14,12 +14,12 @@ public class GriefCommand extends PluginCommand {
     }
 
     @Override
-    public void handleClient(Player player) {
+    public void handleClient(Session session) {
         if (AdminUtils.isGriefVoting()) {
-            AdminUtils.voteGrief(player);
+            AdminUtils.voteGrief(session);
             return;
         }
 
-        new GriefMenu().send(player, null);
+        new GriefMenu().send(session, null);
     }
 }

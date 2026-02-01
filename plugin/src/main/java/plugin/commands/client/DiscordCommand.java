@@ -1,9 +1,9 @@
 package plugin.commands.client;
 
 import mindustry.gen.Call;
-import mindustry.gen.Player;
 import plugin.Config;
 import plugin.commands.PluginCommand;
+import plugin.type.Session;
 
 public class DiscordCommand extends PluginCommand {
     public DiscordCommand() {
@@ -13,7 +13,7 @@ public class DiscordCommand extends PluginCommand {
     }
 
     @Override
-    public void handleClient(Player player) {
-        Call.openURI(player.con, Config.DISCORD_INVITE_URL);
+    public void handleClient(Session session) {
+        Call.openURI(session.player.con, Config.DISCORD_INVITE_URL);
     }
 }

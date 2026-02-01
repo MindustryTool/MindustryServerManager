@@ -1,8 +1,8 @@
 package plugin.commands.client;
 
-import mindustry.gen.Player;
 import plugin.commands.PluginCommand;
 import plugin.menus.ServerListMenu;
+import plugin.type.Session;
 
 public class ServersCommand extends PluginCommand {
     public ServersCommand() {
@@ -13,7 +13,7 @@ public class ServersCommand extends PluginCommand {
     }
 
     @Override
-    public void handleClient(Player player) {
-        new ServerListMenu().send(player, 0);
+    public void handleClient(Session session) {
+        new ServerListMenu().send(session, 0);
     }
 }

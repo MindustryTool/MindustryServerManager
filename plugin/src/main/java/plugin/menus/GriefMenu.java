@@ -1,23 +1,23 @@
 package plugin.menus;
 
-import mindustry.gen.Groups;
-import mindustry.gen.Player;
+import plugin.handler.SessionHandler;
+import plugin.type.Session;
 import plugin.utils.AdminUtils;
 
-public class GriefMenu extends PluginMenu<Player> {
+public class GriefMenu extends PluginMenu<Session> {
     @Override
-    public void build(Player player, Player target) {
+    public void build(Session session, Session target) {
         this.title = "Grief Report";
 
         if (target == null) {
-            Groups.player.each(t -> {
-                option(t.name, (_p, s) -> new GriefMenu().send(player, t));
+            SessionHandler.each(t -> {
+                option(t.player.name, (_p, s) -> new GriefMenu().send(session, t));
                 row();
             });
 
             text("[red]Close");
         } else {
-            option("Report", (p, s) -> AdminUtils.reportGrief(player, target));
+            option("Report", (p, s) -> AdminUtils.reportGrief(session, target));
             row();
             text("Cancel");
         }

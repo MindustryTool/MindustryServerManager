@@ -7,7 +7,6 @@ import java.util.concurrent.TimeUnit;
 import dto.ServerDto;
 import dto.ServerStatus;
 import mindustry.Vars;
-import mindustry.game.EventType.PlayerJoin;
 import mindustry.game.EventType.TapEvent;
 import mindustry.game.EventType.WorldLoadEvent;
 import mindustry.game.Team;
@@ -15,6 +14,7 @@ import mindustry.gen.Call;
 import plugin.Config;
 import plugin.PluginEvents;
 import plugin.ServerControl;
+import plugin.event.SessionCreatedEvent;
 import plugin.menus.ServerRedirectMenu;
 import plugin.type.PaginationRequest;
 import plugin.type.ServerCore;
@@ -28,7 +28,7 @@ public class HubHandler {
     public static void init() {
         PluginEvents.on(TapEvent.class, HubHandler::onTap);
         PluginEvents.on(WorldLoadEvent.class, HubHandler::onWorldLoad);
-        PluginEvents.on(PlayerJoin.class, HubHandler::onPlayerJoin);
+        PluginEvents.on(SessionCreatedEvent.class, HubHandler::onSessionCreated);
 
         setupCustomServerDiscovery();
 
@@ -56,12 +56,11 @@ public class HubHandler {
         }
     }
 
-    private static void onPlayerJoin(PlayerJoin event) {
+    private static void onSessionCreated(SessionCreatedEvent event) {
         var serverData = getTopServer();
-        var player = event.player;
 
         if (serverData != null && !serverData.getId().equals(ServerControl.SERVER_ID) && serverData.getPlayers() > 0) {
-            new ServerRedirectMenu().send(player, serverData);
+            new ServerRedirectMenu().send(event.session, serverData);
         }
     }
 

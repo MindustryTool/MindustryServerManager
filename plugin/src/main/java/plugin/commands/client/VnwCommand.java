@@ -8,10 +8,10 @@ import arc.util.Strings;
 import mindustry.Vars;
 import mindustry.gen.Call;
 import mindustry.gen.Groups;
-import mindustry.gen.Player;
 import plugin.ServerControl;
 import plugin.commands.PluginCommand;
 import plugin.handler.SessionHandler;
+import plugin.type.Session;
 
 public class VnwCommand extends PluginCommand {
     private static int waveVoted = -1;
@@ -29,13 +29,9 @@ public class VnwCommand extends PluginCommand {
     }
 
     @Override
-    public synchronized void handleClient(Player player) {
-        var session = SessionHandler.get(player).orElse(null);
-        if (session == null)
-            return;
-
+    public synchronized void handleClient(Session session) {
         if (session.votedVNW) {
-            player.sendMessage("You already voted.");
+            session.player.sendMessage("You already voted.");
             return;
         }
 
@@ -62,7 +58,7 @@ public class VnwCommand extends PluginCommand {
         if (voted < required) {
             Call.sendMessage(Strings.format(
                     "@[orange] voted to send a new wave. [lightgray](@ votes missing)",
-                    player.name,
+                    session.player.name,
                     required - voted));
             return;
         }

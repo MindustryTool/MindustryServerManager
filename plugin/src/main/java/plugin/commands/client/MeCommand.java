@@ -1,8 +1,7 @@
 package plugin.commands.client;
 
-import mindustry.gen.Player;
 import plugin.commands.PluginCommand;
-import plugin.handler.SessionHandler;
+import plugin.type.Session;
 
 public class MeCommand extends PluginCommand {
     public MeCommand() {
@@ -12,7 +11,7 @@ public class MeCommand extends PluginCommand {
     }
 
     @Override
-    public void handleClient(Player player) {
-        SessionHandler.get(player).ifPresent(session -> player.sendMessage(session.info()));
+    public void handleClient(Session session) {
+        session.player.sendMessage(session.info());
     }
 }

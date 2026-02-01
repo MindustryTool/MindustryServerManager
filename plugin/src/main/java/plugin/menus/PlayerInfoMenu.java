@@ -1,21 +1,20 @@
 package plugin.menus;
 
-import mindustry.gen.Groups;
-import mindustry.gen.Player;
 import plugin.handler.SessionHandler;
+import plugin.type.Session;
 
-public class PlayerInfoMenu extends PluginMenu<Player> {
+public class PlayerInfoMenu extends PluginMenu<Session> {
     @Override
-    public void build(Player player, Player caller) {
+    public void build(Session Session, Session caller) {
         this.title = "Servers";
 
-        Groups.player.each(p -> {
-            option(p.name, (_p, s) -> {
-                SessionHandler.get(p).ifPresent(session -> caller.sendMessage(session.info()));
+        SessionHandler.each(p -> {
+            option(p.player.name, (t, s) -> {
+                caller.player.sendMessage(t.info());
             });
             row();
         });
 
-        option("[red]Close", (p, s) -> new ServerListMenu().send(player, 0));
+        option("[red]Close", (p, s) -> new ServerListMenu().send(session, 0));
     }
 }

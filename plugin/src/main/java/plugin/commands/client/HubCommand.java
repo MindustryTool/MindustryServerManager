@@ -1,6 +1,6 @@
 package plugin.commands.client;
 
-import mindustry.gen.Player;
+import plugin.type.Session;
 import plugin.commands.PluginCommand;
 import plugin.menus.HubMenu;
 
@@ -12,7 +12,7 @@ public class HubCommand extends PluginCommand {
     }
 
     @Override
-    public void handleClient(Player player) {
-        new HubMenu().send(player, null);
+    public void handleClient(Session session) {
+        new HubMenu().send(session, null);
     }
 }

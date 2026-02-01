@@ -10,11 +10,13 @@ import arc.util.Log;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import mindustry.game.EventType.MenuOptionChooseEvent;
-import mindustry.game.EventType.PlayerLeave;
 import mindustry.gen.Call;
 import mindustry.gen.Player;
 import plugin.PluginEvents;
 import plugin.ServerControl;
+import plugin.event.SessionRemovedEvent;
+import plugin.handler.SessionHandler;
+import plugin.type.Session;
 
 public abstract class PluginMenu<T> {
     private static final AtomicInteger ID_GEN = new AtomicInteger(1000);
@@ -23,7 +25,7 @@ public abstract class PluginMenu<T> {
 
     public static void init() {
         PluginEvents.on(MenuOptionChooseEvent.class, event -> {
-            var targetMenu = menus.find(m -> m.getMenuId() == event.menuId && m.player == event.player);
+            var targetMenu = menus.find(m -> m.getMenuId() == event.menuId && m.session.player == event.player);
 
             if (targetMenu == null) {
                 return;
@@ -55,7 +57,8 @@ public abstract class PluginMenu<T> {
 
                 synchronized (event.player) {
                     if (selectedOption != null && selectedOption.callback != null) {
-                        selectedOption.callback.accept(event.player, targetMenu.state);
+                        var session = SessionHandler.get(event.player);
+                        selectedOption.callback.accept(session, targetMenu.state);
                         Call.hideFollowUpMenu(event.player.con, targetMenu.getMenuId());
                     }
 
@@ -71,16 +74,16 @@ public abstract class PluginMenu<T> {
             });
         });
 
-        PluginEvents.on(PlayerLeave.class, event -> {
-            menus.removeAll(m -> m.player == event.player);
+        PluginEvents.on(SessionRemovedEvent.class, event -> {
+            menus.removeAll(m -> m.session.player == event.session.player);
         });
 
         ServerControl.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(() -> {
             menus.removeAll(m -> {
                 var delete = Instant.now().isAfter(m.createdAt.plusSeconds(60 * 5));
 
-                if (delete && m.player.con != null && m.player.con.isConnected()) {
-                    Call.hideFollowUpMenu(m.player.con, m.getMenuId());
+                if (delete && m.session.player.con != null && m.session.player.con.isConnected()) {
+                    Call.hideFollowUpMenu(m.session.player.con, m.getMenuId());
                 }
 
                 return delete;
@@ -94,7 +97,7 @@ public abstract class PluginMenu<T> {
 
     public String title = "";
     public String description = "";
-    public Player player = null;
+    public Session session = null;
     public T state = null;
 
     public final Instant createdAt = Instant.now();
@@ -131,7 +134,7 @@ public abstract class PluginMenu<T> {
         options.add(row);
     }
 
-    public abstract void build(Player player, T state);
+    public abstract void build(Session session, T state);
 
     private void show() {
         String[][] optionTexts = new String[options.size][];
@@ -142,31 +145,31 @@ public abstract class PluginMenu<T> {
             optionTexts[i] = op.map(data -> data.getText()).toArray(String.class);
         }
 
-        Call.menu(player.con, getMenuId(), title, description, optionTexts);
+        Call.menu(session.player.con, getMenuId(), title, description, optionTexts);
     }
 
-    public synchronized void send(Player player, T state) {
+    public synchronized void send(Session session, T state) {
         try {
             @SuppressWarnings("unchecked")
             PluginMenu<T> copy = getClass().getDeclaredConstructor().newInstance();
 
             copy.title = title;
             copy.description = description;
-            copy.player = player;
+            copy.session = session;
             copy.state = state;
             copy.options = new Seq<>(new Seq<>());
 
             ServerControl.backgroundTask("Show Menu: " + getMenuId(), () -> {
                 try {
-                    copy.build(player, state);
+                    copy.build(session, state);
                 } catch (Exception e) {
-                    Log.err("Failed to build menu @ for player @ with state @", copy, player, state);
+                    Log.err("Failed to build menu @ for player @ with state @", copy, session, state);
                     return;
                 }
 
                 copy.options.removeAll(op -> op.size == 0);
 
-                var playerMenus = getMenus(player);
+                var playerMenus = getMenus(session.player);
 
                 menus.add(copy);
 
@@ -180,7 +183,7 @@ public abstract class PluginMenu<T> {
     }
 
     public static Seq<PluginMenu<?>> getMenus(Player player) {
-        return menus.select(m -> m.player == player);
+        return menus.select(m -> m.session.player == player);
     }
 
     @Data
@@ -192,6 +195,6 @@ public abstract class PluginMenu<T> {
 
     @FunctionalInterface
     public interface PlayerPressCallback<T> {
-        void accept(Player player, T state);
+        void accept(Session session, T state);
     }
 }

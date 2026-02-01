@@ -4,16 +4,16 @@ import java.util.Locale;
 
 import mindustry.gen.Call;
 import mindustry.gen.Iconc;
-import mindustry.gen.Player;
 import mindustry.maps.Map;
 import plugin.handler.ApiGateway;
 import plugin.handler.MapRating;
+import plugin.type.Session;
 import plugin.utils.Utils;
 
 public class RateMapMenu extends PluginMenu<Map> {
     @Override
-    public void build(Player player, Map map) {
-        Locale locale = Utils.parseLocale(player.locale());
+    public void build(Session session, Map map) {
+        Locale locale = Utils.parseLocale(session.player.locale());
 
         this.title = ApiGateway.translate("Rate last map", locale);
         this.description = map.name();
@@ -23,7 +23,8 @@ public class RateMapMenu extends PluginMenu<Map> {
 
             option(MapRating.getStarDisplay(star), (p, s) -> {
                 MapRating.updateMapRating(s, star);
-                Call.sendMessage(p.name() + " []voted " + star + "[accent]" + Iconc.star + " []on map " + map.name());
+                Call.sendMessage(
+                        p.player.name() + " []voted " + star + "[accent]" + Iconc.star + " []on map " + map.name());
             });
             row();
         }

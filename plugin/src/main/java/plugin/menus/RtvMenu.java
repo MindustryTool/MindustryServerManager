@@ -2,16 +2,16 @@ package plugin.menus;
 
 import arc.struct.Seq;
 import mindustry.gen.Iconc;
-import mindustry.gen.Player;
 import mindustry.maps.Map;
 import plugin.handler.MapRating;
 import plugin.handler.VoteHandler;
+import plugin.type.Session;
 
 public class RtvMenu extends PluginMenu<Integer> {
     private static final int MAPS_PER_PAGE = 7;
 
     @Override
-    public void build(Player player, Integer page) {
+    public void build(Session session, Integer page) {
         Seq<Map> maps = new Seq<>(VoteHandler.getMaps());
 
         maps.sort((a, b) -> Float.compare(MapRating.getAvg(b), MapRating.getAvg(a)));
@@ -35,12 +35,12 @@ public class RtvMenu extends PluginMenu<Integer> {
             float rating = MapRating.getAvg(map);
             String ratingColor = MapRating.avgScoreColor(rating);
 
-            String voted = VoteHandler.isVoted(player, map.file.nameWithoutExtension()) ? "[accent]Voted" : "";
+            String voted = VoteHandler.isVoted(session.player, map.file.nameWithoutExtension()) ? "[accent]Voted" : "";
             String text = String.format("%s%s%.2f [gold]%c [white]%s", voted, ratingColor, rating, Iconc.star,
                     map.name());
 
             option(text, (p, s) -> {
-                VoteHandler.handleVote(player, map);
+                VoteHandler.handleVote(session.player, map);
             });
             row();
         }

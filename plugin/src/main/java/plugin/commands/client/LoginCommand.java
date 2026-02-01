@@ -3,8 +3,8 @@ package plugin.commands.client;
 import arc.util.Log;
 import dto.LoginDto;
 import mindustry.gen.Call;
-import mindustry.gen.Player;
 import plugin.handler.ApiGateway;
+import plugin.type.Session;
 import plugin.commands.PluginCommand;
 
 public class LoginCommand extends PluginCommand {
@@ -16,16 +16,16 @@ public class LoginCommand extends PluginCommand {
     }
 
     @Override
-    public void handleClient(Player player) {
+    public void handleClient(Session session) {
         try {
-            LoginDto login = ApiGateway.login(player);
+            LoginDto login = ApiGateway.login(session.player);
 
             var loginLink = login.getLoginLink();
 
             if (loginLink != null && !loginLink.isEmpty()) {
-                Call.openURI(player.con, loginLink);
+                Call.openURI(session.player.con, loginLink);
             } else {
-                player.sendMessage("Already logged in");
+                session.player.sendMessage("Already logged in");
             }
         } catch (Exception e) {
             Log.err("Failed to login", e);

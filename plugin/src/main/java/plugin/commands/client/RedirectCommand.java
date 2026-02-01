@@ -1,8 +1,8 @@
 package plugin.commands.client;
 
-import mindustry.gen.Player;
 import plugin.commands.PluginCommand;
 import plugin.handler.ClientCommandHandler;
+import plugin.type.Session;
 
 public class RedirectCommand extends PluginCommand {
     public RedirectCommand() {
@@ -11,7 +11,7 @@ public class RedirectCommand extends PluginCommand {
     }
 
     @Override
-    public void handleClient(Player player) {
-        ClientCommandHandler.sendRedirectServerList(player, 0);
+    public void handleClient(Session session) {
+        ClientCommandHandler.sendRedirectServerList(session, 0);
     }
 }

@@ -1,6 +1,5 @@
 package plugin.controller;
 
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -116,13 +115,9 @@ public class GeneralController {
             ArrayList<Player> players = new ArrayList<Player>();
             Groups.player.forEach(players::add);
 
-            List<PlayerDto> result = Utils
-                    .appPostWithTimeout(() -> (players.stream()//
-                            .map(player -> PlayerDto.from(player)//
-                                    .setJoinedAt(SessionHandler.contains(player) //
-                                            ? SessionHandler.get(player).get().joinedAt
-                                            : Instant.now().toEpochMilli()))
-                            .collect(Collectors.toList())), "Get players");
+            List<PlayerDto> result = SessionHandler.get().values().stream()
+                    .map(session -> PlayerDto.from(session.player).setJoinedAt(session.joinedAt))
+                    .collect(Collectors.toList());
 
             ctx.json(result);
         });

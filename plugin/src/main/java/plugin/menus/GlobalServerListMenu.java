@@ -2,16 +2,16 @@ package plugin.menus;
 
 import arc.util.Log;
 import mindustry.gen.Call;
-import mindustry.gen.Player;
 import plugin.handler.ApiGateway;
 import plugin.handler.ClientCommandHandler;
 import plugin.type.PaginationRequest;
+import plugin.type.Session;
 import dto.ServerDto;
 import java.util.List;
 
 public class GlobalServerListMenu extends PluginMenu<Integer> {
     @Override
-    public void build(Player player, Integer page) {
+    public void build(Session session, Integer page) {
         try {
             int size = 8;
             PaginationRequest request = new PaginationRequest().setPage(page).setSize(size);
@@ -70,7 +70,7 @@ public class GlobalServerListMenu extends PluginMenu<Integer> {
             } else {
                 option("First page", (p, s) -> {
                     new GlobalServerListMenu().send(p, s);
-                    Call.infoToast(p.con, "Please don't click there", 10f);
+                    Call.infoToast(p.player.con, "Please don't click there", 10f);
                 });
             }
 
@@ -79,7 +79,7 @@ public class GlobalServerListMenu extends PluginMenu<Integer> {
             } else {
                 option("No more", (p, s) -> {
                     new GlobalServerListMenu().send(p, s);
-                    Call.infoToast(p.con, "Please don't click there", 10f);
+                    Call.infoToast(p.player.con, "Please don't click there", 10f);
                 });
             }
 

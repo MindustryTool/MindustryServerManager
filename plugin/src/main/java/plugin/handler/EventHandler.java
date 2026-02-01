@@ -9,8 +9,6 @@ import mindustry.core.GameState.State;
 import mindustry.game.EventType.GameOverEvent;
 import mindustry.game.EventType.PlayerChatEvent;
 import mindustry.game.EventType.PlayerConnect;
-import mindustry.game.EventType.PlayerJoin;
-import mindustry.game.EventType.PlayerLeave;
 import mindustry.game.EventType.UnitBulletDestroyEvent;
 import mindustry.game.EventType.WorldLoadEndEvent;
 import mindustry.gen.Building;
@@ -21,6 +19,8 @@ import plugin.Config;
 import plugin.PluginEvents;
 import plugin.ServerControl;
 import plugin.event.PlayerKillUnitEvent;
+import plugin.event.SessionCreatedEvent;
+import plugin.event.SessionRemovedEvent;
 import plugin.menus.HubMenu;
 import plugin.menus.RateMapMenu;
 import plugin.menus.WelcomeMenu;
@@ -35,8 +35,8 @@ public class EventHandler {
     public static void init() {
         Log.info("Setup event handler");
 
-        PluginEvents.on(PlayerJoin.class, EventHandler::onPlayerJoin);
-        PluginEvents.on(PlayerLeave.class, EventHandler::onPlayerLeave);
+        PluginEvents.on(SessionCreatedEvent.class, EventHandler::onSessionCreatedEvent);
+        PluginEvents.on(SessionRemovedEvent.class, EventHandler::onRemovedEvent);
         PluginEvents.on(PlayerChatEvent.class, EventHandler::onPlayerChat);
         PluginEvents.on(GameOverEvent.class, EventHandler::onGameOver);
         PluginEvents.on(WorldLoadEndEvent.class, EventHandler::onWorldLoadEnd);
@@ -78,9 +78,7 @@ public class EventHandler {
         var rateMap = Vars.state.map;
 
         if (rateMap != null) {
-            for (var player : Groups.player) {
-                new RateMapMenu().send(player, rateMap);
-            }
+            SessionHandler.each(session -> new RateMapMenu().send(session, rateMap));
         }
     }
 
@@ -160,14 +158,9 @@ public class EventHandler {
         });
     }
 
-    private static void onPlayerLeave(PlayerLeave event) {
+    private static void onRemovedEvent(SessionRemovedEvent event) {
         try {
-            var player = event.player;
-            var request = PlayerDto.from(player)
-                    .setJoinedAt(SessionHandler.contains(player) //
-                            ? SessionHandler.get(player).get().joinedAt
-                            : Instant.now().toEpochMilli());
-
+            var request = PlayerDto.from(event.session.player).setJoinedAt(event.session.joinedAt);
             HttpServer.fire(new ServerEvents.PlayerLeaveEvent(ServerControl.SERVER_ID, request));
         } catch (Throwable e) {
             e.printStackTrace();
@@ -175,11 +168,11 @@ public class EventHandler {
 
         try {
 
-            Player player = event.player;
+            Player player = event.session.player;
 
             VoteHandler.removeVote(player);
 
-            String playerName = event.player != null ? event.player.plainName() : "Unknown";
+            String playerName = player != null ? player.plainName() : "Unknown";
             String chat = Strings.format("@ leaved the server, current players: @", playerName,
                     Math.max(Groups.player.size() - 1, 0));
 
@@ -198,48 +191,48 @@ public class EventHandler {
         }
     }
 
-    private static void onPlayerJoin(PlayerJoin event) {
+    private static void onSessionCreatedEvent(SessionCreatedEvent event) {
         try {
             if (Vars.state.isPaused()) {
                 Vars.state.set(State.playing);
                 Log.info("Player join: unpaused");
             }
 
-            var player = event.player;
+            var session = event.session;
 
             HttpServer.fire(new ServerEvents.PlayerJoinEvent(ServerControl.SERVER_ID,
-                    PlayerDto.from(event.player).setJoinedAt(Instant.now().toEpochMilli())));
+                    PlayerDto.from(session.player).setJoinedAt(Instant.now().toEpochMilli())));
 
-            String playerName = player != null ? player.plainName() : "Unknown";
+            String playerName = session.player != null ? session.player.plainName() : "Unknown";
             String chat = Strings.format("@ joined the server, current players: @", playerName, Groups.player.size());
 
             HttpServer.fire(new ServerEvents.ChatEvent(ServerControl.SERVER_ID, chat));
 
             ServerControl.backgroundTask("Player Join", () -> {
-                var playerData = ApiGateway.login(player);
+                var playerData = ApiGateway.login(session.player);
 
                 if (Config.IS_HUB) {
-                    new HubMenu().send(event.player, playerData.getLoginLink());
+                    new HubMenu().send(session, playerData.getLoginLink());
                 }
 
-                SessionHandler.get(player).ifPresent(session -> session.setAdmin(playerData.getIsAdmin()));
+                session.setAdmin(playerData.getIsAdmin());
 
                 var isLoggedIn = playerData.getLoginLink() == null;
 
                 if (isLoggedIn) {
                     Log.info(playerData);
-                    player.sendMessage("Logged in as " + playerData.getName());
+                    session.player.sendMessage("Logged in as " + playerData.getName());
                 } else {
-                    player.sendMessage("You are not logged in, consider log in via MindustryTool using /login");
+                    session.player.sendMessage("You are not logged in, consider log in via MindustryTool using /login");
                 }
             });
 
             ServerControl.backgroundTask("Welcome Message", () -> {
-                var translated = ApiGateway.translate(Config.WELCOME_MESSAGE, Utils.parseLocale(player.locale()));
-                player.sendMessage(translated);
+                var translated = ApiGateway.translate(Config.WELCOME_MESSAGE, session.locale);
+                session.player.sendMessage(translated);
             });
 
-            new WelcomeMenu().send(player, null);
+            new WelcomeMenu().send(session, null);
 
         } catch (Throwable e) {
             e.printStackTrace();

@@ -17,14 +17,14 @@ import plugin.PluginEvents;
 import plugin.ServerControl;
 import plugin.controller.GeneralController;
 import plugin.controller.WorkflowController;
+import plugin.event.SessionCreatedEvent;
+import plugin.event.SessionRemovedEvent;
 import dto.ServerStateDto;
 import events.ServerEvents.ServerStateEvent;
 import plugin.utils.Utils;
 import io.javalin.Javalin;
 import io.javalin.json.JavalinJackson;
 import io.javalin.plugin.bundled.RouteOverviewPlugin;
-import mindustry.game.EventType.PlayerJoin;
-import mindustry.game.EventType.PlayerLeave;
 import mindustry.game.EventType.StateChangeEvent;
 import io.javalin.http.sse.SseClient;
 
@@ -104,8 +104,8 @@ public class HttpServer {
             }
         });
 
-        PluginEvents.run(PlayerJoin.class, HttpServer::sendStateUpdate);
-        PluginEvents.run(PlayerLeave.class, HttpServer::sendStateUpdate);
+        PluginEvents.run(SessionCreatedEvent.class, HttpServer::sendStateUpdate);
+        PluginEvents.run(SessionRemovedEvent.class, HttpServer::sendStateUpdate);
         PluginEvents.run(StateChangeEvent.class, HttpServer::sendStateUpdate);
 
         if (!ServerControl.isUnloaded) {
