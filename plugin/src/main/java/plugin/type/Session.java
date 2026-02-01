@@ -183,6 +183,6 @@ public class Session {
 
     @Override
     public String toString() {
-        return info();
+        return "Session<" + player.uuid() + ":" + player.name + ">";
     }
 }
