@@ -119,6 +119,8 @@ public class VoteHandler {
 
         lastMap = map;
 
+        vote(player, mapId);
+
         Call.sendMessage(
                 "[red]RTV: [accent]" + player.name() + " [white]Want to change map to [yellow]" + map.name());
         Call.sendMessage(
@@ -128,6 +130,5 @@ public class VoteHandler {
         Call.sendMessage(
                 "[red]RTV: [white]Use [yellow]/rtv yes to add your vote to this map !");
 
-        vote(player, mapId);
     }
 }
