@@ -14,11 +14,13 @@ import plugin.commands.client.GriefCommand;
 import plugin.commands.client.HubCommand;
 import plugin.commands.client.JsCommand;
 import plugin.commands.client.LoginCommand;
+import plugin.commands.client.MapCommand;
 import plugin.commands.client.MeCommand;
 import plugin.commands.client.PlayerInfoCommand;
 import plugin.commands.client.RedirectCommand;
 import plugin.commands.client.RtvCommand;
 import plugin.commands.client.ServersCommand;
+import plugin.commands.client.TrailCommand;
 import plugin.commands.client.VnwCommand;
 import plugin.menus.GlobalServerListMenu;
 import plugin.type.Session;
@@ -43,6 +45,8 @@ public class ClientCommandHandler {
         commands.add(new PlayerInfoCommand());
         commands.add(new MeCommand());
         commands.add(new GriefCommand());
+        commands.add(new TrailCommand());
+        commands.add(new MapCommand());
 
         for (PluginCommand command : commands) {
             command.register(handler, true);

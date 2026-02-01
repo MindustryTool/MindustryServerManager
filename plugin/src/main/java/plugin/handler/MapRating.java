@@ -109,6 +109,11 @@ public class MapRating {
                         .append("\n");
             }
 
+            if (map.description() != null) {
+                sb.append(map.description())
+                        .append("\n");
+            }
+
             int totalVotes = 0;
             int totalScore = 0;
 
