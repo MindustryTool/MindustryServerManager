@@ -2,7 +2,6 @@ package plugin;
 
 public class Config {
 
-    public static Boolean isLoaded = false;
     public static final String PLUGIN_VERSION = "0.0.1";
 
     public static final String HUB = System.getenv("IS_HUB");

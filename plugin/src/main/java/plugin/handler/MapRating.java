@@ -103,6 +103,12 @@ public class MapRating {
 
             StringBuilder sb = new StringBuilder(map.name()).append("\n");
 
+            if (map.author() != null) {
+                sb.append("[gray]Author: ")
+                        .append(map.author())
+                        .append("\n");
+            }
+
             int totalVotes = 0;
             int totalScore = 0;
 

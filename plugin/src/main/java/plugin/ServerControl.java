@@ -14,6 +14,7 @@ import arc.struct.Seq;
 import arc.util.*;
 import mindustry.Vars;
 import mindustry.core.GameState.State;
+import mindustry.game.EventType.ServerLoadEvent;
 import mindustry.gen.Call;
 import mindustry.gen.Groups;
 import mindustry.gen.Iconc;
@@ -21,6 +22,7 @@ import plugin.handler.ApiGateway;
 import plugin.handler.ClientCommandHandler;
 import plugin.handler.EventHandler;
 import plugin.handler.HttpServer;
+import plugin.handler.HubHandler;
 import plugin.handler.VoteHandler;
 import plugin.menus.PluginMenu;
 import plugin.utils.AdminUtils;
@@ -60,9 +62,15 @@ public class ServerControl extends Plugin implements MindustryToolPlugin {
             SnapshotHandler.init();
             AdminUtils.init();
 
+            if (Config.IS_HUB) {
+                HubHandler.init();
+            }
+
             BACKGROUND_SCHEDULER.schedule(ServerControl::autoHost, 30, TimeUnit.SECONDS);
             BACKGROUND_SCHEDULER.schedule(ServerControl::autoPause, 10, TimeUnit.SECONDS);
             BACKGROUND_SCHEDULER.scheduleWithFixedDelay(ServerControl::sendTips, 0, 3, TimeUnit.MINUTES);
+
+            PluginEvents.on(ServerLoadEvent.class, event -> isUnloaded = true);
 
             Call.sendMessage("[scarlet]Server controller restarted");
             Log.info("Server controller initialized.");
@@ -189,6 +197,8 @@ public class ServerControl extends Plugin implements MindustryToolPlugin {
         tips.add((locale) -> ApiGateway.translate("Router chains", locale) + "  " + Iconc.blockRouter);
         tips.add((locale) -> ApiGateway.translate("Have fun!!!", locale));
         tips.add((locale) -> ApiGateway.translate("The factory must grow!!!", locale));
+        tips.add((locale) -> ApiGateway
+                .translate(Strings.format("Reach level @ to unlock colored name", Config.COLOR_NAME_LEVEL), locale));
 
         var tip = tips.random();
 
