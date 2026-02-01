@@ -52,33 +52,28 @@ public class ServerControl extends Plugin implements MindustryToolPlugin {
 
     @Override
     public void init() {
-        try {
-            HttpServer.init();
-            Workflow.init();
-            EventHandler.init();
-            ApiGateway.init();
-            PluginMenu.init();
-            SessionHandler.init();
-            SnapshotHandler.init();
-            AdminUtils.init();
-            VoteHandler.init();
+        HttpServer.init();
+        Workflow.init();
+        EventHandler.init();
+        ApiGateway.init();
+        PluginMenu.init();
+        SessionHandler.init();
+        SnapshotHandler.init();
+        AdminUtils.init();
+        VoteHandler.init();
 
-            if (Config.IS_HUB) {
-                HubHandler.init();
-            }
-
-            BACKGROUND_SCHEDULER.schedule(ServerControl::autoHost, 30, TimeUnit.SECONDS);
-            BACKGROUND_SCHEDULER.schedule(ServerControl::autoPause, 10, TimeUnit.SECONDS);
-            BACKGROUND_SCHEDULER.scheduleWithFixedDelay(ServerControl::sendTips, 0, 3, TimeUnit.MINUTES);
-
-            PluginEvents.on(ServerLoadEvent.class, event -> isUnloaded = true);
-
-            Call.sendMessage("[scarlet]Server controller restarted");
-            Log.info("Server controller initialized.");
-        } catch (Exception e) {
-            Log.err(e);
-            unload();
+        if (Config.IS_HUB) {
+            HubHandler.init();
         }
+
+        BACKGROUND_SCHEDULER.schedule(ServerControl::autoHost, 30, TimeUnit.SECONDS);
+        BACKGROUND_SCHEDULER.schedule(ServerControl::autoPause, 10, TimeUnit.SECONDS);
+        BACKGROUND_SCHEDULER.scheduleWithFixedDelay(ServerControl::sendTips, 0, 3, TimeUnit.MINUTES);
+
+        PluginEvents.on(ServerLoadEvent.class, event -> isUnloaded = true);
+
+        Call.sendMessage("[scarlet]Server controller restarted");
+        Log.info("Server controller initialized.");
     }
 
     @Override
