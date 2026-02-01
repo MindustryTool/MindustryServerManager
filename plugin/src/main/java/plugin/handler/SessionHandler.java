@@ -31,7 +31,7 @@ public class SessionHandler {
     public static void init() {
         Core.app.post(() -> Groups.player.each(SessionHandler::put));
 
-        ServerControl.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(SessionHandler::create, 10, 10, TimeUnit.SECONDS);
+        ServerControl.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(SessionHandler::create, 10, 2, TimeUnit.SECONDS);
         ServerControl.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(SessionHandler::update, 0, 1, TimeUnit.SECONDS);
 
         PluginEvents.on(PlayerKillUnitEvent.class, event -> {
@@ -87,7 +87,8 @@ public class SessionHandler {
         data.computeIfAbsent(p.uuid(), (k) -> {
             var session = new Session(p, readSessionData(p));
 
-            PluginEvents.fire(new SessionCreatedEvent(session));
+            Core.app.post(() -> PluginEvents.fire(new SessionCreatedEvent(session)));
+            ServerControl.backgroundTask("Update Session", session::update);
 
             return session;
         });

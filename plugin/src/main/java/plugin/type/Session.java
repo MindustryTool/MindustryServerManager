@@ -40,8 +40,6 @@ public class Session {
         this.data = data;
 
         Log.info("Session created for player @: @", player.name, this);
-
-        update();
     }
 
     public void setAdmin(boolean isAdmin) {
