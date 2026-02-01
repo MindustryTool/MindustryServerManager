@@ -440,8 +440,6 @@ public class EventHandler {
                 player.sendMessage(translated);
             });
 
-            player.sendMessage("[cyan]Powered by MindustryTool");
-
             new WelcomeMenu().send(player, null);
 
         } catch (Throwable e) {
