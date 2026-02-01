@@ -8,6 +8,8 @@ import arc.Core;
 import arc.func.Boolf;
 import arc.func.Cons;
 import arc.util.Log;
+import mindustry.game.EventType.PlayerJoin;
+import mindustry.game.EventType.PlayerLeave;
 import mindustry.gen.Groups;
 import mindustry.gen.Player;
 import plugin.PluginEvents;
@@ -32,6 +34,17 @@ public class SessionHandler {
 
         PluginEvents.on(PlayerKillUnitEvent.class, event -> {
             get(event.getPlayer()).ifPresent(session -> session.addKill(event.getUnit().type, 1));
+        });
+
+        PluginEvents.on(PlayerLeave.class, event -> {
+            get(event.player).ifPresent(session -> {
+                writeSessionData(session.player, session.data);
+                remove(session.player);
+            });
+        });
+
+        PluginEvents.on(PlayerJoin.class, event -> {
+            put(event.player);
         });
     }
 

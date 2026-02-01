@@ -328,7 +328,6 @@ public class EventHandler {
 
             Player player = event.player;
 
-            SessionHandler.remove(player);
             VoteHandler.removeVote(player);
 
             String playerName = event.player != null ? event.player.plainName() : "Unknown";
@@ -378,8 +377,6 @@ public class EventHandler {
             }
 
             var player = event.player;
-
-            SessionHandler.put(player);
 
             HttpServer.fire(new ServerEvents.PlayerJoinEvent(ServerControl.SERVER_ID, PlayerDto.from(event.player)
                     .setJoinedAt(SessionHandler.contains(player) //
