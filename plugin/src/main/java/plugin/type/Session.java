@@ -113,18 +113,24 @@ public class Session {
     }
 
     public long getExp() {
-        // Used flare hp as the baseline
-
-        long exp = (long) (data.kills.entrySet().stream().mapToDouble(entry -> {
+        long exp = unitHealthToExp(data.kills.entrySet().stream().mapToDouble(entry -> {
             var unit = Vars.content.unit(entry.getKey());
 
             return unit.health * entry.getValue();
-        }).sum() / UnitTypes.flare.health);
+        }).sum());
 
-        // Killing 1 flare = 5 seconds of play time
-        exp += data.playTime / UnitTypes.flare.health / 5 / 5;
+        exp += playTimeToExp(data.playTime);
 
         return exp;
+    }
+
+    private long unitHealthToExp(double health) {
+        return (long) (health / UnitTypes.flare.health / 2);
+    }
+
+    // Killing 1 flare = 5 seconds of play time
+    private long playTimeToExp(long playTime) {
+        return (long) (playTime / UnitTypes.flare.health / 5 / 10);
     }
 
     public String info() {
