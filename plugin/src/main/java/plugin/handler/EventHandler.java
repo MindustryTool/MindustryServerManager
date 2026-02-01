@@ -429,6 +429,7 @@ public class EventHandler {
 
                 var isLoggedIn = playerData.getLoginLink() == null;
                 if (isLoggedIn) {
+                    Log.info(playerData);
                     player.sendMessage("Logged in as " + playerData.getName());
                 } else {
                     player.sendMessage("You are not logged in, consider log in via MindustryTool using /login");

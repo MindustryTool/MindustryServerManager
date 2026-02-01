@@ -105,6 +105,7 @@ public class GeneralController {
 
             if (player != null) {
                 SessionHandler.getByUuid(uuid).ifPresent(session -> session.setAdmin(request.getIsAdmin()));
+                Log.info(request);
             }
             ctx.result();
 
