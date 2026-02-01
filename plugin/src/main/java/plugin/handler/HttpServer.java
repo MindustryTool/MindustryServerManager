@@ -124,14 +124,12 @@ public class HttpServer {
     }
 
     private static synchronized void onClientConnect(SseClient client) {
-        String createdAt = client.ctx().header("X-CREATED-AT");
-
         client.onClose(() -> {
-            Log.info("Client disconnected with createdAt: " + createdAt);
+            Log.info("Client disconnected");
             eventListener = null;
         });
 
-        Log.info("Client connected with createdAt: " + createdAt);
+        Log.info("Client connected");
 
         client.keepAlive();
 
@@ -144,11 +142,12 @@ public class HttpServer {
         }
 
         if (eventListener != null) {
-            Log.info("Closing existing event listener with createdAt: " + eventListener.ctx().header("X-CREATED-AT")
-                    + ", terminated: " + eventListener.terminated());
+            Log.info("Closing existing event listener, terminated: " + eventListener.terminated());
+
             if (!eventListener.terminated()) {
                 eventListener.close();
             }
+
             eventListener = null;
         }
 
