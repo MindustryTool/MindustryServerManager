@@ -160,9 +160,9 @@ public class HttpServer {
             eventListener = null;
         }
 
-        eventListener = client;
-
         sendStateUpdate();
+
+        eventListener = client;
     }
 
     private static void sendStateUpdate() {
