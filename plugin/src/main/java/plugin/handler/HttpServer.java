@@ -135,11 +135,11 @@ public class HttpServer {
         String createdAt = client.ctx().header("X-CREATED-AT");
 
         client.onClose(() -> {
-            Log.debug("Client disconnected with createdAt: " + createdAt);
+            Log.info("Client disconnected with createdAt: " + createdAt);
             eventListener = null;
         });
 
-        Log.debug("Client connected with createdAt: " + createdAt);
+        Log.info("Client connected with createdAt: " + createdAt);
 
         client.keepAlive();
 
