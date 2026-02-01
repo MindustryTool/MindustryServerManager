@@ -156,6 +156,9 @@ public class Session {
                 .append("m ")
                 .append(seconds % 60)
                 .append("s")
+                .append(" (")
+                .append((int) (data.playTime / UnitTypes.flare.health / 5 / 5))
+                .append("exp)")
                 .append("[]\n");
 
         for (var entry : data.kills.entrySet()) {
@@ -172,7 +175,11 @@ public class Session {
 
             try {
                 char icon = Reflect.get(Iconc.class, "unit" + Strings.capitalize(unit.name));
-                info.append("[]").append(icon).append(": ").append(entry.getValue()).append("\n");
+                info.append("[]").append(icon).append(": ").append(entry.getValue())
+                        .append(" (")
+                        .append((int) (entry.getValue() / UnitTypes.flare.health))
+                        .append("exp)")
+                        .append("\n");
             } catch (Exception e) {
                 Log.err("Error while appending kill info for unit @: @", unit.localizedName, e);
             }
