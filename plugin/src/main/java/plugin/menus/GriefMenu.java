@@ -10,7 +10,7 @@ public class GriefMenu extends PluginMenu<Session> {
         this.title = "Grief Report";
 
         if (target == null) {
-            SessionHandler.each(t -> {
+            SessionHandler.each(t -> t != session, t -> {
                 option(t.player.name, (_p, s) -> new GriefMenu().send(session, t));
                 row();
             });
