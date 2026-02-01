@@ -177,7 +177,7 @@ public class Session {
                 char icon = Reflect.get(Iconc.class, "unit" + Strings.capitalize(unit.name));
                 info.append("[]").append(icon).append(": ").append(entry.getValue())
                         .append(" (")
-                        .append((int) (entry.getValue() / UnitTypes.flare.health))
+                        .append((int) (unit.health * entry.getValue() / UnitTypes.flare.health))
                         .append("exp)")
                         .append("\n");
             } catch (Exception e) {
