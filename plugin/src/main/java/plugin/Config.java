@@ -16,6 +16,7 @@ public class Config {
     public static final String DISCORD_INVITE_URL = "https://discord.gg/Jx5qfU2xmC";
     public static final String MINDUSTRY_TOOL_URL = "https://mindustry-tool.com";
     public static final String RULE_URL = MINDUSTRY_TOOL_URL + "/rules";
+    public static final String GITHUB_URL = "https://github.com/MindustryTool/MindustryToolMod";
 
     public static final int MAX_IDENTICAL_IPS = 3;
     public static final String HUB_MESSAGE = """
