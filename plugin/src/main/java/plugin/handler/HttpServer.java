@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import org.eclipse.jetty.util.thread.ExecutorThreadPool;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -53,14 +52,6 @@ public class HttpServer {
                 mapper.registerModule(new JavaTimeModule());
             }));
 
-            config.http.asyncTimeout = 5_000;
-            config.useVirtualThreads = true;
-
-            ExecutorThreadPool pool = new ExecutorThreadPool(50, 0);
-            pool.setName("HttpServer");
-            config.jetty.threadPool = pool;
-            config.jetty.modifyServer(server -> server.setStopTimeout(5_000)); // wait 5 seconds for existing requests
-
             config.registerPlugin(new RouteOverviewPlugin());
 
             config.requestLogger.http((ctx, ms) -> {
@@ -72,6 +63,7 @@ public class HttpServer {
 
         app.beforeMatched((ctx) -> {
             if (ServerControl.isUnloaded) {
+                Log.info("Server unloaded");
                 throw new ServerUnloadedException();
             }
         });
