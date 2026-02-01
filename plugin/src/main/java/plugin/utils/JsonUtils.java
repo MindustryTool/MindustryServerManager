@@ -31,9 +31,13 @@ public class JsonUtils {
         }
     }
 
+    public static JsonNode createObjectNode() {
+        return objectMapper.createObjectNode();
+    }
+
     public static <T> List<T> readJsonAsArrayClass(String data, Class<T> clazz) {
         try {
-            return objectMapper.readerForArrayOf(clazz).readValue(data);
+            return objectMapper.readerForListOf(clazz).readValue(data);
         } catch (Exception e) {
             throw new RuntimeException("Can not parse to json: " + e.getMessage(), e);
         }

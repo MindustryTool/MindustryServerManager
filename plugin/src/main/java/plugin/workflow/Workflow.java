@@ -18,7 +18,7 @@ import arc.util.Log;
 import io.javalin.http.sse.SseClient;
 import lombok.Getter;
 import mindustry.Vars;
-import plugin.ServerController;
+import plugin.ServerControl;
 import plugin.utils.JsonUtils;
 import plugin.workflow.errors.WorkflowError;
 import plugin.workflow.expressions.ExpressionParser;
@@ -91,7 +91,7 @@ public class Workflow {
             WORKFLOW_FILE.file().createNewFile();
             WORKFLOW_DATA_FILE.file().createNewFile();
 
-            ServerController.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(
+            ServerControl.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(
                     () -> {
                         try {
                             workflowEventConsumers.forEach(client -> client.sendComment("heartbeat"));
@@ -239,47 +239,6 @@ public class Workflow {
         Log.info("Context loaded");
     }
 
-    public static <T> Cons2<T, Boolean> on(Class<T> type, Cons2<T, Boolean> listener) {
-        events.computeIfAbsent(type, (_ignore) -> new Seq<>(Cons2.class)).add(listener);
-
-        return listener;
-    }
-
-    public static <T> boolean remove(Class<T> type, Cons2<T, Boolean> listener) {
-        return events.computeIfAbsent(type, (_ignore) -> new Seq<>(Cons2.class)).remove(listener);
-    }
-
-    @SuppressWarnings({ "rawtypes", "unchecked" })
-    public static <T extends Enum<T>> void fire(Enum<T> type, boolean before) {
-        Seq<Cons2<?, Boolean>> listeners = events.get(type);
-
-        if (listeners != null) {
-            int len = listeners.size;
-            Cons2[] items = listeners.items;
-            for (int i = 0; i < len; i++) {
-                items[i].get(type, before);
-            }
-        }
-    }
-
-    /** Fires a non-enum event by class. */
-    public static <T> void fire(T type, boolean before) {
-        fire(type.getClass(), type, before);
-    }
-
-    @SuppressWarnings({ "rawtypes", "unchecked" })
-    public static <T> void fire(Class<?> ctype, T type, boolean before) {
-        Seq<Cons2<?, Boolean>> listeners = events.get(ctype);
-
-        if (listeners != null) {
-            int len = listeners.size;
-            Cons2[] items = listeners.items;
-            for (int i = 0; i < len; i++) {
-                items[i].get(type, before);
-            }
-        }
-    }
-
     private static void tryRun(Runnable runnable) {
         try {
             runnable.run();
@@ -294,7 +253,7 @@ public class Workflow {
                 " period: " + period);
 
         scheduledTasks
-                .add(ServerController.BACKGROUND_SCHEDULER.scheduleAtFixedRate(() -> tryRun(runnable), delay, period,
+                .add(ServerControl.BACKGROUND_SCHEDULER.scheduleAtFixedRate(() -> tryRun(runnable), delay, period,
                         TimeUnit.SECONDS));
     }
 
@@ -305,7 +264,7 @@ public class Workflow {
                 " delay: " + delay);
 
         scheduledTasks
-                .add(ServerController.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(() -> tryRun(runnable), initialDelay,
+                .add(ServerControl.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(() -> tryRun(runnable), initialDelay,
                         delay,
                         TimeUnit.SECONDS));
     }
@@ -313,7 +272,7 @@ public class Workflow {
     public static void schedule(Runnable runnable, long delay) {
         Log.debug("Schedule task: " + runnable.getClass().getName() + " delay: " + delay);
         scheduledTasks
-                .add(ServerController.BACKGROUND_SCHEDULER.schedule(() -> tryRun(runnable), delay, TimeUnit.SECONDS));
+                .add(ServerControl.BACKGROUND_SCHEDULER.schedule(() -> tryRun(runnable), delay, TimeUnit.SECONDS));
     }
 
 }

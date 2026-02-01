@@ -3,16 +3,17 @@ package plugin.utils;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -20,6 +21,7 @@ import arc.Core;
 import arc.files.Fi;
 import arc.graphics.Pixmap;
 import arc.util.Log;
+import arc.util.Reflect;
 import arc.util.Strings;
 import arc.util.Time;
 import arc.util.Http.HttpRequest;
@@ -37,8 +39,7 @@ import mindustry.io.MapIO;
 import mindustry.io.SaveIO;
 import mindustry.maps.Map;
 import mindustry.maps.MapException;
-import plugin.ServerController;
-import plugin.handler.HttpServer;
+import plugin.ServerControl;
 import plugin.handler.SessionHandler;
 
 public class Utils {
@@ -52,10 +53,11 @@ public class Utils {
 
         isHosting = true;
 
-        if (ServerController.isUnloaded) {
+        if (ServerControl.isUnloaded) {
             Log.warn("Server unloaded, can not host");
             return;
         }
+
         if (Vars.state.isGame()) {
             Log.warn("Already hosting. Type 'stop' to stop hosting first.");
             return;
@@ -67,13 +69,25 @@ public class Utils {
             if (mode != null) {
                 try {
                     preset = Gamemode.valueOf(mode.toLowerCase());
-                } catch (IllegalArgumentException event) {
+                    Core.settings.put("lastServerMode", preset.name());
+
+                    Class<?> clazz = Class.forName("mindustry.server.ServerControl");
+
+                    for (var listener : Core.app.getListeners()) {
+                        if (listener.getClass().equals(clazz)) {
+                            Reflect.set(clazz, listener, "lastMode", preset);
+                            Log.info("Set gamemode to: " + preset.name());
+                            break;
+                        }
+                    }
+                } catch (Exception event) {
                     Log.err("No gamemode '@' found.", mode);
                     return;
                 }
             }
 
             Map result;
+
             if (mapName != null) {
                 result = Vars.maps.all().find(map -> map.plainName().replace('_', ' ')
                         .equalsIgnoreCase(Strings.stripColors(mapName).replace('_', ' ')));
@@ -87,13 +101,13 @@ public class Utils {
                 Log.info("Randomized next map to be @.", result.plainName());
             }
 
+            Log.info("Hosting map @ with mode @.", result.plainName(), preset.name());
+
             Vars.logic.reset();
             Vars.world.loadMap(result, result.applyRules(preset));
             Vars.state.rules = result.applyRules(preset);
             Vars.logic.play();
             Vars.netServer.openServer();
-
-            HttpServer.sendStateUpdate();
 
         } catch (MapException event) {
             Log.err("@: @", event.map.plainName(), event.getMessage());
@@ -173,11 +187,10 @@ public class Utils {
         ArrayList<Player> players = new ArrayList<Player>();
         Groups.player.forEach(players::add);
 
-        List<PlayerDto> p = players.stream()//
-                .map(player -> PlayerDto.from(player)//
-                        .setJoinedAt(SessionHandler.contains(player) //
-                                ? SessionHandler.get(player).joinedAt
-                                : Instant.now().toEpochMilli()))
+        List<PlayerDto> p = SessionHandler.get()
+                .values()
+                .stream()
+                .map(session -> PlayerDto.from(session.player).setJoinedAt(session.joinedAt))
                 .collect(Collectors.toList());
 
         int kicks = Vars.netServer.admins.kickedIPs
@@ -192,7 +205,7 @@ public class Utils {
                 .setMapName(mapName)
                 .setVersion(Version.combined())
                 .setStartedAt(Core.settings.getLong("startedAt", System.currentTimeMillis()))
-                .setServerId(ServerController.SERVER_ID)
+                .setServerId(ServerControl.SERVER_ID)
                 .setStatus(Vars.state.isGame() //
                         ? Vars.state.isPaused()//
                                 ? ServerStatus.PAUSED
@@ -238,38 +251,53 @@ public class Utils {
 
         try {
             tempFile.file().createNewFile();
-            boolean saveSuccess = Utils.appPostWithTimeout(() -> {
+            Core.app.post(() -> {
                 try {
                     SaveIO.save(tempFile);
-                    return true;
                 } catch (Exception e) {
-                    Log.err(e);
-                    return false;
+                    Log.err("Failed to generate save file", e);
                 }
-            }, 2000, "Generate save");
+            });
 
-            if (saveSuccess) {
-                HashMap<String, String> body = new HashMap<>();
-                byte[] bytes = tempFile.readBytes();
+            HashMap<String, String> body = new HashMap<>();
+            byte[] bytes = tempFile.readBytes();
 
-                if (bytes.length == 0) {
-                    return new byte[0];
-                }
-
-                body.put("data", Base64.getEncoder().encodeToString(bytes));
-
-                HttpRequest request = HttpUtils
-                        .post("https://api.mindustry-tool.com", "api", "v4", "maps", "image-json")
-                        .header("Content-Type", "application/json")
-                        .content(JsonUtils.toJsonString(body));
-
-                return HttpUtils.send(request, 30000, byte[].class);
+            if (bytes.length == 0) {
+                return new byte[0];
             }
 
+            body.put("data", Base64.getEncoder().encodeToString(bytes));
+
+            HttpRequest request = HttpUtils
+                    .post("https://api.mindustry-tool.com", "api", "v4", "maps", "image-json")
+                    .header("Content-Type", "application/json")
+                    .content(JsonUtils.toJsonString(body));
+
+            return HttpUtils.send(request, 30000, byte[].class);
+
         } catch (Throwable throwable) {
-            Log.err(throwable);
+            Log.err(throwable.getMessage());
         }
 
         return new byte[0];
+    }
+
+    public static Locale parseLocale(String locale) {
+        if (locale == null) {
+            return Locale.ENGLISH;
+        }
+
+        String[] parts = locale.replace("_", "-").split("-");
+
+        return parts.length > 0 ? Locale.forLanguageTag(parts[0]) : Locale.ENGLISH;
+    }
+
+    public static void forEachPlayerLocale(BiConsumer<Locale, List<Player>> cons) {
+        HashMap<Locale, List<Player>> groupByLocale = new HashMap<>();
+
+        Groups.player.forEach(
+                p -> groupByLocale.computeIfAbsent(parseLocale(p.locale()), k -> new ArrayList<>()).add(p));
+
+        groupByLocale.forEach(cons);
     }
 }

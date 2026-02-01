@@ -1,6 +1,5 @@
 package plugin.controller;
 
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -23,9 +22,6 @@ import mindustry.gen.Groups;
 import mindustry.gen.Player;
 import mindustry.net.Administration.PlayerInfo;
 import plugin.Config;
-import plugin.ServerController;
-import plugin.handler.EventHandler;
-import plugin.handler.HudHandler;
 import plugin.handler.ServerCommandHandler;
 import plugin.handler.SessionHandler;
 import plugin.handler.VoteHandler;
@@ -107,8 +103,8 @@ public class GeneralController {
             }
 
             if (player != null) {
-                HudHandler.closeFollowDisplay(player, HudHandler.LOGIN_UI);
-                EventHandler.setPlayerData(request, player);
+                SessionHandler.getByUuid(uuid).ifPresent(session -> session.setAdmin(request.getIsAdmin()));
+                Log.info(request);
             }
             ctx.result();
 
@@ -119,13 +115,9 @@ public class GeneralController {
             ArrayList<Player> players = new ArrayList<Player>();
             Groups.player.forEach(players::add);
 
-            List<PlayerDto> result = Utils
-                    .appPostWithTimeout(() -> (players.stream()//
-                            .map(player -> PlayerDto.from(player)//
-                                    .setJoinedAt(SessionHandler.contains(player) //
-                                            ? SessionHandler.get(player).joinedAt
-                                            : Instant.now().toEpochMilli()))
-                            .collect(Collectors.toList())), "Get players");
+            List<PlayerDto> result = SessionHandler.get().values().stream()
+                    .map(session -> PlayerDto.from(session.player).setJoinedAt(session.joinedAt))
+                    .collect(Collectors.toList());
 
             ctx.json(result);
         });
@@ -220,7 +212,7 @@ public class GeneralController {
 
             if (commands != null) {
                 for (String command : commands) {
-                    Log.info("Execute command: " + command);
+                    Log.info("[scarlet]Execute command: " + command);
 
                     ServerCommandHandler.execute(command, response -> {
                         if (response.type == ResponseType.unknownCommand) {
@@ -273,7 +265,6 @@ public class GeneralController {
 
                 data.put("state", Utils.getState());
                 data.put("session", SessionHandler.get());
-                data.put("hud", HudHandler.menus.asMap());
                 data.put("isHub", Config.IS_HUB);
                 data.put("ip", Config.SERVER_IP);
                 data.put("units", Groups.unit.size());
@@ -290,12 +281,6 @@ public class GeneralController {
                 gameStats.put("placedBlockCount", Vars.state.stats.placedBlockCount);
                 gameStats.put("unitsCreated", Vars.state.stats.unitsCreated);
                 gameStats.put("wavesLasted", Vars.state.stats.wavesLasted);
-
-                HashMap<String, String> executors = new HashMap<>();
-                executors.put("backgroundExecutor", ServerController.BACKGROUND_TASK_EXECUTOR.toString());
-                executors.put("backgroundScheduler", ServerController.BACKGROUND_SCHEDULER.toString());
-
-                data.put("executors", executors);
 
                 data.put("gameStats", gameStats);
                 data.put("locales", Vars.locales);

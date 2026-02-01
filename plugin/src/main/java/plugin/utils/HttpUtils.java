@@ -1,5 +1,6 @@
 package plugin.utils;
 
+import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -9,7 +10,7 @@ import arc.util.Http;
 import arc.util.Http.HttpRequest;
 import arc.util.Http.HttpStatusException;
 import arc.util.Strings;
-import plugin.ServerController;
+import plugin.ServerControl;
 
 public class HttpUtils {
     private static String toPath(Object... path) {
@@ -59,12 +60,14 @@ public class HttpUtils {
     public static byte[] send(HttpRequest req, int timeoutMilis) {
         CompletableFuture<byte[]> res = new CompletableFuture<>();
         req
-                .header("X-SERVER-ID", ServerController.SERVER_ID.toString())
+                .header("X-SERVER-ID", ServerControl.SERVER_ID.toString())
                 .timeout(timeoutMilis)
                 .redirects(true)
                 .error(error -> {
-                    if (error instanceof HttpStatusException) {
-                        HttpStatusException e = (HttpStatusException) error;
+                    if (error instanceof SocketTimeoutException) {
+                        res.completeExceptionally(
+                                new RuntimeException(req.url + " timeout in " + timeoutMilis + "ms", error));
+                    } else if (error instanceof HttpStatusException e) {
                         res.completeExceptionally(
                                 new RuntimeException(req.url + " " + e.response.getResultAsString(), e));
                     } else {

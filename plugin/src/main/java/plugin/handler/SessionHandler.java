@@ -1,58 +1,126 @@
 package plugin.handler;
 
-import java.util.HashMap;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+
+import arc.Core;
 import arc.func.Boolf;
 import arc.func.Cons;
 import arc.util.Log;
+import mindustry.game.EventType.PlayerJoin;
+import mindustry.game.EventType.PlayerLeave;
 import mindustry.gen.Groups;
 import mindustry.gen.Player;
+import plugin.PluginEvents;
+import plugin.ServerControl;
+import plugin.event.PlayerKillUnitEvent;
+import plugin.event.SessionCreatedEvent;
+import plugin.event.SessionRemovedEvent;
 import plugin.type.Session;
+import plugin.type.SessionData;
+import plugin.utils.JsonUtils;
 
 public class SessionHandler {
-    private static final HashMap<String, Session> data = new HashMap<>();
+    private static final ConcurrentHashMap<String, Session> data = new ConcurrentHashMap<>();
 
-    public static HashMap<String, Session> get() {
+    public static ConcurrentHashMap<String, Session> get() {
         return data;
     }
 
-    public static void load() {
+    public static void init() {
+        Core.app.post(() -> Groups.player.each(SessionHandler::put));
+
+        ServerControl.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(SessionHandler::create, 10, 10, TimeUnit.SECONDS);
+        ServerControl.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(SessionHandler::update, 0, 1, TimeUnit.SECONDS);
+
+        PluginEvents.on(PlayerKillUnitEvent.class, event -> {
+            var session = get(event.getPlayer());
+            session.addKill(event.getUnit().type, 1);
+        });
+
+        PluginEvents.on(PlayerLeave.class, event -> {
+            var session = get(event.player);
+            writeSessionData(session.player, session.data);
+            remove(session.player);
+        });
+
+        PluginEvents.on(PlayerJoin.class, event -> {
+            put(event.player);
+        });
+    }
+
+    private static void create() {
         Groups.player.each(SessionHandler::put);
     }
 
+    private static void update() {
+        each(Session::update);
+    }
+
     public static void clear() {
+        each(s -> writeSessionData(s.player, s.data));
+        each(s -> s.reset());
+
         data.clear();
 
         Log.info("Session handler cleared");
     }
 
-    public static Session getByID(int id) {
-        return find(p -> p.playerId == id);
-    }
-
-    public static Session getByUuid(String uuid) {
-        return find(p -> p.playerUuid.equals(uuid));
+    public static Optional<Session> getByUuid(String uuid) {
+        return Optional.ofNullable(find(p -> p.player.uuid().equals(uuid)));
     }
 
     public static Session get(Player p) {
-        if (p == null)
-            return null;
-        return data.get(p.uuid());
+        var session = data.get(p.uuid());
+
+        if (session == null) {
+            Log.err("Session can not be null");
+            Thread.dumpStack();
+            session = new Session(p, new SessionData());
+        }
+
+        return session;
     }
 
-    public static Session put(Player p) {
-        Session data_ = new Session(p);
+    public static void put(Player p) {
+        data.computeIfAbsent(p.uuid(), (k) -> {
+            var session = new Session(p, readSessionData(p));
 
-        data.put(p.uuid(), data_);
+            PluginEvents.fire(new SessionCreatedEvent(session));
 
-        return data_;
+            return session;
+        });
     }
 
-    public static Session remove(Player p) {
-        Session data_ = get(p);
+    public static SessionData readSessionData(Player p) {
+        SessionData pdata = new SessionData();
 
-        data.remove(p.uuid());
+        try {
+            if (Core.settings.has(p.uuid())) {
+                pdata = JsonUtils.readJsonAsClass(Core.settings.getString(p.uuid()), SessionData.class);
+            }
+        } catch (Exception e) {
+            Log.err("Error while loading session data for player @: @", p.name, e);
+            Core.settings.remove(p.uuid());
+        }
 
-        return data_;
+        return pdata;
+    }
+
+    public static void writeSessionData(Player p, SessionData pdata) {
+        try {
+            Core.settings.put(p.uuid(), JsonUtils.toJsonString(pdata));
+        } catch (Exception e) {
+            Log.err("Error while saving session data for player @: @", p.name, e);
+        }
+    }
+
+    public static void remove(Player p) {
+        var previous = data.remove(p.uuid());
+        if (previous != null) {
+            PluginEvents.fire(new SessionRemovedEvent(previous));
+        }
     }
 
     public static boolean contains(Player p) {

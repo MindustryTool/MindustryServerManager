@@ -13,15 +13,19 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import arc.util.Log;
-import plugin.ServerController;
+import plugin.PluginEvents;
+import plugin.ServerControl;
 import plugin.controller.GeneralController;
 import plugin.controller.WorkflowController;
+import plugin.event.SessionCreatedEvent;
+import plugin.event.SessionRemovedEvent;
 import dto.ServerStateDto;
 import events.ServerEvents.ServerStateEvent;
 import plugin.utils.Utils;
 import io.javalin.Javalin;
 import io.javalin.json.JavalinJackson;
 import io.javalin.plugin.bundled.RouteOverviewPlugin;
+import mindustry.game.EventType.StateChangeEvent;
 import io.javalin.http.sse.SseClient;
 
 public class HttpServer {
@@ -29,23 +33,8 @@ public class HttpServer {
     private static Javalin app;
     private static SseClient eventListener = null;
 
-    public static void fire(Object event) {
-        if (eventListener == null) {
-            buffer.add(event);
-            if (buffer.size() > 1000) {
-                buffer.remove(0);
-            }
-        } else {
-            eventListener.sendEvent(event);
-        }
-    }
-
     public static void init() {
-        if (app != null) {
-            app.stop();
-        }
-
-        ServerController.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(() -> sendStateUpdate(), 0, 30, TimeUnit.SECONDS);
+        ServerControl.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(() -> sendStateUpdate(), 0, 30, TimeUnit.SECONDS);
 
         app = Javalin.create(config -> {
             config.showJavalinBanner = false;
@@ -78,7 +67,7 @@ public class HttpServer {
         });
 
         app.beforeMatched((ctx) -> {
-            if (ServerController.isUnloaded) {
+            if (ServerControl.isUnloaded) {
                 throw new ServerUnloadedException();
             }
         });
@@ -115,12 +104,27 @@ public class HttpServer {
             }
         });
 
-        if (!ServerController.isUnloaded) {
+        PluginEvents.run(SessionCreatedEvent.class, HttpServer::sendStateUpdate);
+        PluginEvents.run(SessionRemovedEvent.class, HttpServer::sendStateUpdate);
+        PluginEvents.run(StateChangeEvent.class, HttpServer::sendStateUpdate);
+
+        if (!ServerControl.isUnloaded) {
             app.start(9999);
             Log.info("Http server started on port 9999");
         }
 
         Log.info("Setup http server done");
+    }
+
+    public static void fire(Object event) {
+        if (eventListener == null) {
+            buffer.add(event);
+            if (buffer.size() > 1000) {
+                buffer.remove(0);
+            }
+        } else {
+            eventListener.sendEvent(event);
+        }
     }
 
     private static synchronized void onClientConnect(SseClient client) {
@@ -157,14 +161,14 @@ public class HttpServer {
         sendStateUpdate();
     }
 
-    public static void sendStateUpdate() {
+    private static void sendStateUpdate() {
         try {
             ServerStateDto state = Utils.getState();
-            ServerStateEvent event = new ServerStateEvent(ServerController.SERVER_ID, Arrays.asList(state));
+            ServerStateEvent event = new ServerStateEvent(ServerControl.SERVER_ID, Arrays.asList(state));
 
             fire(event);
         } catch (Exception error) {
-            Log.err(error);
+            Log.err("Failed to send state update", error);
         }
     }
 
