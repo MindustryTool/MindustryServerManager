@@ -36,6 +36,10 @@ public class HttpServer {
     public static void init() {
         ServerControl.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(() -> sendStateUpdate(), 0, 30, TimeUnit.SECONDS);
 
+        if (app != null) {
+            app.stop();
+        }
+
         app = Javalin.create(config -> {
             config.showJavalinBanner = false;
             config.jsonMapper(new JavalinJackson().updateMapper(mapper -> {
@@ -61,7 +65,7 @@ public class HttpServer {
 
             config.requestLogger.http((ctx, ms) -> {
                 if (!ctx.fullUrl().contains("state") && !ctx.fullUrl().contains("hosting")) {
-                    Log.debug("[" + ctx.method().name() + "] " + Math.round(ms) + "ms " + ctx.fullUrl());
+                    Log.info("[" + ctx.method().name() + "] " + Math.round(ms) + "ms " + ctx.fullUrl());
                 }
             });
         });
