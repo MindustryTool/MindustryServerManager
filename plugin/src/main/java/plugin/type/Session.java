@@ -84,7 +84,8 @@ public class Session {
                         String message = ApiGateway.translate("Level up", locale);
 
                         players.forEach(player -> player.sendMessage(
-                                player.name + " [green]" + message + Strings.format(" @ -> @", oldLevel, newLevel)));
+                                this.player.name + " [green]" + message
+                                        + Strings.format(" @ -> @", oldLevel, newLevel)));
                     });
                 });
             }
