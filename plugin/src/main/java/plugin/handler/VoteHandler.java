@@ -12,11 +12,24 @@ import mindustry.gen.Call;
 import mindustry.gen.Groups;
 import mindustry.gen.Player;
 import mindustry.maps.Map;
+import plugin.PluginEvents;
+import plugin.event.SessionRemovedEvent;
 
 public class VoteHandler {
     public static HashMap<String, Seq<String>> votes = new HashMap<>();
     public static double ratio = 0.6;
     public static Map lastMap = null;
+
+    public static void init() {
+        PluginEvents.on(SessionRemovedEvent.class, event -> {
+            removeVote(event.session.player);
+            check();
+        });
+    }
+
+    private static void check() {
+        votes.forEach((mapId, _v) -> check(mapId));
+    }
 
     public static void unload() {
         votes.clear();
@@ -43,7 +56,7 @@ public class VoteHandler {
         check(mapId);
     }
 
-    public static void removeVote(Player player, String mapId) {
+    private static void removeVote(Player player, String mapId) {
         var vote = votes.get(mapId);
 
         if (vote == null) {
@@ -75,7 +88,7 @@ public class VoteHandler {
         return vote.size;
     }
 
-    public static void removeVote(Player player) {
+    private static void removeVote(Player player) {
         for (Seq<String> vote : votes.values()) {
             vote.remove(player.uuid());
         }

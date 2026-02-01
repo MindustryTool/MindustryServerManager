@@ -61,6 +61,7 @@ public class ServerControl extends Plugin implements MindustryToolPlugin {
             SessionHandler.init();
             SnapshotHandler.init();
             AdminUtils.init();
+            VoteHandler.init();
 
             if (Config.IS_HUB) {
                 HubHandler.init();

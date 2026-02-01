@@ -170,8 +170,6 @@ public class EventHandler {
 
             Player player = event.session.player;
 
-            VoteHandler.removeVote(player);
-
             String playerName = player != null ? player.plainName() : "Unknown";
             String chat = Strings.format("@ leaved the server, current players: @", playerName,
                     Math.max(Groups.player.size() - 1, 0));
