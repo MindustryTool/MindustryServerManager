@@ -117,6 +117,8 @@ public class VoteHandler {
             return;
         }
 
+        lastMap = map;
+
         Call.sendMessage(
                 "[red]RTV: [accent]" + player.name() + " [white]Want to change map to [yellow]" + map.name());
         Call.sendMessage(
