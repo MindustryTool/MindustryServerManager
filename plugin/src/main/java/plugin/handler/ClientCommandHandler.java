@@ -11,6 +11,7 @@ import mindustry.gen.Groups;
 import plugin.PluginEvents;
 import plugin.ServerControl;
 import plugin.commands.PluginCommand;
+import plugin.commands.client.DiscordCommand;
 import plugin.commands.client.GriefCommand;
 import plugin.commands.client.HubCommand;
 import plugin.commands.client.JsCommand;
@@ -49,6 +50,7 @@ public class ClientCommandHandler {
         commands.add(new GriefCommand());
         commands.add(new TrailCommand());
         commands.add(new MapCommand());
+        commands.add(new DiscordCommand());
 
         for (PluginCommand command : commands) {
             command.register(handler, true);
