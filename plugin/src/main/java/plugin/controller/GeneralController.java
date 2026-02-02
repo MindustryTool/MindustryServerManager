@@ -25,6 +25,7 @@ import plugin.Config;
 import plugin.handler.ServerCommandHandler;
 import plugin.handler.SessionHandler;
 import plugin.handler.VoteHandler;
+import plugin.type.ChatDto;
 import dto.PlayerInfoDto;
 import dto.CommandParamDto;
 import dto.LoginDto;
@@ -256,6 +257,11 @@ public class GeneralController {
             }
 
             ctx.result();
+        });
+
+        app.post("chat", ctx -> {
+            var data = ctx.bodyAsClass(ChatDto.class);
+            Call.sendChatMessage(data.getContent());
         });
 
         app.get("json", ctx -> {

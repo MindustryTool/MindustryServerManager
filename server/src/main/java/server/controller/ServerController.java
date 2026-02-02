@@ -198,6 +198,11 @@ public class ServerController {
         return gatewayService.of(serverId).flatMap(client -> client.server().getJson());
     }
 
+    @PostMapping("servers/{id}/chat")
+    public Mono<Void> sendChat(@PathVariable("id") UUID serverId, @RequestBody JsonNode body) {
+        return gatewayService.of(serverId).flatMap(client -> client.server().sendChat(body));
+    }
+
     @PostMapping("servers/{id}/mismatch")
     public Flux<ServerMisMatch> getMismatch(//
             @PathVariable("id") UUID serverId,
