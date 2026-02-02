@@ -67,7 +67,7 @@ public class PluginEvents {
     }
 
     /** Don't do this. */
-    public static void clear() {
+    public static void unregister() {
         events.clear();
     }
 }

@@ -13,6 +13,7 @@ import mindustry.gen.Building;
 import mindustry.gen.Player;
 import mindustry.world.Tile;
 import plugin.PluginEvents;
+import plugin.event.PluginUnloadEvent;
 
 public class SnapshotHandler {
     private static final ConcurrentHashMap<Integer, BuiltByData> builtBy = new ConcurrentHashMap<>();
@@ -28,6 +29,7 @@ public class SnapshotHandler {
     public static void init() {
         PluginEvents.on(BlockBuildEndEvent.class, SnapshotHandler::onBlockBuildEnd);
         PluginEvents.on(BlockDestroyEvent.class, SnapshotHandler::onBlockDestroy);
+        PluginEvents.on(PluginUnloadEvent.class, event -> unload());
     }
 
     public static Optional<Player> getBuiltBy(Building building) {
@@ -94,7 +96,7 @@ public class SnapshotHandler {
         buildingToPlayer.put(building, player);
     }
 
-    public static void unload() {
+    private static void unload() {
         builtBy.clear();
         buildingToPlayer.clear();
     }

@@ -15,6 +15,10 @@ public class JsCommand extends PluginCommand {
 
     @Override
     public void handleServer() {
-        Log.info("&fi&lw&fb" + Vars.mods.getScripts().runConsole(scriptParam.asString()));
+        try {
+            Log.info("&fi&lw&fb" + Vars.mods.getScripts().runConsole(scriptParam.asString()));
+        } catch (Exception e) {
+            Log.err(e);
+        }
     }
 }

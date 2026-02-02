@@ -46,10 +46,6 @@ public class EventHandler {
         Log.info("Setup event handler done");
     }
 
-    public static void unload() {
-        Log.info("Event handler unloaded");
-    }
-
     private static void onUnitBulletDestroy(UnitBulletDestroyEvent event) {
         var unit = event.unit;
         var bullet = event.bullet;

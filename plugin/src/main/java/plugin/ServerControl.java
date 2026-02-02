@@ -30,7 +30,10 @@ import plugin.utils.Utils;
 import plugin.handler.ServerCommandHandler;
 import plugin.handler.SessionHandler;
 import plugin.handler.SnapshotHandler;
+import plugin.repository.SessionRepository;
 import plugin.workflow.Workflow;
+import plugin.database.DB;
+import plugin.event.PluginUnloadEvent;
 import loader.MindustryToolPlugin;
 
 public class ServerControl extends Plugin implements MindustryToolPlugin {
@@ -52,11 +55,13 @@ public class ServerControl extends Plugin implements MindustryToolPlugin {
 
     @Override
     public void init() {
+        DB.init();
         HttpServer.init();
         Workflow.init();
         EventHandler.init();
         ApiGateway.init();
         PluginMenu.init();
+        SessionRepository.init();
         SessionHandler.init();
         SnapshotHandler.init();
         AdminUtils.init();
@@ -103,20 +108,11 @@ public class ServerControl extends Plugin implements MindustryToolPlugin {
     @Override
     public void unload() {
         Log.info("Unload");
-        isUnloaded = true;
 
-        ClientCommandHandler.unload();
-        ServerCommandHandler.unload();
-        SessionHandler.clear();
-        Workflow.clear();
-        EventHandler.unload();
-        VoteHandler.unload();
-        ApiGateway.unload();
-        HttpServer.unload();
-        PluginEvents.clear();
-        PluginMenu.unload();
-        SnapshotHandler.unload();
-        AdminUtils.unload();
+        PluginEvents.fire(new PluginUnloadEvent());
+        PluginEvents.unregister();
+
+        isUnloaded = true;
 
         BACKGROUND_TASK_EXECUTOR.shutdownNow();
         Log.info("Background task executor shutdown");

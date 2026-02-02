@@ -13,6 +13,7 @@ import mindustry.gen.Groups;
 import mindustry.gen.Player;
 import mindustry.maps.Map;
 import plugin.PluginEvents;
+import plugin.event.PluginUnloadEvent;
 import plugin.event.SessionRemovedEvent;
 
 public class VoteHandler {
@@ -25,17 +26,19 @@ public class VoteHandler {
             removeVote(event.session.player);
             check();
         });
+
+        PluginEvents.on(PluginUnloadEvent.class, event -> unload());
     }
 
-    private static void check() {
-        votes.forEach((mapId, _v) -> check(mapId));
-    }
-
-    public static void unload() {
+    private static void unload() {
         votes.clear();
         votes = null;
 
         Log.info("Vote handler unloaded");
+    }
+
+    private static void check() {
+        votes.forEach((mapId, _v) -> check(mapId));
     }
 
     public static void reset() {

@@ -101,7 +101,13 @@ public abstract class PluginCommand {
                         return;
                     }
 
-                    var session = SessionHandler.get(player);
+                    var session = SessionHandler.get(player).orElse(null);
+
+                    if (session == null) {
+                        Log.info("[scarlet]Failed to get session for player.");
+                        Thread.dumpStack();
+                        return;
+                    }
 
                     wrapper(() -> {
                         this.newInstance(session)

@@ -16,6 +16,7 @@ import plugin.PluginEvents;
 import plugin.ServerControl;
 import plugin.controller.GeneralController;
 import plugin.controller.WorkflowController;
+import plugin.event.PluginUnloadEvent;
 import plugin.event.SessionCreatedEvent;
 import plugin.event.SessionRemovedEvent;
 import dto.ServerStateDto;
@@ -109,6 +110,8 @@ public class HttpServer {
             Log.info("Http server started on port 9999");
         }
 
+        PluginEvents.on(PluginUnloadEvent.class, event -> unload());
+
         Log.info("Setup http server done");
     }
 
@@ -171,7 +174,7 @@ public class HttpServer {
         return eventListener != null && !eventListener.terminated();
     }
 
-    public static void unload() {
+    private static void unload() {
         if (eventListener != null) {
             eventListener.close();
         }

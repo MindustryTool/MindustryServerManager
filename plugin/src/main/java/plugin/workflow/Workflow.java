@@ -18,7 +18,9 @@ import arc.util.Log;
 import io.javalin.http.sse.SseClient;
 import lombok.Getter;
 import mindustry.Vars;
+import plugin.PluginEvents;
 import plugin.ServerControl;
+import plugin.event.PluginUnloadEvent;
 import plugin.utils.JsonUtils;
 import plugin.workflow.errors.WorkflowError;
 import plugin.workflow.expressions.ExpressionParser;
@@ -102,9 +104,12 @@ public class Workflow {
                     TimeUnit.SECONDS);
 
             loadWorkflowFromFile();
+
+            PluginEvents.on(PluginUnloadEvent.class, event -> unload());
         } catch (Exception e) {
             e.printStackTrace();
         }
+
     }
 
     public static JsonNode readWorkflowData() {
@@ -135,7 +140,7 @@ public class Workflow {
         nodeTypes.put(node.getName(), node);
     }
 
-    public static void clear() {
+    private static void unload() {
         events.clear();
         nodeTypes.clear();
         nodes.clear();

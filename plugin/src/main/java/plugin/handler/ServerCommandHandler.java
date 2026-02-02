@@ -8,10 +8,13 @@ import arc.util.CommandHandler.CommandResponse;
 import arc.util.Log;
 import arc.util.CommandHandler;
 import lombok.Getter;
+import plugin.PluginEvents;
 import plugin.commands.PluginCommand;
 import plugin.commands.server.JsCommand;
 import plugin.commands.server.KickWithReasonCommand;
 import plugin.commands.server.SayCommand;
+import plugin.commands.server.SqlCommand;
+import plugin.event.PluginUnloadEvent;
 import plugin.type.PrevCommand;
 
 public class ServerCommandHandler {
@@ -37,6 +40,7 @@ public class ServerCommandHandler {
         commands.add(new JsCommand());
         commands.add(new SayCommand());
         commands.add(new KickWithReasonCommand());
+        commands.add(new SqlCommand());
 
         for (PluginCommand command : commands) {
             command.register(handler, false);
@@ -45,9 +49,11 @@ public class ServerCommandHandler {
 
         prevCommands.forEach(prev -> prev.getCallback().accept(handler.handleMessage(prev.getCommand())));
         prevCommands.clear();
+
+        PluginEvents.on(PluginUnloadEvent.class, event -> unload());
     }
 
-    public static void unload() {
+    private static void unload() {
         commands.forEach(command -> handler.removeCommand(command.getName()));
         commands.clear();
 

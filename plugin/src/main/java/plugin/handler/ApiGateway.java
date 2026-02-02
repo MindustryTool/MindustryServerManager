@@ -19,7 +19,9 @@ import arc.util.Http.HttpStatusException;
 import arc.util.Log;
 import plugin.utils.HttpUtils;
 import plugin.utils.JsonUtils;
+import plugin.PluginEvents;
 import plugin.ServerControl;
+import plugin.event.PluginUnloadEvent;
 import plugin.type.PaginationRequest;
 import plugin.type.TranslationDto;
 import dto.LoginDto;
@@ -223,9 +225,11 @@ public class ApiGateway {
 
     public static void init() {
         Log.info("Setup api gateway done");
+
+        PluginEvents.on(PluginUnloadEvent.class, event -> unload());
     }
 
-    public static void unload() {
+    private static void unload() {
         serverQueryCache.invalidateAll();
         serverQueryCache = null;
 

@@ -15,6 +15,7 @@ import mindustry.net.Packets.KickReason;
 import plugin.Config;
 import plugin.PluginEvents;
 import plugin.ServerControl;
+import plugin.event.PluginUnloadEvent;
 import plugin.event.SessionRemovedEvent;
 import plugin.handler.SessionHandler;
 import plugin.type.Session;
@@ -39,9 +40,11 @@ public class AdminUtils {
                 reset();
             }
         });
+
+        PluginEvents.on(PluginUnloadEvent.class, event -> unload());
     }
 
-    public static void unload() {
+    private static void unload() {
         reset();
         lastGriefReportTimes.invalidateAll();
     }

@@ -14,6 +14,7 @@ import mindustry.gen.Call;
 import mindustry.gen.Player;
 import plugin.PluginEvents;
 import plugin.ServerControl;
+import plugin.event.PluginUnloadEvent;
 import plugin.event.SessionRemovedEvent;
 import plugin.handler.SessionHandler;
 import plugin.type.Session;
@@ -57,9 +58,16 @@ public abstract class PluginMenu<T> {
 
                 synchronized (event.player) {
                     if (selectedOption != null && selectedOption.callback != null) {
-                        var session = SessionHandler.get(event.player);
-                        selectedOption.callback.accept(session, targetMenu.state);
                         Call.hideFollowUpMenu(event.player.con, targetMenu.getMenuId());
+
+                        var session = SessionHandler.get(event.player).orElse(null);
+
+                        if (session == null) {
+                            Log.err("Failed to get session for player @", event.player);
+                            Thread.dumpStack();
+                        } else {
+                            selectedOption.callback.accept(session, targetMenu.state);
+                        }
                     }
 
                     menus.remove(targetMenu);
@@ -89,9 +97,11 @@ public abstract class PluginMenu<T> {
                 return delete;
             });
         }, 0, 1, TimeUnit.MINUTES);
+
+        PluginEvents.on(PluginUnloadEvent.class, event -> unload());
     }
 
-    public static void unload() {
+    private static void unload() {
         menus.clear();
     }
 

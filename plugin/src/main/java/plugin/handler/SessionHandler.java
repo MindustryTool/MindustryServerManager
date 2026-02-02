@@ -15,11 +15,11 @@ import mindustry.gen.Player;
 import plugin.PluginEvents;
 import plugin.ServerControl;
 import plugin.event.PlayerKillUnitEvent;
+import plugin.event.PluginUnloadEvent;
 import plugin.event.SessionCreatedEvent;
 import plugin.event.SessionRemovedEvent;
 import plugin.type.Session;
-import plugin.type.SessionData;
-import plugin.utils.JsonUtils;
+import plugin.repository.SessionRepository;
 
 public class SessionHandler {
     private static final ConcurrentHashMap<String, Session> data = new ConcurrentHashMap<>();
@@ -35,31 +35,34 @@ public class SessionHandler {
         ServerControl.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(SessionHandler::update, 0, 1, TimeUnit.SECONDS);
 
         PluginEvents.on(PlayerKillUnitEvent.class, event -> {
-            var session = get(event.getPlayer());
-            session.addKill(event.getUnit().type, 1);
+            get(event.getPlayer()).ifPresent(session -> session.addKill(event.getUnit().type, 1));
+            SessionRepository.markDirty(event.getPlayer().uuid());
         });
 
         PluginEvents.on(PlayerLeave.class, event -> {
-            var session = get(event.player);
-            writeSessionData(session.player, session.data);
-            remove(session.player);
+            remove(event.player);
         });
 
         PluginEvents.on(PlayerJoin.class, event -> {
             put(event.player);
         });
+
+        PluginEvents.on(PluginUnloadEvent.class, event -> unload());
     }
 
     private static void create() {
-        Groups.player.each(SessionHandler::put);
+        Core.app.post(() -> Groups.player.each(SessionHandler::put));
     }
 
     private static void update() {
-        each(Session::update);
+        each(s -> {
+            s.update();
+            SessionRepository.markDirty(s.player.uuid());
+        });
     }
 
-    public static void clear() {
-        each(s -> writeSessionData(s.player, s.data));
+    public static void unload() {
+        each(s -> SessionRepository.remove(s.player.uuid()));
         each(s -> s.reset());
 
         data.clear();
@@ -71,19 +74,13 @@ public class SessionHandler {
         return Optional.ofNullable(find(p -> p.player.uuid().equals(uuid)));
     }
 
-    public static Session get(Player p) {
-        var session = data.get(p.uuid());
-
-        if (session == null) {
-            session = put(p);
-        }
-
-        return session;
+    public static Optional<Session> get(Player p) {
+        return Optional.ofNullable(data.get(p.uuid()));
     }
 
     public static Session put(Player p) {
         return data.computeIfAbsent(p.uuid(), (k) -> {
-            var session = new Session(p, readSessionData(p));
+            var session = new Session(p, SessionRepository.get(p.uuid()));
 
             Core.app.post(() -> PluginEvents.fire(new SessionCreatedEvent(session)));
             ServerControl.backgroundTask("Update Session", session::update);
@@ -92,31 +89,9 @@ public class SessionHandler {
         });
     }
 
-    public static SessionData readSessionData(Player p) {
-        SessionData pdata = new SessionData();
-
-        try {
-            if (Core.settings.has(p.uuid())) {
-                pdata = JsonUtils.readJsonAsClass(Core.settings.getString(p.uuid()), SessionData.class);
-            }
-        } catch (Exception e) {
-            Log.err("Error while loading session data for player @: @", p.name, e);
-            Core.settings.remove(p.uuid());
-        }
-
-        return pdata;
-    }
-
-    public static void writeSessionData(Player p, SessionData pdata) {
-        try {
-            Core.settings.put(p.uuid(), JsonUtils.toJsonString(pdata));
-        } catch (Exception e) {
-            Log.err("Error while saving session data for player @: @", p.name, e);
-        }
-    }
-
     public static void remove(Player p) {
         var previous = data.remove(p.uuid());
+
         if (previous != null) {
             PluginEvents.fire(new SessionRemovedEvent(previous));
         }

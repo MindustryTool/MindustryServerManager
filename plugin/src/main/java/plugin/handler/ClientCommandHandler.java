@@ -8,6 +8,7 @@ import arc.util.Log;
 import lombok.Getter;
 import mindustry.gen.Call;
 import mindustry.gen.Groups;
+import plugin.PluginEvents;
 import plugin.ServerControl;
 import plugin.commands.PluginCommand;
 import plugin.commands.client.GriefCommand;
@@ -22,6 +23,7 @@ import plugin.commands.client.RtvCommand;
 import plugin.commands.client.ServersCommand;
 import plugin.commands.client.TrailCommand;
 import plugin.commands.client.VnwCommand;
+import plugin.event.PluginUnloadEvent;
 import plugin.menus.GlobalServerListMenu;
 import plugin.type.Session;
 
@@ -52,9 +54,11 @@ public class ClientCommandHandler {
             command.register(handler, true);
             Log.info("Client command registered: " + command.getName());
         }
+
+        PluginEvents.on(PluginUnloadEvent.class, event -> unload());
     }
 
-    public static void unload() {
+    private static void unload() {
         commands.forEach(command -> handler.removeCommand(command.getName()));
         commands.clear();
 
