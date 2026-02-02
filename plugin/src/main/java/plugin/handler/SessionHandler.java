@@ -75,16 +75,14 @@ public class SessionHandler {
         var session = data.get(p.uuid());
 
         if (session == null) {
-            Log.err("Session can not be null");
-            Thread.dumpStack();
-            session = new Session(p, new SessionData());
+            session = put(p);
         }
 
         return session;
     }
 
-    public static void put(Player p) {
-        data.computeIfAbsent(p.uuid(), (k) -> {
+    public static Session put(Player p) {
+        return data.computeIfAbsent(p.uuid(), (k) -> {
             var session = new Session(p, readSessionData(p));
 
             Core.app.post(() -> PluginEvents.fire(new SessionCreatedEvent(session)));
