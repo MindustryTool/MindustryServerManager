@@ -47,7 +47,7 @@ public class SessionHandler {
             put(event.player);
         });
 
-        PluginEvents.on(PluginUnloadEvent.class, event -> unload());
+        PluginEvents.run(PluginUnloadEvent.class, SessionHandler::unload);
     }
 
     private static void create() {

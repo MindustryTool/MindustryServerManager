@@ -98,7 +98,7 @@ public abstract class PluginMenu<T> {
             });
         }, 0, 1, TimeUnit.MINUTES);
 
-        PluginEvents.on(PluginUnloadEvent.class, event -> unload());
+        PluginEvents.run(PluginUnloadEvent.class, PluginMenu::unload);
     }
 
     private static void unload() {

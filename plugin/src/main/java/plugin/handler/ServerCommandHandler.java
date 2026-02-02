@@ -50,7 +50,7 @@ public class ServerCommandHandler {
         prevCommands.forEach(prev -> prev.getCallback().accept(handler.handleMessage(prev.getCommand())));
         prevCommands.clear();
 
-        PluginEvents.on(PluginUnloadEvent.class, event -> unload());
+        PluginEvents.run(PluginUnloadEvent.class, ServerCommandHandler::unload);
     }
 
     private static void unload() {

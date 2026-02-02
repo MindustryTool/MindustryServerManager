@@ -35,7 +35,7 @@ public class SessionRepository {
         ServerControl.BACKGROUND_SCHEDULER
                 .scheduleWithFixedDelay(SessionRepository::flushBatch, 10, 10, TimeUnit.SECONDS);
 
-        PluginEvents.on(PluginUnloadEvent.class, event -> unload());
+        PluginEvents.run(PluginUnloadEvent.class, SessionRepository::unload);
         PluginEvents.on(SessionRemovedEvent.class, event -> write(event.session.player.uuid(), event.session.data));
     }
 

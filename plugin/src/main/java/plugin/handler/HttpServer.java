@@ -1,5 +1,7 @@
 package plugin.handler;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -32,6 +34,9 @@ public class HttpServer {
     private static final List<Object> buffer = new ArrayList<>();
     private static Javalin app;
     private static SseClient eventListener = null;
+    private static Instant lastSendEvent = Instant.now();
+
+    private static final Duration HEARTBEAT_DURATION = Duration.ofSeconds(30);
 
     public static void init() {
         ServerControl.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(() -> sendStateUpdate(), 0, 30, TimeUnit.SECONDS);
@@ -110,7 +115,15 @@ public class HttpServer {
             Log.info("Http server started on port 9999");
         }
 
-        PluginEvents.on(PluginUnloadEvent.class, event -> unload());
+        PluginEvents.run(PluginUnloadEvent.class, HttpServer::unload);
+
+        ServerControl.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(
+                () -> {
+                    if (isConnected() && Duration.between(lastSendEvent, Instant.now()).compareTo(HEARTBEAT_DURATION) > 0) {
+                        sendStateUpdate();
+                    }
+                }, 0, 2,
+                TimeUnit.SECONDS);
 
         Log.info("Setup http server done");
     }
@@ -123,6 +136,7 @@ public class HttpServer {
             }
         } else {
             eventListener.sendEvent(event);
+            lastSendEvent = Instant.now();
         }
     }
 

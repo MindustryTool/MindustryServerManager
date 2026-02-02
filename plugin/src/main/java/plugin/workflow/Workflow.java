@@ -105,7 +105,7 @@ public class Workflow {
 
             loadWorkflowFromFile();
 
-            PluginEvents.on(PluginUnloadEvent.class, event -> unload());
+            PluginEvents.run(PluginUnloadEvent.class, Workflow::unload);
         } catch (Exception e) {
             e.printStackTrace();
         }

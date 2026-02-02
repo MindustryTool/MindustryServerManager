@@ -226,7 +226,7 @@ public class ApiGateway {
     public static void init() {
         Log.info("Setup api gateway done");
 
-        PluginEvents.on(PluginUnloadEvent.class, event -> unload());
+        PluginEvents.run(PluginUnloadEvent.class, ApiGateway::unload);
     }
 
     private static void unload() {

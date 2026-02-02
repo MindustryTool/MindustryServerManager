@@ -41,7 +41,7 @@ public class AdminUtils {
             }
         });
 
-        PluginEvents.on(PluginUnloadEvent.class, event -> unload());
+        PluginEvents.run(PluginUnloadEvent.class, AdminUtils::unload);
     }
 
     private static void unload() {

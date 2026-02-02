@@ -29,7 +29,7 @@ public class SnapshotHandler {
     public static void init() {
         PluginEvents.on(BlockBuildEndEvent.class, SnapshotHandler::onBlockBuildEnd);
         PluginEvents.on(BlockDestroyEvent.class, SnapshotHandler::onBlockDestroy);
-        PluginEvents.on(PluginUnloadEvent.class, event -> unload());
+        PluginEvents.run(PluginUnloadEvent.class, SnapshotHandler::unload);
     }
 
     public static Optional<Player> getBuiltBy(Building building) {

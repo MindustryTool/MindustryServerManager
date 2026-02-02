@@ -55,7 +55,7 @@ public class ClientCommandHandler {
             Log.info("Client command registered: " + command.getName());
         }
 
-        PluginEvents.on(PluginUnloadEvent.class, event -> unload());
+        PluginEvents.run(PluginUnloadEvent.class, ClientCommandHandler::unload);
     }
 
     private static void unload() {

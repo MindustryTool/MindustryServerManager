@@ -27,7 +27,7 @@ public class VoteHandler {
             check();
         });
 
-        PluginEvents.on(PluginUnloadEvent.class, event -> unload());
+        PluginEvents.run(PluginUnloadEvent.class, VoteHandler::unload);
     }
 
     private static void unload() {
