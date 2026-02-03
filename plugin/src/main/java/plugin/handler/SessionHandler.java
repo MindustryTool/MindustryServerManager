@@ -113,8 +113,16 @@ public class SessionHandler {
         return data.computeIfAbsent(p.uuid(), (k) -> {
             var session = new Session(p);
 
+            ServerControl.backgroundTask("Update Session", () -> {
+                try {
+                    session.data().joinedAt = session.joinedAt;
+                } catch (Exception e) {
+                    Log.err(e);
+                }
+                session.update();
+            });
+
             Core.app.post(() -> PluginEvents.fire(new SessionCreatedEvent(session)));
-            ServerControl.backgroundTask("Update Session", session::update);
 
             return session;
         });

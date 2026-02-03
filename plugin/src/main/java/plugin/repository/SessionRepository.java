@@ -2,6 +2,7 @@ package plugin.repository;
 
 import java.sql.SQLException;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -17,6 +18,7 @@ import plugin.event.SessionRemovedEvent;
 import plugin.PluginEvents;
 import plugin.ServerControl;
 import plugin.type.SessionData;
+import plugin.utils.ExpUtils;
 import plugin.utils.JsonUtils;
 
 public class SessionRepository {
@@ -121,11 +123,12 @@ public class SessionRepository {
 
     private static void write(String uuid, SessionData pdata) {
         try {
-            var sql = "INSERT INTO sessions(uuid, data) VALUES(?, ?) ON CONFLICT(uuid) DO UPDATE SET data = excluded.data";
+            var sql = "INSERT INTO sessions(uuid, data, totalExp) VALUES(?, ?, ?) ON CONFLICT(uuid) DO UPDATE SET data = excluded.data, totalExp = excluded.totalExp";
 
             DB.prepare(sql, statement -> {
                 statement.setString(1, uuid);
                 statement.setString(2, JsonUtils.toJsonString(pdata));
+                statement.setLong(3, ExpUtils.getTotalExp(pdata, Instant.now().toEpochMilli() - pdata.joinedAt));
                 statement.executeUpdate();
             });
         } catch (Exception e) {
@@ -135,7 +138,7 @@ public class SessionRepository {
 
     private static void createTableIfNotExists() {
         try {
-            var sql = "CREATE TABLE IF NOT EXISTS sessions (uuid TEXT PRIMARY KEY, data TEXT NOT NULL)";
+            var sql = "CREATE TABLE IF NOT EXISTS sessions (uuid TEXT PRIMARY KEY, data TEXT NOT NULL, totalExp INTEGER DEFAULT 0)";
 
             DB.statement(statement -> {
                 statement.executeUpdate(sql);
