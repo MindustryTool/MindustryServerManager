@@ -18,7 +18,7 @@ public class ExpUtils {
     }
 
     public static long unitHealthToExp(double health) {
-        return (long) (health / UnitTypes.flare.health / 2);
+        return (long) (health / UnitTypes.flare.health / 5);
     }
 
     // Killing 1 flare = 5 seconds of play time
