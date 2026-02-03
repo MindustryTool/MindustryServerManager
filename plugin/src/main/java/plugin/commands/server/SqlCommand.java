@@ -24,8 +24,15 @@ public class SqlCommand extends PluginCommand {
                     var metaData = result.getMetaData();
                     int columnCount = metaData.getColumnCount();
 
+                    StringBuilder header = new StringBuilder("[sky]");
+                    for (int i = 1; i <= columnCount; i++) {
+                        header.append(metaData.getColumnName(i)).append(" | ");
+                    }
+
+                    Log.info(header.toString());
+
                     while (result.next()) {
-                        StringBuilder row = new StringBuilder();
+                        StringBuilder row = new StringBuilder("[sky]");
                         for (int i = 1; i <= columnCount; i++) {
                             row.append(result.getString(i)).append(" | ");
                         }
