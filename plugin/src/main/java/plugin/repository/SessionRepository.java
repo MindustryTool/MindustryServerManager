@@ -1,9 +1,13 @@
 package plugin.repository;
 
 import java.sql.SQLException;
+import java.time.Duration;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 
 import arc.util.Log;
 import mindustry.gen.Player;
@@ -16,7 +20,9 @@ import plugin.type.SessionData;
 import plugin.utils.JsonUtils;
 
 public class SessionRepository {
-    private static final ConcurrentHashMap<String, SessionData> cache = new ConcurrentHashMap<>();
+    private static final Cache<String, SessionData> cache = Caffeine.newBuilder()
+            .expireAfterAccess(Duration.ofMinutes(1))
+            .build();
 
     private static final Set<String> dirty = ConcurrentHashMap.newKeySet();
 
@@ -36,7 +42,7 @@ public class SessionRepository {
         } catch (Exception e) {
             Log.err("Failed to flush session repository on unload: @", e.getMessage());
         } finally {
-            cache.clear();
+            cache.invalidateAll();
             dirty.clear();
         }
     }
@@ -46,7 +52,7 @@ public class SessionRepository {
     }
 
     public static SessionData get(String uuid) {
-        var existing = cache.get(uuid);
+        var existing = cache.getIfPresent(uuid);
 
         if (existing != null) {
             return existing;
@@ -68,13 +74,13 @@ public class SessionRepository {
     }
 
     public static void markDirty(String uuid) {
-        if (cache.get(uuid) != null) {
+        if (cache.getIfPresent(uuid) != null) {
             dirty.add(uuid);
         }
     }
 
     public static void remove(String uuid) {
-        cache.remove(uuid);
+        cache.invalidate(uuid);
         dirty.remove(uuid);
     }
 
@@ -84,7 +90,7 @@ public class SessionRepository {
         }
 
         for (var uuid : dirty.toArray(new String[0])) {
-            var data = cache.get(uuid);
+            var data = cache.getIfPresent(uuid);
             if (data != null) {
                 write(uuid, data);
             }
