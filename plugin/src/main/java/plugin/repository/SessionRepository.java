@@ -1,5 +1,6 @@
 package plugin.repository;
 
+import java.sql.SQLException;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -41,12 +42,19 @@ public class SessionRepository {
 
     public static SessionData get(String uuid) {
         var existing = cache.get(uuid);
+
         if (existing != null) {
             return existing;
         }
-        var loaded = read(uuid);
-        cache.put(uuid, loaded);
-        return loaded;
+
+        try {
+            var loaded = read(uuid);
+            cache.put(uuid, loaded);
+            return loaded;
+        } catch (Exception e) {
+            Log.err("Error while loading session data for uuid: @", uuid, e);
+            return new SessionData();
+        }
     }
 
     public static void put(String uuid, SessionData data) {
@@ -79,25 +87,24 @@ public class SessionRepository {
         }
     }
 
-    private static SessionData read(String uuid) {
-        SessionData pdata = new SessionData();
-        try {
-            var sql = "SELECT data FROM sessions WHERE uuid = ?";
-            try (var conn = DB.getConnection(); var ps = conn.prepareStatement(sql)) {
-                ps.setString(1, uuid);
-                try (var rs = ps.executeQuery()) {
-                    if (rs.next()) {
-                        var json = rs.getString(1);
-                        if (json != null && !json.isEmpty()) {
-                            pdata = JsonUtils.readJsonAsClass(json, SessionData.class);
-                        }
+    private static SessionData read(String uuid) throws SQLException {
+        var sql = "SELECT data FROM sessions WHERE uuid = ?";
+        try (var conn = DB.getConnection(); var ps = conn.prepareStatement(sql)) {
+            ps.setString(1, uuid);
+
+            try (var rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    var json = rs.getString(1);
+
+                    if (json == null || json.isEmpty()) {
+                        throw new IllegalArgumentException("No session data found for uuid: " + uuid);
                     }
+                    return JsonUtils.readJsonAsClass(json, SessionData.class);
+                } else {
+                    return new SessionData();
                 }
             }
-        } catch (Exception e) {
-            Log.err("Error while loading session", e);
         }
-        return pdata;
     }
 
     private static void write(String uuid, SessionData pdata) {
