@@ -35,6 +35,11 @@ public class VnwCommand extends PluginCommand {
             return;
         }
 
+        if (Groups.unit.count(unit -> unit.team != session.player.team()) > 1000) {
+            session.player.sendMessage("You can't vote when there are more than 1000 enemies.");
+            return;
+        }
+
         boolean voting = waveVoted != -1;
 
         if (!voting) {
