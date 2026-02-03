@@ -15,7 +15,6 @@ import arc.util.*;
 import mindustry.Vars;
 import mindustry.core.GameState.State;
 import mindustry.game.EventType.ServerLoadEvent;
-import mindustry.gen.Call;
 import mindustry.gen.Groups;
 import mindustry.gen.Iconc;
 import plugin.handler.ApiGateway;
@@ -82,7 +81,6 @@ public class ServerControl extends Plugin implements MindustryToolPlugin {
                 p.sendMessage(msg);
             }
         });
-        Call.sendMessage("[scarlet]Server controller restarted");
     }
 
     @Override
@@ -191,7 +189,7 @@ public class ServerControl extends Plugin implements MindustryToolPlugin {
         tips.add((locale) -> ApiGateway.translate(locale, "@Be respectful — toxic behavior may lead to punishment"));
         tips.add((locale) -> ApiGateway.translate(locale, "@Report griefers instead of arguing in chat"));
         tips.add((locale) -> ApiGateway.translate(locale, "@Admins are here to help — ask nicely"));
-        tips.add((locale) -> ApiGateway.translate(locale, Iconc.blockRouter +"Router chains"));
+        tips.add((locale) -> ApiGateway.translate(locale, Iconc.blockRouter + "Router chains"));
         tips.add((locale) -> ApiGateway.translate(locale, "@Have fun!!!"));
         tips.add((locale) -> ApiGateway.translate(locale, "@The factory must grow!!!"));
         tips.add((locale) -> ApiGateway.translate(locale, "@Reach level ", Config.COLOR_NAME_LEVEL,

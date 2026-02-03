@@ -15,7 +15,7 @@ import plugin.utils.Utils;
 import plugin.handler.SessionHandler;
 import plugin.type.Session;
 
-public abstract class PluginCommand {
+    public abstract class PluginCommand {
     @Getter
     @Setter
     private String name;

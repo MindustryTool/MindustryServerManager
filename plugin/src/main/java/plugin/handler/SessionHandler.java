@@ -39,7 +39,7 @@ public class SessionHandler {
             get(event.getPlayer()).ifPresent(session -> {
 
                 long result = session.addKill(event.getUnit().type, 1);
-                long base = 1;
+                long base = 10;
 
                 while (result >= base * 10) {
                     base *= 10;
