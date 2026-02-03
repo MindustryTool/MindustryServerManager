@@ -119,12 +119,9 @@ public class DB {
     private static Connection getConnection() throws SQLException {
         lock.readLock().lock();
         try {
-            if (connection == null || connection.isClosed()) {
-                String jdbcUrl = JDBC_URL_PREFIX + DATABASE_DIR + "/" + DATABASE_FILE;
-                connection = DriverManager.getConnection(jdbcUrl);
-            }
+            String jdbcUrl = JDBC_URL_PREFIX + DATABASE_DIR + "/" + DATABASE_FILE;
 
-            return connection;
+            return connection = DriverManager.getConnection(jdbcUrl);
         } finally {
             lock.readLock().unlock();
         }
