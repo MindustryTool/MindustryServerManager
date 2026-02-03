@@ -4,7 +4,6 @@ import java.io.File;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import arc.util.Log;
@@ -38,17 +37,6 @@ public class DB {
 
             File databaseFile = new File(databaseDir, DATABASE_FILE);
             databasePath = databaseFile.getAbsolutePath();
-            String jdbcUrl = JDBC_URL_PREFIX + databasePath;
-
-            Log.info("Connecting to " + jdbcUrl);
-
-            try {
-                Class.forName("org.sqlite.JDBC");
-            } catch (ClassNotFoundException e) {
-                e.printStackTrace();
-            }
-
-            connection = DriverManager.getConnection(jdbcUrl);
 
             PluginEvents.on(PluginUnloadEvent.class, event -> close());
 
@@ -64,37 +52,21 @@ public class DB {
     public static Connection getConnection() throws SQLException {
         lock.readLock().lock();
         try {
-            if (connection == null) {
-                throw new SQLException("Database connection is not available");
-            }
+            if (connection == null || connection.isClosed()) {
+                String jdbcUrl = JDBC_URL_PREFIX + DATABASE_DIR + "/" + DATABASE_FILE;
 
-            if (connection.isClosed()) {
-                throw new SQLException("Database connection is closed");
+                Log.info("Connecting to " + jdbcUrl);
+
+                try {
+                    Class.forName("org.sqlite.JDBC");
+                } catch (ClassNotFoundException e) {
+                    e.printStackTrace();
+                }
+
+                connection = DriverManager.getConnection(jdbcUrl);
             }
 
             return connection;
-        } finally {
-            lock.readLock().unlock();
-        }
-    }
-
-    public static boolean isHealthy() {
-        lock.readLock().lock();
-        try {
-            if (connection == null)
-                return false;
-            try {
-                if (connection.isClosed())
-                    return false;
-            } catch (SQLException e) {
-                return false;
-            }
-            try (Statement stmt = connection.createStatement()) {
-                stmt.execute("SELECT 1");
-                return true;
-            } catch (SQLException e) {
-                return false;
-            }
         } finally {
             lock.readLock().unlock();
         }
