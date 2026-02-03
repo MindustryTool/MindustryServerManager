@@ -39,6 +39,13 @@ public class DB {
             File databaseFile = new File(databaseDir, DATABASE_FILE);
             databasePath = databaseFile.getAbsolutePath();
             String jdbcUrl = JDBC_URL_PREFIX + databasePath;
+
+            try {
+                Class.forName("org.sqlite.JDBC");
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
+            }
+
             connection = DriverManager.getConnection(jdbcUrl);
 
             PluginEvents.on(PluginUnloadEvent.class, event -> close());
