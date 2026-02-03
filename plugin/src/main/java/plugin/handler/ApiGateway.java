@@ -43,8 +43,7 @@ public class ApiGateway {
             .build();
 
     private static Cache<String, String> translationCache = Caffeine.newBuilder()
-            .expireAfterWrite(Duration.ofMinutes(30))
-            .maximumSize(500)
+            .expireAfterAccess(Duration.ofMinutes(10))
             .build();
 
     public static void requestConnection() {
@@ -155,6 +154,32 @@ public class ApiGateway {
             Log.err("Failed to translate text: " + text, e);
             return text;
         }
+    }
+
+    public static String translate(Locale targetLanguage, Object... texts) {
+        boolean[] indexes = new boolean[texts.length];
+        Seq<String> needTranslate = new Seq<>();
+
+        for (int i = 0; i < texts.length; i++) {
+            if (String.valueOf(texts[i]).startsWith("@")) {
+                indexes[i] = true;
+                needTranslate.add(String.valueOf(texts[i]));
+            }
+        }
+
+        var translated = translate(needTranslate, targetLanguage);
+
+        StringBuilder sb = new StringBuilder();
+
+        for (int i = 0; i < texts.length; i++) {
+            if (indexes[i]) {
+                sb.append(translated.remove(0));
+            } else {
+                sb.append(texts[i]);
+            }
+        }
+
+        return sb.toString();
     }
 
     public static Seq<String> translate(Seq<String> texts, Locale targetLanguage) {

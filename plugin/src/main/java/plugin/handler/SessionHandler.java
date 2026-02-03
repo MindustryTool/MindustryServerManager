@@ -10,6 +10,7 @@ import arc.func.Cons;
 import arc.util.Log;
 import mindustry.game.EventType.PlayerJoin;
 import mindustry.game.EventType.PlayerLeave;
+import mindustry.gen.Call;
 import mindustry.gen.Groups;
 import mindustry.gen.Player;
 import plugin.PluginEvents;
@@ -19,6 +20,7 @@ import plugin.event.PluginUnloadEvent;
 import plugin.event.SessionCreatedEvent;
 import plugin.event.SessionRemovedEvent;
 import plugin.type.Session;
+import plugin.utils.Utils;
 import plugin.repository.SessionRepository;
 
 public class SessionHandler {
@@ -35,7 +37,32 @@ public class SessionHandler {
         ServerControl.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(SessionHandler::update, 0, 1, TimeUnit.SECONDS);
 
         PluginEvents.on(PlayerKillUnitEvent.class, event -> {
-            get(event.getPlayer()).ifPresent(session -> session.addKill(event.getUnit().type, 1));
+            get(event.getPlayer()).ifPresent(session -> {
+
+                long result = session.addKill(event.getUnit().type, 1);
+                long number = -1;
+
+                for (int i = 2; i < 5; i++) {
+                    if (result < Math.pow(10, i)) {
+                        if (result % Math.pow(10, i - 1) == 0) {
+                            number = result;
+                            break;
+                        }
+                    }
+                }
+
+                long print = number;
+
+                Utils.forEachPlayerLocale((locale, players) -> {
+                    String translated = ApiGateway.translate(locale, event.getPlayer().name, "@killed ",
+                            print,
+                            event.getUnit().type.localizedName);
+
+                    for (var player : players) {
+                        player.sendMessage(translated);
+                    }
+                });
+            });
             SessionRepository.markDirty(event.getPlayer().uuid());
         });
 

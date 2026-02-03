@@ -108,10 +108,12 @@ public class Session {
         player.name(originalName);
     }
 
-    public void addKill(UnitType unit, int amount) {
+    public long addKill(UnitType unit, int amount) {
         assert amount > 0 : "Kill amount must be greater than 0";
 
-        data.kills.put(unit.id, data.kills.getOrDefault(unit.id, 0L) + amount);
+        var value = data.kills.getOrDefault(unit.id, 0L) + amount;
+
+        return data.kills.put(unit.id, value);
     }
 
     public long getExp() {
