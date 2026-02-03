@@ -107,7 +107,7 @@ public class ApiGateway {
         });
     }
 
-    public static TranslationDto translate(Locale targetLanguage, String text) {
+    public static TranslationDto translateRaw(Locale targetLanguage, String text) {
         var languageCode = targetLanguage.getLanguage();
 
         if (languageCode == null || languageCode.isEmpty()) {
@@ -145,7 +145,7 @@ public class ApiGateway {
         }
 
         try {
-            var result = translate(targetLanguage, text);
+            var result = translateRaw(targetLanguage, text);
 
             translationCache.put(cacheKey, result.getTranslatedText());
 
@@ -161,9 +161,9 @@ public class ApiGateway {
         Seq<String> needTranslate = new Seq<>();
 
         for (int i = 0; i < texts.length; i++) {
-            if (String.valueOf(texts[i]).startsWith("@")) {
+            if (String.valueOf(texts[i]).trim().startsWith("@")) {
                 indexes[i] = true;
-                needTranslate.add(String.valueOf(texts[i]));
+                needTranslate.add(String.valueOf(texts[i]).trim());
             }
         }
 

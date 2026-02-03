@@ -17,6 +17,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import arc.ApplicationListener;
 import arc.Core;
 import arc.files.Fi;
 import arc.graphics.Pixmap;
@@ -33,11 +34,13 @@ import mindustry.Vars;
 import mindustry.core.Version;
 import mindustry.game.Gamemode;
 import mindustry.gen.Groups;
+import mindustry.gen.Iconc;
 import mindustry.gen.Player;
 import mindustry.io.MapIO;
 import mindustry.io.SaveIO;
 import mindustry.maps.Map;
 import mindustry.maps.MapException;
+import mindustry.type.UnitType;
 import plugin.ServerControl;
 import plugin.handler.SessionHandler;
 
@@ -313,5 +316,9 @@ public class Utils {
                 p -> groupByLocale.computeIfAbsent(parseLocale(p.locale()), k -> new ArrayList<>()).add(p));
 
         groupByLocale.forEach(cons);
+    }
+
+    public static char icon(UnitType type) {
+        return Reflect.get(Iconc.class, "unit" + Strings.capitalize(type.name));
     }
 }

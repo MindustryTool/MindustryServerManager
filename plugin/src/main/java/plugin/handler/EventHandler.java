@@ -128,7 +128,7 @@ public class EventHandler {
         ServerControl.backgroundTask("Chat Event", () -> {
             try {
                 Utils.forEachPlayerLocale((locale, ps) -> {
-                    var result = ApiGateway.translate(locale, Strings.stripColors(message));
+                    var result = ApiGateway.translateRaw(locale, Strings.stripColors(message));
 
                     if (result.getDetectedLanguage().getLanguage().equalsIgnoreCase(locale.getLanguage())) {
                         return;

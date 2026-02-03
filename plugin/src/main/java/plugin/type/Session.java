@@ -184,7 +184,7 @@ public class Session {
             }
 
             try {
-                char icon = Reflect.get(Iconc.class, "unit" + Strings.capitalize(unit.name));
+                char icon = Utils.icon(unit);
                 info.append("[]").append(icon).append(": ").append(entry.getValue())
                         .append(" (")
                         .append(unitHealthToExp(unit.health * entry.getValue()))

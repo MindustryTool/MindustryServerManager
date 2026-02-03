@@ -10,7 +10,6 @@ import arc.func.Cons;
 import arc.util.Log;
 import mindustry.game.EventType.PlayerJoin;
 import mindustry.game.EventType.PlayerLeave;
-import mindustry.gen.Call;
 import mindustry.gen.Groups;
 import mindustry.gen.Player;
 import plugin.PluginEvents;
@@ -42,7 +41,7 @@ public class SessionHandler {
                 long result = session.addKill(event.getUnit().type, 1);
                 long number = -1;
 
-                for (int i = 2; i < 5; i++) {
+                for (int i = 3; i < 7; i++) {
                     if (result < Math.pow(10, i)) {
                         if (result % Math.pow(10, i - 1) == 0) {
                             number = result;
@@ -54,9 +53,9 @@ public class SessionHandler {
                 long print = number;
 
                 Utils.forEachPlayerLocale((locale, players) -> {
-                    String translated = ApiGateway.translate(locale, event.getPlayer().name, "@killed ",
+                    String translated = ApiGateway.translate(locale, event.getPlayer().name, "@killed",
                             print,
-                            event.getUnit().type.localizedName);
+                            Utils.icon(event.getUnit().type));
 
                     for (var player : players) {
                         player.sendMessage(translated);
