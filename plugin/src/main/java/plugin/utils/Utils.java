@@ -322,11 +322,18 @@ public class Utils {
     }
 
     public static String padRight(String text, int length) {
-        if (text.length() >= length)
+        if (text == null) {
+            text = "";
+        }
+
+        var plain = Strings.stripColors(text);
+        if (plain.length() >= length) {
             return text;
+        }
+
         StringBuilder sb = new StringBuilder(text);
 
-        for (int i = text.length(); i < length; i++) {
+        for (int i = plain.length(); i < length; i++) {
             sb.append(" ");
         }
 
