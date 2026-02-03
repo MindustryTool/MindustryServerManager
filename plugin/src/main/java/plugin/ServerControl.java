@@ -175,12 +175,12 @@ public class ServerControl extends Plugin implements MindustryToolPlugin {
         Seq<Func<Locale, String>> tips = new Seq<>();
 
         tips.add((locale) -> ApiGateway.translate(locale, "@Powered by ", "MindustryTool"));
-        tips.add((locale) -> ApiGateway.translate(locale, "@Use ", "[accent]/discord", " @to join our Discord server"));
-        tips.add((locale) -> ApiGateway.translate(locale, "@Use ", "[accent]/vnw", " @to skip a wave"));
-        tips.add((locale) -> ApiGateway.translate(locale, "@Use ", "[accent]/rtv", " @to change map"));
-        tips.add((locale) -> ApiGateway.translate(locale, "@Use ", "[accent]/me", " @to see your stats"));
-        tips.add((locale) -> ApiGateway.translate(locale, "@Use ", "[accent]/grief", " @to report a player"));
-        tips.add((locale) -> ApiGateway.translate(locale, "@Use ", "[accent]/website",
+        tips.add((locale) -> ApiGateway.translate(locale, "@Use ", "[accent]/discord[sky]", " @to join our Discord server"));
+        tips.add((locale) -> ApiGateway.translate(locale, "@Use ", "[accent]/vnw[sky]", " @to skip a wave"));
+        tips.add((locale) -> ApiGateway.translate(locale, "@Use ", "[accent]/rtv[sky]", " @to change map"));
+        tips.add((locale) -> ApiGateway.translate(locale, "@Use ", "[accent]/me[sky]", " @to see your stats"));
+        tips.add((locale) -> ApiGateway.translate(locale, "@Use ", "[accent]/grief[sky]", " @to report a player"));
+        tips.add((locale) -> ApiGateway.translate(locale, "@Use ", "[accent]/website[sky]",
                 "@to visit our website for schematics and maps"));
         tips.add((locale) -> ApiGateway.translate(locale, "@Remember to respect other players"));
         tips.add((locale) -> ApiGateway.translate(locale, "@Remember to download and update", "MindustryTool"));
