@@ -6,7 +6,7 @@ import mindustry.maps.Map;
 import plugin.handler.MapRating;
 import plugin.handler.VoteHandler;
 import plugin.type.Session;
-import plugin.handler.ApiGateway;
+import plugin.handler.I18n;
 
 public class RtvMenu extends PluginMenu<Integer> {
     private static final int MAPS_PER_PAGE = 7;
@@ -25,8 +25,8 @@ public class RtvMenu extends PluginMenu<Integer> {
 
         int currentPage = Math.max(1, Math.min(page, totalPages));
 
-        this.title = ApiGateway.translate(session.locale, "@Available Maps");
-        this.description = ApiGateway.translate(session.locale,
+        this.title = I18n.t(session.locale, "@Available Maps");
+        this.description = I18n.t(session.locale,
                 "@Page ", currentPage, " / ", totalPages, "\n", "@Click a map to vote for it.");
 
         int start = (currentPage - 1) * MAPS_PER_PAGE;
@@ -38,7 +38,7 @@ public class RtvMenu extends PluginMenu<Integer> {
             String ratingColor = MapRating.avgScoreColor(rating);
 
             String voted = VoteHandler.isVoted(session.player, map.file.nameWithoutExtension())
-                    ? ApiGateway.translate(session.locale, "[accent]", "@Voted")
+                    ? I18n.t(session.locale, "[accent]", "@Voted")
                     : "";
             String text = String.format("%s%s%.2f [gold]%c [white]%s", voted, ratingColor, rating, Iconc.star,
                     map.name());
@@ -54,19 +54,19 @@ public class RtvMenu extends PluginMenu<Integer> {
 
         if (hasPrev || hasNext) {
             if (hasPrev) {
-                option(ApiGateway.translate(session.locale, "@<< Previous"), (p, s) -> {
+                option(I18n.t(session.locale, "@<< Previous"), (p, s) -> {
                     new RtvMenu().send(p, currentPage - 1);
                 });
             }
 
             if (hasNext) {
-                option(ApiGateway.translate(session.locale, "@Next >>"), (p, s) -> {
+                option(I18n.t(session.locale, "@Next >>"), (p, s) -> {
                     new RtvMenu().send(p, currentPage + 1);
                 });
             }
             row();
         }
 
-        text(ApiGateway.translate(session.locale, "[scarlet]", "@Close"));
+        text(I18n.t(session.locale, "[scarlet]", "@Close"));
     }
 }

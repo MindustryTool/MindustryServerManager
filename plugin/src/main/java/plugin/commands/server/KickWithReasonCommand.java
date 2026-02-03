@@ -6,7 +6,7 @@ import mindustry.gen.Groups;
 import mindustry.gen.Player;
 import mindustry.net.Packets.KickReason;
 import plugin.commands.PluginCommand;
-import plugin.handler.ApiGateway;
+import plugin.handler.I18n;
 import plugin.utils.Utils;
 
 public class KickWithReasonCommand extends PluginCommand {
@@ -39,7 +39,7 @@ public class KickWithReasonCommand extends PluginCommand {
                 target.kick(reason);
             }
             Utils.forEachPlayerLocale((locale, players) -> {
-                String msg = ApiGateway.translate(locale, "[scarlet]", target.name(), "[scarlet]", " ",
+                String msg = I18n.t(locale, "[scarlet]", target.name(), "[scarlet]", " ",
                         "@has been kicked by the server.");
                 for (var p : players) {
                     p.sendMessage(msg);

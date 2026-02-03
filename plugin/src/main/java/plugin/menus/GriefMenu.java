@@ -3,12 +3,12 @@ package plugin.menus;
 import plugin.handler.SessionHandler;
 import plugin.type.Session;
 import plugin.utils.AdminUtils;
-import plugin.handler.ApiGateway;
+import plugin.handler.I18n;
 
 public class GriefMenu extends PluginMenu<Session> {
     @Override
     public void build(Session session, Session target) {
-        this.title = ApiGateway.translate(session.locale, "@Grief Report");
+        this.title = I18n.t(session.locale, "@Grief Report");
 
         if (target == null) {
             SessionHandler.each(t -> t != session, t -> {
@@ -16,12 +16,12 @@ public class GriefMenu extends PluginMenu<Session> {
                 row();
             });
 
-            text(ApiGateway.translate(session.locale, "[red]", "@Close"));
+            text(I18n.t(session.locale, "[red]", "@Close"));
         } else {
-            option(ApiGateway.translate(session.locale, "@Report"),
+            option(I18n.t(session.locale, "@Report"),
                     (p, s) -> AdminUtils.reportGrief(session, target));
             row();
-            text(ApiGateway.translate(session.locale, "@Cancel"));
+            text(I18n.t(session.locale, "@Cancel"));
         }
     }
 }

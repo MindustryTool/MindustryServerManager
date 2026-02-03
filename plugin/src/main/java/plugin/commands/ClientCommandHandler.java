@@ -23,8 +23,11 @@ import plugin.commands.client.RtvCommand;
 import plugin.commands.client.ServersCommand;
 import plugin.commands.client.TrailCommand;
 import plugin.commands.client.VnwCommand;
+import plugin.commands.client.SubmitMapCommand;
+import plugin.commands.client.AdminCommand;
 import plugin.event.PluginUnloadEvent;
 import plugin.handler.ApiGateway;
+import plugin.handler.I18n;
 import plugin.menus.GlobalServerListMenu;
 import plugin.type.Session;
 import plugin.utils.Utils;
@@ -51,7 +54,9 @@ public class ClientCommandHandler {
         commands.add(new GriefCommand());
         commands.add(new TrailCommand());
         commands.add(new MapCommand());
+        commands.add(new SubmitMapCommand());
         commands.add(new DiscordCommand());
+        commands.add(new AdminCommand());
 
         for (PluginCommand command : commands) {
             command.register(handler, true);
@@ -71,16 +76,16 @@ public class ClientCommandHandler {
     }
 
     public static void onServerChoose(Session session, String id, String name) {
-        session.player.sendMessage(ApiGateway.translate(session.locale,
+        session.player.sendMessage(I18n.t(session.locale,
                 "[green]", "@Starting server ", "[white]", name, ", ", "[white]", "@redirection will happen soon"));
 
         try {
             ServerControl.backgroundTask("Redirect Server", () -> {
                 var data = ApiGateway.host(id);
-                session.player.sendMessage(ApiGateway.translate(session.locale,
+                session.player.sendMessage(I18n.t(session.locale,
                         "[green]", "@Redirecting"));
                 Utils.forEachPlayerLocale((locale, players) -> {
-                    String msg = ApiGateway.translate(locale, session.player.coloredName(), " ", "[green]",
+                    String msg = I18n.t(locale, session.player.coloredName(), " ", "[green]",
                             "@redirecting to server ", "[white]", name,
                             ", ", "@use ", "[green]", "/servers", "[white]", " ", "@to follow");
                     for (var p : players) {
@@ -109,7 +114,7 @@ public class ClientCommandHandler {
                 });
             });
         } catch (Exception e) {
-            session.player.sendMessage(ApiGateway.translate(session.locale,
+            session.player.sendMessage(I18n.t(session.locale,
                     "@Error: ", "@Can not load server"));
             e.printStackTrace();
         }

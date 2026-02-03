@@ -8,6 +8,7 @@ import mindustry.gen.Call;
 import mindustry.gen.Player;
 import plugin.ServerControl;
 import plugin.handler.ApiGateway;
+import plugin.handler.I18n;
 
 public class ServerUtils {
 
@@ -17,15 +18,15 @@ public class ServerUtils {
 
         ServerControl.backgroundTask("Server Choose", () -> {
             try {
-                player.sendMessage(ApiGateway.translate(Utils.parseLocale(player.locale()),
+                player.sendMessage(I18n.t(Utils.parseLocale(player.locale()),
                         "[green]", "@Starting server ", "[white]", name,
                         ", ", "[white]", "@this can take up to 1 minutes, please wait"));
                 Log.info(String.format("Send host command to server %s %S", name, id));
                 var data = ApiGateway.host(id);
-                player.sendMessage(ApiGateway.translate(Utils.parseLocale(player.locale()),
+                player.sendMessage(I18n.t(Utils.parseLocale(player.locale()),
                         "[green]", "@Redirecting"));
                 Utils.forEachPlayerLocale((locale, players) -> {
-                    String msg = ApiGateway.translate(locale, player.coloredName(), " ", "[green]",
+                    String msg = I18n.t(locale, player.coloredName(), " ", "[green]",
                             "@redirecting to server ", "[white]", name,
                             ", ", "@use ", "[green]", "/servers", "[white]", " ", "@to follow");
                     for (var p : players) {
@@ -49,7 +50,7 @@ public class ServerUtils {
 
                 Call.connect(player.con, InetAddress.getByName(host.trim()).getHostAddress(), port);
             } catch (Throwable e) {
-                player.sendMessage(ApiGateway.translate(Utils.parseLocale(player.locale()),
+                player.sendMessage(I18n.t(Utils.parseLocale(player.locale()),
                         "@Error: ", "@Can not load server"));
                 e.printStackTrace();
             }

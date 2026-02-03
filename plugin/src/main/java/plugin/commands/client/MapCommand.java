@@ -4,7 +4,7 @@ import mindustry.Vars;
 import plugin.commands.PluginCommand;
 import plugin.handler.MapRating;
 import plugin.type.Session;
-import plugin.handler.ApiGateway;
+import plugin.handler.I18n;
 
 public class MapCommand extends PluginCommand {
     public MapCommand() {
@@ -16,7 +16,7 @@ public class MapCommand extends PluginCommand {
     @Override
     public void handleClient(Session session) {
         if (Vars.state.map == null) {
-            session.player.sendMessage(ApiGateway.translate(session.locale,
+            session.player.sendMessage(I18n.t(session.locale,
                     "@Map is not loaded"));
             return;
         }

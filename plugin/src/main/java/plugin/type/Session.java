@@ -15,7 +15,7 @@ import mindustry.type.UnitType;
 import mindustry.ui.dialogs.LanguageDialog;
 import plugin.Config;
 import plugin.ServerControl;
-import plugin.handler.ApiGateway;
+import plugin.handler.I18n;
 import plugin.repository.SessionRepository;
 import plugin.utils.ExpUtils;
 import plugin.utils.Utils;
@@ -44,7 +44,7 @@ public class Session {
 
             if (isAdmin) {
                 Utils.forEachPlayerLocale((locale, players) -> {
-                    String msg = ApiGateway.translate(locale, "[accent]", "@An admin logged in:[] ", player.name);
+                    String msg = I18n.t(locale, "[accent]", "@An admin logged in:[] ", player.name);
                     for (var p : players) {
                         p.sendMessage(msg);
                     }
@@ -78,7 +78,7 @@ public class Session {
 
                 ServerControl.backgroundTask("Update level", () -> {
                     Utils.forEachPlayerLocale((locale, players) -> {
-                        String message = ApiGateway.translate("Level up", locale);
+                        String message = I18n.t(locale,"Level up");
 
                         players.forEach(player -> player.sendMessage(
                                 this.player.name + " [green]" + message

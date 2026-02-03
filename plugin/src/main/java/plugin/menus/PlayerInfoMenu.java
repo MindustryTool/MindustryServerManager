@@ -2,12 +2,12 @@ package plugin.menus;
 
 import plugin.handler.SessionHandler;
 import plugin.type.Session;
-import plugin.handler.ApiGateway;
+import plugin.handler.I18n;
 
 public class PlayerInfoMenu extends PluginMenu<Session> {
     @Override
     public void build(Session Session, Session caller) {
-        this.title = ApiGateway.translate(session.locale, "@Servers");
+        this.title = I18n.t(session.locale, "@Servers");
 
         SessionHandler.each(p -> {
             option(p.player.name, (t, s) -> {
@@ -16,7 +16,7 @@ public class PlayerInfoMenu extends PluginMenu<Session> {
             row();
         });
 
-        option(ApiGateway.translate(session.locale, "[red]", "@Close"),
+        option(I18n.t(session.locale, "[red]", "@Close"),
                 (p, s) -> new ServerListMenu().send(session, 0));
     }
 }

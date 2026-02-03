@@ -156,34 +156,6 @@ public class ApiGateway {
         }
     }
 
-    public static String translate(Locale targetLanguage, Object... texts) {
-        boolean[] indexes = new boolean[texts.length];
-
-        Seq<String> needTranslate = new Seq<>();
-
-        for (int i = 0; i < texts.length; i++) {
-            String str = String.valueOf(texts[i]).trim();
-            if (str.startsWith("@")) {
-                indexes[i] = true;
-                needTranslate.add(str.substring(1));
-            }
-        }
-
-        var translated = translate(needTranslate, targetLanguage);
-
-        StringBuilder sb = new StringBuilder();
-
-        for (int i = 0; i < texts.length; i++) {
-            if (indexes[i]) {
-                sb.append(translated.remove(0));
-            } else {
-                sb.append(texts[i]);
-            }
-        }
-
-        return sb.toString();
-    }
-
     public static Seq<String> translate(Seq<String> texts, Locale targetLanguage) {
         var languageCode = targetLanguage.getLanguage();
 

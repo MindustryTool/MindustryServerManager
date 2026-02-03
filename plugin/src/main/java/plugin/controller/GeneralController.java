@@ -34,7 +34,7 @@ import dto.ServerCommandDto;
 import dto.StartServerDto;
 import dto.ServerStateDto;
 import plugin.utils.Utils;
-import plugin.handler.ApiGateway;
+import plugin.handler.I18n;
 import io.javalin.Javalin;
 import io.javalin.http.ContentType;
 
@@ -65,7 +65,7 @@ public class GeneralController {
             String message = ctx.body();
 
             Utils.forEachPlayerLocale((locale, players) -> {
-                String msg = ApiGateway.translate(locale, "@" + message);
+                String msg = I18n.t(locale, "@" + message);
                 for (var p : players) {
                     p.sendMessage(msg);
                 }
@@ -260,7 +260,7 @@ public class GeneralController {
             } else {
                 String message = ctx.body();
                 Utils.forEachPlayerLocale((locale, players) -> {
-                    String msg = ApiGateway.translate(locale, "[]", "@" + message);
+                    String msg = I18n.t(locale, "[]", "@" + message);
                     for (var p : players) {
                         p.sendMessage(msg);
                     }

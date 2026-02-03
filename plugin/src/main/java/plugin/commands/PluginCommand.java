@@ -10,7 +10,7 @@ import lombok.Getter;
 import lombok.Setter;
 import mindustry.gen.Player;
 import plugin.ServerControl;
-import plugin.handler.ApiGateway;
+import plugin.handler.I18n;
 import plugin.utils.Utils;
 import plugin.handler.SessionHandler;
 import plugin.type.Session;
@@ -97,7 +97,7 @@ public abstract class PluginCommand {
             handler.register(name, paramText.toString(), description, (args, p) -> {
                 if (p instanceof Player player) {
                     if (admin && !player.admin) {
-                        player.sendMessage(ApiGateway.translate(Utils.parseLocale(player.locale()), "[scarlet]",
+                        player.sendMessage(I18n.t(Utils.parseLocale(player.locale()), "[scarlet]",
                                 "@You must be admin to use this command."));
                         return;
                     }
@@ -116,10 +116,10 @@ public abstract class PluginCommand {
                                     .handleParams(args)
                                     .handleClient(session);
                         } catch (ParamException e) {
-                            session.player.sendMessage(ApiGateway.translate(
+                            session.player.sendMessage(I18n.t(
                                     session.locale, "[scarlet]", "@Error: ", e.getMessage()));
                         } catch (Exception e) {
-                            session.player.sendMessage(ApiGateway.translate(
+                            session.player.sendMessage(I18n.t(
                                     session.locale, "[scarlet]", "@Error"));
                             Log.err("Failed to execute command " + name, e);
                         }

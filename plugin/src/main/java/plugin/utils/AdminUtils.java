@@ -18,7 +18,7 @@ import plugin.event.PluginUnloadEvent;
 import plugin.event.SessionRemovedEvent;
 import plugin.handler.SessionHandler;
 import plugin.type.Session;
-import plugin.handler.ApiGateway;
+import plugin.handler.I18n;
 
 public class AdminUtils {
 
@@ -55,13 +55,13 @@ public class AdminUtils {
 
     public static void voteGrief(Session session) {
         if (reported == null) {
-            session.player.sendMessage(ApiGateway.translate(session.locale,
+            session.player.sendMessage(I18n.t(session.locale,
                     "@No player is being reported."));
             return;
         }
 
         if (session.votedGrief) {
-            session.player.sendMessage(ApiGateway.translate(session.locale,
+            session.player.sendMessage(I18n.t(session.locale,
                     "@You already voted."));
             return;
         }
@@ -74,7 +74,7 @@ public class AdminUtils {
         if (voted >= required) {
             reported.player.kick(KickReason.kick);
             Utils.forEachPlayerLocale((locale, players) -> {
-                String msg = ApiGateway.translate(locale, "[red]", "@Player ", reported.player.name,
+                String msg = I18n.t(locale, "[red]", "@Player ", reported.player.name,
                         " ", "@was kicked for griefing.");
                 for (var p : players) {
                     p.sendMessage(msg);
@@ -86,7 +86,7 @@ public class AdminUtils {
             reset();
         } else {
             Utils.forEachPlayerLocale((locale, players) -> {
-                String msg = ApiGateway.translate(locale, "[red]", "@Player ", session.player.name,
+                String msg = I18n.t(locale, "[red]", "@Player ", session.player.name,
                         " ", "@voted for player ", reported.player.name,
                         " ", "@for griefing. Use ", "/grief", " ", "@to kick this player.");
                 for (var p : players) {
@@ -98,13 +98,13 @@ public class AdminUtils {
 
     public static void reportGrief(Session player, Session target) {
         if (Groups.player.size() < 3) {
-            player.player.sendMessage(ApiGateway.translate(player.locale,
+            player.player.sendMessage(I18n.t(player.locale,
                     "@You cannot report grief if there are less than 3 players."));
             return;
         }
 
         if (target == player) {
-            player.player.sendMessage(ApiGateway.translate(player.locale,
+            player.player.sendMessage(I18n.t(player.locale,
                     "@You cannot report yourself.(Bud are you alright)"));
             return;
         }
@@ -116,7 +116,7 @@ public class AdminUtils {
                 long remaining = lastReportTime.plusSeconds(Config.GRIEF_REPORT_COOLDOWN)
                         .getEpochSecond() - Instant.now().getEpochSecond();
 
-                player.player.sendMessage(ApiGateway.translate(player.locale,
+                player.player.sendMessage(I18n.t(player.locale,
                         "@You must wait ", remaining, " ", "@seconds to report again."));
                 return;
             }
@@ -133,7 +133,7 @@ public class AdminUtils {
         target.player.team(Team.derelict);
 
         Utils.forEachPlayerLocale((locale, players) -> {
-            String msg = ApiGateway.translate(locale, "[red]", "@Player ", player.player.name, " ",
+            String msg = I18n.t(locale, "[red]", "@Player ", player.player.name, " ",
                     "@reported player ", target.player.name, " ", "@for griefing. Use ", "/grief", " ",
                     "@to kick this player.");
             for (var p : players) {
@@ -143,7 +143,7 @@ public class AdminUtils {
 
         voteTimeout = ServerControl.BACKGROUND_SCHEDULER.schedule(() -> {
             Utils.forEachPlayerLocale((locale, players) -> {
-                String msg = ApiGateway.translate(locale, "[scarlet]", "@Vote failed, not enough votes.");
+                String msg = I18n.t(locale, "[scarlet]", "@Vote failed, not enough votes.");
                 for (var p : players) {
                     p.sendMessage(msg);
                 }

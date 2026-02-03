@@ -21,6 +21,7 @@ import plugin.handler.ApiGateway;
 import plugin.handler.EventHandler;
 import plugin.handler.HttpServer;
 import plugin.handler.HubHandler;
+import plugin.handler.I18n;
 import plugin.handler.VoteHandler;
 import plugin.menus.PluginMenu;
 import plugin.utils.AdminUtils;
@@ -78,7 +79,7 @@ public class ServerControl extends Plugin implements MindustryToolPlugin {
 
         PluginEvents.on(ServerLoadEvent.class, event -> isUnloaded = false);
         Utils.forEachPlayerLocale((locale, players) -> {
-            String msg = "[scarlet]" + ApiGateway.translate(locale, "@Server controller restarted");
+            String msg = "[scarlet]" + I18n.t(locale, "@Server controller restarted");
             for (var p : players) {
                 p.sendMessage(msg);
             }
@@ -176,26 +177,26 @@ public class ServerControl extends Plugin implements MindustryToolPlugin {
     private static void sendTips() {
         Seq<Func<Locale, String>> tips = new Seq<>();
 
-        tips.add((locale) -> ApiGateway.translate(locale, "@Powered by", " MindustryTool"));
-        tips.add((locale) -> ApiGateway.translate(locale, "@Use", " [accent]/discord[sky] ",
+        tips.add((locale) -> I18n.t(locale, "@Powered by", " MindustryTool"));
+        tips.add((locale) -> I18n.t(locale, "@Use", " [accent]/discord[sky] ",
                 "@to join our Discord server"));
-        tips.add((locale) -> ApiGateway.translate(locale, "@Use", " [accent]/vnw[sky] ", "@to skip a wave"));
-        tips.add((locale) -> ApiGateway.translate(locale, "@Use", " [accent]/rtv[sky] ", "@to change map"));
-        tips.add((locale) -> ApiGateway.translate(locale, "@Use", " [accent]/me[sky] ", "@to see your stats"));
-        tips.add((locale) -> ApiGateway.translate(locale, "@Use", " [accent]/grief[sky] ", "@to report a player"));
-        tips.add((locale) -> ApiGateway.translate(locale, "@Use", " [accent]/website[sky] ",
+        tips.add((locale) -> I18n.t(locale, "@Use", " [accent]/vnw[sky] ", "@to skip a wave"));
+        tips.add((locale) -> I18n.t(locale, "@Use", " [accent]/rtv[sky] ", "@to change map"));
+        tips.add((locale) -> I18n.t(locale, "@Use", " [accent]/me[sky] ", "@to see your stats"));
+        tips.add((locale) -> I18n.t(locale, "@Use", " [accent]/grief[sky] ", "@to report a player"));
+        tips.add((locale) -> I18n.t(locale, "@Use", " [accent]/website[sky] ",
                 "@to visit our website for schematics and maps"));
-        tips.add((locale) -> ApiGateway.translate(locale, "@Remember to respect other players"));
-        tips.add((locale) -> ApiGateway.translate(locale, "@Remember to download and update", " MindustryTool"));
-        tips.add((locale) -> ApiGateway.translate(locale, "@If you find this helpful please give us a star: ",
+        tips.add((locale) -> I18n.t(locale, "@Remember to respect other players"));
+        tips.add((locale) -> I18n.t(locale, "@Remember to download and update", " MindustryTool"));
+        tips.add((locale) -> I18n.t(locale, "@If you find this helpful please give us a star: ",
                 Config.GITHUB_URL));
-        tips.add((locale) -> ApiGateway.translate(locale, "@Be respectful — toxic behavior may lead to punishment"));
-        tips.add((locale) -> ApiGateway.translate(locale, "@Report griefers instead of arguing in chat"));
-        tips.add((locale) -> ApiGateway.translate(locale, "@Admins are here to help — ask nicely"));
+        tips.add((locale) -> I18n.t(locale, "@Be respectful — toxic behavior may lead to punishment"));
+        tips.add((locale) -> I18n.t(locale, "@Report griefers instead of arguing in chat"));
+        tips.add((locale) -> I18n.t(locale, "@Admins are here to help — ask nicely"));
         tips.add((locale) -> Iconc.blockRouter + "Router chains");
-        tips.add((locale) -> ApiGateway.translate(locale, "@Have fun!!!"));
-        tips.add((locale) -> ApiGateway.translate(locale, "@The factory must grow!!!"));
-        tips.add((locale) -> ApiGateway.translate(locale, "@Reach level", " ", Config.COLOR_NAME_LEVEL, " ",
+        tips.add((locale) -> I18n.t(locale, "@Have fun!!!"));
+        tips.add((locale) -> I18n.t(locale, "@The factory must grow!!!"));
+        tips.add((locale) -> I18n.t(locale, "@Reach level", " ", Config.COLOR_NAME_LEVEL, " ",
                 "@to unlock colored name"));
         var tip = tips.random();
 

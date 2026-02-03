@@ -57,7 +57,7 @@ public class SessionHandler {
                     String formatted = Strings.format(" @ @ (+@exp)", print, Utils.icon(event.getUnit().type),
                             session.unitHealthToExp(result * event.getUnit().type.health));
 
-                    String translated = ApiGateway.translate(locale, event.getPlayer().name, "@killed", formatted);
+                    String translated = I18n.t(locale, event.getPlayer().name, "@killed", formatted);
 
                     for (var player : players) {
                         player.sendMessage(translated);

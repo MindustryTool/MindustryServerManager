@@ -66,7 +66,7 @@ public class MapRating {
 
             save(data);
 
-        } catch (Exception e) {
+    } catch (Exception e) {
             Log.err("Failed to update map rating", e);
         }
     }

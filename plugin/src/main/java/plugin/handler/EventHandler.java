@@ -215,16 +215,16 @@ public class EventHandler {
 
                 if (isLoggedIn) {
                     Log.info(playerData);
-                    session.player.sendMessage(ApiGateway.translate(session.locale,
+                    session.player.sendMessage(I18n.t(session.locale,
                             "@Logged in as ", playerData.getName()));
                 } else {
-                    session.player.sendMessage(ApiGateway.translate(session.locale,
+                    session.player.sendMessage(I18n.t(session.locale,
                             "@You are not logged in, consider log in via ", " MindustryTool ", "@using", "/login"));
                 }
             });
 
             ServerControl.backgroundTask("Welcome Message", () -> {
-                var translated = ApiGateway.translate(Config.WELCOME_MESSAGE, session.locale);
+                var translated = I18n.t(session.locale, Config.WELCOME_MESSAGE);
                 session.player.sendMessage(translated);
             });
 
