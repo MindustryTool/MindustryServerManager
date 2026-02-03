@@ -23,8 +23,6 @@ public abstract class PluginCommand {
 
     private Seq<Param> params = new Seq<>();
 
-    private Session session;
-
     @Setter
     @Getter
     private boolean admin = true;
@@ -60,13 +58,12 @@ public abstract class PluginCommand {
         return p;
     }
 
-    protected PluginCommand newInstance(Session session) {
+    protected PluginCommand newInstance() {
         try {
             PluginCommand copy = this.getClass().getDeclaredConstructor().newInstance();
 
             copy.name = this.name;
             copy.description = this.description;
-            copy.session = session;
 
             for (Param p : this.params) {
                 copy.params.add(p.copy());
@@ -109,42 +106,38 @@ public abstract class PluginCommand {
                         return;
                     }
 
-                    wrapper(() -> {
-                        this.newInstance(session)
-                                .handleParams(args)
-                                .handleClient(session);
+                    ServerControl.BACKGROUND_TASK_EXECUTOR.submit(() -> {
+                        try {
+                            this.newInstance()
+                                    .handleParams(args)
+                                    .handleClient(session);
+                        } catch (ParamException e) {
+                            session.player.sendMessage(e.getMessage());
+                        } catch (Exception e) {
+                            session.player.sendMessage("Error");
+                            Log.err("Failed to execute command " + name, e);
+                        }
                     });
                 } else {
                     throw new IllegalArgumentException("Player expected");
                 }
             });
         } else {
-            wrapper(() -> {
-                handler.register(name, paramText.toString(), description, (args) -> {
-                    this.newInstance(null)
-                            .handleParams(args)
-                            .handleServer();
-                });
+            ServerControl.BACKGROUND_TASK_EXECUTOR.submit(() -> {
+                try {
+                    handler.register(name, paramText.toString(), description, (args) -> {
+                        this.newInstance()
+                                .handleParams(args)
+                                .handleServer();
+                    });
+                } catch (ParamException e) {
+                    Log.err(e.getMessage());
+                } catch (Exception e) {
+                    Log.err("Failed to execute command " + name, e);
+                }
             });
-        }
-    }
 
-    private void wrapper(Runnable runnable) {
-        ServerControl.BACKGROUND_TASK_EXECUTOR.submit(() -> {
-            try {
-                runnable.run();
-            } catch (ParamException e) {
-                if (session != null) {
-                    session.player.sendMessage(e.getMessage());
-                }
-                Log.err(e.getMessage());
-            } catch (Exception e) {
-                if (session != null) {
-                    session.player.sendMessage("Error");
-                }
-                Log.err("Failed to execute command " + name, e);
-            }
-        });
+        }
     }
 
     public void handleClient(Session session) {

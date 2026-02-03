@@ -71,7 +71,7 @@ public class ServerControl extends Plugin implements MindustryToolPlugin {
             HubHandler.init();
         }
 
-        BACKGROUND_SCHEDULER.schedule(ServerControl::autoHost, 30, TimeUnit.SECONDS);
+        BACKGROUND_SCHEDULER.schedule(ServerControl::autoHost, 60, TimeUnit.SECONDS);
         BACKGROUND_SCHEDULER.schedule(ServerControl::autoPause, 10, TimeUnit.SECONDS);
         BACKGROUND_SCHEDULER.scheduleWithFixedDelay(ServerControl::sendTips, 0, 3, TimeUnit.MINUTES);
 
