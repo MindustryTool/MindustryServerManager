@@ -1,16 +1,9 @@
 package plugin.utils;
 
 import arc.struct.Seq;
-import mindustry.gen.Call;
-import plugin.repository.SessionRepository;
 import plugin.repository.SessionRepository.RankData;
 
 public class RankUtils {
-
-    public static void sendLeaderBoard() {
-        var players = SessionRepository.getLeaderBoard(10);
-        Call.sendMessage(getRankString(players));
-    }
 
     public static String getRankString(Seq<RankData> players) {
         StringBuilder sb = new StringBuilder("[]\n");

@@ -1,6 +1,7 @@
 package plugin.commands.client;
 
 import plugin.commands.PluginCommand;
+import plugin.repository.SessionRepository;
 import plugin.type.Session;
 import plugin.utils.RankUtils;
 
@@ -13,6 +14,7 @@ public class RankCommand extends PluginCommand {
 
     @Override
     public void handleClient(Session session) {
-        RankUtils.sendLeaderBoard();
+        String data = RankUtils.getRankString(SessionRepository.getLeaderBoard(10));
+        session.player.sendMessage(data);
     }
 }
