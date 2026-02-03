@@ -24,7 +24,6 @@ import arc.util.Log;
 import arc.util.Reflect;
 import arc.util.Strings;
 import arc.util.Time;
-import arc.util.Http.HttpRequest;
 import dto.ModDto;
 import dto.ModMetaDto;
 import dto.PlayerDto;
@@ -272,16 +271,17 @@ public class Utils {
 
             byte[] imageBytes = tempImageFile.readBytes();
 
-            ServerControl.backgroundTask("Generate preview", () -> {
-                body.put("data", Base64.getEncoder().encodeToString(bytes));
+            body.put("data", Base64.getEncoder().encodeToString(bytes));
 
-                HttpRequest request = HttpUtils
-                        .post("https://api.mindustry-tool.com", "api", "v4", "maps", "image-json")
-                        .header("Content-Type", "application/json")
-                        .content(JsonUtils.toJsonString(body));
-
-                tempImageFile.writeBytes(HttpUtils.send(request, 30000, byte[].class));
-            });
+            HttpUtils
+                    .post("https://api.mindustry-tool.com", "api", "v4", "maps", "image-json")
+                    .header("Content-Type", "application/json")
+                    .content(JsonUtils.toJsonString(body))
+                    .timeout(30000)
+                    .error(Log::err)
+                    .submit((res) -> {
+                        tempImageFile.write(res.getResultAsStream(), false);
+                    });
 
             if (imageBytes.length == 0) {
                 return new byte[0];
