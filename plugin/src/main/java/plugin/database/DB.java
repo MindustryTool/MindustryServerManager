@@ -20,12 +20,14 @@ public class DB {
     private static String databasePath;
 
     public static void init() {
+        try {
+            Class.forName("org.sqlite.JDBC");
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+
         lock.writeLock().lock();
         try {
-            if (connection != null && !connection.isClosed()) {
-                return;
-            }
-
             File databaseDir = new File(DATABASE_DIR);
 
             if (!databaseDir.exists()) {
@@ -54,15 +56,6 @@ public class DB {
         try {
             if (connection == null || connection.isClosed()) {
                 String jdbcUrl = JDBC_URL_PREFIX + DATABASE_DIR + "/" + DATABASE_FILE;
-
-                Log.info("Connecting to " + jdbcUrl);
-
-                try {
-                    Class.forName("org.sqlite.JDBC");
-                } catch (ClassNotFoundException e) {
-                    e.printStackTrace();
-                }
-
                 connection = DriverManager.getConnection(jdbcUrl);
             }
 
