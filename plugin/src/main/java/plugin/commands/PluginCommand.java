@@ -112,7 +112,7 @@ public abstract class PluginCommand {
                                     .handleParams(args)
                                     .handleClient(session);
                         } catch (ParamException e) {
-                            session.player.sendMessage(e.getMessage());
+                            session.player.sendMessage("[scarlet]Error: " + e.getMessage());
                         } catch (Exception e) {
                             session.player.sendMessage("Error");
                             Log.err("Failed to execute command " + name, e);
@@ -150,7 +150,7 @@ public abstract class PluginCommand {
 
     public static class ParamException extends IllegalArgumentException {
         public ParamException(Param param, String message) {
-            super(message + "\n" + param.toParamText() + "=" + param.value);
+            super(message + " " + param.toParamText() + "=" + param.value);
         }
     }
 
