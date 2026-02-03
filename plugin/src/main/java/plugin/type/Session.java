@@ -149,7 +149,7 @@ public class Session {
         long excess = ExpUtils.excessExp(exp);
 
         info.append("Player: ").append(player.name)
-                .append(" ")
+                .append("\n")
                 .append(LanguageDialog.getDisplayName(locale))
                 .append("[]\n")
                 .append("[sky]Level: ")

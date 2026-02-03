@@ -219,7 +219,7 @@ public class EventHandler {
                             "@Logged in as ", playerData.getName()));
                 } else {
                     session.player.sendMessage(ApiGateway.translate(session.locale,
-                            "@You are not logged in, consider log in via ", "MindustryTool", " using ", "/login"));
+                            "@You are not logged in, consider log in via ", " MindustryTool ", "@using", "/login"));
                 }
             });
 

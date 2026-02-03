@@ -12,7 +12,7 @@ public class HubMenu extends PluginMenu<String> {
         this.description = ApiGateway.translate(session.locale, "@" + Config.HUB_MESSAGE);
 
         if (loginLink != null && !loginLink.isEmpty()) {
-            option(ApiGateway.translate(session.locale, "[green]", "@Login via", "MindustryTool"),
+            option(ApiGateway.translate(session.locale, "[green]", "@Login via", " MindustryTool"),
                     (p, s) -> Call.openURI(p.player.con, s));
             row();
         }

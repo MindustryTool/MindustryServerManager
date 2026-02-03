@@ -174,7 +174,7 @@ public class ServerControl extends Plugin implements MindustryToolPlugin {
     private static void sendTips() {
         Seq<Func<Locale, String>> tips = new Seq<>();
 
-        tips.add((locale) -> ApiGateway.translate(locale, "@Powered by", " ", "MindustryTool"));
+        tips.add((locale) -> ApiGateway.translate(locale, "@Powered by", " MindustryTool"));
         tips.add((locale) -> ApiGateway.translate(locale, "@Use", " [accent]/discord[sky] ",
                 "@to join our Discord server"));
         tips.add((locale) -> ApiGateway.translate(locale, "@Use", " [accent]/vnw[sky] ", "@to skip a wave"));
@@ -184,7 +184,7 @@ public class ServerControl extends Plugin implements MindustryToolPlugin {
         tips.add((locale) -> ApiGateway.translate(locale, "@Use", " [accent]/website[sky] ",
                 "@to visit our website for schematics and maps"));
         tips.add((locale) -> ApiGateway.translate(locale, "@Remember to respect other players"));
-        tips.add((locale) -> ApiGateway.translate(locale, "@Remember to download and update", "MindustryTool"));
+        tips.add((locale) -> ApiGateway.translate(locale, "@Remember to download and update", " MindustryTool"));
         tips.add((locale) -> ApiGateway.translate(locale, "@If you find this helpful please give us a star: ",
                 Config.GITHUB_URL));
         tips.add((locale) -> ApiGateway.translate(locale, "@Be respectful — toxic behavior may lead to punishment"));
