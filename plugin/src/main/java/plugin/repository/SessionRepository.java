@@ -100,7 +100,8 @@ public class SessionRepository {
 
     private static SessionData read(String uuid) throws SQLException {
         var sql = "SELECT data FROM sessions WHERE uuid = ?";
-        try (var conn = DB.getConnection(); var ps = conn.prepareStatement(sql)) {
+
+        return DB.prepare(sql, ps -> {
             ps.setString(1, uuid);
 
             try (var rs = ps.executeQuery()) {
@@ -115,17 +116,18 @@ public class SessionRepository {
                     return new SessionData();
                 }
             }
-        }
+        });
     }
 
     private static void write(String uuid, SessionData pdata) {
         try {
             var sql = "INSERT INTO sessions(uuid, data) VALUES(?, ?) ON CONFLICT(uuid) DO UPDATE SET data = excluded.data";
-            try (var conn = DB.getConnection(); var ps = conn.prepareStatement(sql)) {
-                ps.setString(1, uuid);
-                ps.setString(2, JsonUtils.toJsonString(pdata));
-                ps.executeUpdate();
-            }
+
+            DB.prepare(sql, statement -> {
+                statement.setString(1, uuid);
+                statement.setString(2, JsonUtils.toJsonString(pdata));
+                statement.executeUpdate();
+            });
         } catch (Exception e) {
             Log.err("Error while saving session", e);
         }
@@ -134,9 +136,15 @@ public class SessionRepository {
     private static void createTableIfNotExists() {
         try {
             var sql = "CREATE TABLE IF NOT EXISTS sessions (uuid TEXT PRIMARY KEY, data TEXT NOT NULL)";
-            try (var conn = DB.getConnection(); var stmt = conn.createStatement()) {
-                stmt.executeUpdate(sql);
-            }
+
+            DB.statement(statement -> {
+                statement.executeUpdate(sql);
+
+                if (!DB.hasColumn(statement, "sessions", "totalExp")) {
+                    statement.executeUpdate("ALTER TABLE sessions ADD COLUMN totalExp INTEGER DEFAULT 0");
+                }
+            });
+
         } catch (Exception e) {
             Log.err("Failed to create sessions table: @", e.getMessage());
         }

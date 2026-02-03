@@ -7,7 +7,6 @@ import arc.Core;
 import arc.util.Log;
 import arc.util.Strings;
 import mindustry.Vars;
-import mindustry.content.UnitTypes;
 import mindustry.gen.Groups;
 import mindustry.gen.Player;
 import mindustry.net.Administration.PlayerInfo;
@@ -69,7 +68,7 @@ public class Session {
     }
 
     public void update() {
-        var level = ExpUtils.levelFromTotalExp(getExp());
+        var level = ExpUtils.levelFromTotalExp(ExpUtils.getTotalExp(data(), sessionPlayTime()));
 
         if (level != currentLevel) {
             if (currentLevel != 0) {
@@ -78,7 +77,7 @@ public class Session {
 
                 ServerControl.backgroundTask("Update level", () -> {
                     Utils.forEachPlayerLocale((locale, players) -> {
-                        String message = I18n.t(locale,"Level up");
+                        String message = I18n.t(locale, "Level up");
 
                         players.forEach(player -> player.sendMessage(
                                 this.player.name + " [green]" + message
@@ -125,34 +124,13 @@ public class Session {
         return value;
     }
 
-    public long getExp() {
-        var data = data();
-        long exp = unitHealthToExp(data.kills.entrySet().stream().mapToDouble(entry -> {
-            var unit = Vars.content.unit(entry.getKey());
-
-            return unit.health * entry.getValue();
-        }).sum());
-
-        exp += playTimeToExp(data.playTime + sessionPlayTime());
-
-        return exp;
-    }
-
-    public long unitHealthToExp(double health) {
-        return (long) (health / UnitTypes.flare.health / 2);
-    }
-
-    // Killing 1 flare = 5 seconds of play time
-    public long playTimeToExp(long playTime) {
-        return (long) (playTime / UnitTypes.flare.health / 5 / 10);
-    }
-
     public String info() {
+        var data = data();
+
         StringBuilder info = new StringBuilder();
-        long exp = getExp();
+        long exp = ExpUtils.getTotalExp(data, sessionPlayTime());
         int level = ExpUtils.levelFromTotalExp(exp);
         long excess = ExpUtils.excessExp(exp);
-        var data = data();
 
         info.append("Player: ").append(player.name)
                 .append("\n")
@@ -180,7 +158,7 @@ public class Session {
                 .append(seconds % 60)
                 .append("s")
                 .append(" (")
-                .append(playTimeToExp(data.playTime))
+                .append(ExpUtils.playTimeToExp(data.playTime))
                 .append("exp)")
                 .append("[]\n");
 
@@ -200,7 +178,7 @@ public class Session {
                 char icon = Utils.icon(unit);
                 info.append("[]").append(icon).append(": ").append(entry.getValue())
                         .append(" (")
-                        .append(unitHealthToExp(unit.health * entry.getValue()))
+                        .append(ExpUtils.unitHealthToExp(unit.health * entry.getValue()))
                         .append("exp)")
                         .append("\n");
             } catch (Exception e) {

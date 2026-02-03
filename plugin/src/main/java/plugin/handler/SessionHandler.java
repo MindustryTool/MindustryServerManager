@@ -21,6 +21,7 @@ import plugin.event.PluginUnloadEvent;
 import plugin.event.SessionCreatedEvent;
 import plugin.event.SessionRemovedEvent;
 import plugin.type.Session;
+import plugin.utils.ExpUtils;
 import plugin.utils.Utils;
 import plugin.repository.SessionRepository;
 
@@ -54,10 +55,12 @@ public class SessionHandler {
                 }
 
                 Utils.forEachPlayerLocale((locale, players) -> {
-                    String formatted = Strings.format(" @ @ (+@exp)", print, Utils.icon(event.getUnit().type),
-                            session.unitHealthToExp(result * event.getUnit().type.health));
+                    String formatted = Strings.format(" @ @ (+@exp)",
+                            print,
+                            Utils.icon(event.getUnit().type),
+                            ExpUtils.unitHealthToExp(result * event.getUnit().type.health));
 
-                    String translated = I18n.t(locale, event.getPlayer().name, "@killed", formatted);
+                    String translated = I18n.t(locale, event.getPlayer().name, " ", "@killed", formatted);
 
                     for (var player : players) {
                         player.sendMessage(translated);

@@ -17,8 +17,8 @@ public class RateMapMenu extends PluginMenu<Map> {
         this.title = I18n.t(locale, "@Rate last map");
         this.description = map.name();
 
-        for (int i = 0; i < 5; i++) {
-            int star = i + 1;
+        for (int i = 5; i > 0; i--) {
+            int star = i;
 
             option(MapRating.getStarDisplay(star), (p, s) -> {
                 MapRating.updateMapRating(s, star);

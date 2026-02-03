@@ -15,8 +15,7 @@ public class SqlCommand extends PluginCommand {
 
     @Override
     public void handleServer() {
-        try (var conn = DB.getConnection(); var statement = conn.prepareStatement(scriptParam.asString())) {
-
+        DB.prepare(scriptParam.asString(), statement -> {
             boolean hasResultSet = statement.execute();
 
             if (hasResultSet) {
@@ -43,8 +42,6 @@ public class SqlCommand extends PluginCommand {
                 int updateCount = statement.getUpdateCount();
                 Log.info("Query OK, " + updateCount + " rows affected.");
             }
-        } catch (Exception e) {
-            Log.err("SQL Error: " + e.getMessage());
-        }
+        });
     }
 }

@@ -3,7 +3,9 @@ package plugin.database;
 import java.io.File;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import arc.util.Log;
@@ -51,7 +53,70 @@ public class DB {
         }
     }
 
-    public static Connection getConnection() throws SQLException {
+    @FunctionalInterface
+    public interface SqlHandler<T, S> {
+        T accept(S statement) throws SQLException;
+    }
+
+    @FunctionalInterface
+    public interface SqlConsumer<S> {
+        void accept(S statement) throws SQLException;
+    }
+
+    public static <T> T statement(SqlHandler<T, Statement> consumer) {
+        try (Connection conn = getConnection(); var statement = conn.createStatement();) {
+            return consumer.accept(statement);
+        } catch (SQLException e) {
+            throw new DatabaseException("Failed to prepare statement", e);
+        }
+    }
+
+    public static void statement(SqlConsumer<Statement> consumer) {
+        try (Connection conn = getConnection(); var statement = conn.createStatement();) {
+            consumer.accept(statement);
+        } catch (SQLException e) {
+            throw new DatabaseException("Failed to prepare statement", e);
+        }
+    }
+
+    public static <T> T prepare(String sql, SqlHandler<T, PreparedStatement> consumer) {
+        try (Connection conn = getConnection(); var statement = conn.prepareStatement(sql);) {
+            return consumer.accept(statement);
+        } catch (SQLException e) {
+            throw new DatabaseException("Failed to prepare statement", e);
+        }
+    }
+
+    public static void prepare(String sql, SqlConsumer<PreparedStatement> consumer) {
+        try (Connection conn = getConnection(); var statement = conn.prepareStatement(sql);) {
+            consumer.accept(statement);
+        } catch (SQLException e) {
+            throw new DatabaseException("Failed to prepare statement", e);
+        }
+    }
+
+    public static boolean hasRow(Statement statement, String tableName) throws SQLException {
+        var result = statement.executeQuery("SELECT * FROM " + tableName + " LIMIT 1");
+
+        return result.next();
+    }
+
+    public static boolean hasColumn(Statement statement, String tableName, String columnName) throws SQLException {
+        var result = statement.executeQuery("SELECT * FROM " + tableName + " LIMIT 1");
+
+        var metaData = result.getMetaData();
+        int columnCount = metaData.getColumnCount();
+
+        for (int i = 1; i <= columnCount; i++) {
+            if (metaData.getColumnName(i).equals(columnName)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static Connection getConnection() throws SQLException {
         lock.readLock().lock();
         try {
             if (connection == null || connection.isClosed()) {
