@@ -136,6 +136,7 @@ public abstract class PluginCommand {
             if (session != null) {
                 session.player.sendMessage(e.getMessage());
             }
+            Log.err(e.getMessage());
         } catch (Exception e) {
             if (session != null) {
                 session.player.sendMessage("Error");
