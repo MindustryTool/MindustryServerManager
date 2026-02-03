@@ -10,6 +10,7 @@ import java.util.concurrent.TimeUnit;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 
+import arc.struct.Seq;
 import arc.util.Log;
 import mindustry.gen.Player;
 import plugin.database.DB;
@@ -100,6 +101,30 @@ public class SessionRepository {
             }
             dirty.remove(uuid);
         }
+    }
+
+    public static Seq<SessionData> getLeaderBoard(int size) {
+        var sql = "SELECT uuid, data FROM sessions ORDER BY totalExp DESC LIMIT ?";
+
+        return DB.prepare(sql, statement -> {
+            statement.setInt(1, size);
+
+            try (var rs = statement.executeQuery()) {
+                Seq<SessionData> players = new Seq<>();
+
+                while (rs.next()) {
+                    var uuid = rs.getString(1);
+                    var json = rs.getString(2);
+
+                    if (json == null || json.isEmpty()) {
+                        throw new IllegalArgumentException("No session data found for uuid: " + uuid);
+                    }
+                    players.add(JsonUtils.readJsonAsClass(json, SessionData.class));
+                }
+
+                return players;
+            }
+        });
     }
 
     private static SessionData read(String uuid) throws SQLException {

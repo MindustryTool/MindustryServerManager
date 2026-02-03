@@ -22,6 +22,7 @@ import plugin.event.SessionCreatedEvent;
 import plugin.event.SessionRemovedEvent;
 import plugin.type.Session;
 import plugin.utils.ExpUtils;
+import plugin.utils.RankUtils;
 import plugin.utils.Utils;
 import plugin.repository.SessionRepository;
 
@@ -76,6 +77,7 @@ public class SessionHandler {
 
         PluginEvents.on(PlayerJoin.class, event -> {
             Core.app.post(() -> put(event.player));
+            ServerControl.backgroundTask("Send Leader Board", () -> RankUtils.sendLeaderBoard());
         });
 
         PluginEvents.run(PluginUnloadEvent.class, SessionHandler::unload);

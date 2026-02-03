@@ -18,6 +18,7 @@ import plugin.commands.client.LoginCommand;
 import plugin.commands.client.MapCommand;
 import plugin.commands.client.MeCommand;
 import plugin.commands.client.PlayerInfoCommand;
+import plugin.commands.client.RankCommand;
 import plugin.commands.client.RedirectCommand;
 import plugin.commands.client.RtvCommand;
 import plugin.commands.client.ServersCommand;
@@ -57,6 +58,7 @@ public class ClientCommandHandler {
         commands.add(new SubmitMapCommand());
         commands.add(new DiscordCommand());
         commands.add(new AdminCommand());
+        commands.add(new RankCommand());
 
         for (PluginCommand command : commands) {
             command.register(handler, true);
