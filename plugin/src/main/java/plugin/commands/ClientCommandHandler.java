@@ -24,6 +24,7 @@ import plugin.commands.client.RtvCommand;
 import plugin.commands.client.ServersCommand;
 import plugin.commands.client.TrailCommand;
 import plugin.commands.client.VnwCommand;
+import plugin.commands.client.WebsiteCommand;
 import plugin.commands.client.SubmitMapCommand;
 import plugin.commands.client.AdminCommand;
 import plugin.event.PluginUnloadEvent;
@@ -59,6 +60,7 @@ public class ClientCommandHandler {
         commands.add(new DiscordCommand());
         commands.add(new AdminCommand());
         commands.add(new RankCommand());
+        commands.add(new WebsiteCommand());
 
         for (PluginCommand command : commands) {
             command.register(handler, true);
