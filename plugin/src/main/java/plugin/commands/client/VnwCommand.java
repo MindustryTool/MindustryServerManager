@@ -25,7 +25,7 @@ public class VnwCommand extends PluginCommand {
         setDescription("Vote for sending a new Wave");
         setAdmin(false);
 
-        numberParam = optional("number").min(1);
+        numberParam = optional("number").min(1).max(10);
     }
 
     @Override
