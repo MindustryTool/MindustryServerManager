@@ -108,7 +108,6 @@ public class SessionRepository {
                 ps.setString(2, JsonUtils.toJsonString(pdata));
                 ps.executeUpdate();
             }
-            Log.info("Saved: " + uuid);
         } catch (Exception e) {
             Log.err("Error while saving session", e);
         }
