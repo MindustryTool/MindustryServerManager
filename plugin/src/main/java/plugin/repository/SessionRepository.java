@@ -106,7 +106,7 @@ public class SessionRepository {
                 }
             }
         } catch (Exception e) {
-            Log.err("Error while loading session data for uuid @: @", uuid, e);
+            Log.err("Error while loading session", e);
         }
         return pdata;
     }
@@ -120,7 +120,7 @@ public class SessionRepository {
                 ps.executeUpdate();
             }
         } catch (Exception e) {
-            Log.err("Error while saving session data for uuid @: @", uuid, e);
+            Log.err("Error while saving session", e);
         }
     }
 
