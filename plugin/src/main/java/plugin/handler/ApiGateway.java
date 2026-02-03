@@ -158,12 +158,14 @@ public class ApiGateway {
 
     public static String translate(Locale targetLanguage, Object... texts) {
         boolean[] indexes = new boolean[texts.length];
+
         Seq<String> needTranslate = new Seq<>();
 
         for (int i = 0; i < texts.length; i++) {
-            if (String.valueOf(texts[i]).trim().startsWith("@")) {
+            String str = String.valueOf(texts[i]).trim();
+            if (str.startsWith("@")) {
                 indexes[i] = true;
-                needTranslate.add(String.valueOf(texts[i]).trim());
+                needTranslate.add(str);
             }
         }
 
@@ -177,6 +179,7 @@ public class ApiGateway {
             } else {
                 sb.append(texts[i]);
             }
+            sb.append(" ");
         }
 
         return sb.toString();

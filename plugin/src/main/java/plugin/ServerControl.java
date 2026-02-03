@@ -183,7 +183,7 @@ public class ServerControl extends Plugin implements MindustryToolPlugin {
         tips.add((locale) -> ApiGateway.translate(locale, "@Use ", "/me", " @to see your stats"));
         tips.add((locale) -> ApiGateway.translate(locale, "@Use ", "/grief", " @to report a player"));
         tips.add((locale) -> ApiGateway.translate(locale, "@Use ", "/website",
-                " @to visit our website for schematics and maps"));
+                "@to visit our website for schematics and maps"));
         tips.add((locale) -> ApiGateway.translate(locale, "@Remember to respect other players"));
         tips.add((locale) -> ApiGateway.translate(locale, "@Remember to download and update MindustryTool mod"));
         tips.add((locale) -> ApiGateway.translate(locale, "@If you find this helpful please give us a star: ",
