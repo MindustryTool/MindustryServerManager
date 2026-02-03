@@ -8,6 +8,7 @@ import arc.Core;
 import arc.func.Boolf;
 import arc.func.Cons;
 import arc.util.Log;
+import arc.util.Strings;
 import mindustry.game.EventType.PlayerJoin;
 import mindustry.game.EventType.PlayerLeave;
 import mindustry.gen.Groups;
@@ -52,9 +53,10 @@ public class SessionHandler {
                 }
 
                 Utils.forEachPlayerLocale((locale, players) -> {
-                    String translated = ApiGateway.translate(locale, event.getPlayer().name, "@killed",
-                            print,
-                            Utils.icon(event.getUnit().type));
+                    String formatted = Strings.format(" @ @ (+@exp)", print, Utils.icon(event.getUnit().type),
+                            session.unitHealthToExp(result * event.getUnit().type.health));
+
+                    String translated = ApiGateway.translate(locale, event.getPlayer().name, "@killed", formatted);
 
                     for (var player : players) {
                         player.sendMessage(translated);

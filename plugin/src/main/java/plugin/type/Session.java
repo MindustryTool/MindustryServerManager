@@ -133,12 +133,12 @@ public class Session {
         return exp;
     }
 
-    private long unitHealthToExp(double health) {
+    public long unitHealthToExp(double health) {
         return (long) (health / UnitTypes.flare.health / 2);
     }
 
     // Killing 1 flare = 5 seconds of play time
-    private long playTimeToExp(long playTime) {
+    public long playTimeToExp(long playTime) {
         return (long) (playTime / UnitTypes.flare.health / 5 / 10);
     }
 
