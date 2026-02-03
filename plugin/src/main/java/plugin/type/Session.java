@@ -146,7 +146,7 @@ public class Session {
                 .append("[]\n");
 
         // in millis
-        long seconds = data.playTime / 1000;
+        long seconds = data.playTime + sessionPlayTime() / 1000;
         long minutes = seconds / 60;
         long hours = minutes / 60;
 
@@ -158,7 +158,7 @@ public class Session {
                 .append(seconds % 60)
                 .append("s")
                 .append(" (")
-                .append(ExpUtils.playTimeToExp(data.playTime))
+                .append(ExpUtils.playTimeToExp(data.playTime + sessionPlayTime()))
                 .append("exp)")
                 .append("[]\n");
 
