@@ -7,7 +7,7 @@ public class ExpUtils {
             return 1;
 
         double a = 0.08;
-        double b = 0.002;
+        double b = 0.004;
 
         double raw = Math.cbrt(totalExp * b) + Math.sqrt(totalExp * a);
         return Math.max(1, (int) Math.floor(raw));

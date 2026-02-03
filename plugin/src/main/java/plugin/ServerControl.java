@@ -27,6 +27,7 @@ import plugin.utils.AdminUtils;
 import plugin.utils.Utils;
 import plugin.handler.SessionHandler;
 import plugin.handler.SnapshotHandler;
+import plugin.handler.TrailHandler;
 import plugin.repository.SessionRepository;
 import plugin.workflow.Workflow;
 import plugin.commands.ClientCommandHandler;
@@ -65,6 +66,7 @@ public class ServerControl extends Plugin implements MindustryToolPlugin {
         SnapshotHandler.init();
         AdminUtils.init();
         VoteHandler.init();
+        TrailHandler.init();
 
         if (Config.IS_HUB) {
             HubHandler.init();

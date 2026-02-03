@@ -9,6 +9,7 @@ import mindustry.entities.Effect;
 import mindustry.gen.Call;
 import plugin.PluginEvents;
 import plugin.ServerControl;
+import plugin.event.PluginUnloadEvent;
 import plugin.event.SessionRemovedEvent;
 import plugin.type.Session;
 import plugin.type.Trail;
@@ -21,6 +22,11 @@ public class TrailHandler {
         trails.add(new FirstTrail());
 
         PluginEvents.on(SessionRemovedEvent.class, event -> playerTrails.remove(event.session));
+        PluginEvents.run(PluginUnloadEvent.class, () -> {
+            trails.clear();
+            playerTrails.clear();
+        });
+
         ServerControl.BACKGROUND_SCHEDULER.scheduleAtFixedRate(TrailHandler::render, 0, 1, TimeUnit.SECONDS);
     }
 
