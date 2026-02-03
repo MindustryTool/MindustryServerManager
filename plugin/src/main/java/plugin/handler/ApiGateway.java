@@ -179,7 +179,6 @@ public class ApiGateway {
             } else {
                 sb.append(texts[i]);
             }
-            sb.append(" ");
         }
 
         return sb.toString();

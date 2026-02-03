@@ -12,6 +12,7 @@ import mindustry.gen.Groups;
 import mindustry.gen.Player;
 import mindustry.net.Administration.PlayerInfo;
 import mindustry.type.UnitType;
+import mindustry.ui.dialogs.LanguageDialog;
 import plugin.Config;
 import plugin.ServerControl;
 import plugin.handler.ApiGateway;
@@ -148,6 +149,8 @@ public class Session {
         long excess = ExpUtils.excessExp(exp);
 
         info.append("Player: ").append(player.name)
+                .append(" ")
+                .append(LanguageDialog.getDisplayName(locale))
                 .append("[]\n")
                 .append("[sky]Level: ")
                 .append(level)

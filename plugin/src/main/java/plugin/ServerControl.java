@@ -174,13 +174,14 @@ public class ServerControl extends Plugin implements MindustryToolPlugin {
     private static void sendTips() {
         Seq<Func<Locale, String>> tips = new Seq<>();
 
-        tips.add((locale) -> ApiGateway.translate(locale, "@Powered by ", "MindustryTool"));
-        tips.add((locale) -> ApiGateway.translate(locale, "@Use ", "[accent]/discord[sky]", " @to join our Discord server"));
-        tips.add((locale) -> ApiGateway.translate(locale, "@Use ", "[accent]/vnw[sky]", " @to skip a wave"));
-        tips.add((locale) -> ApiGateway.translate(locale, "@Use ", "[accent]/rtv[sky]", " @to change map"));
-        tips.add((locale) -> ApiGateway.translate(locale, "@Use ", "[accent]/me[sky]", " @to see your stats"));
-        tips.add((locale) -> ApiGateway.translate(locale, "@Use ", "[accent]/grief[sky]", " @to report a player"));
-        tips.add((locale) -> ApiGateway.translate(locale, "@Use ", "[accent]/website[sky]",
+        tips.add((locale) -> ApiGateway.translate(locale, "@Powered by", " ", "MindustryTool"));
+        tips.add((locale) -> ApiGateway.translate(locale, "@Use", " [accent]/discord[sky] ",
+                "@to join our Discord server"));
+        tips.add((locale) -> ApiGateway.translate(locale, "@Use", " [accent]/vnw[sky] ", "@to skip a wave"));
+        tips.add((locale) -> ApiGateway.translate(locale, "@Use", " [accent]/rtv[sky] ", "@to change map"));
+        tips.add((locale) -> ApiGateway.translate(locale, "@Use", " [accent]/me[sky] ", "@to see your stats"));
+        tips.add((locale) -> ApiGateway.translate(locale, "@Use", " [accent]/grief[sky] ", "@to report a player"));
+        tips.add((locale) -> ApiGateway.translate(locale, "@Use", " [accent]/website[sky] ",
                 "@to visit our website for schematics and maps"));
         tips.add((locale) -> ApiGateway.translate(locale, "@Remember to respect other players"));
         tips.add((locale) -> ApiGateway.translate(locale, "@Remember to download and update", "MindustryTool"));
@@ -192,8 +193,8 @@ public class ServerControl extends Plugin implements MindustryToolPlugin {
         tips.add((locale) -> Iconc.blockRouter + "Router chains");
         tips.add((locale) -> ApiGateway.translate(locale, "@Have fun!!!"));
         tips.add((locale) -> ApiGateway.translate(locale, "@The factory must grow!!!"));
-        tips.add((locale) -> ApiGateway.translate(locale, "@Reach level ", Config.COLOR_NAME_LEVEL,
-                " @to unlock colored name"));
+        tips.add((locale) -> ApiGateway.translate(locale, "@Reach level", " ", Config.COLOR_NAME_LEVEL, " ",
+                "@to unlock colored name"));
         var tip = tips.random();
 
         backgroundTask("Send tip", () -> {
