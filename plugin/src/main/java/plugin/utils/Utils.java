@@ -245,8 +245,6 @@ public class Utils {
 
         if (tempFile.isDirectory()) {
             tempFile.deleteDirectory();
-        } else {
-            tempFile.delete();
         }
 
         try {
