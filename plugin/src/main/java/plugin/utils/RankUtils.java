@@ -27,7 +27,7 @@ public class RankUtils {
 
             sb.append("[] ")
                     .append(Utils.padRight(data.name, 20))
-                    .append("[] Lv: ")
+                    .append("[] ")
                     .append(Utils.padRight(ExpUtils.levelFromTotalExp(totalExp) + "", 3))
                     .append("(")
                     .append(totalExp)
