@@ -3,20 +3,20 @@ package plugin.utils;
 import arc.struct.Seq;
 import mindustry.gen.Call;
 import plugin.repository.SessionRepository;
-import plugin.type.SessionData;
+import plugin.repository.SessionRepository.RankData;
 
 public class RankUtils {
 
     public static void sendLeaderBoard() {
-        Seq<SessionData> players = SessionRepository.getLeaderBoard(10);
+        var players = SessionRepository.getLeaderBoard(10);
         Call.sendMessage(getRankString(players));
     }
 
-    public static String getRankString(Seq<SessionData> players) {
+    public static String getRankString(Seq<RankData> players) {
         StringBuilder sb = new StringBuilder("[]\n");
 
         for (int i = 0; i < players.size; i++) {
-            var data = players.get(i);
+            var data = players.get(i).data;
 
             if (i == 0) {
                 sb.append("[gold]1st");
