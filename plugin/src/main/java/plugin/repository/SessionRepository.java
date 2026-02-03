@@ -162,6 +162,7 @@ public class SessionRepository {
             var sql = "INSERT INTO sessions(uuid, data, totalExp) VALUES(?, ?, ?) ON CONFLICT(uuid) DO UPDATE SET data = excluded.data, totalExp = excluded.totalExp";
 
             DB.prepare(sql, statement -> {
+                pdata.playTime += Instant.now().toEpochMilli() - pdata.joinedAt;
                 statement.setString(1, uuid);
                 statement.setString(2, JsonUtils.toJsonString(pdata));
                 statement.setLong(3, ExpUtils.getTotalExp(pdata, Instant.now().toEpochMilli() - pdata.joinedAt));

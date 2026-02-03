@@ -1,6 +1,5 @@
 package plugin.handler;
 
-import java.time.Instant;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -138,8 +137,6 @@ public class SessionHandler {
         var previous = data.remove(p.uuid());
 
         if (previous != null) {
-            previous.data().playTime += Instant.now().toEpochMilli() - previous.joinedAt;
-
             PluginEvents.fire(new SessionRemovedEvent(previous));
         }
     }
