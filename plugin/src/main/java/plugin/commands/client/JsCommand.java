@@ -17,6 +17,7 @@ public class JsCommand extends PluginCommand {
     @Override
     public void handleClient(Session session) {
         String output = Vars.mods.getScripts().runConsole(codeParam.asString());
+        session.player.sendMessage(codeParam.asString());
         session.player.sendMessage("> " + (isError(output) ? "[#ff341c]" + output : output));
     }
 
