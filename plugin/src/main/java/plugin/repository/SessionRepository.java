@@ -4,10 +4,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
-import com.github.benmanes.caffeine.cache.RemovalCause;
-
 import arc.util.Log;
 import plugin.database.DB;
 import plugin.event.PluginUnloadEvent;
@@ -18,14 +14,7 @@ import plugin.type.SessionData;
 import plugin.utils.JsonUtils;
 
 public class SessionRepository {
-    private static final Cache<String, SessionData> cache = Caffeine.newBuilder()
-            .expireAfterAccess(5, TimeUnit.MINUTES)
-            .evictionListener((key, value, cause) -> {
-                if (cause == RemovalCause.EXPIRED || cause == RemovalCause.EXPLICIT) {
-                    write((String) key, (SessionData) value);
-                }
-            })
-            .build();
+    private static final ConcurrentHashMap<String, SessionData> cache = new ConcurrentHashMap<>();
 
     private static final Set<String> dirty = ConcurrentHashMap.newKeySet();
 
@@ -33,7 +22,7 @@ public class SessionRepository {
         createTableIfNotExists();
 
         ServerControl.BACKGROUND_SCHEDULER
-                .scheduleWithFixedDelay(SessionRepository::flushBatch, 10, 10, TimeUnit.SECONDS);
+                .scheduleWithFixedDelay(SessionRepository::flushBatch, 10, 30, TimeUnit.SECONDS);
 
         PluginEvents.run(PluginUnloadEvent.class, SessionRepository::unload);
         PluginEvents.on(SessionRemovedEvent.class, event -> write(event.session.player.uuid(), event.session.data));
@@ -45,13 +34,13 @@ public class SessionRepository {
         } catch (Exception e) {
             Log.err("Failed to flush session repository on unload: @", e.getMessage());
         } finally {
-            cache.invalidateAll();
+            cache.clear();
             dirty.clear();
         }
     }
 
     public static SessionData get(String uuid) {
-        var existing = cache.getIfPresent(uuid);
+        var existing = cache.get(uuid);
         if (existing != null) {
             return existing;
         }
@@ -66,13 +55,13 @@ public class SessionRepository {
     }
 
     public static void markDirty(String uuid) {
-        if (cache.getIfPresent(uuid) != null) {
+        if (cache.get(uuid) != null) {
             dirty.add(uuid);
         }
     }
 
     public static void remove(String uuid) {
-        cache.invalidate(uuid);
+        cache.remove(uuid);
         dirty.remove(uuid);
     }
 
@@ -82,7 +71,7 @@ public class SessionRepository {
         }
 
         for (var uuid : dirty.toArray(new String[0])) {
-            var data = cache.getIfPresent(uuid);
+            var data = cache.get(uuid);
             if (data != null) {
                 write(uuid, data);
             }
