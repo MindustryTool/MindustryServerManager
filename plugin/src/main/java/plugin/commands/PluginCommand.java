@@ -5,6 +5,7 @@ import java.util.function.Function;
 import arc.struct.Seq;
 import arc.util.CommandHandler;
 import arc.util.Log;
+import arc.util.Strings;
 import lombok.Getter;
 import lombok.Setter;
 import mindustry.gen.Player;
@@ -159,7 +160,15 @@ public abstract class PluginCommand {
         private ParamType type;
         private String value;
 
-        private Seq<Function<Param, Boolean>> validators = new Seq<>();
+        private Seq<Runnable> validators = new Seq<>();
+
+        private void validate(Function<Param, Boolean> validator, String message, Object... args) {
+            validators.add(() -> {
+                if (!validator.apply(this)) {
+                    throw new ParamException(this, Strings.format(message, args));
+                }
+            });
+        }
 
         public void setValue(String value) {
             this.value = value;
@@ -172,14 +181,12 @@ public abstract class PluginCommand {
                 return;
             }
 
-            for (Function<Param, Boolean> validator : validators) {
-                if (!validator.apply(this)) {
-                    throw new ParamException(this, "Invalid value");
-                }
+            for (var validator : validators) {
+                validator.run();
             }
         }
 
-        private Param(String name, ParamType type, Seq<Function<Param, Boolean>> validators) {
+        private Param(String name, ParamType type, Seq<Runnable> validators) {
             this.name = name;
             this.type = type;
             this.validators = validators;
@@ -256,23 +263,27 @@ public abstract class PluginCommand {
         }
 
         public Param minLength(int min) {
-            validators.add(param -> param.value.length() >= min);
+            validate(param -> param.value.length() >= min, "Min length: @", min);
             return this;
         }
 
         public Param maxLength(int max) {
-            validators.add(param -> param.value.length() <= max);
+            validate(param -> param.value.length() <= max, "Max length: @", max);
             return this;
         }
 
         public Param min(double min) {
-            validators.add(param -> param.asDouble() >= min);
+            validate(param -> param.asDouble() >= min, "Min value: @", min);
             return this;
         }
 
         public Param max(double max) {
-            validators.add(param -> param.asDouble() <= max);
+            validate(param -> param.asDouble() <= max,"Max value: @", max);
             return this;
+        }
+
+        public String toString() {
+            return this.toParamText() + "=" + String.valueOf(value);
         }
     }
 
