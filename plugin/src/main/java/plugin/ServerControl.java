@@ -111,12 +111,12 @@ public class ServerControl extends Plugin implements MindustryToolPlugin {
 
     @Override
     public void unload() {
+        isUnloaded = true;
+
         Log.info("Unload");
 
         PluginEvents.fire(new PluginUnloadEvent());
         PluginEvents.unregister();
-
-        isUnloaded = true;
 
         BACKGROUND_TASK_EXECUTOR.shutdownNow();
         Log.info("Background task executor shutdown");
