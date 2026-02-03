@@ -92,6 +92,10 @@ public class EventHandler {
             }
 
         }, 5, TimeUnit.SECONDS);
+
+        ServerControl.backgroundTask("update map preview", () -> {
+            Utils.mapPreview();
+        });
     }
 
     private static void onPlayerConnect(PlayerConnect event) {
