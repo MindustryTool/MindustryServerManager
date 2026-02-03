@@ -23,8 +23,8 @@ public class RateMapMenu extends PluginMenu<Map> {
             option(MapRating.getStarDisplay(star), (p, s) -> {
                 MapRating.updateMapRating(s, star);
                 Utils.forEachPlayerLocale((l, players) -> {
-                    String msg = I18n.t(l, p.player.name(), " ", "[]", "@voted", " ", star, "[accent]",
-                            Iconc.star, " ", "[]", "@on map ", map.name());
+                    String msg = I18n.t(l, p.player.name(), " [] ", "@voted", " ", star, "[accent]",
+                            Iconc.star, " [] ", "@on map ", " ", map.name());
                     for (var pp : players) {
                         pp.sendMessage(msg);
                     }
