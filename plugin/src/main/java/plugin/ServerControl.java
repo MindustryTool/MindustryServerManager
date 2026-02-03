@@ -185,13 +185,13 @@ public class ServerControl extends Plugin implements MindustryToolPlugin {
         tips.add((locale) -> ApiGateway.translate(locale, "@Use ", "/website",
                 "@to visit our website for schematics and maps"));
         tips.add((locale) -> ApiGateway.translate(locale, "@Remember to respect other players"));
-        tips.add((locale) -> ApiGateway.translate(locale, "@Remember to download and update MindustryTool mod"));
+        tips.add((locale) -> ApiGateway.translate(locale, "@Remember to download and update", "MindustryTool"));
         tips.add((locale) -> ApiGateway.translate(locale, "@If you find this helpful please give us a star: ",
                 Config.GITHUB_URL));
         tips.add((locale) -> ApiGateway.translate(locale, "@Be respectful — toxic behavior may lead to punishment"));
         tips.add((locale) -> ApiGateway.translate(locale, "@Report griefers instead of arguing in chat"));
         tips.add((locale) -> ApiGateway.translate(locale, "@Admins are here to help — ask nicely"));
-        tips.add((locale) -> ApiGateway.translate(locale, "@Router chains", "  " + Iconc.blockRouter));
+        tips.add((locale) -> ApiGateway.translate(locale, Iconc.blockRouter +"Router chains"));
         tips.add((locale) -> ApiGateway.translate(locale, "@Have fun!!!"));
         tips.add((locale) -> ApiGateway.translate(locale, "@The factory must grow!!!"));
         tips.add((locale) -> ApiGateway.translate(locale, "@Reach level ", Config.COLOR_NAME_LEVEL,

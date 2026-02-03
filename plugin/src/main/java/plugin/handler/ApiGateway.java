@@ -165,7 +165,7 @@ public class ApiGateway {
             String str = String.valueOf(texts[i]).trim();
             if (str.startsWith("@")) {
                 indexes[i] = true;
-                needTranslate.add(str);
+                needTranslate.add(str.substring(1));
             }
         }
 
