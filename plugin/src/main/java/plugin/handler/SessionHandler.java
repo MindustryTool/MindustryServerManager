@@ -1,5 +1,6 @@
 package plugin.handler;
 
+import java.time.Instant;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -71,7 +72,7 @@ public class SessionHandler {
         });
 
         PluginEvents.on(PlayerJoin.class, event -> {
-           Core.app.post(() -> put(event.player));
+            Core.app.post(() -> put(event.player));
         });
 
         PluginEvents.run(PluginUnloadEvent.class, SessionHandler::unload);
@@ -107,7 +108,7 @@ public class SessionHandler {
 
     public static Session put(Player p) {
         return data.computeIfAbsent(p.uuid(), (k) -> {
-            var session = new Session(p, SessionRepository.get(p.uuid()));
+            var session = new Session(p);
 
             Core.app.post(() -> PluginEvents.fire(new SessionCreatedEvent(session)));
             ServerControl.backgroundTask("Update Session", session::update);
@@ -120,6 +121,8 @@ public class SessionHandler {
         var previous = data.remove(p.uuid());
 
         if (previous != null) {
+            previous.data().playTime += Instant.now().toEpochMilli() - previous.joinedAt;
+
             PluginEvents.fire(new SessionRemovedEvent(previous));
         }
     }

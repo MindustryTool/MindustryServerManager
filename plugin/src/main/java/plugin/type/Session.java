@@ -16,26 +16,24 @@ import mindustry.ui.dialogs.LanguageDialog;
 import plugin.Config;
 import plugin.ServerControl;
 import plugin.handler.ApiGateway;
+import plugin.repository.SessionRepository;
 import plugin.utils.ExpUtils;
 import plugin.utils.Utils;
 
 public class Session {
-    public final Long joinedAt = Instant.now().toEpochMilli();
     public final Locale locale;
     public final Player player;
     public final String originalName;
-    public final SessionData data;
+    public final Long joinedAt = Instant.now().toEpochMilli();
 
     public boolean votedVNW = false;
     public boolean votedGrief = false;
     public int currentLevel = 0;
-    public Instant lastUpdate = Instant.now();
 
-    public Session(Player player, SessionData data) {
+    public Session(Player player) {
         this.player = player;
         this.originalName = player.name().replaceAll("\\|[A-Z]{2}\\| \\[\\]<\\[[^]]+\\]\\d+>", "").trim();
         this.locale = Locale.forLanguageTag(player.locale().split("_|-")[0]);
-        this.data = data;
 
         Log.info("Session created for player @: @", player.name, this);
     }
@@ -71,8 +69,6 @@ public class Session {
     }
 
     public void update() {
-        data.playTime += Instant.now().toEpochMilli() - lastUpdate.toEpochMilli();
-        lastUpdate = Instant.now();
         var level = ExpUtils.levelFromTotalExp(getExp());
 
         if (level != currentLevel) {
@@ -111,9 +107,17 @@ public class Session {
         player.name(originalName);
     }
 
-    public long addKill(UnitType unit, int amount) {
-        assert amount > 0 : "Kill amount must be greater than 0";
+    public SessionData data() {
+        return SessionRepository.get(player);
+    }
 
+    public long sessionPlayTime() {
+        return Instant.now().toEpochMilli() - joinedAt;
+    }
+
+    public synchronized long addKill(UnitType unit, int amount) {
+        assert amount > 0 : "Kill amount must be greater than 0";
+        var data = data();
         var value = data.kills.getOrDefault(unit.id, 0L) + amount;
 
         data.kills.put(unit.id, value);
@@ -122,13 +126,14 @@ public class Session {
     }
 
     public long getExp() {
+        var data = data();
         long exp = unitHealthToExp(data.kills.entrySet().stream().mapToDouble(entry -> {
             var unit = Vars.content.unit(entry.getKey());
 
             return unit.health * entry.getValue();
         }).sum());
 
-        exp += playTimeToExp(data.playTime);
+        exp += playTimeToExp(data.playTime + sessionPlayTime());
 
         return exp;
     }
@@ -147,6 +152,7 @@ public class Session {
         long exp = getExp();
         int level = ExpUtils.levelFromTotalExp(exp);
         long excess = ExpUtils.excessExp(exp);
+        var data = data();
 
         info.append("Player: ").append(player.name)
                 .append("\n")

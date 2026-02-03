@@ -6,6 +6,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 import arc.util.Log;
+import mindustry.gen.Player;
 import plugin.database.DB;
 import plugin.event.PluginUnloadEvent;
 import plugin.event.SessionRemovedEvent;
@@ -26,7 +27,7 @@ public class SessionRepository {
                 .scheduleWithFixedDelay(SessionRepository::flushBatch, 10, 30, TimeUnit.SECONDS);
 
         PluginEvents.run(PluginUnloadEvent.class, SessionRepository::unload);
-        PluginEvents.on(SessionRemovedEvent.class, event -> write(event.session.player.uuid(), event.session.data));
+        PluginEvents.run(SessionRemovedEvent.class, SessionRepository::flushBatch);
     }
 
     private static void unload() {
@@ -38,6 +39,10 @@ public class SessionRepository {
             cache.clear();
             dirty.clear();
         }
+    }
+
+    public static SessionData get(Player player) {
+        return get(player.uuid());
     }
 
     public static SessionData get(String uuid) {
