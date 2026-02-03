@@ -40,7 +40,7 @@ public class SessionRepository {
         PluginEvents.run(SessionRemovedEvent.class, SessionRepository::flushBatch);
 
         ServerControl.backgroundTask("update rank", () -> {
-            var players = getLeaderBoard(1000);
+            var players = getLeaderBoard(100);
             for (var player : players) {
                 player.data.joinedAt = Instant.now().toEpochMilli();
                 write(player.uuid, player.data);
