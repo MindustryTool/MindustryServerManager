@@ -71,7 +71,7 @@ public class SessionHandler {
         });
 
         PluginEvents.on(PlayerJoin.class, event -> {
-            put(event.player);
+           Core.app.post(() -> put(event.player));
         });
 
         PluginEvents.run(PluginUnloadEvent.class, SessionHandler::unload);
