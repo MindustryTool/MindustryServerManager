@@ -115,7 +115,10 @@ public class SessionHandler {
 
             ServerControl.backgroundTask("Update Session", () -> {
                 try {
-                    session.data().joinedAt = session.joinedAt;
+                    var data = session.data();
+
+                    data.joinedAt = session.joinedAt;
+                    data.name = session.originalName;
                 } catch (Exception e) {
                     Log.err(e);
                 }
