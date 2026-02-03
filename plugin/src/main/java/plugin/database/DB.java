@@ -105,7 +105,7 @@ public class DB {
         try {
             if (connection != null && !connection.isClosed()) {
                 connection.close();
-                Log.info("SQLite database connection closed");
+                Log.info("[red]SQLite database connection closed");
             }
         } catch (Exception e) {
             Log.err("Failed to close database connection: @", e.getMessage());
