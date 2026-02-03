@@ -22,7 +22,7 @@ import mindustry.gen.Groups;
 import mindustry.gen.Player;
 import mindustry.net.Administration.PlayerInfo;
 import plugin.Config;
-import plugin.handler.ServerCommandHandler;
+import plugin.commands.ServerCommandHandler;
 import plugin.handler.SessionHandler;
 import plugin.handler.VoteHandler;
 import plugin.type.ChatDto;
@@ -213,7 +213,7 @@ public class GeneralController {
 
             if (commands != null) {
                 for (String command : commands) {
-                    Log.info("[sky]Execute command: " + command);
+                    Log.info("[sky]" + command);
 
                     ServerCommandHandler.execute(command, response -> {
                         if (response.type == ResponseType.unknownCommand) {

@@ -1,4 +1,4 @@
-package plugin.handler;
+package plugin.commands;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,7 +9,6 @@ import arc.util.Log;
 import arc.util.CommandHandler;
 import lombok.Getter;
 import plugin.PluginEvents;
-import plugin.commands.PluginCommand;
 import plugin.commands.server.JsCommand;
 import plugin.commands.server.KickWithReasonCommand;
 import plugin.commands.server.SayCommand;

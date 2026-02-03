@@ -1,7 +1,7 @@
 package plugin.commands.client;
 
+import plugin.commands.ClientCommandHandler;
 import plugin.commands.PluginCommand;
-import plugin.handler.ClientCommandHandler;
 import plugin.type.Session;
 
 public class RedirectCommand extends PluginCommand {

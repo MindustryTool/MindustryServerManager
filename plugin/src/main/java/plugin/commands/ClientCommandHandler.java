@@ -1,4 +1,4 @@
-package plugin.handler;
+package plugin.commands;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -10,7 +10,6 @@ import mindustry.gen.Call;
 import mindustry.gen.Groups;
 import plugin.PluginEvents;
 import plugin.ServerControl;
-import plugin.commands.PluginCommand;
 import plugin.commands.client.DiscordCommand;
 import plugin.commands.client.GriefCommand;
 import plugin.commands.client.HubCommand;
@@ -25,6 +24,7 @@ import plugin.commands.client.ServersCommand;
 import plugin.commands.client.TrailCommand;
 import plugin.commands.client.VnwCommand;
 import plugin.event.PluginUnloadEvent;
+import plugin.handler.ApiGateway;
 import plugin.menus.GlobalServerListMenu;
 import plugin.type.Session;
 
