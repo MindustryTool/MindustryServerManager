@@ -1,6 +1,6 @@
 package plugin.handler;
 
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 import arc.Events;
 import arc.struct.Seq;
@@ -17,7 +17,7 @@ import plugin.event.PluginUnloadEvent;
 import plugin.event.SessionRemovedEvent;
 
 public class VoteHandler {
-    public static HashMap<String, Seq<String>> votes = new HashMap<>();
+    public static ConcurrentHashMap<String, Seq<String>> votes = new ConcurrentHashMap<>();
     public static double ratio = 0.6;
     public static Map lastMap = null;
 
