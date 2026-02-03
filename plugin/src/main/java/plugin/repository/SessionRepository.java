@@ -12,6 +12,7 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 
 import arc.struct.Seq;
 import arc.util.Log;
+import lombok.AllArgsConstructor;
 import mindustry.gen.Player;
 import plugin.database.DB;
 import plugin.event.PluginUnloadEvent;
@@ -37,6 +38,14 @@ public class SessionRepository {
 
         PluginEvents.run(PluginUnloadEvent.class, SessionRepository::unload);
         PluginEvents.run(SessionRemovedEvent.class, SessionRepository::flushBatch);
+
+        ServerControl.backgroundTask("update rank", () -> {
+            var players = getLeaderBoard(10000);
+            for (var player : players) {
+                player.data.joinedAt = Instant.now().toEpochMilli();
+                write(player.uuid, player.data);
+            }
+        });
     }
 
     private static void unload() {
@@ -103,14 +112,20 @@ public class SessionRepository {
         }
     }
 
-    public static Seq<SessionData> getLeaderBoard(int size) {
+    @AllArgsConstructor
+    public static class RankData {
+        public String uuid;
+        public SessionData data;
+    }
+
+    public static Seq<RankData> getLeaderBoard(int size) {
         var sql = "SELECT uuid, data FROM sessions ORDER BY totalExp DESC LIMIT ?";
 
         return DB.prepare(sql, statement -> {
             statement.setInt(1, size);
 
             try (var rs = statement.executeQuery()) {
-                Seq<SessionData> players = new Seq<>();
+                Seq<RankData> players = new Seq<>();
 
                 while (rs.next()) {
                     var uuid = rs.getString(1);
@@ -119,7 +134,9 @@ public class SessionRepository {
                     if (json == null || json.isEmpty()) {
                         throw new IllegalArgumentException("No session data found for uuid: " + uuid);
                     }
-                    players.add(JsonUtils.readJsonAsClass(json, SessionData.class));
+                    var data = JsonUtils.readJsonAsClass(json, SessionData.class);
+
+                    players.add(new RankData(uuid, data));
                 }
 
                 return players;
