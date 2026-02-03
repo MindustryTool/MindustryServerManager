@@ -76,7 +76,7 @@ public class ServerControl extends Plugin implements MindustryToolPlugin {
 
         PluginEvents.on(ServerLoadEvent.class, event -> isUnloaded = false);
         Utils.forEachPlayerLocale((locale, players) -> {
-            String msg = ApiGateway.translate(locale, "[scarlet]", "@Server controller restarted");
+            String msg = "[scarlet]" + ApiGateway.translate(locale, "@Server controller restarted");
             for (var p : players) {
                 p.sendMessage(msg);
             }
@@ -175,12 +175,12 @@ public class ServerControl extends Plugin implements MindustryToolPlugin {
         Seq<Func<Locale, String>> tips = new Seq<>();
 
         tips.add((locale) -> ApiGateway.translate(locale, "@Powered by ", "MindustryTool"));
-        tips.add((locale) -> ApiGateway.translate(locale, "@Use ", "/discord", " @to join our Discord server"));
-        tips.add((locale) -> ApiGateway.translate(locale, "@Use ", "/vnw", " @to skip a wave"));
-        tips.add((locale) -> ApiGateway.translate(locale, "@Use ", "/rtv", " @to change map"));
-        tips.add((locale) -> ApiGateway.translate(locale, "@Use ", "/me", " @to see your stats"));
-        tips.add((locale) -> ApiGateway.translate(locale, "@Use ", "/grief", " @to report a player"));
-        tips.add((locale) -> ApiGateway.translate(locale, "@Use ", "/website",
+        tips.add((locale) -> ApiGateway.translate(locale, "@Use ", "[accent]/discord", " @to join our Discord server"));
+        tips.add((locale) -> ApiGateway.translate(locale, "@Use ", "[accent]/vnw", " @to skip a wave"));
+        tips.add((locale) -> ApiGateway.translate(locale, "@Use ", "[accent]/rtv", " @to change map"));
+        tips.add((locale) -> ApiGateway.translate(locale, "@Use ", "[accent]/me", " @to see your stats"));
+        tips.add((locale) -> ApiGateway.translate(locale, "@Use ", "[accent]/grief", " @to report a player"));
+        tips.add((locale) -> ApiGateway.translate(locale, "@Use ", "[accent]/website",
                 "@to visit our website for schematics and maps"));
         tips.add((locale) -> ApiGateway.translate(locale, "@Remember to respect other players"));
         tips.add((locale) -> ApiGateway.translate(locale, "@Remember to download and update", "MindustryTool"));
@@ -189,7 +189,7 @@ public class ServerControl extends Plugin implements MindustryToolPlugin {
         tips.add((locale) -> ApiGateway.translate(locale, "@Be respectful — toxic behavior may lead to punishment"));
         tips.add((locale) -> ApiGateway.translate(locale, "@Report griefers instead of arguing in chat"));
         tips.add((locale) -> ApiGateway.translate(locale, "@Admins are here to help — ask nicely"));
-        tips.add((locale) -> ApiGateway.translate(locale, Iconc.blockRouter + "Router chains"));
+        tips.add((locale) -> Iconc.blockRouter + "Router chains");
         tips.add((locale) -> ApiGateway.translate(locale, "@Have fun!!!"));
         tips.add((locale) -> ApiGateway.translate(locale, "@The factory must grow!!!"));
         tips.add((locale) -> ApiGateway.translate(locale, "@Reach level ", Config.COLOR_NAME_LEVEL,
