@@ -8,5 +8,5 @@ public class SessionData {
     // in ms
     public String name = new String();
     public long playTime = 0;
-    public long joinedAt = Instant.now().toEpochMilli();
+    public long lastSaved = Instant.now().toEpochMilli();
 }

@@ -119,7 +119,7 @@ public class SessionHandler {
                 try {
                     var data = session.data();
 
-                    data.joinedAt = session.joinedAt;
+                    data.lastSaved = session.joinedAt;
                     data.name = session.originalName;
                 } catch (Exception e) {
                     Log.err(e);
