@@ -324,6 +324,12 @@ public class Utils {
     public static String padRight(String text, int length) {
         if (text.length() >= length)
             return text;
-        return text + " ".repeat(length - text.length());
+        StringBuilder sb = new StringBuilder(text);
+
+        for (int i = text.length(); i < length; i++) {
+            sb.append(" ");
+        }
+
+        return sb.toString();
     }
 }
