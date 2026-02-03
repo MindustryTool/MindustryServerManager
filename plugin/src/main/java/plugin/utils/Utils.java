@@ -320,4 +320,10 @@ public class Utils {
     public static char icon(UnitType type) {
         return Reflect.get(Iconc.class, "unit" + Strings.capitalize(type.name));
     }
+
+    public static String padRight(String text, int length) {
+        if (text.length() >= length)
+            return text;
+        return text + " ".repeat(length - text.length());
+    }
 }

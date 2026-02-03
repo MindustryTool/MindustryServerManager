@@ -38,15 +38,6 @@ public class SessionRepository {
 
         PluginEvents.run(PluginUnloadEvent.class, SessionRepository::unload);
         PluginEvents.run(SessionRemovedEvent.class, SessionRepository::flushBatch);
-
-        ServerControl.backgroundTask("update rank", () -> {
-            var players = getLeaderBoard(100);
-            for (var player : players) {
-                player.data.joinedAt = Instant.now().toEpochMilli();
-                write(player.uuid, player.data);
-                Log.info("Update rank for player: @", player.data.name);
-            }
-        });
     }
 
     private static void unload() {

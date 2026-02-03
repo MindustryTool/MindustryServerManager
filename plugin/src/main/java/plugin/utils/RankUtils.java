@@ -11,22 +11,24 @@ public class RankUtils {
         for (int i = 0; i < players.size; i++) {
             var data = players.get(i).data;
 
+            String rank = i + 1 + "th";
+
             if (i == 0) {
-                sb.append("[gold]1st");
+                rank = "[gold]1st";
             } else if (i == 1) {
-                sb.append("[#C0C0C0]2nd");
+                rank = "[#C0C0C0]2nd";
             } else if (i == 2) {
-                sb.append("[#CD7F32]3rd");
-            } else {
-                sb.append(i + 1 + "th");
+                rank = "[#CD7F32]3rd";
             }
+
+            sb.append(Utils.padRight(rank, 5));
 
             long totalExp = ExpUtils.getTotalExp(data, 0);
 
             sb.append("[] ")
-                    .append(data.name)
+                    .append(Utils.padRight(data.name, 20))
                     .append("[] Lv: ")
-                    .append(ExpUtils.levelFromTotalExp(totalExp))
+                    .append(Utils.padRight(ExpUtils.levelFromTotalExp(totalExp) + "", 3))
                     .append("(")
                     .append(totalExp)
                     .append(")\n");
