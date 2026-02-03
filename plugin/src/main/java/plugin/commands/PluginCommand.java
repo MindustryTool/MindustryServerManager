@@ -15,7 +15,7 @@ import plugin.utils.Utils;
 import plugin.handler.SessionHandler;
 import plugin.type.Session;
 
-    public abstract class PluginCommand {
+public abstract class PluginCommand {
     @Getter
     @Setter
     private String name;
@@ -120,7 +120,7 @@ import plugin.type.Session;
                                     session.locale, "[scarlet]", "@Error: ", e.getMessage()));
                         } catch (Exception e) {
                             session.player.sendMessage(ApiGateway.translate(
-                                    session.locale, "@Error"));
+                                    session.locale, "[scarlet]", "@Error"));
                             Log.err("Failed to execute command " + name, e);
                         }
                     });
