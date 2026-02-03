@@ -40,6 +40,8 @@ public class DB {
             databasePath = databaseFile.getAbsolutePath();
             String jdbcUrl = JDBC_URL_PREFIX + databasePath;
 
+            Log.info("Connecting to " + jdbcUrl);
+
             try {
                 Class.forName("org.sqlite.JDBC");
             } catch (ClassNotFoundException e) {
