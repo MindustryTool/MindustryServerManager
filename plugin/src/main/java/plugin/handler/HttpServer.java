@@ -119,11 +119,11 @@ public class HttpServer {
 
         ServerControl.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(
                 () -> {
-                    if (isConnected() && Duration.between(lastSendEvent, Instant.now()).compareTo(HEARTBEAT_DURATION) > 0) {
+                    if (isConnected()
+                            && Duration.between(lastSendEvent, Instant.now()).compareTo(HEARTBEAT_DURATION) > 0) {
                         sendStateUpdate();
                     }
-                }, 0, 2,
-                TimeUnit.SECONDS);
+                }, 0, 2, TimeUnit.SECONDS);
 
         Log.info("Setup http server done");
     }

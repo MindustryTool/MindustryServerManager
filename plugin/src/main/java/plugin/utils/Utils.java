@@ -213,8 +213,6 @@ public class Utils {
                         : ServerStatus.STOP);
     }
 
-    private static final String MAP_PREVIEW_IMAGE_FILE_NAME = "map-preview.png";
-
     public static byte[] mapPreview2() {
         Pixmap pix = null;
         try {
@@ -239,16 +237,24 @@ public class Utils {
     }
 
     private static final String MAP_PREVIEW_FILE_NAME = "map-preview.msav";
+    private static final String MAP_PREVIEW_IMAGE_FILE_NAME = "map-preview-image.png";
 
     public static byte[] mapPreview() {
-        Fi tempFile = new Fi(MAP_PREVIEW_FILE_NAME);
+        Fi tempFile = Vars.dataDirectory.child(MAP_PREVIEW_FILE_NAME);
+        Fi tempImageFile = Vars.dataDirectory.child(MAP_PREVIEW_IMAGE_FILE_NAME);
 
         if (tempFile.isDirectory()) {
             tempFile.deleteDirectory();
         }
 
+        if (tempImageFile.isDirectory()) {
+            tempImageFile.deleteDirectory();
+        }
+
         try {
             tempFile.file().createNewFile();
+            tempImageFile.file().createNewFile();
+
             Core.app.post(() -> {
                 try {
                     SaveIO.save(tempFile);
@@ -264,14 +270,24 @@ public class Utils {
                 return new byte[0];
             }
 
-            body.put("data", Base64.getEncoder().encodeToString(bytes));
+            byte[] imageBytes = tempImageFile.readBytes();
 
-            HttpRequest request = HttpUtils
-                    .post("https://api.mindustry-tool.com", "api", "v4", "maps", "image-json")
-                    .header("Content-Type", "application/json")
-                    .content(JsonUtils.toJsonString(body));
+            ServerControl.backgroundTask("Generate preview", () -> {
+                body.put("data", Base64.getEncoder().encodeToString(bytes));
 
-            return HttpUtils.send(request, 30000, byte[].class);
+                HttpRequest request = HttpUtils
+                        .post("https://api.mindustry-tool.com", "api", "v4", "maps", "image-json")
+                        .header("Content-Type", "application/json")
+                        .content(JsonUtils.toJsonString(body));
+
+                tempImageFile.writeBytes(HttpUtils.send(request, 30000, byte[].class));
+            });
+
+            if (imageBytes.length == 0) {
+                return new byte[0];
+            }
+
+            return imageBytes;
 
         } catch (Throwable throwable) {
             Log.err(throwable.getMessage());
