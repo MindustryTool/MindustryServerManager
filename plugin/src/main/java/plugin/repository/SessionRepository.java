@@ -40,7 +40,9 @@ public class SessionRepository {
 
     private static void unload() {
         try {
-            flushBatch();
+            for (var entry : cache.asMap().entrySet()) {
+                write(entry.getKey(), entry.getValue());
+            }
         } catch (Exception e) {
             Log.err("Failed to flush session repository on unload: @", e.getMessage());
         } finally {
