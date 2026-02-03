@@ -165,9 +165,6 @@ public class ServerService {
                     };
 
                     Flux<LogEvent> sendCommandFlux = Flux.concat(
-                            Flux.fromArray(preHostCommand)
-                                    .filter(cmd -> cmd.length() > 0)
-                                    .map(cmd -> LogEvent.info(serverId, cmd)),
                             serverGateway//
                                     .sendCommand(preHostCommand)
                                     .thenReturn(LogEvent.info(serverId, "Config done")));
