@@ -9,7 +9,6 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 
 import arc.math.Mathf;
 import mindustry.game.Team;
-import mindustry.gen.Call;
 import mindustry.gen.Groups;
 import mindustry.net.Packets.KickReason;
 import plugin.Config;
@@ -19,6 +18,7 @@ import plugin.event.PluginUnloadEvent;
 import plugin.event.SessionRemovedEvent;
 import plugin.handler.SessionHandler;
 import plugin.type.Session;
+import plugin.handler.ApiGateway;
 
 public class AdminUtils {
 
@@ -55,12 +55,14 @@ public class AdminUtils {
 
     public static void voteGrief(Session session) {
         if (reported == null) {
-            session.player.sendMessage("No player is being reported.");
+            session.player.sendMessage(ApiGateway.translate(session.locale,
+                    "@No player is being reported."));
             return;
         }
 
         if (session.votedGrief) {
-            session.player.sendMessage("You already voted.");
+            session.player.sendMessage(ApiGateway.translate(session.locale,
+                    "@You already voted."));
             return;
         }
 
@@ -71,25 +73,39 @@ public class AdminUtils {
 
         if (voted >= required) {
             reported.player.kick(KickReason.kick);
-            Call.sendMessage("[red]Player " + reported.player.name + " was kicked for griefing.");
+            Utils.forEachPlayerLocale((locale, players) -> {
+                String msg = ApiGateway.translate(locale, "[red]", "@Player ", reported.player.name,
+                        " ", "@was kicked for griefing.");
+                for (var p : players) {
+                    p.sendMessage(msg);
+                }
+            });
             if (reporter != null) {
                 lastGriefReportTimes.invalidate(reporter);
             }
             reset();
         } else {
-            Call.sendMessage("[red]Player " + session.player.name + " voted for player " + reported.player.name
-                    + " for griefing. Use /grief to kick this player.");
+            Utils.forEachPlayerLocale((locale, players) -> {
+                String msg = ApiGateway.translate(locale, "[red]", "@Player ", session.player.name,
+                        " ", "@voted for player ", reported.player.name,
+                        " ", "@for griefing. Use ", "/grief", " ", "@to kick this player.");
+                for (var p : players) {
+                    p.sendMessage(msg);
+                }
+            });
         }
     }
 
     public static void reportGrief(Session player, Session target) {
         if (Groups.player.size() < 3) {
-            player.player.sendMessage("You cannot report grief if there are less than 3 players.");
+            player.player.sendMessage(ApiGateway.translate(player.locale,
+                    "@You cannot report grief if there are less than 3 players."));
             return;
         }
 
         if (target == player) {
-            player.player.sendMessage("You cannot report yourself.(Bud are you alright)");
+            player.player.sendMessage(ApiGateway.translate(player.locale,
+                    "@You cannot report yourself.(Bud are you alright)"));
             return;
         }
 
@@ -100,7 +116,8 @@ public class AdminUtils {
                 long remaining = lastReportTime.plusSeconds(Config.GRIEF_REPORT_COOLDOWN)
                         .getEpochSecond() - Instant.now().getEpochSecond();
 
-                player.player.sendMessage("You must wait " + remaining + " seconds to report again.");
+                player.player.sendMessage(ApiGateway.translate(player.locale,
+                        "@You must wait ", remaining, " ", "@seconds to report again."));
                 return;
             }
         }
@@ -115,11 +132,22 @@ public class AdminUtils {
 
         target.player.team(Team.derelict);
 
-        Call.sendMessage("[red]Player " + player.player.name + " reported player " + target.player.name
-                + " for griefing. Use /grief to kick this player.");
+        Utils.forEachPlayerLocale((locale, players) -> {
+            String msg = ApiGateway.translate(locale, "[red]", "@Player ", player.player.name, " ",
+                    "@reported player ", target.player.name, " ", "@for griefing. Use ", "/grief", " ",
+                    "@to kick this player.");
+            for (var p : players) {
+                p.sendMessage(msg);
+            }
+        });
 
         voteTimeout = ServerControl.BACKGROUND_SCHEDULER.schedule(() -> {
-            Call.sendMessage("[scarlet]Vote failed, not enough votes.");
+            Utils.forEachPlayerLocale((locale, players) -> {
+                String msg = ApiGateway.translate(locale, "[scarlet]", "@Vote failed, not enough votes.");
+                for (var p : players) {
+                    p.sendMessage(msg);
+                }
+            });
             target.player.team(originalTeam);
             reset();
         }, 60, TimeUnit.SECONDS);

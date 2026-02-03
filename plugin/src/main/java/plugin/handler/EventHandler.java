@@ -215,9 +215,11 @@ public class EventHandler {
 
                 if (isLoggedIn) {
                     Log.info(playerData);
-                    session.player.sendMessage("Logged in as " + playerData.getName());
+                    session.player.sendMessage(ApiGateway.translate(session.locale,
+                            "@Logged in as ", playerData.getName()));
                 } else {
-                    session.player.sendMessage("You are not logged in, consider log in via MindustryTool using /login");
+                    session.player.sendMessage(ApiGateway.translate(session.locale,
+                            "@You are not logged in, consider log in via MindustryTool using ", "/login"));
                 }
             });
 

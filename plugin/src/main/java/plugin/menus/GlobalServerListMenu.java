@@ -17,21 +17,21 @@ public class GlobalServerListMenu extends PluginMenu<Integer> {
             PaginationRequest request = new PaginationRequest().setPage(page).setSize(size);
             List<ServerDto> servers = ApiGateway.getServers(request);
 
-            this.title = "Servers";
+            this.title = ApiGateway.translate(session.locale, "@Servers");
             this.description = "";
 
-            text("[#FFD700]Server name");
-            text("[#FFD700]Players playing");
+            text(ApiGateway.translate(session.locale, "[#FFD700]", "@Server name"));
+            text(ApiGateway.translate(session.locale, "[#FFD700]", "@Players playing"));
             row();
 
-            text("[#87CEEB]Server Gamemode");
-            text("[#FFA500]Map Playing");
+            text(ApiGateway.translate(session.locale, "[#87CEEB]", "@Server Gamemode"));
+            text(ApiGateway.translate(session.locale, "[#FFA500]", "@Map Playing"));
             row();
 
-            text("[#DA70D6]Server Mods");
+            text(ApiGateway.translate(session.locale, "[#DA70D6]", "@Server Mods"));
             row();
 
-            text("[#B0B0B0]Server Description");
+            text(ApiGateway.translate(session.locale, "[#B0B0B0]", "@Server Description"));
             row();
 
             servers.forEach(server -> {
@@ -41,19 +41,22 @@ public class GlobalServerListMenu extends PluginMenu<Integer> {
 
                 option(String.format("[#FFD700]%s", server.getName()),
                         (p, s) -> ClientCommandHandler.onServerChoose(p, server.getId().toString(), server.getName()));
-                option(String.format("[#32CD32]Players: %d", server.getPlayers()),
+                option(ApiGateway.translate(session.locale, "[#32CD32]", "@Players: ", server.getPlayers()),
                         (p, s) -> ClientCommandHandler.onServerChoose(p, server.getId().toString(), server.getName()));
                 row();
 
-                option(String.format("[#87CEEB]Gamemode: %s", server.getMode()),
+                option(ApiGateway.translate(session.locale, "[#87CEEB]", "@Gamemode: ", server.getMode()),
                         (p, s) -> ClientCommandHandler.onServerChoose(p, server.getId().toString(), server.getName()));
-                option(String.format("[#1E90FF]Map: %s",
-                        server.getMapName() != null ? server.getMapName() : "[#FF4500]Server offline"),
+                option(ApiGateway.translate(session.locale, "[#1E90FF]", "@Map: ",
+                        server.getMapName() != null ? server.getMapName()
+                                : ApiGateway.translate(session.locale, "[#FF4500]",
+                                        "@Server offline")),
                         (p, s) -> ClientCommandHandler.onServerChoose(p, server.getId().toString(), server.getName()));
                 row();
 
                 if (server.getMods() != null && !server.getMods().isEmpty()) {
-                    option(String.format("[#DA70D6]Mods: %s", String.join(", ", server.getMods())), (p,
+                    option(ApiGateway.translate(session.locale, "[#DA70D6]", "@Mods: ",
+                            String.join(", ", server.getMods())), (p,
                             s) -> ClientCommandHandler.onServerChoose(p, server.getId().toString(), server.getName()));
                     row();
                 }
@@ -66,26 +69,26 @@ public class GlobalServerListMenu extends PluginMenu<Integer> {
             });
 
             if (page > 0) {
-                option("[yellow]Previous", (p, s) -> new GlobalServerListMenu().send(p, s - 1));
+                option(ApiGateway.translate(session.locale, "[yellow]", "@Previous"), (p, s) -> new GlobalServerListMenu().send(p, s - 1));
             } else {
-                option("First page", (p, s) -> {
+                option(ApiGateway.translate(session.locale, "@First page"), (p, s) -> {
                     new GlobalServerListMenu().send(p, s);
-                    Call.infoToast(p.player.con, "Please don't click there", 10f);
+                    Call.infoToast(p.player.con, ApiGateway.translate(session.locale, "@Please don't click there"), 10f);
                 });
             }
 
             if (servers.size() == size) {
-                option("[green]Next", (p, s) -> new GlobalServerListMenu().send(p, s + 1));
+                option(ApiGateway.translate(session.locale, "[green]", "@Next"), (p, s) -> new GlobalServerListMenu().send(p, s + 1));
             } else {
-                option("No more", (p, s) -> {
+                option(ApiGateway.translate(session.locale, "@No more"), (p, s) -> {
                     new GlobalServerListMenu().send(p, s);
-                    Call.infoToast(p.player.con, "Please don't click there", 10f);
+                    Call.infoToast(p.player.con, ApiGateway.translate(session.locale, "@Please don't click there"), 10f);
                 });
             }
 
             row();
 
-            text("[red]Close");
+            text(ApiGateway.translate(session.locale, "[red]", "@Close"));
         } catch (Exception e) {
             Log.err("Failed to build global server list menu", e);
         }

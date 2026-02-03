@@ -2,11 +2,12 @@ package plugin.commands.server;
 
 import arc.util.Log;
 import mindustry.Vars;
-import mindustry.gen.Call;
 import mindustry.gen.Groups;
 import mindustry.gen.Player;
 import mindustry.net.Packets.KickReason;
 import plugin.commands.PluginCommand;
+import plugin.handler.ApiGateway;
+import plugin.utils.Utils;
 
 public class KickWithReasonCommand extends PluginCommand {
     private Param idParam;
@@ -37,7 +38,13 @@ public class KickWithReasonCommand extends PluginCommand {
             } else {
                 target.kick(reason);
             }
-            Call.sendMessage("[scarlet]" + target.name() + "[scarlet] has been kicked by the server.");
+            Utils.forEachPlayerLocale((locale, players) -> {
+                String msg = ApiGateway.translate(locale, "[scarlet]", target.name(), "[scarlet]", " ",
+                        "@has been kicked by the server.");
+                for (var p : players) {
+                    p.sendMessage(msg);
+                }
+            });
             Log.info("It is done.");
         } else {
             Log.info("Nobody with that uuid could be found: " + uuid);

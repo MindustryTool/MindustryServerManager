@@ -27,6 +27,7 @@ import plugin.event.PluginUnloadEvent;
 import plugin.handler.ApiGateway;
 import plugin.menus.GlobalServerListMenu;
 import plugin.type.Session;
+import plugin.utils.Utils;
 
 public class ClientCommandHandler {
 
@@ -70,16 +71,22 @@ public class ClientCommandHandler {
     }
 
     public static void onServerChoose(Session session, String id, String name) {
-        session.player.sendMessage(
-                String.format("[green]Starting server [white]%s, [white]redirection will happen soon", name));
+        session.player.sendMessage(ApiGateway.translate(session.locale,
+                "[green]", "@Starting server ", "[white]", name, ", ", "[white]", "@redirection will happen soon"));
 
         try {
             ServerControl.backgroundTask("Redirect Server", () -> {
                 var data = ApiGateway.host(id);
-                session.player.sendMessage("[green]Redirecting");
-                Call.sendMessage(
-                        String.format("%s [green]redirecting to server [white]%s, use [green]/servers[white] to follow",
-                                session.player.coloredName(), name));
+                session.player.sendMessage(ApiGateway.translate(session.locale,
+                        "[green]", "@Redirecting"));
+                Utils.forEachPlayerLocale((locale, players) -> {
+                    String msg = ApiGateway.translate(locale, session.player.coloredName(), " ", "[green]",
+                            "@redirecting to server ", "[white]", name,
+                            ", ", "@use ", "[green]", "/servers", "[white]", " ", "@to follow");
+                    for (var p : players) {
+                        p.sendMessage(msg);
+                    }
+                });
 
                 String host = "";
                 int port = 6567;
@@ -102,7 +109,8 @@ public class ClientCommandHandler {
                 });
             });
         } catch (Exception e) {
-            session.player.sendMessage("Error: Can not load server");
+            session.player.sendMessage(ApiGateway.translate(session.locale,
+                    "@Error: ", "@Can not load server"));
             e.printStackTrace();
         }
     }

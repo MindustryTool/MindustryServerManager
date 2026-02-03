@@ -34,6 +34,7 @@ import dto.ServerCommandDto;
 import dto.StartServerDto;
 import dto.ServerStateDto;
 import plugin.utils.Utils;
+import plugin.handler.ApiGateway;
 import io.javalin.Javalin;
 import io.javalin.http.ContentType;
 
@@ -63,7 +64,12 @@ public class GeneralController {
         app.post("discord", ctx -> {
             String message = ctx.body();
 
-            Call.sendMessage(message);
+            Utils.forEachPlayerLocale((locale, players) -> {
+                String msg = ApiGateway.translate(locale, "@" + message);
+                for (var p : players) {
+                    p.sendMessage(msg);
+                }
+            });
             ctx.result();
         });
 
@@ -253,7 +259,12 @@ public class GeneralController {
                 Log.err("Not hosting. Host a game first.");
             } else {
                 String message = ctx.body();
-                Call.sendMessage("[]" + message);
+                Utils.forEachPlayerLocale((locale, players) -> {
+                    String msg = ApiGateway.translate(locale, "[]", "@" + message);
+                    for (var p : players) {
+                        p.sendMessage(msg);
+                    }
+                });
             }
 
             ctx.result();

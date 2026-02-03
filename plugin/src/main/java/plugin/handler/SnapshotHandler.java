@@ -14,6 +14,7 @@ import mindustry.gen.Player;
 import mindustry.world.Tile;
 import plugin.PluginEvents;
 import plugin.event.PluginUnloadEvent;
+import plugin.event.SessionRemovedEvent;
 
 public class SnapshotHandler {
     private static final ConcurrentHashMap<Integer, BuiltByData> builtBy = new ConcurrentHashMap<>();
@@ -30,6 +31,14 @@ public class SnapshotHandler {
         PluginEvents.on(BlockBuildEndEvent.class, SnapshotHandler::onBlockBuildEnd);
         PluginEvents.on(BlockDestroyEvent.class, SnapshotHandler::onBlockDestroy);
         PluginEvents.run(PluginUnloadEvent.class, SnapshotHandler::unload);
+        PluginEvents.on(SessionRemovedEvent.class, SnapshotHandler::onSessionRemoved);
+    }
+
+
+    public static void onSessionRemoved(SessionRemovedEvent event){
+        var player = event.session.player;
+        builtBy.values().removeIf(data -> data.player == player);
+        buildingToPlayer.values().removeIf(p -> p == player);
     }
 
     public static Optional<Player> getBuiltBy(Building building) {

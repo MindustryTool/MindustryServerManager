@@ -8,13 +8,13 @@ import arc.util.Log;
 import mindustry.Vars;
 import mindustry.game.EventType;
 import mindustry.game.Team;
-import mindustry.gen.Call;
 import mindustry.gen.Groups;
 import mindustry.gen.Player;
 import mindustry.maps.Map;
 import plugin.PluginEvents;
 import plugin.event.PluginUnloadEvent;
 import plugin.event.SessionRemovedEvent;
+import plugin.utils.Utils;
 
 public class VoteHandler {
     public static ConcurrentHashMap<String, Seq<String>> votes = new ConcurrentHashMap<>();
@@ -103,11 +103,21 @@ public class VoteHandler {
 
     public static void check(String mapId) {
         if (getVoteCount(mapId) >= getRequire()) {
-            Call.sendMessage("[red]RTV: [green]Vote passed! Changing map...");
+            Utils.forEachPlayerLocale((locale, players) -> {
+                String msg = ApiGateway.translate(locale, "[red]RTV: ", "[green]", "@Vote passed! Changing map...");
+                for (var p : players) {
+                    p.sendMessage(msg);
+                }
+            });
             var map = getMaps().find(m -> m.file.nameWithoutExtension().equals(mapId));
 
             if (map == null) {
-                Call.sendMessage("Map with id: " + mapId + " not exists");
+                Utils.forEachPlayerLocale((locale, players) -> {
+                    String msg = ApiGateway.translate(locale, "@Map with id: ", mapId, " ", "@not exists");
+                    for (var p : players) {
+                        p.sendMessage(msg);
+                    }
+                });
                 return;
             }
 
@@ -127,8 +137,13 @@ public class VoteHandler {
         String mapId = map.file.nameWithoutExtension();
 
         if (isVoted(player, mapId)) {
-            Call.sendMessage("[red]RTV: " + player.name + " [accent]removed their vote for [yellow]"
-                    + map.name());
+            Utils.forEachPlayerLocale((locale, players) -> {
+                String msg = ApiGateway.translate(locale, "[red]RTV: ", player.name, " ", "[accent]",
+                        "@removed their vote for ", "[yellow]", map.name());
+                for (var p : players) {
+                    p.sendMessage(msg);
+                }
+            });
             removeVote(player, mapId);
             return;
         }
@@ -137,14 +152,19 @@ public class VoteHandler {
 
         vote(player, mapId);
 
-        Call.sendMessage(
-                "[red]RTV: [accent]" + player.name() + " [white]Want to change map to [yellow]" + map.name());
-        Call.sendMessage(
-                "[red]RTV: [white]Current Vote for [yellow]" + map.name() + "[white]: [green]"
-                        + getVoteCount(mapId) + "/"
-                        + getRequire());
-        Call.sendMessage(
-                "[red]RTV: [white]Use [yellow]/rtv yes to add your vote to this map !");
+        Utils.forEachPlayerLocale((locale, players) -> {
+            String msg1 = ApiGateway.translate(locale, "[red]RTV: ", "[accent]", player.name(), " ", "[white]",
+                    "@Want to change map to ", "[yellow]", map.name());
+            String msg2 = ApiGateway.translate(locale, "[red]RTV: ", "[white]", "@Current Vote for ", "[yellow]",
+                    map.name() + "[white]: ", "[green]", getVoteCount(mapId), "/", getRequire());
+            String msg3 = ApiGateway.translate(locale, "[red]RTV: ", "[white]", "@Use ", "[yellow]", "/rtv yes",
+                    " ", "@to add your vote to this map !");
+            for (var p : players) {
+                p.sendMessage(msg1);
+                p.sendMessage(msg2);
+                p.sendMessage(msg3);
+            }
+        });
 
     }
 }

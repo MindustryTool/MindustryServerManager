@@ -17,7 +17,6 @@ import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import arc.ApplicationListener;
 import arc.Core;
 import arc.files.Fi;
 import arc.graphics.Pixmap;

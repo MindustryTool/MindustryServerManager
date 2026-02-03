@@ -10,6 +10,8 @@ import lombok.Getter;
 import lombok.Setter;
 import mindustry.gen.Player;
 import plugin.ServerControl;
+import plugin.handler.ApiGateway;
+import plugin.utils.Utils;
 import plugin.handler.SessionHandler;
 import plugin.type.Session;
 
@@ -95,7 +97,8 @@ public abstract class PluginCommand {
             handler.register(name, paramText.toString(), description, (args, p) -> {
                 if (p instanceof Player player) {
                     if (admin && !player.admin) {
-                        player.sendMessage("[scarlet]You must be admin to use this command.");
+                        player.sendMessage(ApiGateway.translate(Utils.parseLocale(player.locale()), "[scarlet]",
+                                "@You must be admin to use this command."));
                         return;
                     }
 
@@ -113,9 +116,11 @@ public abstract class PluginCommand {
                                     .handleParams(args)
                                     .handleClient(session);
                         } catch (ParamException e) {
-                            session.player.sendMessage("[scarlet]Error: " + e.getMessage());
+                            session.player.sendMessage(ApiGateway.translate(
+                                    session.locale, "[scarlet]", "@Error: ", e.getMessage()));
                         } catch (Exception e) {
-                            session.player.sendMessage("Error");
+                            session.player.sendMessage(ApiGateway.translate(
+                                    session.locale, "@Error"));
                             Log.err("Failed to execute command " + name, e);
                         }
                     });
@@ -278,7 +283,7 @@ public abstract class PluginCommand {
         }
 
         public Param max(double max) {
-            validate(param -> param.asDouble() <= max,"Max value: @", max);
+            validate(param -> param.asDouble() <= max, "Max value: @", max);
             return this;
         }
 

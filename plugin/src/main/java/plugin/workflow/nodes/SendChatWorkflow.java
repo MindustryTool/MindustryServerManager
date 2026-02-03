@@ -1,9 +1,10 @@
 package plugin.workflow.nodes;
 
-import mindustry.gen.Call;
 import mindustry.gen.Player;
 import plugin.workflow.WorkflowEmitEvent;
 import plugin.workflow.WorkflowGroup;
+import plugin.handler.ApiGateway;
+import plugin.utils.Utils;
 
 public class SendChatWorkflow extends WorkflowNode {
     private final WorkflowField<Player, Void> playerField = new WorkflowField<Player, Void>("player")
@@ -25,7 +26,12 @@ public class SendChatWorkflow extends WorkflowNode {
         String message = messageField.getConsumer().asString(event);
 
         if (player == null) {
-            Call.sendMessage(message);
+            Utils.forEachPlayerLocale((locale, players) -> {
+                String msg = ApiGateway.translate(locale, "@" + message);
+                for (var p : players) {
+                    p.sendMessage(msg);
+                }
+            });
         } else {
             player.sendMessage(message);
         }

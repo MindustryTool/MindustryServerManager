@@ -25,7 +25,8 @@ public class LoginCommand extends PluginCommand {
             if (loginLink != null && !loginLink.isEmpty()) {
                 Call.openURI(session.player.con, loginLink);
             } else {
-                session.player.sendMessage("Already logged in");
+                session.player.sendMessage(ApiGateway.translate(session.locale,
+                        "@Already logged in"));
             }
         } catch (Exception e) {
             Log.err("Failed to login", e);

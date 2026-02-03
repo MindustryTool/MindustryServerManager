@@ -4,14 +4,14 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import arc.math.Mathf;
-import arc.util.Strings;
 import mindustry.Vars;
-import mindustry.gen.Call;
 import mindustry.gen.Groups;
 import plugin.ServerControl;
 import plugin.commands.PluginCommand;
+import plugin.handler.ApiGateway;
 import plugin.handler.SessionHandler;
 import plugin.type.Session;
+import plugin.utils.Utils;
 
 public class VnwCommand extends PluginCommand {
     private static int waveVoted = -1;
@@ -31,12 +31,13 @@ public class VnwCommand extends PluginCommand {
     @Override
     public synchronized void handleClient(Session session) {
         if (session.votedVNW) {
-            session.player.sendMessage("You already voted.");
+            session.player.sendMessage(ApiGateway.translate(session.locale, "@You already voted."));
             return;
         }
 
         if (Groups.unit.count(unit -> unit.team != session.player.team()) > 1000) {
-            session.player.sendMessage("You can't vote when there are more than 1000 enemies.");
+            session.player.sendMessage(ApiGateway.translate(session.locale,
+                    "@You can't vote when there are more than 1000 enemies."));
             return;
         }
 
@@ -47,7 +48,12 @@ public class VnwCommand extends PluginCommand {
 
             voteTimeout = ServerControl.BACKGROUND_SCHEDULER.schedule(() -> {
                 SessionHandler.each(s -> s.votedVNW = false);
-                Call.sendMessage("[scarlet]Vote failed, not enough votes.");
+                Utils.forEachPlayerLocale((locale, players) -> {
+                    String msg = ApiGateway.translate(locale, "[scarlet]", "@Vote failed, not enough votes.");
+                    for (var p : players) {
+                        p.sendMessage(msg);
+                    }
+                });
                 waveVoted = -1;
             }, 60, TimeUnit.SECONDS);
 
@@ -61,10 +67,14 @@ public class VnwCommand extends PluginCommand {
         int required = Mathf.ceil(0.6f * Groups.player.size());
 
         if (voted < required) {
-            Call.sendMessage(Strings.format(
-                    "@[orange] voted to send a new wave. [lightgray](@ votes missing)",
-                    session.player.name,
-                    required - voted));
+            Utils.forEachPlayerLocale((locale, players) -> {
+                String msg = ApiGateway.translate(locale,
+                        session.player.name, "[orange]", " ", "@voted to send a new wave. ", "[lightgray]", "(",
+                        required - voted, " ", "@votes missing", ")");
+                for (var p : players) {
+                    p.sendMessage(msg);
+                }
+            });
             return;
         }
 
@@ -72,7 +82,12 @@ public class VnwCommand extends PluginCommand {
         voteCountDown.cancel(false);
         SessionHandler.each(s -> s.votedVNW = false);
 
-        Call.sendMessage("[green]Vote passed. Sending new wave.");
+        Utils.forEachPlayerLocale((locale, players) -> {
+            String msg = ApiGateway.translate(locale, "[green]", "@Vote passed. Sending new wave.");
+            for (var p : players) {
+                p.sendMessage(msg);
+            }
+        });
         sendWave(waveVoted);
     }
 
@@ -93,7 +108,13 @@ public class VnwCommand extends PluginCommand {
         }
 
         voteCountDown = ServerControl.BACKGROUND_SCHEDULER.schedule(() -> {
-            Call.sendMessage(Strings.format("[orange]Vote new wave timeout in @ seconds.", time));
+            Utils.forEachPlayerLocale((locale, players) -> {
+                String msg = ApiGateway.translate(locale, "[orange]", "@Vote new wave timeout in ", time, " ",
+                        "@seconds.");
+                for (var p : players) {
+                    p.sendMessage(msg);
+                }
+            });
             startCountDown(time - 10);
         }, 10, TimeUnit.SECONDS);
     }

@@ -17,14 +17,21 @@ public class ServerUtils {
 
         ServerControl.backgroundTask("Server Choose", () -> {
             try {
-                player.sendMessage(String.format(
-                        "[green]Starting server [white]%s, [white]this can take up to 1 minutes, please wait", name));
+                player.sendMessage(ApiGateway.translate(Utils.parseLocale(player.locale()),
+                        "[green]", "@Starting server ", "[white]", name,
+                        ", ", "[white]", "@this can take up to 1 minutes, please wait"));
                 Log.info(String.format("Send host command to server %s %S", name, id));
                 var data = ApiGateway.host(id);
-                player.sendMessage("[green]Redirecting");
-                Call.sendMessage(
-                        String.format("%s [green]redirecting to server [white]%s, use [green]/servers[white] to follow",
-                                player.coloredName(), name));
+                player.sendMessage(ApiGateway.translate(Utils.parseLocale(player.locale()),
+                        "[green]", "@Redirecting"));
+                Utils.forEachPlayerLocale((locale, players) -> {
+                    String msg = ApiGateway.translate(locale, player.coloredName(), " ", "[green]",
+                            "@redirecting to server ", "[white]", name,
+                            ", ", "@use ", "[green]", "/servers", "[white]", " ", "@to follow");
+                    for (var p : players) {
+                        p.sendMessage(msg);
+                    }
+                });
 
                 String host = "";
                 int port = 6567;
@@ -42,7 +49,8 @@ public class ServerUtils {
 
                 Call.connect(player.con, InetAddress.getByName(host.trim()).getHostAddress(), port);
             } catch (Throwable e) {
-                player.sendMessage("Error: Can not load server");
+                player.sendMessage(ApiGateway.translate(Utils.parseLocale(player.locale()),
+                        "@Error: ", "@Can not load server"));
                 e.printStackTrace();
             }
         });

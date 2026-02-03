@@ -5,13 +5,10 @@ import java.util.Locale;
 
 import arc.Core;
 import arc.util.Log;
-import arc.util.Reflect;
 import arc.util.Strings;
 import mindustry.Vars;
 import mindustry.content.UnitTypes;
-import mindustry.gen.Call;
 import mindustry.gen.Groups;
-import mindustry.gen.Iconc;
 import mindustry.gen.Player;
 import mindustry.net.Administration.PlayerInfo;
 import mindustry.type.UnitType;
@@ -47,7 +44,12 @@ public class Session {
             player.admin = isAdmin;
 
             if (isAdmin) {
-                Call.sendMessage("[accent]An admin logged in:[] " + player.name);
+                Utils.forEachPlayerLocale((locale, players) -> {
+                    String msg = ApiGateway.translate(locale, "[accent]", "@An admin logged in:[] ", player.name);
+                    for (var p : players) {
+                        p.sendMessage(msg);
+                    }
+                });
             }
 
             PlayerInfo target = Vars.netServer.admins.getInfoOptional(player.uuid());
@@ -113,7 +115,9 @@ public class Session {
 
         var value = data.kills.getOrDefault(unit.id, 0L) + amount;
 
-        return data.kills.put(unit.id, value);
+        data.kills.put(unit.id, value);
+
+        return value;
     }
 
     public long getExp() {

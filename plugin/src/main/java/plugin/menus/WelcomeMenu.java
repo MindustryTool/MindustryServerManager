@@ -6,7 +6,6 @@ import mindustry.gen.Iconc;
 import plugin.Config;
 import plugin.handler.ApiGateway;
 import plugin.type.Session;
-import plugin.utils.Utils;
 
 public class WelcomeMenu extends PluginMenu<Void> {
     @Override
@@ -14,7 +13,7 @@ public class WelcomeMenu extends PluginMenu<Void> {
         this.title = "MindustryTool";
 
         Seq<String> translated = ApiGateway.translate(Seq.with("Rules", "Website", "Discord", "Close"),
-                Utils.parseLocale(session.player.locale()));
+                session.locale);
 
         option(Iconc.book + "[green]" + translated.get(0), (p, s) -> Call.openURI(p.player.con, Config.RULE_URL));
         row();

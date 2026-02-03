@@ -76,9 +76,13 @@ public class ServerControl extends Plugin implements MindustryToolPlugin {
         BACKGROUND_SCHEDULER.scheduleWithFixedDelay(ServerControl::sendTips, 0, 3, TimeUnit.MINUTES);
 
         PluginEvents.on(ServerLoadEvent.class, event -> isUnloaded = false);
-
+        Utils.forEachPlayerLocale((locale, players) -> {
+            String msg = ApiGateway.translate(locale, "[scarlet]", "@Server controller restarted");
+            for (var p : players) {
+                p.sendMessage(msg);
+            }
+        });
         Call.sendMessage("[scarlet]Server controller restarted");
-        Log.info("Server controller initialized.");
     }
 
     @Override

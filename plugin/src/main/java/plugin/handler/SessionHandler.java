@@ -39,18 +39,17 @@ public class SessionHandler {
             get(event.getPlayer()).ifPresent(session -> {
 
                 long result = session.addKill(event.getUnit().type, 1);
-                long number = -1;
+                long base = 1;
 
-                for (int i = 3; i < 7; i++) {
-                    if (result < Math.pow(10, i)) {
-                        if (result % Math.pow(10, i - 1) == 0) {
-                            number = result;
-                            break;
-                        }
-                    }
+                while (result >= base * 10) {
+                    base *= 10;
                 }
 
-                long print = number;
+                long print = (result / base) * base;
+
+                if (result != print) {
+                    return;
+                }
 
                 Utils.forEachPlayerLocale((locale, players) -> {
                     String translated = ApiGateway.translate(locale, event.getPlayer().name, "@killed",
