@@ -64,8 +64,12 @@ public class DB {
     public static Connection getConnection() throws SQLException {
         lock.readLock().lock();
         try {
-            if (connection == null || connection.isClosed()) {
+            if (connection == null) {
                 throw new SQLException("Database connection is not available");
+            }
+
+            if (connection.isClosed()) {
+                throw new SQLException("Database connection is closed");
             }
 
             return connection;
