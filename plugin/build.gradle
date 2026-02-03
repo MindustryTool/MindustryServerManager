@@ -55,6 +55,7 @@ dependencies{
 jar{
     duplicatesStrategy(DuplicatesStrategy.EXCLUDE)
     archiveFileName = "${project.archivesBaseName}.jar"
+    
     from{
         configurations.runtimeClasspath.collect{it.isDirectory() ? it : zipTree(it)}
     }
@@ -62,5 +63,13 @@ jar{
     from(project.projectDir){
         include "plugin.properties"
         include "META-INF/plugin.properties"
+    }
+
+    from {
+        configurations.runtimeClasspath.collect {
+            it.isDirectory() ? [] : zipTree(it).matching {
+                include "META-INF/services/**"
+            }
+        }
     }
 }
