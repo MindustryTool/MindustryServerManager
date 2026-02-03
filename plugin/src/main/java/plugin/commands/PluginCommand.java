@@ -130,19 +130,21 @@ public abstract class PluginCommand {
     }
 
     private void wrapper(Runnable runnable) {
-        try {
-            ServerControl.BACKGROUND_TASK_EXECUTOR.submit(runnable);
-        } catch (ParamException e) {
-            if (session != null) {
-                session.player.sendMessage(e.getMessage());
+        ServerControl.BACKGROUND_TASK_EXECUTOR.submit(() -> {
+            try {
+                runnable.run();
+            } catch (ParamException e) {
+                if (session != null) {
+                    session.player.sendMessage(e.getMessage());
+                }
+                Log.err(e.getMessage());
+            } catch (Exception e) {
+                if (session != null) {
+                    session.player.sendMessage("Error");
+                }
+                Log.err("Failed to execute command " + name, e);
             }
-            Log.err(e.getMessage());
-        } catch (Exception e) {
-            if (session != null) {
-                session.player.sendMessage("Error");
-            }
-            Log.err("Failed to execute command " + name, e);
-        }
+        });
     }
 
     public void handleClient(Session session) {
