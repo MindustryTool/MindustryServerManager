@@ -169,11 +169,7 @@ public abstract class PluginMenu<T> {
             copy.state = state;
             copy.options = new Seq<>(new Seq<>());
 
-            Log.info("Show menu @ for player @ with state @", copy, session, state);
-
             ServerControl.backgroundTask("Show Menu: " + getMenuId(), () -> {
-                Log.info("Build menu @ for player @ with state @", copy, session, state);
-
                 try {
                     copy.build(session, state);
                 } catch (Exception e) {
@@ -189,7 +185,6 @@ public abstract class PluginMenu<T> {
 
                 if (playerMenus.size == 0) {
                     copy.show();
-                    Log.info("Show menu @ for player @ with state @", copy, session, state);
                 }
             });
         } catch (Exception e) {
