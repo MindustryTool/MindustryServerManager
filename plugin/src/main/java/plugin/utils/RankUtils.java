@@ -1,11 +1,16 @@
 package plugin.utils;
 
+import java.util.Locale;
+
 import arc.struct.Seq;
+import plugin.handler.I18n;
 import plugin.repository.SessionRepository.RankData;
 
 public class RankUtils {
-    public static String getRankString(Seq<RankData> players) {
+    public static String getRankString(Locale locale, Seq<RankData> players) {
         StringBuilder sb = new StringBuilder("[]\n");
+
+        sb.append(I18n.t(locale, "rank"));
 
         for (int i = 0; i < players.size; i++) {
             var data = players.get(i).data;
@@ -36,8 +41,8 @@ public class RankUtils {
                     .append("[] ")
                     .append(Utils.padRight(data.name, 20))
                     .append("[] ")
-                    .append("[[")
-                    .append(Utils.padRight(levelStr, 3))
+                    .append("[")
+                    .append(levelStr)
                     .append("] (")
                     .append(totalExp)
                     .append(")\n");

@@ -77,7 +77,8 @@ public class SessionHandler {
         PluginEvents.on(PlayerJoin.class, event -> {
             Core.app.post(() -> put(event.player));
             ServerControl.backgroundTask("Send Leader Board",
-                    () -> event.player.sendMessage(RankUtils.getRankString(SessionRepository.getLeaderBoard(10))));
+                    () -> event.player.sendMessage(RankUtils.getRankString(Utils.parseLocale(event.player.locale),
+                            SessionRepository.getLeaderBoard(10))));
         });
 
         PluginEvents.run(PluginUnloadEvent.class, SessionHandler::unload);

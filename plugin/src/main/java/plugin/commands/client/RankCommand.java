@@ -14,7 +14,7 @@ public class RankCommand extends PluginCommand {
 
     @Override
     public void handleClient(Session session) {
-        String data = RankUtils.getRankString(SessionRepository.getLeaderBoard(10));
+        String data = RankUtils.getRankString(session.locale, SessionRepository.getLeaderBoard(10));
         session.player.sendMessage(data);
     }
 }
