@@ -72,7 +72,8 @@ public class ApiGateway {
 
     public static synchronized String host(String targetServerId) {
         Log.info("Hosting server: " + targetServerId);
-        return HttpUtils.send(HttpUtils.post(GATEWAY_URL, "servers", SERVER_ID, "host"), 60000, String.class);
+
+        return HttpUtils.send(HttpUtils.post(GATEWAY_URL, "servers", targetServerId, "host"), 60000, String.class);
     }
 
     public static synchronized List<ServerDto> getServers(PaginationRequest request) {
