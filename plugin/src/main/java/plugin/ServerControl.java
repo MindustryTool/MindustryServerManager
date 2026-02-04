@@ -46,7 +46,8 @@ public class ServerControl extends Plugin implements MindustryToolPlugin {
 
     public static final UUID SERVER_ID = UUID.fromString(System.getenv("SERVER_ID"));
     public static final ScheduledExecutorService BACKGROUND_SCHEDULER = Executors.newSingleThreadScheduledExecutor();
-    private static final ExecutorService BACKGROUND_TASK_EXECUTOR = Executors.newWorkStealingPool();
+    private static final ExecutorService BACKGROUND_TASK_EXECUTOR = Executors
+            .newFixedThreadPool(Runtime.getRuntime().availableProcessors());
     private static final Set<String> runningTasks = ConcurrentHashMap.newKeySet();
 
     public ServerControl() {
@@ -146,7 +147,7 @@ public class ServerControl extends Plugin implements MindustryToolPlugin {
         System.out.println("Finalizing " + this);
     }
 
-    public static synchronized void backgroundTask(String name, Runnable r) {
+    public static void backgroundTask(String name, Runnable r) {
         runningTasks.add(name);
         Log.info("Running tasks: " + runningTasks);
         BACKGROUND_TASK_EXECUTOR.submit(() -> {
