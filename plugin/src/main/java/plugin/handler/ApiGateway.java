@@ -43,7 +43,7 @@ public class ApiGateway {
             .build();
 
     private static Cache<String, String> translationCache = Caffeine.newBuilder()
-            .expireAfterAccess(Duration.ofMinutes(10))
+            .expireAfterAccess(Duration.ofDays(1))
             .build();
 
     public static void requestConnection() {
