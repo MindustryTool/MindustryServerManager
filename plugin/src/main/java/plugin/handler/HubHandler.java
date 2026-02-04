@@ -156,19 +156,25 @@ public class HubHandler {
     }
 
     private static void onTap(TapEvent event) {
+        Log.info(event);
+
         if (!plugin.Config.IS_HUB) {
             return;
         }
+        Log.info(event);
 
         if (event.tile == null) {
             return;
         }
+        Log.info(event);
 
         var map = Vars.state.map;
 
         if (map == null) {
             return;
         }
+
+        Log.info(event);
 
         var tapSize = 4;
 
@@ -183,6 +189,7 @@ public class HubHandler {
                     && tapY >= core.getY() - tapSize
                     && tapY <= core.getY() + tapSize//
             ) {
+                Log.info(core);
                 if (core.getServer() == null) {
                     continue;
                 }
