@@ -130,17 +130,17 @@ public abstract class PluginCommand {
             });
         } else {
             ServerControl.BACKGROUND_TASK_EXECUTOR.submit(() -> {
-                try {
-                    handler.register(name, paramText.toString(), description, (args) -> {
+                handler.register(name, paramText.toString(), description, (args) -> {
+                    try {
                         this.newInstance()
                                 .handleParams(args)
                                 .handleServer();
-                    });
-                } catch (ParamException e) {
-                    Log.err(e.getMessage());
-                } catch (Exception e) {
-                    Log.err("Failed to execute command " + name, e);
-                }
+                    } catch (ParamException e) {
+                        Log.err(e.getMessage());
+                    } catch (Exception e) {
+                        Log.err("Failed to execute command " + name, e);
+                    }
+                });
             });
 
         }

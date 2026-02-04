@@ -9,6 +9,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.pf4j.Plugin;
 
+import arc.Core;
 import arc.func.Func;
 import arc.struct.Seq;
 import arc.util.*;
@@ -88,12 +89,12 @@ public class ServerControl extends Plugin implements MindustryToolPlugin {
 
     @Override
     public void registerServerCommands(CommandHandler handler) {
-        ServerCommandHandler.registerCommands(handler);
+        Core.app.post(() -> ServerCommandHandler.registerCommands(handler));
     }
 
     @Override
     public void registerClientCommands(CommandHandler handler) {
-        ClientCommandHandler.registerCommands(handler);
+        Core.app.post(() ->ClientCommandHandler.registerCommands(handler));
     }
 
     @Override
