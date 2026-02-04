@@ -137,7 +137,7 @@ public class GatewayService {
                 return Utils.wrapError(webClient.method(HttpMethod.POST)
                         .uri("/servers/" + serverId + "/host-server")
                         .retrieve()
-                        .bodyToMono(String.class), Duration.ofSeconds(2), "Host");
+                        .bodyToMono(String.class), Duration.ofSeconds(60), "Host server");
             }
         }
 
