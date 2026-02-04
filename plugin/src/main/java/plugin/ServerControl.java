@@ -155,14 +155,15 @@ public class ServerControl extends Plugin implements MindustryToolPlugin {
 
     public static void ioTask(String name, Runnable r) {
         ioTasks.add(name);
-        Log.info("Running io tasks: " + ioTasks);
         IO_TASK_EXECUTOR.submit(() -> {
             try {
+                Log.info("Running io tasks: " + ioTasks);
                 r.run();
             } catch (Exception e) {
                 Log.err("Failed to execute background task: " + name, e);
             } finally {
                 ioTasks.remove(name);
+                Log.info("Running io tasks: " + ioTasks);
             }
 
         });
@@ -170,14 +171,15 @@ public class ServerControl extends Plugin implements MindustryToolPlugin {
 
     public static void cpuTask(String name, Runnable r) {
         cpuTasks.add(name);
-        Log.info("Running cpu tasks: " + cpuTasks);
         CPU_TASK_EXECUTOR.submit(() -> {
             try {
+                Log.info("Running cpu tasks: " + cpuTasks);
                 r.run();
             } catch (Exception e) {
                 Log.err("Failed to execute background task: " + name, e);
             } finally {
                 cpuTasks.remove(name);
+                Log.info("Running cpu tasks: " + cpuTasks);
             }
 
         });
