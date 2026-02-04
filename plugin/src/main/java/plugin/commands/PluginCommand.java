@@ -110,7 +110,7 @@ public abstract class PluginCommand {
                         return;
                     }
 
-                    ServerControl.BACKGROUND_TASK_EXECUTOR.submit(() -> {
+                    ServerControl.backgroundTask("Client command", () -> {
                         try {
                             this.newInstance()
                                     .handleParams(args)
@@ -130,7 +130,7 @@ public abstract class PluginCommand {
             });
         } else {
             handler.register(name, paramText.toString(), description, (args) -> {
-                ServerControl.BACKGROUND_TASK_EXECUTOR.submit(() -> {
+                ServerControl.backgroundTask("Server command", () -> {
                     try {
                         this.newInstance()
                                 .handleParams(args)
@@ -142,7 +142,6 @@ public abstract class PluginCommand {
                     }
                 });
             });
-
         }
     }
 

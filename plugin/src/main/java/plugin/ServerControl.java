@@ -43,8 +43,9 @@ public class ServerControl extends Plugin implements MindustryToolPlugin {
     public static boolean isUnloaded = false;
 
     public static final UUID SERVER_ID = UUID.fromString(System.getenv("SERVER_ID"));
-    public static final ExecutorService BACKGROUND_TASK_EXECUTOR = Executors.newCachedThreadPool();
     public static final ScheduledExecutorService BACKGROUND_SCHEDULER = Executors.newSingleThreadScheduledExecutor();
+    private static final ExecutorService BACKGROUND_TASK_EXECUTOR = Executors.newCachedThreadPool();
+    private static final Seq<String> runningTasks = new Seq<>();
 
     public ServerControl() {
         Log.info("Server controller created: " + this);
@@ -94,7 +95,7 @@ public class ServerControl extends Plugin implements MindustryToolPlugin {
 
     @Override
     public void registerClientCommands(CommandHandler handler) {
-        Core.app.post(() ->ClientCommandHandler.registerCommands(handler));
+        Core.app.post(() -> ClientCommandHandler.registerCommands(handler));
     }
 
     @Override
@@ -144,12 +145,17 @@ public class ServerControl extends Plugin implements MindustryToolPlugin {
     }
 
     public static void backgroundTask(String name, Runnable r) {
+        runningTasks.add(name);
+        Log.info("Running tasks: " + runningTasks);
         BACKGROUND_TASK_EXECUTOR.submit(() -> {
             try {
                 r.run();
             } catch (Exception e) {
                 Log.err("Failed to execute background task: " + name, e);
+            } finally {
+                runningTasks.remove(name);
             }
+
         });
     }
 
