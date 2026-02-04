@@ -24,9 +24,9 @@ import plugin.Config;
 import plugin.PluginEvents;
 import plugin.ServerControl;
 import plugin.event.SessionCreatedEvent;
+import plugin.menus.ServerRedirectMenu;
 import plugin.type.PaginationRequest;
 import plugin.type.ServerCore;
-import plugin.utils.ServerUtils;
 
 public class HubHandler {
 
@@ -126,11 +126,12 @@ public class HubHandler {
                                 .select(s -> s.getStatus() == ServerStatus.STOP || s.getStatus() == ServerStatus.ONLINE)
                                 .random();
 
+                        var totalPlayers = servers.sum(s -> (int) s.getPlayers());
+
                         if (serverData != null) {
-                            name += " -> " + serverData.getName();
-                            description += " -> " + serverData.getDescription();
+                            description += " -> " + serverData.getName();
                             map = serverData.getMapName() == null ? "" : serverData.getMapName();
-                            players = (int) serverData.getPlayers();
+                            players = totalPlayers;
                         }
                     } catch (Throwable e) {
                         e.printStackTrace();
@@ -203,7 +204,8 @@ public class HubHandler {
                     && tapY >= core.getY() - tapSize
                     && tapY <= core.getY() + tapSize//
             ) {
-                ServerUtils.redirect(event.player, core.getServer());
+                SessionHandler.get(event.player)
+                        .ifPresent(session -> new ServerRedirectMenu().send(session, core.getServer()));
                 break;
             }
         }
@@ -229,12 +231,6 @@ public class HubHandler {
             return;
         }
 
-        Call.label(
-                Config.HUB_MESSAGE,
-                5,
-                map.width / 2f * Vars.tilesize,
-                map.height / 2f * Vars.tilesize);
-
         for (var core : serverCores) {
             renderServerLabel(core);
         }
@@ -244,24 +240,22 @@ public class HubHandler {
         ServerDto server = core.getServer();
 
         float labelX = core.getX();
-        float labelY = core.getY() + 25;
-
-        var status = server.getStatus();
-        String coloredStatus = (status == ServerStatus.ONLINE || status == ServerStatus.PAUSED)
-                ? "[green]" + status
-                : "[red]" + status;
+        float labelY = core.getY();
 
         var mods = new ArrayList<>(server.getMods());
 
-        mods.removeIf(m -> m.trim().equalsIgnoreCase("mindustrytoolplugin"));
+        mods.removeIf(m -> m.contains("mindustrytoolplugin") || m.contains("PluginLoader"));
 
-        String message = server.getName() + " (Tap core to join)\n\n" +
-                "[white]Status: " + coloredStatus + "\n" +
-                "[white]Players: " + server.getPlayers() + "\n" +
-                "[white]Map: " + server.getMapName() + "\n" +
-                "[white]Mode: " + server.getMode() + "\n" +
-                "[white]Description: " + server.getDescription() + "\n" +
-                (mods.isEmpty() ? "" : "[white]Mods: " + mods);
+        var name = server.getName().substring(0, Math.min(50, server.getName().length()));
+        var description = server.getDescription().substring(0, Math.min(50, server.getDescription()
+                .length()));
+
+        String message = name +
+                "[#E3F2FD]Players: []" + server.getPlayers() + "\n" +
+                "[#BBDEFB]Map: []" + server.getMapName() + "\n" +
+                "[#90CAF9]Mode: []" + server.getMode() + "\n" +
+                description + "\n" +
+                (mods.isEmpty() ? "" : "[#4FC3F7]Mods:[] " + mods);
 
         Call.label(message, 5, labelX, labelY);
     }

@@ -9,7 +9,6 @@ public class HubMenu extends PluginMenu<String> {
     @Override
     public void build(Session session, String loginLink) {
         this.title = I18n.t(session.locale, "@Servers");
-        this.description = I18n.t(session.locale, "@" + Config.HUB_MESSAGE);
 
         if (loginLink != null && !loginLink.isEmpty()) {
             option(I18n.t(session.locale, "[green]", "@Login via", " MindustryTool"),
@@ -29,7 +28,6 @@ public class HubMenu extends PluginMenu<String> {
                 (p, s) -> Call.openURI(p.player.con, Config.DISCORD_INVITE_URL));
         row();
 
-        option(I18n.t(session.locale, "[red]", "@Close"),
-                (p, s) -> new ServerListMenu().send(session, 0));
+        text(I18n.t(session.locale, "[red]", "@Close"));
     }
 }
