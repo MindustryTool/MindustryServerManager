@@ -40,13 +40,10 @@ public class RankUtils {
 
             sb.append(Utils.padRight(rank, 6))
                     .append("[] ")
-                    .append(Utils.padRight(data.name, 20))
+                    .append(Utils.padRight("[" + levelStr + "] (" + totalExp + ")", 14))
                     .append("[] ")
-                    .append("[")
-                    .append(levelStr)
-                    .append("] (")
-                    .append(totalExp)
-                    .append(")\n");
+                    .append(Utils.padRight(data.name, 20))
+                    .append("\n");
         }
 
         return sb.append("[]\n").toString();
