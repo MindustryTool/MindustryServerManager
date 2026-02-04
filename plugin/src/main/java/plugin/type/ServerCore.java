@@ -10,4 +10,5 @@ public class ServerCore {
     private ServerDto server;
     private final float x;
     private final float y;
+    private final float size;
 }

@@ -65,7 +65,7 @@ public class HubHandler {
                     (b.getX() - centerX) * (b.getX() - centerX) + (b.getY() - centerY) * (b.getY() - centerY)));
 
             for (var core : cores) {
-                serverCores.add(new ServerCore(null, core.getX(), core.getY()));
+                serverCores.add(new ServerCore(null, core.getX(), core.getY(), core.hitSize()));
             }
         });
     }
@@ -170,20 +170,19 @@ public class HubHandler {
             return;
         }
 
-        var tapSize = 4;
-
         var tapX = event.tile.worldx();
         var tapY = event.tile.worldy();
 
         Call.effectReliable(Fx.coreBuildShockwave, tapX, tapY, 0, Color.white);
 
         for (var core : serverCores) {
+            var tapSize = core.getSize();
+
             if (tapX >= core.getX() - tapSize //
                     && tapX <= core.getX() + tapSize //
                     && tapY >= core.getY() - tapSize
                     && tapY <= core.getY() + tapSize//
             ) {
-                Log.info(core);
                 if (core.getServer() == null) {
                     continue;
                 }
