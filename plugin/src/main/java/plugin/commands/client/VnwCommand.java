@@ -70,7 +70,7 @@ public class VnwCommand extends PluginCommand {
             Utils.forEachPlayerLocale((locale, players) -> {
                 String msg = I18n.t(locale,
                         session.player.name, "[orange]", " ", "@voted to send a new wave. ", "[lightgray]", "(",
-                        required - voted, " ", "@votes missing", ")", " ", "@use", "/vnw yes", " ", "@to skip waves");
+                        required - voted, " ", "@votes missing", ")", " ", "@use", "/vnw", " ", "@to skip waves");
                 for (var p : players) {
                     p.sendMessage(msg);
                 }
