@@ -48,10 +48,7 @@ public class HubHandler {
             renderServerLabels();
         }, 5, 1, TimeUnit.SECONDS);
 
-        ServerControl.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(() -> {
-            loadCores();
-        }, 0, 10, TimeUnit.SECONDS);
-
+        loadCores();
     }
 
     private static void loadCores() {
