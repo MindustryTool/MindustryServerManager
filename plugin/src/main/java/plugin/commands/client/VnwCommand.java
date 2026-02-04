@@ -88,18 +88,30 @@ public class VnwCommand extends PluginCommand {
                 p.sendMessage(msg);
             }
         });
-        sendWave(waveVoted);
+        sendWave();
     }
 
-    private void sendWave(int wave) {
-        if (wave <= 0) {
+    private void sendWave() {
+        if (waveVoted <= 0) {
             waveVoted = -1;
+            return;
+        }
+
+        waveVoted--;
+
+        if (Groups.unit.count(unit -> unit.team == Vars.state.rules.waveTeam) > 1000) {
+            Utils.forEachPlayerLocale((locale, players) -> {
+                String msg = I18n.t(locale, "[scarlet]", "@Stop sending waves, more than 1000 enemies.");
+                for (var p : players) {
+                    p.sendMessage(msg);
+                }
+            });
             return;
         }
 
         Vars.state.wavetime = 0f;
 
-        ServerControl.BACKGROUND_SCHEDULER.schedule(() -> sendWave(wave - 1), 1, TimeUnit.SECONDS);
+        ServerControl.BACKGROUND_SCHEDULER.schedule(() -> sendWave(), 1, TimeUnit.SECONDS);
     }
 
     private void startCountDown(int time) {
