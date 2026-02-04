@@ -7,7 +7,7 @@ import dto.ServerDto;
 @Data
 @AllArgsConstructor
 public class ServerCore {
-    private final ServerDto server;
+    private ServerDto server;
     private final float x;
     private final float y;
 }

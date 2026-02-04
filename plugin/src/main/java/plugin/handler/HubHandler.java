@@ -59,16 +59,14 @@ public class HubHandler {
 
             getTopServer();
 
-            var cores = Team.sharded.cores();
+            var cores = Team.sharded.cores().sort((a, b) -> Float.compare(
+                    (a.getX() - centerX) * (a.getX() - centerX) + (a.getY() - centerY) * (a.getY() - centerY),
+                    (b.getX() - centerX) * (b.getX() - centerX) + (b.getY() - centerY) * (b.getY() - centerY)));
 
             for (int i = 0; i < cores.size; i++) {
                 var core = cores.get(i);
                 serverCores.add(new ServerCore(servers.get(i), core.getX(), core.getY()));
             }
-
-            serverCores.sort((a, b) -> Float.compare(
-                    (a.getX() - centerX) * (a.getX() - centerX) + (a.getY() - centerY) * (a.getY() - centerY),
-                    (b.getX() - centerX) * (b.getX() - centerX) + (b.getY() - centerY) * (b.getY() - centerY)));
         });
     }
 
@@ -204,6 +202,10 @@ public class HubHandler {
                     && tapY >= core.getY() - tapSize
                     && tapY <= core.getY() + tapSize//
             ) {
+                if (core.getServer() == null) {
+                    continue;
+                }
+
                 SessionHandler.get(event.player)
                         .ifPresent(session -> new ServerRedirectMenu().send(session, core.getServer()));
                 break;
@@ -215,9 +217,20 @@ public class HubHandler {
         try {
             var request = new PaginationRequest()
                     .setPage(0)
-                    .setSize(40);
+                    .setSize(serverCores.size);
 
             servers = Seq.with(ApiGateway.getServers(request));
+
+            for (int i = 0; i < serverCores.size; i++) {
+                var core = serverCores.get(i);
+
+                if (i < servers.size) {
+                    var data = servers.get(i);
+                    core.setServer(data);
+                } else {
+                    core.setServer(null);
+                }
+            }
 
         } catch (Throwable e) {
             e.printStackTrace();
@@ -238,6 +251,10 @@ public class HubHandler {
 
     private static void renderServerLabel(ServerCore core) {
         ServerDto server = core.getServer();
+
+        if (server == null) {
+            return;
+        }
 
         float labelX = core.getX();
         float labelY = core.getY();
