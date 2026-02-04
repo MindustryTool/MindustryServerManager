@@ -267,12 +267,12 @@ public class HubHandler {
         var description = server.getDescription().substring(0, Math.min(50, server.getDescription()
                 .length()));
 
-        String message = name + "\n" +
-                description + "\n\n" +
+        String message = name + "[]\n" +
+                description + "[]\n\n" +
                 "[#E3F2FD]Players: []" + server.getPlayers() + "\n" +
-                "[#BBDEFB]Map: []" + server.getMapName() + "\n" +
-                "[#90CAF9]Mode: []" + server.getMode() + "\n" +
-                (mods.isEmpty() ? "" : "[#4FC3F7]Mods:[] " + mods) + "\n";
+                "[#BBDEFB]Map: []" + server.getMapName() + "[]\n" +
+                "[#90CAF9]Mode: []" + server.getMode() + "[]\n" +
+                (mods.isEmpty() ? "" : "[#4FC3F7]Mods:[] " + mods) + "[]\n";
 
         Call.label(message, 5, labelX, labelY);
     }
