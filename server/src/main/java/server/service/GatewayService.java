@@ -132,6 +132,13 @@ public class GatewayService {
                         .retrieve()
                         .bodyToMono(JsonNode.class), Duration.ofSeconds(2), "Login");
             }
+
+            public Mono<String> host(UUID serverId) {
+                return Utils.wrapError(webClient.method(HttpMethod.POST)
+                        .uri("/servers/" + serverId + "/host-server")
+                        .retrieve()
+                        .bodyToMono(String.class), Duration.ofSeconds(2), "Host");
+            }
         }
 
         public class Server {

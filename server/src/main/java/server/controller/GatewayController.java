@@ -32,4 +32,9 @@ public class GatewayController {
     public Mono<JsonNode> login(@PathVariable("id") UUID id, @RequestBody JsonNode body) {
         return gatewayService.of(id).flatMap(gateway -> gateway.api().login(id, body));
     }
+
+    @PostMapping("servers/{id}/host")
+    public Mono<String> host(@PathVariable("id") UUID id) {
+        return gatewayService.of(id).flatMap(gateway -> gateway.api().host(id));
+    }
 }

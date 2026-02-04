@@ -81,9 +81,8 @@ public class ApiGateway {
             try {
                 return HttpUtils
                         .send(HttpUtils
-                                .post(GATEWAY_URL, "host")
-                                .header("Content-Type", "text/plain")//
-                                .content(targetServerId), 45000, String.class);
+                                .post(GATEWAY_URL, "servers", SERVER_ID, "host")
+                                .header("Content-Type", "text/plain"), 45000, String.class);
             } catch (Exception e) {
                 Log.err("Error hosting server: " + targetServerId, e);
                 throw new RuntimeException(e);
