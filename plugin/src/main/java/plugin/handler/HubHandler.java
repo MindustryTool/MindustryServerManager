@@ -61,8 +61,7 @@ public class HubHandler {
                     (a.getX() - centerX) * (a.getX() - centerX) + (a.getY() - centerY) * (a.getY() - centerY),
                     (b.getX() - centerX) * (b.getX() - centerX) + (b.getY() - centerY) * (b.getY() - centerY)));
 
-            for (int i = 0; i < cores.size; i++) {
-                var core = cores.get(i);
+            for (var core : cores) {
                 serverCores.add(new ServerCore(null, core.getX(), core.getY()));
             }
         });
@@ -251,6 +250,6 @@ public class HubHandler {
                 "[#90CAF9]Mode: []" + server.getMode() + "[]\n" +
                 (mods.isEmpty() ? "" : "[#4FC3F7]Mods:[] " + mods) + "[]\n";
 
-        Call.label(message, 5, labelX, labelY);
+        Call.labelReliable(message, 5, labelX, labelY);
     }
 }

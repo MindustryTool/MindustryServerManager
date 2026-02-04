@@ -23,7 +23,6 @@ import plugin.ServerControl;
 import plugin.event.PlayerKillUnitEvent;
 import plugin.event.SessionCreatedEvent;
 import plugin.event.SessionRemovedEvent;
-import plugin.menus.HubMenu;
 import plugin.menus.RateMapMenu;
 import plugin.menus.WelcomeMenu;
 import dto.PlayerDto;
@@ -228,10 +227,6 @@ public class EventHandler {
 
             ServerControl.backgroundTask("Player Join", () -> {
                 var playerData = ApiGateway.login(session.player);
-
-                if (Config.IS_HUB) {
-                    new HubMenu().send(session, playerData.getLoginLink());
-                }
 
                 session.setAdmin(playerData.getIsAdmin());
 
