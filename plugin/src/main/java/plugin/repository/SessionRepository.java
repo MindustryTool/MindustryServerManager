@@ -37,7 +37,8 @@ public class SessionRepository {
                 .scheduleWithFixedDelay(SessionRepository::flushBatch, 10, 30, TimeUnit.SECONDS);
 
         PluginEvents.run(PluginUnloadEvent.class, SessionRepository::unload);
-        PluginEvents.run(SessionRemovedEvent.class, SessionRepository::flushBatch);
+        PluginEvents.on(SessionRemovedEvent.class,
+                event -> write(event.getSession().player.uuid(), event.getSession().data()));
     }
 
     private static void unload() {

@@ -66,7 +66,7 @@ public class VnwCommand extends PluginCommand {
         int voted = SessionHandler.count(s -> s.votedVNW);
         int required = Mathf.ceil(0.6f * Groups.player.size());
 
-        if (voted < required) {
+        if (voted < required && !session.player.admin) {
             Utils.forEachPlayerLocale((locale, players) -> {
                 String msg = I18n.t(locale,
                         session.player.name, "[orange]", " ", "@voted to send a new wave. ", "[lightgray]", "(",
