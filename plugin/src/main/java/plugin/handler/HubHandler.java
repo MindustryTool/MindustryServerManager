@@ -35,22 +35,26 @@ public class HubHandler {
 
     public static void init() {
         PluginEvents.on(TapEvent.class, HubHandler::onTap);
-        PluginEvents.on(WorldLoadEvent.class, HubHandler::onWorldLoad);
         PluginEvents.on(SessionCreatedEvent.class, HubHandler::onSessionCreated);
+        PluginEvents.run(WorldLoadEvent.class, HubHandler::loadCores);
 
         setupCustomServerDiscovery();
 
         ServerControl.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(() -> {
             refreshServerList();
-        }, 10, 30, TimeUnit.SECONDS);
+        }, 2, 30, TimeUnit.SECONDS);
 
         ServerControl.BACKGROUND_SCHEDULER.scheduleAtFixedRate(() -> {
             renderServerLabels();
-        }, 15, 5, TimeUnit.SECONDS);
+        }, 5, 5, TimeUnit.SECONDS);
+
+        ServerControl.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(() -> {
+            loadCores();
+        }, 0, 10, TimeUnit.SECONDS);
 
     }
 
-    private static void onWorldLoad(WorldLoadEvent event) {
+    private static void loadCores() {
         ServerControl.backgroundTask("Refresh server list", () -> {
             serverCores.clear();
 
