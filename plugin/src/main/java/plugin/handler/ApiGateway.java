@@ -151,7 +151,7 @@ public class ApiGateway {
 
             return result.getTranslatedText();
         } catch (Exception e) {
-            Log.err("Failed to translate text: " + text, e);
+            Log.err("Failed to translate text: " + text + "\n" + e.getMessage());
             return text;
         }
     }
@@ -217,7 +217,7 @@ public class ApiGateway {
 
             return Seq.with(result).map(r -> r.getNow("This should never happen"));
         } catch (Exception e) {
-            Log.err("Failed to translate texts: " + texts, e);
+            Log.err("Failed to translate texts: " + texts + "\n" + e.getMessage());
             return texts;
         }
     }
