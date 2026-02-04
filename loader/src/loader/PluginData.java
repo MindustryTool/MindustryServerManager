@@ -56,7 +56,7 @@ public class PluginData {
             int timeout = 5000;
             CompletableFuture<PluginVersion> result = new CompletableFuture<>();
 
-            Http.get(URI.create(PLUGIN_API_URL + "/api/v4/plugins/version?owner=" + this.owner + "&repo=" + this.repo
+            Http.get(URI.create(PLUGIN_API_URL + "/api/v4/plugins/version?repo=" + this.repo + "&owner=" + this.owner
                     + "&tag=" + this.tag).toString())
                     .error(error -> {
                         result.completeExceptionally(error);
@@ -78,7 +78,7 @@ public class PluginData {
 
     public byte[] download() {
         try {
-            URL url = URI.create(PLUGIN_API_URL + "/api/v4/plugins/download?owner=" + this.owner + "&repo=" + this.repo
+            URL url = URI.create(PLUGIN_API_URL + "/api/v4/plugins/download?repo=" + this.repo + "&owner=" + this.owner
                     + "&tag=" + this.tag).toURL();
 
             HttpURLConnection httpConn = (HttpURLConnection) url.openConnection();
