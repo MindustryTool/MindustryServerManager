@@ -1,16 +1,25 @@
 package plugin.handler;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.List;
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
+import arc.Core;
+import arc.net.Server;
+import arc.struct.Seq;
+import arc.util.Log;
 import dto.ServerDto;
 import dto.ServerStatus;
 import mindustry.Vars;
+import mindustry.core.Version;
 import mindustry.game.EventType.TapEvent;
 import mindustry.game.EventType.WorldLoadEvent;
 import mindustry.game.Team;
 import mindustry.gen.Call;
+import mindustry.gen.Groups;
+import mindustry.net.ArcNetProvider;
+import mindustry.net.Net;
 import plugin.Config;
 import plugin.PluginEvents;
 import plugin.ServerControl;
@@ -21,8 +30,8 @@ import plugin.utils.ServerUtils;
 
 public class HubHandler {
 
-    private static final List<ServerCore> serverCores = new ArrayList<>();
-    private static List<ServerDto> servers = new ArrayList<>();
+    private static final Seq<ServerCore> serverCores = new Seq<>();
+    private static Seq<ServerDto> servers = new Seq<>();
 
     public static void init() {
         PluginEvents.on(TapEvent.class, HubHandler::onTap);
@@ -74,9 +83,9 @@ public class HubHandler {
 
     private static synchronized ServerDto getTopServer() {
         try {
-            var request = new PaginationRequest().setPage(0).setSize(Math.min(100, serverCores.size()));
+            var request = new PaginationRequest().setPage(0).setSize(Math.min(100, serverCores.size));
 
-            var servers = ApiGateway.getServers(request);
+            var servers = Seq.with(ApiGateway.getServers(request));
 
             if (servers.isEmpty()) {
                 return null;
@@ -94,76 +103,79 @@ public class HubHandler {
     }
 
     private static void setupCustomServerDiscovery() {
-        // try {
-        // var providerField = Net.class.getDeclaredField("provider");
-        // providerField.setAccessible(true);
-        // var provider = (ArcNetProvider) providerField.get(Vars.net);
-        // var serverField = ArcNetProvider.class.getDeclaredField("server");
-        // serverField.setAccessible(true);
-        // var server = (Server) serverField.get(provider);
+        try {
+            var providerField = Net.class.getDeclaredField("provider");
+            providerField.setAccessible(true);
+            var provider = (ArcNetProvider) providerField.get(Vars.net);
+            var serverField = ArcNetProvider.class.getDeclaredField("server");
+            serverField.setAccessible(true);
+            var server = (Server) serverField.get(provider);
 
-        // server.setDiscoveryHandler((address, handler) -> {
-        // String name = mindustry.net.Administration.Config.serverName.string();
-        // String description = mindustry.net.Administration.Config.desc.string();
-        // String map = Vars.state.map.name();
+            server.setDiscoveryHandler((address, handler) -> {
+                String name = mindustry.net.Administration.Config.serverName.string();
+                String description = mindustry.net.Administration.Config.desc.string();
+                String map = Vars.state.map.name();
 
-        // ByteBuffer buffer = ByteBuffer.allocate(500);
+                ByteBuffer buffer = ByteBuffer.allocate(500);
 
-        // int players = Groups.player.size();
+                int players = Groups.player.size();
 
-        // if (Config.IS_HUB) {
-        // try {
-        // var serverData = getTopServer();
-        // if (serverData != null) {
-        // name += " -> " + serverData.name;
-        // description += " -> " + serverData.description;
-        // map = serverData.mapName == null ? "" : serverData.mapName;
-        // players = (int) serverData.players;
-        // }
-        // } catch (Throwable e) {
-        // e.printStackTrace();
-        // }
-        // }
+                if (Config.IS_HUB && servers.size > 0) {
+                    try {
+                        var serverData = servers
+                                .select(s -> s.getStatus() == ServerStatus.STOP || s.getStatus() == ServerStatus.ONLINE)
+                                .random();
 
-        // writeString(buffer, name, 100);
-        // writeString(buffer, map, 64);
+                        if (serverData != null) {
+                            name += " -> " + serverData.getName();
+                            description += " -> " + serverData.getDescription();
+                            map = serverData.getMapName() == null ? "" : serverData.getMapName();
+                            players = (int) serverData.getPlayers();
+                        }
+                    } catch (Throwable e) {
+                        e.printStackTrace();
+                    }
+                }
 
-        // buffer.putInt(Core.settings.getInt("totalPlayers", players));
-        // buffer.putInt(Vars.state.wave);
-        // buffer.putInt(Version.build);
-        // writeString(buffer, Version.type);
+                writeString(buffer, name, 100);
+                writeString(buffer, map, 64);
 
-        // buffer.put((byte) Vars.state.rules.mode().ordinal());
-        // buffer.putInt(Vars.netServer.admins.getPlayerLimit());
+                buffer.putInt(Core.settings.getInt("totalPlayers", players));
+                buffer.putInt(Vars.state.wave);
+                buffer.putInt(Version.build);
+                writeString(buffer, Version.type);
 
-        // writeString(buffer, description, 100);
-        // if (Vars.state.rules.modeName != null) {
-        // writeString(buffer, Vars.state.rules.modeName, 50);
-        // }
-        // buffer.position(0);
-        // handler.respond(buffer);
+                buffer.put((byte) Vars.state.rules.mode().ordinal());
+                buffer.putInt(Vars.netServer.admins.getPlayerLimit());
 
-        // buffer.clear();
-        // });
+                writeString(buffer, description, 100);
+                if (Vars.state.rules.modeName != null) {
+                    writeString(buffer, Vars.state.rules.modeName, 50);
+                }
+                buffer.position(0);
+                handler.respond(buffer);
 
-        // } catch (Throwable e) {
-        // Log.err(e);
-        // }
+                buffer.clear();
+            });
+
+        } catch (Throwable e) {
+            Log.err(e);
+        }
     }
 
-    // private void writeString(ByteBuffer buffer, String string) {
-    // writeString(buffer, string, 32);
-    // }
+    private static void writeString(ByteBuffer buffer, String string) {
+        writeString(buffer, string, 32);
+    }
 
-    // private void writeString(ByteBuffer buffer, String string, int maxlen) {
-    // byte[] bytes = string.getBytes(Vars.charset);
-    // if (bytes.length > maxlen) {
-    // bytes = Arrays.copyOfRange(bytes, 0, maxlen);
-    // }
+    private static void writeString(ByteBuffer buffer, String string, int maxlen) {
+        byte[] bytes = string.getBytes(Vars.charset);
+        if (bytes.length > maxlen) {
+            bytes = Arrays.copyOfRange(bytes, 0, maxlen);
+        }
 
-    // buffer.put((byte) bytes.length);
-    // buffer.put(bytes);
-    // }
+        buffer.put((byte) bytes.length);
+        buffer.put(bytes);
+    }
 
     private static void onTap(TapEvent event) {
         if (!plugin.Config.IS_HUB) {
@@ -203,7 +215,7 @@ public class HubHandler {
                     .setPage(0)
                     .setSize(40);
 
-            servers = ApiGateway.getServers(request);
+            servers = Seq.with(ApiGateway.getServers(request));
 
         } catch (Throwable e) {
             e.printStackTrace();
