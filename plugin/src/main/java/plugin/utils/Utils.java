@@ -260,20 +260,25 @@ public class Utils {
             tempFile.file().createNewFile();
             tempImageFile.file().createNewFile();
 
+            var future = new CompletableFuture<byte[]>();
+
             Core.app.post(() -> {
                 try {
                     SaveIO.save(tempFile);
+                    future.complete(tempFile.readBytes());
                 } catch (Exception e) {
                     Log.err("Failed to generate save file", e);
+                    future.completeExceptionally(e);
                 }
             });
 
-            HashMap<String, String> body = new HashMap<>();
-            byte[] bytes = tempFile.readBytes();
+            var bytes = future.get(10, TimeUnit.SECONDS);
 
             if (bytes.length == 0) {
                 return new byte[0];
             }
+
+            HashMap<String, String> body = new HashMap<>();
 
             byte[] imageBytes = tempImageFile.readBytes();
 

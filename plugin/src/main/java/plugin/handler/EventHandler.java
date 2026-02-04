@@ -7,8 +7,10 @@ import arc.util.Strings;
 import mindustry.Vars;
 import mindustry.core.GameState.State;
 import mindustry.game.EventType.GameOverEvent;
+import mindustry.game.EventType.PlayerBanEvent;
 import mindustry.game.EventType.PlayerChatEvent;
 import mindustry.game.EventType.PlayerConnect;
+import mindustry.game.EventType.PlayerLeave;
 import mindustry.game.EventType.UnitBulletDestroyEvent;
 import mindustry.game.EventType.WorldLoadEndEvent;
 import mindustry.gen.Building;
@@ -42,8 +44,26 @@ public class EventHandler {
         PluginEvents.on(WorldLoadEndEvent.class, EventHandler::onWorldLoadEnd);
         PluginEvents.on(PlayerConnect.class, EventHandler::onPlayerConnect);
         PluginEvents.on(UnitBulletDestroyEvent.class, EventHandler::onUnitBulletDestroy);
+        PluginEvents.on(PlayerLeave.class, EventHandler::onPlayerLeave);
+        PluginEvents.on(PlayerBanEvent.class, EventHandler::onPlayerBan);
 
         Log.info("Setup event handler done");
+    }
+
+    private static void onPlayerBan(PlayerBanEvent event) {
+        String message = Strings.format("[scarlet]Player @ has been banned", event.player.name);
+
+        HttpServer.fire(ServerEvents.LogEvent.info(ServerControl.SERVER_ID, message));
+        HttpServer.fire(new ServerEvents.ChatEvent(ServerControl.SERVER_ID, message));
+    }
+
+    private static void onPlayerLeave(PlayerLeave event) {
+        if (event.player.con != null && event.player.con.kicked) {
+            String message = Strings.format("[scarlet]Player @ has been kicked", event.player.name);
+
+            HttpServer.fire(ServerEvents.LogEvent.info(ServerControl.SERVER_ID, message));
+            HttpServer.fire(new ServerEvents.ChatEvent(ServerControl.SERVER_ID, message));
+        }
     }
 
     private static void onUnitBulletDestroy(UnitBulletDestroyEvent event) {
@@ -223,7 +243,8 @@ public class EventHandler {
                             "@Logged in as ", playerData.getName()));
                 } else {
                     session.player.sendMessage(I18n.t(session.locale,
-                            "@You are not logged in, consider log in via ", " MindustryTool ", "@using", " [accent]/login[]"));
+                            "@You are not logged in, consider log in via ", " MindustryTool ", "@using",
+                            " [accent]/login[]"));
                 }
             });
 

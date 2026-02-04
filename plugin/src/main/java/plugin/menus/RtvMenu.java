@@ -67,13 +67,13 @@ public class RtvMenu extends PluginMenu<Integer> {
 
         if (hasPrev || hasNext) {
             if (hasPrev) {
-                option(I18n.t(session.locale, "@<< Previous"), (p, s) -> {
+                option(I18n.t(session.locale, "<<", "@Previous"), (p, s) -> {
                     new RtvMenu().send(p, currentPage - 1);
                 });
             }
 
             if (hasNext) {
-                option(I18n.t(session.locale, "@Next >>"), (p, s) -> {
+                option(I18n.t(session.locale, "@Next", ">>"), (p, s) -> {
                     new RtvMenu().send(p, currentPage + 1);
                 });
             }
