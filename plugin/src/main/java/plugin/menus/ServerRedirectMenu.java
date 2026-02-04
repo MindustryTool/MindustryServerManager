@@ -61,7 +61,7 @@ public class ServerRedirectMenu extends PluginMenu<ServerDto> {
                 Call.connect(player.con, InetAddress.getByName(host.trim()).getHostAddress(), port);
             } catch (Throwable e) {
                 player.sendMessage(I18n.t(Utils.parseLocale(player.locale()),
-                        "@Error: ", "@Can not load server"));
+                        "[scarlet]", "@Error: ", "@Can not load server"));
                 e.printStackTrace();
             }
         });
