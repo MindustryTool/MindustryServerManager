@@ -75,7 +75,7 @@ public class ApiGateway {
         return HttpUtils
                 .send(HttpUtils
                         .post(GATEWAY_URL, "servers", SERVER_ID, "host")
-                        .header("Content-Type", "text/plain"), 45000, String.class);
+                        .header("Content-Type", "text/plain"), 60000, String.class);
     }
 
     public static synchronized List<ServerDto> getServers(PaginationRequest request) {
