@@ -96,13 +96,13 @@ public class Session {
     public String getPlayerName(long level) {
         boolean hasColor = level > Config.COLOR_NAME_LEVEL || player.admin;
         String playerName = hasColor ? originalName : Strings.stripColors(originalName);
-        String country = locale.getDisplayCountry();
+        String language = locale.getDisplayLanguage();
 
-        if (country.isEmpty()) {
-            country = player.locale;
+        if (language.isEmpty()) {
+            language = player.locale;
         }
 
-        return "|" + country + "| " + "[]<" + "[accent]" + level + "[]> " + playerName;
+        return "|" + language + "| " + "[]<" + "[accent]" + level + "[]> " + playerName;
     }
 
     public void reset() {
