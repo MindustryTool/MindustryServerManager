@@ -156,6 +156,7 @@ public class ServerControl extends Plugin implements MindustryToolPlugin {
     public static void ioTask(String name, Runnable r) {
         ioTasks.add(name);
         IO_TASK_EXECUTOR.submit(() -> {
+            long startedAt = Time.millis();
             try {
                 Log.info("Running io tasks: " + ioTasks);
                 r.run();
@@ -164,6 +165,7 @@ public class ServerControl extends Plugin implements MindustryToolPlugin {
             } finally {
                 ioTasks.remove(name);
                 Log.info("Running io tasks: " + ioTasks);
+                Log.info("IO task " + name + " took " + (Time.millis() - startedAt) + "ms");
             }
 
         });
@@ -172,6 +174,7 @@ public class ServerControl extends Plugin implements MindustryToolPlugin {
     public static void cpuTask(String name, Runnable r) {
         cpuTasks.add(name);
         CPU_TASK_EXECUTOR.submit(() -> {
+            long startedAt = Time.millis();
             try {
                 Log.info("Running cpu tasks: " + cpuTasks);
                 r.run();
@@ -180,6 +183,7 @@ public class ServerControl extends Plugin implements MindustryToolPlugin {
             } finally {
                 cpuTasks.remove(name);
                 Log.info("Running cpu tasks: " + cpuTasks);
+                Log.info("CPU task " + name + " took " + (Time.millis() - startedAt) + "ms");
             }
 
         });
