@@ -29,6 +29,7 @@ import plugin.event.SessionCreatedEvent;
 import plugin.menus.ServerRedirectMenu;
 import plugin.type.PaginationRequest;
 import plugin.type.ServerCore;
+import plugin.utils.Utils;
 
 public class HubHandler {
 
@@ -208,7 +209,8 @@ public class HubHandler {
                     .setPage(0)
                     .setSize(serverCores.size);
 
-            servers = Seq.with(ApiGateway.getServers(request));
+            servers = Seq.with(ApiGateway.getServers(request))
+                    .select(server -> !server.getId().equals(ServerControl.SERVER_ID));
 
             for (int i = 0; i < serverCores.size; i++) {
                 var core = serverCores.get(i);
@@ -256,13 +258,19 @@ public class HubHandler {
         var description = server.getDescription().substring(0, Math.min(150, server.getDescription()
                 .length()));
 
-        String message = name + "[]\n" +
-                description + "[]\n\n" +
-                "[#E3F2FD]Players: []" + server.getPlayers() + "\n" +
-                "[#BBDEFB]Map: []" + server.getMapName() + "[]\n" +
-                "[#90CAF9]Mode: []" + server.getMode() + "[]\n" +
-                (mods.isEmpty() ? "" : "[#4FC3F7]Mods:[] " + mods) + "[]\n";
+        Utils.forEachPlayerLocale((locale, players) -> {
 
-        Call.label(message, 5, labelX, labelY);
+            String message = name + "[]\n" +
+                    description + "[]\n\n" +
+                    "[#E3F2FD]Players: []" + server.getPlayers() + "\n" +
+                    "[#BBDEFB]Map: []" + server.getMapName() + "[]\n" +
+                    "[#90CAF9]Mode: []" + server.getMode() + "[]\n" +
+                    (mods.isEmpty() ? "" : "[#4FC3F7]Mods:[] " + mods) + "[]\n\n" +
+                    "[accent]" + I18n.t(locale, "@Tap to join server") + "\n";
+
+            for (var player : players) {
+                Call.label(player.con, message, 5, labelX, labelY);
+            }
+        });
     }
 }
