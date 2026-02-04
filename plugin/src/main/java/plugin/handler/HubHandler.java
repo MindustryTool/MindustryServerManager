@@ -45,10 +45,16 @@ public class HubHandler {
         refreshServerList();
 
         ServerControl.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(() -> {
+            if (Groups.player.size() <= 0) {
+                return;
+            }
             refreshServerList();
         }, 0, 5, TimeUnit.SECONDS);
 
         ServerControl.BACKGROUND_SCHEDULER.scheduleAtFixedRate(() -> {
+            if (Groups.player.size() <= 0) {
+                return;
+            }
             renderServerLabels();
         }, 5, 5, TimeUnit.SECONDS);
     }
@@ -198,10 +204,6 @@ public class HubHandler {
 
     private static void refreshServerList() {
         try {
-            if (Groups.player.size() <= 0) {
-                return;
-            }
-
             var request = new PaginationRequest()
                     .setPage(0)
                     .setSize(serverCores.size);
@@ -228,10 +230,6 @@ public class HubHandler {
         var map = Vars.state.map;
 
         if (map == null) {
-            return;
-        }
-
-        if (Groups.player.size() <= 0) {
             return;
         }
 
