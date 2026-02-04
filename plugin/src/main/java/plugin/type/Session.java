@@ -31,8 +31,8 @@ public class Session {
 
     public Session(Player player) {
         this.player = player;
-        this.originalName = player.name().replaceAll("\\|[A-Z]{2}\\| \\[\\]<\\[[^]]+\\]\\d+>", "").trim();
-        this.locale = Locale.forLanguageTag(player.locale().split("_|-")[0]);
+        this.originalName = player.name().replaceAll("\\|[a-zA-Z]+\\| \\[\\]<\\[[^]]+\\]\\d+>", "").trim();
+        this.locale = Locale.forLanguageTag(player.locale().replace("_", "-"));
 
         Log.info("Session created for player @: @", player.name, this);
     }
@@ -88,18 +88,21 @@ public class Session {
 
             currentLevel = level;
 
-            player.name(getPlayerName(player, level));
+            player.name(getPlayerName(level));
         }
 
     }
 
-    public String getPlayerName(Player player, long level) {
-        String[] parts = player.locale.split("-|_");
-        String locale = parts.length > 0 ? parts[0] : player.locale;
+    public String getPlayerName(long level) {
         boolean hasColor = level > Config.COLOR_NAME_LEVEL || player.admin;
         String playerName = hasColor ? originalName : Strings.stripColors(originalName);
+        String country = locale.getDisplayCountry();
 
-        return "|" + locale.toUpperCase() + "| " + "[]<" + "[accent]" + level + "[]> " + playerName;
+        if (country.isEmpty()) {
+            country = player.locale;
+        }
+
+        return "|" + country + "| " + "[]<" + "[accent]" + level + "[]> " + playerName;
     }
 
     public void reset() {
