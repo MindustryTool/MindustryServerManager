@@ -6,12 +6,14 @@ import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 import arc.Core;
+import arc.graphics.Color;
 import arc.net.Server;
 import arc.struct.Seq;
 import arc.util.Log;
 import dto.ServerDto;
 import dto.ServerStatus;
 import mindustry.Vars;
+import mindustry.content.Fx;
 import mindustry.core.Version;
 import mindustry.game.EventType.TapEvent;
 import mindustry.game.EventType.WorldLoadEvent;
@@ -173,6 +175,8 @@ public class HubHandler {
         var tapX = event.tile.x;
         var tapY = event.tile.y;
 
+        Call.effectReliable(Fx.coreBuildShockwave, tapX, tapY, 0, Color.white);
+
         for (var core : serverCores) {
             if (tapX >= core.getX() - tapSize //
                     && tapX <= core.getX() + tapSize //
@@ -192,6 +196,10 @@ public class HubHandler {
 
     private static void refreshServerList() {
         try {
+            if (Groups.player.size() <= 0) {
+                return;
+            }
+
             var request = new PaginationRequest()
                     .setPage(0)
                     .setSize(serverCores.size);
@@ -218,6 +226,10 @@ public class HubHandler {
         var map = Vars.state.map;
 
         if (map == null) {
+            return;
+        }
+
+        if (Groups.player.size() <= 0) {
             return;
         }
 
@@ -251,6 +263,6 @@ public class HubHandler {
                 "[#90CAF9]Mode: []" + server.getMode() + "[]\n" +
                 (mods.isEmpty() ? "" : "[#4FC3F7]Mods:[] " + mods) + "[]\n";
 
-        Call.label(message, 1, labelX, labelY);
+        Call.label(message, 5, labelX, labelY);
     }
 }
