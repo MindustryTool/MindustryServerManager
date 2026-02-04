@@ -25,7 +25,7 @@ public class I18n {
             translated = ApiGateway.translate(needTranslate, locale);
         } catch (Exception e) {
             translated = ApiGateway.translate(translated, Locale.ENGLISH);
-            Log.err("Failed to translate texts", e);
+            Log.err(e.getMessage());
         }
 
         StringBuilder sb = new StringBuilder();
