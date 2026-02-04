@@ -46,7 +46,7 @@ public class HubHandler {
 
         ServerControl.BACKGROUND_SCHEDULER.scheduleAtFixedRate(() -> {
             renderServerLabels();
-        }, 5, 5, TimeUnit.SECONDS);
+        }, 5, 1, TimeUnit.SECONDS);
 
         ServerControl.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(() -> {
             loadCores();
@@ -254,6 +254,6 @@ public class HubHandler {
                 "[#90CAF9]Mode: []" + server.getMode() + "[]\n" +
                 (mods.isEmpty() ? "" : "[#4FC3F7]Mods:[] " + mods) + "[]\n";
 
-        Call.labelReliable(message, 5, labelX, labelY);
+        Call.label(message, 1, labelX, labelY);
     }
 }
