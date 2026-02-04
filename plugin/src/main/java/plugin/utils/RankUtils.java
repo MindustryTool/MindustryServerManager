@@ -10,7 +10,8 @@ public class RankUtils {
     public static String getRankString(Locale locale, Seq<RankData> players) {
         StringBuilder sb = new StringBuilder("[]\n");
 
-        sb.append(I18n.t(locale, "[accent]", "@Rank"))
+        sb.append(I18n.t(locale, "[accent]", Utils.padRight("@Rank", 10)))
+                .append(Utils.padRight("Exp", 20))
                 .append("[]\n");
 
         for (int i = 0; i < players.size; i++) {
@@ -38,11 +39,11 @@ public class RankUtils {
             long totalExp = ExpUtils.getTotalExp(data, 0);
             String levelStr = String.valueOf(ExpUtils.levelFromTotalExp(totalExp));
 
-            sb.append(Utils.padRight(rank, 6))
+            sb.append(Utils.padRight(rank, 10))
                     .append("[] ")
-                    .append(Utils.padRight("[" + levelStr + "] (" + totalExp + ")", 14))
+                    .append(Utils.padRight("[" + levelStr + "] (" + totalExp + ")", 20))
                     .append("[] ")
-                    .append(Utils.padRight(data.name, 20))
+                    .append(data.name)
                     .append("\n");
         }
 
