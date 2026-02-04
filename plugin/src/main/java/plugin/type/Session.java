@@ -43,7 +43,7 @@ public class Session {
 
             if (isAdmin) {
                 Utils.forEachPlayerLocale((locale, players) -> {
-                    String msg = I18n.t(locale, "[accent]", "@An admin logged in:[] ", player.name);
+                    String msg = I18n.t(locale, "@An admin logged in:[] ", player.name);
                     for (var p : players) {
                         p.sendMessage(msg);
                     }
@@ -102,7 +102,7 @@ public class Session {
             language = player.locale;
         }
 
-        return "|" + language + "| " + "[]<" + "[accent]" + level + "[]> " + playerName;
+        return "[]|" + language + "| " + "[]<" + "[accent]" + level + "[]> " + playerName;
     }
 
     public void reset() {

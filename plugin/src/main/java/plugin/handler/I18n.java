@@ -4,6 +4,7 @@ import java.util.Locale;
 
 import arc.struct.Seq;
 import arc.util.Log;
+import arc.util.Strings;
 
 public class I18n {
     public static String t(Locale locale, Object... texts) {
@@ -37,7 +38,11 @@ public class I18n {
                 next = translated.remove(0);
             }
 
-            if (sb.length() > 1 && sb.charAt(sb.length() - 1) != ' ' && !next.startsWith(" ")) {
+            boolean prevHasSpace = sb.length() > 1 && sb.charAt(sb.length() - 1) == ' ';
+            boolean nextHasSpace = next.startsWith(" ");
+            boolean prevIsColor = Strings.stripColors(sb.toString()).trim().isEmpty();
+
+            if (!prevHasSpace && !nextHasSpace && !prevIsColor) {
                 sb.append(' ');
             }
 
