@@ -26,5 +26,5 @@ jobs:
         with:
           context: ./
           push: true
-          tags: ghcr.io/mindustrytool/mindustry-server-manager:${{ github.ref_name }}
+          tags: ghcr.io/mindustrytool/mindustry-server-manager:v2
 
