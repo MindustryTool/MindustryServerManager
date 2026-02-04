@@ -134,6 +134,7 @@ public class GatewayService {
             }
 
             public Mono<String> host(UUID serverId) {
+                Log.info("Host server: " + serverId);
                 return Utils.wrapError(webClient.method(HttpMethod.POST)
                         .uri("/servers/" + serverId + "/host-server")
                         .retrieve()
