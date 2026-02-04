@@ -66,7 +66,7 @@ public abstract class PluginCommand {
             PluginCommand copy = this.getClass().getDeclaredConstructor().newInstance();
 
             copy.name = this.name;
-            copy.description = this.description;
+            copy.description = (admin ? "[scarlet]ADMIN - " : "") + this.description;
 
             for (Param p : this.params) {
                 copy.params.add(p.copy());
