@@ -144,7 +144,7 @@ public class ServerControl extends Plugin implements MindustryToolPlugin {
         System.out.println("Finalizing " + this);
     }
 
-    public static void backgroundTask(String name, Runnable r) {
+    public static synchronized void backgroundTask(String name, Runnable r) {
         runningTasks.add(name);
         Log.info("Running tasks: " + runningTasks);
         BACKGROUND_TASK_EXECUTOR.submit(() -> {
