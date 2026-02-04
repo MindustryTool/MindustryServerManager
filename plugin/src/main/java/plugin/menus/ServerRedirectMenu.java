@@ -31,14 +31,17 @@ public class ServerRedirectMenu extends PluginMenu<ServerDto> {
                 player.sendMessage(I18n.t(Utils.parseLocale(player.locale()),
                         "[green]", "@Starting server ", "[white]", name,
                         ", ", "[white]", "@this can take up to 1 minutes, please wait"));
+
                 Log.info(String.format("Send host command to server %s %S", name, id));
+
                 var data = ApiGateway.host(id);
-                player.sendMessage(I18n.t(Utils.parseLocale(player.locale()),
-                        "[green]", "@Redirecting"));
+
+                player.sendMessage(I18n.t(Utils.parseLocale(player.locale()), "[green]", "@Redirecting"));
+
                 Utils.forEachPlayerLocale((locale, players) -> {
                     String msg = I18n.t(locale, player.coloredName(), " ", "[green]",
-                            "@redirecting to server ", "[white]", name,
-                            ", ", "@use ", "[green]", "/servers", "[white]", " ", "@to follow");
+                            "@redirecting to server ", "[white]", name, ", ", "@use ", "[green]", "/servers", "[white]",
+                            " ", "@to follow");
                     for (var p : players) {
                         p.sendMessage(msg);
                     }
@@ -59,7 +62,7 @@ public class ServerRedirectMenu extends PluginMenu<ServerDto> {
                 Log.info("Redirecting " + player.name + " to " + host + ":" + port);
 
                 Call.connect(player.con, InetAddress.getByName(host.trim()).getHostAddress(), port);
-            } catch (Throwable e) {
+            } catch (Exception e) {
                 player.sendMessage(I18n.t(Utils.parseLocale(player.locale()),
                         "[scarlet]", "@Error: ", "@Can not load server"));
                 e.printStackTrace();

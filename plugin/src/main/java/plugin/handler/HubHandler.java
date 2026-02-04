@@ -44,7 +44,7 @@ public class HubHandler {
 
         ServerControl.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(() -> {
             refreshServerList();
-        }, 2, 30, TimeUnit.SECONDS);
+        }, 0, 5, TimeUnit.SECONDS);
 
         ServerControl.BACKGROUND_SCHEDULER.scheduleAtFixedRate(() -> {
             renderServerLabels();
