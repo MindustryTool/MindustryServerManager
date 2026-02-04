@@ -36,7 +36,7 @@ public abstract class PluginMenu<T> {
                 return;
             }
 
-            ServerControl.ioTask("Menu Option Choose", () -> {
+            ServerControl.ioTask("Menu Option Choose: " + targetMenu.getMenuId(), () -> {
                 HudOption<Object> selectedOption = null;
 
                 int i = 0;

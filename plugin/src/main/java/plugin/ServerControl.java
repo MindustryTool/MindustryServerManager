@@ -232,7 +232,7 @@ public class ServerControl extends Plugin implements MindustryToolPlugin {
         tips.add((locale) -> I18n.t(locale, "@Admins are here to help — ask nicely"));
         tips.add((locale) -> "[]" + Iconc.blockRouter + "Router chains");
         tips.add((locale) -> I18n.t(locale, "@Have fun!!!"));
-        tips.add((locale) -> I18n.t(locale, "@The factory must grow!!!"));
+        tips.add((locale) -> "@The factory must grow!!!");
         tips.add((locale) -> I18n.t(locale, "@Reach level", " ", Config.COLOR_NAME_LEVEL, " ",
                 "@to unlock colored name"));
 

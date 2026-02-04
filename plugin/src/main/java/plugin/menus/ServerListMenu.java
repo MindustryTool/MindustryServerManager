@@ -17,7 +17,7 @@ public class ServerListMenu extends PluginMenu<Integer> {
     @Override
     public void build(Session session, Integer page) {
         try {
-            int size = 5;
+            int size = 4;
 
             PaginationRequest request = new PaginationRequest().setPage(page).setSize(size);
             List<ServerDto> servers = ApiGateway.getServers(request);
