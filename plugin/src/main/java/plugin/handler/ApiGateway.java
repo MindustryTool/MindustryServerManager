@@ -124,7 +124,7 @@ public class ApiGateway {
                 .send(HttpUtils
                         .post("https://api.mindustry-tool.com/api/v4/libre")
                         .header("Content-Type", "application/json")//
-                        .content(JsonUtils.toJsonString(body)), 1000, TranslationDto.class);
+                        .content(JsonUtils.toJsonString(body)), 3000, TranslationDto.class);
 
         return result;
     }
@@ -213,7 +213,7 @@ public class ApiGateway {
         }
 
         try {
-            CompletableFuture.allOf(result.toArray(new CompletableFuture[texts.size])).get(2, TimeUnit.SECONDS);
+            CompletableFuture.allOf(result.toArray(new CompletableFuture[texts.size])).get(5, TimeUnit.SECONDS);
 
             return Seq.with(result).map(r -> r.getNow("This should never happen"));
         } catch (Exception e) {
