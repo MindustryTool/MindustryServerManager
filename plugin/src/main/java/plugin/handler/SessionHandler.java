@@ -13,6 +13,7 @@ import mindustry.game.EventType.PlayerJoin;
 import mindustry.game.EventType.PlayerLeave;
 import mindustry.gen.Groups;
 import mindustry.gen.Player;
+import mindustry.gen.TimedKillc;
 import plugin.PluginEvents;
 import plugin.ServerControl;
 import plugin.event.PlayerKillUnitEvent;
@@ -40,6 +41,9 @@ public class SessionHandler {
 
         PluginEvents.on(PlayerKillUnitEvent.class, event -> {
             get(event.getPlayer()).ifPresent(session -> {
+                if (event.getUnit().type.isHidden() || event.getUnit().type instanceof TimedKillc) {
+                    return;
+                }
 
                 long result = session.addKill(event.getUnit().type, 1);
                 long base = 1;

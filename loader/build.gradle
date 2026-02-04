@@ -18,6 +18,8 @@ dependencies{
     implementation "org.pf4j:pf4j:3.13.0"     
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.16.2'
     implementation "org.slf4j:slf4j-simple:2.0.16"
+    implementation 'org.xerial:sqlite-jdbc:3.43.2.0'
+
 
     compileOnly "com.github.Anuken.Arc:arc-core:$mindustryVersion"
     compileOnly "com.github.Anuken.Mindustry:core:$mindustryVersion"

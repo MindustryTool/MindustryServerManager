@@ -7,14 +7,14 @@ import arc.util.Log;
 
 public class I18n {
     public static String t(Locale locale, Object... texts) {
-        boolean[] indexes = new boolean[texts.length];
+        boolean[] needTranslateIndexes = new boolean[texts.length];
 
         Seq<String> needTranslate = new Seq<>();
 
         for (int i = 0; i < texts.length; i++) {
             String str = String.valueOf(texts[i]).trim();
             if (str.startsWith("@")) {
-                indexes[i] = true;
+                needTranslateIndexes[i] = true;
                 needTranslate.add(str.substring(1));
             }
         }
@@ -31,11 +31,17 @@ public class I18n {
         StringBuilder sb = new StringBuilder();
 
         for (int i = 0; i < texts.length; i++) {
-            if (indexes[i]) {
-                sb.append(translated.remove(0));
-            } else {
-                sb.append(texts[i]);
+            var next = texts[i].toString();
+
+            if (needTranslateIndexes[i]) {
+                next = translated.remove(0);
             }
+
+            if (sb.length() > 1 && sb.charAt(sb.length() - 1) != ' ' && !next.startsWith(" ")) {
+                sb.append(' ');
+            }
+
+            sb.append(next);
         }
 
         return sb.toString();

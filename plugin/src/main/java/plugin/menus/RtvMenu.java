@@ -15,7 +15,20 @@ public class RtvMenu extends PluginMenu<Integer> {
     public void build(Session session, Integer page) {
         Seq<Map> maps = new Seq<>(VoteHandler.getMaps());
 
-        maps.sort((a, b) -> Float.compare(MapRating.getAvg(b), MapRating.getAvg(a)));
+        maps.sort((a, b) -> {
+            var ar = MapRating.getAvg(a);
+            var br = MapRating.getAvg(b);
+
+            if (ar == 0) {
+                ar = 6;
+            }
+
+            if (br == 0) {
+                br = 6;
+            }
+
+            return Float.compare(br, ar);
+        });
 
         int totalPages = (int) Math.ceil((double) maps.size / MAPS_PER_PAGE);
 

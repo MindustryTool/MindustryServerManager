@@ -10,7 +10,8 @@ public class RankUtils {
     public static String getRankString(Locale locale, Seq<RankData> players) {
         StringBuilder sb = new StringBuilder("[]\n");
 
-        sb.append(I18n.t(locale, "rank"));
+        sb.append(I18n.t(locale, "[accent]", "@Rank"))
+                .append("[]\n");
 
         for (int i = 0; i < players.size; i++) {
             var data = players.get(i).data;

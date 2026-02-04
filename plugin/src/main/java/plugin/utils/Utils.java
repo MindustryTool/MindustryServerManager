@@ -322,21 +322,29 @@ public class Utils {
     }
 
     public static String padRight(String text, int length) {
-        if (text == null)
+        if (text == null) {
             text = "";
+        }
+
+        int spaceWidth = TextWidth.measure(" ");
+        int targetWidth = spaceWidth * length;
 
         String plain = Strings.stripColors(text);
-        int plainLength = plain.length();
 
-        if (plainLength >= length) {
+        int currentWidth = TextWidth.measure(plain);
+
+        if (currentWidth >= targetWidth) {
             return text;
         }
 
         StringBuilder sb = new StringBuilder(text);
-        for (int i = plainLength; i < length; i++) {
-            sb.append(" ");
+
+        while (currentWidth < targetWidth) {
+            sb.append(' ');
+            currentWidth += spaceWidth;
         }
 
         return sb.toString();
     }
+
 }
