@@ -252,6 +252,10 @@ public class Utils {
             tempImageFile.deleteDirectory();
         }
 
+        if (!Vars.state.isGame()) {
+            return new byte[0];
+        }
+
         try {
             tempFile.file().createNewFile();
             tempImageFile.file().createNewFile();
