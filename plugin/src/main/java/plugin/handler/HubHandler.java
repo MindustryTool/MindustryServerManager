@@ -15,7 +15,6 @@ import plugin.Config;
 import plugin.PluginEvents;
 import plugin.ServerControl;
 import plugin.event.SessionCreatedEvent;
-import plugin.menus.ServerRedirectMenu;
 import plugin.type.PaginationRequest;
 import plugin.type.ServerCore;
 import plugin.utils.ServerUtils;
@@ -43,30 +42,40 @@ public class HubHandler {
     }
 
     private static void onWorldLoad(WorldLoadEvent event) {
-        serverCores.clear();
+        ServerControl.backgroundTask("Refresh server list", () -> {
+            serverCores.clear();
 
-        var cores = Team.sharded.cores();
+            float centerX = Vars.world.unitWidth() / 2;
+            float centerY = Vars.world.unitHeight() / 2;
 
-        for (int i = 0; i < cores.size; i++) {
-            var core = cores.get(i);
+            getTopServer();
 
-            if (i < servers.size()) {
+            var cores = Team.sharded.cores();
+
+            for (int i = 0; i < cores.size; i++) {
+                var core = cores.get(i);
                 serverCores.add(new ServerCore(servers.get(i), core.getX(), core.getY()));
             }
-        }
+
+            serverCores.sort((a, b) -> Float.compare(
+                    (a.getX() - centerX) * (a.getX() - centerX) + (a.getY() - centerY) * (a.getY() - centerY),
+                    (b.getX() - centerX) * (b.getX() - centerX) + (b.getY() - centerY) * (b.getY() - centerY)));
+        });
     }
 
     private static void onSessionCreated(SessionCreatedEvent event) {
-        var serverData = getTopServer();
+        // var serverData = getTopServer();
 
-        if (serverData != null && !serverData.getId().equals(ServerControl.SERVER_ID) && serverData.getPlayers() > 0) {
-            new ServerRedirectMenu().send(event.session, serverData);
-        }
+        // if (serverData != null && !serverData.getId().equals(ServerControl.SERVER_ID)
+        // && serverData.getPlayers() > 0) {
+        // new ServerRedirectMenu().send(event.session, serverData);
+        // }
     }
 
     private static synchronized ServerDto getTopServer() {
         try {
-            var request = new PaginationRequest().setPage(0).setSize(1);
+            var request = new PaginationRequest().setPage(0).setSize(Math.min(100, serverCores.size()));
+
             var servers = ApiGateway.getServers(request);
 
             if (servers.isEmpty()) {
@@ -183,6 +192,7 @@ public class HubHandler {
                     && tapY <= core.getY() + tapSize//
             ) {
                 ServerUtils.redirect(event.player, core.getServer());
+                break;
             }
         }
     }
