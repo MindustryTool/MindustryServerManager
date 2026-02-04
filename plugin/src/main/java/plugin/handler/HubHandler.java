@@ -42,11 +42,11 @@ public class HubHandler {
 
         ServerControl.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(() -> {
             refreshServerList();
-        }, 0, 30, TimeUnit.SECONDS);
+        }, 10, 30, TimeUnit.SECONDS);
 
         ServerControl.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(() -> {
             renderServerLabels();
-        }, 0, 5, TimeUnit.SECONDS);
+        }, 10, 5, TimeUnit.SECONDS);
 
     }
 
@@ -57,15 +57,13 @@ public class HubHandler {
             float centerX = Vars.world.unitWidth() / 2;
             float centerY = Vars.world.unitHeight() / 2;
 
-            getTopServer();
-
             var cores = Team.sharded.cores().sort((a, b) -> Float.compare(
                     (a.getX() - centerX) * (a.getX() - centerX) + (a.getY() - centerY) * (a.getY() - centerY),
                     (b.getX() - centerX) * (b.getX() - centerX) + (b.getY() - centerY) * (b.getY() - centerY)));
 
             for (int i = 0; i < cores.size; i++) {
                 var core = cores.get(i);
-                serverCores.add(new ServerCore(servers.get(i), core.getX(), core.getY()));
+                serverCores.add(new ServerCore(null, core.getX(), core.getY()));
             }
         });
     }
@@ -77,27 +75,6 @@ public class HubHandler {
         // && serverData.getPlayers() > 0) {
         // new ServerRedirectMenu().send(event.session, serverData);
         // }
-    }
-
-    private static synchronized ServerDto getTopServer() {
-        try {
-            var request = new PaginationRequest().setPage(0).setSize(Math.min(100, serverCores.size));
-
-            var servers = Seq.with(ApiGateway.getServers(request));
-
-            if (servers.isEmpty()) {
-                return null;
-            }
-
-            if (servers.get(0).getId() == null) {
-                return null;
-            }
-
-            return servers.get(0);
-        } catch (Throwable e) {
-            e.printStackTrace();
-            return null;
-        }
     }
 
     private static void setupCustomServerDiscovery() {
