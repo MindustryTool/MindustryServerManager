@@ -46,9 +46,15 @@ public class ServerControl extends Plugin implements MindustryToolPlugin {
 
     public static final UUID SERVER_ID = UUID.fromString(System.getenv("SERVER_ID"));
     public static final ScheduledExecutorService BACKGROUND_SCHEDULER = Executors.newSingleThreadScheduledExecutor();
-    private static final ExecutorService BACKGROUND_TASK_EXECUTOR = Executors
+
+    private static final ExecutorService IO_TASK_EXECUTOR = Executors
+            .newCachedThreadPool();
+
+    private static final ExecutorService CPU_TASK_EXECUTOR = Executors
             .newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-    private static final Set<String> runningTasks = ConcurrentHashMap.newKeySet();
+
+    private static final Set<String> ioTasks = ConcurrentHashMap.newKeySet();
+    private static final Set<String> cpuTasks = ConcurrentHashMap.newKeySet();
 
     public ServerControl() {
         Log.info("Server controller created: " + this);
@@ -124,7 +130,7 @@ public class ServerControl extends Plugin implements MindustryToolPlugin {
         PluginEvents.fire(new PluginUnloadEvent());
         PluginEvents.unregister();
 
-        BACKGROUND_TASK_EXECUTOR.shutdownNow();
+        IO_TASK_EXECUTOR.shutdownNow();
         Log.info("Background task executor shutdown");
         BACKGROUND_SCHEDULER.shutdownNow();
         Log.info("Background scheduler shutdown");
@@ -147,16 +153,31 @@ public class ServerControl extends Plugin implements MindustryToolPlugin {
         System.out.println("Finalizing " + this);
     }
 
-    public static void backgroundTask(String name, Runnable r) {
-        runningTasks.add(name);
-        Log.info("Running tasks: " + runningTasks);
-        BACKGROUND_TASK_EXECUTOR.submit(() -> {
+    public static void ioTask(String name, Runnable r) {
+        ioTasks.add(name);
+        Log.info("Running io tasks: " + ioTasks);
+        IO_TASK_EXECUTOR.submit(() -> {
             try {
                 r.run();
             } catch (Exception e) {
                 Log.err("Failed to execute background task: " + name, e);
             } finally {
-                runningTasks.remove(name);
+                ioTasks.remove(name);
+            }
+
+        });
+    }
+
+    public static void cpuTask(String name, Runnable r) {
+        cpuTasks.add(name);
+        Log.info("Running cpu tasks: " + cpuTasks);
+        CPU_TASK_EXECUTOR.submit(() -> {
+            try {
+                r.run();
+            } catch (Exception e) {
+                Log.err("Failed to execute background task: " + name, e);
+            } finally {
+                cpuTasks.remove(name);
             }
 
         });
@@ -211,7 +232,7 @@ public class ServerControl extends Plugin implements MindustryToolPlugin {
 
         var tip = tips.random();
 
-        backgroundTask("Send tip", () -> {
+        ioTask("Send tip", () -> {
             Utils.forEachPlayerLocale((locale, players) -> {
                 for (var player : players) {
                     player.sendMessage("\n[sky]" + tip.get(locale) + "[]\n");

@@ -112,7 +112,7 @@ public class EventHandler {
 
         }, 5, TimeUnit.SECONDS);
 
-        ServerControl.backgroundTask("update map preview", () -> {
+        ServerControl.cpuTask("update map preview", () -> {
             Utils.mapPreview();
         });
     }
@@ -148,7 +148,7 @@ public class EventHandler {
 
         Log.info(chat);
 
-        ServerControl.backgroundTask("Chat Event", () -> {
+        ServerControl.ioTask("Chat Event", () -> {
             try {
                 Utils.forEachPlayerLocale((locale, ps) -> {
                     var result = ApiGateway.translateRaw(locale, Strings.stripColors(message));
@@ -225,7 +225,7 @@ public class EventHandler {
 
             HttpServer.fire(new ServerEvents.ChatEvent(ServerControl.SERVER_ID, chat));
 
-            ServerControl.backgroundTask("Player Join", () -> {
+            ServerControl.ioTask("Player Join", () -> {
                 var playerData = ApiGateway.login(session.player);
 
                 session.setAdmin(playerData.getIsAdmin());
@@ -243,7 +243,7 @@ public class EventHandler {
                 }
             });
 
-            ServerControl.backgroundTask("Welcome Message", () -> {
+            ServerControl.ioTask("Welcome Message", () -> {
                 var translated = I18n.t(session.locale, Config.WELCOME_MESSAGE);
                 session.player.sendMessage(translated);
             });

@@ -75,7 +75,7 @@ public class Session {
                 var oldLevel = currentLevel;
                 var newLevel = level;
 
-                ServerControl.backgroundTask("Update level", () -> {
+                ServerControl.ioTask("Update level", () -> {
                     Utils.forEachPlayerLocale((locale, players) -> {
                         String message = I18n.t(locale, "Level up");
 

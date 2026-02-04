@@ -36,7 +36,7 @@ public abstract class PluginMenu<T> {
                 return;
             }
 
-            ServerControl.backgroundTask("Menu Option Choose", () -> {
+            ServerControl.ioTask("Menu Option Choose", () -> {
                 HudOption<Object> selectedOption = null;
 
                 int i = 0;
@@ -169,7 +169,7 @@ public abstract class PluginMenu<T> {
             copy.state = state;
             copy.options = new Seq<>(new Seq<>());
 
-            ServerControl.backgroundTask("Show Menu: " + getMenuId(), () -> {
+            ServerControl.ioTask("Show Menu: " + getMenuId(), () -> {
                 try {
                     copy.build(session, state);
                 } catch (Exception e) {

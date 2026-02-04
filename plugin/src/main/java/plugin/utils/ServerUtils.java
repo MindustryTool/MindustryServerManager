@@ -16,15 +16,17 @@ public class ServerUtils {
         String id = server.getId().toString();
         String name = server.getName();
 
-        ServerControl.backgroundTask("Server Choose", () -> {
+        ServerControl.ioTask("Server Choose", () -> {
             try {
                 player.sendMessage(I18n.t(Utils.parseLocale(player.locale()),
                         "[green]", "@Starting server ", "[white]", name,
                         ", ", "[white]", "@this can take up to 1 minutes, please wait"));
                 Log.info(String.format("Send host command to server %s %S", name, id));
+
                 var data = ApiGateway.host(id);
-                player.sendMessage(I18n.t(Utils.parseLocale(player.locale()),
-                        "[green]", "@Redirecting"));
+
+                player.sendMessage(I18n.t(Utils.parseLocale(player.locale()), "[green]", "@Redirecting"));
+
                 Utils.forEachPlayerLocale((locale, players) -> {
                     String msg = I18n.t(locale, player.coloredName(), " ", "[green]",
                             "@redirecting to server ", "[white]", name,

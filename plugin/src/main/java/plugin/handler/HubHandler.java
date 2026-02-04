@@ -61,7 +61,7 @@ public class HubHandler {
     }
 
     private static void loadCores() {
-        ServerControl.backgroundTask("Refresh server list", () -> {
+        ServerControl.ioTask("Refresh server list", () -> {
             serverCores.clear();
 
             float centerX = Vars.world.unitWidth() / 2;

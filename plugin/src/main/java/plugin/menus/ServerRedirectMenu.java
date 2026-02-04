@@ -26,7 +26,7 @@ public class ServerRedirectMenu extends PluginMenu<ServerDto> {
     }
 
     public void onServerChoose(Player player, String id, String name) {
-        ServerControl.backgroundTask("Server Choose", () -> {
+        ServerControl.ioTask("Server Choose", () -> {
             try {
                 player.sendMessage(I18n.t(Utils.parseLocale(player.locale()),
                         "[green]", "@Starting server ", "[white]", name,

@@ -80,7 +80,7 @@ public class SessionHandler {
 
         PluginEvents.on(PlayerJoin.class, event -> {
             Core.app.post(() -> put(event.player));
-            ServerControl.backgroundTask("Send Leader Board",
+            ServerControl.ioTask("Send Leader Board",
                     () -> event.player.sendMessage(RankUtils.getRankString(Utils.parseLocale(event.player.locale),
                             SessionRepository.getLeaderBoard(10))));
         });
@@ -120,7 +120,7 @@ public class SessionHandler {
         return data.computeIfAbsent(p.uuid(), (k) -> {
             var session = new Session(p);
 
-            ServerControl.backgroundTask("Update Session", () -> {
+            ServerControl.ioTask("Update Session", () -> {
                 try {
                     var data = session.data();
 

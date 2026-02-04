@@ -84,7 +84,7 @@ public class ClientCommandHandler {
                 "[green]", "@Starting server ", "[white]", name, ", ", "[white]", "@redirection will happen soon"));
 
         try {
-            ServerControl.backgroundTask("Redirect Server", () -> {
+            ServerControl.ioTask("Redirect Server", () -> {
                 var data = ApiGateway.host(id);
                 session.player.sendMessage(I18n.t(session.locale,
                         "[green]", "@Redirecting"));

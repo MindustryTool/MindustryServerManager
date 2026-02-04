@@ -110,7 +110,7 @@ public abstract class PluginCommand {
                         return;
                     }
 
-                    ServerControl.backgroundTask("Client command", () -> {
+                    ServerControl.ioTask("Client command", () -> {
                         try {
                             this.newInstance()
                                     .handleParams(args)
@@ -130,7 +130,7 @@ public abstract class PluginCommand {
             });
         } else {
             handler.register(name, paramText.toString(), description, (args) -> {
-                ServerControl.backgroundTask("Server command", () -> {
+                ServerControl.ioTask("Server command", () -> {
                     try {
                         this.newInstance()
                                 .handleParams(args)
