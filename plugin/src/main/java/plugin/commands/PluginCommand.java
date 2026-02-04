@@ -129,8 +129,8 @@ public abstract class PluginCommand {
                 }
             });
         } else {
-            ServerControl.BACKGROUND_TASK_EXECUTOR.submit(() -> {
-                handler.register(name, paramText.toString(), description, (args) -> {
+            handler.register(name, paramText.toString(), description, (args) -> {
+                ServerControl.BACKGROUND_TASK_EXECUTOR.submit(() -> {
                     try {
                         this.newInstance()
                                 .handleParams(args)
