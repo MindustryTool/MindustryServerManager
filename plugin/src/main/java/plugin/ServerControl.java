@@ -43,7 +43,7 @@ public class ServerControl extends Plugin implements MindustryToolPlugin {
     public static boolean isUnloaded = false;
 
     public static final UUID SERVER_ID = UUID.fromString(System.getenv("SERVER_ID"));
-    public static final ExecutorService BACKGROUND_TASK_EXECUTOR = Executors.newWorkStealingPool();
+    public static final ExecutorService BACKGROUND_TASK_EXECUTOR = Executors.newCachedThreadPool();
     public static final ScheduledExecutorService BACKGROUND_SCHEDULER = Executors.newSingleThreadScheduledExecutor();
 
     public ServerControl() {
