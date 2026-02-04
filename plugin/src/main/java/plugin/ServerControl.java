@@ -1,7 +1,9 @@
 package plugin;
 
 import java.util.Locale;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -45,7 +47,7 @@ public class ServerControl extends Plugin implements MindustryToolPlugin {
     public static final UUID SERVER_ID = UUID.fromString(System.getenv("SERVER_ID"));
     public static final ScheduledExecutorService BACKGROUND_SCHEDULER = Executors.newSingleThreadScheduledExecutor();
     private static final ExecutorService BACKGROUND_TASK_EXECUTOR = Executors.newWorkStealingPool();
-    private static final Seq<String> runningTasks = new Seq<>();
+    private static final Set<String> runningTasks = ConcurrentHashMap.newKeySet();
 
     public ServerControl() {
         Log.info("Server controller created: " + this);
