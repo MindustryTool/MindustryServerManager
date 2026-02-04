@@ -41,6 +41,8 @@ public class HubHandler {
         PluginEvents.run(WorldLoadEvent.class, HubHandler::loadCores);
 
         setupCustomServerDiscovery();
+        loadCores();
+        refreshServerList();
 
         ServerControl.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(() -> {
             refreshServerList();
@@ -49,8 +51,6 @@ public class HubHandler {
         ServerControl.BACKGROUND_SCHEDULER.scheduleAtFixedRate(() -> {
             renderServerLabels();
         }, 5, 5, TimeUnit.SECONDS);
-
-        loadCores();
     }
 
     private static void loadCores() {
