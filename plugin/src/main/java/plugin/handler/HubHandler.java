@@ -156,17 +156,13 @@ public class HubHandler {
     }
 
     private static void onTap(TapEvent event) {
-        Log.info(event);
-
         if (!plugin.Config.IS_HUB) {
             return;
         }
-        Log.info(event);
 
         if (event.tile == null) {
             return;
         }
-        Log.info(event);
 
         var map = Vars.state.map;
 
@@ -174,12 +170,10 @@ public class HubHandler {
             return;
         }
 
-        Log.info(event);
-
         var tapSize = 4;
 
-        var tapX = event.tile.x;
-        var tapY = event.tile.y;
+        var tapX = event.tile.worldx();
+        var tapY = event.tile.worldy();
 
         Call.effectReliable(Fx.coreBuildShockwave, tapX, tapY, 0, Color.white);
 
