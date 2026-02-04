@@ -61,8 +61,10 @@ public class HubHandler {
             float centerY = Vars.world.unitHeight() / 2;
 
             var cores = Team.sharded.cores().sort((a, b) -> Float.compare(
-                    (a.getX() - centerX) * (a.getX() - centerX) + (a.getY() - centerY) * (a.getY() - centerY),
-                    (b.getX() - centerX) * (b.getX() - centerX) + (b.getY() - centerY) * (b.getY() - centerY)));
+                    (a.getX() - centerX) * (a.getX() - centerX) + (a.getY() - centerY) * (a.getY() - centerY)
+                            - a.hitSize(),
+                    (b.getX() - centerX) * (b.getX() - centerX) + (b.getY() - centerY) * (b.getY() - centerY)
+                            - b.hitSize()));
 
             for (var core : cores) {
                 serverCores.add(new ServerCore(null, core.getX(), core.getY(), core.hitSize()));
