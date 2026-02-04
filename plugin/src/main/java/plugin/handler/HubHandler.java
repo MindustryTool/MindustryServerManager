@@ -48,7 +48,7 @@ public class HubHandler {
 
         ServerControl.BACKGROUND_SCHEDULER.scheduleAtFixedRate(() -> {
             renderServerLabels();
-        }, 5, 1, TimeUnit.SECONDS);
+        }, 5, 5, TimeUnit.SECONDS);
 
         loadCores();
     }
@@ -252,8 +252,8 @@ public class HubHandler {
 
         mods.removeIf(m -> m.contains("mindustrytoolplugin") || m.contains("PluginLoader"));
 
-        var name = server.getName().substring(0, Math.min(50, server.getName().length()));
-        var description = server.getDescription().substring(0, Math.min(50, server.getDescription()
+        var name = server.getName();
+        var description = server.getDescription().substring(0, Math.min(150, server.getDescription()
                 .length()));
 
         String message = name + "[]\n" +
