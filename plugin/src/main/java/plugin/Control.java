@@ -15,7 +15,6 @@ import arc.struct.Seq;
 import arc.util.*;
 import mindustry.Vars;
 import mindustry.core.GameState.State;
-import mindustry.game.EventType.ServerLoadEvent;
 import mindustry.gen.Groups;
 import mindustry.gen.Iconc;
 import plugin.handler.AdminHandler;
@@ -40,7 +39,7 @@ import loader.MindustryToolPlugin;
 
 public class Control extends Plugin implements MindustryToolPlugin {
 
-    public static boolean isUnloaded = false;
+    public static PluginState state = PluginState.LOADING;
 
     public static final UUID SERVER_ID = UUID.fromString(System.getenv("SERVER_ID"));
 
@@ -86,13 +85,14 @@ public class Control extends Plugin implements MindustryToolPlugin {
         BACKGROUND_SCHEDULER.schedule(Control::autoPause, 10, TimeUnit.SECONDS);
         BACKGROUND_SCHEDULER.scheduleWithFixedDelay(Control::sendTips, 3, 3, TimeUnit.MINUTES);
 
-        PluginEvents.on(ServerLoadEvent.class, event -> isUnloaded = false);
         Utils.forEachPlayerLocale((locale, players) -> {
             String msg = "[scarlet]" + I18n.t(locale, "@Server controller restarted");
             for (var p : players) {
                 p.sendMessage(msg);
             }
         });
+
+        state = PluginState.LOADED;
     }
 
     @Override
@@ -108,7 +108,7 @@ public class Control extends Plugin implements MindustryToolPlugin {
     @Override
     public void onEvent(Object event) {
         try {
-            if (isUnloaded) {
+            if (state != PluginState.LOADED) {
                 return;
             }
 
@@ -121,7 +121,7 @@ public class Control extends Plugin implements MindustryToolPlugin {
 
     @Override
     public void unload() {
-        isUnloaded = true;
+        state = PluginState.UNLOADED;
 
         Log.info("Unload");
 

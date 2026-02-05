@@ -15,6 +15,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import arc.util.Log;
 import plugin.PluginEvents;
+import plugin.PluginState;
 import plugin.Control;
 import plugin.controller.GeneralController;
 import plugin.controller.WorkflowController;
@@ -68,7 +69,7 @@ public class HttpServer {
         });
 
         app.beforeMatched((ctx) -> {
-            if (Control.isUnloaded) {
+            if (Control.state != PluginState.LOADED) {
                 Log.info("Server unloaded");
                 throw new ServerUnloadedException();
             }
@@ -110,10 +111,8 @@ public class HttpServer {
         PluginEvents.run(SessionRemovedEvent.class, HttpServer::sendStateUpdate);
         PluginEvents.run(StateChangeEvent.class, HttpServer::sendStateUpdate);
 
-        if (!Control.isUnloaded) {
-            app.start(9999);
-            Log.info("Http server started on port 9999");
-        }
+        app.start(9999);
+        Log.info("Http server started on port 9999");
 
         PluginEvents.run(PluginUnloadEvent.class, HttpServer::unload);
 

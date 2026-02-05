@@ -41,6 +41,7 @@ import mindustry.maps.Map;
 import mindustry.maps.MapException;
 import mindustry.type.UnitType;
 import plugin.Control;
+import plugin.PluginState;
 import plugin.handler.SessionHandler;
 
 public class Utils {
@@ -54,7 +55,7 @@ public class Utils {
 
         isHosting = true;
 
-        if (Control.isUnloaded) {
+        if (Control.state == PluginState.UNLOADED) {
             Log.warn("Server unloaded, can not host");
             return;
         }
