@@ -8,29 +8,29 @@ import plugin.type.Session;
 public class TrailMenu extends PluginMenu<Integer> {
     @Override
     public void build(Session session, Integer page) {
-        var keys = Seq.with(TrailHandler.trails.values());
+        var trails = Seq.with(TrailHandler.trails.values());
 
         var size = 5;
 
         var start = page * size;
-        var end = Math.min(start + size, keys.size);
+        var end = Math.min(start + size, trails.size);
 
         for (int i = start; i < end; i++) {
-            var trail = keys.get(i);
+            var trail = trails.get(i);
 
             var allowed = trail.allowed(session);
-            option(allowed ? "[green]" : "[gray]" + trail.getName(), (p, s) -> {
+            option((allowed ? "[green]" : "[gray]") + trail.getName(), (p, s) -> {
                 session.data().trail = trail.getName();
             });
 
             for (var req : trail.getRequirements()) {
-                text(req.getAllowed().apply(session) ? "[green]" : "[red]" + I18n.t(session, req.getMessage()));
+                text((req.getAllowed().apply(session) ? "[green]" : "[red]") + I18n.t(session, req.getMessage()));
             }
             row();
         }
 
         option(I18n.t(session, "@Previous"), (p, s) -> this.send(session, Math.max(0, page - 1)));
-        option(I18n.t(session, "@Next"), (p, s) -> this.send(session, Math.min(keys.size / size, page + 1)));
+        option(I18n.t(session, "@Next"), (p, s) -> this.send(session, Math.min(trails.size / size, page + 1)));
         row();
         text(I18n.t(session, "@Close"));
     }

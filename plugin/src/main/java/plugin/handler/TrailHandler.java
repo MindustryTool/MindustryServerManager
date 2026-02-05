@@ -29,7 +29,7 @@ public class TrailHandler {
         Trail.create("explotion", Fx.explosion, TrailRequirement.admin());
 
         ServerControl.BACKGROUND_SCHEDULER
-                .scheduleAtFixedRate(TrailHandler::render, 0, 300, TimeUnit.MICROSECONDS);
+                .scheduleAtFixedRate(TrailHandler::render, 0, 700, TimeUnit.MICROSECONDS);
     }
 
     private static void render() {
