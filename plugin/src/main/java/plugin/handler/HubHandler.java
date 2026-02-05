@@ -280,7 +280,7 @@ public class HubHandler {
                     newLine(description) + "[]\n\n" +
                     "[#E3F2FD]Players: []" + server.getPlayers() + "\n" +
                     "[#BBDEFB]Map: []" + newLine(server.getMapName()) + "[]\n" +
-                    "[#90CAF9]Mode: []" + server.getMode() + "[]\n" +
+                    "[#90CAF9]Mode: []" + server.getModeIcon() + " " + server.getMode() + "[]\n" +
                     (mods.isEmpty() ? "" : "[#4FC3F7]Mods:[] " + mods) + "[]\n\n" +
                     (server.getStatus().isOnline() ? "[accent]" : "[sky]") + I18n.t(locale, "@Tap to join server")
                     + "\n";
@@ -303,7 +303,7 @@ public class HubHandler {
         for (int i = 0; i < word.length; i++) {
             sb.append(word[i]);
 
-            if (Strings.stripColors(sb.toString()).length() > 20) {
+            if (Strings.stripColors(sb.toString()).length() > 25) {
                 sb.append("\n");
             } else {
                 sb.append(" ");
