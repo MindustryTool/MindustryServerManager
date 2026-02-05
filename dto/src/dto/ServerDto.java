@@ -17,8 +17,8 @@ public class ServerDto {
     private String mode;
     private int port;
     private ServerStatus status = ServerStatus.UNSET;
-    private boolean official;
-    private boolean hub;
+    private Boolean isOfficial;
+    private Boolean isHub;
     private long players;
     private String mapName;
     private String gameVersion;

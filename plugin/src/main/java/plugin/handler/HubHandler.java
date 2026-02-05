@@ -275,7 +275,7 @@ public class HubHandler {
 
         Utils.forEachPlayerLocale((locale, players) -> {
 
-            String message = (server.isOfficial() ? "[gold]" + Iconc.star + "[] " : "") + newLine(name) + "[]\n" +
+            String message = (server.getIsOfficial() ? "[gold]" + Iconc.star + "[] " : "") + newLine(name) + "[]\n" +
                     newLine(description) + "[]\n\n" +
                     "[#E3F2FD]Players: []" + server.getPlayers() + "\n" +
                     "[#BBDEFB]Map: []" + newLine(server.getMapName()) + "[]\n" +

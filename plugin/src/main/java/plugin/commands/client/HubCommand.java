@@ -23,7 +23,7 @@ public class HubCommand extends PluginClientCommand {
         var servers = Seq
                 .with(Registry.get(ApiGateway.class).getServers(new PaginationRequest().setPage(0).setSize(20)));
 
-        var hub = servers.find(server -> server.isHub());
+        var hub = servers.find(server -> server.getIsHub());
 
         if (hub == null) {
             session.player.sendMessage(I18n.t(session, "@Hub not found"));
