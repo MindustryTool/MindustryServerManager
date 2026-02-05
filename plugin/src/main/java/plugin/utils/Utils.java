@@ -42,7 +42,7 @@ import mindustry.maps.MapException;
 import mindustry.type.UnitType;
 import plugin.Control;
 import plugin.PluginState;
-import plugin.handler.SessionHandler;
+import plugin.Registry;
 
 public class Utils {
 
@@ -189,7 +189,7 @@ public class Utils {
         ArrayList<Player> players = new ArrayList<Player>();
         Groups.player.forEach(players::add);
 
-        List<PlayerDto> p = SessionHandler.get()
+        List<PlayerDto> p = Registry.get(plugin.handler.SessionHandler.class).get()
                 .values()
                 .stream()
                 .map(session -> PlayerDto.from(session.player).setJoinedAt(session.joinedAt))

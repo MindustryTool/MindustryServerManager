@@ -17,19 +17,10 @@ import mindustry.Vars;
 import mindustry.core.GameState.State;
 import mindustry.gen.Groups;
 import mindustry.gen.Iconc;
-import plugin.handler.AdminHandler;
 import plugin.handler.ApiGateway;
-import plugin.handler.EventHandler;
 import plugin.handler.HttpServer;
-import plugin.handler.HubHandler;
 import plugin.handler.I18n;
-import plugin.handler.VoteHandler;
-import plugin.menus.PluginMenu;
 import plugin.utils.Utils;
-import plugin.handler.SessionHandler;
-import plugin.handler.SnapshotHandler;
-import plugin.handler.TrailHandler;
-import plugin.repository.SessionRepository;
 import plugin.commands.ClientCommandHandler;
 import plugin.commands.ServerCommandHandler;
 import plugin.database.DB;
@@ -61,26 +52,24 @@ public class Control extends Plugin implements MindustryToolPlugin {
 
     @Override
     public void init() {
-        Registry.init(getClass());
+        Registry.init(getClass().getPackage().getName());
 
         DB.init();
-        HttpServer.init();
-        EventHandler.init();
-        ApiGateway.init();
-        PluginMenu.init();
-        SessionRepository.init();
-        SessionHandler.init();
-        SnapshotHandler.init();
-        AdminHandler.init();
-        VoteHandler.init();
-        TrailHandler.init();
 
-        if (Config.IS_HUB) {
-            HubHandler.init();
-        }
+        // Components are initialized by Registry
+        // SessionRepository.init();
+        // SessionHandler.init();
+        // SnapshotHandler.init();
+        // AdminHandler.init();
+        // VoteHandler.init();
+        // TrailHandler.init();
 
-        BACKGROUND_SCHEDULER.schedule(Control::autoHost, 60, TimeUnit.SECONDS);
-        BACKGROUND_SCHEDULER.schedule(Control::autoPause, 10, TimeUnit.SECONDS);
+        // if (Config.IS_HUB) {
+        // HubHandler.init();
+        // }
+
+        BACKGROUND_SCHEDULER.schedule(this::autoHost, 60, TimeUnit.SECONDS);
+        BACKGROUND_SCHEDULER.schedule(this::autoPause, 10, TimeUnit.SECONDS);
         BACKGROUND_SCHEDULER.scheduleWithFixedDelay(Control::sendTips, 3, 3, TimeUnit.MINUTES);
 
         Utils.forEachPlayerLocale((locale, players) -> {
@@ -95,12 +84,12 @@ public class Control extends Plugin implements MindustryToolPlugin {
 
     @Override
     public void registerServerCommands(CommandHandler handler) {
-        Core.app.post(() -> ServerCommandHandler.registerCommands(handler));
+        Core.app.post(() -> Registry.get(ServerCommandHandler.class).registerCommands(handler));
     }
 
     @Override
     public void registerClientCommands(CommandHandler handler) {
-        Core.app.post(() -> ClientCommandHandler.registerCommands(handler));
+        Core.app.post(() -> Registry.get(ClientCommandHandler.class).registerCommands(handler));
     }
 
     @Override
@@ -197,25 +186,26 @@ public class Control extends Plugin implements MindustryToolPlugin {
         });
     }
 
-    private static void autoHost() {
+    private void autoHost() {
         try {
             if (!Vars.state.isGame()) {
                 Log.info("Server not hosting, auto host");
-                ApiGateway.host(SERVER_ID.toString());
+                Registry.get(ApiGateway.class).host(SERVER_ID.toString());
             }
         } catch (Exception e) {
             Log.err("Failed to host server", e);
         }
     }
 
-    private static void autoPause() {
+    private void autoPause() {
         if (!Vars.state.isPaused() && Groups.player.size() == 0) {
             Vars.state.set(State.paused);
             Log.info("No player: paused");
         }
 
-        if (HttpServer.isConnected()) {
-            ApiGateway.requestConnection();
+        var httpServer = Registry.get(HttpServer.class);
+        if (httpServer != null && httpServer.isConnected()) {
+            Registry.get(ApiGateway.class).requestConnection();
         }
     }
 

@@ -6,17 +6,20 @@ import java.util.concurrent.TimeUnit;
 import arc.math.Mathf;
 import mindustry.Vars;
 import mindustry.gen.Groups;
+import plugin.Component;
 import plugin.Control;
+import plugin.Registry;
 import plugin.commands.PluginCommand;
 import plugin.handler.I18n;
 import plugin.handler.SessionHandler;
 import plugin.type.Session;
 import plugin.utils.Utils;
 
+@Component
 public class VnwCommand extends PluginCommand {
-    private static int waveVoted = -1;
-    private static ScheduledFuture<?> voteTimeout;
-    private static ScheduledFuture<?> voteCountDown;
+    private int waveVoted = -1;
+    private ScheduledFuture<?> voteTimeout;
+    private ScheduledFuture<?> voteCountDown;
 
     private Param numberParam;
 
@@ -47,7 +50,7 @@ public class VnwCommand extends PluginCommand {
             waveVoted = numberParam.hasValue() ? numberParam.asInt() : 1;
 
             voteTimeout = Control.BACKGROUND_SCHEDULER.schedule(() -> {
-                SessionHandler.each(s -> s.votedVNW = false);
+                Registry.get(SessionHandler.class).each(s -> s.votedVNW = false);
                 Utils.forEachPlayerLocale((locale, players) -> {
                     String msg = I18n.t(locale, "[scarlet]", "@Vote failed, not enough votes.");
                     for (var p : players) {
@@ -63,7 +66,7 @@ public class VnwCommand extends PluginCommand {
 
         session.votedVNW = true;
 
-        int voted = SessionHandler.count(s -> s.votedVNW);
+        int voted = Registry.get(SessionHandler.class).count(s -> s.votedVNW);
         int required = Mathf.ceil(0.6f * Groups.player.size());
 
         if (voted < required && !session.player.admin) {
@@ -80,7 +83,7 @@ public class VnwCommand extends PluginCommand {
 
         voteTimeout.cancel(false);
         voteCountDown.cancel(false);
-        SessionHandler.each(s -> s.votedVNW = false);
+        Registry.get(SessionHandler.class).each(s -> s.votedVNW = false);
 
         Utils.forEachPlayerLocale((locale, players) -> {
             String msg = I18n.t(locale, "[green]", "@Vote passed. Sending new wave.");

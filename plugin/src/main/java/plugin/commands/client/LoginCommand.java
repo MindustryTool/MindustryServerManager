@@ -3,11 +3,14 @@ package plugin.commands.client;
 import arc.util.Log;
 import dto.LoginDto;
 import mindustry.gen.Call;
+import plugin.Registry;
 import plugin.handler.ApiGateway;
 import plugin.handler.I18n;
 import plugin.type.Session;
 import plugin.commands.PluginCommand;
+import plugin.Component;
 
+@Component
 public class LoginCommand extends PluginCommand {
     public LoginCommand() {
         setName("login");
@@ -19,7 +22,7 @@ public class LoginCommand extends PluginCommand {
     @Override
     public void handleClient(Session session) {
         try {
-            LoginDto login = ApiGateway.login(session.player);
+            LoginDto login = Registry.get(ApiGateway.class).login(session.player);
 
             var loginLink = login.getLoginLink();
 

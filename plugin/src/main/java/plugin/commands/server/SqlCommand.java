@@ -1,9 +1,11 @@
 package plugin.commands.server;
 
 import arc.util.Log;
+import plugin.Component;
 import plugin.commands.PluginCommand;
 import plugin.database.DB;
 
+@Component
 public class SqlCommand extends PluginCommand {
     private Param scriptParam;
 

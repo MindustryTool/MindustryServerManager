@@ -1,10 +1,13 @@
 package plugin.commands.client;
 
+import plugin.Component;
+import plugin.Registry;
 import plugin.commands.PluginCommand;
 import plugin.handler.AdminHandler;
 import plugin.menus.GriefMenu;
 import plugin.type.Session;
 
+@Component
 public class GriefCommand extends PluginCommand {
 
     public GriefCommand() {
@@ -15,8 +18,9 @@ public class GriefCommand extends PluginCommand {
 
     @Override
     public void handleClient(Session session) {
-        if (AdminHandler.isGriefVoting()) {
-            AdminHandler.voteGrief(session);
+        var adminHandler = Registry.get(AdminHandler.class);
+        if (adminHandler.isGriefVoting()) {
+            adminHandler.voteGrief(session);
             return;
         }
 

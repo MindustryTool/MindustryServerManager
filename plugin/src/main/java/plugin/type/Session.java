@@ -19,6 +19,8 @@ import plugin.repository.SessionRepository;
 import plugin.utils.ExpUtils;
 import plugin.utils.Utils;
 
+import plugin.Registry;
+
 public class Session {
     public final Locale locale;
     public final Player player;
@@ -108,7 +110,7 @@ public class Session {
     }
 
     public SessionData data() {
-        return SessionRepository.get(player);
+        return Registry.get(SessionRepository.class).get(player);
     }
 
     public long sessionPlayTime() {

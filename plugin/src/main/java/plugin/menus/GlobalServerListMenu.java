@@ -2,6 +2,7 @@ package plugin.menus;
 
 import arc.util.Log;
 import mindustry.gen.Call;
+import plugin.Registry;
 import plugin.commands.ClientCommandHandler;
 import plugin.handler.ApiGateway;
 import plugin.handler.I18n;
@@ -11,12 +12,16 @@ import dto.ServerDto;
 import java.util.List;
 
 public class GlobalServerListMenu extends PluginMenu<Integer> {
+
+    public GlobalServerListMenu() {
+    }
+
     @Override
     public void build(Session session, Integer page) {
         try {
             int size = 8;
             PaginationRequest request = new PaginationRequest().setPage(page).setSize(size);
-            List<ServerDto> servers = ApiGateway.getServers(request);
+            List<ServerDto> servers = Registry.get(ApiGateway.class).getServers(request);
 
             this.title = I18n.t(session.locale, "@Servers");
             this.description = "";
@@ -35,37 +40,39 @@ public class GlobalServerListMenu extends PluginMenu<Integer> {
             text(I18n.t(session.locale, "[#B0B0B0]", "@Server Description"));
             row();
 
+            var clientCommandHandler = Registry.get(ClientCommandHandler.class);
+
             servers.forEach(server -> {
                 option("-----------------", (p, s) -> {
                 });
                 row();
 
                 option(String.format("[#FFD700]%s", server.getName()),
-                        (p, s) -> ClientCommandHandler.onServerChoose(p, server.getId().toString(), server.getName()));
+                        (p, s) -> clientCommandHandler.onServerChoose(p, server.getId().toString(), server.getName()));
                 option(I18n.t(session.locale, "[#32CD32]", "@Players: ", server.getPlayers()),
-                        (p, s) -> ClientCommandHandler.onServerChoose(p, server.getId().toString(), server.getName()));
+                        (p, s) -> clientCommandHandler.onServerChoose(p, server.getId().toString(), server.getName()));
                 row();
 
                 option(I18n.t(session.locale, "[#87CEEB]", "@Gamemode: ", server.getMode()),
-                        (p, s) -> ClientCommandHandler.onServerChoose(p, server.getId().toString(), server.getName()));
+                        (p, s) -> clientCommandHandler.onServerChoose(p, server.getId().toString(), server.getName()));
                 option(I18n.t(session.locale, "[#1E90FF]", "@Map: ",
                         server.getMapName() != null ? server.getMapName()
                                 : I18n.t(session.locale, "[#FF4500]",
                                         "@Server offline")),
-                        (p, s) -> ClientCommandHandler.onServerChoose(p, server.getId().toString(), server.getName()));
+                        (p, s) -> clientCommandHandler.onServerChoose(p, server.getId().toString(), server.getName()));
                 row();
 
                 if (server.getMods() != null && !server.getMods().isEmpty()) {
                     option(I18n.t(session.locale, "[#DA70D6]", "@Mods: ",
                             String.join(", ", server.getMods())),
                             (p,
-                                    s) -> ClientCommandHandler.onServerChoose(p, server.getId().toString(),
+                                    s) -> clientCommandHandler.onServerChoose(p, server.getId().toString(),
                                             server.getName()));
                     row();
                 }
 
                 if (server.getDescription() != null && !server.getDescription().trim().isEmpty()) {
-                    option(String.format("[#B0B0B0]%s", server.getDescription()), (p, s) -> ClientCommandHandler
+                    option(String.format("[#B0B0B0]%s", server.getDescription()), (p, s) -> clientCommandHandler
                             .onServerChoose(p, server.getId().toString(), server.getName()));
                     row();
                 }

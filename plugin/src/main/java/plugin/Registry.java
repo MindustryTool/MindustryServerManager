@@ -1,31 +1,29 @@
 package plugin;
 
 import arc.util.Log;
+import org.reflections.Reflections;
+import org.reflections.scanners.Scanners;
 
-import java.io.File;
 import java.lang.reflect.Constructor;
-import java.net.URL;
-import java.net.URLDecoder;
 import java.util.*;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
 
 public final class Registry {
 
     private static final Map<Class<?>, Object> instances = new HashMap<>();
+    private static final Set<Class<?>> creating = new HashSet<>();
 
     private Registry() {
     }
 
-    public static void init(Class<?> pluginMainClass) {
-        String basePackage = pluginMainClass.getPackage().getName();
-        Log.info("Registry scanning package: @", basePackage);
+    public static void init(String packageName) {
+        Log.info("Registry scanning package: @", packageName);
 
         try {
-            for (Class<?> clazz : scanClasses(basePackage)) {
-                if (clazz.isAnnotationPresent(Component.class)) {
-                    getOrCreate(clazz);
-                }
+            Reflections reflections = new Reflections(packageName, Scanners.TypesAnnotated);
+            Set<Class<?>> components = reflections.getTypesAnnotatedWith(Component.class);
+
+            for (Class<?> clazz : components) {
+                getOrCreate(clazz);
             }
         } catch (Exception e) {
             throw new RuntimeException("Registry init failed", e);
@@ -44,15 +42,27 @@ public final class Registry {
                 ((IComponent) obj).destroy();
             }
         });
+        instances.clear();
     }
 
     @SuppressWarnings("unchecked")
     public static <T> T get(Class<T> type) {
         Object obj = instances.get(type);
         if (obj == null) {
-            throw new RuntimeException("No component registered for " + type.getName());
+            // Allow on-demand creation if it's a component or we want to allow lazy loading
+            return (T) getOrCreate(type);
         }
         return (T) obj;
+    }
+
+    public static <T> List<T> getAll(Class<T> type) {
+        List<T> list = new ArrayList<>();
+        for (Object obj : instances.values()) {
+            if (type.isInstance(obj)) {
+                list.add(type.cast(obj));
+            }
+        }
+        return list;
     }
 
     private static Object getOrCreate(Class<?> type) {
@@ -60,7 +70,12 @@ public final class Registry {
             return instances.get(type);
         }
 
+        if (creating.contains(type)) {
+            throw new RuntimeException("Circular dependency detected: " + type.getName());
+        }
+
         try {
+            creating.add(type);
             Constructor<?> constructor = selectConstructor(type);
             Object[] args = Arrays.stream(constructor.getParameterTypes())
                     .map(Registry::getOrCreate)
@@ -74,6 +89,8 @@ public final class Registry {
 
         } catch (Exception e) {
             throw new RuntimeException("Failed to create component " + type.getName(), e);
+        } finally {
+            creating.remove(type);
         }
     }
 
@@ -94,64 +111,5 @@ public final class Registry {
 
         throw new RuntimeException(
                 "Multiple constructors found in " + type.getName() + ", no default constructor");
-    }
-
-    private static List<Class<?>> scanClasses(String packageName) throws Exception {
-        String path = packageName.replace('.', '/');
-        Enumeration<URL> resources = Thread.currentThread().getContextClassLoader().getResources(path);
-
-        List<Class<?>> classes = new ArrayList<>();
-
-        while (resources.hasMoreElements()) {
-            URL resource = resources.nextElement();
-            String filePath = URLDecoder.decode(resource.getFile(), "UTF-8");
-
-            if (filePath.startsWith("file:") && filePath.contains("!")) {
-
-                String jarPath = filePath.substring(5, filePath.indexOf("!"));
-                scanJar(jarPath, path, classes);
-            } else {
-
-                scanDirectory(new File(filePath), packageName, classes);
-            }
-        }
-
-        return classes;
-    }
-
-    private static void scanDirectory(File dir, String pkg, List<Class<?>> classes) {
-        if (!dir.exists())
-            return;
-
-        for (File file : Objects.requireNonNull(dir.listFiles())) {
-            if (file.isDirectory()) {
-                scanDirectory(file, pkg + "." + file.getName(), classes);
-            } else if (file.getName().endsWith(".class")) {
-                try {
-                    String className = pkg + "." +
-                            file.getName().replace(".class", "");
-                    classes.add(Class.forName(className));
-                } catch (ClassNotFoundException ignored) {
-                }
-            }
-        }
-    }
-
-    private static void scanJar(String jarPath, String path, List<Class<?>> classes) {
-        try (JarFile jar = new JarFile(jarPath)) {
-            Enumeration<JarEntry> entries = jar.entries();
-            while (entries.hasMoreElements()) {
-                JarEntry e = entries.nextElement();
-                String name = e.getName();
-
-                if (name.startsWith(path) && name.endsWith(".class")) {
-                    String className = name
-                            .replace('/', '.')
-                            .replace(".class", "");
-                    classes.add(Class.forName(className));
-                }
-            }
-        } catch (Exception ignored) {
-        }
     }
 }

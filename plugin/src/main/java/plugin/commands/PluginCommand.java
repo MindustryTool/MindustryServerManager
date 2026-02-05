@@ -15,6 +15,8 @@ import plugin.utils.Utils;
 import plugin.handler.SessionHandler;
 import plugin.type.Session;
 
+import plugin.Registry;
+
 public abstract class PluginCommand {
     @Getter
     @Setter
@@ -102,7 +104,7 @@ public abstract class PluginCommand {
                         return;
                     }
 
-                    var session = SessionHandler.get(player).orElse(null);
+                    var session = Registry.get(SessionHandler.class).get(player).orElse(null);
 
                     if (session == null) {
                         Log.info("[scarlet]Failed to get session for player.");
@@ -153,13 +155,13 @@ public abstract class PluginCommand {
         throw new UnsupportedOperationException("run");
     }
 
-    public static class ParamException extends IllegalArgumentException {
+    public class ParamException extends IllegalArgumentException {
         public ParamException(Param param, String message) {
             super(message + " " + param.toParamText() + "=" + param.value);
         }
     }
 
-    public static class Param {
+    public class Param {
         private String name;
         private ParamType type;
         private String value;
@@ -291,7 +293,7 @@ public abstract class PluginCommand {
         }
     }
 
-    private static enum ParamType {
+    private enum ParamType {
         Required,
         Optional,
         Variadic

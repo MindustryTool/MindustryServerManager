@@ -1,8 +1,10 @@
 package plugin.commands.client;
 
+import plugin.Component;
 import plugin.commands.PluginCommand;
 import plugin.type.Session;
 
+@Component
 public class MeCommand extends PluginCommand {
     public MeCommand() {
         setName("me");

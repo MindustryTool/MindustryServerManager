@@ -11,6 +11,7 @@ import arc.net.Server;
 import arc.struct.Seq;
 import arc.util.Log;
 import dto.ServerDto;
+import lombok.RequiredArgsConstructor;
 import mindustry.Vars;
 import mindustry.content.Fx;
 import mindustry.core.Version;
@@ -22,7 +23,9 @@ import mindustry.gen.Call;
 import mindustry.gen.Groups;
 import mindustry.net.ArcNetProvider;
 import mindustry.net.Net;
+import plugin.Component;
 import plugin.Config;
+import plugin.IComponent;
 import plugin.PluginEvents;
 import plugin.Control;
 import plugin.menus.ServerRedirectMenu;
@@ -30,15 +33,25 @@ import plugin.type.PaginationRequest;
 import plugin.type.ServerCore;
 import plugin.utils.Utils;
 
-public class HubHandler {
+@Component
+@RequiredArgsConstructor
+public class HubHandler implements IComponent {
 
-    private static final Seq<ServerCore> serverCores = new Seq<>();
-    private static Seq<ServerDto> servers = new Seq<>();
+    private final Seq<ServerCore> serverCores = new Seq<>();
+    private Seq<ServerDto> servers = new Seq<>();
 
-    public static void init() {
-        PluginEvents.on(TapEvent.class, HubHandler::onTap);
-        PluginEvents.on(PlayerJoin.class, HubHandler::onPlayerJoin);
-        PluginEvents.run(WorldLoadEvent.class, HubHandler::loadCores);
+    private final SessionHandler sessionHandler;
+    private final ApiGateway apiGateway;
+
+    @Override
+    public void init() {
+        if (!Config.IS_HUB) {
+            return;
+        }
+
+        PluginEvents.on(TapEvent.class, this::onTap);
+        PluginEvents.on(PlayerJoin.class, this::onPlayerJoin);
+        PluginEvents.run(WorldLoadEvent.class, this::loadCores);
 
         setupCustomServerDiscovery();
         loadCores();
@@ -59,7 +72,7 @@ public class HubHandler {
         }, 5, 5, TimeUnit.SECONDS);
     }
 
-    private static void loadCores() {
+    private void loadCores() {
         Control.ioTask("Refresh server list", () -> {
             serverCores.clear();
 
@@ -78,12 +91,12 @@ public class HubHandler {
         });
     }
 
-    private static void onPlayerJoin(PlayerJoin event) {
+    private void onPlayerJoin(PlayerJoin event) {
         refreshServerList();
         renderServerLabels();
     }
 
-    private static void setupCustomServerDiscovery() {
+    private void setupCustomServerDiscovery() {
         try {
             var providerField = Net.class.getDeclaredField("provider");
             providerField.setAccessible(true);
@@ -144,11 +157,11 @@ public class HubHandler {
         }
     }
 
-    private static void writeString(ByteBuffer buffer, String string) {
+    private void writeString(ByteBuffer buffer, String string) {
         writeString(buffer, string, 32);
     }
 
-    private static void writeString(ByteBuffer buffer, String string, int maxlen) {
+    private void writeString(ByteBuffer buffer, String string, int maxlen) {
         byte[] bytes = string.getBytes(Vars.charset);
         if (bytes.length > maxlen) {
             bytes = Arrays.copyOfRange(bytes, 0, maxlen);
@@ -158,7 +171,7 @@ public class HubHandler {
         buffer.put(bytes);
     }
 
-    private static void onTap(TapEvent event) {
+    private void onTap(TapEvent event) {
         if (!plugin.Config.IS_HUB) {
             return;
         }
@@ -190,20 +203,20 @@ public class HubHandler {
                     continue;
                 }
 
-                SessionHandler.get(event.player)
+                sessionHandler.get(event.player)
                         .ifPresent(session -> new ServerRedirectMenu().send(session, core.getServer()));
                 break;
             }
         }
     }
 
-    private static void refreshServerList() {
+    private void refreshServerList() {
         try {
             var request = new PaginationRequest()
                     .setPage(0)
                     .setSize(serverCores.size);
 
-            servers = Seq.with(ApiGateway.getServers(request))
+            servers = Seq.with(apiGateway.getServers(request))
                     .select(server -> !server.getId().equals(Control.SERVER_ID));
 
             for (int i = 0; i < serverCores.size; i++) {
@@ -222,7 +235,7 @@ public class HubHandler {
         }
     }
 
-    private static void renderServerLabels() {
+    private void renderServerLabels() {
         var map = Vars.state.map;
 
         if (map == null) {
@@ -234,7 +247,7 @@ public class HubHandler {
         }
     }
 
-    private static void renderServerLabel(ServerCore core) {
+    private void renderServerLabel(ServerCore core) {
         ServerDto server = core.getServer();
 
         if (server == null) {
@@ -269,7 +282,7 @@ public class HubHandler {
         });
     }
 
-    public static String newLine(String text) {
+    public String newLine(String text) {
         if (text == null) {
             return "";
         }
@@ -283,6 +296,8 @@ public class HubHandler {
 
             if (i % 5 == 4 && i < word.length - 1) {
                 sb.append("\n");
+            } else {
+                sb.append(" ");
             }
         }
 

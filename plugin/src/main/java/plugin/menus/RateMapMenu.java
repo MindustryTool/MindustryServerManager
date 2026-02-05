@@ -10,6 +10,10 @@ import plugin.type.Session;
 import plugin.utils.Utils;
 
 public class RateMapMenu extends PluginMenu<Map> {
+
+    public RateMapMenu() {
+    }
+
     @Override
     public void build(Session session, Map map) {
         Locale locale = session.locale;

@@ -7,6 +7,7 @@ import dto.ServerDto;
 import mindustry.gen.Call;
 import mindustry.gen.Player;
 import plugin.Control;
+import plugin.Registry;
 import plugin.handler.ApiGateway;
 import plugin.handler.I18n;
 
@@ -23,7 +24,7 @@ public class ServerUtils {
                         ", ", "[white]", "@this can take up to 1 minutes, please wait"));
                 Log.info(String.format("Send host command to server %s %S", name, id));
 
-                var data = ApiGateway.host(id);
+                var data = Registry.get(ApiGateway.class).host(id);
 
                 player.sendMessage(I18n.t(Utils.parseLocale(player.locale()), "[green]", "@Redirecting"));
 

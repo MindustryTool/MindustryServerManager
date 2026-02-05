@@ -9,15 +9,17 @@ import arc.func.Boolf;
 import arc.func.Cons;
 import arc.util.Log;
 import arc.util.Strings;
+import lombok.RequiredArgsConstructor;
 import mindustry.game.EventType.PlayerJoin;
 import mindustry.game.EventType.PlayerLeave;
 import mindustry.gen.Groups;
 import mindustry.gen.Player;
 import mindustry.gen.TimedKillc;
+import plugin.Component;
+import plugin.IComponent;
 import plugin.PluginEvents;
 import plugin.Control;
 import plugin.event.PlayerKillUnitEvent;
-import plugin.event.PluginUnloadEvent;
 import plugin.event.SessionCreatedEvent;
 import plugin.event.SessionRemovedEvent;
 import plugin.type.Session;
@@ -26,18 +28,19 @@ import plugin.utils.RankUtils;
 import plugin.utils.Utils;
 import plugin.repository.SessionRepository;
 
-public class SessionHandler {
-    private static final ConcurrentHashMap<String, Session> data = new ConcurrentHashMap<>();
+@Component
+@RequiredArgsConstructor
+public class SessionHandler implements IComponent {
+    private final ConcurrentHashMap<String, Session> data = new ConcurrentHashMap<>();
 
-    public static ConcurrentHashMap<String, Session> get() {
-        return data;
-    }
+    private final SessionRepository sessionRepository;
 
-    public static void init() {
-        Core.app.post(() -> Groups.player.each(SessionHandler::put));
+    @Override
+    public void init() {
+        Core.app.post(() -> Groups.player.each(this::put));
 
-        Control.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(SessionHandler::create, 10, 2, TimeUnit.SECONDS);
-        Control.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(SessionHandler::update, 0, 1, TimeUnit.SECONDS);
+        Control.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(this::create, 10, 2, TimeUnit.SECONDS);
+        Control.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(this::update, 0, 1, TimeUnit.SECONDS);
 
         PluginEvents.on(PlayerKillUnitEvent.class, event -> {
             get(event.getPlayer()).ifPresent(session -> {
@@ -71,7 +74,7 @@ public class SessionHandler {
                     }
                 });
             });
-            SessionRepository.markDirty(event.getPlayer().uuid());
+            sessionRepository.markDirty(event.getPlayer().uuid());
         });
 
         PluginEvents.on(PlayerLeave.class, event -> {
@@ -83,25 +86,31 @@ public class SessionHandler {
 
             Control.ioTask("Send Leader Board",
                     () -> event.player.sendMessage(RankUtils.getRankString(Utils.parseLocale(event.player.locale),
-                            SessionRepository.getLeaderBoard(10))));
+                            sessionRepository.getLeaderBoard(10))));
         });
 
-        PluginEvents.run(PluginUnloadEvent.class, SessionHandler::unload);
+        // PluginEvents.run(PluginUnloadEvent.class, this::unload); // Handled by
+        // destroy
     }
 
-    private static void create() {
-        Core.app.post(() -> Groups.player.each(SessionHandler::put));
+    public ConcurrentHashMap<String, Session> get() {
+        return data;
     }
 
-    private static void update() {
+    private void create() {
+        Core.app.post(() -> Groups.player.each(this::put));
+    }
+
+    private void update() {
         each(s -> {
             s.update();
-            SessionRepository.markDirty(s.player.uuid());
+            sessionRepository.markDirty(s.player.uuid());
         });
     }
 
-    public static void unload() {
-        each(s -> SessionRepository.remove(s.player.uuid()));
+    @Override
+    public void destroy() {
+        each(s -> sessionRepository.remove(s.player.uuid()));
         each(s -> s.reset());
 
         data.clear();
@@ -109,15 +118,15 @@ public class SessionHandler {
         Log.info("Session handler cleared");
     }
 
-    public static Optional<Session> getByUuid(String uuid) {
+    public Optional<Session> getByUuid(String uuid) {
         return Optional.ofNullable(find(p -> p.player.uuid().equals(uuid)));
     }
 
-    public static Optional<Session> get(Player p) {
+    public Optional<Session> get(Player p) {
         return Optional.ofNullable(data.get(p.uuid()));
     }
 
-    public static Session put(Player p) {
+    public Session put(Player p) {
         return data.computeIfAbsent(p.uuid(), (k) -> {
             var session = new Session(p);
 
@@ -137,7 +146,7 @@ public class SessionHandler {
         });
     }
 
-    public static void remove(Player p) {
+    public void remove(Player p) {
         var previous = data.remove(p.uuid());
 
         if (previous != null) {
@@ -145,22 +154,22 @@ public class SessionHandler {
         }
     }
 
-    public static boolean contains(Player p) {
+    public boolean contains(Player p) {
         return data.containsKey(p.uuid());
     }
 
-    public static void each(Cons<Session> item) {
+    public void each(Cons<Session> item) {
         data.forEach((k, v) -> item.get(v));
     }
 
-    public static void each(Boolf<Session> pred, Cons<Session> item) {
+    public void each(Boolf<Session> pred, Cons<Session> item) {
         data.forEach((k, v) -> {
             if (pred.get(v))
                 item.get(v);
         });
     }
 
-    public static int count(Boolf<Session> pred) {
+    public int count(Boolf<Session> pred) {
         int size = 0;
 
         for (Session p : data.values()) {
@@ -171,7 +180,7 @@ public class SessionHandler {
         return size;
     }
 
-    public static Session find(Boolf<Session> pred) {
+    public Session find(Boolf<Session> pred) {
         for (Session p : data.values()) {
             if (pred.get(p))
                 return p;

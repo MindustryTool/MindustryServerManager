@@ -17,11 +17,11 @@ import arc.struct.Seq;
 import arc.util.Http;
 import arc.util.Http.HttpStatusException;
 import arc.util.Log;
+import plugin.Component;
+import plugin.IComponent;
 import plugin.utils.HttpUtils;
 import plugin.utils.JsonUtils;
-import plugin.PluginEvents;
 import plugin.Control;
-import plugin.event.PluginUnloadEvent;
 import plugin.type.PaginationRequest;
 import plugin.type.TranslationDto;
 import dto.LoginDto;
@@ -29,28 +29,29 @@ import dto.LoginRequestDto;
 import dto.ServerDto;
 import mindustry.gen.Player;
 
-public class ApiGateway {
+@Component
+public class ApiGateway implements IComponent {
 
-    private static final String GATEWAY_URL = "http://server-manager-v2:8088/gateway/v2";
-    private static final String API_URL = "https://api.mindustry-tool.com/api/v4/";
-    private static final String SERVER_ID = Control.SERVER_ID.toString();
+    private final String GATEWAY_URL = "http://server-manager-v2:8088/gateway/v2";
+    private final String API_URL = "https://api.mindustry-tool.com/api/v4/";
+    private final String SERVER_ID = Control.SERVER_ID.toString();
 
-    private static final ConcurrentHashMap<String, Object> locks = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Object> locks = new ConcurrentHashMap<>();
 
-    private static Cache<PaginationRequest, List<ServerDto>> serverQueryCache = Caffeine.newBuilder()
+    private Cache<PaginationRequest, List<ServerDto>> serverQueryCache = Caffeine.newBuilder()
             .expireAfterWrite(Duration.ofSeconds(15))
             .maximumSize(10)
             .build();
 
-    private static Cache<String, String> translationCache = Caffeine.newBuilder()
+    private final Cache<String, String> translationCache = Caffeine.newBuilder()
             .expireAfterAccess(Duration.ofHours(1))
             .build();
 
-    public static void requestConnection() {
+    public void requestConnection() {
         HttpUtils.get(HttpUtils.get(GATEWAY_URL, "servers", SERVER_ID, "request-connection"));
     }
 
-    public static int getTotalPlayer() {
+    public int getTotalPlayer() {
         try {
             return HttpUtils.send(HttpUtils.get(GATEWAY_URL, "total-player"), Integer.class);
         } catch (Exception e) {
@@ -59,7 +60,7 @@ public class ApiGateway {
         }
     }
 
-    public static LoginDto login(Player player) {
+    public LoginDto login(Player player) {
         var body = new LoginRequestDto()
                 .setUuid(player.uuid())
                 .setName(player.name())
@@ -73,7 +74,7 @@ public class ApiGateway {
 
     }
 
-    public static String host(String targetServerId) {
+    public String host(String targetServerId) {
         Object lock = locks.computeIfAbsent(targetServerId, k -> new Object());
 
         synchronized (lock) {
@@ -89,7 +90,7 @@ public class ApiGateway {
 
     }
 
-    public static synchronized List<ServerDto> getServers(PaginationRequest request) {
+    public synchronized List<ServerDto> getServers(PaginationRequest request) {
         return serverQueryCache.get(request, _ignore -> {
             try {
                 String query = String.format("servers?page=%s&size=%s", request.getPage(), request.getSize());
@@ -102,7 +103,7 @@ public class ApiGateway {
         });
     }
 
-    public static TranslationDto translateRaw(Locale targetLanguage, String text) {
+    public TranslationDto translateRaw(Locale targetLanguage, String text) {
         var languageCode = targetLanguage.getLanguage();
 
         if (languageCode == null || languageCode.isEmpty()) {
@@ -124,7 +125,7 @@ public class ApiGateway {
         return result;
     }
 
-    public static String translate(String text, Locale targetLanguage) {
+    public String translate(String text, Locale targetLanguage) {
         var languageCode = targetLanguage.getLanguage();
 
         if (languageCode == null || languageCode.isEmpty()) {
@@ -151,7 +152,7 @@ public class ApiGateway {
         }
     }
 
-    public static Seq<String> translate(Seq<String> texts, Locale targetLanguage) {
+    public Seq<String> translate(Seq<String> texts, Locale targetLanguage) {
         var languageCode = targetLanguage.getLanguage();
 
         if (languageCode == null || languageCode.isEmpty()) {
@@ -218,13 +219,13 @@ public class ApiGateway {
         }
     }
 
-    public static void init() {
+    @Override
+    public void init() {
         Log.info("Setup api gateway done");
-
-        PluginEvents.run(PluginUnloadEvent.class, ApiGateway::unload);
     }
 
-    private static void unload() {
+    @Override
+    public void destroy() {
         serverQueryCache.invalidateAll();
         serverQueryCache = null;
 

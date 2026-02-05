@@ -10,8 +10,9 @@ import arc.struct.Seq;
 import arc.util.Log;
 import lombok.AllArgsConstructor;
 import mindustry.gen.Player;
+import plugin.Component;
+import plugin.IComponent;
 import plugin.database.DB;
-import plugin.event.PluginUnloadEvent;
 import plugin.event.SessionRemovedEvent;
 import plugin.PluginEvents;
 import plugin.Control;
@@ -19,18 +20,20 @@ import plugin.type.SessionData;
 import plugin.utils.ExpUtils;
 import plugin.utils.JsonUtils;
 
-public class SessionRepository {
-    private static final ConcurrentHashMap<String, SessionData> cache = new ConcurrentHashMap<>();
+@Component
+public class SessionRepository implements IComponent {
+    private final ConcurrentHashMap<String, SessionData> cache = new ConcurrentHashMap<>();
 
-    private static final Set<String> dirty = ConcurrentHashMap.newKeySet();
+    private final Set<String> dirty = ConcurrentHashMap.newKeySet();
 
-    public static void init() {
+    @Override
+    public void init() {
         createTableIfNotExists();
 
         Control.BACKGROUND_SCHEDULER
-                .scheduleWithFixedDelay(SessionRepository::flushBatch, 10, 30, TimeUnit.SECONDS);
+                .scheduleWithFixedDelay(this::flushBatch, 10, 30, TimeUnit.SECONDS);
 
-        PluginEvents.run(PluginUnloadEvent.class, SessionRepository::unload);
+        // PluginEvents.run(PluginUnloadEvent.class, this::unload); // Handled by destroy
         PluginEvents.on(SessionRemovedEvent.class,
                 event -> {
                     write(event.getSession().player.uuid(), event.getSession().data());
@@ -38,7 +41,8 @@ public class SessionRepository {
                 });
     }
 
-    private static void unload() {
+    @Override
+    public void destroy() {
         try {
             for (var entry : cache.entrySet()) {
                 write(entry.getKey(), entry.getValue());
@@ -51,11 +55,11 @@ public class SessionRepository {
         }
     }
 
-    public static SessionData get(Player player) {
+    public SessionData get(Player player) {
         return get(player.uuid());
     }
 
-    public static SessionData get(String uuid) {
+    public SessionData get(String uuid) {
         var existing = cache.get(uuid);
 
         if (existing != null) {
@@ -72,23 +76,23 @@ public class SessionRepository {
         }
     }
 
-    public static void put(String uuid, SessionData data) {
+    public void put(String uuid, SessionData data) {
         cache.put(uuid, data);
         dirty.add(uuid);
     }
 
-    public static void markDirty(String uuid) {
+    public void markDirty(String uuid) {
         if (cache.get(uuid) != null) {
             dirty.add(uuid);
         }
     }
 
-    public static void remove(String uuid) {
+    public void remove(String uuid) {
         cache.remove(uuid);
         dirty.remove(uuid);
     }
 
-    public static void flushBatch() {
+    public void flushBatch() {
         if (dirty.isEmpty()) {
             return;
         }
@@ -108,7 +112,7 @@ public class SessionRepository {
         public SessionData data;
     }
 
-    public static Seq<RankData> getLeaderBoard(int size) {
+    public Seq<RankData> getLeaderBoard(int size) {
         var sql = "SELECT uuid, data FROM sessions ORDER BY totalExp DESC LIMIT ?";
 
         return DB.prepare(sql, statement -> {
@@ -134,7 +138,7 @@ public class SessionRepository {
         });
     }
 
-    private static SessionData read(String uuid) throws SQLException {
+    private SessionData read(String uuid) throws SQLException {
         var sql = "SELECT data FROM sessions WHERE uuid = ?";
 
         return DB.prepare(sql, ps -> {
@@ -155,7 +159,7 @@ public class SessionRepository {
         });
     }
 
-    private static void write(String uuid, SessionData pdata) {
+    private void write(String uuid, SessionData pdata) {
         try {
             var sql = "INSERT INTO sessions(uuid, data, totalExp) VALUES(?, ?, ?) ON CONFLICT(uuid) DO UPDATE SET data = excluded.data, totalExp = excluded.totalExp";
 
@@ -174,7 +178,7 @@ public class SessionRepository {
         }
     }
 
-    private static void createTableIfNotExists() {
+    private void createTableIfNotExists() {
         try {
             var sql = "CREATE TABLE IF NOT EXISTS sessions (uuid TEXT PRIMARY KEY, data TEXT NOT NULL, totalExp INTEGER DEFAULT 0)";
 

@@ -5,6 +5,7 @@ import java.util.Locale;
 import arc.struct.Seq;
 import arc.util.Log;
 import arc.util.Strings;
+import plugin.Registry;
 import plugin.type.Session;
 
 public class I18n {
@@ -28,9 +29,9 @@ public class I18n {
         Seq<String> translated = null;
 
         try {
-            translated = ApiGateway.translate(needTranslate, locale);
+            translated = Registry.get(ApiGateway.class).translate(needTranslate, locale);
         } catch (Exception e) {
-            translated = ApiGateway.translate(translated, Locale.ENGLISH);
+            translated = Registry.get(ApiGateway.class).translate(needTranslate, Locale.ENGLISH);
             Log.err(e.getMessage());
         }
 

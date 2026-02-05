@@ -139,5 +139,6 @@ public class DB {
         } finally {
             lock.writeLock().unlock();
         }
+        connection = null;
     }
 }

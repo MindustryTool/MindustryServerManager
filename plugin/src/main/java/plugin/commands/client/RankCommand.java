@@ -1,10 +1,13 @@
 package plugin.commands.client;
 
+import plugin.Component;
+import plugin.Registry;
 import plugin.commands.PluginCommand;
 import plugin.repository.SessionRepository;
 import plugin.type.Session;
 import plugin.utils.RankUtils;
 
+@Component
 public class RankCommand extends PluginCommand {
     public RankCommand() {
         setName("rank");
@@ -14,7 +17,7 @@ public class RankCommand extends PluginCommand {
 
     @Override
     public void handleClient(Session session) {
-        String data = RankUtils.getRankString(session.locale, SessionRepository.getLeaderBoard(10));
+        String data = RankUtils.getRankString(session.locale, Registry.get(SessionRepository.class).getLeaderBoard(10));
         session.player.sendMessage(data);
     }
 }

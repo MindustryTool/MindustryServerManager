@@ -4,15 +4,20 @@ import arc.struct.Seq;
 import mindustry.gen.Call;
 import mindustry.gen.Iconc;
 import plugin.Config;
+import plugin.Registry;
 import plugin.handler.ApiGateway;
 import plugin.type.Session;
 
 public class WelcomeMenu extends PluginMenu<Void> {
+
+    public WelcomeMenu() {
+    }
+
     @Override
     public void build(Session session, Void state) {
         this.title = "MindustryTool";
 
-        Seq<String> translated = ApiGateway.translate(Seq.with("Rules", "Website", "Discord", "Close"),
+        Seq<String> translated = Registry.get(ApiGateway.class).translate(Seq.with("Rules", "Website", "Discord", "Close"),
                 session.locale);
 
         option(Iconc.book + "[green]" + translated.get(0), (p, s) -> Call.openURI(p.player.con, Config.RULE_URL));

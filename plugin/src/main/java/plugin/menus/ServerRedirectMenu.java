@@ -3,6 +3,7 @@ package plugin.menus;
 import mindustry.gen.Call;
 import mindustry.gen.Player;
 import plugin.Control;
+import plugin.Registry;
 import plugin.handler.ApiGateway;
 import plugin.handler.I18n;
 import plugin.type.Session;
@@ -14,6 +15,10 @@ import arc.util.Log;
 import dto.ServerDto;
 
 public class ServerRedirectMenu extends PluginMenu<ServerDto> {
+
+    public ServerRedirectMenu() {
+    }
+
     @Override
     public void build(Session session, ServerDto serverData) {
         this.title = I18n.t(session.locale, "@Redirect");
@@ -34,7 +39,7 @@ public class ServerRedirectMenu extends PluginMenu<ServerDto> {
 
                 Log.info(String.format("Send host command to server %s %S", name, id));
 
-                var data = ApiGateway.host(id);
+                var data = Registry.get(ApiGateway.class).host(id);
 
                 player.sendMessage(I18n.t(Utils.parseLocale(player.locale()), "[green]", "@Redirecting"));
 

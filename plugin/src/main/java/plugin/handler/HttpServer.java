@@ -14,11 +14,12 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import arc.util.Log;
+import plugin.Component;
+import plugin.IComponent;
 import plugin.PluginEvents;
 import plugin.PluginState;
 import plugin.Control;
 import plugin.controller.GeneralController;
-import plugin.event.PluginUnloadEvent;
 import plugin.event.SessionCreatedEvent;
 import plugin.event.SessionRemovedEvent;
 import dto.ServerStateDto;
@@ -27,19 +28,25 @@ import plugin.utils.Utils;
 import io.javalin.Javalin;
 import io.javalin.json.JavalinJackson;
 import io.javalin.plugin.bundled.RouteOverviewPlugin;
+import lombok.RequiredArgsConstructor;
 import mindustry.game.EventType.StateChangeEvent;
 import io.javalin.http.sse.SseClient;
 
-public class HttpServer {
-    private static final List<Object> buffer = new ArrayList<>();
-    private static Javalin app;
-    private static SseClient eventListener = null;
-    private static Instant lastSendEvent = Instant.now();
+@Component
+@RequiredArgsConstructor
+public class HttpServer implements IComponent {
+    private final List<Object> buffer = new ArrayList<>();
+    private Javalin app;
+    private SseClient eventListener = null;
+    private Instant lastSendEvent = Instant.now();
 
-    private static final Duration HEARTBEAT_DURATION = Duration.ofSeconds(30);
+    private final Duration HEARTBEAT_DURATION = Duration.ofSeconds(30);
 
-    public static void init() {
-        Control.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(() -> sendStateUpdate(), 0, 30, TimeUnit.SECONDS);
+    private final ApiGateway apiGateway;
+
+    @Override
+    public void init() {
+        Control.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(this::sendStateUpdate, 0, 30, TimeUnit.SECONDS);
 
         if (app != null) {
             app.stop();
@@ -78,7 +85,7 @@ public class HttpServer {
 
         GeneralController.init(app);
 
-        app.sse("events", HttpServer::onClientConnect);
+        app.sse("events", this::onClientConnect);
 
         app.exception(TimeoutException.class, (exception, ctx) -> {
             Log.warn("Timeout exception", exception);
@@ -105,19 +112,20 @@ public class HttpServer {
             }
         });
 
-        PluginEvents.run(SessionCreatedEvent.class, HttpServer::sendStateUpdate);
-        PluginEvents.run(SessionRemovedEvent.class, HttpServer::sendStateUpdate);
-        PluginEvents.run(StateChangeEvent.class, HttpServer::sendStateUpdate);
+        PluginEvents.run(SessionCreatedEvent.class, this::sendStateUpdate);
+        PluginEvents.run(SessionRemovedEvent.class, this::sendStateUpdate);
+        PluginEvents.run(StateChangeEvent.class, this::sendStateUpdate);
 
         app.start(9999);
         Log.info("Http server started on port 9999");
 
-        PluginEvents.run(PluginUnloadEvent.class, HttpServer::unload);
+        // PluginEvents.run(PluginUnloadEvent.class, this::unload); // Handled by
+        // destroy()
 
         Control.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(
                 () -> {
                     if (!isConnected()) {
-                        ApiGateway.requestConnection();
+                        apiGateway.requestConnection();
                     } else if (Duration.between(lastSendEvent, Instant.now()).compareTo(HEARTBEAT_DURATION) > 0) {
                         sendStateUpdate();
                     }
@@ -126,7 +134,7 @@ public class HttpServer {
         Log.info("Setup http server done");
     }
 
-    public static void fire(Object event) {
+    public void fire(Object event) {
         if (eventListener == null) {
             buffer.add(event);
             if (buffer.size() > 1000) {
@@ -138,7 +146,7 @@ public class HttpServer {
         }
     }
 
-    private static synchronized void onClientConnect(SseClient client) {
+    private synchronized void onClientConnect(SseClient client) {
         client.onClose(() -> {
             Log.info("Client disconnected");
             eventListener = null;
@@ -171,7 +179,7 @@ public class HttpServer {
         eventListener = client;
     }
 
-    private static void sendStateUpdate() {
+    private void sendStateUpdate() {
         try {
             ServerStateDto state = Utils.getState();
             ServerStateEvent event = new ServerStateEvent(Control.SERVER_ID, Arrays.asList(state));
@@ -182,11 +190,12 @@ public class HttpServer {
         }
     }
 
-    public static boolean isConnected() {
+    public boolean isConnected() {
         return eventListener != null && !eventListener.terminated();
     }
 
-    private static void unload() {
+    @Override
+    public void destroy() {
         if (eventListener != null) {
             eventListener.close();
         }
@@ -195,13 +204,15 @@ public class HttpServer {
 
         Log.info("Event listener closed");
 
-        app.stop();
-        app = null;
+        if (app != null) {
+            app.stop();
+            app = null;
+        }
 
         Log.info("Stop http server");
     }
 
-    public static class RequestInfo {
+    public class RequestInfo {
         public final String method;
         public final String path;
         public final String ip;
@@ -215,7 +226,7 @@ public class HttpServer {
         }
     }
 
-    public static class ServerUnloadedException extends IllegalStateException {
+    public class ServerUnloadedException extends IllegalStateException {
         public ServerUnloadedException() {
             super("Server is unloaded");
         }

@@ -17,7 +17,9 @@ import mindustry.gen.Building;
 import mindustry.gen.Call;
 import mindustry.gen.Groups;
 import mindustry.gen.Player;
+import plugin.Component;
 import plugin.Config;
+import plugin.IComponent;
 import plugin.PluginEvents;
 import plugin.Control;
 import plugin.event.PlayerKillUnitEvent;
@@ -27,45 +29,57 @@ import plugin.menus.RateMapMenu;
 import plugin.menus.WelcomeMenu;
 import dto.PlayerDto;
 import plugin.utils.Utils;
-import events.ServerEvents;
+import plugin.Registry;
 import mindustry.ui.dialogs.LanguageDialog;
 import java.time.Instant;
 
-public class EventHandler {
+import events.ServerEvents;
 
-    public static void init() {
+@Component
+public class EventHandler implements IComponent {
+
+    private final HttpServer httpServer;
+    private final ApiGateway apiGateway;
+
+    public EventHandler(HttpServer httpServer, ApiGateway apiGateway) {
+        this.httpServer = httpServer;
+        this.apiGateway = apiGateway;
+    }
+
+    @Override
+    public void init() {
         Log.info("Setup event handler");
 
-        PluginEvents.on(SessionCreatedEvent.class, EventHandler::onSessionCreatedEvent);
-        PluginEvents.on(SessionRemovedEvent.class, EventHandler::onRemovedEvent);
-        PluginEvents.on(PlayerChatEvent.class, EventHandler::onPlayerChat);
-        PluginEvents.on(GameOverEvent.class, EventHandler::onGameOver);
-        PluginEvents.on(WorldLoadEndEvent.class, EventHandler::onWorldLoadEnd);
-        PluginEvents.on(PlayerConnect.class, EventHandler::onPlayerConnect);
-        PluginEvents.on(UnitBulletDestroyEvent.class, EventHandler::onUnitBulletDestroy);
-        PluginEvents.on(PlayerLeave.class, EventHandler::onPlayerLeave);
-        PluginEvents.on(PlayerBanEvent.class, EventHandler::onPlayerBan);
+        PluginEvents.on(SessionCreatedEvent.class, this::onSessionCreatedEvent);
+        PluginEvents.on(SessionRemovedEvent.class, this::onRemovedEvent);
+        PluginEvents.on(PlayerChatEvent.class, this::onPlayerChat);
+        PluginEvents.on(GameOverEvent.class, this::onGameOver);
+        PluginEvents.on(WorldLoadEndEvent.class, this::onWorldLoadEnd);
+        PluginEvents.on(PlayerConnect.class, this::onPlayerConnect);
+        PluginEvents.on(UnitBulletDestroyEvent.class, this::onUnitBulletDestroy);
+        PluginEvents.on(PlayerLeave.class, this::onPlayerLeave);
+        PluginEvents.on(PlayerBanEvent.class, this::onPlayerBan);
 
         Log.info("Setup event handler done");
     }
 
-    private static void onPlayerBan(PlayerBanEvent event) {
+    private void onPlayerBan(PlayerBanEvent event) {
         String message = Strings.format("[scarlet]Player @ has been banned", event.player.name);
 
-        HttpServer.fire(ServerEvents.LogEvent.info(Control.SERVER_ID, message));
-        HttpServer.fire(new ServerEvents.ChatEvent(Control.SERVER_ID, message));
+        httpServer.fire(ServerEvents.LogEvent.info(Control.SERVER_ID, message));
+        httpServer.fire(new ServerEvents.ChatEvent(Control.SERVER_ID, message));
     }
 
-    private static void onPlayerLeave(PlayerLeave event) {
+    private void onPlayerLeave(PlayerLeave event) {
         if (event.player.con != null && event.player.con.kicked) {
             String message = Strings.format("[scarlet]Player @ has been kicked", event.player.name);
 
-            HttpServer.fire(ServerEvents.LogEvent.info(Control.SERVER_ID, message));
-            HttpServer.fire(new ServerEvents.ChatEvent(Control.SERVER_ID, message));
+            httpServer.fire(ServerEvents.LogEvent.info(Control.SERVER_ID, message));
+            httpServer.fire(new ServerEvents.ChatEvent(Control.SERVER_ID, message));
         }
     }
 
-    private static void onUnitBulletDestroy(UnitBulletDestroyEvent event) {
+    private void onUnitBulletDestroy(UnitBulletDestroyEvent event) {
         var unit = event.unit;
         var bullet = event.bullet;
 
@@ -82,22 +96,22 @@ public class EventHandler {
         }
 
         if (bullet.owner() instanceof Building building) {
-            SnapshotHandler.getBuiltBy(building)
+            Registry.get(SnapshotHandler.class).getBuiltBy(building)
                     .ifPresent(buildBy -> PluginEvents.fire(new PlayerKillUnitEvent(buildBy, unit)));
         } else if (bullet.owner() instanceof Player player) {
             PluginEvents.fire(new PlayerKillUnitEvent(player, unit));
         }
     }
 
-    private static void onGameOver(GameOverEvent event) {
+    private void onGameOver(GameOverEvent event) {
         var rateMap = Vars.state.map;
 
         if (rateMap != null) {
-            SessionHandler.each(session -> new RateMapMenu().send(session, rateMap));
+            Registry.get(SessionHandler.class).each(session -> new RateMapMenu().send(session, rateMap));
         }
     }
 
-    private static void onWorldLoadEnd(WorldLoadEndEvent event) {
+    private void onWorldLoadEnd(WorldLoadEndEvent event) {
         Control.BACKGROUND_SCHEDULER.schedule(() -> {
             if (!Vars.state.isPaused() && Groups.player.size() == 0) {
                 Vars.state.set(State.paused);
@@ -117,7 +131,7 @@ public class EventHandler {
         });
     }
 
-    private static void onPlayerConnect(PlayerConnect event) {
+    private void onPlayerConnect(PlayerConnect event) {
         try {
             var player = event.player;
 
@@ -133,7 +147,7 @@ public class EventHandler {
         }
     }
 
-    private static void onPlayerChat(PlayerChatEvent event) {
+    private void onPlayerChat(PlayerChatEvent event) {
         Player player = event.player;
         String message = event.message;
 
@@ -144,14 +158,14 @@ public class EventHandler {
             return;
         }
 
-        HttpServer.fire(new ServerEvents.ChatEvent(Control.SERVER_ID, chat));
+        httpServer.fire(new ServerEvents.ChatEvent(Control.SERVER_ID, chat));
 
         Log.info(chat);
 
         Control.ioTask("Chat Event", () -> {
             try {
                 Utils.forEachPlayerLocale((locale, ps) -> {
-                    var result = ApiGateway.translateRaw(locale, Strings.stripColors(message));
+                    var result = apiGateway.translateRaw(locale, Strings.stripColors(message));
 
                     if (result.getDetectedLanguage().getLanguage().equalsIgnoreCase(locale.getLanguage())) {
                         return;
@@ -168,7 +182,7 @@ public class EventHandler {
 
                         p.sendMessage(translatedChat + "\n");
 
-                        HttpServer.fire(new ServerEvents.ChatEvent(Control.SERVER_ID, translatedChat));
+                        httpServer.fire(new ServerEvents.ChatEvent(Control.SERVER_ID, translatedChat));
                     }
                 });
             } catch (Throwable e) {
@@ -177,10 +191,10 @@ public class EventHandler {
         });
     }
 
-    private static void onRemovedEvent(SessionRemovedEvent event) {
+    private void onRemovedEvent(SessionRemovedEvent event) {
         try {
             var request = PlayerDto.from(event.session.player).setJoinedAt(event.session.joinedAt);
-            HttpServer.fire(new ServerEvents.PlayerLeaveEvent(Control.SERVER_ID, request));
+            httpServer.fire(new ServerEvents.PlayerLeaveEvent(Control.SERVER_ID, request));
         } catch (Throwable e) {
             e.printStackTrace();
         }
@@ -200,7 +214,7 @@ public class EventHandler {
                 }
             }, 5, TimeUnit.SECONDS);
 
-            HttpServer.fire(new ServerEvents.ChatEvent(Control.SERVER_ID, chat));
+            httpServer.fire(new ServerEvents.ChatEvent(Control.SERVER_ID, chat));
 
             Log.info(chat);
         } catch (Throwable e) {
@@ -208,7 +222,7 @@ public class EventHandler {
         }
     }
 
-    private static void onSessionCreatedEvent(SessionCreatedEvent event) {
+    private void onSessionCreatedEvent(SessionCreatedEvent event) {
         try {
             if (Vars.state.isPaused()) {
                 Vars.state.set(State.playing);
@@ -217,16 +231,16 @@ public class EventHandler {
 
             var session = event.session;
 
-            HttpServer.fire(new ServerEvents.PlayerJoinEvent(Control.SERVER_ID,
+            httpServer.fire(new ServerEvents.PlayerJoinEvent(Control.SERVER_ID,
                     PlayerDto.from(session.player).setJoinedAt(Instant.now().toEpochMilli())));
 
             String playerName = session.player != null ? session.player.plainName() : "Unknown";
             String chat = Strings.format("@ joined the server, current players: @", playerName, Groups.player.size());
 
-            HttpServer.fire(new ServerEvents.ChatEvent(Control.SERVER_ID, chat));
+            httpServer.fire(new ServerEvents.ChatEvent(Control.SERVER_ID, chat));
 
             Control.ioTask("Player Join", () -> {
-                var playerData = ApiGateway.login(session.player);
+                var playerData = apiGateway.login(session.player);
 
                 session.setAdmin(playerData.getIsAdmin());
 

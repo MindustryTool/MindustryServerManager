@@ -38,6 +38,8 @@ import plugin.handler.I18n;
 import io.javalin.Javalin;
 import io.javalin.http.ContentType;
 
+import plugin.Registry;
+
 public class GeneralController {
 
     public static void init(Javalin app) {
@@ -110,7 +112,7 @@ public class GeneralController {
             }
 
             if (player != null) {
-                SessionHandler.getByUuid(uuid).ifPresent(session -> session.setAdmin(request.getIsAdmin()));
+                Registry.get(SessionHandler.class).getByUuid(uuid).ifPresent(session -> session.setAdmin(request.getIsAdmin()));
                 Log.info(request);
             }
             ctx.result();
@@ -122,7 +124,7 @@ public class GeneralController {
             ArrayList<Player> players = new ArrayList<Player>();
             Groups.player.forEach(players::add);
 
-            List<PlayerDto> result = SessionHandler.get().values().stream()
+            List<PlayerDto> result = Registry.get(SessionHandler.class).get().values().stream()
                     .map(session -> PlayerDto.from(session.player).setJoinedAt(session.joinedAt))
                     .collect(Collectors.toList());
 
@@ -195,9 +197,10 @@ public class GeneralController {
         });
 
         app.get("commands", ctx -> {
-            List<ServerCommandDto> commands = ServerCommandHandler.getHandler() == null
+            var handler = Registry.get(ServerCommandHandler.class);
+            List<ServerCommandDto> commands = handler.getHandler() == null
                     ? Arrays.asList()
-                    : ServerCommandHandler.getHandler()//
+                    : handler.getHandler()//
                             .getCommandList()
                             .map(command -> new ServerCommandDto()
                                     .setText(command.text)
@@ -221,13 +224,13 @@ public class GeneralController {
                 for (String command : commands) {
                     Log.info("[sky]" + command);
 
-                    ServerCommandHandler.execute(command, response -> {
+                    Registry.get(ServerCommandHandler.class).execute(command, response -> {
                         if (response.type == ResponseType.unknownCommand) {
 
                             int minDst = 0;
                             Command closest = null;
 
-                            for (Command cmd : ServerCommandHandler.getHandler().getCommandList()) {
+                            for (Command cmd : Registry.get(ServerCommandHandler.class).getHandler().getCommandList()) {
                                 int dst = Strings.levenshtein(cmd.text, response.runCommand);
 
                                 if (dst < 3 && (closest == null || dst < minDst)) {
@@ -281,7 +284,7 @@ public class GeneralController {
                 HashMap<String, Object> data = new HashMap<>();
 
                 data.put("state", Utils.getState());
-                data.put("session", SessionHandler.get());
+                data.put("session", Registry.get(SessionHandler.class).get());
                 data.put("isHub", Config.IS_HUB);
                 data.put("ip", Config.SERVER_IP);
                 data.put("units", Groups.unit.size());
@@ -339,7 +342,7 @@ public class GeneralController {
                             return info;
                         }).list());
                 data.put("mods", Vars.mods.list().map(mod -> mod.meta.toString()).list());
-                data.put("votes", VoteHandler.votes);
+                data.put("votes", Registry.get(VoteHandler.class).votes);
 
                 HashMap<String, Object> settings = new HashMap<String, Object>();
 
@@ -370,7 +373,7 @@ public class GeneralController {
             String[] commandsArray = commands.split("\n");
             for (String command : commandsArray) {
                 Log.info("Host command: " + command);
-                ServerCommandHandler.execute(command, (_ignore) -> {
+                Registry.get(ServerCommandHandler.class).execute(command, (_ignore) -> {
                 });
             }
             return;

@@ -3,6 +3,7 @@ package plugin.menus;
 import arc.struct.Seq;
 import mindustry.gen.Iconc;
 import mindustry.maps.Map;
+import plugin.Registry;
 import plugin.handler.MapRating;
 import plugin.handler.VoteHandler;
 import plugin.type.Session;
@@ -11,9 +12,13 @@ import plugin.handler.I18n;
 public class RtvMenu extends PluginMenu<Integer> {
     private static final int MAPS_PER_PAGE = 7;
 
+    public RtvMenu() {
+    }
+
     @Override
     public void build(Session session, Integer page) {
-        Seq<Map> maps = new Seq<>(VoteHandler.getMaps());
+        var voteHandler = Registry.get(VoteHandler.class);
+        Seq<Map> maps = new Seq<>(voteHandler.getMaps());
 
         maps.sort((a, b) -> {
             var ar = MapRating.getAvg(a);
@@ -50,14 +55,14 @@ public class RtvMenu extends PluginMenu<Integer> {
             float rating = MapRating.getAvg(map);
             String ratingColor = MapRating.avgScoreColor(rating);
 
-            String voted = VoteHandler.isVoted(session.player, map.file.nameWithoutExtension())
+            String voted = voteHandler.isVoted(session.player, map.file.nameWithoutExtension())
                     ? I18n.t(session.locale, "[accent]", "@Voted")
                     : "";
             String text = String.format("%s%s%.2f [gold]%c [white]%s", voted, ratingColor, rating, Iconc.star,
                     map.name());
 
             option(text, (p, s) -> {
-                VoteHandler.handleVote(session.player, map);
+                voteHandler.handleVote(session.player, map);
             });
             row();
         }

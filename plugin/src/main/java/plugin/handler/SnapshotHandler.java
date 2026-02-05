@@ -12,13 +12,15 @@ import mindustry.game.EventType.BlockDestroyEvent;
 import mindustry.gen.Building;
 import mindustry.gen.Player;
 import mindustry.world.Tile;
+import plugin.Component;
+import plugin.IComponent;
 import plugin.PluginEvents;
-import plugin.event.PluginUnloadEvent;
 import plugin.event.SessionRemovedEvent;
 
-public class SnapshotHandler {
-    private static final ConcurrentHashMap<Integer, BuiltByData> builtBy = new ConcurrentHashMap<>();
-    private static final ConcurrentHashMap<Building, Player> buildingToPlayer = new ConcurrentHashMap<>();
+@Component
+public class SnapshotHandler implements IComponent {
+    private final ConcurrentHashMap<Integer, BuiltByData> builtBy = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Building, Player> buildingToPlayer = new ConcurrentHashMap<>();
 
     @Data
     public static class BuiltByData {
@@ -27,25 +29,30 @@ public class SnapshotHandler {
         public final Instant builtTime;
     }
 
-    public static void init() {
-        PluginEvents.on(BlockBuildEndEvent.class, SnapshotHandler::onBlockBuildEnd);
-        PluginEvents.on(BlockDestroyEvent.class, SnapshotHandler::onBlockDestroy);
-        PluginEvents.run(PluginUnloadEvent.class, SnapshotHandler::unload);
-        PluginEvents.on(SessionRemovedEvent.class, SnapshotHandler::onSessionRemoved);
+    @Override
+    public void init() {
+        PluginEvents.on(BlockBuildEndEvent.class, this::onBlockBuildEnd);
+        PluginEvents.on(BlockDestroyEvent.class, this::onBlockDestroy);
+        PluginEvents.on(SessionRemovedEvent.class, this::onSessionRemoved);
     }
 
+    @Override
+    public void destroy() {
+        builtBy.clear();
+        buildingToPlayer.clear();
+    }
 
-    public static void onSessionRemoved(SessionRemovedEvent event){
+    public void onSessionRemoved(SessionRemovedEvent event) {
         var player = event.session.player;
         builtBy.values().removeIf(data -> data.player == player);
         buildingToPlayer.values().removeIf(p -> p == player);
     }
 
-    public static Optional<Player> getBuiltBy(Building building) {
+    public Optional<Player> getBuiltBy(Building building) {
         return Optional.ofNullable(buildingToPlayer.get(building));
     }
 
-    private static void onBlockDestroy(BlockDestroyEvent event) {
+    private void onBlockDestroy(BlockDestroyEvent event) {
         var tile = event.tile;
 
         if (tile == null) {
@@ -61,11 +68,11 @@ public class SnapshotHandler {
         }
     }
 
-    private static int tileIndex(Tile tile) {
+    private int tileIndex(Tile tile) {
         return tile.x + tile.y * Vars.world.width();
     }
 
-    private static void onBlockBuildEnd(BlockBuildEndEvent event) {
+    private void onBlockBuildEnd(BlockBuildEndEvent event) {
         var unit = event.unit;
         var tile = event.tile;
 
@@ -103,10 +110,5 @@ public class SnapshotHandler {
 
         builtBy.put(index, new BuiltByData(player, new WeakReference<>(building), Instant.now()));
         buildingToPlayer.put(building, player);
-    }
-
-    private static void unload() {
-        builtBy.clear();
-        buildingToPlayer.clear();
     }
 }

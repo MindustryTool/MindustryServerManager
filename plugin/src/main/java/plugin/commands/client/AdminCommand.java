@@ -2,9 +2,11 @@ package plugin.commands.client;
 
 import mindustry.gen.Call;
 import plugin.Config;
+import plugin.Component;
 import plugin.commands.PluginCommand;
 import plugin.type.Session;
 
+@Component
 public class AdminCommand extends PluginCommand {
     public AdminCommand() {
         setName("admin");

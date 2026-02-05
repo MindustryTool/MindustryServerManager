@@ -3,8 +3,10 @@ package plugin.commands.server;
 import arc.util.Log;
 import mindustry.Vars;
 import mindustry.gen.Call;
+import plugin.Component;
 import plugin.commands.PluginCommand;
 
+@Component
 public class SayCommand extends PluginCommand {
     private Param messageParam;
 

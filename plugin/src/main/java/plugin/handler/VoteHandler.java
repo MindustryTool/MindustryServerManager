@@ -11,42 +11,46 @@ import mindustry.game.Team;
 import mindustry.gen.Groups;
 import mindustry.gen.Player;
 import mindustry.maps.Map;
+import plugin.Component;
+import plugin.IComponent;
 import plugin.PluginEvents;
-import plugin.event.PluginUnloadEvent;
 import plugin.event.SessionRemovedEvent;
 import plugin.utils.Utils;
 
-public class VoteHandler {
-    public static ConcurrentHashMap<String, Seq<String>> votes = new ConcurrentHashMap<>();
-    public static double ratio = 0.6;
-    public static Map lastMap = null;
+@Component
+public class VoteHandler implements IComponent {
+    public final ConcurrentHashMap<String, Seq<String>> votes = new ConcurrentHashMap<>();
+    public double ratio = 0.6;
+    public Map lastMap = null;
 
-    public static void init() {
+    @Override
+    public void init() {
         PluginEvents.on(SessionRemovedEvent.class, event -> {
             removeVote(event.session.player);
             check();
         });
 
-        PluginEvents.run(PluginUnloadEvent.class, VoteHandler::unload);
+        // PluginEvents.run(PluginUnloadEvent.class, this::unload); // Handled by destroy
     }
 
-    private static void unload() {
+    @Override
+    public void destroy() {
         votes.clear();
-        votes = null;
+        lastMap = null;
 
         Log.info("Vote handler unloaded");
     }
 
-    private static void check() {
+    private void check() {
         votes.forEach((mapId, _v) -> check(mapId));
     }
 
-    public static void reset() {
+    public void reset() {
         votes.clear();
         lastMap = null;
     }
 
-    public static void vote(Player player, String mapId) {
+    public void vote(Player player, String mapId) {
         var vote = votes.get(mapId);
 
         if (vote == null) {
@@ -59,7 +63,7 @@ public class VoteHandler {
         check(mapId);
     }
 
-    private static void removeVote(Player player, String mapId) {
+    private void removeVote(Player player, String mapId) {
         var vote = votes.get(mapId);
 
         if (vote == null) {
@@ -69,7 +73,7 @@ public class VoteHandler {
         vote.remove(player.uuid());
     }
 
-    public static boolean isVoted(Player player, String mapId) {
+    public boolean isVoted(Player player, String mapId) {
         var vote = votes.get(mapId);
 
         if (vote == null) {
@@ -78,11 +82,11 @@ public class VoteHandler {
         return vote.contains(player.uuid());
     }
 
-    public static int getRequire() {
+    public int getRequire() {
         return (int) Math.min(Math.floor(ratio * Groups.player.size()) + 1, Groups.player.size());
     }
 
-    public static int getVoteCount(String mapId) {
+    public int getVoteCount(String mapId) {
         var vote = votes.get(mapId);
 
         if (vote == null) {
@@ -91,17 +95,17 @@ public class VoteHandler {
         return vote.size;
     }
 
-    private static void removeVote(Player player) {
+    private void removeVote(Player player) {
         for (Seq<String> vote : votes.values()) {
             vote.remove(player.uuid());
         }
     }
 
-    public static Seq<Map> getMaps() {
+    public Seq<Map> getMaps() {
         return Vars.maps.customMaps();
     }
 
-    public static void check(String mapId) {
+    public void check(String mapId) {
         if (getVoteCount(mapId) >= getRequire()) {
             Utils.forEachPlayerLocale((locale, players) -> {
                 String msg = I18n.t(locale, "[red]RTV: ", "[green]", "@Vote passed! Changing map...");
@@ -127,13 +131,13 @@ public class VoteHandler {
         }
     }
 
-    public static void handleVote(Player player) {
+    public void handleVote(Player player) {
         if (lastMap != null) {
             handleVote(player, lastMap);
         }
     }
 
-    public static void handleVote(Player player, Map map) {
+    public void handleVote(Player player, Map map) {
         String mapId = map.file.nameWithoutExtension();
 
         if (isVoted(player, mapId)) {

@@ -9,31 +9,38 @@ import arc.graphics.Color;
 import arc.struct.Seq;
 import lombok.Data;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import mindustry.content.Fx;
 import mindustry.entities.Effect;
 import mindustry.gen.Call;
+import plugin.Component;
+import plugin.IComponent;
 import plugin.Control;
 import plugin.type.Session;
 import plugin.utils.ExpUtils;
 
-public class TrailHandler {
+@Component
+@RequiredArgsConstructor
+public class TrailHandler implements IComponent {
 
-    public static final ConcurrentHashMap<String, Trail> trails = new ConcurrentHashMap<>();
+    public final ConcurrentHashMap<String, Trail> trails = new ConcurrentHashMap<>();
+    private final SessionHandler sessionHandler;
 
-    public static void init() {
-        Trail.create("shock", Fx.landShock, TrailRequirement.level(2));
-        Trail.create("lightning", Fx.chainLightning, TrailRequirement.level(5));
-        Trail.create("fire", Fx.fire, TrailRequirement.level(15));
-        Trail.create("heal", Fx.healWave, TrailRequirement.level(35));
-        Trail.create("placeblock", Fx.placeBlock, TrailRequirement.level(50));
-        Trail.create("explotion", Fx.explosion, TrailRequirement.admin());
+    @Override
+    public void init() {
+        Trail.create(this, "shock", Fx.landShock, TrailRequirement.level(2));
+        Trail.create(this, "lightning", Fx.chainLightning, TrailRequirement.level(5));
+        Trail.create(this, "fire", Fx.fire, TrailRequirement.level(15));
+        Trail.create(this, "heal", Fx.healWave, TrailRequirement.level(35));
+        Trail.create(this, "placeblock", Fx.placeBlock, TrailRequirement.level(50));
+        Trail.create(this, "explotion", Fx.explosion, TrailRequirement.admin());
 
         Control.BACKGROUND_SCHEDULER
-                .scheduleAtFixedRate(TrailHandler::render, 0, 500, TimeUnit.MILLISECONDS);
+                .scheduleAtFixedRate(this::render, 0, 500, TimeUnit.MILLISECONDS);
     }
 
-    private static void render() {
-        SessionHandler.each(session -> {
+    private void render() {
+        sessionHandler.each(session -> {
             var userTrail = session.data().trail;
             if (userTrail != null) {
                 var trail = trails.get(userTrail);
@@ -54,14 +61,15 @@ public class TrailHandler {
             return requirements.allMatch(r -> r.getAllowed().apply(session));
         }
 
-        public static void create(String name, Effect effect, TrailRequirement... requirements) {
+        public static void create(TrailHandler handler, String name, Effect effect, TrailRequirement... requirements) {
             var trail = new Trail(name, Seq.with(requirements), (x, y) -> Call.effect(effect, x, y, 0, Color.white));
-            trails.put(name, trail);
+            handler.trails.put(name, trail);
         }
 
-        public static void custom(String name, Cons2<Float, Float> render, TrailRequirement... requirements) {
+        public static void custom(TrailHandler handler, String name, Cons2<Float, Float> render,
+                TrailRequirement... requirements) {
             var trail = new Trail(name, Seq.with(requirements), render);
-            trails.put(name, trail);
+            handler.trails.put(name, trail);
         }
     }
 

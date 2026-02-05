@@ -1,10 +1,13 @@
 package plugin.commands.client;
 
-import plugin.commands.ClientCommandHandler;
+import plugin.Component;
 import plugin.commands.PluginCommand;
+import plugin.menus.GlobalServerListMenu;
 import plugin.type.Session;
 
+@Component
 public class RedirectCommand extends PluginCommand {
+
     public RedirectCommand() {
         setName("redirect");
         setDescription("Redirect all player to server");
@@ -12,6 +15,6 @@ public class RedirectCommand extends PluginCommand {
 
     @Override
     public void handleClient(Session session) {
-        ClientCommandHandler.sendRedirectServerList(session, 0);
+        new GlobalServerListMenu().send(session, 0);
     }
 }

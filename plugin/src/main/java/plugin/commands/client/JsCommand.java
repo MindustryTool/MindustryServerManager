@@ -1,9 +1,11 @@
 package plugin.commands.client;
 
 import mindustry.Vars;
+import plugin.Component;
 import plugin.commands.PluginCommand;
 import plugin.type.Session;
 
+@Component
 public class JsCommand extends PluginCommand {
     private Param codeParam;
 

@@ -5,10 +5,13 @@ import mindustry.Vars;
 import mindustry.gen.Groups;
 import mindustry.gen.Player;
 import mindustry.net.Packets.KickReason;
+import plugin.Component;
 import plugin.commands.PluginCommand;
 import plugin.handler.I18n;
+
 import plugin.utils.Utils;
 
+@Component
 public class KickWithReasonCommand extends PluginCommand {
     private Param idParam;
     private Param reasonParam;

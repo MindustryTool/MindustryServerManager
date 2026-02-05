@@ -1,10 +1,13 @@
 package plugin.commands.client;
 
+import plugin.Component;
 import plugin.commands.PluginCommand;
 import plugin.menus.ServerListMenu;
 import plugin.type.Session;
 
+@Component
 public class ServersCommand extends PluginCommand {
+
     public ServersCommand() {
         setName("servers");
         setDescription("Display available servers");

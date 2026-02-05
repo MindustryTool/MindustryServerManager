@@ -1,11 +1,13 @@
 package plugin.commands.client;
 
 import mindustry.Vars;
+import plugin.Component;
 import plugin.commands.PluginCommand;
 import plugin.handler.MapRating;
 import plugin.type.Session;
 import plugin.handler.I18n;
 
+@Component
 public class MapCommand extends PluginCommand {
     public MapCommand() {
         setName("map");

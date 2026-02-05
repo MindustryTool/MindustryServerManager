@@ -1,10 +1,12 @@
 package plugin.commands.client;
 
 import mindustry.gen.Call;
+import plugin.Component;
 import plugin.Config;
 import plugin.commands.PluginCommand;
 import plugin.type.Session;
 
+@Component
 public class SubmitMapCommand extends PluginCommand {
     public SubmitMapCommand() {
         setName("submitmap");

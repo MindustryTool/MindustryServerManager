@@ -2,8 +2,10 @@ package plugin.commands.server;
 
 import arc.util.Log;
 import mindustry.Vars;
+import plugin.Component;
 import plugin.commands.PluginCommand;
 
+@Component
 public class JsCommand extends PluginCommand {
     private Param scriptParam;
 

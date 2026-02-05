@@ -9,31 +9,38 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 
 import arc.Events;
 import arc.math.Mathf;
+import lombok.RequiredArgsConstructor;
 import mindustry.Vars;
 import mindustry.game.Team;
 import mindustry.game.EventType.ConnectionEvent;
 import mindustry.gen.Groups;
 import mindustry.net.Packets.Connect;
 import mindustry.net.Packets.KickReason;
+import plugin.Component;
 import plugin.Config;
+import plugin.IComponent;
 import plugin.PluginEvents;
 import plugin.Control;
-import plugin.event.PluginUnloadEvent;
 import plugin.event.SessionRemovedEvent;
 import plugin.type.Session;
 import plugin.utils.Utils;
 
-public class AdminHandler {
+@Component
+@RequiredArgsConstructor
+public class AdminHandler implements IComponent {
 
-    private static final Cache<String, Instant> lastGriefReportTimes = Caffeine.newBuilder()
+    private final Cache<String, Instant> lastGriefReportTimes = Caffeine.newBuilder()
             .expireAfterWrite(Config.GRIEF_REPORT_COOLDOWN, TimeUnit.SECONDS)
             .build();
 
-    private static Session reported = null;
-    private static Session reporter = null;
-    private static ScheduledFuture<?> voteTimeout;
+    private Session reported = null;
+    private Session reporter = null;
+    private ScheduledFuture<?> voteTimeout;
 
-    public static void init() {
+    private final SessionHandler sessionHandler;
+
+    @Override
+    public void init() {
         PluginEvents.on(SessionRemovedEvent.class, event -> {
             if (reported == event.session) {
                 if (reporter != null) {
@@ -44,7 +51,8 @@ public class AdminHandler {
             }
         });
 
-        PluginEvents.run(PluginUnloadEvent.class, AdminHandler::unload);
+        // PluginEvents.run(PluginUnloadEvent.class, AdminHandler::unload); // Handled
+        // by destroy
 
         Vars.net.handleServer(Connect.class, (con, connect) -> {
             Events.fire(new ConnectionEvent(con));
@@ -59,16 +67,17 @@ public class AdminHandler {
         });
     }
 
-    private static void unload() {
+    @Override
+    public void destroy() {
         reset();
         lastGriefReportTimes.invalidateAll();
     }
 
-    public static boolean isGriefVoting() {
+    public boolean isGriefVoting() {
         return reported != null;
     }
 
-    public static void voteGrief(Session session) {
+    public void voteGrief(Session session) {
         if (reported == null) {
             session.player.sendMessage(I18n.t(session.locale,
                     "@No player is being reported."));
@@ -83,7 +92,7 @@ public class AdminHandler {
 
         session.votedGrief = true;
 
-        int voted = SessionHandler.count(s -> s.votedGrief);
+        int voted = sessionHandler.count(s -> s.votedGrief);
         int required = Mathf.ceil(0.6f * Groups.player.size());
 
         if (voted >= required) {
@@ -111,7 +120,7 @@ public class AdminHandler {
         }
     }
 
-    public static void reportGrief(Session player, Session target) {
+    public void reportGrief(Session player, Session target) {
         if (Groups.player.size() < 3) {
             player.player.sendMessage(I18n.t(player.locale,
                     "@You cannot report grief if there are less than 3 players."));
@@ -168,7 +177,7 @@ public class AdminHandler {
         }, 60, TimeUnit.SECONDS);
     }
 
-    private static void reset() {
+    private void reset() {
         reported = null;
         reporter = null;
 
@@ -176,6 +185,6 @@ public class AdminHandler {
             voteTimeout.cancel(true);
         }
 
-        SessionHandler.each(s -> s.votedGrief = false);
+        sessionHandler.each(s -> s.votedGrief = false);
     }
 }

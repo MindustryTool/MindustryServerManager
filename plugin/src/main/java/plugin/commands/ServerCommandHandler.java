@@ -6,26 +6,27 @@ import java.util.function.Consumer;
 
 import arc.util.CommandHandler.CommandResponse;
 import arc.util.Log;
+import arc.struct.Seq;
 import arc.util.CommandHandler;
 import lombok.Getter;
+import plugin.Component;
+import plugin.IComponent;
 import plugin.PluginEvents;
-import plugin.commands.server.JsCommand;
-import plugin.commands.server.KickWithReasonCommand;
-import plugin.commands.server.SayCommand;
-import plugin.commands.server.SqlCommand;
+import plugin.Registry;
 import plugin.event.PluginUnloadEvent;
 import plugin.type.PrevCommand;
 
-public class ServerCommandHandler {
+@Component
+public class ServerCommandHandler implements IComponent {
 
-    private static final List<PluginCommand> commands = new ArrayList<>();
+    private final List<PluginCommand> commands = new ArrayList<>();
 
     @Getter
-    private static CommandHandler handler;
+    private CommandHandler handler;
 
-    private static final List<PrevCommand> prevCommands = new ArrayList<>();
+    private final List<PrevCommand> prevCommands = new ArrayList<>();
 
-    public static void execute(String command, Consumer<CommandResponse> callback) {
+    public void execute(String command, Consumer<CommandResponse> callback) {
         if (handler == null) {
             prevCommands.add(new PrevCommand(command, callback));
         } else {
@@ -33,13 +34,11 @@ public class ServerCommandHandler {
         }
     }
 
-    public static void registerCommands(CommandHandler handler) {
-        ServerCommandHandler.handler = handler;
+    public void registerCommands(CommandHandler handler) {
+        this.handler = handler;
 
-        commands.add(new JsCommand());
-        commands.add(new SayCommand());
-        commands.add(new KickWithReasonCommand());
-        commands.add(new SqlCommand());
+        List<PluginCommand> registeredCommands = Registry.getAll(PluginCommand.class);
+        commands.addAll(registeredCommands);
 
         for (PluginCommand command : commands) {
             command.register(handler, false);
@@ -49,15 +48,30 @@ public class ServerCommandHandler {
         prevCommands.forEach(prev -> prev.getCallback().accept(handler.handleMessage(prev.getCommand())));
         prevCommands.clear();
 
-        PluginEvents.run(PluginUnloadEvent.class, ServerCommandHandler::unload);
+        PluginEvents.run(PluginUnloadEvent.class, this::unload);
     }
 
-    private static void unload() {
-        commands.forEach(command -> handler.removeCommand(command.getName()));
+    private void unload() {
+        if (handler != null) {
+            commands.forEach(command -> handler.removeCommand(command.getName()));
+        }
         commands.clear();
 
         handler = null;
 
         Log.info("Server command unloaded");
+    }
+
+    @Override
+    public void init() {
+    }
+
+    @Override
+    public void destroy() {
+        unload();
+    }
+    
+    public Seq<arc.util.CommandHandler.Command> getCommandList() {
+        return handler == null ? new Seq<>() : handler.getCommandList();
     }
 }
