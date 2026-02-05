@@ -270,6 +270,10 @@ public class HubHandler {
     }
 
     public static String newLine(String text) {
+        if (text == null) {
+            return "";
+        }
+
         String[] lines = text.split("\n");
 
         StringBuilder sb = new StringBuilder();
