@@ -90,6 +90,24 @@ public class DockerNodeManager implements NodeManager {
 
         return Flux.create(emitter -> {
             try {
+                var containers = dockerClient.listContainersCmd()//
+                        .withShowAll(true)//
+                        .withLabelFilter(Map.of(Const.serverIdLabel, request.getId().toString()))//
+                        .exec();
+
+                if (containers.size() > 1) {
+                    for (var container : containers) {
+                        emitter.next(LogEvent.info(serverId, "Removing container " + container.getNames()[0]));
+                        dockerClient.removeContainerCmd(container.getId())
+                                .withForce(true)
+                                .exec();
+                    }
+                }
+
+                if (containers.size() == 1) {
+                    return;
+                }
+
                 emitter.next(LogEvent.info(serverId, "Pulling image: " + request.getImage()));
 
                 try {
@@ -140,18 +158,6 @@ public class DockerNodeManager implements NodeManager {
                                 "Port exists at conatiner " + server.getNames()[0] + " port: " + config.getPort()));
                         return;
                     }
-                }
-
-                var containers = dockerClient.listContainersCmd()//
-                        .withShowAll(true)//
-                        .withLabelFilter(Map.of(Const.serverIdLabel, request.getId().toString()))//
-                        .exec();
-
-                for (var container : containers) {
-                    emitter.next(LogEvent.info(serverId, "Removing container " + container.getNames()[0]));
-                    dockerClient.removeContainerCmd(container.getId())
-                            .withForce(true)
-                            .exec();
                 }
 
                 Volume volume = new Volume("/config");

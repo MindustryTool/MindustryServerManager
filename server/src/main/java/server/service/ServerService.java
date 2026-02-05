@@ -127,13 +127,17 @@ public class ServerService {
         Flux<LogEvent> callGatewayFlux = gatewayService.of(serverId)
                 .flatMapMany(gatewayClient -> hostCallGateway(request, gatewayClient));
 
-        return Flux
+        Flux<LogEvent> createFlux = Flux
                 .concat(nodeManager.create(request),
                         Mono.just(LogEvent.info(serverId, "Connecting to gateway...")),
                         callGatewayFlux//
                 )
                 .onErrorResume(err -> Mono.just(LogEvent.error(serverId, err.getMessage())).then(Mono.error(err)))
                 .doOnError(Log::err);
+
+        return gatewayService.of(serverId)
+                .flatMap(gateway -> gateway.server().isHosting())
+                .flatMapMany(isHosting -> isHosting ? Mono.empty() : createFlux);
     }
 
     private Flux<LogEvent> hostCallGateway(ServerConfig request, GatewayClient gatewayClient) {
