@@ -224,7 +224,7 @@ public class HubHandler {
         try {
             var request = new PaginationRequest()
                     .setPage(0)
-                    .setSize(serverCores.size);
+                    .setSize(serverCores.size + 5);
 
             servers = Seq.with(apiGateway.getServers(request))
                     .select(server -> !server.getId().equals(Control.SERVER_ID));
