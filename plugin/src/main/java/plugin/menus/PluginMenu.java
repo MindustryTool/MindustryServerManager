@@ -88,7 +88,7 @@ public abstract class PluginMenu<T> {
 
         ServerControl.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(() -> {
             menus.removeAll(m -> {
-                var delete = Instant.now().isAfter(m.createdAt.plusSeconds(60 * 5));
+                var delete = Instant.now().isAfter(m.createdAt.plusSeconds(30));
 
                 if (delete && m.session.player.con != null && m.session.player.con.isConnected()) {
                     Call.hideFollowUpMenu(m.session.player.con, m.getMenuId());
