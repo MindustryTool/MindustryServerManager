@@ -81,8 +81,9 @@ public class VnwCommand extends PluginClientCommand {
             return;
         }
 
-        voteTimeout.cancel(false);
-        voteCountDown.cancel(false);
+        voteTimeout.cancel(true);
+        voteCountDown.cancel(true);
+
         Registry.get(SessionHandler.class).each(s -> s.votedVNW = false);
 
         Utils.forEachPlayerLocale((locale, players) -> {
@@ -91,16 +92,15 @@ public class VnwCommand extends PluginClientCommand {
                 p.sendMessage(msg);
             }
         });
-        sendWave();
+
+        sendWave(waveVoted);
+        waveVoted = -1;
     }
 
-    private void sendWave() {
-        if (waveVoted <= 0) {
-            waveVoted = -1;
+    private void sendWave(int count) {
+        if (count <= 0) {
             return;
         }
-
-        waveVoted--;
 
         if (Groups.unit.count(unit -> unit.team == Vars.state.rules.waveTeam) > 1000) {
             Utils.forEachPlayerLocale((locale, players) -> {
@@ -114,7 +114,7 @@ public class VnwCommand extends PluginClientCommand {
 
         Vars.state.wavetime = 0f;
 
-        Control.BACKGROUND_SCHEDULER.schedule(() -> sendWave(), 1, TimeUnit.SECONDS);
+        Control.BACKGROUND_SCHEDULER.schedule(() -> sendWave(count - 1), 5, TimeUnit.SECONDS);
     }
 
     private void startCountDown(int time) {
