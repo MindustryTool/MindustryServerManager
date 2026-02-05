@@ -21,6 +21,7 @@ import mindustry.game.EventType.WorldLoadEvent;
 import mindustry.game.Team;
 import mindustry.gen.Call;
 import mindustry.gen.Groups;
+import mindustry.gen.Iconc;
 import mindustry.net.ArcNetProvider;
 import mindustry.net.Net;
 import plugin.Component;
@@ -267,7 +268,7 @@ public class HubHandler implements IComponent {
 
         Utils.forEachPlayerLocale((locale, players) -> {
 
-            String message = newLine(name) + "[]\n" +
+            String message = (server.isOfficial() ? "[gold]" + Iconc.star + "[] " : "") + newLine(name) + "[]\n" +
                     newLine(description) + "[]\n\n" +
                     "[#E3F2FD]Players: []" + server.getPlayers() + "\n" +
                     "[#BBDEFB]Map: []" + newLine(server.getMapName()) + "[]\n" +
