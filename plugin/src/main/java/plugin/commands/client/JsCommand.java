@@ -2,11 +2,11 @@ package plugin.commands.client;
 
 import mindustry.Vars;
 import plugin.Component;
-import plugin.commands.PluginCommand;
+import plugin.commands.PluginClientCommand;
 import plugin.type.Session;
 
 @Component
-public class JsCommand extends PluginCommand {
+public class JsCommand extends PluginClientCommand {
     private Param codeParam;
 
     public JsCommand() {
@@ -17,7 +17,7 @@ public class JsCommand extends PluginCommand {
     }
 
     @Override
-    public void handleClient(Session session) {
+    public void handle(Session session) {
         String output = Vars.mods.getScripts().runConsole(codeParam.asString());
         session.player.sendMessage(codeParam.asString());
         session.player.sendMessage("> " + (isError(output) ? "[#ff341c]" + output : output));

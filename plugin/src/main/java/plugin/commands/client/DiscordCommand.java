@@ -3,11 +3,11 @@ package plugin.commands.client;
 import mindustry.gen.Call;
 import plugin.Component;
 import plugin.Config;
-import plugin.commands.PluginCommand;
+import plugin.commands.PluginClientCommand;
 import plugin.type.Session;
 
 @Component
-public class DiscordCommand extends PluginCommand {
+public class DiscordCommand extends PluginClientCommand {
     public DiscordCommand() {
         setName("discord");
         setDescription("Open discord channel");
@@ -15,7 +15,7 @@ public class DiscordCommand extends PluginCommand {
     }
 
     @Override
-    public void handleClient(Session session) {
+    public void handle(Session session) {
         Call.openURI(session.player.con, Config.DISCORD_INVITE_URL);
     }
 }

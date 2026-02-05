@@ -2,13 +2,13 @@ package plugin.commands.client;
 
 import plugin.Component;
 import plugin.Registry;
-import plugin.commands.PluginCommand;
+import plugin.commands.PluginClientCommand;
 import plugin.handler.VoteHandler;
 import plugin.menus.RtvMenu;
 import plugin.type.Session;
 
 @Component
-public class RtvCommand extends PluginCommand {
+public class RtvCommand extends PluginClientCommand {
     Param followParam;
 
     public RtvCommand() {
@@ -20,7 +20,7 @@ public class RtvCommand extends PluginCommand {
     }
 
     @Override
-    public void handleClient(Session session) {
+    public void handle(Session session) {
         if (followParam.hasValue() && followParam.asString().equalsIgnoreCase("yes")) {
             Registry.get(VoteHandler.class).handleVote(session.player);
         } else {

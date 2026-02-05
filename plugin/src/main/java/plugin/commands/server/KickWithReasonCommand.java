@@ -6,13 +6,13 @@ import mindustry.gen.Groups;
 import mindustry.gen.Player;
 import mindustry.net.Packets.KickReason;
 import plugin.Component;
-import plugin.commands.PluginCommand;
+import plugin.commands.PluginServerCommand;
 import plugin.handler.I18n;
 
 import plugin.utils.Utils;
 
 @Component
-public class KickWithReasonCommand extends PluginCommand {
+public class KickWithReasonCommand extends PluginServerCommand {
     private Param idParam;
     private Param reasonParam;
 
@@ -24,7 +24,7 @@ public class KickWithReasonCommand extends PluginCommand {
     }
 
     @Override
-    public void handleServer() {
+    public void handle() {
         if (!Vars.state.isGame()) {
             Log.err("Not hosting. Host a game first.");
             return;

@@ -3,10 +3,10 @@ package plugin.commands.server;
 import arc.util.Log;
 import mindustry.Vars;
 import plugin.Component;
-import plugin.commands.PluginCommand;
+import plugin.commands.PluginServerCommand;
 
 @Component
-public class JsCommand extends PluginCommand {
+public class JsCommand extends PluginServerCommand {
     private Param scriptParam;
 
     public JsCommand() {
@@ -16,7 +16,7 @@ public class JsCommand extends PluginCommand {
     }
 
     @Override
-    public void handleServer() {
+    public void handle() {
         try {
             Log.info("&fi&lw&fb" + Vars.mods.getScripts().runConsole(scriptParam.asString()));
         } catch (Exception e) {

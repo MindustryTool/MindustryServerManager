@@ -1,12 +1,12 @@
 package plugin.commands.client;
 
 import plugin.Component;
-import plugin.commands.PluginCommand;
+import plugin.commands.PluginClientCommand;
 import plugin.menus.ServerListMenu;
 import plugin.type.Session;
 
 @Component
-public class ServersCommand extends PluginCommand {
+public class ServersCommand extends PluginClientCommand {
 
     public ServersCommand() {
         setName("servers");
@@ -16,7 +16,7 @@ public class ServersCommand extends PluginCommand {
     }
 
     @Override
-    public void handleClient(Session session) {
+    public void handle(Session session) {
         new ServerListMenu().send(session, 0);
     }
 }

@@ -3,11 +3,11 @@ package plugin.commands.client;
 import mindustry.gen.Call;
 import plugin.Config;
 import plugin.Component;
-import plugin.commands.PluginCommand;
+import plugin.commands.PluginClientCommand;
 import plugin.type.Session;
 
 @Component
-public class WebsiteCommand extends PluginCommand {
+public class WebsiteCommand extends PluginClientCommand {
     public WebsiteCommand() {
         setName("website");
         setDescription("Open mindustry tool official website");
@@ -15,7 +15,7 @@ public class WebsiteCommand extends PluginCommand {
     }
 
     @Override
-    public void handleClient(Session session) {
+    public void handle(Session session) {
         Call.openURI(session.player.con, Config.MINDUSTRY_TOOL_URL);
     }
 }

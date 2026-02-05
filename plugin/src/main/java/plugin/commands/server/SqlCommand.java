@@ -2,11 +2,11 @@ package plugin.commands.server;
 
 import arc.util.Log;
 import plugin.Component;
-import plugin.commands.PluginCommand;
+import plugin.commands.PluginServerCommand;
 import plugin.database.DB;
 
 @Component
-public class SqlCommand extends PluginCommand {
+public class SqlCommand extends PluginServerCommand {
     private Param scriptParam;
 
     public SqlCommand() {
@@ -16,7 +16,7 @@ public class SqlCommand extends PluginCommand {
     }
 
     @Override
-    public void handleServer() {
+    public void handle() {
         DB.prepare(scriptParam.asString(), statement -> {
             boolean hasResultSet = statement.execute();
 

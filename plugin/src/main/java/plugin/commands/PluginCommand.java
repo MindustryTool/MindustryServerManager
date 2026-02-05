@@ -3,47 +3,20 @@ package plugin.commands;
 import java.util.function.Function;
 
 import arc.struct.Seq;
-import arc.util.CommandHandler;
-import arc.util.Log;
 import arc.util.Strings;
 import lombok.Getter;
 import lombok.Setter;
-import mindustry.gen.Player;
-import plugin.Control;
-import plugin.handler.I18n;
-import plugin.utils.Utils;
-import plugin.handler.SessionHandler;
-import plugin.type.Session;
-
-import plugin.Registry;
 
 public abstract class PluginCommand {
     @Getter
     @Setter
-    private String name;
+    protected String name;
 
     @Getter
     @Setter
-    private String description;
+    protected String description;
 
-    private Seq<Param> params = new Seq<>();
-
-    @Setter
-    @Getter
-    private boolean admin = true;
-
-    private PluginCommand handleParams(String[] args) {
-        for (int i = 0; i < params.size; i++) {
-            Param param = params.get(i);
-            if (i < args.length) {
-                param.setValue(args[i]);
-            } else {
-                param.setValue(null);
-            }
-        }
-
-        return this;
-    }
+    protected Seq<Param> params = new Seq<>();
 
     protected Param optional(String name) {
         Param p = new Param(name, ParamType.Optional, new Seq<>());
@@ -63,98 +36,6 @@ public abstract class PluginCommand {
         return p;
     }
 
-    protected PluginCommand newInstance() {
-        try {
-            PluginCommand copy = this.getClass().getDeclaredConstructor().newInstance();
-
-            copy.name = this.name;
-            copy.description = (admin ? "[scarlet]ADMIN - " : "") + this.description;
-
-            for (Param p : this.params) {
-                copy.params.add(p.copy());
-            }
-
-            return copy;
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to clone command", e);
-        }
-    }
-
-    public void register(CommandHandler handler, boolean isClient) {
-        if (name == null || name.isEmpty()) {
-            throw new IllegalArgumentException("name");
-        }
-
-        if (description == null || description.isEmpty()) {
-            throw new IllegalArgumentException("description");
-        }
-
-        StringBuilder paramText = new StringBuilder("");
-
-        for (Param param : params) {
-            paramText.append(param.toParamText()).append(" ");
-        }
-
-        if (isClient) {
-            handler.register(name, paramText.toString(), description, (args, p) -> {
-                if (p instanceof Player player) {
-                    if (admin && !player.admin) {
-                        player.sendMessage(I18n.t(Utils.parseLocale(player.locale()), "[scarlet]",
-                                "@You must be admin to use this command."));
-                        return;
-                    }
-
-                    var session = Registry.get(SessionHandler.class).get(player).orElse(null);
-
-                    if (session == null) {
-                        Log.info("[scarlet]Failed to get session for player.");
-                        Thread.dumpStack();
-                        return;
-                    }
-
-                    Control.ioTask("Client command", () -> {
-                        try {
-                            this.newInstance()
-                                    .handleParams(args)
-                                    .handleClient(session);
-                        } catch (ParamException e) {
-                            session.player.sendMessage(I18n.t(
-                                    session.locale, "[scarlet]", "@Error: ", e.getMessage()));
-                        } catch (Exception e) {
-                            session.player.sendMessage(I18n.t(
-                                    session.locale, "[scarlet]", "@Error"));
-                            Log.err("Failed to execute command " + name, e);
-                        }
-                    });
-                } else {
-                    throw new IllegalArgumentException("Player expected");
-                }
-            });
-        } else {
-            handler.register(name, paramText.toString(), description, (args) -> {
-                Control.ioTask("Server command", () -> {
-                    try {
-                        this.newInstance()
-                                .handleParams(args)
-                                .handleServer();
-                    } catch (ParamException e) {
-                        Log.err(e.getMessage());
-                    } catch (Exception e) {
-                        Log.err("Failed to execute command " + name, e);
-                    }
-                });
-            });
-        }
-    }
-
-    public void handleClient(Session session) {
-        throw new UnsupportedOperationException("run");
-    }
-
-    public void handleServer() {
-        throw new UnsupportedOperationException("run");
-    }
-
     public class ParamException extends IllegalArgumentException {
         public ParamException(Param param, String message) {
             super(message + " " + param.toParamText() + "=" + param.value);
@@ -167,6 +48,17 @@ public abstract class PluginCommand {
         private String value;
 
         private Seq<Runnable> validators = new Seq<>();
+
+        public static void parse(Seq<Param> params, String[] args) {
+            for (int i = 0; i < params.size; i++) {
+                Param param = params.get(i);
+                if (i < args.length) {
+                    param.setValue(args[i]);
+                } else {
+                    param.setValue(null);
+                }
+            }
+        }
 
         private void validate(Function<Param, Boolean> validator, String message, Object... args) {
             validators.add(() -> {

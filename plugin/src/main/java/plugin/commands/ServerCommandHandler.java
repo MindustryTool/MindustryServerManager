@@ -19,7 +19,7 @@ import plugin.type.PrevCommand;
 @Component
 public class ServerCommandHandler implements IComponent {
 
-    private final List<PluginCommand> commands = new ArrayList<>();
+    private final List<PluginServerCommand> commands = new ArrayList<>();
 
     @Getter
     private CommandHandler handler;
@@ -37,11 +37,11 @@ public class ServerCommandHandler implements IComponent {
     public void registerCommands(CommandHandler handler) {
         this.handler = handler;
 
-        List<PluginCommand> registeredCommands = Registry.getAll(PluginCommand.class);
+        List<PluginServerCommand> registeredCommands = Registry.getAll(PluginServerCommand.class);
         commands.addAll(registeredCommands);
 
-        for (PluginCommand command : commands) {
-            command.register(handler, false);
+        for (PluginServerCommand command : commands) {
+            command.register(handler);
             Log.info("Server command registered: " + command.getName());
         }
 
@@ -70,7 +70,7 @@ public class ServerCommandHandler implements IComponent {
     public void destroy() {
         unload();
     }
-    
+
     public Seq<arc.util.CommandHandler.Command> getCommandList() {
         return handler == null ? new Seq<>() : handler.getCommandList();
     }

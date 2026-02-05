@@ -7,11 +7,11 @@ import plugin.Registry;
 import plugin.handler.ApiGateway;
 import plugin.handler.I18n;
 import plugin.type.Session;
-import plugin.commands.PluginCommand;
+import plugin.commands.PluginClientCommand;
 import plugin.Component;
 
 @Component
-public class LoginCommand extends PluginCommand {
+public class LoginCommand extends PluginClientCommand {
     public LoginCommand() {
         setName("login");
         setDescription("Login");
@@ -20,7 +20,7 @@ public class LoginCommand extends PluginCommand {
     }
 
     @Override
-    public void handleClient(Session session) {
+    public void handle(Session session) {
         try {
             LoginDto login = Registry.get(ApiGateway.class).login(session.player);
 

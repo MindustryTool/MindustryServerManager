@@ -1,12 +1,12 @@
 package plugin.commands.client;
 
 import plugin.Component;
-import plugin.commands.PluginCommand;
+import plugin.commands.PluginClientCommand;
 import plugin.menus.GlobalServerListMenu;
 import plugin.type.Session;
 
 @Component
-public class RedirectCommand extends PluginCommand {
+public class RedirectCommand extends PluginClientCommand {
 
     public RedirectCommand() {
         setName("redirect");
@@ -14,7 +14,7 @@ public class RedirectCommand extends PluginCommand {
     }
 
     @Override
-    public void handleClient(Session session) {
+    public void handle(Session session) {
         new GlobalServerListMenu().send(session, 0);
     }
 }

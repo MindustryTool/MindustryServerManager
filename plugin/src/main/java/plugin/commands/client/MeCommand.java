@@ -1,11 +1,11 @@
 package plugin.commands.client;
 
 import plugin.Component;
-import plugin.commands.PluginCommand;
+import plugin.commands.PluginClientCommand;
 import plugin.type.Session;
 
 @Component
-public class MeCommand extends PluginCommand {
+public class MeCommand extends PluginClientCommand {
     public MeCommand() {
         setName("me");
         setDescription("Display your info");
@@ -13,7 +13,7 @@ public class MeCommand extends PluginCommand {
     }
 
     @Override
-    public void handleClient(Session session) {
+    public void handle(Session session) {
         session.player.sendMessage(session.info());
     }
 }

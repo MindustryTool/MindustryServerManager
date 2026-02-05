@@ -4,10 +4,10 @@ import arc.util.Log;
 import mindustry.Vars;
 import mindustry.gen.Call;
 import plugin.Component;
-import plugin.commands.PluginCommand;
+import plugin.commands.PluginServerCommand;
 
 @Component
-public class SayCommand extends PluginCommand {
+public class SayCommand extends PluginServerCommand {
     private Param messageParam;
 
     public SayCommand() {
@@ -17,7 +17,7 @@ public class SayCommand extends PluginCommand {
     }
 
     @Override
-    public void handleServer() {
+    public void handle() {
         if (!Vars.state.isGame()) {
             Log.err("Not hosting. Host a game first.");
             return;

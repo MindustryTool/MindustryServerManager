@@ -6,12 +6,12 @@ import plugin.type.PaginationRequest;
 import plugin.type.Session;
 import plugin.utils.ServerUtils;
 import arc.struct.Seq;
-import plugin.commands.PluginCommand;
+import plugin.commands.PluginClientCommand;
 import plugin.handler.ApiGateway;
 import plugin.handler.I18n;
 
 @Component
-public class HubCommand extends PluginCommand {
+public class HubCommand extends PluginClientCommand {
     public HubCommand() {
         setName("hub");
         setDescription("Go to hub");
@@ -19,8 +19,9 @@ public class HubCommand extends PluginCommand {
     }
 
     @Override
-    public void handleClient(Session session) {
-        var servers = Seq.with(Registry.get(ApiGateway.class).getServers(new PaginationRequest().setPage(0).setSize(20)));
+    public void handle(Session session) {
+        var servers = Seq
+                .with(Registry.get(ApiGateway.class).getServers(new PaginationRequest().setPage(0).setSize(20)));
 
         var hub = servers.find(server -> server.isHub());
 

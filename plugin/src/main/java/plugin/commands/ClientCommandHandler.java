@@ -24,7 +24,7 @@ import plugin.utils.Utils;
 @RequiredArgsConstructor
 public class ClientCommandHandler implements IComponent {
 
-    private final List<PluginCommand> commands = new ArrayList<>();
+    private final List<PluginClientCommand> commands = new ArrayList<>();
 
     @Getter
     private CommandHandler handler;
@@ -35,11 +35,11 @@ public class ClientCommandHandler implements IComponent {
         this.handler = handler;
 
         // Get all commands from registry
-        List<PluginCommand> registeredCommands = Registry.getAll(PluginCommand.class);
+        List<PluginClientCommand> registeredCommands = Registry.getAll(PluginClientCommand.class);
         commands.addAll(registeredCommands);
 
-        for (PluginCommand command : commands) {
-            command.register(handler, true);
+        for (PluginClientCommand command : commands) {
+            command.register(handler);
             Log.info("Client command registered: " + command.getName());
         }
 

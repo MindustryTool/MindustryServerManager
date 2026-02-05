@@ -1,12 +1,12 @@
 package plugin.commands.client;
 
 import plugin.Component;
-import plugin.commands.PluginCommand;
+import plugin.commands.PluginClientCommand;
 import plugin.menus.PlayerInfoMenu;
 import plugin.type.Session;
 
 @Component
-public class PlayerInfoCommand extends PluginCommand {
+public class PlayerInfoCommand extends PluginClientCommand {
     public PlayerInfoCommand() {
         setName("pinfo");
         setDescription("Display player info");
@@ -14,7 +14,7 @@ public class PlayerInfoCommand extends PluginCommand {
     }
 
     @Override
-    public void handleClient(Session session) {
+    public void handle(Session session) {
         new PlayerInfoMenu().send(session, session);
     }
 }

@@ -1,12 +1,12 @@
 package plugin.commands.client;
 
 import plugin.Component;
-import plugin.commands.PluginCommand;
+import plugin.commands.PluginClientCommand;
 import plugin.menus.TrailMenu;
 import plugin.type.Session;
 
 @Component
-public class TrailCommand extends PluginCommand {
+public class TrailCommand extends PluginClientCommand {
     public TrailCommand() {
         setName("trail");
         setDescription("Toggle trail");
@@ -14,7 +14,7 @@ public class TrailCommand extends PluginCommand {
     }
 
     @Override
-    public void handleClient(Session session) {
+    public void handle(Session session) {
         new TrailMenu().send(session, 0);
     }
 }

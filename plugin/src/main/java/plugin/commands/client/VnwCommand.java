@@ -9,14 +9,14 @@ import mindustry.gen.Groups;
 import plugin.Component;
 import plugin.Control;
 import plugin.Registry;
-import plugin.commands.PluginCommand;
+import plugin.commands.PluginClientCommand;
 import plugin.handler.I18n;
 import plugin.handler.SessionHandler;
 import plugin.type.Session;
 import plugin.utils.Utils;
 
 @Component
-public class VnwCommand extends PluginCommand {
+public class VnwCommand extends PluginClientCommand {
     private int waveVoted = -1;
     private ScheduledFuture<?> voteTimeout;
     private ScheduledFuture<?> voteCountDown;
@@ -32,7 +32,7 @@ public class VnwCommand extends PluginCommand {
     }
 
     @Override
-    public synchronized void handleClient(Session session) {
+    public synchronized void handle(Session session) {
         if (session.votedVNW) {
             session.player.sendMessage(I18n.t(session.locale, "@You already voted."));
             return;
