@@ -1,9 +1,7 @@
 package plugin;
 
 import java.util.Locale;
-import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -52,9 +50,6 @@ public class ServerControl extends Plugin implements MindustryToolPlugin {
 
     private static final ExecutorService CPU_TASK_EXECUTOR = Executors
             .newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-
-    private static final Set<String> ioTasks = ConcurrentHashMap.newKeySet();
-    private static final Set<String> cpuTasks = ConcurrentHashMap.newKeySet();
 
     public ServerControl() {
         Log.info("Server controller created: " + this);
@@ -154,38 +149,35 @@ public class ServerControl extends Plugin implements MindustryToolPlugin {
     }
 
     public static void ioTask(String name, Runnable r) {
-        ioTasks.add(name);
         IO_TASK_EXECUTOR.submit(() -> {
             long startedAt = Time.millis();
             try {
-                Log.info("Running io tasks: " + ioTasks);
                 r.run();
             } catch (Exception e) {
-                Log.err("Failed to execute background task: " + name, e);
+                Log.err("Failed to execute io task: " + name, e);
             } finally {
-                ioTasks.remove(name);
-                Log.info("Running io tasks: " + ioTasks);
-                Log.info("IO task " + name + " took " + (Time.millis() - startedAt) + "ms");
+                var elapsed = Time.millis() - startedAt;
+                if (elapsed > 1000) {
+                    Log.info("CPU task " + name + " took " + elapsed + "ms");
+                }
             }
 
         });
     }
 
     public static void cpuTask(String name, Runnable r) {
-        cpuTasks.add(name);
         CPU_TASK_EXECUTOR.submit(() -> {
             long startedAt = Time.millis();
             try {
-                Log.info("Running cpu tasks: " + cpuTasks);
                 r.run();
             } catch (Exception e) {
-                Log.err("Failed to execute background task: " + name, e);
+                Log.err("Failed to execute cpu task: " + name, e);
             } finally {
-                cpuTasks.remove(name);
-                Log.info("Running cpu tasks: " + cpuTasks);
-                Log.info("CPU task " + name + " took " + (Time.millis() - startedAt) + "ms");
+                var elapsed = Time.millis() - startedAt;
+                if (elapsed > 1000) {
+                    Log.info("CPU task " + name + " took " + elapsed + "ms");
+                }
             }
-
         });
     }
 

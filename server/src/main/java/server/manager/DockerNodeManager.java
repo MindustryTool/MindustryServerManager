@@ -460,7 +460,7 @@ public class DockerNodeManager implements NodeManager {
 
                                 eventBus.emit(new StartEvent(serverId));
                             } else if (stopEvents.stream().anyMatch(stop -> status.equalsIgnoreCase(stop))) {
-                                eventBus.emit(new StopEvent(serverId, status.toUpperCase()));
+                                eventBus.emit(new StopEvent(serverId, "DOCKER-" + status.toUpperCase()));
                             }
                         }, () -> {
                             var serverIdString = container.getLabels().get(Const.serverIdLabel);
@@ -469,7 +469,7 @@ public class DockerNodeManager implements NodeManager {
                             }
 
                             UUID serverId = UUID.fromString(serverIdString);
-                            eventBus.emit(new StopEvent(serverId, status.toUpperCase()));
+                            eventBus.emit(new StopEvent(serverId, "DOCKER-" + status.toUpperCase()));
                         });
 
                         String name = optional
