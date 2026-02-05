@@ -146,7 +146,6 @@ public class ServerService {
 
         Flux<LogEvent> hostFlux = serverGateway.isHosting()
                 .flatMapMany(isHosting -> {
-
                     if (isHosting) {
                         var event = LogEvent.info(serverId, "Server is hosting, do nothing");
                         Log.info("Server is hosting, do nothing");
