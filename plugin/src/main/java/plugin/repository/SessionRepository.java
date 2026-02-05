@@ -12,10 +12,10 @@ import lombok.AllArgsConstructor;
 import mindustry.gen.Player;
 import plugin.database.DB;
 import plugin.event.SessionRemovedEvent;
-import plugin.PluginEvents;
 import plugin.annotations.Component;
 import plugin.annotations.Destroy;
 import plugin.annotations.Init;
+import plugin.annotations.Listener;
 import plugin.Control;
 import plugin.type.SessionData;
 import plugin.utils.ExpUtils;
@@ -30,15 +30,13 @@ public class SessionRepository {
     @Init
     public void init() {
         createTableIfNotExists();
+        Control.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(this::flushBatch, 10, 30, TimeUnit.SECONDS);
+    }
 
-        Control.BACKGROUND_SCHEDULER
-                .scheduleWithFixedDelay(this::flushBatch, 10, 30, TimeUnit.SECONDS);
-
-        PluginEvents.on(SessionRemovedEvent.class,
-                event -> {
-                    write(event.getSession().player.uuid(), event.getSession().getData());
-                    cache.remove(event.getSession().player.uuid());
-                });
+    @Listener
+    public void onSessionRemoved(SessionRemovedEvent event) {
+        write(event.getSession().player.uuid(), event.getSession().getData());
+        cache.remove(event.getSession().player.uuid());
     }
 
     @Destroy

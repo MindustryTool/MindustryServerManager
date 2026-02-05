@@ -152,22 +152,42 @@ public final class Registry {
 
             // Scan for @Listener
             if (method.isAnnotationPresent(Listener.class)) {
-                if (method.getParameterCount() != 1) {
-                    Log.err("@Listener method @ in @ must have exactly one parameter", method.getName(),
-                            clazz.getName());
-                    continue;
-                }
-                Class eventType = method.getParameterTypes()[0];
+                Listener annotation = method.getAnnotation(Listener.class);
+                int paramCount = method.getParameterCount();
+
                 method.setAccessible(true);
 
-                // Register with PluginEvents
-                PluginEvents.on(eventType, (Cons) event -> {
-                    try {
-                        method.invoke(instance, event);
-                    } catch (Exception e) {
-                        Log.err("Failed to invoke listener @ in @", method.getName(), clazz.getName(), e);
+                if (paramCount == 1) {
+                    Class<?> eventType = method.getParameterTypes()[0];
+                    // Register with PluginEvents
+                    PluginEvents.on(eventType, (Cons) event -> {
+                        try {
+                            method.invoke(instance, event);
+                        } catch (Exception e) {
+                            Log.err("Failed to invoke listener @ in @", method.getName(), clazz.getName(), e);
+                        }
+                    });
+                } else if (paramCount == 0) {
+                    Class<?> eventType = annotation.value();
+                    if (eventType == Object.class) {
+                        Log.err("@Listener method @ in @ with 0 parameters must specify event type in annotation",
+                                method.getName(),
+                                clazz.getName());
+                        continue;
                     }
-                });
+
+                    // Register with PluginEvents
+                    PluginEvents.run(eventType, () -> {
+                        try {
+                            method.invoke(instance);
+                        } catch (Exception e) {
+                            Log.err("Failed to invoke listener @ in @", method.getName(), clazz.getName(), e);
+                        }
+                    });
+                } else {
+                    Log.err("@Listener method @ in @ must have exactly 0 or 1 parameter", method.getName(),
+                            clazz.getName());
+                }
             }
         }
 

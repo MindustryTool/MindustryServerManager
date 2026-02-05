@@ -9,8 +9,7 @@ import java.sql.Statement;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import arc.util.Log;
-import plugin.PluginEvents;
-import plugin.event.PluginUnloadEvent;
+import plugin.annotations.Destroy;
 
 public class DB {
     private static final String DATABASE_DIR = "./config/database";
@@ -41,8 +40,6 @@ public class DB {
 
             File databaseFile = new File(databaseDir, DATABASE_FILE);
             databasePath = databaseFile.getAbsolutePath();
-
-            PluginEvents.on(PluginUnloadEvent.class, event -> close());
 
             Log.info("SQLite database initialized at: " + databasePath);
 
@@ -127,6 +124,7 @@ public class DB {
         }
     }
 
+    @Destroy
     public static void close() {
         lock.writeLock().lock();
         try {

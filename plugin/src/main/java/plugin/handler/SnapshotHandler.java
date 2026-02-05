@@ -12,10 +12,9 @@ import mindustry.game.EventType.BlockDestroyEvent;
 import mindustry.gen.Building;
 import mindustry.gen.Player;
 import mindustry.world.Tile;
-import plugin.PluginEvents;
 import plugin.annotations.Component;
 import plugin.annotations.Destroy;
-import plugin.annotations.Init;
+import plugin.annotations.Listener;
 import plugin.event.SessionRemovedEvent;
 
 @Component
@@ -30,19 +29,13 @@ public class SnapshotHandler {
         public final Instant builtTime;
     }
 
-    @Init
-    public void init() {
-        PluginEvents.on(BlockBuildEndEvent.class, this::onBlockBuildEnd);
-        PluginEvents.on(BlockDestroyEvent.class, this::onBlockDestroy);
-        PluginEvents.on(SessionRemovedEvent.class, this::onSessionRemoved);
-    }
-
     @Destroy
     public void destroy() {
         builtBy.clear();
         buildingToPlayer.clear();
     }
 
+    @Listener
     public void onSessionRemoved(SessionRemovedEvent event) {
         var player = event.session.player;
         builtBy.values().removeIf(data -> data.player == player);
@@ -53,6 +46,7 @@ public class SnapshotHandler {
         return Optional.ofNullable(buildingToPlayer.get(building));
     }
 
+    @Listener
     private void onBlockDestroy(BlockDestroyEvent event) {
         var tile = event.tile;
 
@@ -73,6 +67,7 @@ public class SnapshotHandler {
         return tile.x + tile.y * Vars.world.width();
     }
 
+    @Listener
     private void onBlockBuildEnd(BlockBuildEndEvent event) {
         var unit = event.unit;
         var tile = event.tile;

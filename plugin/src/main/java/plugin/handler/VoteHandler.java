@@ -10,10 +10,9 @@ import mindustry.game.Team;
 import mindustry.gen.Groups;
 import mindustry.gen.Player;
 import mindustry.maps.Map;
-import plugin.PluginEvents;
 import plugin.annotations.Component;
 import plugin.annotations.Destroy;
-import plugin.annotations.Init;
+import plugin.annotations.Listener;
 import plugin.event.SessionRemovedEvent;
 import plugin.utils.Utils;
 
@@ -23,15 +22,10 @@ public class VoteHandler {
     public double ratio = 0.6;
     public Map lastMap = null;
 
-    @Init
-    public void init() {
-        PluginEvents.on(SessionRemovedEvent.class, event -> {
-            removeVote(event.session.player);
-            check();
-        });
-
-        // PluginEvents.run(PluginUnloadEvent.class, this::unload); // Handled by
-        // destroy
+    @Listener
+    public void onSessionRemovedEvent(SessionRemovedEvent event) {
+        removeVote(event.session.player);
+        check();
     }
 
     @Destroy

@@ -25,9 +25,9 @@ import mindustry.gen.Iconc;
 import mindustry.net.ArcNetProvider;
 import mindustry.net.Net;
 import plugin.Config;
-import plugin.PluginEvents;
 import plugin.annotations.Component;
 import plugin.annotations.Init;
+import plugin.annotations.Listener;
 import plugin.Control;
 import plugin.menus.ServerRedirectMenu;
 import plugin.type.PaginationRequest;
@@ -50,10 +50,6 @@ public class HubHandler {
             return;
         }
 
-        PluginEvents.on(TapEvent.class, this::onTap);
-        PluginEvents.on(PlayerJoin.class, this::onPlayerJoin);
-        PluginEvents.run(WorldLoadEvent.class, this::loadCores);
-
         setupCustomServerDiscovery();
         loadCores();
         refreshServerList();
@@ -73,6 +69,7 @@ public class HubHandler {
         }, 5, 5, TimeUnit.SECONDS);
     }
 
+    @Listener(WorldLoadEvent.class)
     private void loadCores() {
         Control.ioTask("Refresh server list", () -> {
             serverCores.clear();
@@ -92,6 +89,7 @@ public class HubHandler {
         });
     }
 
+    @Listener
     private void onPlayerJoin(PlayerJoin event) {
         refreshServerList();
         renderServerLabels();
@@ -172,6 +170,7 @@ public class HubHandler {
         buffer.put(bytes);
     }
 
+    @Listener
     private void onTap(TapEvent event) {
         if (!plugin.Config.IS_HUB) {
             return;

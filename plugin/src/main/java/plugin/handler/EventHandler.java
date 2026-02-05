@@ -29,7 +29,7 @@ import dto.PlayerDto;
 import plugin.utils.Utils;
 import plugin.Registry;
 import plugin.annotations.Component;
-import plugin.annotations.Init;
+import plugin.annotations.Listener;
 import mindustry.ui.dialogs.LanguageDialog;
 import java.time.Instant;
 
@@ -49,19 +49,7 @@ public class EventHandler {
         this.sessionService = sessionService;
     }
 
-    @Init
-    public void init() {
-        PluginEvents.on(SessionCreatedEvent.class, this::onSessionCreatedEvent);
-        PluginEvents.on(SessionRemovedEvent.class, this::onRemovedEvent);
-        PluginEvents.on(PlayerChatEvent.class, this::onPlayerChat);
-        PluginEvents.on(GameOverEvent.class, this::onGameOver);
-        PluginEvents.on(WorldLoadEndEvent.class, this::onWorldLoadEnd);
-        PluginEvents.on(PlayerConnect.class, this::onPlayerConnect);
-        PluginEvents.on(UnitBulletDestroyEvent.class, this::onUnitBulletDestroy);
-        PluginEvents.on(PlayerLeave.class, this::onPlayerLeave);
-        PluginEvents.on(PlayerBanEvent.class, this::onPlayerBan);
-    }
-
+    @Listener
     private void onPlayerBan(PlayerBanEvent event) {
         String message = Strings.format("[scarlet]Player @ has been banned", event.player.name);
 
@@ -69,6 +57,7 @@ public class EventHandler {
         httpServer.fire(new ServerEvents.ChatEvent(Control.SERVER_ID, message));
     }
 
+    @Listener
     private void onPlayerLeave(PlayerLeave event) {
         if (event.player.con != null && event.player.con.kicked) {
             String message = Strings.format("[scarlet]Player @ has been kicked", event.player.name);
@@ -78,6 +67,7 @@ public class EventHandler {
         }
     }
 
+    @Listener
     private void onUnitBulletDestroy(UnitBulletDestroyEvent event) {
         var unit = event.unit;
         var bullet = event.bullet;
@@ -102,6 +92,7 @@ public class EventHandler {
         }
     }
 
+    @Listener
     private void onGameOver(GameOverEvent event) {
         var rateMap = Vars.state.map;
 
@@ -110,6 +101,7 @@ public class EventHandler {
         }
     }
 
+    @Listener
     private void onWorldLoadEnd(WorldLoadEndEvent event) {
         Control.BACKGROUND_SCHEDULER.schedule(() -> {
             if (!Vars.state.isPaused() && Groups.player.size() == 0) {
@@ -130,6 +122,7 @@ public class EventHandler {
         });
     }
 
+    @Listener
     private void onPlayerConnect(PlayerConnect event) {
         try {
             var player = event.player;
@@ -146,6 +139,7 @@ public class EventHandler {
         }
     }
 
+    @Listener
     private void onPlayerChat(PlayerChatEvent event) {
         Player player = event.player;
         String message = event.message;
@@ -190,6 +184,7 @@ public class EventHandler {
         });
     }
 
+    @Listener
     private void onRemovedEvent(SessionRemovedEvent event) {
         try {
             var request = PlayerDto.from(event.session.player).setJoinedAt(event.session.joinedAt);
@@ -221,6 +216,7 @@ public class EventHandler {
         }
     }
 
+    @Listener
     private void onSessionCreatedEvent(SessionCreatedEvent event) {
         try {
             if (Vars.state.isPaused()) {

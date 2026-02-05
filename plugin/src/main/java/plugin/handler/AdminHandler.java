@@ -17,10 +17,10 @@ import mindustry.gen.Groups;
 import mindustry.net.Packets.Connect;
 import mindustry.net.Packets.KickReason;
 import plugin.Config;
-import plugin.PluginEvents;
 import plugin.annotations.Component;
 import plugin.annotations.Destroy;
 import plugin.annotations.Init;
+import plugin.annotations.Listener;
 import plugin.Control;
 import plugin.event.SessionRemovedEvent;
 import plugin.type.Session;
@@ -42,19 +42,6 @@ public class AdminHandler {
 
     @Init
     public void init() {
-        PluginEvents.on(SessionRemovedEvent.class, event -> {
-            if (reported == event.session) {
-                if (reporter != null) {
-                    lastGriefReportTimes.invalidate(reporter);
-                }
-                reported.player.kick(KickReason.kick, 60 * 1000 * 60);
-                reset();
-            }
-        });
-
-        // PluginEvents.run(PluginUnloadEvent.class, AdminHandler::unload); // Handled
-        // by destroy
-
         Vars.net.handleServer(Connect.class, (con, connect) -> {
             Events.fire(new ConnectionEvent(con));
 
@@ -66,6 +53,17 @@ public class AdminHandler {
                         "Discord: " + Config.DISCORD_INVITE_URL);
             }
         });
+    }
+
+    @Listener
+    public void onSessionRemoved(SessionRemovedEvent event) {
+        if (reported == event.session) {
+            if (reporter != null) {
+                lastGriefReportTimes.invalidate(reporter);
+            }
+            reported.player.kick(KickReason.kick, 60 * 1000 * 60);
+            reset();
+        }
     }
 
     @Destroy

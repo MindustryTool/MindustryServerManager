@@ -52,14 +52,7 @@ public class Control extends Plugin implements MindustryToolPlugin {
 
         BACKGROUND_SCHEDULER.schedule(this::autoHost, 60, TimeUnit.SECONDS);
         BACKGROUND_SCHEDULER.schedule(this::autoPause, 10, TimeUnit.SECONDS);
-        BACKGROUND_SCHEDULER.scheduleWithFixedDelay(Control::sendTips, 3, 3, TimeUnit.MINUTES);
-
-        Utils.forEachPlayerLocale((locale, players) -> {
-            String msg = "[scarlet]" + I18n.t(locale, "@Server controller restarted");
-            for (var p : players) {
-                p.sendMessage(msg);
-            }
-        });
+        BACKGROUND_SCHEDULER.scheduleWithFixedDelay(this::sendTips, 3, 3, TimeUnit.MINUTES);
 
         state = PluginState.LOADED;
     }
@@ -189,7 +182,7 @@ public class Control extends Plugin implements MindustryToolPlugin {
         }
     }
 
-    private static void sendTips() {
+    private void sendTips() {
         Seq<Func<Locale, String>> tips = new Seq<>();
 
         tips.add((locale) -> I18n.t(locale, "@Powered by", " MindustryTool"));

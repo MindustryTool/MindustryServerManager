@@ -19,6 +19,7 @@ import plugin.PluginEvents;
 import plugin.annotations.Component;
 import plugin.annotations.Destroy;
 import plugin.annotations.Init;
+import plugin.annotations.Listener;
 import plugin.event.PlayerKillUnitEvent;
 import plugin.event.SessionCreatedEvent;
 import plugin.event.SessionRemovedEvent;
@@ -43,28 +44,31 @@ public class SessionHandler {
 
         Control.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(this::create, 10, 2, TimeUnit.SECONDS);
         Control.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(this::update, 0, 1, TimeUnit.SECONDS);
+    }
 
-        PluginEvents.on(PlayerKillUnitEvent.class, event -> {
-            get(event.getPlayer()).ifPresent(session -> {
-                if (event.getUnit().type.isHidden() || event.getUnit().type instanceof TimedKillc) {
-                    return;
-                }
+    @Listener
+    public void onPlayerKillUnit(PlayerKillUnitEvent event) {
+        get(event.getPlayer()).ifPresent(session -> {
+            if (event.getUnit().type.isHidden() || event.getUnit().type instanceof TimedKillc) {
+                return;
+            }
 
-                sessionService.addKill(session, event.getUnit().type, 1);
-            });
+            sessionService.addKill(session, event.getUnit().type, 1);
         });
+    }
 
-        PluginEvents.on(PlayerLeave.class, event -> {
-            remove(event.player);
-        });
+    @Listener
+    public void onPlayerJoin(PlayerJoin event) {
+        Core.app.post(() -> put(event.player));
 
-        PluginEvents.on(PlayerJoin.class, event -> {
-            Core.app.post(() -> put(event.player));
+        Control.ioTask("Send Leader Board",
+                () -> event.player.sendMessage(RankUtils.getRankString(Utils.parseLocale(event.player.locale),
+                        sessionRepository.getLeaderBoard(10))));
+    }
 
-            Control.ioTask("Send Leader Board",
-                    () -> event.player.sendMessage(RankUtils.getRankString(Utils.parseLocale(event.player.locale),
-                            sessionRepository.getLeaderBoard(10))));
-        });
+    @Listener
+    public void onPlayerLeave(PlayerLeave event) {
+        remove(event.player);
     }
 
     public ConcurrentHashMap<String, Session> get() {

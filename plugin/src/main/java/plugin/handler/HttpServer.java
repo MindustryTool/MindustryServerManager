@@ -14,11 +14,11 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import arc.util.Log;
-import plugin.PluginEvents;
 import plugin.PluginState;
 import plugin.annotations.Component;
 import plugin.annotations.Destroy;
 import plugin.annotations.Init;
+import plugin.annotations.Listener;
 import plugin.Control;
 import plugin.controller.GeneralController;
 import plugin.event.SessionCreatedEvent;
@@ -111,10 +111,6 @@ public class HttpServer {
             }
         });
 
-        PluginEvents.run(SessionCreatedEvent.class, this::sendStateUpdate);
-        PluginEvents.run(SessionRemovedEvent.class, this::sendStateUpdate);
-        PluginEvents.run(StateChangeEvent.class, this::sendStateUpdate);
-
         app.start(9999);
         Log.info("Http server started on port 9999");
 
@@ -174,6 +170,21 @@ public class HttpServer {
         sendStateUpdate();
 
         eventListener = client;
+    }
+
+    @Listener(SessionCreatedEvent.class)
+    private void onSessionCreated() {
+        sendStateUpdate();
+    }
+
+    @Listener(SessionRemovedEvent.class)
+    private void onSessionRemoved() {
+        sendStateUpdate();
+    }
+
+    @Listener(StateChangeEvent.class)
+    private void onStateChange() {
+        sendStateUpdate();
     }
 
     private void sendStateUpdate() {
