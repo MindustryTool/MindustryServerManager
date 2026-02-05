@@ -11,7 +11,6 @@ import arc.net.Server;
 import arc.struct.Seq;
 import arc.util.Log;
 import dto.ServerDto;
-import dto.ServerStatus;
 import mindustry.Vars;
 import mindustry.content.Fx;
 import mindustry.core.Version;
@@ -105,7 +104,6 @@ public class HubHandler {
                 if (Config.IS_HUB && servers.size > 0) {
                     try {
                         var serverData = servers
-                                .select(s -> s.getStatus() == ServerStatus.STOP || s.getStatus() == ServerStatus.ONLINE)
                                 .random();
 
                         var totalPlayers = servers.sum(s -> (int) s.getPlayers());
@@ -256,10 +254,10 @@ public class HubHandler {
 
         Utils.forEachPlayerLocale((locale, players) -> {
 
-            String message = name + "[]\n" +
-                    description + "[]\n\n" +
+            String message = newLine(name) + "[]\n" +
+                    newLine(description) + "[]\n\n" +
                     "[#E3F2FD]Players: []" + server.getPlayers() + "\n" +
-                    "[#BBDEFB]Map: []" + server.getMapName() + "[]\n" +
+                    "[#BBDEFB]Map: []" + newLine(server.getMapName()) + "[]\n" +
                     "[#90CAF9]Mode: []" + server.getMode() + "[]\n" +
                     (mods.isEmpty() ? "" : "[#4FC3F7]Mods:[] " + mods) + "[]\n\n" +
                     "[accent]" + I18n.t(locale, "@Tap to join server") + "\n";
@@ -268,5 +266,21 @@ public class HubHandler {
                 Call.label(player.con, message, 5, labelX, labelY);
             }
         });
+    }
+
+    public static String newLine(String text) {
+        String[] lines = text.split("\n");
+
+        StringBuilder sb = new StringBuilder();
+
+        for (int i = 0; i < lines.length; i++) {
+            sb.append(lines[i]);
+
+            if (i % 5 == 4 && i < lines.length - 1) {
+                sb.append("\n");
+            }
+        }
+
+        return sb.toString();
     }
 }

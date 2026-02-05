@@ -8,5 +8,9 @@ public enum ServerStatus {
     OFFLINE,
     NOT_RESPONSE,
     PAUSED,
-    UNKNOWN,
+    UNKNOWN;
+
+    public boolean isOnline() {
+        return this == ONLINE || this == PAUSED;
+    }
 }
