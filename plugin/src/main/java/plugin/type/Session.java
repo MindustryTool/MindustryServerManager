@@ -22,7 +22,6 @@ import plugin.utils.Utils;
 public class Session {
     public final Locale locale;
     public final Player player;
-    public final String originalName;
     public final Long joinedAt = Instant.now().toEpochMilli();
 
     public boolean votedVNW = false;
@@ -31,7 +30,6 @@ public class Session {
 
     public Session(Player player) {
         this.player = player;
-        this.originalName = player.name().replaceAll("\\|[a-zA-Z]+\\| \\[\\]<\\[[^]]+\\]\\d+>", "").trim();
         this.locale = Locale.forLanguageTag(player.locale().replace("_", "-"));
 
         Log.info("Session created for player @: @", player.name, this);
@@ -95,7 +93,7 @@ public class Session {
 
     public String getPlayerName(long level) {
         boolean hasColor = level > Config.COLOR_NAME_LEVEL || player.admin;
-        String playerName = hasColor ? originalName : Strings.stripColors(originalName);
+        String playerName = hasColor ? data().name : Strings.stripColors(data().name);
         String language = locale.getDisplayLanguage();
 
         if (language.isEmpty()) {
@@ -106,7 +104,7 @@ public class Session {
     }
 
     public void reset() {
-        player.name(originalName);
+        player.name(data().name);
     }
 
     public SessionData data() {
