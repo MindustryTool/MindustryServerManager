@@ -15,7 +15,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import arc.util.Log;
 import plugin.PluginEvents;
-import plugin.ServerControl;
+import plugin.Control;
 import plugin.controller.GeneralController;
 import plugin.controller.WorkflowController;
 import plugin.event.PluginUnloadEvent;
@@ -39,7 +39,7 @@ public class HttpServer {
     private static final Duration HEARTBEAT_DURATION = Duration.ofSeconds(30);
 
     public static void init() {
-        ServerControl.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(() -> sendStateUpdate(), 0, 30, TimeUnit.SECONDS);
+        Control.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(() -> sendStateUpdate(), 0, 30, TimeUnit.SECONDS);
 
         if (app != null) {
             app.stop();
@@ -68,7 +68,7 @@ public class HttpServer {
         });
 
         app.beforeMatched((ctx) -> {
-            if (ServerControl.isUnloaded) {
+            if (Control.isUnloaded) {
                 Log.info("Server unloaded");
                 throw new ServerUnloadedException();
             }
@@ -110,14 +110,14 @@ public class HttpServer {
         PluginEvents.run(SessionRemovedEvent.class, HttpServer::sendStateUpdate);
         PluginEvents.run(StateChangeEvent.class, HttpServer::sendStateUpdate);
 
-        if (!ServerControl.isUnloaded) {
+        if (!Control.isUnloaded) {
             app.start(9999);
             Log.info("Http server started on port 9999");
         }
 
         PluginEvents.run(PluginUnloadEvent.class, HttpServer::unload);
 
-        ServerControl.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(
+        Control.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(
                 () -> {
                     if (!isConnected()) {
                         ApiGateway.requestConnection();
@@ -177,7 +177,7 @@ public class HttpServer {
     private static void sendStateUpdate() {
         try {
             ServerStateDto state = Utils.getState();
-            ServerStateEvent event = new ServerStateEvent(ServerControl.SERVER_ID, Arrays.asList(state));
+            ServerStateEvent event = new ServerStateEvent(Control.SERVER_ID, Arrays.asList(state));
 
             fire(event);
         } catch (Exception error) {

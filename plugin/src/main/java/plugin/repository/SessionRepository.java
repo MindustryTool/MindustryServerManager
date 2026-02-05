@@ -14,7 +14,7 @@ import plugin.database.DB;
 import plugin.event.PluginUnloadEvent;
 import plugin.event.SessionRemovedEvent;
 import plugin.PluginEvents;
-import plugin.ServerControl;
+import plugin.Control;
 import plugin.type.SessionData;
 import plugin.utils.ExpUtils;
 import plugin.utils.JsonUtils;
@@ -27,7 +27,7 @@ public class SessionRepository {
     public static void init() {
         createTableIfNotExists();
 
-        ServerControl.BACKGROUND_SCHEDULER
+        Control.BACKGROUND_SCHEDULER
                 .scheduleWithFixedDelay(SessionRepository::flushBatch, 10, 30, TimeUnit.SECONDS);
 
         PluginEvents.run(PluginUnloadEvent.class, SessionRepository::unload);

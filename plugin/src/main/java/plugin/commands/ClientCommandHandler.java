@@ -9,7 +9,7 @@ import lombok.Getter;
 import mindustry.gen.Call;
 import mindustry.gen.Groups;
 import plugin.PluginEvents;
-import plugin.ServerControl;
+import plugin.Control;
 import plugin.commands.client.DiscordCommand;
 import plugin.commands.client.GriefCommand;
 import plugin.commands.client.HubCommand;
@@ -84,7 +84,7 @@ public class ClientCommandHandler {
                 "[green]", "@Starting server ", "[white]", name, ", ", "[white]", "@redirection will happen soon"));
 
         try {
-            ServerControl.ioTask("Redirect Server", () -> {
+            Control.ioTask("Redirect Server", () -> {
                 var data = ApiGateway.host(id);
                 session.player.sendMessage(I18n.t(session.locale,
                         "[green]", "@Redirecting"));

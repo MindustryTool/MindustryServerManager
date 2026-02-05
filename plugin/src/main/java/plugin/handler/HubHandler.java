@@ -24,7 +24,7 @@ import mindustry.net.ArcNetProvider;
 import mindustry.net.Net;
 import plugin.Config;
 import plugin.PluginEvents;
-import plugin.ServerControl;
+import plugin.Control;
 import plugin.menus.ServerRedirectMenu;
 import plugin.type.PaginationRequest;
 import plugin.type.ServerCore;
@@ -44,14 +44,14 @@ public class HubHandler {
         loadCores();
         refreshServerList();
 
-        ServerControl.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(() -> {
+        Control.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(() -> {
             if (Groups.player.size() <= 0) {
                 return;
             }
             refreshServerList();
         }, 0, 5, TimeUnit.SECONDS);
 
-        ServerControl.BACKGROUND_SCHEDULER.scheduleAtFixedRate(() -> {
+        Control.BACKGROUND_SCHEDULER.scheduleAtFixedRate(() -> {
             if (Groups.player.size() <= 0) {
                 return;
             }
@@ -60,7 +60,7 @@ public class HubHandler {
     }
 
     private static void loadCores() {
-        ServerControl.ioTask("Refresh server list", () -> {
+        Control.ioTask("Refresh server list", () -> {
             serverCores.clear();
 
             float centerX = Vars.world.unitWidth() / 2;
@@ -204,7 +204,7 @@ public class HubHandler {
                     .setSize(serverCores.size);
 
             servers = Seq.with(ApiGateway.getServers(request))
-                    .select(server -> !server.getId().equals(ServerControl.SERVER_ID));
+                    .select(server -> !server.getId().equals(Control.SERVER_ID));
 
             for (int i = 0; i < serverCores.size; i++) {
                 var core = serverCores.get(i);

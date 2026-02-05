@@ -38,7 +38,7 @@ import plugin.database.DB;
 import plugin.event.PluginUnloadEvent;
 import loader.MindustryToolPlugin;
 
-public class ServerControl extends Plugin implements MindustryToolPlugin {
+public class Control extends Plugin implements MindustryToolPlugin {
 
     public static boolean isUnloaded = false;
 
@@ -52,7 +52,7 @@ public class ServerControl extends Plugin implements MindustryToolPlugin {
     private static final ExecutorService CPU_TASK_EXECUTOR = Executors
             .newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 
-    public ServerControl() {
+    public Control() {
         Log.info("Server controller created: " + this);
     }
 
@@ -63,6 +63,8 @@ public class ServerControl extends Plugin implements MindustryToolPlugin {
 
     @Override
     public void init() {
+        Registry.init(getClass());
+
         DB.init();
         HttpServer.init();
         Workflow.init();
@@ -80,9 +82,9 @@ public class ServerControl extends Plugin implements MindustryToolPlugin {
             HubHandler.init();
         }
 
-        BACKGROUND_SCHEDULER.schedule(ServerControl::autoHost, 60, TimeUnit.SECONDS);
-        BACKGROUND_SCHEDULER.schedule(ServerControl::autoPause, 10, TimeUnit.SECONDS);
-        BACKGROUND_SCHEDULER.scheduleWithFixedDelay(ServerControl::sendTips, 3, 3, TimeUnit.MINUTES);
+        BACKGROUND_SCHEDULER.schedule(Control::autoHost, 60, TimeUnit.SECONDS);
+        BACKGROUND_SCHEDULER.schedule(Control::autoPause, 10, TimeUnit.SECONDS);
+        BACKGROUND_SCHEDULER.scheduleWithFixedDelay(Control::sendTips, 3, 3, TimeUnit.MINUTES);
 
         PluginEvents.on(ServerLoadEvent.class, event -> isUnloaded = false);
         Utils.forEachPlayerLocale((locale, players) -> {
@@ -123,13 +125,14 @@ public class ServerControl extends Plugin implements MindustryToolPlugin {
 
         Log.info("Unload");
 
-        PluginEvents.fire(new PluginUnloadEvent());
-        PluginEvents.unregister();
-
         IO_TASK_EXECUTOR.shutdownNow();
         Log.info("Background task executor shutdown");
         BACKGROUND_SCHEDULER.shutdownNow();
         Log.info("Background scheduler shutdown");
+
+        PluginEvents.fire(new PluginUnloadEvent());
+        Registry.destroy();
+        PluginEvents.unregister();
 
         Log.info("Server controller stopped: " + this);
     }

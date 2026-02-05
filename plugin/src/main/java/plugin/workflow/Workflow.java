@@ -19,7 +19,7 @@ import io.javalin.http.sse.SseClient;
 import lombok.Getter;
 import mindustry.Vars;
 import plugin.PluginEvents;
-import plugin.ServerControl;
+import plugin.Control;
 import plugin.event.PluginUnloadEvent;
 import plugin.utils.JsonUtils;
 import plugin.workflow.errors.WorkflowError;
@@ -93,7 +93,7 @@ public class Workflow {
             WORKFLOW_FILE.file().createNewFile();
             WORKFLOW_DATA_FILE.file().createNewFile();
 
-            ServerControl.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(
+            Control.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(
                     () -> {
                         try {
                             workflowEventConsumers.forEach(client -> client.sendComment("heartbeat"));
@@ -258,7 +258,7 @@ public class Workflow {
                 " period: " + period);
 
         scheduledTasks
-                .add(ServerControl.BACKGROUND_SCHEDULER.scheduleAtFixedRate(() -> tryRun(runnable), delay, period,
+                .add(Control.BACKGROUND_SCHEDULER.scheduleAtFixedRate(() -> tryRun(runnable), delay, period,
                         TimeUnit.SECONDS));
     }
 
@@ -269,7 +269,7 @@ public class Workflow {
                 " delay: " + delay);
 
         scheduledTasks
-                .add(ServerControl.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(() -> tryRun(runnable), initialDelay,
+                .add(Control.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(() -> tryRun(runnable), initialDelay,
                         delay,
                         TimeUnit.SECONDS));
     }
@@ -277,7 +277,7 @@ public class Workflow {
     public static void schedule(Runnable runnable, long delay) {
         Log.debug("Schedule task: " + runnable.getClass().getName() + " delay: " + delay);
         scheduledTasks
-                .add(ServerControl.BACKGROUND_SCHEDULER.schedule(() -> tryRun(runnable), delay, TimeUnit.SECONDS));
+                .add(Control.BACKGROUND_SCHEDULER.schedule(() -> tryRun(runnable), delay, TimeUnit.SECONDS));
     }
 
 }

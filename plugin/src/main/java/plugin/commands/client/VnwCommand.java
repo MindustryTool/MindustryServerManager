@@ -6,7 +6,7 @@ import java.util.concurrent.TimeUnit;
 import arc.math.Mathf;
 import mindustry.Vars;
 import mindustry.gen.Groups;
-import plugin.ServerControl;
+import plugin.Control;
 import plugin.commands.PluginCommand;
 import plugin.handler.I18n;
 import plugin.handler.SessionHandler;
@@ -46,7 +46,7 @@ public class VnwCommand extends PluginCommand {
         if (!voting) {
             waveVoted = numberParam.hasValue() ? numberParam.asInt() : 1;
 
-            voteTimeout = ServerControl.BACKGROUND_SCHEDULER.schedule(() -> {
+            voteTimeout = Control.BACKGROUND_SCHEDULER.schedule(() -> {
                 SessionHandler.each(s -> s.votedVNW = false);
                 Utils.forEachPlayerLocale((locale, players) -> {
                     String msg = I18n.t(locale, "[scarlet]", "@Vote failed, not enough votes.");
@@ -111,7 +111,7 @@ public class VnwCommand extends PluginCommand {
 
         Vars.state.wavetime = 0f;
 
-        ServerControl.BACKGROUND_SCHEDULER.schedule(() -> sendWave(), 1, TimeUnit.SECONDS);
+        Control.BACKGROUND_SCHEDULER.schedule(() -> sendWave(), 1, TimeUnit.SECONDS);
     }
 
     private void startCountDown(int time) {
@@ -119,7 +119,7 @@ public class VnwCommand extends PluginCommand {
             return;
         }
 
-        voteCountDown = ServerControl.BACKGROUND_SCHEDULER.schedule(() -> {
+        voteCountDown = Control.BACKGROUND_SCHEDULER.schedule(() -> {
             Utils.forEachPlayerLocale((locale, players) -> {
                 String msg = I18n.t(locale, "[orange]", "@Vote new wave timeout in", " ", time, " ",
                         "@seconds.");

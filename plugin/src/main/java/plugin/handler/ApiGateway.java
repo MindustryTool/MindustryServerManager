@@ -20,7 +20,7 @@ import arc.util.Log;
 import plugin.utils.HttpUtils;
 import plugin.utils.JsonUtils;
 import plugin.PluginEvents;
-import plugin.ServerControl;
+import plugin.Control;
 import plugin.event.PluginUnloadEvent;
 import plugin.type.PaginationRequest;
 import plugin.type.TranslationDto;
@@ -33,7 +33,7 @@ public class ApiGateway {
 
     private static final String GATEWAY_URL = "http://server-manager-v2:8088/gateway/v2";
     private static final String API_URL = "https://api.mindustry-tool.com/api/v4/";
-    private static final String SERVER_ID = ServerControl.SERVER_ID.toString();
+    private static final String SERVER_ID = Control.SERVER_ID.toString();
 
     private static final ConcurrentHashMap<String, Object> locks = new ConcurrentHashMap<>();
 

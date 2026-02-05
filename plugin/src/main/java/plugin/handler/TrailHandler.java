@@ -12,7 +12,7 @@ import lombok.Getter;
 import mindustry.content.Fx;
 import mindustry.entities.Effect;
 import mindustry.gen.Call;
-import plugin.ServerControl;
+import plugin.Control;
 import plugin.type.Session;
 import plugin.utils.ExpUtils;
 
@@ -28,7 +28,7 @@ public class TrailHandler {
         Trail.create("placeblock", Fx.placeBlock, TrailRequirement.level(50));
         Trail.create("explotion", Fx.explosion, TrailRequirement.admin());
 
-        ServerControl.BACKGROUND_SCHEDULER
+        Control.BACKGROUND_SCHEDULER
                 .scheduleAtFixedRate(TrailHandler::render, 0, 500, TimeUnit.MILLISECONDS);
     }
 

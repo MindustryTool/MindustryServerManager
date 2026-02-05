@@ -9,7 +9,7 @@ import arc.util.Strings;
 import lombok.Getter;
 import lombok.Setter;
 import mindustry.gen.Player;
-import plugin.ServerControl;
+import plugin.Control;
 import plugin.handler.I18n;
 import plugin.utils.Utils;
 import plugin.handler.SessionHandler;
@@ -110,7 +110,7 @@ public abstract class PluginCommand {
                         return;
                     }
 
-                    ServerControl.ioTask("Client command", () -> {
+                    Control.ioTask("Client command", () -> {
                         try {
                             this.newInstance()
                                     .handleParams(args)
@@ -130,7 +130,7 @@ public abstract class PluginCommand {
             });
         } else {
             handler.register(name, paramText.toString(), description, (args) -> {
-                ServerControl.ioTask("Server command", () -> {
+                Control.ioTask("Server command", () -> {
                     try {
                         this.newInstance()
                                 .handleParams(args)

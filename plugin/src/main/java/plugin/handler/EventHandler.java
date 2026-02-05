@@ -19,7 +19,7 @@ import mindustry.gen.Groups;
 import mindustry.gen.Player;
 import plugin.Config;
 import plugin.PluginEvents;
-import plugin.ServerControl;
+import plugin.Control;
 import plugin.event.PlayerKillUnitEvent;
 import plugin.event.SessionCreatedEvent;
 import plugin.event.SessionRemovedEvent;
@@ -52,16 +52,16 @@ public class EventHandler {
     private static void onPlayerBan(PlayerBanEvent event) {
         String message = Strings.format("[scarlet]Player @ has been banned", event.player.name);
 
-        HttpServer.fire(ServerEvents.LogEvent.info(ServerControl.SERVER_ID, message));
-        HttpServer.fire(new ServerEvents.ChatEvent(ServerControl.SERVER_ID, message));
+        HttpServer.fire(ServerEvents.LogEvent.info(Control.SERVER_ID, message));
+        HttpServer.fire(new ServerEvents.ChatEvent(Control.SERVER_ID, message));
     }
 
     private static void onPlayerLeave(PlayerLeave event) {
         if (event.player.con != null && event.player.con.kicked) {
             String message = Strings.format("[scarlet]Player @ has been kicked", event.player.name);
 
-            HttpServer.fire(ServerEvents.LogEvent.info(ServerControl.SERVER_ID, message));
-            HttpServer.fire(new ServerEvents.ChatEvent(ServerControl.SERVER_ID, message));
+            HttpServer.fire(ServerEvents.LogEvent.info(Control.SERVER_ID, message));
+            HttpServer.fire(new ServerEvents.ChatEvent(Control.SERVER_ID, message));
         }
     }
 
@@ -98,7 +98,7 @@ public class EventHandler {
     }
 
     private static void onWorldLoadEnd(WorldLoadEndEvent event) {
-        ServerControl.BACKGROUND_SCHEDULER.schedule(() -> {
+        Control.BACKGROUND_SCHEDULER.schedule(() -> {
             if (!Vars.state.isPaused() && Groups.player.size() == 0) {
                 Vars.state.set(State.paused);
                 Log.info("No player: paused");
@@ -112,7 +112,7 @@ public class EventHandler {
 
         }, 5, TimeUnit.SECONDS);
 
-        ServerControl.cpuTask("update map preview", () -> {
+        Control.cpuTask("update map preview", () -> {
             Utils.mapPreview();
         });
     }
@@ -144,11 +144,11 @@ public class EventHandler {
             return;
         }
 
-        HttpServer.fire(new ServerEvents.ChatEvent(ServerControl.SERVER_ID, chat));
+        HttpServer.fire(new ServerEvents.ChatEvent(Control.SERVER_ID, chat));
 
         Log.info(chat);
 
-        ServerControl.ioTask("Chat Event", () -> {
+        Control.ioTask("Chat Event", () -> {
             try {
                 Utils.forEachPlayerLocale((locale, ps) -> {
                     var result = ApiGateway.translateRaw(locale, Strings.stripColors(message));
@@ -168,7 +168,7 @@ public class EventHandler {
 
                         p.sendMessage(translatedChat + "\n");
 
-                        HttpServer.fire(new ServerEvents.ChatEvent(ServerControl.SERVER_ID, translatedChat));
+                        HttpServer.fire(new ServerEvents.ChatEvent(Control.SERVER_ID, translatedChat));
                     }
                 });
             } catch (Throwable e) {
@@ -180,7 +180,7 @@ public class EventHandler {
     private static void onRemovedEvent(SessionRemovedEvent event) {
         try {
             var request = PlayerDto.from(event.session.player).setJoinedAt(event.session.joinedAt);
-            HttpServer.fire(new ServerEvents.PlayerLeaveEvent(ServerControl.SERVER_ID, request));
+            HttpServer.fire(new ServerEvents.PlayerLeaveEvent(Control.SERVER_ID, request));
         } catch (Throwable e) {
             e.printStackTrace();
         }
@@ -193,14 +193,14 @@ public class EventHandler {
             String chat = Strings.format("@ leaved the server, current players: @", playerName,
                     Math.max(Groups.player.size() - 1, 0));
 
-            ServerControl.BACKGROUND_SCHEDULER.schedule(() -> {
+            Control.BACKGROUND_SCHEDULER.schedule(() -> {
                 if (!Vars.state.isPaused() && Groups.player.size() == 0) {
                     Vars.state.set(State.paused);
                     Log.info("No player: paused");
                 }
             }, 5, TimeUnit.SECONDS);
 
-            HttpServer.fire(new ServerEvents.ChatEvent(ServerControl.SERVER_ID, chat));
+            HttpServer.fire(new ServerEvents.ChatEvent(Control.SERVER_ID, chat));
 
             Log.info(chat);
         } catch (Throwable e) {
@@ -217,15 +217,15 @@ public class EventHandler {
 
             var session = event.session;
 
-            HttpServer.fire(new ServerEvents.PlayerJoinEvent(ServerControl.SERVER_ID,
+            HttpServer.fire(new ServerEvents.PlayerJoinEvent(Control.SERVER_ID,
                     PlayerDto.from(session.player).setJoinedAt(Instant.now().toEpochMilli())));
 
             String playerName = session.player != null ? session.player.plainName() : "Unknown";
             String chat = Strings.format("@ joined the server, current players: @", playerName, Groups.player.size());
 
-            HttpServer.fire(new ServerEvents.ChatEvent(ServerControl.SERVER_ID, chat));
+            HttpServer.fire(new ServerEvents.ChatEvent(Control.SERVER_ID, chat));
 
-            ServerControl.ioTask("Player Join", () -> {
+            Control.ioTask("Player Join", () -> {
                 var playerData = ApiGateway.login(session.player);
 
                 session.setAdmin(playerData.getIsAdmin());
@@ -243,7 +243,7 @@ public class EventHandler {
                 }
             });
 
-            ServerControl.ioTask("Welcome Message", () -> {
+            Control.ioTask("Welcome Message", () -> {
                 var translated = I18n.t(session.locale, Config.WELCOME_MESSAGE);
                 session.player.sendMessage(translated);
             });

@@ -15,7 +15,7 @@ import mindustry.gen.Groups;
 import mindustry.gen.Player;
 import mindustry.gen.TimedKillc;
 import plugin.PluginEvents;
-import plugin.ServerControl;
+import plugin.Control;
 import plugin.event.PlayerKillUnitEvent;
 import plugin.event.PluginUnloadEvent;
 import plugin.event.SessionCreatedEvent;
@@ -36,8 +36,8 @@ public class SessionHandler {
     public static void init() {
         Core.app.post(() -> Groups.player.each(SessionHandler::put));
 
-        ServerControl.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(SessionHandler::create, 10, 2, TimeUnit.SECONDS);
-        ServerControl.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(SessionHandler::update, 0, 1, TimeUnit.SECONDS);
+        Control.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(SessionHandler::create, 10, 2, TimeUnit.SECONDS);
+        Control.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(SessionHandler::update, 0, 1, TimeUnit.SECONDS);
 
         PluginEvents.on(PlayerKillUnitEvent.class, event -> {
             get(event.getPlayer()).ifPresent(session -> {
@@ -81,7 +81,7 @@ public class SessionHandler {
         PluginEvents.on(PlayerJoin.class, event -> {
             Core.app.post(() -> put(event.player));
 
-            ServerControl.ioTask("Send Leader Board",
+            Control.ioTask("Send Leader Board",
                     () -> event.player.sendMessage(RankUtils.getRankString(Utils.parseLocale(event.player.locale),
                             SessionRepository.getLeaderBoard(10))));
         });

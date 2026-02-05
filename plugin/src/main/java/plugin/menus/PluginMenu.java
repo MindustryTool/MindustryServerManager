@@ -13,7 +13,7 @@ import mindustry.game.EventType.MenuOptionChooseEvent;
 import mindustry.gen.Call;
 import mindustry.gen.Player;
 import plugin.PluginEvents;
-import plugin.ServerControl;
+import plugin.Control;
 import plugin.event.PluginUnloadEvent;
 import plugin.event.SessionRemovedEvent;
 import plugin.handler.SessionHandler;
@@ -36,7 +36,7 @@ public abstract class PluginMenu<T> {
                 return;
             }
 
-            ServerControl.ioTask("Menu Option Choose: " + targetMenu.getMenuId(), () -> {
+            Control.ioTask("Menu Option Choose: " + targetMenu.getMenuId(), () -> {
                 HudOption<Object> selectedOption = null;
 
                 int i = 0;
@@ -86,7 +86,7 @@ public abstract class PluginMenu<T> {
             menus.removeAll(m -> m.session.player == event.session.player);
         });
 
-        ServerControl.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(() -> {
+        Control.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(() -> {
             menus.removeAll(m -> {
                 var delete = Instant.now().isAfter(m.createdAt.plusSeconds(30));
 
@@ -175,7 +175,7 @@ public abstract class PluginMenu<T> {
             copy.state = state;
             copy.options = new Seq<>(new Seq<>());
 
-            ServerControl.ioTask("Show Menu: " + getMenuId(), () -> {
+            Control.ioTask("Show Menu: " + getMenuId(), () -> {
                 try {
                     copy.build(session, state);
                 } catch (Exception e) {

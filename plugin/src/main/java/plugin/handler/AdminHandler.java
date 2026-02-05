@@ -17,7 +17,7 @@ import mindustry.net.Packets.Connect;
 import mindustry.net.Packets.KickReason;
 import plugin.Config;
 import plugin.PluginEvents;
-import plugin.ServerControl;
+import plugin.Control;
 import plugin.event.PluginUnloadEvent;
 import plugin.event.SessionRemovedEvent;
 import plugin.type.Session;
@@ -156,7 +156,7 @@ public class AdminHandler {
             }
         });
 
-        voteTimeout = ServerControl.BACKGROUND_SCHEDULER.schedule(() -> {
+        voteTimeout = Control.BACKGROUND_SCHEDULER.schedule(() -> {
             Utils.forEachPlayerLocale((locale, players) -> {
                 String msg = I18n.t(locale, "[scarlet]", "@Vote failed, not enough votes.");
                 for (var p : players) {

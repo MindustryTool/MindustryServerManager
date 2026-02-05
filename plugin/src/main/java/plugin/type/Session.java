@@ -13,7 +13,7 @@ import mindustry.net.Administration.PlayerInfo;
 import mindustry.type.UnitType;
 import mindustry.ui.dialogs.LanguageDialog;
 import plugin.Config;
-import plugin.ServerControl;
+import plugin.Control;
 import plugin.handler.I18n;
 import plugin.repository.SessionRepository;
 import plugin.utils.ExpUtils;
@@ -73,7 +73,7 @@ public class Session {
                 var oldLevel = currentLevel;
                 var newLevel = level;
 
-                ServerControl.ioTask("Update level", () -> {
+                Control.ioTask("Update level", () -> {
                     Utils.forEachPlayerLocale((locale, players) -> {
                         String message = I18n.t(locale, "Level up");
 
