@@ -158,7 +158,7 @@ public class ServerControl extends Plugin implements MindustryToolPlugin {
             } finally {
                 var elapsed = Time.millis() - startedAt;
                 if (elapsed > 1000) {
-                    Log.info("CPU task " + name + " took " + elapsed + "ms");
+                    Log.info("[yellow]IO task " + name + " took " + elapsed + "ms");
                 }
             }
 
@@ -175,7 +175,7 @@ public class ServerControl extends Plugin implements MindustryToolPlugin {
             } finally {
                 var elapsed = Time.millis() - startedAt;
                 if (elapsed > 1000) {
-                    Log.info("CPU task " + name + " took " + elapsed + "ms");
+                    Log.info("[yellow]CPU task " + name + " took " + elapsed + "ms");
                 }
             }
         });
