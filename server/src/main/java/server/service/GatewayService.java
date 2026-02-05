@@ -59,6 +59,10 @@ public class GatewayService {
     private final NodeManager nodeManager;
     private final ConcurrentHashMap<UUID, Mono<GatewayClient>> cache = new ConcurrentHashMap<>();
 
+    public boolean has(UUID serverId) {
+        return cache.containsKey(serverId);
+    }
+
     public Mono<GatewayClient> of(UUID serverId) {
         return cache.computeIfAbsent(serverId,
                 _id -> Mono.<GatewayClient>create(

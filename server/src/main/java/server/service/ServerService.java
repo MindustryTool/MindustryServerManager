@@ -142,14 +142,12 @@ public class ServerService {
                 gatewayService.of(serverId)
                         .flatMap(gateway -> {
                             if (gateway.state() == ConnectionState.CONNECTED) {
-                                return gateway.server()
-                                        .isHosting()
-                                        .onErrorComplete()
-                                        .defaultIfEmpty(false);
+                                return gateway.server().isHosting();
                             }
 
                             return Mono.just(false);
                         })
+                        .defaultIfEmpty(false)
                         .flatMapMany(isHosting -> isHosting ? Mono
                                 .just(LogEvent.info(serverId, "Server hosting, skip hosting.")) : createFlux))
                 .doOnError(Log::err);
