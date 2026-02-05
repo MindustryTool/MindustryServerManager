@@ -119,22 +119,19 @@ public class SessionHandler {
 
     public static Session put(Player p) {
         return data.computeIfAbsent(p.uuid(), (k) -> {
-            String name = p.name;
             var session = new Session(p);
 
-            ServerControl.ioTask("Update Session", () -> {
-                try {
-                    var data = session.data();
+            try {
+                var data = session.data();
 
-                    data.name = name;
-                    data.lastSaved = session.joinedAt;
-                    session.update();
+                data.name = p.name;
+                data.lastSaved = session.joinedAt;
+                session.update();
 
-                    Core.app.post(() -> PluginEvents.fire(new SessionCreatedEvent(session)));
-                } catch (Exception e) {
-                    Log.err(e);
-                }
-            });
+            } catch (Exception e) {
+                Log.err(e);
+            }
+            Core.app.post(() -> PluginEvents.fire(new SessionCreatedEvent(session)));
 
             return session;
         });
