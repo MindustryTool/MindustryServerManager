@@ -16,8 +16,6 @@ public final class Registry {
     }
 
     public static void init(String packageName) {
-        Log.info("Registry scanning package: @", packageName);
-
         try {
             Reflections reflections = new Reflections(packageName, Scanners.TypesAnnotated);
             Set<Class<?>> components = reflections.getTypesAnnotatedWith(Component.class);

@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 
-import arc.util.Log;
 import dto.PlayerDto;
 import dto.ServerStateDto;
 import enums.NodeRemoveReason;
@@ -28,7 +27,6 @@ public class ServerEvents {
                     .toLowerCase();
 
             eventTypeMap.put(className, clazz);
-            Log.info("Register @ events", className);
         }
     }
 

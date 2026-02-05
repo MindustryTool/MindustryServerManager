@@ -123,8 +123,6 @@ public class Utils {
     }
 
     private static synchronized void appPostWithTimeout(Runnable r, int timeout, String taskName) {
-        Log.info("Start task: " + taskName);
-
         CompletableFuture<Void> v = new CompletableFuture<>();
         Core.app.post(() -> {
             try {

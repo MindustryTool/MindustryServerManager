@@ -84,8 +84,6 @@ public class SessionHandler implements IComponent {
         each(s -> s.reset());
 
         data.clear();
-
-        Log.info("Session handler cleared");
     }
 
     public Optional<Session> getByUuid(String uuid) {

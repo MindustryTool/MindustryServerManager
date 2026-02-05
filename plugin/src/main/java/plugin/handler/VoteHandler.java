@@ -4,7 +4,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import arc.Events;
 import arc.struct.Seq;
-import arc.util.Log;
 import mindustry.Vars;
 import mindustry.game.EventType;
 import mindustry.game.Team;
@@ -37,8 +36,6 @@ public class VoteHandler implements IComponent {
     public void destroy() {
         votes.clear();
         lastMap = null;
-
-        Log.info("Vote handler unloaded");
     }
 
     private void check() {

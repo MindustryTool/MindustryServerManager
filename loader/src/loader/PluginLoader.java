@@ -200,7 +200,6 @@ public class PluginLoader extends Plugin {
 
             if (hasFile) {
                 loadPlugin(pluginData);
-                Log.info("Load cached plugin: " + pluginData.getName());
                 return;
             }
         } else {
@@ -215,17 +214,10 @@ public class PluginLoader extends Plugin {
 
         byte[] data = pluginData.download();
 
-        Log.info("[cyan]Downloaded: " + pluginData.getName() + ":" + updatedAt);
-
         unloadPlugin(pluginData);
 
-        Log.info("[cyan]Deleting old plugin file: " + pluginFile);
         pluginFile.delete();
-
-        Log.info("[cyan]Writing new plugin file: " + pluginFile);
         pluginFile.writeBytes(data);
-
-        Log.info("[cyan]Updating metadata: " + pluginData.getName());
         writeUpdatedAt(pluginData, updatedAt);
 
         loadPlugin(pluginData);
@@ -256,8 +248,6 @@ public class PluginLoader extends Plugin {
         if (plugins.containsKey(pluginData)) {
             throw new RuntimeException("Plugin already loaded: " + pluginData.getName());
         }
-
-        Log.info("[green]Loading plugin: " + pluginData.getName());
 
         Path path = getPluginPath(pluginData);
 

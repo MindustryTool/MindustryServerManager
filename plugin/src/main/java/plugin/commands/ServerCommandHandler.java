@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.function.Consumer;
 
 import arc.util.CommandHandler.CommandResponse;
-import arc.util.Log;
 import arc.struct.Seq;
 import arc.util.CommandHandler;
 import lombok.Getter;
@@ -42,7 +41,6 @@ public class ServerCommandHandler implements IComponent {
 
         for (PluginServerCommand command : commands) {
             command.register(handler);
-            Log.info("Server command registered: " + command.getName());
         }
 
         prevCommands.forEach(prev -> prev.getCallback().accept(handler.handleMessage(prev.getCommand())));
@@ -58,8 +56,6 @@ public class ServerCommandHandler implements IComponent {
         commands.clear();
 
         handler = null;
-
-        Log.info("Server command unloaded");
     }
 
     @Override

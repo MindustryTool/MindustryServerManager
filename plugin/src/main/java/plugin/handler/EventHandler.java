@@ -51,8 +51,6 @@ public class EventHandler implements IComponent {
 
     @Override
     public void init() {
-        Log.info("Setup event handler");
-
         PluginEvents.on(SessionCreatedEvent.class, this::onSessionCreatedEvent);
         PluginEvents.on(SessionRemovedEvent.class, this::onRemovedEvent);
         PluginEvents.on(PlayerChatEvent.class, this::onPlayerChat);
@@ -62,8 +60,6 @@ public class EventHandler implements IComponent {
         PluginEvents.on(UnitBulletDestroyEvent.class, this::onUnitBulletDestroy);
         PluginEvents.on(PlayerLeave.class, this::onPlayerLeave);
         PluginEvents.on(PlayerBanEvent.class, this::onPlayerBan);
-
-        Log.info("Setup event handler done");
     }
 
     private void onPlayerBan(PlayerBanEvent event) {

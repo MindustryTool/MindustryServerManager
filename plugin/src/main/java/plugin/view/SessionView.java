@@ -74,7 +74,6 @@ public class SessionView {
             UnitType unit = Vars.content.unit(entry.getKey());
 
             if (unit == null) {
-                // Log.info("Unit @ is null", entry.getKey()); // Optional logging
                 continue;
             }
 

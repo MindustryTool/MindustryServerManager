@@ -60,7 +60,7 @@ public class GeneralController {
         });
 
         app.get("hosting", (ctx) -> {
-            var hosting = Utils.appPostWithTimeout(() ->Vars.state.isGame(), "Get hosting status");
+            var hosting = Utils.appPostWithTimeout(() -> Vars.state.isGame(), "Get hosting status");
             ctx.contentType(ContentType.APPLICATION_JSON);
             ctx.json(hosting);
         });
@@ -116,7 +116,6 @@ public class GeneralController {
             if (player != null) {
                 Registry.get(SessionHandler.class).getByUuid(uuid).ifPresent(
                         session -> Registry.get(SessionService.class).setAdmin(session, request.getIsAdmin()));
-                Log.info(request);
             }
             ctx.result();
 

@@ -42,12 +42,6 @@ public class Control extends Plugin implements MindustryToolPlugin {
             .newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 
     public Control() {
-        Log.info("Server controller created: " + this);
-    }
-
-    @Override
-    public void start() {
-        Log.info("Server controller started: " + this);
     }
 
     @Override
@@ -101,9 +95,7 @@ public class Control extends Plugin implements MindustryToolPlugin {
         Log.info("Unload");
 
         IO_TASK_EXECUTOR.shutdownNow();
-        Log.info("Background task executor shutdown");
         BACKGROUND_SCHEDULER.shutdownNow();
-        Log.info("Background scheduler shutdown");
 
         PluginEvents.fire(new PluginUnloadEvent());
         Registry.destroy();

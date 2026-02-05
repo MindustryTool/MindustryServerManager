@@ -24,8 +24,6 @@ public class Session {
         this.player = player;
         this.data = data;
         this.locale = Locale.forLanguageTag(player.locale().replace("_", "-"));
-
-        Log.info("Session created for player @: @", player.name, this);
     }
 
     public void reset() {

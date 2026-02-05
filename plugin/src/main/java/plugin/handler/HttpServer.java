@@ -81,8 +81,6 @@ public class HttpServer implements IComponent {
             }
         });
 
-        Log.info("Setup http server");
-
         GeneralController.init(app);
 
         app.sse("events", this::onClientConnect);
@@ -130,8 +128,6 @@ public class HttpServer implements IComponent {
                         sendStateUpdate();
                     }
                 }, 5, 2, TimeUnit.SECONDS);
-
-        Log.info("Setup http server done");
     }
 
     public void fire(Object event) {
@@ -202,14 +198,10 @@ public class HttpServer implements IComponent {
 
         buffer.clear();
 
-        Log.info("Event listener closed");
-
         if (app != null) {
             app.stop();
             app = null;
         }
-
-        Log.info("Stop http server");
     }
 
     public class RequestInfo {

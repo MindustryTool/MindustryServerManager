@@ -115,7 +115,6 @@ public class PluginMenuHandler implements IComponent {
     public int getMenuId(Class<?> cls) {
         return CLASS_IDS.computeIfAbsent(cls, c -> {
             var id = ID_GEN.getAndIncrement();
-            Log.info("Register menu @ with id @", c, id);
             return id;
         });
     }

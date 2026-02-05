@@ -40,7 +40,6 @@ public class ClientCommandHandler implements IComponent {
 
         for (PluginClientCommand command : commands) {
             command.register(handler);
-            Log.info("Client command registered: " + command.getName());
         }
 
         PluginEvents.run(PluginUnloadEvent.class, this::unload);
@@ -62,7 +61,6 @@ public class ClientCommandHandler implements IComponent {
         }
         commands.clear();
         handler = null;
-        Log.info("Client command unloaded");
     }
 
     // ... onServerChoose ...
