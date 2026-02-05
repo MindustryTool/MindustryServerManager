@@ -18,6 +18,7 @@ import mindustry.core.GameState.State;
 import mindustry.game.EventType.ServerLoadEvent;
 import mindustry.gen.Groups;
 import mindustry.gen.Iconc;
+import plugin.handler.AdminHandler;
 import plugin.handler.ApiGateway;
 import plugin.handler.EventHandler;
 import plugin.handler.HttpServer;
@@ -25,7 +26,6 @@ import plugin.handler.HubHandler;
 import plugin.handler.I18n;
 import plugin.handler.VoteHandler;
 import plugin.menus.PluginMenu;
-import plugin.utils.AdminUtils;
 import plugin.utils.Utils;
 import plugin.handler.SessionHandler;
 import plugin.handler.SnapshotHandler;
@@ -43,6 +43,7 @@ public class ServerControl extends Plugin implements MindustryToolPlugin {
     public static boolean isUnloaded = false;
 
     public static final UUID SERVER_ID = UUID.fromString(System.getenv("SERVER_ID"));
+
     public static final ScheduledExecutorService BACKGROUND_SCHEDULER = Executors.newSingleThreadScheduledExecutor();
 
     private static final ExecutorService IO_TASK_EXECUTOR = Executors
@@ -71,7 +72,7 @@ public class ServerControl extends Plugin implements MindustryToolPlugin {
         SessionRepository.init();
         SessionHandler.init();
         SnapshotHandler.init();
-        AdminUtils.init();
+        AdminHandler.init();
         VoteHandler.init();
         TrailHandler.init();
 

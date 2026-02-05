@@ -1,4 +1,4 @@
-package plugin.utils;
+package plugin.handler;
 
 import java.time.Instant;
 import java.util.concurrent.ScheduledFuture;
@@ -7,20 +7,23 @@ import java.util.concurrent.TimeUnit;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 
+import arc.Events;
 import arc.math.Mathf;
+import mindustry.Vars;
 import mindustry.game.Team;
+import mindustry.game.EventType.ConnectionEvent;
 import mindustry.gen.Groups;
+import mindustry.net.Packets.Connect;
 import mindustry.net.Packets.KickReason;
 import plugin.Config;
 import plugin.PluginEvents;
 import plugin.ServerControl;
 import plugin.event.PluginUnloadEvent;
 import plugin.event.SessionRemovedEvent;
-import plugin.handler.SessionHandler;
 import plugin.type.Session;
-import plugin.handler.I18n;
+import plugin.utils.Utils;
 
-public class AdminUtils {
+public class AdminHandler {
 
     private static final Cache<String, Instant> lastGriefReportTimes = Caffeine.newBuilder()
             .expireAfterWrite(Config.GRIEF_REPORT_COOLDOWN, TimeUnit.SECONDS)
@@ -41,7 +44,19 @@ public class AdminUtils {
             }
         });
 
-        PluginEvents.run(PluginUnloadEvent.class, AdminUtils::unload);
+        PluginEvents.run(PluginUnloadEvent.class, AdminHandler::unload);
+
+        Vars.net.handleServer(Connect.class, (con, connect) -> {
+            Events.fire(new ConnectionEvent(con));
+
+            if (Vars.netServer.admins.isIPBanned(connect.addressTCP)
+                    || Vars.netServer.admins.isSubnetBanned(connect.addressTCP)) {
+
+                con.kick("[scarlet]You has been banned from the server\n" +
+                        "If you think this is a mistake, please contact the server administrator\n" +
+                        "Discord: " + Config.DISCORD_INVITE_URL);
+            }
+        });
     }
 
     private static void unload() {

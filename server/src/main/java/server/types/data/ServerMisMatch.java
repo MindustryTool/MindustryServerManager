@@ -10,6 +10,8 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.Accessors;
 import dto.ModDto;
+import dto.ServerConfig;
+import dto.ServerMetadata;
 import dto.ServerStateDto;
 import dto.ServerStatus;
 

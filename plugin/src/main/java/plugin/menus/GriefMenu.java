@@ -2,7 +2,7 @@ package plugin.menus;
 
 import plugin.handler.SessionHandler;
 import plugin.type.Session;
-import plugin.utils.AdminUtils;
+import plugin.handler.AdminHandler;
 import plugin.handler.I18n;
 
 public class GriefMenu extends PluginMenu<Session> {
@@ -19,7 +19,7 @@ public class GriefMenu extends PluginMenu<Session> {
             text(I18n.t(session.locale, "[red]", "@Close"));
         } else {
             option(I18n.t(session.locale, "@Report"),
-                    (p, s) -> AdminUtils.reportGrief(session, target));
+                    (p, s) -> AdminHandler.reportGrief(session, target));
             row();
             text(I18n.t(session.locale, "@Cancel"));
         }
