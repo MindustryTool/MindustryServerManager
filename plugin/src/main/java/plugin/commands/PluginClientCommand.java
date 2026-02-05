@@ -29,7 +29,7 @@ public abstract class PluginClientCommand extends PluginCommand {
             throw new IllegalArgumentException("description");
         }
 
-        description = (admin ? "[scarlet]ADMIN - " : "") + description;
+        description = (admin ? "[scarlet]ADMIN[] - " : "") + description;
 
         StringBuilder paramText = new StringBuilder("");
 

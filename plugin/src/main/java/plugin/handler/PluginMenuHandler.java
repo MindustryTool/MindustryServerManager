@@ -31,10 +31,12 @@ public class PluginMenuHandler implements IComponent {
             var targetMenu = menus.find(m -> m.getMenuId() == event.menuId && m.session.player == event.player);
 
             if (targetMenu == null) {
+                showNext(event.player);
                 return;
             }
 
             if (event.option < 0) {
+                showNext(event.player);
                 return;
             }
 
@@ -74,12 +76,7 @@ public class PluginMenuHandler implements IComponent {
 
                     menus.remove(targetMenu);
 
-                    var remainingMenus = getMenus(event.player);
-
-                    if (remainingMenus.size > 0) {
-                        var nextMenu = remainingMenus.first();
-                        nextMenu.show();
-                    }
+                    showNext(event.player);
                 }
             });
         });
@@ -105,6 +102,15 @@ public class PluginMenuHandler implements IComponent {
                 first.show();
             }
         }, 0, 1, TimeUnit.MINUTES);
+    }
+
+    public void showNext(Player player) {
+        var remainingMenus = getMenus(player);
+
+        if (remainingMenus.size > 0) {
+            var nextMenu = remainingMenus.first();
+            nextMenu.show();
+        }
     }
 
     @Override
