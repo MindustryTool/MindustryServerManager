@@ -35,7 +35,6 @@ import dto.ManagerMapDto;
 import dto.ManagerModDto;
 import server.manager.NodeManager;
 import server.service.GatewayService.GatewayClient;
-import server.service.GatewayService.GatewayClient.ConnectionState;
 import server.utils.ApiError;
 import server.utils.Utils;
 import reactor.core.publisher.Flux;
@@ -139,17 +138,11 @@ public class ServerService {
 
         return Flux.concat(
                 Mono.just(LogEvent.info(serverId, "Check if server hosting")),
-                gatewayService.of(serverId)
-                        .flatMap(gateway -> {
-                            if (gateway.state() == ConnectionState.CONNECTED) {
-                                return gateway.server().isHosting();
-                            }
-
-                            return Mono.just(false);
-                        })
+                gatewayService.isHosting(serverId)
                         .defaultIfEmpty(false)
-                        .flatMapMany(isHosting -> isHosting ? Mono
-                                .just(LogEvent.info(serverId, "Server hosting, skip hosting.")) : createFlux))
+                        .flatMapMany(isHosting -> isHosting
+                                ? Mono.just(LogEvent.info(serverId, "Server hosting, skip hosting."))
+                                : createFlux))
                 .doOnError(Log::err);
     }
 
