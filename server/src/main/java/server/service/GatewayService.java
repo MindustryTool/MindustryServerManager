@@ -107,6 +107,10 @@ public class GatewayService {
             Log.info("Create GatewayClient for server: " + id);
         }
 
+        public ConnectionState state() {
+            return state;
+        }
+
         public void cancel() {
             eventJob.dispose();
         }
