@@ -128,7 +128,8 @@ public class ServerService {
                 .flatMapMany(gatewayClient -> hostCallGateway(request, gatewayClient));
 
         Flux<LogEvent> createFlux = Flux
-                .concat(nodeManager.create(request),
+                .concat(Mono.just(LogEvent.info(serverId, "Server not hosting, create server")),
+                        nodeManager.create(request),
                         Mono.just(LogEvent.info(serverId, "Connecting to gateway...")),
                         callGatewayFlux//
                 )
