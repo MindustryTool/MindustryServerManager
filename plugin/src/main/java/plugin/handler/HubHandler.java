@@ -10,6 +10,7 @@ import arc.graphics.Color;
 import arc.net.Server;
 import arc.struct.Seq;
 import arc.util.Log;
+import arc.util.Strings;
 import dto.ServerDto;
 import lombok.RequiredArgsConstructor;
 import mindustry.Vars;
@@ -302,7 +303,7 @@ public class HubHandler {
         for (int i = 0; i < word.length; i++) {
             sb.append(word[i]);
 
-            if (i % 5 == 4 && i < word.length - 1) {
+            if (Strings.stripColors(sb.toString()).length() > 20) {
                 sb.append("\n");
             } else {
                 sb.append(" ");
