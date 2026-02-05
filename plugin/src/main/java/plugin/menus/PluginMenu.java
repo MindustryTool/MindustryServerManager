@@ -7,8 +7,8 @@ import arc.util.Log;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import mindustry.gen.Call;
-import plugin.Control;
 import plugin.Registry;
+import plugin.Tasks;
 import plugin.handler.PluginMenuHandler;
 import plugin.type.Session;
 
@@ -74,7 +74,7 @@ public abstract class PluginMenu<T> {
             copy.state = state;
             copy.options = new Seq<>(new Seq<>());
 
-            Control.ioTask("Show Menu: " + getMenuId(), () -> {
+            Tasks.io("Show Menu: " + getMenuId(), () -> {
                 try {
                     copy.build(session, state);
                 } catch (Exception e) {

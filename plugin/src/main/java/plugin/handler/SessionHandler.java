@@ -16,6 +16,7 @@ import mindustry.gen.Player;
 import mindustry.gen.TimedKillc;
 import plugin.Control;
 import plugin.PluginEvents;
+import plugin.Tasks;
 import plugin.annotations.Component;
 import plugin.annotations.Destroy;
 import plugin.annotations.Init;
@@ -61,7 +62,7 @@ public class SessionHandler {
     public void onPlayerJoin(PlayerJoin event) {
         Core.app.post(() -> put(event.player));
 
-        Control.ioTask("Send Leader Board",
+        Tasks.io("Send Leader Board",
                 () -> event.player.sendMessage(RankUtils.getRankString(Utils.parseLocale(event.player.locale),
                         sessionRepository.getLeaderBoard(10))));
     }

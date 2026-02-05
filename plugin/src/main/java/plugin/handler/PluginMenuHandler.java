@@ -12,6 +12,7 @@ import mindustry.gen.Call;
 import mindustry.gen.Player;
 import plugin.Control;
 import plugin.Registry;
+import plugin.Tasks;
 import plugin.annotations.Component;
 import plugin.annotations.Destroy;
 import plugin.annotations.Init;
@@ -62,7 +63,7 @@ public class PluginMenuHandler {
             return;
         }
 
-        Control.ioTask("Menu Option Choose: " + targetMenu.getMenuId(), () -> {
+        Tasks.io("Menu Option Choose: " + targetMenu.getMenuId(), () -> {
             HudOption<Object> selectedOption = null;
 
             int i = 0;

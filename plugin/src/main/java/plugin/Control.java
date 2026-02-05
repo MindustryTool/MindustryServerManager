@@ -2,7 +2,6 @@ package plugin;
 
 import java.util.Locale;
 import java.util.UUID;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -34,12 +33,6 @@ public class Control extends Plugin implements MindustryToolPlugin {
     public static final UUID SERVER_ID = UUID.fromString(System.getenv("SERVER_ID"));
 
     public static final ScheduledExecutorService BACKGROUND_SCHEDULER = Executors.newSingleThreadScheduledExecutor();
-
-    private static final ExecutorService IO_TASK_EXECUTOR = Executors
-            .newCachedThreadPool();
-
-    private static final ExecutorService CPU_TASK_EXECUTOR = Executors
-            .newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 
     public Control() {
     }
@@ -87,8 +80,9 @@ public class Control extends Plugin implements MindustryToolPlugin {
 
         Log.info("Unload");
 
-        IO_TASK_EXECUTOR.shutdownNow();
         BACKGROUND_SCHEDULER.shutdownNow();
+
+        Tasks.destroy();
 
         PluginEvents.fire(new PluginUnloadEvent());
         Registry.destroy();
@@ -110,53 +104,6 @@ public class Control extends Plugin implements MindustryToolPlugin {
     @Override
     protected void finalize() throws Throwable {
         System.out.println("Finalizing " + this);
-    }
-
-    public static void ioTask(String name, Runnable r) {
-        if (IO_TASK_EXECUTOR.isShutdown()) {
-            return;
-        }
-
-        var result = IO_TASK_EXECUTOR.submit(() -> {
-            long startedAt = Time.millis();
-            try {
-                r.run();
-            } catch (Exception e) {
-                Log.err("Failed to execute io task: " + name, e);
-            } finally {
-                var elapsed = Time.millis() - startedAt;
-                if (elapsed > 1000) {
-                    Log.warn("IO task " + name + " took " + elapsed + "ms");
-                }
-            }
-        });
-
-        BACKGROUND_SCHEDULER.schedule(() -> {
-            if (!result.isDone()) {
-                Log.warn("[orange]IO task " + name + " timed out");
-                result.cancel(true);
-            }
-        }, 5, TimeUnit.SECONDS);
-    }
-
-    public static void cpuTask(String name, Runnable r) {
-        if (CPU_TASK_EXECUTOR.isShutdown()) {
-            return;
-        }
-
-        CPU_TASK_EXECUTOR.submit(() -> {
-            long startedAt = Time.millis();
-            try {
-                r.run();
-            } catch (Exception e) {
-                Log.err("Failed to execute cpu task: " + name, e);
-            } finally {
-                var elapsed = Time.millis() - startedAt;
-                if (elapsed > 1000) {
-                    Log.warn("CPU task " + name + " took " + elapsed + "ms");
-                }
-            }
-        });
     }
 
     private void autoHost() {
@@ -209,7 +156,7 @@ public class Control extends Plugin implements MindustryToolPlugin {
 
         var tip = tips.random();
 
-        ioTask("Send tip", () -> {
+        Tasks.io("Send tip", () -> {
             Utils.forEachPlayerLocale((locale, players) -> {
                 for (var player : players) {
                     player.sendMessage("\n[sky]" + tip.get(locale) + "[]\n");

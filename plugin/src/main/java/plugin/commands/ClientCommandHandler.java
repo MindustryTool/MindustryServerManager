@@ -9,8 +9,8 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import mindustry.gen.Call;
 import mindustry.gen.Groups;
-import plugin.Control;
 import plugin.Registry;
+import plugin.Tasks;
 import plugin.annotations.Component;
 import plugin.annotations.Destroy;
 import plugin.handler.ApiGateway;
@@ -56,7 +56,7 @@ public class ClientCommandHandler {
                 "[green]", "@Starting server ", "[]", name, ", ", "[]", "@redirection will happen soon"));
 
         try {
-            Control.ioTask("Redirect Server", () -> {
+            Tasks.io("Redirect Server", () -> {
                 var data = apiGateway.host(id);
 
                 session.player.sendMessage(I18n.t(session.locale, "[green]", "@Redirecting"));

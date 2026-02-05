@@ -5,8 +5,8 @@ import arc.util.Log;
 import lombok.Getter;
 import lombok.Setter;
 import mindustry.gen.Player;
-import plugin.Control;
 import plugin.Registry;
+import plugin.Tasks;
 import plugin.handler.I18n;
 import plugin.handler.SessionHandler;
 import plugin.type.Session;
@@ -53,7 +53,7 @@ public abstract class PluginClientCommand extends PluginCommand {
                     return;
                 }
 
-                Control.ioTask("Client command", () -> {
+                Tasks.io("Client command", () -> {
                     try {
                         var copy = this.getClass().getDeclaredConstructor().newInstance();
                         Param.parse(params, args);

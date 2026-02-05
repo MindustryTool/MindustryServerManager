@@ -28,6 +28,7 @@ import plugin.menus.WelcomeMenu;
 import dto.PlayerDto;
 import plugin.utils.Utils;
 import plugin.Registry;
+import plugin.Tasks;
 import plugin.annotations.Component;
 import plugin.annotations.Listener;
 import mindustry.ui.dialogs.LanguageDialog;
@@ -117,7 +118,7 @@ public class EventHandler {
 
         }, 5, TimeUnit.SECONDS);
 
-        Control.cpuTask("update map preview", () -> {
+        Tasks.cpu("update map preview", () -> {
             Utils.mapPreview();
         });
     }
@@ -155,7 +156,7 @@ public class EventHandler {
 
         Log.info(chat);
 
-        Control.ioTask("Chat Event", () -> {
+        Tasks.io("Chat Event", () -> {
             try {
                 Utils.forEachPlayerLocale((locale, ps) -> {
                     var result = apiGateway.translateRaw(locale, Strings.stripColors(message));
@@ -234,7 +235,7 @@ public class EventHandler {
 
             httpServer.fire(new ServerEvents.ChatEvent(Control.SERVER_ID, chat));
 
-            Control.ioTask("Player Join", () -> {
+            Tasks.io("Player Join", () -> {
                 var playerData = apiGateway.login(session.player);
 
                 sessionService.setAdmin(session, playerData.getIsAdmin());
@@ -252,7 +253,7 @@ public class EventHandler {
                 }
             });
 
-            Control.ioTask("Welcome Message", () -> {
+            Tasks.io("Welcome Message", () -> {
                 var translated = I18n.t(session.locale, Config.WELCOME_MESSAGE);
                 session.player.sendMessage(translated);
             });

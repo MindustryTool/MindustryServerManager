@@ -29,6 +29,7 @@ import plugin.annotations.Component;
 import plugin.annotations.Init;
 import plugin.annotations.Listener;
 import plugin.Control;
+import plugin.Tasks;
 import plugin.menus.ServerRedirectMenu;
 import plugin.type.PaginationRequest;
 import plugin.type.ServerCore;
@@ -71,7 +72,7 @@ public class HubHandler {
 
     @Listener(WorldLoadEvent.class)
     private void loadCores() {
-        Control.ioTask("Refresh server list", () -> {
+        Tasks.io("Refresh server list", () -> {
             serverCores.clear();
 
             float centerX = Vars.world.unitWidth() / 2;

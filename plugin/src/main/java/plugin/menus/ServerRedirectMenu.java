@@ -2,8 +2,8 @@ package plugin.menus;
 
 import mindustry.gen.Call;
 import mindustry.gen.Player;
-import plugin.Control;
 import plugin.Registry;
+import plugin.Tasks;
 import plugin.handler.ApiGateway;
 import plugin.handler.I18n;
 import plugin.type.Session;
@@ -31,7 +31,7 @@ public class ServerRedirectMenu extends PluginMenu<ServerDto> {
     }
 
     public void onServerChoose(Player player, String id, String name) {
-        Control.ioTask("Server Choose", () -> {
+        Tasks.io("Server Choose", () -> {
             try {
                 player.sendMessage(I18n.t(Utils.parseLocale(player.locale()),
                         "[green]", "@Starting server ", "[]", name,

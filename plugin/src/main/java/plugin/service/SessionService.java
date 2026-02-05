@@ -7,7 +7,7 @@ import mindustry.gen.Groups;
 import mindustry.gen.Player;
 import mindustry.net.Administration.PlayerInfo;
 import mindustry.type.UnitType;
-import plugin.Control;
+import plugin.Tasks;
 import plugin.annotations.Component;
 import plugin.repository.SessionRepository;
 import plugin.type.Session;
@@ -78,7 +78,7 @@ public class SessionService {
                 int oldLevel = session.currentLevel;
                 int newLevel = level;
 
-                Control.ioTask("Update level", () -> {
+                Tasks.io("Update level", () -> {
                     Utils.forEachPlayerLocale((locale, players) -> {
                         String message = SessionView.getLevelUpMessage(locale, oldLevel, newLevel);
                         players.forEach(p -> p.sendMessage(session.player.name + message));

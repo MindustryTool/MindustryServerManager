@@ -6,8 +6,8 @@ import arc.util.Log;
 import dto.ServerDto;
 import mindustry.gen.Call;
 import mindustry.gen.Player;
-import plugin.Control;
 import plugin.Registry;
+import plugin.Tasks;
 import plugin.handler.ApiGateway;
 import plugin.handler.I18n;
 
@@ -17,7 +17,7 @@ public class ServerUtils {
         String id = server.getId().toString();
         String name = server.getName();
 
-        Control.ioTask("Server Choose", () -> {
+        Tasks.io("Server Choose", () -> {
             try {
                 player.sendMessage(I18n.t(Utils.parseLocale(player.locale()),
                         "[green]", "@Starting server ", "[]", name,

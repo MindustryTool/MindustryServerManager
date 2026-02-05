@@ -2,7 +2,7 @@ package plugin.commands;
 
 import arc.util.CommandHandler;
 import arc.util.Log;
-import plugin.Control;
+import plugin.Tasks;
 
 public abstract class PluginServerCommand extends PluginCommand {
     public abstract void handle();
@@ -23,7 +23,7 @@ public abstract class PluginServerCommand extends PluginCommand {
         }
 
         handler.register(name, paramText.toString(), description, (args) -> {
-            Control.ioTask("Server command", () -> {
+            Tasks.io("Server command", () -> {
                 try {
                     var copy = this.getClass().getDeclaredConstructor().newInstance();
                     Param.parse(params, args);
