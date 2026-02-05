@@ -137,7 +137,10 @@ public class ServerService {
 
         return Flux.concat(
                 Mono.just(LogEvent.info(serverId, "Check if server hosting")), gatewayService.of(serverId)
-                        .flatMap(gateway -> gateway.server().isHosting().defaultIfEmpty(false))
+                        .flatMap(gateway -> gateway.server()
+                                .isHosting()
+                                .onErrorComplete()
+                                .defaultIfEmpty(false))
                         .flatMapMany(isHosting -> isHosting ? Mono
                                 .just(LogEvent.info(serverId, "Server hosting, skip hosting.")) : createFlux));
     }
