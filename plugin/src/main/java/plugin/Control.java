@@ -56,18 +56,6 @@ public class Control extends Plugin implements MindustryToolPlugin {
 
         DB.init();
 
-        // Components are initialized by Registry
-        // SessionRepository.init();
-        // SessionHandler.init();
-        // SnapshotHandler.init();
-        // AdminHandler.init();
-        // VoteHandler.init();
-        // TrailHandler.init();
-
-        // if (Config.IS_HUB) {
-        // HubHandler.init();
-        // }
-
         BACKGROUND_SCHEDULER.schedule(this::autoHost, 60, TimeUnit.SECONDS);
         BACKGROUND_SCHEDULER.schedule(this::autoPause, 10, TimeUnit.SECONDS);
         BACKGROUND_SCHEDULER.scheduleWithFixedDelay(Control::sendTips, 3, 3, TimeUnit.MINUTES);
