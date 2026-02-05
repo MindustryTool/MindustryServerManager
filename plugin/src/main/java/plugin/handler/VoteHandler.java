@@ -10,19 +10,20 @@ import mindustry.game.Team;
 import mindustry.gen.Groups;
 import mindustry.gen.Player;
 import mindustry.maps.Map;
-import plugin.Component;
-import plugin.IComponent;
 import plugin.PluginEvents;
+import plugin.annotations.Component;
+import plugin.annotations.Destroy;
+import plugin.annotations.Init;
 import plugin.event.SessionRemovedEvent;
 import plugin.utils.Utils;
 
 @Component
-public class VoteHandler implements IComponent {
+public class VoteHandler {
     public final ConcurrentHashMap<String, Seq<String>> votes = new ConcurrentHashMap<>();
     public double ratio = 0.6;
     public Map lastMap = null;
 
-    @Override
+    @Init
     public void init() {
         PluginEvents.on(SessionRemovedEvent.class, event -> {
             removeVote(event.session.player);
@@ -33,7 +34,7 @@ public class VoteHandler implements IComponent {
         // destroy
     }
 
-    @Override
+    @Destroy
     public void destroy() {
         votes.clear();
         lastMap = null;

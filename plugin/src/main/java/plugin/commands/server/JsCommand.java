@@ -2,7 +2,7 @@ package plugin.commands.server;
 
 import arc.util.Log;
 import mindustry.Vars;
-import plugin.Component;
+import plugin.annotations.Component;
 import plugin.commands.PluginServerCommand;
 
 @Component

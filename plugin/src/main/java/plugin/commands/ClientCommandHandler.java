@@ -9,12 +9,10 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import mindustry.gen.Call;
 import mindustry.gen.Groups;
-import plugin.Component;
-import plugin.IComponent;
-import plugin.PluginEvents;
 import plugin.Control;
 import plugin.Registry;
-import plugin.event.PluginUnloadEvent;
+import plugin.annotations.Component;
+import plugin.annotations.Destroy;
 import plugin.handler.ApiGateway;
 import plugin.handler.I18n;
 import plugin.type.Session;
@@ -22,7 +20,7 @@ import plugin.utils.Utils;
 
 @Component
 @RequiredArgsConstructor
-public class ClientCommandHandler implements IComponent {
+public class ClientCommandHandler {
 
     private final List<PluginClientCommand> commands = new ArrayList<>();
 
@@ -41,21 +39,10 @@ public class ClientCommandHandler implements IComponent {
         for (PluginClientCommand command : commands) {
             command.register(handler);
         }
-
-        PluginEvents.run(PluginUnloadEvent.class, this::unload);
     }
 
-    @Override
-    public void init() {
-        // Nothing to init here, wait for registerCommands
-    }
-
-    @Override
+    @Destroy
     public void destroy() {
-        unload();
-    }
-
-    private void unload() {
         if (handler != null) {
             commands.forEach(command -> handler.removeCommand(command.getName()));
         }

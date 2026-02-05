@@ -2,7 +2,7 @@ package plugin.commands.client;
 
 import mindustry.gen.Call;
 import plugin.Config;
-import plugin.Component;
+import plugin.annotations.Component;
 import plugin.commands.PluginClientCommand;
 import plugin.type.Session;
 

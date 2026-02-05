@@ -12,13 +12,14 @@ import mindustry.game.EventType.BlockDestroyEvent;
 import mindustry.gen.Building;
 import mindustry.gen.Player;
 import mindustry.world.Tile;
-import plugin.Component;
-import plugin.IComponent;
 import plugin.PluginEvents;
+import plugin.annotations.Component;
+import plugin.annotations.Destroy;
+import plugin.annotations.Init;
 import plugin.event.SessionRemovedEvent;
 
 @Component
-public class SnapshotHandler implements IComponent {
+public class SnapshotHandler {
     private final ConcurrentHashMap<Integer, BuiltByData> builtBy = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<Building, Player> buildingToPlayer = new ConcurrentHashMap<>();
 
@@ -29,14 +30,14 @@ public class SnapshotHandler implements IComponent {
         public final Instant builtTime;
     }
 
-    @Override
+    @Init
     public void init() {
         PluginEvents.on(BlockBuildEndEvent.class, this::onBlockBuildEnd);
         PluginEvents.on(BlockDestroyEvent.class, this::onBlockDestroy);
         PluginEvents.on(SessionRemovedEvent.class, this::onSessionRemoved);
     }
 
-    @Override
+    @Destroy
     public void destroy() {
         builtBy.clear();
         buildingToPlayer.clear();

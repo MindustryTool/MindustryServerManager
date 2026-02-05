@@ -1,7 +1,7 @@
 package plugin.commands.client;
 
-import plugin.Component;
 import plugin.Registry;
+import plugin.annotations.Component;
 import plugin.type.PaginationRequest;
 import plugin.type.Session;
 import plugin.utils.ServerUtils;

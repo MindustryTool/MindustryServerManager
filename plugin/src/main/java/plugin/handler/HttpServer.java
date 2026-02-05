@@ -14,10 +14,11 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import arc.util.Log;
-import plugin.Component;
-import plugin.IComponent;
 import plugin.PluginEvents;
 import plugin.PluginState;
+import plugin.annotations.Component;
+import plugin.annotations.Destroy;
+import plugin.annotations.Init;
 import plugin.Control;
 import plugin.controller.GeneralController;
 import plugin.event.SessionCreatedEvent;
@@ -34,7 +35,7 @@ import io.javalin.http.sse.SseClient;
 
 @Component
 @RequiredArgsConstructor
-public class HttpServer implements IComponent {
+public class HttpServer {
     private final List<Object> buffer = new ArrayList<>();
     private Javalin app;
     private SseClient eventListener = null;
@@ -44,7 +45,7 @@ public class HttpServer implements IComponent {
 
     private final ApiGateway apiGateway;
 
-    @Override
+    @Init
     public void init() {
         Control.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(this::sendStateUpdate, 0, 30, TimeUnit.SECONDS);
 
@@ -190,7 +191,7 @@ public class HttpServer implements IComponent {
         return eventListener != null && !eventListener.terminated();
     }
 
-    @Override
+    @Destroy
     public void destroy() {
         if (eventListener != null) {
             eventListener.close();

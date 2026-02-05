@@ -10,23 +10,24 @@ import arc.struct.Seq;
 import arc.util.Log;
 import lombok.AllArgsConstructor;
 import mindustry.gen.Player;
-import plugin.Component;
-import plugin.IComponent;
 import plugin.database.DB;
 import plugin.event.SessionRemovedEvent;
 import plugin.PluginEvents;
+import plugin.annotations.Component;
+import plugin.annotations.Destroy;
+import plugin.annotations.Init;
 import plugin.Control;
 import plugin.type.SessionData;
 import plugin.utils.ExpUtils;
 import plugin.utils.JsonUtils;
 
 @Component
-public class SessionRepository implements IComponent {
+public class SessionRepository {
     private final ConcurrentHashMap<String, SessionData> cache = new ConcurrentHashMap<>();
 
     private final Set<String> dirty = ConcurrentHashMap.newKeySet();
 
-    @Override
+    @Init
     public void init() {
         createTableIfNotExists();
 
@@ -40,7 +41,7 @@ public class SessionRepository implements IComponent {
                 });
     }
 
-    @Override
+    @Destroy
     public void destroy() {
         try {
             for (var entry : cache.entrySet()) {

@@ -1,6 +1,6 @@
 package plugin.commands.client;
 
-import plugin.Component;
+import plugin.annotations.Component;
 import plugin.commands.PluginClientCommand;
 import plugin.menus.GlobalServerListMenu;
 import plugin.type.Session;

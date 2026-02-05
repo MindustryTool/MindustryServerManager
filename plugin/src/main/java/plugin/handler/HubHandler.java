@@ -24,10 +24,10 @@ import mindustry.gen.Groups;
 import mindustry.gen.Iconc;
 import mindustry.net.ArcNetProvider;
 import mindustry.net.Net;
-import plugin.Component;
 import plugin.Config;
-import plugin.IComponent;
 import plugin.PluginEvents;
+import plugin.annotations.Component;
+import plugin.annotations.Init;
 import plugin.Control;
 import plugin.menus.ServerRedirectMenu;
 import plugin.type.PaginationRequest;
@@ -36,7 +36,7 @@ import plugin.utils.Utils;
 
 @Component
 @RequiredArgsConstructor
-public class HubHandler implements IComponent {
+public class HubHandler {
 
     private final Seq<ServerCore> serverCores = new Seq<>();
     private Seq<ServerDto> servers = new Seq<>();
@@ -44,7 +44,7 @@ public class HubHandler implements IComponent {
     private final SessionHandler sessionHandler;
     private final ApiGateway apiGateway;
 
-    @Override
+    @Init
     public void init() {
         if (!Config.IS_HUB) {
             return;

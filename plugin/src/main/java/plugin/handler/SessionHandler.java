@@ -14,10 +14,11 @@ import mindustry.game.EventType.PlayerLeave;
 import mindustry.gen.Groups;
 import mindustry.gen.Player;
 import mindustry.gen.TimedKillc;
-import plugin.Component;
 import plugin.Control;
-import plugin.IComponent;
 import plugin.PluginEvents;
+import plugin.annotations.Component;
+import plugin.annotations.Destroy;
+import plugin.annotations.Init;
 import plugin.event.PlayerKillUnitEvent;
 import plugin.event.SessionCreatedEvent;
 import plugin.event.SessionRemovedEvent;
@@ -30,13 +31,13 @@ import plugin.utils.Utils;
 
 @Component
 @RequiredArgsConstructor
-public class SessionHandler implements IComponent {
+public class SessionHandler {
     private final ConcurrentHashMap<String, Session> data = new ConcurrentHashMap<>();
 
     private final SessionRepository sessionRepository;
     private final SessionService sessionService;
 
-    @Override
+    @Init
     public void init() {
         Core.app.post(() -> Groups.player.each(this::put));
 
@@ -78,7 +79,7 @@ public class SessionHandler implements IComponent {
         each(sessionService::update);
     }
 
-    @Override
+    @Destroy
     public void destroy() {
         each(s -> sessionRepository.remove(s.player.uuid()));
         each(s -> s.reset());

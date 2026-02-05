@@ -1,7 +1,7 @@
 package plugin.commands.client;
 
-import plugin.Component;
 import plugin.Registry;
+import plugin.annotations.Component;
 import plugin.commands.PluginClientCommand;
 import plugin.repository.SessionRepository;
 import plugin.type.Session;

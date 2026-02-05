@@ -16,10 +16,11 @@ import mindustry.game.EventType.ConnectionEvent;
 import mindustry.gen.Groups;
 import mindustry.net.Packets.Connect;
 import mindustry.net.Packets.KickReason;
-import plugin.Component;
 import plugin.Config;
-import plugin.IComponent;
 import plugin.PluginEvents;
+import plugin.annotations.Component;
+import plugin.annotations.Destroy;
+import plugin.annotations.Init;
 import plugin.Control;
 import plugin.event.SessionRemovedEvent;
 import plugin.type.Session;
@@ -27,7 +28,7 @@ import plugin.utils.Utils;
 
 @Component
 @RequiredArgsConstructor
-public class AdminHandler implements IComponent {
+public class AdminHandler {
 
     private final Cache<String, Instant> lastGriefReportTimes = Caffeine.newBuilder()
             .expireAfterWrite(Config.GRIEF_REPORT_COOLDOWN, TimeUnit.SECONDS)
@@ -39,7 +40,7 @@ public class AdminHandler implements IComponent {
 
     private final SessionHandler sessionHandler;
 
-    @Override
+    @Init
     public void init() {
         PluginEvents.on(SessionRemovedEvent.class, event -> {
             if (reported == event.session) {
@@ -67,7 +68,7 @@ public class AdminHandler implements IComponent {
         });
     }
 
-    @Override
+    @Destroy
     public void destroy() {
         reset();
         lastGriefReportTimes.invalidateAll();

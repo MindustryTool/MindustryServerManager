@@ -8,15 +8,13 @@ import arc.util.CommandHandler.CommandResponse;
 import arc.struct.Seq;
 import arc.util.CommandHandler;
 import lombok.Getter;
-import plugin.Component;
-import plugin.IComponent;
-import plugin.PluginEvents;
 import plugin.Registry;
-import plugin.event.PluginUnloadEvent;
+import plugin.annotations.Component;
+import plugin.annotations.Destroy;
 import plugin.type.PrevCommand;
 
 @Component
-public class ServerCommandHandler implements IComponent {
+public class ServerCommandHandler {
 
     private final List<PluginServerCommand> commands = new ArrayList<>();
 
@@ -45,26 +43,16 @@ public class ServerCommandHandler implements IComponent {
 
         prevCommands.forEach(prev -> prev.getCallback().accept(handler.handleMessage(prev.getCommand())));
         prevCommands.clear();
-
-        PluginEvents.run(PluginUnloadEvent.class, this::unload);
     }
 
-    private void unload() {
+    @Destroy
+    public void destroy() {
         if (handler != null) {
             commands.forEach(command -> handler.removeCommand(command.getName()));
         }
         commands.clear();
 
         handler = null;
-    }
-
-    @Override
-    public void init() {
-    }
-
-    @Override
-    public void destroy() {
-        unload();
     }
 
     public Seq<arc.util.CommandHandler.Command> getCommandList() {

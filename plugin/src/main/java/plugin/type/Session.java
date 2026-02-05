@@ -3,13 +3,8 @@ package plugin.type;
 import java.time.Instant;
 import java.util.Locale;
 
-import arc.util.Log;
 import mindustry.gen.Player;
 
-/**
- * Lightweight runtime object representing a player's active session.
- * Does not contain business logic or UI logic.
- */
 public class Session {
     public final Locale locale;
     public final Player player;

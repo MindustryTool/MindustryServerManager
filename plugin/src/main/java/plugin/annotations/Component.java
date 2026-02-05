@@ -1,4 +1,4 @@
-package plugin;
+package plugin.annotations;
 
 import java.lang.annotation.*;
 

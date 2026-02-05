@@ -17,8 +17,8 @@ import arc.struct.Seq;
 import arc.util.Http;
 import arc.util.Http.HttpStatusException;
 import arc.util.Log;
-import plugin.Component;
-import plugin.IComponent;
+import plugin.annotations.Component;
+import plugin.annotations.Destroy;
 import plugin.utils.HttpUtils;
 import plugin.utils.JsonUtils;
 import plugin.Control;
@@ -30,7 +30,7 @@ import dto.ServerDto;
 import mindustry.gen.Player;
 
 @Component
-public class ApiGateway implements IComponent {
+public class ApiGateway {
 
     private final String GATEWAY_URL = "http://server-manager-v2:8088/gateway/v2";
     private final String API_URL = "https://api.mindustry-tool.com/api/v4/";
@@ -219,16 +219,9 @@ public class ApiGateway implements IComponent {
         }
     }
 
-    @Override
-    public void init() {
-        Log.info("Setup api gateway done");
-    }
-
-    @Override
+    @Destroy
     public void destroy() {
         serverQueryCache.invalidateAll();
         serverQueryCache = null;
-
-        Log.info("Api gateway unloaded");
     }
 }

@@ -5,7 +5,7 @@ import mindustry.Vars;
 import mindustry.gen.Groups;
 import mindustry.gen.Player;
 import mindustry.net.Packets.KickReason;
-import plugin.Component;
+import plugin.annotations.Component;
 import plugin.commands.PluginServerCommand;
 import plugin.handler.I18n;
 

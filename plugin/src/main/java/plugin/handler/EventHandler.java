@@ -17,9 +17,7 @@ import mindustry.gen.Building;
 import mindustry.gen.Call;
 import mindustry.gen.Groups;
 import mindustry.gen.Player;
-import plugin.Component;
 import plugin.Config;
-import plugin.IComponent;
 import plugin.PluginEvents;
 import plugin.Control;
 import plugin.event.PlayerKillUnitEvent;
@@ -30,6 +28,8 @@ import plugin.menus.WelcomeMenu;
 import dto.PlayerDto;
 import plugin.utils.Utils;
 import plugin.Registry;
+import plugin.annotations.Component;
+import plugin.annotations.Init;
 import mindustry.ui.dialogs.LanguageDialog;
 import java.time.Instant;
 
@@ -37,7 +37,7 @@ import events.ServerEvents;
 import plugin.service.SessionService;
 
 @Component
-public class EventHandler implements IComponent {
+public class EventHandler {
 
     private final HttpServer httpServer;
     private final ApiGateway apiGateway;
@@ -49,7 +49,7 @@ public class EventHandler implements IComponent {
         this.sessionService = sessionService;
     }
 
-    @Override
+    @Init
     public void init() {
         PluginEvents.on(SessionCreatedEvent.class, this::onSessionCreatedEvent);
         PluginEvents.on(SessionRemovedEvent.class, this::onRemovedEvent);

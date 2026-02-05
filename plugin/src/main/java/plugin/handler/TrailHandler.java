@@ -13,20 +13,20 @@ import lombok.RequiredArgsConstructor;
 import mindustry.content.Fx;
 import mindustry.entities.Effect;
 import mindustry.gen.Call;
-import plugin.Component;
-import plugin.IComponent;
+import plugin.annotations.Component;
+import plugin.annotations.Init;
 import plugin.Control;
 import plugin.type.Session;
 import plugin.utils.ExpUtils;
 
 @Component
 @RequiredArgsConstructor
-public class TrailHandler implements IComponent {
+public class TrailHandler {
 
     public final ConcurrentHashMap<String, Trail> trails = new ConcurrentHashMap<>();
     private final SessionHandler sessionHandler;
 
-    @Override
+    @Init
     public void init() {
         Trail.create(this, "shock", Fx.landShock, TrailRequirement.level(2));
         Trail.create(this, "lightning", Fx.chainLightning, TrailRequirement.level(5));

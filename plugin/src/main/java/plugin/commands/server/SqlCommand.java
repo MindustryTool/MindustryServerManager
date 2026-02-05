@@ -1,7 +1,7 @@
 package plugin.commands.server;
 
 import arc.util.Log;
-import plugin.Component;
+import plugin.annotations.Component;
 import plugin.commands.PluginServerCommand;
 import plugin.database.DB;
 

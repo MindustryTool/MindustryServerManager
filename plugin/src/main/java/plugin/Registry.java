@@ -1,16 +1,20 @@
 package plugin;
 
+import arc.func.Cons;
 import arc.util.Log;
 import org.reflections.Reflections;
 import org.reflections.scanners.Scanners;
+import plugin.annotations.*;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
 import java.util.*;
 
 public final class Registry {
 
     private static final Map<Class<?>, Object> instances = new HashMap<>();
     private static final Set<Class<?>> creating = new HashSet<>();
+    private static final Set<Object> initialized = new HashSet<>();
 
     private Registry() {
     }
@@ -21,26 +25,34 @@ public final class Registry {
             Set<Class<?>> components = reflections.getTypesAnnotatedWith(Component.class);
 
             for (Class<?> clazz : components) {
+                // Check Lazy
+                if (clazz.isAnnotationPresent(Lazy.class)) {
+                    continue;
+                }
+
                 getOrCreate(clazz);
             }
         } catch (Exception e) {
             throw new RuntimeException("Registry init failed", e);
         }
-
-        instances.values().forEach(obj -> {
-            if (obj instanceof IComponent) {
-                ((IComponent) obj).init();
-            }
-        });
     }
 
     public static void destroy() {
         instances.values().forEach(obj -> {
-            if (obj instanceof IComponent) {
-                ((IComponent) obj).destroy();
+            // Process @Destroy
+            for (Method method : obj.getClass().getDeclaredMethods()) {
+                if (method.isAnnotationPresent(Destroy.class)) {
+                    try {
+                        method.setAccessible(true);
+                        method.invoke(obj);
+                    } catch (Exception e) {
+                        Log.err("Failed to invoke @Destroy on " + obj.getClass().getName(), e);
+                    }
+                }
             }
         });
         instances.clear();
+        initialized.clear();
     }
 
     @SuppressWarnings("unchecked")
@@ -65,11 +77,34 @@ public final class Registry {
 
     private static Object getOrCreate(Class<?> type) {
         if (instances.containsKey(type)) {
-            return instances.get(type);
+            Object instance = instances.get(type);
+            initialize(instance);
+            return instance;
         }
 
         if (creating.contains(type)) {
             throw new RuntimeException("Circular dependency detected: " + type.getName());
+        }
+
+        // Check ConditionOn
+        if (type.isAnnotationPresent(ConditionOn.class)) {
+            ConditionOn annotation = type.getAnnotation(ConditionOn.class);
+            Class<? extends Condition> conditionClass = annotation.value();
+            try {
+                // Instantiate the condition class (must have default constructor)
+                Condition condition = conditionClass.getDeclaredConstructor().newInstance();
+                if (!condition.check()) {
+                    Log.info("Skipping component @ due to condition", type.getName());
+                    // Return null if condition fails.
+                    // Note: If this component is required by another, this will cause a null
+                    // injection
+                    // or NPE later. This is expected behavior for optional dependencies,
+                    // but strict dependencies will fail.
+                    return null;
+                }
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to check condition for " + type.getName(), e);
+            }
         }
 
         try {
@@ -83,6 +118,10 @@ public final class Registry {
             instances.put(type, instance);
 
             Log.info("Registered component: @", type.getName());
+
+            // Initialize immediately
+            initialize(instance);
+
             return instance;
 
         } catch (Exception e) {
@@ -90,6 +129,49 @@ public final class Registry {
         } finally {
             creating.remove(type);
         }
+    }
+
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    private static void initialize(Object instance) {
+        if (initialized.contains(instance)) {
+            return;
+        }
+
+        Class<?> clazz = instance.getClass();
+
+        // Scan for @Init
+        for (Method method : clazz.getDeclaredMethods()) {
+            if (method.isAnnotationPresent(Init.class)) {
+                try {
+                    method.setAccessible(true);
+                    method.invoke(instance);
+                } catch (Exception e) {
+                    throw new RuntimeException("Failed to invoke @Init on " + clazz.getName(), e);
+                }
+            }
+
+            // Scan for @Listener
+            if (method.isAnnotationPresent(Listener.class)) {
+                if (method.getParameterCount() != 1) {
+                    Log.err("@Listener method @ in @ must have exactly one parameter", method.getName(),
+                            clazz.getName());
+                    continue;
+                }
+                Class eventType = method.getParameterTypes()[0];
+                method.setAccessible(true);
+
+                // Register with PluginEvents
+                PluginEvents.on(eventType, (Cons) event -> {
+                    try {
+                        method.invoke(instance, event);
+                    } catch (Exception e) {
+                        Log.err("Failed to invoke listener @ in @", method.getName(), clazz.getName(), e);
+                    }
+                });
+            }
+        }
+
+        initialized.add(instance);
     }
 
     private static Constructor<?> selectConstructor(Class<?> type) {

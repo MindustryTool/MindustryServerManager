@@ -10,22 +10,23 @@ import arc.util.Log;
 import mindustry.game.EventType.MenuOptionChooseEvent;
 import mindustry.gen.Call;
 import mindustry.gen.Player;
-import plugin.Component;
 import plugin.Control;
-import plugin.IComponent;
 import plugin.PluginEvents;
 import plugin.Registry;
+import plugin.annotations.Component;
+import plugin.annotations.Destroy;
+import plugin.annotations.Init;
 import plugin.event.SessionRemovedEvent;
 import plugin.menus.PluginMenu;
 import plugin.menus.PluginMenu.HudOption;
 
 @Component
-public class PluginMenuHandler implements IComponent {
+public class PluginMenuHandler {
     private final AtomicInteger ID_GEN = new AtomicInteger(1000);
     private final ConcurrentHashMap<Class<?>, Integer> CLASS_IDS = new ConcurrentHashMap<>();
     private final Seq<PluginMenu<?>> menus = new Seq<>();
 
-    @Override
+    @Init
     public void init() {
         PluginEvents.on(MenuOptionChooseEvent.class, event -> {
             var targetMenu = menus.find(m -> m.getMenuId() == event.menuId && m.session.player == event.player);
@@ -106,7 +107,7 @@ public class PluginMenuHandler implements IComponent {
         }
     }
 
-    @Override
+    @Destroy
     public void destroy() {
         menus.clear();
         CLASS_IDS.clear();

@@ -1,7 +1,7 @@
 package plugin.commands.client;
 
 import mindustry.Vars;
-import plugin.Component;
+import plugin.annotations.Component;
 import plugin.commands.PluginClientCommand;
 import plugin.handler.MapRating;
 import plugin.type.Session;
