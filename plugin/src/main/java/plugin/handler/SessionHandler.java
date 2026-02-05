@@ -108,12 +108,13 @@ public class SessionHandler implements IComponent {
                     sessionData.name = p.name;
                     sessionData.lastSaved = session.joinedAt;
                 }
-                
+
                 sessionService.update(session);
 
             } catch (Exception e) {
                 Log.err(e);
             }
+
             Core.app.post(() -> PluginEvents.fire(new SessionCreatedEvent(session)));
 
             return session;
