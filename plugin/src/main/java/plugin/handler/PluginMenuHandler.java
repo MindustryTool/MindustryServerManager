@@ -35,6 +35,8 @@ public class PluginMenuHandler implements IComponent {
                 return;
             }
 
+            menus.remove(targetMenu);
+
             if (event.option < 0) {
                 showNext(event.player);
                 return;
@@ -73,8 +75,6 @@ public class PluginMenuHandler implements IComponent {
                             selectedOption.getCallback().accept(session, targetMenu.state);
                         }
                     }
-
-                    menus.remove(targetMenu);
 
                     showNext(event.player);
                 }
