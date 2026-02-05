@@ -260,7 +260,8 @@ public class HubHandler {
                     "[#BBDEFB]Map: []" + newLine(server.getMapName()) + "[]\n" +
                     "[#90CAF9]Mode: []" + server.getMode() + "[]\n" +
                     (mods.isEmpty() ? "" : "[#4FC3F7]Mods:[] " + mods) + "[]\n\n" +
-                    "[accent]" + I18n.t(locale, "@Tap to join server") + "\n";
+                    (server.getStatus().isOnline() ? "[accent]" : "[sky]") + I18n.t(locale, "@Tap to join server")
+                    + "\n";
 
             for (var player : players) {
                 Call.label(player.con, message, 5, labelX, labelY);
