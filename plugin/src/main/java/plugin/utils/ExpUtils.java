@@ -23,12 +23,12 @@ public class ExpUtils {
     }
 
     public static long unitHealthToExp(double health) {
-        return (long) (health / UnitTypes.flare.health / 5);
+        return (long) (health / UnitTypes.flare.health / 8);
     }
 
     // Killing 1 flare = 5 seconds of play time
     public static long playTimeToExp(long playTime) {
-        return (long) (playTime / UnitTypes.flare.health / 5 / 10);
+        return (long) (playTime / UnitTypes.flare.health / 5 / 8);
     }
 
     public static int levelFromTotalExp(long totalExp) {
