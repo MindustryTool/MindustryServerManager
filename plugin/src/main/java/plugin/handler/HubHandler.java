@@ -300,13 +300,17 @@ public class HubHandler {
 
         StringBuilder sb = new StringBuilder();
 
+        int currentLength = 0;
+
         for (int i = 0; i < word.length; i++) {
             sb.append(word[i]);
 
-            if (Strings.stripColors(sb.toString()).length() > 25) {
+            if (currentLength > 25) {
                 sb.append("\n");
+                currentLength = 0;
             } else {
                 sb.append(" ");
+                currentLength += Strings.stripColors(word[i]).length();
             }
         }
 
