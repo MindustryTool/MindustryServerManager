@@ -96,6 +96,12 @@ public abstract class PluginMenu<T> {
 
                 return delete;
             });
+
+            var first = menus.firstOpt();
+
+            if (first != null) {
+                first.show();
+            }
         }, 0, 1, TimeUnit.MINUTES);
 
         PluginEvents.run(PluginUnloadEvent.class, PluginMenu::unload);
