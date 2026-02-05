@@ -149,7 +149,7 @@ public class ServerControl extends Plugin implements MindustryToolPlugin {
     }
 
     public static void ioTask(String name, Runnable r) {
-        IO_TASK_EXECUTOR.submit(() -> {
+        var result = IO_TASK_EXECUTOR.submit(() -> {
             long startedAt = Time.millis();
             try {
                 r.run();
@@ -158,11 +158,17 @@ public class ServerControl extends Plugin implements MindustryToolPlugin {
             } finally {
                 var elapsed = Time.millis() - startedAt;
                 if (elapsed > 1000) {
-                    Log.info("[yellow]IO task " + name + " took " + elapsed + "ms");
+                    Log.warn("IO task " + name + " took " + elapsed + "ms");
                 }
             }
-
         });
+
+        BACKGROUND_SCHEDULER.schedule(() -> {
+            if (!result.isDone()) {
+                Log.warn("[orange]IO task " + name + " timed out");
+                result.cancel(true);
+            }
+        }, 5, TimeUnit.SECONDS);
     }
 
     public static void cpuTask(String name, Runnable r) {
@@ -175,7 +181,7 @@ public class ServerControl extends Plugin implements MindustryToolPlugin {
             } finally {
                 var elapsed = Time.millis() - startedAt;
                 if (elapsed > 1000) {
-                    Log.info("[yellow]CPU task " + name + " took " + elapsed + "ms");
+                    Log.warn("CPU task " + name + " took " + elapsed + "ms");
                 }
             }
         });
