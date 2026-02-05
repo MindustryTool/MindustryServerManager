@@ -51,6 +51,14 @@ public class HubHandler {
             return;
         }
 
+        for (var block : Vars.content.blocks()) {
+            Vars.state.rules.bannedBlocks.add(block);
+        }
+
+        for (var unit : Vars.content.units()) {
+            Vars.state.rules.bannedUnits.add(unit);
+        }
+
         setupCustomServerDiscovery();
         loadCores();
         refreshServerList();
