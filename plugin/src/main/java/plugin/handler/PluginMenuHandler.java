@@ -95,12 +95,6 @@ public class PluginMenuHandler implements IComponent {
 
                 return delete;
             });
-
-            var first = menus.firstOpt();
-
-            if (first != null) {
-                first.show();
-            }
         }, 0, 1, TimeUnit.MINUTES);
     }
 
@@ -108,8 +102,7 @@ public class PluginMenuHandler implements IComponent {
         var remainingMenus = getMenus(player);
 
         if (remainingMenus.size > 0) {
-            var nextMenu = remainingMenus.first();
-            nextMenu.show();
+            remainingMenus.first().show();
         }
     }
 
