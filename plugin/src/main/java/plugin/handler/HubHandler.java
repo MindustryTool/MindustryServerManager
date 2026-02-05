@@ -274,14 +274,14 @@ public class HubHandler {
             return "";
         }
 
-        String[] lines = text.split("\n");
+        String[] word = text.split(" ");
 
         StringBuilder sb = new StringBuilder();
 
-        for (int i = 0; i < lines.length; i++) {
-            sb.append(lines[i]);
+        for (int i = 0; i < word.length; i++) {
+            sb.append(word[i]);
 
-            if (i % 5 == 4 && i < lines.length - 1) {
+            if (i % 5 == 4 && i < word.length - 1) {
                 sb.append("\n");
             }
         }
