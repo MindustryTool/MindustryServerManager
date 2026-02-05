@@ -263,8 +263,7 @@ public class HubHandler implements IComponent {
         mods.removeIf(m -> m.contains("mindustrytoolplugin") || m.contains("PluginLoader"));
 
         var name = server.getName();
-        var description = server.getDescription().substring(0, Math.min(150, server.getDescription()
-                .length()));
+        var description = server.getDescription();
 
         Utils.forEachPlayerLocale((locale, players) -> {
 
