@@ -2,9 +2,14 @@ package plugin.utils;
 
 import mindustry.Vars;
 import mindustry.content.UnitTypes;
+import plugin.type.Session;
 import plugin.type.SessionData;
 
 public class ExpUtils {
+
+    public static long getLevel(Session session) {
+        return levelFromTotalExp(getTotalExp(session.data(), session.sessionPlayTime()));
+    }
 
     public static long getTotalExp(SessionData data, long sessionPlayTime) {
         long exp = unitHealthToExp(data.kills.entrySet().stream().mapToDouble(entry -> {

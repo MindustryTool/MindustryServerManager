@@ -5,8 +5,13 @@ import java.util.Locale;
 import arc.struct.Seq;
 import arc.util.Log;
 import arc.util.Strings;
+import plugin.type.Session;
 
 public class I18n {
+    public static String t(Session sesion, Object... texts) {
+        return t(sesion.locale, texts);
+    }
+
     public static String t(Locale locale, Object... texts) {
         boolean[] needTranslateIndexes = new boolean[texts.length];
 

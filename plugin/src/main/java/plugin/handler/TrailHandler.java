@@ -2,63 +2,87 @@ package plugin.handler;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
+import arc.func.Cons2;
 import arc.graphics.Color;
 import arc.struct.Seq;
+import lombok.Data;
+import lombok.Getter;
+import mindustry.content.Fx;
 import mindustry.entities.Effect;
 import mindustry.gen.Call;
-import plugin.PluginEvents;
 import plugin.ServerControl;
-import plugin.event.PluginUnloadEvent;
-import plugin.event.SessionRemovedEvent;
 import plugin.type.Session;
-import plugin.type.Trail;
+import plugin.utils.ExpUtils;
 
 public class TrailHandler {
-    private static final ConcurrentHashMap<Session, Trail> playerTrails = new ConcurrentHashMap<>();
-    private static final Seq<Trail> trails = new Seq<>();
+
+    public static final ConcurrentHashMap<String, Trail> trails = new ConcurrentHashMap<>();
 
     public static void init() {
-        trails.add(new FirstTrail());
+        Trail.create("shock", Fx.landShock, TrailRequirement.level(2));
+        Trail.create("lightning", Fx.chainLightning, TrailRequirement.level(5));
+        Trail.create("fire", Fx.fire, TrailRequirement.level(15));
+        Trail.create("heal", Fx.healWave, TrailRequirement.level(35));
+        Trail.create("placeblock", Fx.placeBlock, TrailRequirement.level(50));
+        Trail.create("explotion", Fx.explosion, TrailRequirement.admin());
 
-        PluginEvents.on(SessionRemovedEvent.class, event -> playerTrails.remove(event.session));
-        PluginEvents.run(PluginUnloadEvent.class, () -> {
-            trails.clear();
-            playerTrails.clear();
-        });
-
-        ServerControl.BACKGROUND_SCHEDULER.scheduleAtFixedRate(TrailHandler::render, 0, 1, TimeUnit.SECONDS);
-    }
-
-    public static void toogle(Session session) {
-        if (playerTrails.contains(session)) {
-            playerTrails.remove(session);
-            session.player.sendMessage(I18n.t(session.locale,
-                    "[scarlet]", "@Trail disabled"));
-        } else {
-            playerTrails.put(session, trails.first());
-            session.player.sendMessage(I18n.t(session.locale,
-                    "[green]", "@Trail enabled"));
-        }
+        ServerControl.BACKGROUND_SCHEDULER
+                .scheduleAtFixedRate(TrailHandler::render, 0, 1, TimeUnit.SECONDS);
     }
 
     private static void render() {
-        playerTrails.forEach((session, trail) -> {
-            trail.render(session, session.player.x, session.player.y);
+        SessionHandler.each(session -> {
+            var userTrail = session.data().trail;
+            if (userTrail != null) {
+                var trail = trails.get(userTrail);
+                if (trail != null && trail.allowed(session)) {
+                    trail.render.get(session.player.x, session.player.y);
+                }
+            }
         });
     }
 
-    private static class FirstTrail implements Trail {
-        int i = 0;
+    @Data
+    public static final class Trail {
+        private final String name;
+        private final Seq<TrailRequirement> requirements;
+        private final Cons2<Float, Float> render;
 
-        @Override
-        public boolean isAllowed(Session session) {
-            return true;
+        public boolean allowed(Session session) {
+            return requirements.allMatch(r -> r.getAllowed().apply(session));
         }
 
-        @Override
-        public void render(Session session, float x, float y) {
-            Call.effect(Effect.get(++i % Effect.all.size), x, y, 1, Color.white);
+        public static void create(String name, Effect effect, TrailRequirement... requirements) {
+            var trail = new Trail(name, Seq.with(requirements), (x, y) -> Call.effect(effect, x, y, 0, Color.white));
+            trails.put(name, trail);
+        }
+
+        public static void custom(String name, Cons2<Float, Float> render, TrailRequirement... requirements) {
+            var trail = new Trail(name, Seq.with(requirements), render);
+            trails.put(name, trail);
         }
     }
+
+    @Getter
+    public static class TrailRequirement {
+        private final String message;
+        private final Function<Session, Boolean> allowed;
+
+        private TrailRequirement(String message, Function<Session, Boolean> allowed) {
+            this.message = message;
+            this.allowed = allowed;
+        }
+
+        public static TrailRequirement level(int level) {
+            return new TrailRequirement("@Level >= " + level, session -> ExpUtils.getLevel(session) >= level);
+        }
+
+        public static TrailRequirement admin() {
+            return new TrailRequirement("@You must be an admin to use this trail", session -> session.player.admin);
+        }
+
+    }
+
 }

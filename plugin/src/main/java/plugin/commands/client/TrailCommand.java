@@ -1,7 +1,7 @@
 package plugin.commands.client;
 
 import plugin.commands.PluginCommand;
-import plugin.handler.TrailHandler;
+import plugin.menus.TrailMenu;
 import plugin.type.Session;
 
 public class TrailCommand extends PluginCommand {
@@ -13,6 +13,6 @@ public class TrailCommand extends PluginCommand {
 
     @Override
     public void handleClient(Session session) {
-        TrailHandler.toogle(session);
+        new TrailMenu().send(session, 0);
     }
 }

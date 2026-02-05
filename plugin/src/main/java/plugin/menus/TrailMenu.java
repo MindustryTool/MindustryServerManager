@@ -1,0 +1,35 @@
+package plugin.menus;
+
+import arc.struct.Seq;
+import plugin.handler.I18n;
+import plugin.handler.TrailHandler;
+import plugin.type.Session;
+
+public class TrailMenu extends PluginMenu<Integer> {
+    @Override
+    public void build(Session session, Integer page) {
+
+        var keys = Seq.with(TrailHandler.trails.entrySet());
+
+        var size = 5;
+
+        var start = page * size;
+        var end = Math.min(start + size, keys.size);
+
+        for (int i = start; i < end; i++) {
+            var trail = keys.get(i);
+
+            option(trail.getKey(), (p, s) -> {
+                session.data().trail = trail.getKey();
+            });
+
+            for (var req : trail.getValue().getRequirements()) {
+                text(I18n.t(session, req.getMessage()));
+            }
+            row();
+        }
+
+        option(I18n.t(session, "@Previous"), (p, s) -> this.send(session, Math.max(0, page - 1)));
+        option(I18n.t(session, "@Next"), (p, s) -> this.send(session, Math.min(keys.size / size, page + 1)));
+    }
+}
