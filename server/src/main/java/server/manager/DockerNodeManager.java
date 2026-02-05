@@ -95,17 +95,11 @@ public class DockerNodeManager implements NodeManager {
                         .withLabelFilter(Map.of(Const.serverIdLabel, request.getId().toString()))//
                         .exec();
 
-                if (containers.size() > 1) {
-                    for (var container : containers) {
-                        emitter.next(LogEvent.info(serverId, "Removing container " + container.getNames()[0]));
-                        dockerClient.removeContainerCmd(container.getId())
-                                .withForce(true)
-                                .exec();
-                    }
-                }
-
-                if (containers.size() == 1) {
-                    return;
+                for (var container : containers) {
+                    emitter.next(LogEvent.info(serverId, "Removing container " + container.getNames()[0]));
+                    dockerClient.removeContainerCmd(container.getId())
+                            .withForce(true)
+                            .exec();
                 }
 
                 emitter.next(LogEvent.info(serverId, "Pulling image: " + request.getImage()));
