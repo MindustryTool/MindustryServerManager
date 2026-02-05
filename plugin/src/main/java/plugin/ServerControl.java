@@ -149,6 +149,10 @@ public class ServerControl extends Plugin implements MindustryToolPlugin {
     }
 
     public static void ioTask(String name, Runnable r) {
+        if (IO_TASK_EXECUTOR.isShutdown()) {
+            return;
+        }
+
         var result = IO_TASK_EXECUTOR.submit(() -> {
             long startedAt = Time.millis();
             try {
@@ -172,6 +176,10 @@ public class ServerControl extends Plugin implements MindustryToolPlugin {
     }
 
     public static void cpuTask(String name, Runnable r) {
+        if (CPU_TASK_EXECUTOR.isShutdown()) {
+            return;
+        }
+
         CPU_TASK_EXECUTOR.submit(() -> {
             long startedAt = Time.millis();
             try {

@@ -128,13 +128,13 @@ public class SessionHandler {
 
                     data.name = name;
                     data.lastSaved = session.joinedAt;
+                    session.update();
+
+                    Core.app.post(() -> PluginEvents.fire(new SessionCreatedEvent(session)));
                 } catch (Exception e) {
                     Log.err(e);
                 }
-                session.update();
             });
-
-            Core.app.post(() -> PluginEvents.fire(new SessionCreatedEvent(session)));
 
             return session;
         });
