@@ -15,6 +15,7 @@ import dto.ServerStatus;
 import mindustry.Vars;
 import mindustry.content.Fx;
 import mindustry.core.Version;
+import mindustry.game.EventType.PlayerJoin;
 import mindustry.game.EventType.TapEvent;
 import mindustry.game.EventType.WorldLoadEvent;
 import mindustry.game.Team;
@@ -25,7 +26,6 @@ import mindustry.net.Net;
 import plugin.Config;
 import plugin.PluginEvents;
 import plugin.ServerControl;
-import plugin.event.SessionCreatedEvent;
 import plugin.menus.ServerRedirectMenu;
 import plugin.type.PaginationRequest;
 import plugin.type.ServerCore;
@@ -38,7 +38,7 @@ public class HubHandler {
 
     public static void init() {
         PluginEvents.on(TapEvent.class, HubHandler::onTap);
-        PluginEvents.on(SessionCreatedEvent.class, HubHandler::onSessionCreated);
+        PluginEvents.on(PlayerJoin.class, HubHandler::onPlayerJoin);
         PluginEvents.run(WorldLoadEvent.class, HubHandler::loadCores);
 
         setupCustomServerDiscovery();
@@ -79,13 +79,9 @@ public class HubHandler {
         });
     }
 
-    private static void onSessionCreated(SessionCreatedEvent event) {
-        // var serverData = getTopServer();
-
-        // if (serverData != null && !serverData.getId().equals(ServerControl.SERVER_ID)
-        // && serverData.getPlayers() > 0) {
-        // new ServerRedirectMenu().send(event.session, serverData);
-        // }
+    private static void onPlayerJoin(PlayerJoin event) {
+        refreshServerList();
+        renderServerLabels();
     }
 
     private static void setupCustomServerDiscovery() {
