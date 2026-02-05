@@ -124,19 +124,12 @@ public class ServerService {
     public Flux<LogEvent> host(ServerConfig request) {
         var serverId = request.getId();
 
-        return Flux.concat(
-                Mono.just(LogEvent.info(serverId, "Check if server hosting")),
-                gatewayService.isHosting(serverId)
-                        .defaultIfEmpty(false)
-                        .flatMapMany(isHosting -> isHosting
-                                ? Mono.just(LogEvent.info(serverId, "Server hosting, skip hosting."))
-                                : Flux.concat(Mono.just(LogEvent.info(serverId, "Server not hosting, create server")),
-                                        nodeManager.create(request),
-                                        Mono.just(LogEvent.info(serverId, "Connecting to gateway...")),
-                                        gatewayService.of(serverId)
-                                                .flatMapMany(gatewayClient -> hostCallGateway(request, gatewayClient)))
-                                        .onErrorResume(err -> Mono.just(LogEvent.error(serverId, err.getMessage()))
-                                                .then(Mono.error(err)))))
+        return Flux.concat(//
+                Mono.just(LogEvent.info(serverId, "Server not hosting, create server")),
+                nodeManager.create(request),
+                Mono.just(LogEvent.info(serverId, "Connecting to gateway...")),
+                gatewayService.of(serverId).flatMapMany(gatewayClient -> hostCallGateway(request, gatewayClient)))
+                .onErrorResume(err -> Mono.just(LogEvent.error(serverId, err.getMessage())).then(Mono.error(err)))
                 .doOnError(Log::err);
     }
 
