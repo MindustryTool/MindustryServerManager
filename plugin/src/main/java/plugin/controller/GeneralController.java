@@ -24,6 +24,7 @@ import mindustry.net.Administration.PlayerInfo;
 import plugin.Config;
 import plugin.commands.ServerCommandHandler;
 import plugin.handler.SessionHandler;
+import plugin.service.SessionService;
 import plugin.handler.VoteHandler;
 import plugin.type.ChatDto;
 import dto.PlayerInfoDto;
@@ -112,7 +113,7 @@ public class GeneralController {
             }
 
             if (player != null) {
-                Registry.get(SessionHandler.class).getByUuid(uuid).ifPresent(session -> session.setAdmin(request.getIsAdmin()));
+                Registry.get(SessionHandler.class).getByUuid(uuid).ifPresent(session -> Registry.get(SessionService.class).setAdmin(session, request.getIsAdmin()));
                 Log.info(request);
             }
             ctx.result();

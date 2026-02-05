@@ -2,6 +2,7 @@ package plugin.menus;
 
 import plugin.handler.SessionHandler;
 import plugin.type.Session;
+import plugin.view.SessionView;
 import plugin.handler.I18n;
 
 import plugin.Registry;
@@ -17,7 +18,7 @@ public class PlayerInfoMenu extends PluginMenu<Session> {
 
         Registry.get(SessionHandler.class).each(p -> {
             option(p.player.name, (t, s) -> {
-                caller.player.sendMessage(p.info());
+                caller.player.sendMessage(SessionView.getInfoString(p, p.getData()));
             });
             row();
         });

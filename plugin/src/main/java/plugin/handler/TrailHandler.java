@@ -41,7 +41,7 @@ public class TrailHandler implements IComponent {
 
     private void render() {
         sessionHandler.each(session -> {
-            var userTrail = session.data().trail;
+            var userTrail = session.getData().trail;
             if (userTrail != null) {
                 var trail = trails.get(userTrail);
                 if (trail != null && trail.allowed(session)) {

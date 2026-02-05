@@ -34,16 +34,19 @@ import mindustry.ui.dialogs.LanguageDialog;
 import java.time.Instant;
 
 import events.ServerEvents;
+import plugin.service.SessionService;
 
 @Component
 public class EventHandler implements IComponent {
 
     private final HttpServer httpServer;
     private final ApiGateway apiGateway;
+    private final SessionService sessionService;
 
-    public EventHandler(HttpServer httpServer, ApiGateway apiGateway) {
+    public EventHandler(HttpServer httpServer, ApiGateway apiGateway, SessionService sessionService) {
         this.httpServer = httpServer;
         this.apiGateway = apiGateway;
+        this.sessionService = sessionService;
     }
 
     @Override
@@ -242,7 +245,7 @@ public class EventHandler implements IComponent {
             Control.ioTask("Player Join", () -> {
                 var playerData = apiGateway.login(session.player);
 
-                session.setAdmin(playerData.getIsAdmin());
+                sessionService.setAdmin(session, playerData.getIsAdmin());
 
                 var isLoggedIn = playerData.getLoginLink() == null;
 

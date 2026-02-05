@@ -8,7 +8,6 @@ import arc.Core;
 import arc.func.Boolf;
 import arc.func.Cons;
 import arc.util.Log;
-import arc.util.Strings;
 import lombok.RequiredArgsConstructor;
 import mindustry.game.EventType.PlayerJoin;
 import mindustry.game.EventType.PlayerLeave;
@@ -16,17 +15,18 @@ import mindustry.gen.Groups;
 import mindustry.gen.Player;
 import mindustry.gen.TimedKillc;
 import plugin.Component;
+import plugin.Control;
 import plugin.IComponent;
 import plugin.PluginEvents;
-import plugin.Control;
 import plugin.event.PlayerKillUnitEvent;
 import plugin.event.SessionCreatedEvent;
 import plugin.event.SessionRemovedEvent;
+import plugin.repository.SessionRepository;
+import plugin.service.SessionService;
 import plugin.type.Session;
-import plugin.utils.ExpUtils;
+import plugin.type.SessionData;
 import plugin.utils.RankUtils;
 import plugin.utils.Utils;
-import plugin.repository.SessionRepository;
 
 @Component
 @RequiredArgsConstructor
@@ -34,6 +34,7 @@ public class SessionHandler implements IComponent {
     private final ConcurrentHashMap<String, Session> data = new ConcurrentHashMap<>();
 
     private final SessionRepository sessionRepository;
+    private final SessionService sessionService;
 
     @Override
     public void init() {
@@ -48,33 +49,8 @@ public class SessionHandler implements IComponent {
                     return;
                 }
 
-                long result = session.addKill(event.getUnit().type, 1);
-                long base = 1;
-
-                while (result >= base * 10) {
-                    base *= 10;
-                }
-
-                long print = (result / base) * base;
-
-                if (result != print || result < 10) {
-                    return;
-                }
-
-                Utils.forEachPlayerLocale((locale, players) -> {
-                    String formatted = Strings.format(" @ @ (+@exp)",
-                            print,
-                            Utils.icon(event.getUnit().type),
-                            ExpUtils.unitHealthToExp(result * event.getUnit().type.health));
-
-                    String translated = I18n.t(locale, event.getPlayer().name, " ", "@killed", formatted);
-
-                    for (var player : players) {
-                        player.sendMessage(translated);
-                    }
-                });
+                sessionService.addKill(session, event.getUnit().type, 1);
             });
-            sessionRepository.markDirty(event.getPlayer().uuid());
         });
 
         PluginEvents.on(PlayerLeave.class, event -> {
@@ -88,9 +64,6 @@ public class SessionHandler implements IComponent {
                     () -> event.player.sendMessage(RankUtils.getRankString(Utils.parseLocale(event.player.locale),
                             sessionRepository.getLeaderBoard(10))));
         });
-
-        // PluginEvents.run(PluginUnloadEvent.class, this::unload); // Handled by
-        // destroy
     }
 
     public ConcurrentHashMap<String, Session> get() {
@@ -102,10 +75,7 @@ public class SessionHandler implements IComponent {
     }
 
     private void update() {
-        each(s -> {
-            s.update();
-            sessionRepository.markDirty(s.player.uuid());
-        });
+        each(sessionService::update);
     }
 
     @Override
@@ -128,14 +98,18 @@ public class SessionHandler implements IComponent {
 
     public Session put(Player p) {
         return data.computeIfAbsent(p.uuid(), (k) -> {
-            var session = new Session(p);
+            // Fetch data first
+            SessionData sessionData = sessionRepository.get(p);
+            var session = new Session(p, sessionData);
 
             try {
-                var data = session.data();
-
-                data.name = p.name;
-                data.lastSaved = session.joinedAt;
-                session.update();
+                // Initialize session data
+                synchronized (sessionData) {
+                    sessionData.name = p.name;
+                    sessionData.lastSaved = session.joinedAt;
+                }
+                
+                sessionService.update(session);
 
             } catch (Exception e) {
                 Log.err(e);

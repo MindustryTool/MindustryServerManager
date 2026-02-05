@@ -25,7 +25,7 @@ public class TrailMenu extends PluginMenu<Integer> {
 
             var allowed = trail.allowed(session);
             option((allowed ? "[green]" : "[gray]") + trail.getName(), (p, s) -> {
-                session.data().trail = trail.getName();
+                session.getData().trail = trail.getName();
             });
 
             for (var req : trail.getRequirements()) {

@@ -36,13 +36,13 @@ public abstract class PluginCommand {
         return p;
     }
 
-    public class ParamException extends IllegalArgumentException {
+    public static class ParamException extends IllegalArgumentException {
         public ParamException(Param param, String message) {
             super(message + " " + param.toParamText() + "=" + param.value);
         }
     }
 
-    public class Param {
+    public static class Param {
         private String name;
         private ParamType type;
         private String value;

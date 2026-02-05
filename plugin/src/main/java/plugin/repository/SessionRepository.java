@@ -36,7 +36,7 @@ public class SessionRepository implements IComponent {
         // PluginEvents.run(PluginUnloadEvent.class, this::unload); // Handled by destroy
         PluginEvents.on(SessionRemovedEvent.class,
                 event -> {
-                    write(event.getSession().player.uuid(), event.getSession().data());
+                    write(event.getSession().player.uuid(), event.getSession().getData());
                     cache.remove(event.getSession().player.uuid());
                 });
     }

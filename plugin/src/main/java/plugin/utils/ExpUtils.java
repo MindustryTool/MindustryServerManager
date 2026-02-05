@@ -8,7 +8,7 @@ import plugin.type.SessionData;
 public class ExpUtils {
 
     public static long getLevel(Session session) {
-        return levelFromTotalExp(getTotalExp(session.data(), session.sessionPlayTime()));
+        return levelFromTotalExp(getTotalExp(session.getData(), session.sessionPlayTime()));
     }
 
     public static long getTotalExp(SessionData data, long sessionPlayTime) {

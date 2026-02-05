@@ -290,7 +290,7 @@ public class Utils {
                     .header("Content-Type", "application/json")
                     .content(JsonUtils.toJsonString(body))
                     .timeout(30000)
-                    .error(Log::err)
+                    .error(error -> Log.err(error.getMessage()))
                     .submit((res) -> {
                         tempImageFile.write(res.getResultAsStream(), false);
                     });
