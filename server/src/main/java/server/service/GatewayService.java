@@ -59,6 +59,9 @@ public class GatewayService {
     private final NodeManager nodeManager;
     private final ConcurrentHashMap<UUID, Mono<GatewayClient>> cache = new ConcurrentHashMap<>();
 
+    @Getter
+    private final Api api = new Api();
+
     public Mono<Boolean> isHosting(UUID serverId) {
         if (cache.containsKey(serverId)) {
             return cache.get(serverId)
@@ -84,6 +87,38 @@ public class GatewayService {
                         .block(Duration.ofSeconds(5)).cancel());
     }
 
+    public class Api {
+        private WebClient webClient(UUID id) {
+            return WebClient.builder()
+                    .codecs(configurer -> configurer
+                            .defaultCodecs()
+                            .maxInMemorySize(16 * 1024 * 1024))
+                    .baseUrl(URI.create(Const.API_URL).toString())
+                    .defaultHeaders(headers -> {
+                        headers.set("X-SERVER-ID", id.toString());
+                        headers.set("X-MANAGER-AUTH", envConfig.serverConfig().accessToken());
+                    })
+                    .defaultStatusHandler(Utils::handleStatus, Utils::createError)
+                    .build();
+        }
+
+        public Mono<JsonNode> login(UUID serverId, JsonNode body) {
+            return Utils.wrapError(webClient(serverId).method(HttpMethod.POST)
+                    .uri("/servers/" + serverId + "/login")
+                    .bodyValue(body)
+                    .retrieve()
+                    .bodyToMono(JsonNode.class), Duration.ofSeconds(2), "Login");
+        }
+
+        public Mono<String> host(UUID serverId) {
+            Log.info("Host server: " + serverId);
+            return Utils.wrapError(webClient(serverId).method(HttpMethod.POST)
+                    .uri("/servers/" + serverId + "/host-server")
+                    .retrieve()
+                    .bodyToMono(String.class), Duration.ofSeconds(60), "Host server");
+        }
+    }
+
     @RequiredArgsConstructor
     @Accessors(fluent = true)
     public class GatewayClient {
@@ -98,9 +133,6 @@ public class GatewayService {
         @Getter
         private final Server server;
 
-        @Getter
-        private final Api api;
-
         private final Instant createdAt = Instant.now();
         private Instant disconnectedAt = null;
         private ConnectionState state = ConnectionState.CONNECTING;
@@ -110,7 +142,6 @@ public class GatewayService {
         public GatewayClient(UUID id, Consumer<GatewayClient> onConnect, Consumer<Throwable> onError) {
             this.id = id;
             this.server = new Server();
-            this.api = new Api();
             this.eventJob = createFetchEventJob(onConnect, onError);
 
             Log.info("Create GatewayClient for server: " + id);
@@ -122,37 +153,6 @@ public class GatewayService {
 
         public void cancel() {
             eventJob.dispose();
-        }
-
-        public class Api {
-            private final WebClient webClient = WebClient.builder()
-                    .codecs(configurer -> configurer
-                            .defaultCodecs()
-                            .maxInMemorySize(16 * 1024 * 1024))
-                    .baseUrl(URI.create(Const.API_URL).toString())
-                    .defaultHeaders(headers -> {
-                        headers.set("X-SERVER-ID", id.toString());
-                        headers.set("X-CREATED-AT", createdAt.toString());
-                        headers.set("X-MANAGER-AUTH", envConfig.serverConfig().accessToken());
-                    })
-                    .defaultStatusHandler(Utils::handleStatus, Utils::createError)
-                    .build();
-
-            public Mono<JsonNode> login(UUID serverId, JsonNode body) {
-                return Utils.wrapError(webClient.method(HttpMethod.POST)
-                        .uri("/servers/" + serverId + "/login")
-                        .bodyValue(body)
-                        .retrieve()
-                        .bodyToMono(JsonNode.class), Duration.ofSeconds(2), "Login");
-            }
-
-            public Mono<String> host(UUID serverId) {
-                Log.info("Host server: " + serverId);
-                return Utils.wrapError(webClient.method(HttpMethod.POST)
-                        .uri("/servers/" + serverId + "/host-server")
-                        .retrieve()
-                        .bodyToMono(String.class), Duration.ofSeconds(60), "Host server");
-            }
         }
 
         public class Server {
