@@ -35,7 +35,7 @@ public class TrailHandler {
         Trail.create(this, "placeblock", Fx.placeBlock, TrailRequirement.level(50));
         Trail.create(this, "explotion", Fx.explosion, TrailRequirement.admin());
 
-        Control.BACKGROUND_SCHEDULER
+        Control.SCHEDULER
                 .scheduleAtFixedRate(this::render, 0, 500, TimeUnit.MILLISECONDS);
     }
 

@@ -64,14 +64,14 @@ public class HubHandler {
         loadCores();
         refreshServerList();
 
-        Control.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(() -> {
+        Control.SCHEDULER.scheduleWithFixedDelay(() -> {
             if (Groups.player.size() <= 0) {
                 return;
             }
             refreshServerList();
         }, 0, 5, TimeUnit.SECONDS);
 
-        Control.BACKGROUND_SCHEDULER.scheduleAtFixedRate(() -> {
+        Control.SCHEDULER.scheduleAtFixedRate(() -> {
             if (Groups.player.size() <= 0) {
                 return;
             }

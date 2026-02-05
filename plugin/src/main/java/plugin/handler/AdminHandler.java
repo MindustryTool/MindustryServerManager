@@ -164,7 +164,7 @@ public class AdminHandler {
             }
         });
 
-        voteTimeout = Control.BACKGROUND_SCHEDULER.schedule(() -> {
+        voteTimeout = Control.SCHEDULER.schedule(() -> {
             Utils.forEachPlayerLocale((locale, players) -> {
                 String msg = I18n.t(locale, "[scarlet]", "@Vote failed, not enough votes.");
                 for (var p : players) {

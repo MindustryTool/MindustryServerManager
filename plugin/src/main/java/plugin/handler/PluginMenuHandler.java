@@ -29,7 +29,7 @@ public class PluginMenuHandler {
 
     @Init
     public void init() {
-        Control.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(() -> {
+        Control.SCHEDULER.scheduleWithFixedDelay(() -> {
             menus.removeAll(m -> {
                 var delete = Instant.now().isAfter(m.createdAt.plusSeconds(30));
 

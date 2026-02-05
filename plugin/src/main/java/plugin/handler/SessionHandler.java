@@ -43,8 +43,8 @@ public class SessionHandler {
     public void init() {
         Core.app.post(() -> Groups.player.each(this::put));
 
-        Control.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(this::create, 10, 2, TimeUnit.SECONDS);
-        Control.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(this::update, 0, 1, TimeUnit.SECONDS);
+        Control.SCHEDULER.scheduleWithFixedDelay(this::create, 10, 2, TimeUnit.SECONDS);
+        Control.SCHEDULER.scheduleWithFixedDelay(this::update, 0, 1, TimeUnit.SECONDS);
     }
 
     @Listener

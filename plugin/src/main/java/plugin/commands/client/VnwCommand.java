@@ -49,7 +49,7 @@ public class VnwCommand extends PluginClientCommand {
         if (!voting) {
             waveVoted = numberParam.hasValue() ? numberParam.asInt() : 1;
 
-            voteTimeout = Control.BACKGROUND_SCHEDULER.schedule(() -> {
+            voteTimeout = Control.SCHEDULER.schedule(() -> {
                 Registry.get(SessionHandler.class).each(s -> s.votedVNW = false);
                 Utils.forEachPlayerLocale((locale, players) -> {
                     String msg = I18n.t(locale, "[scarlet]", "@Vote failed, not enough votes.");
@@ -114,7 +114,7 @@ public class VnwCommand extends PluginClientCommand {
 
         Vars.state.wavetime = 0f;
 
-        Control.BACKGROUND_SCHEDULER.schedule(() -> sendWave(count - 1), 5, TimeUnit.SECONDS);
+        Control.SCHEDULER.schedule(() -> sendWave(count - 1), 5, TimeUnit.SECONDS);
     }
 
     private void startCountDown(int time) {
@@ -122,7 +122,7 @@ public class VnwCommand extends PluginClientCommand {
             return;
         }
 
-        voteCountDown = Control.BACKGROUND_SCHEDULER.schedule(() -> {
+        voteCountDown = Control.SCHEDULER.schedule(() -> {
             Utils.forEachPlayerLocale((locale, players) -> {
                 String msg = I18n.t(locale, "[orange]", "@Vote new wave timeout in", " ", time, " ",
                         "@seconds.");

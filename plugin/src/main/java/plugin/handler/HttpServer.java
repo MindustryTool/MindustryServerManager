@@ -47,7 +47,7 @@ public class HttpServer {
 
     @Init
     public void init() {
-        Control.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(this::sendStateUpdate, 0, 30, TimeUnit.SECONDS);
+        Control.SCHEDULER.scheduleWithFixedDelay(this::sendStateUpdate, 0, 30, TimeUnit.SECONDS);
 
         if (app != null) {
             app.stop();
@@ -117,7 +117,7 @@ public class HttpServer {
         // PluginEvents.run(PluginUnloadEvent.class, this::unload); // Handled by
         // destroy()
 
-        Control.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(
+        Control.SCHEDULER.scheduleWithFixedDelay(
                 () -> {
                     if (!isConnected()) {
                         apiGateway.requestConnection();

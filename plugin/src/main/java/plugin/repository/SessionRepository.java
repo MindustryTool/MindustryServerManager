@@ -30,7 +30,7 @@ public class SessionRepository {
     @Init
     public void init() {
         createTableIfNotExists();
-        Control.BACKGROUND_SCHEDULER.scheduleWithFixedDelay(this::flushBatch, 10, 30, TimeUnit.SECONDS);
+        Control.SCHEDULER.scheduleWithFixedDelay(this::flushBatch, 10, 30, TimeUnit.SECONDS);
     }
 
     @Listener

@@ -104,7 +104,7 @@ public class EventHandler {
 
     @Listener
     private void onWorldLoadEnd(WorldLoadEndEvent event) {
-        Control.BACKGROUND_SCHEDULER.schedule(() -> {
+        Control.SCHEDULER.schedule(() -> {
             if (!Vars.state.isPaused() && Groups.player.size() == 0) {
                 Vars.state.set(State.paused);
                 Log.info("No player: paused");
@@ -202,7 +202,7 @@ public class EventHandler {
             String chat = Strings.format("@ leaved the server, current players: @", playerName,
                     Math.max(Groups.player.size() - 1, 0));
 
-            Control.BACKGROUND_SCHEDULER.schedule(() -> {
+            Control.SCHEDULER.schedule(() -> {
                 if (!Vars.state.isPaused() && Groups.player.size() == 0) {
                     Vars.state.set(State.paused);
                     Log.info("No player: paused");

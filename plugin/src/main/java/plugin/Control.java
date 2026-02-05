@@ -32,7 +32,7 @@ public class Control extends Plugin implements MindustryToolPlugin {
 
     public static final UUID SERVER_ID = UUID.fromString(System.getenv("SERVER_ID"));
 
-    public static final ScheduledExecutorService BACKGROUND_SCHEDULER = Executors.newSingleThreadScheduledExecutor();
+    public static final ScheduledExecutorService SCHEDULER = Executors.newSingleThreadScheduledExecutor();
 
     public Control() {
     }
@@ -43,9 +43,9 @@ public class Control extends Plugin implements MindustryToolPlugin {
 
         DB.init();
 
-        BACKGROUND_SCHEDULER.schedule(this::autoHost, 60, TimeUnit.SECONDS);
-        BACKGROUND_SCHEDULER.schedule(this::autoPause, 10, TimeUnit.SECONDS);
-        BACKGROUND_SCHEDULER.scheduleWithFixedDelay(this::sendTips, 3, 3, TimeUnit.MINUTES);
+        SCHEDULER.schedule(this::autoHost, 60, TimeUnit.SECONDS);
+        SCHEDULER.schedule(this::autoPause, 10, TimeUnit.SECONDS);
+        SCHEDULER.scheduleWithFixedDelay(this::sendTips, 3, 3, TimeUnit.MINUTES);
 
         state = PluginState.LOADED;
     }
@@ -80,7 +80,7 @@ public class Control extends Plugin implements MindustryToolPlugin {
 
         Log.info("Unload");
 
-        BACKGROUND_SCHEDULER.shutdownNow();
+        SCHEDULER.shutdownNow();
 
         Tasks.destroy();
 
