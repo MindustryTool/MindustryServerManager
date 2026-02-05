@@ -128,7 +128,7 @@ public class PluginMenuHandler implements IComponent {
     }
 
     public void add(PluginMenu<?> menu) {
-        menus.add(menu);
+        menus.insert(0, menu);
     }
 
     public Seq<PluginMenu<?>> getMenus(Player player) {
