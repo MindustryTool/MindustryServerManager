@@ -28,7 +28,7 @@ public class ServerDto {
 
     public char getModeIcon() {
         try {
-            var m = Gamemode.valueOf(mode.toLowerCase());
+            Gamemode m = Gamemode.valueOf(mode.toLowerCase());
             if (m == Gamemode.survival) {
                 return Iconc.modeSurvival;
             }
