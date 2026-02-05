@@ -33,7 +33,6 @@ public class SessionRepository implements IComponent {
         Control.BACKGROUND_SCHEDULER
                 .scheduleWithFixedDelay(this::flushBatch, 10, 30, TimeUnit.SECONDS);
 
-        // PluginEvents.run(PluginUnloadEvent.class, this::unload); // Handled by destroy
         PluginEvents.on(SessionRemovedEvent.class,
                 event -> {
                     write(event.getSession().player.uuid(), event.getSession().getData());
