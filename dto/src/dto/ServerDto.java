@@ -18,7 +18,9 @@ public class ServerDto {
     private int port;
     private ServerStatus status = ServerStatus.UNSET;
     private boolean official;
+    private boolean hub;
     private long players;
     private String mapName;
+    private String gameVersion;
     private List<String> mods = new ArrayList<>();
 }
