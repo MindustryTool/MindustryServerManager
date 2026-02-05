@@ -137,13 +137,15 @@ public class ServerService {
                 .doOnError(Log::err);
 
         return Flux.concat(
-                Mono.just(LogEvent.info(serverId, "Check if server hosting")), gatewayService.of(serverId)
+                Mono.just(LogEvent.info(serverId, "Check if server hosting")),
+                gatewayService.of(serverId)
                         .flatMap(gateway -> gateway.server()
                                 .isHosting()
                                 .onErrorComplete()
                                 .defaultIfEmpty(false))
                         .flatMapMany(isHosting -> isHosting ? Mono
-                                .just(LogEvent.info(serverId, "Server hosting, skip hosting.")) : createFlux));
+                                .just(LogEvent.info(serverId, "Server hosting, skip hosting.")) : createFlux))
+                .doOnError(Log::err);
     }
 
     private Flux<LogEvent> hostCallGateway(ServerConfig request, GatewayClient gatewayClient) {
