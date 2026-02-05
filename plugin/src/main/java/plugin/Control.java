@@ -30,7 +30,6 @@ import plugin.handler.SessionHandler;
 import plugin.handler.SnapshotHandler;
 import plugin.handler.TrailHandler;
 import plugin.repository.SessionRepository;
-import plugin.workflow.Workflow;
 import plugin.commands.ClientCommandHandler;
 import plugin.commands.ServerCommandHandler;
 import plugin.database.DB;
@@ -66,7 +65,6 @@ public class Control extends Plugin implements MindustryToolPlugin {
 
         DB.init();
         HttpServer.init();
-        Workflow.init();
         EventHandler.init();
         ApiGateway.init();
         PluginMenu.init();

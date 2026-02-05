@@ -18,7 +18,6 @@ import plugin.PluginEvents;
 import plugin.PluginState;
 import plugin.Control;
 import plugin.controller.GeneralController;
-import plugin.controller.WorkflowController;
 import plugin.event.PluginUnloadEvent;
 import plugin.event.SessionCreatedEvent;
 import plugin.event.SessionRemovedEvent;
@@ -78,7 +77,6 @@ public class HttpServer {
         Log.info("Setup http server");
 
         GeneralController.init(app);
-        WorkflowController.init(app);
 
         app.sse("events", HttpServer::onClientConnect);
 
