@@ -29,7 +29,8 @@ public class VoteHandler implements IComponent {
             check();
         });
 
-        // PluginEvents.run(PluginUnloadEvent.class, this::unload); // Handled by destroy
+        // PluginEvents.run(PluginUnloadEvent.class, this::unload); // Handled by
+        // destroy
     }
 
     @Override
@@ -154,11 +155,11 @@ public class VoteHandler implements IComponent {
         vote(player, mapId);
 
         Utils.forEachPlayerLocale((locale, players) -> {
-            String msg1 = I18n.t(locale, "[red]RTV: ", "[accent] ", player.name(), " ", "[white] ",
+            String msg1 = I18n.t(locale, "[red]RTV: ", "[accent] ", player.name(), " ", "[] ",
                     "@Want to change map to ", "[yellow]", map.name());
-            String msg2 = I18n.t(locale, "[red]RTV: ", "[white]", "@Current Vote for ", "[yellow]",
-                    map.name() + "[white]: ", "[green]", getVoteCount(mapId), "/", getRequire());
-            String msg3 = I18n.t(locale, "[red]RTV: ", "[white]", "@Use ", "[yellow] ", "/rtv yes",
+            String msg2 = I18n.t(locale, "[red]RTV: ", "[]", "@Current Vote for ", "[yellow]",
+                    map.name() + "[]: ", "[green]", getVoteCount(mapId), "/", getRequire());
+            String msg3 = I18n.t(locale, "[red]RTV: ", "[]", "@Use ", "[yellow] ", "/rtv yes",
                     " ", "@to add your vote to this map !");
             for (var p : players) {
                 p.sendMessage(msg1);

@@ -20,8 +20,8 @@ public class ServerUtils {
         Control.ioTask("Server Choose", () -> {
             try {
                 player.sendMessage(I18n.t(Utils.parseLocale(player.locale()),
-                        "[green]", "@Starting server ", "[white]", name,
-                        ", ", "[white]", "@this can take up to 1 minutes, please wait"));
+                        "[green]", "@Starting server ", "[]", name,
+                        ", ", "[]", "@this can take up to 1 minutes, please wait"));
                 Log.info(String.format("Send host command to server %s %S", name, id));
 
                 var data = Registry.get(ApiGateway.class).host(id);
@@ -30,8 +30,8 @@ public class ServerUtils {
 
                 Utils.forEachPlayerLocale((locale, players) -> {
                     String msg = I18n.t(locale, player.coloredName(), " ", "[green]",
-                            "@redirecting to server ", "[white]", name,
-                            ", ", "@use ", "[green]", "/servers", "[white]", " ", "@to follow");
+                            "@redirecting to server ", "[]", name,
+                            ", ", "@use ", "[green]", "/servers", "[]", " ", "@to follow");
                     for (var p : players) {
                         p.sendMessage(msg);
                     }
