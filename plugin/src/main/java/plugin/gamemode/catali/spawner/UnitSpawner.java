@@ -18,14 +18,10 @@ public class UnitSpawner {
     private final CataliConfig config;
 
     public void spawn(Team team) {
-
         for (var entry : config.unitSpawnChance) {
-            Log.info(entry);
             if (Mathf.chance(entry.chances)) {
                 var count = team.data().unitCount;
                 var maxCount = Groups.player.size() * 30;
-
-                Log.info("Spawning unit @ for team @", entry, team);
 
                 if (count >= maxCount) {
                     break;

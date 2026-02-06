@@ -34,8 +34,6 @@ public class BlockSpawner {
 
                 var tile = SpawnerHelper.getSpawnTile(block.size);
 
-                Log.info("Spawning block @ at tile @", block, tile);
-
                 if (tile == null) {
                     return;
                 }
