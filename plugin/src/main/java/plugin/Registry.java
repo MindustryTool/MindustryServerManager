@@ -1,18 +1,15 @@
 package plugin;
 
 import arc.Core;
-import arc.files.Fi;
-import arc.func.Cons;
 import arc.util.Log;
-import mindustry.Vars;
 import org.reflections.Reflections;
 import org.reflections.scanners.Scanners;
 import plugin.annotations.*;
 import plugin.service.ConfigManager;
-import plugin.utils.JsonUtils;
+import plugin.service.EventRegistrar;
+import plugin.service.PersistenceManager;
 
 import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.*;
 
@@ -21,7 +18,10 @@ public final class Registry {
     private static final Map<Class<?>, Object> instances = new HashMap<>();
     private static final Set<Class<?>> creating = new HashSet<>();
     private static final Set<Object> initialized = new HashSet<>();
+
     private static final ConfigManager configManager = new ConfigManager();
+    private static final PersistenceManager persistenceManager = new PersistenceManager();
+    private static final EventRegistrar eventRegistrar = new EventRegistrar();
 
     private static String currentGamemode;
 
@@ -58,31 +58,7 @@ public final class Registry {
 
     public static void destroy() {
         instances.values().forEach(obj -> {
-            // Process @Persistence saving
-            for (Field field : obj.getClass().getDeclaredFields()) {
-                if (field.isAnnotationPresent(Persistence.class)) {
-                    try {
-                        field.setAccessible(true);
-                        Persistence persistence = field.getAnnotation(Persistence.class);
-                        String path = persistence.value();
-                        Fi file = Vars.dataDirectory.child(path);
-
-                        Object value = field.get(obj);
-                        if (value != null) {
-                            if (!file.exists()) {
-                                file.parent().mkdirs();
-                            }
-                            String json = JsonUtils.toJsonString(value);
-                            file.writeString(json);
-                            Log.info("Saved persistence for field @ in @ to @", field.getName(),
-                                    obj.getClass().getSimpleName(), path);
-                        }
-                    } catch (Exception e) {
-                        Log.err("Failed to save persistence for field @ in @", field.getName(),
-                                obj.getClass().getName(), e);
-                    }
-                }
-            }
+            persistenceManager.save(obj);
 
             // Process @Destroy
             for (Method method : obj.getClass().getDeclaredMethods()) {
@@ -180,7 +156,6 @@ public final class Registry {
         }
     }
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })
     private static void initialize(Object instance) {
         if (initialized.contains(instance)) {
             return;
@@ -192,29 +167,8 @@ public final class Registry {
             configManager.process(instance);
         }
 
-        // Process @Persistence
-        for (Field field : clazz.getDeclaredFields()) {
-            if (field.isAnnotationPresent(Persistence.class)) {
-                try {
-                    field.setAccessible(true);
-                    Persistence persistence = field.getAnnotation(Persistence.class);
-                    String path = persistence.value();
-                    Fi file = Vars.dataDirectory.child(path);
+        persistenceManager.load(instance);
 
-                    if (file.exists()) {
-                        String json = file.readString();
-                        Object value = JsonUtils.readJson(json, field.getGenericType());
-                        field.set(instance, value);
-                        Log.info("Loaded persistence for field @ in @ from @", field.getName(), clazz.getSimpleName(),
-                                path);
-                    }
-                } catch (Exception e) {
-                    Log.err("Failed to load persistence for field @ in @", field.getName(), clazz.getName(), e);
-                }
-            }
-        }
-
-        // Scan for @Init
         for (Method method : clazz.getDeclaredMethods()) {
             if (method.isAnnotationPresent(Init.class)) {
                 try {
@@ -224,48 +178,9 @@ public final class Registry {
                     throw new RuntimeException("Failed to invoke @Init on " + clazz.getName(), e);
                 }
             }
-
-            // Scan for @Listener
-            if (method.isAnnotationPresent(Listener.class)) {
-                Listener annotation = method.getAnnotation(Listener.class);
-                int paramCount = method.getParameterCount();
-
-                method.setAccessible(true);
-
-                if (paramCount == 1) {
-                    Class<?> eventType = method.getParameterTypes()[0];
-                    // Register with PluginEvents
-                    PluginEvents.on(eventType, (Cons) event -> {
-                        try {
-                            method.invoke(instance, event);
-                        } catch (Exception e) {
-                            Log.err("Failed to invoke listener @ in @", method.getName(), clazz.getName());
-                            Log.err(e);
-                        }
-                    });
-                } else if (paramCount == 0) {
-                    Class<?> eventType = annotation.value();
-                    if (eventType == Object.class) {
-                        Log.err("@Listener method @ in @ with 0 parameters must specify event type in annotation",
-                                method.getName(),
-                                clazz.getName());
-                        continue;
-                    }
-
-                    // Register with PluginEvents
-                    PluginEvents.run(eventType, () -> {
-                        try {
-                            method.invoke(instance);
-                        } catch (Exception e) {
-                            Log.err("Failed to invoke listener @ in @", method.getName(), clazz.getName(), e);
-                        }
-                    });
-                } else {
-                    Log.err("@Listener method @ in @ must have exactly 0 or 1 parameter", method.getName(),
-                            clazz.getName());
-                }
-            }
         }
+
+        eventRegistrar.register(instance);
 
         initialized.add(instance);
     }
