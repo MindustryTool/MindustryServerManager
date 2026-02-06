@@ -328,8 +328,11 @@ public class CataliGamemode {
 
             if (hasPlayer == false) {
                 player.unit(unit);
+                Log.info("Assigned unit @ to player @", unit.type, player.name);
+                return;
             }
         }
+        Log.info("No available unit for player @", player.name);
     }
 
     public CataliTeamData createTeam(Player leader) {
