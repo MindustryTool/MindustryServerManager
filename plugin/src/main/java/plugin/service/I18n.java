@@ -53,8 +53,9 @@ public class I18n {
             boolean prevHasSpace = sb.length() > 1 && sb.charAt(sb.length() - 1) == ' ';
             boolean nextHasSpace = next.startsWith(" ");
             boolean prevIsColor = Strings.stripColors(sb.toString()).trim().isEmpty();
+            boolean prevIsNewline = sb.length() > 1 && sb.charAt(sb.length() - 1) == '\n';
 
-            if (!prevHasSpace && !nextHasSpace && !prevIsColor) {
+            if (!prevHasSpace && !nextHasSpace && !prevIsColor &&!prevIsNewline) {
                 sb.append(' ');
             }
 

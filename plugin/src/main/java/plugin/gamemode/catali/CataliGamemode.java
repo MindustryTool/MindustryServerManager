@@ -128,7 +128,7 @@ public class CataliGamemode {
                         String.valueOf(team.level.rareUpgradePoints), "[white]\n",
                         "@Unit:", units, "\n");
 
-                Call.infoPopup(player.con, message, 2, Align.right | Align.top, 50, 0, 0, 0);
+                Call.infoPopup(player.con, message, 2, Align.right | Align.top, 120, 0, 0, 0);
             }
         }
     }
@@ -457,7 +457,7 @@ public class CataliGamemode {
         var playerTeam = findTeam(leader);
 
         if (playerTeam == null) {
-            int id = 10;
+            int id = 20;
             while (hasTeam(id) || enemyTeam().id == id || id == SPECTATOR_TEAM.id) {
                 id++;
                 if (id > 250) {
