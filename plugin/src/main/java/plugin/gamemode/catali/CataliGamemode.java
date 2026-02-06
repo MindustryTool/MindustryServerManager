@@ -193,6 +193,8 @@ public class CataliGamemode {
     public void onUnitDestroy(UnitDestroyEvent e) {
         CataliTeamData victimTeam = teams.find(team -> team.team.id == e.unit.team.id);
 
+        Thread.dumpStack();
+
         if (victimTeam != null) {
             if (!victimTeam.hasUnit()) {
                 teams.remove(victimTeam);
