@@ -84,9 +84,13 @@ public class CataliGamemode {
         return teams.find(team -> team.members.contains(player.uuid()));
     }
 
+    public Team enemyTeam() {
+        return Vars.state.rules.waveTeam;
+    }
+
     public void spawn() {
-        unitSpawner.spawn(Vars.state.rules.waveTeam);
-        blockSpawner.spawn(Vars.state.rules.waveTeam);
+        unitSpawner.spawn(enemyTeam());
+        blockSpawner.spawn(enemyTeam());
     }
 
     public void update() {
@@ -342,7 +346,6 @@ public class CataliGamemode {
         if (bulletOwner instanceof Teamc teamc) {
             var killerTeam = teams.find(team -> team.team.id == teamc.team().id);
             if (killerTeam == null) {
-                Log.warn("Missing team for block @", e.build.block.name);
                 return;
             }
 
@@ -455,7 +458,7 @@ public class CataliGamemode {
 
         if (playerTeam == null) {
             int id = 10;
-            while (hasTeam(id) || Vars.state.rules.waveTeam.id == id || id == SPECTATOR_TEAM.id) {
+            while (hasTeam(id) || enemyTeam().id == id || id == SPECTATOR_TEAM.id) {
                 id++;
                 if (id > 250) {
                     throw new RuntimeException("Failed to find a free team ID");
