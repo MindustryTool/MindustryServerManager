@@ -70,6 +70,19 @@ public class CataliGamemode {
 
         if (playerTeam != null) {
             player.team(playerTeam.team);
+            for (var unit : playerTeam.units) {
+                var hasPlayer = false;
+                for (var p : Groups.player) {
+                    if (p.unit() == unit) {
+                        hasPlayer = true;
+                        break;
+                    }
+                }
+
+                if (hasPlayer == false) {
+                    player.unit(unit);
+                }
+            }
         } else {
             player.team(Team.derelict);
             player.sendMessage("[yellow]Type /play to start a new team!");
