@@ -214,19 +214,19 @@ public class CataliGamemode {
         });
     }
 
-    private void spawnUnitForTeam(CataliTeamData data, UnitType type) {
+    private Unit spawnUnitForTeam(CataliTeamData data, UnitType type) {
         var leaderPlayer = Groups.player.find(p -> p.team() == data.team);
 
         if (leaderPlayer == null) {
             Log.info("No leader player for team @", data.team);
-            return;
+            return null;
         }
 
         Unit leaderUnit = Groups.unit.find(u -> u == leaderPlayer.unit());
 
         if (leaderUnit == null) {
             Log.info("No leader unit for player @", leaderPlayer.name);
-            return;
+            return null;
         }
 
         Tile safeTile = null;
@@ -264,7 +264,7 @@ public class CataliGamemode {
 
         if (safeTile == null) {
             Log.info("No safe tile found for team @", data.team);
-            return;
+            return null;
         }
 
         Unit u = type.create(data.team);
@@ -275,6 +275,8 @@ public class CataliGamemode {
         u.maxHealth *= data.upgrades.healthMultiplier;
         u.health = u.maxHealth;
         u.damageMultiplier(data.upgrades.damageMultiplier);
+
+        return u;
     }
 
     public boolean hasTeam(int id) {
@@ -303,6 +305,14 @@ public class CataliGamemode {
         teams.add(data);
 
         leader.team(newTeam);
+
+        var unit = spawnUnitForTeam(data, UnitTypes.poly);
+
+        if (unit != null) {
+            var coreUnit = leader.unit();
+            leader.unit(unit);
+            coreUnit.kill();
+        }
 
         return data;
     }
