@@ -18,6 +18,7 @@ import lombok.NoArgsConstructor;
 public class TeamRespawn {
     public Seq<RespawnEntry> respawn = new Seq<>();
 
+    @Data
     public static class RespawnEntry {
         @JsonSerialize(using = MappableContentSerializer.class)
         @JsonDeserialize(using = UnitTypeDeserializer.class)
