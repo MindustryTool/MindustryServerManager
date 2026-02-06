@@ -28,7 +28,8 @@ public class PersistenceManager {
                                 path);
                     }
                 } catch (Exception e) {
-                    Log.err("Failed to load persistence for field @ in @", field.getName(), clazz.getName(), e);
+                    Log.err("Failed to load persistence for field @ in @", field.getName(), clazz.getName());
+                    Log.err(e);
                 }
             }
         }
@@ -56,7 +57,8 @@ public class PersistenceManager {
                     }
                 } catch (Exception e) {
                     Log.err("Failed to save persistence for field @ in @", field.getName(),
-                            clazz.getName(), e);
+                            clazz.getName());
+                    Log.err(e);
                 }
             }
         }
