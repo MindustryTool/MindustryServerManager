@@ -92,7 +92,7 @@ public class CataliGamemode {
                         continue;
                     }
 
-                    leader.sendMessage(I18n.t(leader, "@Tap to spawn"));
+                    Call.infoPopup(leader.con, I18n.t(leader, "@Tap to spawn"), 2, Align.center, 0, 0, 0, 0);
                 }
             }
 
