@@ -32,6 +32,7 @@ import plugin.utils.TimeUtils;
 import plugin.utils.Utils;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
 @Gamemode("catali")
@@ -102,10 +103,10 @@ public class CataliGamemode {
             Seq<CataliTeamData> remove = new Seq<>();
 
             for (var team : teams) {
-                if (!team.hasUnit()) {
+                if (!team.hasUnit() && team.timeoutAt().isBefore(Instant.now())) {
                     remove.add(team);
                 } else if (team.spawning == true) {
-                    var leader = Groups.player.find(player -> player.uuid().equals(team.metadata.leaderUuid));
+                    var leader = Groups.player.find(player -> player.uuid().equals(team.leaderUuid));
 
                     if (leader == null) {
                         continue;
@@ -147,7 +148,7 @@ public class CataliGamemode {
             player.unit().kill();
         }
 
-        var playerTeam = findTeam(player);
+        var playerTeam = teams.find(team -> team.leaderUuid.equals(player.uuid()));
 
         if (playerTeam != null) {
             player.team(playerTeam.team);
@@ -155,14 +156,11 @@ public class CataliGamemode {
             if (playerTeam.hasUnit()) {
                 assignUnitForPlayer(playerTeam, player);
             } else {
-                playerTeam.spawning = true;
+                teams.remove(playerTeam);
             }
         } else {
             player.team(SPECTATOR_TEAM);
             player.sendMessage("[yellow]Type /play to start a new team!");
-
-            Call.infoPopup(player.con, I18n.t(session, "[yellow]", "@Type", "[accent]/play[]", "@to start a new team"),
-                    5, Align.center, 5, 5, 5, 5);
         }
     }
 
@@ -302,7 +300,7 @@ public class CataliGamemode {
     }
 
     private Unit spawnUnitForTeam(CataliTeamData data, UnitType type) {
-        var leaderPlayer = Groups.player.find(p -> p.uuid().equals(data.metadata.leaderUuid));
+        var leaderPlayer = Groups.player.find(p -> p.uuid().equals(data.leaderUuid));
 
         if (leaderPlayer == null) {
             Log.info("No leader player for team @", data.team);

@@ -41,6 +41,7 @@ public class BlockSpawner {
 
                 Core.app.post(() -> {
                     tile.setBlock(block, team);
+                    tile.block().update = true;
                     Log.info("Spawned block @ at tile @", block, tile);
                 });
             }

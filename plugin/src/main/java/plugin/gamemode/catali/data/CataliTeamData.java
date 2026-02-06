@@ -5,6 +5,8 @@ import arc.struct.Seq;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.Instant;
+
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import mindustry.game.Team;
@@ -19,8 +21,10 @@ import plugin.json.TeamSerializer;
 public class CataliTeamData {
     @JsonSerialize(using = TeamSerializer.class)
     @JsonDeserialize(using = TeamDeserializer.class)
+    public String leaderUuid;
+    public Instant createdTime = Instant.now();
+    public Instant lastLeaderOnlineTime = Instant.now();
     public Team team;
-    public TeamMetadata metadata;
     public TeamLevel level;
     public TeamRespawn respawn;
     public TeamUpgrades upgrades;
@@ -30,10 +34,14 @@ public class CataliTeamData {
 
     public CataliTeamData(Team team, String leaderUuid) {
         this.team = team;
-        this.metadata = new TeamMetadata(team.id, leaderUuid);
+        this.leaderUuid = leaderUuid;
         this.level = new TeamLevel();
         this.respawn = new TeamRespawn();
         this.upgrades = new TeamUpgrades();
+    }
+
+    public Instant timeoutAt() {
+        return lastLeaderOnlineTime.plusSeconds(60 * 2);
     }
 
     public void eachMember(Cons<Player> cons) {
