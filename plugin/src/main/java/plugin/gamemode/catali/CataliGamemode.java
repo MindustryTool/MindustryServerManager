@@ -5,6 +5,7 @@ import arc.math.Mathf;
 import arc.struct.Seq;
 import arc.util.Align;
 import arc.util.Log;
+import arc.util.Strings;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import mindustry.Vars;
@@ -68,7 +69,7 @@ public class CataliGamemode {
 
         Vars.state.rules.canGameOver = false;
 
-        Control.SCHEDULER.scheduleWithFixedDelay(this::update, 0, 2, TimeUnit.SECONDS);
+        Control.SCHEDULER.scheduleWithFixedDelay(this::update, 0, 1, TimeUnit.SECONDS);
         Control.SCHEDULER.scheduleWithFixedDelay(this::spawn, 0, 2, TimeUnit.SECONDS);
 
         Log.info(config);
@@ -93,7 +94,36 @@ public class CataliGamemode {
             updateRespawn();
             updateTeam();
             updatePlayer();
+            updateStatsHud();
         });
+    }
+
+    private void updateStatsHud() {
+        for (var player : Groups.player) {
+            var team = findTeam(player);
+
+            String[] stats = null;
+
+            if (team == null) {
+                stats = new String[] {
+                        "@No team"
+                };
+            } else {
+                String units = Strings.join(", ", team.team.data().units.map(u -> u.type.emoji()));
+
+                stats = new String[] {
+                        "@Team ID:", String.valueOf(team.team.id), "\n",
+                        "@Level:", String.valueOf(team.level.level), "\n",
+                        "@Member:", String.valueOf(team.members.size), "\n",
+                        "@Upgrades:", "", String.valueOf(team.level.commonUpgradePoints), "[accent]",
+                        String.valueOf(team.level.rareUpgradePoints), "[white]\n",
+                        "@Unit:", units, "\n",
+                };
+            }
+
+            Call.infoPopup(player.con, I18n.t(player, (Object[]) stats), 2,
+                    Align.right | Align.top, 50, 0, 0, 0);
+        }
     }
 
     private void updatePlayer() {
@@ -185,7 +215,7 @@ public class CataliGamemode {
             }
         } else {
             player.team(SPECTATOR_TEAM);
-            player.sendMessage("[yellow]Type /play to start a new team!");
+            createTeam(player);
         }
     }
 
