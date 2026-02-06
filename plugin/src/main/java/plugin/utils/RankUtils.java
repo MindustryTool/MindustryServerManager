@@ -3,8 +3,8 @@ package plugin.utils;
 import java.util.Locale;
 
 import arc.struct.Seq;
-import plugin.handler.I18n;
 import plugin.repository.SessionRepository.RankData;
+import plugin.service.I18n;
 
 public class RankUtils {
     public static String getRankString(Locale locale, Seq<RankData> players) {

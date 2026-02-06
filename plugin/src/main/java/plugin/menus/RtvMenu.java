@@ -4,10 +4,10 @@ import arc.struct.Seq;
 import mindustry.gen.Iconc;
 import mindustry.maps.Map;
 import plugin.Registry;
-import plugin.handler.MapRating;
-import plugin.handler.VoteHandler;
+import plugin.service.I18n;
+import plugin.service.MapRating;
+import plugin.service.VoteService;
 import plugin.type.Session;
-import plugin.handler.I18n;
 
 public class RtvMenu extends PluginMenu<Integer> {
     private static final int MAPS_PER_PAGE = 7;
@@ -17,7 +17,7 @@ public class RtvMenu extends PluginMenu<Integer> {
 
     @Override
     public void build(Session session, Integer page) {
-        var voteHandler = Registry.get(VoteHandler.class);
+        var voteHandler = Registry.get(VoteService.class);
         Seq<Map> maps = new Seq<>(voteHandler.getMaps());
 
         maps.sort((a, b) -> {

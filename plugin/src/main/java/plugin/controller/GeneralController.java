@@ -23,9 +23,10 @@ import mindustry.gen.Player;
 import mindustry.net.Administration.PlayerInfo;
 import plugin.Config;
 import plugin.commands.ServerCommandHandler;
-import plugin.handler.SessionHandler;
+import plugin.service.I18n;
+import plugin.service.SessionHandler;
 import plugin.service.SessionService;
-import plugin.handler.VoteHandler;
+import plugin.service.VoteService;
 import plugin.type.ChatDto;
 import dto.PlayerInfoDto;
 import dto.CommandParamDto;
@@ -35,7 +36,6 @@ import dto.ServerCommandDto;
 import dto.StartServerDto;
 import dto.ServerStateDto;
 import plugin.utils.Utils;
-import plugin.handler.I18n;
 import io.javalin.Javalin;
 import io.javalin.http.ContentType;
 
@@ -344,7 +344,7 @@ public class GeneralController {
                             return info;
                         }).list());
                 data.put("mods", Vars.mods.list().map(mod -> mod.meta.toString()).list());
-                data.put("votes", Registry.get(VoteHandler.class).votes);
+                data.put("votes", Registry.get(VoteService.class).votes);
 
                 HashMap<String, Object> settings = new HashMap<String, Object>();
 

@@ -11,8 +11,8 @@ import plugin.Registry;
 import plugin.annotations.Component;
 import plugin.annotations.Destroy;
 import plugin.commands.PluginClientCommand;
-import plugin.handler.I18n;
-import plugin.handler.SessionHandler;
+import plugin.service.I18n;
+import plugin.service.SessionHandler;
 import plugin.type.Session;
 import plugin.utils.Utils;
 

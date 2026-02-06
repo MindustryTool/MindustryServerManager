@@ -1,4 +1,4 @@
-package plugin.handler;
+package plugin.service;
 
 import java.util.HashMap;
 

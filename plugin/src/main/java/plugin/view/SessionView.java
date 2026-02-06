@@ -10,7 +10,7 @@ import mindustry.gen.Player;
 import mindustry.type.UnitType;
 import mindustry.ui.dialogs.LanguageDialog;
 import plugin.Config;
-import plugin.handler.I18n;
+import plugin.service.I18n;
 import plugin.type.Session;
 import plugin.type.SessionData;
 import plugin.utils.ExpUtils;

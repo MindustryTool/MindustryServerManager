@@ -1,4 +1,4 @@
-package plugin.handler;
+package plugin.service;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -38,7 +38,7 @@ import plugin.utils.Utils;
 
 @Component
 @RequiredArgsConstructor
-public class HubHandler {
+public class HubService {
 
     private final Seq<ServerCore> serverCores = new Seq<>();
     private Seq<ServerDto> servers = new Seq<>();

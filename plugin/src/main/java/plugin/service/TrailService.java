@@ -1,4 +1,4 @@
-package plugin.handler;
+package plugin.service;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -21,7 +21,7 @@ import plugin.utils.ExpUtils;
 
 @Component
 @RequiredArgsConstructor
-public class TrailHandler {
+public class TrailService {
 
     public final ConcurrentHashMap<String, Trail> trails = new ConcurrentHashMap<>();
     private final SessionHandler sessionHandler;
@@ -61,12 +61,12 @@ public class TrailHandler {
             return requirements.allMatch(r -> r.getAllowed().apply(session));
         }
 
-        public static void create(TrailHandler handler, String name, Effect effect, TrailRequirement... requirements) {
+        public static void create(TrailService handler, String name, Effect effect, TrailRequirement... requirements) {
             var trail = new Trail(name, Seq.with(requirements), (x, y) -> Call.effect(effect, x, y, 0, Color.white));
             handler.trails.put(name, trail);
         }
 
-        public static void custom(TrailHandler handler, String name, Cons2<Float, Float> render,
+        public static void custom(TrailService handler, String name, Cons2<Float, Float> render,
                 TrailRequirement... requirements) {
             var trail = new Trail(name, Seq.with(requirements), render);
             handler.trails.put(name, trail);

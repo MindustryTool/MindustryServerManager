@@ -1,4 +1,4 @@
-package plugin.handler;
+package plugin.service;
 
 import java.net.SocketTimeoutException;
 import java.time.Duration;

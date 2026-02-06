@@ -187,7 +187,7 @@ public class Utils {
         ArrayList<Player> players = new ArrayList<Player>();
         Groups.player.forEach(players::add);
 
-        List<PlayerDto> p = Registry.get(plugin.handler.SessionHandler.class).get()
+        List<PlayerDto> p = Registry.get(plugin.service.SessionHandler.class).get()
                 .values()
                 .stream()
                 .map(session -> PlayerDto.from(session.player).setJoinedAt(session.joinedAt))

@@ -1,10 +1,12 @@
 package plugin;
 
+import arc.Core;
 import arc.func.Cons;
 import arc.util.Log;
 import org.reflections.Reflections;
 import org.reflections.scanners.Scanners;
 import plugin.annotations.*;
+import plugin.service.ConfigManager;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
@@ -15,19 +17,30 @@ public final class Registry {
     private static final Map<Class<?>, Object> instances = new HashMap<>();
     private static final Set<Class<?>> creating = new HashSet<>();
     private static final Set<Object> initialized = new HashSet<>();
+    private static final ConfigManager configManager = new ConfigManager();
 
-    private Registry() {
-    }
+    private static String currentGamemode;
 
     public static void init(String packageName) {
         try {
             Reflections reflections = new Reflections(packageName, Scanners.TypesAnnotated);
             Set<Class<?>> components = reflections.getTypesAnnotatedWith(Component.class);
 
+            currentGamemode = Core.settings.getString("mindustrytool.gamemode", null);
+
             for (Class<?> clazz : components) {
                 // Check Lazy
-                if (clazz.isAnnotationPresent(Lazy.class)) {
+                if (isLazy(clazz)) {
                     continue;
+                }
+
+                if (currentGamemode != null) {
+                    if (clazz.isAnnotationPresent(Gamemode.class)) {
+                        Gamemode gamemode = clazz.getAnnotation(Gamemode.class);
+                        if (!Objects.equals(currentGamemode, gamemode.value())) {
+                            continue;
+                        }
+                    }
                 }
 
                 getOrCreate(clazz);
@@ -51,6 +64,7 @@ public final class Registry {
                 }
             }
         });
+        configManager.destroy();
         instances.clear();
         initialized.clear();
     }
@@ -82,24 +96,27 @@ public final class Registry {
             return instance;
         }
 
+        // Check Gamemode
+        if (type.isAnnotationPresent(Gamemode.class)) {
+            Gamemode gamemode = type.getAnnotation(Gamemode.class);
+            if (!Objects.equals(currentGamemode, gamemode.value())) {
+                throw new RuntimeException("Gamemode mismatch! Current: " + currentGamemode + ", Component: "
+                        + type.getName() + " expects " + gamemode.value());
+            }
+        }
+
         if (creating.contains(type)) {
             throw new RuntimeException("Circular dependency detected: " + type.getName());
         }
 
-        // Check ConditionOn
         if (type.isAnnotationPresent(ConditionOn.class)) {
             ConditionOn annotation = type.getAnnotation(ConditionOn.class);
             Class<? extends Condition> conditionClass = annotation.value();
             try {
-                // Instantiate the condition class (must have default constructor)
                 Condition condition = conditionClass.getDeclaredConstructor().newInstance();
+
                 if (!condition.check()) {
                     Log.info("Skipping component @ due to condition", type.getName());
-                    // Return null if condition fails.
-                    // Note: If this component is required by another, this will cause a null
-                    // injection
-                    // or NPE later. This is expected behavior for optional dependencies,
-                    // but strict dependencies will fail.
                     return null;
                 }
             } catch (Exception e) {
@@ -138,6 +155,10 @@ public final class Registry {
         }
 
         Class<?> clazz = instance.getClass();
+
+        if (clazz.isAnnotationPresent(Configuration.class)) {
+            configManager.process(instance);
+        }
 
         // Scan for @Init
         for (Method method : clazz.getDeclaredMethods()) {
@@ -192,6 +213,18 @@ public final class Registry {
         }
 
         initialized.add(instance);
+    }
+
+    private static boolean isLazy(Class<?> type) {
+        if (type.isAnnotationPresent(Lazy.class)) {
+            return true;
+        }
+        for (java.lang.annotation.Annotation a : type.getAnnotations()) {
+            if (a.annotationType().isAnnotationPresent(Lazy.class)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static Constructor<?> selectConstructor(Class<?> type) {

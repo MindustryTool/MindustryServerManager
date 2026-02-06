@@ -5,8 +5,8 @@ import dto.LoginDto;
 import mindustry.gen.Call;
 import plugin.Registry;
 import plugin.annotations.Component;
-import plugin.handler.ApiGateway;
-import plugin.handler.I18n;
+import plugin.service.ApiGateway;
+import plugin.service.I18n;
 import plugin.type.Session;
 import plugin.commands.PluginClientCommand;
 

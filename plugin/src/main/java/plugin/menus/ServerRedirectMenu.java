@@ -4,8 +4,8 @@ import mindustry.gen.Call;
 import mindustry.gen.Player;
 import plugin.Registry;
 import plugin.Tasks;
-import plugin.handler.ApiGateway;
-import plugin.handler.I18n;
+import plugin.service.ApiGateway;
+import plugin.service.I18n;
 import plugin.type.Session;
 import plugin.utils.Utils;
 

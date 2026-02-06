@@ -1,4 +1,4 @@
-package plugin.handler;
+package plugin.service;
 
 import java.time.Instant;
 import java.util.concurrent.ScheduledFuture;
@@ -28,7 +28,7 @@ import plugin.utils.Utils;
 
 @Component
 @RequiredArgsConstructor
-public class AdminHandler {
+public class AdminService {
 
     private final Cache<String, Instant> lastGriefReportTimes = Caffeine.newBuilder()
             .expireAfterWrite(Config.GRIEF_REPORT_COOLDOWN, TimeUnit.SECONDS)

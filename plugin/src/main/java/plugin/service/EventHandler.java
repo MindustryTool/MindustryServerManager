@@ -1,4 +1,4 @@
-package plugin.handler;
+package plugin.service;
 
 import java.util.concurrent.TimeUnit;
 
@@ -35,7 +35,6 @@ import mindustry.ui.dialogs.LanguageDialog;
 import java.time.Instant;
 
 import events.ServerEvents;
-import plugin.service.SessionService;
 
 @Component
 public class EventHandler {

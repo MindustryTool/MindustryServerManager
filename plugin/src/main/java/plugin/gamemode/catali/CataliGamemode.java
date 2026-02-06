@@ -1,0 +1,288 @@
+package plugin.gamemode.catali;
+
+import arc.math.Mathf;
+import arc.struct.Seq;
+import arc.util.Align;
+import arc.util.Interval;
+import arc.util.Log;
+import lombok.RequiredArgsConstructor;
+import mindustry.Vars;
+import mindustry.content.UnitTypes;
+import mindustry.game.EventType.*;
+import mindustry.game.Team;
+import mindustry.gen.Call;
+import mindustry.gen.Groups;
+import mindustry.gen.Player;
+import mindustry.gen.Teamc;
+import mindustry.gen.Unit;
+import mindustry.type.UnitType;
+import mindustry.world.Tile;
+import plugin.PluginEvents;
+import plugin.annotations.Gamemode;
+import plugin.annotations.Init;
+import plugin.annotations.Listener;
+import plugin.event.SessionCreatedEvent;
+import plugin.gamemode.catali.data.*;
+import plugin.gamemode.catali.spawner.BlockSpawner;
+import plugin.gamemode.catali.spawner.UnitSpawner;
+import plugin.service.I18n;
+import plugin.utils.TimeUtils;
+import plugin.utils.Utils;
+
+import java.time.Duration;
+
+@Gamemode("catali")
+@RequiredArgsConstructor
+public class CataliGamemode {
+
+    private final Seq<CataliTeamData> teams = new Seq<>();
+
+    private final Interval interval = new Interval(2); // 0: unit spawn, 1: block spawn
+
+    private final UnitSpawner unitSpawner;
+    private final BlockSpawner blockSpawner;
+    private final CataliConfig config;
+
+    @Init
+    public void init() {
+        PluginEvents.run(Trigger.update, this::onUpdate);
+
+        Vars.content.units().forEach(u -> u.flying = u.naval ? true : u.flying);
+
+        UnitTypes.omura.abilities.clear();
+        UnitTypes.omura.weapons.get(0).bullet.damage /= 2;
+
+        UnitTypes.collaris.speed /= 2;
+    }
+
+    @Listener
+    public void onPlayerJoin(SessionCreatedEvent event) {
+        var session = event.session;
+        var player = session.player;
+
+        var playerTeam = findTeam(player);
+
+        if (player != null) {
+            player.team(playerTeam.team);
+        }
+
+        player.team(Team.derelict);
+        player.sendMessage("[yellow]Type /play to start a new team!");
+
+        Call.infoPopup(player.con, I18n.t(session, "[yellow]", "@Type", "[accent]/play[]", "@to start a new team"),
+                5, Align.center, 5, 5, 5, 5);
+    }
+
+    @Listener
+    public void onTap(TapEvent event) {
+        var playerTeam = findTeam(event.player);
+
+        if (playerTeam != null && playerTeam.spawning == true) {
+            var spawnX = event.tile.worldx();
+            var spawnY = event.tile.worldy();
+
+            var spawnable = isTileSafe(event.tile);
+
+            if (spawnable) {
+                Unit starter = UnitTypes.poly.create(playerTeam.team);
+
+                starter.set(spawnX, spawnY);
+                starter.add();
+
+                playerTeam.spawning = false;
+            }
+        }
+    }
+
+    public CataliTeamData findTeam(Player player) {
+        return teams.find(team -> team.metadata.members.contains(player.uuid()));
+    }
+
+    public void onUpdate() {
+        if (!Vars.state.isGame()) {
+            return;
+        }
+
+        if (interval.get(0, config.enemyUnitSpawnTime.toSeconds())) {
+            unitSpawner.spawn(Vars.state.rules.waveTeam);
+        }
+
+        if (interval.get(1, config.enemyBlockSpawnTime.toSeconds())) {
+            blockSpawner.spawn();
+        }
+
+        for (CataliTeamData data : teams) {
+            var respawns = data.respawn.getRespawnUnit();
+            for (var entry : respawns) {
+                spawnUnitForTeam(data, entry.type);
+            }
+        }
+    }
+
+    @Listener
+    public void onUnitDestroy(UnitBulletDestroyEvent e) {
+        CataliTeamData victimTeam = teams.find(team -> team.team.id == e.unit.team.id && team.units.contains(e.unit));
+
+        if (victimTeam != null) {
+            var respawnTime = config.unitRespawnTime.get(e.unit.type);
+
+            if (respawnTime == null) {
+                respawnTime = Duration.ofSeconds(10);
+                Log.warn("Missing respawn time for unit @", e.unit.type.name);
+            }
+
+            var timeStr = TimeUtils.toString(respawnTime);
+
+            victimTeam.respawn.addUnit(e.unit.type, respawnTime);
+
+            victimTeam.eachMember(player -> {
+                player.sendMessage(
+                        I18n.t(player, "[scarlet]", e.unit.type.emoji(), "@destroyed! Respawning in", timeStr));
+            });
+        }
+
+        var bulletOwner = e.bullet.owner();
+
+        if (bulletOwner instanceof Teamc teamc) {
+            var killerTeam = teams.find(team -> team.team.id == teamc.team().id);
+            var exp = config.unitExp.get(e.unit.type);
+
+            if (exp == null) {
+                exp = 10;
+                Log.warn("Missing exp for unit @", e.unit.type.name);
+            }
+
+            killerTeam.level.addExp(exp);
+            displayExp(killerTeam, exp, e.unit.x, e.unit.y);
+
+            // Catch stray unit
+            if (victimTeam == null) {
+                spawnUnitForTeam(killerTeam, e.unit.type);
+                Utils.forEachPlayerLocale((locale, players) -> {
+                    String message = I18n.t(locale, "[green]", "@Team", killerTeam.team.id,
+                            "@has caught a stray unit!");
+
+                    for (var player : players) {
+                        player.sendMessage(message);
+                    }
+                });
+            }
+        }
+
+    }
+
+    @Listener
+    public void onBlockDestroy(BuildingBulletDestroyEvent e) {
+        var bulletOwner = e.bullet.owner();
+
+        if (bulletOwner instanceof Teamc teamc) {
+            var killerTeam = teams.find(team -> team.team.id == teamc.team().id);
+            var exp = config.blockExp.get(e.build.block);
+
+            if (exp == null) {
+                exp = 10;
+                Log.warn("Missing exp for block @", e.build.block.name);
+            }
+
+            killerTeam.level.addExp(exp);
+            displayExp(killerTeam, exp, e.build.x, e.build.y);
+        }
+    }
+
+    private void displayExp(CataliTeamData team, int amount, float x, float y) {
+        team.eachMember(player -> {
+            Call.label(player.con, "[green]+" + amount + "exp", 2, x + Mathf.random(5), y + Mathf.random(5));
+        });
+    }
+
+    private void spawnUnitForTeam(CataliTeamData data, UnitType type) {
+        var leaderPlayer = Groups.player.find(p -> p.team() == data.team);
+
+        if (leaderPlayer == null) {
+            Log.info("No leader player for team @", data.team);
+            return;
+        }
+
+        Unit leaderUnit = Groups.unit.find(u -> u == leaderPlayer.unit());
+
+        if (leaderUnit == null) {
+            Log.info("No leader unit for player @", leaderPlayer.name);
+            return;
+        }
+
+        Tile safeTile = null;
+        Tile tile = null;
+        int maxSearchRange = 10;
+        // Search for safe tile arround
+
+        for (int i = 1; i < maxSearchRange; i++) {
+            for (int x = 1 - i; x < i; x++) {
+                tile = Vars.world.tile(x, -i);
+                if (isTileSafe(tile)) {
+                    safeTile = tile;
+                    break;
+                }
+                tile = Vars.world.tile(x, i);
+                if (isTileSafe(tile)) {
+                    safeTile = tile;
+                    break;
+                }
+            }
+
+            for (int y = 1 - i; y < i; y++) {
+                tile = Vars.world.tile(-i, y);
+                if (isTileSafe(tile)) {
+                    safeTile = tile;
+                    break;
+                }
+                tile = Vars.world.tile(i, y);
+                if (isTileSafe(tile)) {
+                    safeTile = tile;
+                    break;
+                }
+            }
+        }
+
+        if (safeTile == null) {
+            Log.info("No safe tile found for team @", data.team);
+            return;
+        }
+
+        Unit u = type.create(data.team);
+        u.set(safeTile.worldx(), safeTile.worldy());
+        u.add();
+
+        // Apply upgrades
+        u.maxHealth *= data.upgrades.healthMultiplier;
+        u.health = u.maxHealth;
+        u.damageMultiplier(data.upgrades.damageMultiplier);
+    }
+
+    public boolean hasTeam(int id) {
+        return teams.contains(team -> team.team.id == id);
+    }
+
+    public CataliTeamData createTeam(Player leader) {
+        int id = 10;
+
+        while (hasTeam(id) || Team.get(id).active()) {
+            id++;
+            if (id > 200) {
+                throw new RuntimeException("Failed to find a free team ID");
+            }
+        }
+
+        Team newTeam = Team.get(id);
+        CataliTeamData data = new CataliTeamData(newTeam, leader.uuid());
+
+        teams.add(data);
+
+        leader.team(newTeam);
+
+        return data;
+    }
+
+    public boolean isTileSafe(Tile tile) {
+        return tile != null && !tile.solid();
+    }
+}

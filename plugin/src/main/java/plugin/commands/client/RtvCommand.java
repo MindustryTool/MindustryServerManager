@@ -3,8 +3,8 @@ package plugin.commands.client;
 import plugin.Registry;
 import plugin.annotations.Component;
 import plugin.commands.PluginClientCommand;
-import plugin.handler.VoteHandler;
 import plugin.menus.RtvMenu;
+import plugin.service.VoteService;
 import plugin.type.Session;
 
 @Component
@@ -22,7 +22,7 @@ public class RtvCommand extends PluginClientCommand {
     @Override
     public void handle(Session session) {
         if (followParam.hasValue() && followParam.asString().equalsIgnoreCase("yes")) {
-            Registry.get(VoteHandler.class).handleVote(session.player);
+            Registry.get(VoteService.class).handleVote(session.player);
         } else {
             new RtvMenu().send(session, 0);
         }

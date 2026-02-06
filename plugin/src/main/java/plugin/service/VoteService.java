@@ -1,4 +1,4 @@
-package plugin.handler;
+package plugin.service;
 
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -17,7 +17,7 @@ import plugin.event.SessionRemovedEvent;
 import plugin.utils.Utils;
 
 @Component
-public class VoteHandler {
+public class VoteService {
     public final ConcurrentHashMap<String, Seq<String>> votes = new ConcurrentHashMap<>();
     public double ratio = 0.6;
     public Map lastMap = null;

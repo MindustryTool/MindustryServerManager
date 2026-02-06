@@ -1,10 +1,9 @@
 package plugin.menus;
 
-import plugin.handler.SessionHandler;
+import plugin.service.I18n;
+import plugin.service.SessionHandler;
 import plugin.type.Session;
 import plugin.view.SessionView;
-import plugin.handler.I18n;
-
 import plugin.Registry;
 
 public class PlayerInfoMenu extends PluginMenu<Session> {

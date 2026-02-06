@@ -7,8 +7,7 @@ import mindustry.gen.Player;
 import mindustry.net.Packets.KickReason;
 import plugin.annotations.Component;
 import plugin.commands.PluginServerCommand;
-import plugin.handler.I18n;
-
+import plugin.service.I18n;
 import plugin.utils.Utils;
 
 @Component

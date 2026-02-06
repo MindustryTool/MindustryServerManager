@@ -7,8 +7,8 @@ import plugin.type.Session;
 import plugin.utils.ServerUtils;
 import arc.struct.Seq;
 import plugin.commands.PluginClientCommand;
-import plugin.handler.ApiGateway;
-import plugin.handler.I18n;
+import plugin.service.ApiGateway;
+import plugin.service.I18n;
 
 @Component
 public class HubCommand extends PluginClientCommand {

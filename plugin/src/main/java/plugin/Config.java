@@ -1,5 +1,8 @@
 package plugin;
 
+import plugin.annotations.Configuration;
+
+@Configuration("config.json")
 public class Config {
 
     public static final String PLUGIN_VERSION = "0.0.1";

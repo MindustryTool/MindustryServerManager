@@ -2,8 +2,8 @@ package plugin.menus;
 
 import arc.struct.Seq;
 import plugin.Registry;
-import plugin.handler.I18n;
-import plugin.handler.TrailHandler;
+import plugin.service.I18n;
+import plugin.service.TrailService;
 import plugin.type.Session;
 
 public class TrailMenu extends PluginMenu<Integer> {
@@ -13,7 +13,7 @@ public class TrailMenu extends PluginMenu<Integer> {
 
     @Override
     public void build(Session session, Integer page) {
-        var trails = Seq.with(Registry.get(TrailHandler.class).trails.values());
+        var trails = Seq.with(Registry.get(TrailService.class).trails.values());
 
         var size = 5;
 

@@ -1,4 +1,4 @@
-package plugin.handler;
+package plugin.service;
 
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -25,7 +25,6 @@ import plugin.event.PlayerKillUnitEvent;
 import plugin.event.SessionCreatedEvent;
 import plugin.event.SessionRemovedEvent;
 import plugin.repository.SessionRepository;
-import plugin.service.SessionService;
 import plugin.type.Session;
 import plugin.type.SessionData;
 import plugin.utils.RankUtils;

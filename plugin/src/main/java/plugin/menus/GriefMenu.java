@@ -1,10 +1,10 @@
 package plugin.menus;
 
 import plugin.Registry;
-import plugin.handler.SessionHandler;
+import plugin.service.AdminService;
+import plugin.service.I18n;
+import plugin.service.SessionHandler;
 import plugin.type.Session;
-import plugin.handler.AdminHandler;
-import plugin.handler.I18n;
 
 public class GriefMenu extends PluginMenu<Session> {
 
@@ -24,7 +24,7 @@ public class GriefMenu extends PluginMenu<Session> {
             text(I18n.t(session.locale, "[red]", "@Close"));
         } else {
             option(I18n.t(session.locale, "@Report"),
-                    (p, s) -> Registry.get(AdminHandler.class).reportGrief(session, target));
+                    (p, s) -> Registry.get(AdminService.class).reportGrief(session, target));
             row();
             text(I18n.t(session.locale, "@Cancel"));
         }

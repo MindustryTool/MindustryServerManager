@@ -9,7 +9,7 @@ import lombok.RequiredArgsConstructor;
 import mindustry.gen.Call;
 import plugin.Registry;
 import plugin.Tasks;
-import plugin.handler.PluginMenuHandler;
+import plugin.service.PluginMenuService;
 import plugin.type.Session;
 
 public abstract class PluginMenu<T> {
@@ -27,7 +27,7 @@ public abstract class PluginMenu<T> {
     }
 
     public final int getMenuId() {
-        return Registry.get(PluginMenuHandler.class).getMenuId(getClass());
+        return Registry.get(PluginMenuService.class).getMenuId(getClass());
     }
 
     public void option(String text, PlayerPressCallback<T> callback) {
@@ -84,7 +84,7 @@ public abstract class PluginMenu<T> {
 
                 copy.options.removeAll(op -> op.size == 0);
 
-                var handler = Registry.get(PluginMenuHandler.class);
+                var handler = Registry.get(PluginMenuService.class);
                 var playerMenus = handler.getMenus(session.player);
 
                 handler.add(copy);

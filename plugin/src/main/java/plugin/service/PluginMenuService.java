@@ -1,4 +1,4 @@
-package plugin.handler;
+package plugin.service;
 
 import java.time.Instant;
 import java.util.concurrent.ConcurrentHashMap;
@@ -22,7 +22,7 @@ import plugin.menus.PluginMenu;
 import plugin.menus.PluginMenu.HudOption;
 
 @Component
-public class PluginMenuHandler {
+public class PluginMenuService {
     private final AtomicInteger ID_GEN = new AtomicInteger(1000);
     private final ConcurrentHashMap<Class<?>, Integer> CLASS_IDS = new ConcurrentHashMap<>();
     private final Seq<PluginMenu<?>> menus = new Seq<>();

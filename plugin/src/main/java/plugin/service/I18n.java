@@ -1,16 +1,22 @@
-package plugin.handler;
+package plugin.service;
 
 import java.util.Locale;
 
 import arc.struct.Seq;
 import arc.util.Log;
 import arc.util.Strings;
+import mindustry.gen.Player;
 import plugin.Registry;
 import plugin.type.Session;
+import plugin.utils.Utils;
 
 public class I18n {
     public static String t(Session sesion, Object... texts) {
         return t(sesion.locale, texts);
+    }
+
+    public static String t(Player player, Object... texts) {
+        return t(Utils.parseLocale(player.locale), texts);
     }
 
     public static String t(Locale locale, Object... texts) {

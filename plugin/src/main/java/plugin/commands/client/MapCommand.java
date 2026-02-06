@@ -3,9 +3,9 @@ package plugin.commands.client;
 import mindustry.Vars;
 import plugin.annotations.Component;
 import plugin.commands.PluginClientCommand;
-import plugin.handler.MapRating;
+import plugin.service.I18n;
+import plugin.service.MapRating;
 import plugin.type.Session;
-import plugin.handler.I18n;
 
 @Component
 public class MapCommand extends PluginClientCommand {

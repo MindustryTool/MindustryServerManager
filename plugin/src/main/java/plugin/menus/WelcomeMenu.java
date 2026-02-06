@@ -5,7 +5,7 @@ import mindustry.gen.Call;
 import mindustry.gen.Iconc;
 import plugin.Config;
 import plugin.Registry;
-import plugin.handler.ApiGateway;
+import plugin.service.ApiGateway;
 import plugin.type.Session;
 
 public class WelcomeMenu extends PluginMenu<Void> {

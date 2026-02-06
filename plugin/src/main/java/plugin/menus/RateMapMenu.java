@@ -4,8 +4,8 @@ import java.util.Locale;
 
 import mindustry.gen.Iconc;
 import mindustry.maps.Map;
-import plugin.handler.I18n;
-import plugin.handler.MapRating;
+import plugin.service.I18n;
+import plugin.service.MapRating;
 import plugin.type.Session;
 import plugin.utils.Utils;
 
