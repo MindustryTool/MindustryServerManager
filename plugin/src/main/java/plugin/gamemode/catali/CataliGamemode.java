@@ -90,7 +90,7 @@ public class CataliGamemode {
             var spawnX = event.tile.worldx();
             var spawnY = event.tile.worldy();
 
-            var spawnable = isTileSafe(event.tile);
+            var spawnable = isTileSafe(event.tile, UnitTypes.poly);
 
             if (spawnable) {
                 Unit starter = UnitTypes.poly.create(playerTeam.team);
@@ -137,22 +137,34 @@ public class CataliGamemode {
         CataliTeamData victimTeam = teams.find(team -> team.team.id == e.unit.team.id && team.units.contains(e.unit));
 
         if (victimTeam != null) {
-            var respawnTime = Utils.find(config.unitRespawnTime, item -> item.unit == e.unit.type,
-                    item -> item.respawnTime);
+            victimTeam.units.remove(e.unit);
 
-            if (respawnTime == null) {
-                respawnTime = Duration.ofSeconds(10);
-                Log.warn("Missing respawn time for unit @", e.unit.type.name);
+            if (victimTeam.units.size <= 0) {
+                teams.remove(victimTeam);
+                Utils.forEachPlayerLocale((locale, players) -> {
+                    String message = I18n.t(locale, "[scarlet]", "@Team", victimTeam.team.id, "@has been eliminated!");
+                    for (var player : players) {
+                        player.sendMessage(message);
+                    }
+                });
+            } else {
+                var respawnTime = Utils.find(config.unitRespawnTime, item -> item.unit == e.unit.type,
+                        item -> item.respawnTime);
+
+                if (respawnTime == null) {
+                    respawnTime = Duration.ofSeconds(10);
+                    Log.warn("Missing respawn time for unit @", e.unit.type.name);
+                }
+
+                var timeStr = TimeUtils.toString(respawnTime);
+
+                victimTeam.respawn.addUnit(e.unit.type, respawnTime);
+
+                victimTeam.eachMember(player -> {
+                    player.sendMessage(
+                            I18n.t(player, "[scarlet]", e.unit.type.emoji(), "@destroyed! Respawning in", timeStr));
+                });
             }
-
-            var timeStr = TimeUtils.toString(respawnTime);
-
-            victimTeam.respawn.addUnit(e.unit.type, respawnTime);
-
-            victimTeam.eachMember(player -> {
-                player.sendMessage(
-                        I18n.t(player, "[scarlet]", e.unit.type.emoji(), "@destroyed! Respawning in", timeStr));
-            });
         }
 
         var bulletOwner = e.bullet.owner();
@@ -241,12 +253,12 @@ public class CataliGamemode {
         for (int i = 1; i < maxSearchRange; i++) {
             for (int x = 1 - i; x < i; x++) {
                 tile = Vars.world.tile(leaderUnit.tileX() + x, leaderUnit.tileY() - i);
-                if (isTileSafe(tile)) {
+                if (isTileSafe(tile, type)) {
                     safeTile = tile;
                     break;
                 }
                 tile = Vars.world.tile(leaderUnit.tileX() + x, leaderUnit.tileY() + i);
-                if (isTileSafe(tile)) {
+                if (isTileSafe(tile, type)) {
                     safeTile = tile;
                     break;
                 }
@@ -254,12 +266,12 @@ public class CataliGamemode {
 
             for (int y = 1 - i; y < i; y++) {
                 tile = Vars.world.tile(leaderUnit.tileX() - i, leaderUnit.tileY() + y);
-                if (isTileSafe(tile)) {
+                if (isTileSafe(tile, type)) {
                     safeTile = tile;
                     break;
                 }
                 tile = Vars.world.tile(leaderUnit.tileX() + i, leaderUnit.tileY() + y);
-                if (isTileSafe(tile)) {
+                if (isTileSafe(tile, type)) {
                     safeTile = tile;
                     break;
                 }
@@ -323,7 +335,8 @@ public class CataliGamemode {
         return data;
     }
 
-    public boolean isTileSafe(Tile tile) {
-        return tile != null && !tile.solid();
+    public boolean isTileSafe(Tile tile, UnitType type) {
+        return tile != null && !tile.solid()
+                && Groups.unit.intersect(tile.worldx(), tile.worldy(), type.hitSize, type.hitSize).any();
     }
 }
