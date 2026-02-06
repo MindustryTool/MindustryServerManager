@@ -53,6 +53,13 @@ public class CataliGamemode {
         UnitTypes.omura.weapons.get(0).bullet.damage /= 2;
 
         UnitTypes.collaris.speed /= 2;
+
+        for (var block : Vars.content.blocks()) {
+            Vars.state.rules.bannedBlocks.add(block);
+        }
+        for (var unit : Vars.content.units()) {
+            Vars.state.rules.bannedUnits.add(unit);
+        }
     }
 
     @Listener
