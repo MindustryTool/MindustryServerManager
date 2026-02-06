@@ -458,6 +458,7 @@ public class GatewayService {
                             }
                         }
                     })
+                    .onErrorComplete(error -> error instanceof ApiError apiError && apiError.status.is5xxServerError())
                     .retryWhen(Retry.fixedDelay(60, Duration.ofSeconds(1)))
                     .onErrorMap(Exceptions::isRetryExhausted,
                             error -> new ApiError(HttpStatus.BAD_REQUEST, "Events timeout: " + error.getMessage()))
