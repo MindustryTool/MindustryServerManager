@@ -240,12 +240,12 @@ public class CataliGamemode {
 
         for (int i = 1; i < maxSearchRange; i++) {
             for (int x = 1 - i; x < i; x++) {
-                tile = Vars.world.tile(x, -i);
+                tile = Vars.world.tile(leaderUnit.tileX() + x, leaderUnit.tileY() - i);
                 if (isTileSafe(tile)) {
                     safeTile = tile;
                     break;
                 }
-                tile = Vars.world.tile(x, i);
+                tile = Vars.world.tile(leaderUnit.tileX() + x, leaderUnit.tileY() + i);
                 if (isTileSafe(tile)) {
                     safeTile = tile;
                     break;
@@ -253,12 +253,12 @@ public class CataliGamemode {
             }
 
             for (int y = 1 - i; y < i; y++) {
-                tile = Vars.world.tile(-i, y);
+                tile = Vars.world.tile(leaderUnit.tileX() - i, leaderUnit.tileY() + y);
                 if (isTileSafe(tile)) {
                     safeTile = tile;
                     break;
                 }
-                tile = Vars.world.tile(i, y);
+                tile = Vars.world.tile(leaderUnit.tileX() + i, leaderUnit.tileY() + y);
                 if (isTileSafe(tile)) {
                     safeTile = tile;
                     break;
