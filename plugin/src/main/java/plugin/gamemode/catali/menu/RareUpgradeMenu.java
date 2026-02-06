@@ -14,28 +14,28 @@ public class RareUpgradeMenu extends PluginMenu<CataliTeamData> {
 
     @Override
     public void build(Session session, CataliTeamData team) {
-        title = I18n.t(session, "@Rare Upgrades", session.player);
-        description = I18n.t(session, "@Select a rare upgrade type.", session.player);
+        title = I18n.t(session, "@Rare Upgrades");
+        description = I18n.t(session, "@Select a rare upgrade type.");
 
-        option(I18n.t(session, "@Spawn Unit", session.player), (s, st) -> {
+        option(I18n.t(session, "@Spawn Unit"), (s, st) -> {
             PluginEvents.fire(new CataliSpawnRareUpgrade(team));
         });
 
         row();
 
-        option(I18n.t(session, "@Evolve Unit", session.player), (s, st) -> {
+        option(I18n.t(session, "@Evolve Unit"), (s, st) -> {
             Registry.get(RareUpgradeTierSelectUnitMenu.class).send(s, team);
         });
 
         row();
 
-        option(I18n.t(session, "@Apply Buff", session.player), (s, st) -> {
+        option(I18n.t(session, "@Apply Buff"), (s, st) -> {
             Registry.get(RareUpgradeBuffSelectUnitMenu.class).send(s, team);
         });
 
         row();
 
-        option(I18n.t(session, "@Close", session.player), (s, st) -> {
+        option(I18n.t(session, "@Close"), (s, st) -> {
         });
     }
 }

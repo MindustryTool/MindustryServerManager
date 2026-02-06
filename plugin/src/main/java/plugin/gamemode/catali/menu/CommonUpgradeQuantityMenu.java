@@ -19,8 +19,8 @@ public class CommonUpgradeQuantityMenu extends PluginMenu<Pair<CataliTeamData, C
 
         var level = team.level;
 
-        title = I18n.t(session, "@Upgrade Quantity", session.player);
-        description = I18n.t(session, "@Select how many points to spend.", session.player);
+        title = I18n.t(session, "@Upgrade Quantity");
+        description = I18n.t(session, "@Select how many points to spend.");
 
         option("1", (s, st) -> {
             team.upgrade(upgrade, 1);
@@ -45,17 +45,17 @@ public class CommonUpgradeQuantityMenu extends PluginMenu<Pair<CataliTeamData, C
 
         row();
 
-        option(I18n.t(session, "@All Points", session.player), (s, st) -> {
+        option(I18n.t(session, "@All Points"), (s, st) -> {
             team.upgrade(upgrade, level.commonUpgradePoints);
             Registry.get(CommonUpgradeMenu.class).send(s, team);
         });
 
         row();
 
-        option(I18n.t(session, "@Back", session.player), (s, st) -> {
+        option(I18n.t(session, "@Back"), (s, st) -> {
             Registry.get(CommonUpgradeMenu.class).send(s, team);
         });
-        option(I18n.t(session, "@Close", session.player), (s, st) -> {
+        option(I18n.t(session, "@Close"), (s, st) -> {
         });
     }
 }

@@ -14,8 +14,8 @@ public class RareUpgradeTierSelectUnitMenu extends PluginMenu<CataliTeamData> {
 
     @Override
     public void build(Session session, CataliTeamData team) {
-        title = I18n.t(session, "@Select Unit to Evolve", session.player);
-        description = I18n.t(session, "@Choose a unit to evolve.", session.player);
+        title = I18n.t(session, "@Select Unit to Evolve");
+        description = I18n.t(session, "@Choose a unit to evolve.");
 
         var config = Registry.get(CataliConfig.class);
 
@@ -39,11 +39,11 @@ public class RareUpgradeTierSelectUnitMenu extends PluginMenu<CataliTeamData> {
 
         row();
 
-        option(I18n.t(session, "@Back", session.player), (s, st) -> {
+        option(I18n.t(session, "@Back"), (s, st) -> {
             Registry.get(RareUpgradeMenu.class).send(s, team);
         });
 
-        option(I18n.t(session, "@Close", session.player), (s, st) -> {
+        option(I18n.t(session, "@Close"), (s, st) -> {
         });
     }
 }

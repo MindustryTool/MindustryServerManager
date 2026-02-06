@@ -25,12 +25,12 @@ public class AssignNextLeaderMenu extends PluginMenu<CataliTeamData> {
         }
 
         if (availableTeammates.isEmpty()) {
-            title = I18n.t(session, "@No available teammates to transfer leadership to.", session.player);
+            title = I18n.t(session, "@No available teammates to transfer leadership to.");
             return;
         }
 
-        title = I18n.t(session, "@Assign Next Leader", session.player);
-        description = I18n.t(session, "@Select a teammate to be the next leader.", session.player);
+        title = I18n.t(session, "@Assign Next Leader");
+        description = I18n.t(session, "@Select a teammate to be the next leader.");
 
         int i = 0;
         for (var p : availableTeammates) {
@@ -45,6 +45,6 @@ public class AssignNextLeaderMenu extends PluginMenu<CataliTeamData> {
         }
 
         row();
-        text(I18n.t(session, "@Close", session.player));
+        text(I18n.t(session, "@Close"));
     }
 }

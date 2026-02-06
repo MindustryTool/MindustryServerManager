@@ -22,8 +22,8 @@ public class RareUpgradeBuffSelectBuffMenu extends PluginMenu<Pair<CataliTeamDat
 
         var availableEffectsAppliedTo = CataliConfig.selectBuffsCanBeApplied(unit);
 
-        title = I18n.t(session, "@Select Buff", session.player);
-        description = I18n.t(session, "@Choose a buff to apply to the unit.", session.player);
+        title = I18n.t(session, "@Select Buff");
+        description = I18n.t(session, "@Choose a buff to apply to the unit.");
 
         int i = 0;
         for (var effect : availableEffectsAppliedTo) {
@@ -38,10 +38,10 @@ public class RareUpgradeBuffSelectBuffMenu extends PluginMenu<Pair<CataliTeamDat
 
         row();
 
-        option(I18n.t(session, "@Back", session.player), (s, st) -> {
+        option(I18n.t(session, "@Back"), (s, st) -> {
             Registry.get(RareUpgradeBuffSelectUnitMenu.class).send(s, team);
         });
-        option(I18n.t(session, "@Close", session.player), (s, st) -> {
+        option(I18n.t(session, "@Close"), (s, st) -> {
         });
     }
 }

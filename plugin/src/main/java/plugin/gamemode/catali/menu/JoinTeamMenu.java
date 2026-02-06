@@ -28,8 +28,8 @@ public class JoinTeamMenu extends PluginMenu<Void> {
             }
         }
 
-        title = I18n.t(session, "@Join Team", session.player);
-        description = I18n.t(session, "@Select a team leader to request joining.", session.player);
+        title = I18n.t(session, "@Join Team");
+        description = I18n.t(session, "@Select a team leader to request joining.");
 
         int i = 0;
         for (var team : validTeams) {
@@ -54,7 +54,7 @@ public class JoinTeamMenu extends PluginMenu<Void> {
         }
 
         row();
-        option(I18n.t(session, "@Close", session.player), (s, st) -> {
+        option(I18n.t(session, "@Close"), (s, st) -> {
         });
     }
 }

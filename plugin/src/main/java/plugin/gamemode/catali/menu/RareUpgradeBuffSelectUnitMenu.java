@@ -13,8 +13,8 @@ public class RareUpgradeBuffSelectUnitMenu extends PluginMenu<CataliTeamData> {
 
     @Override
     public void build(Session session, CataliTeamData team) {
-        title = I18n.t(session, "@Select Unit for Buff", session.player);
-        description = I18n.t(session, "@Choose a unit to apply a buff to.", session.player);
+        title = I18n.t(session, "@Select Unit for Buff");
+        description = I18n.t(session, "@Choose a unit to apply a buff to.");
 
         int i = 0;
         for (var unit : team.getTeamUnits()) {
@@ -30,10 +30,10 @@ public class RareUpgradeBuffSelectUnitMenu extends PluginMenu<CataliTeamData> {
 
         row();
 
-        option(I18n.t(session, "@Back", session.player), (s, st) -> {
+        option(I18n.t(session, "@Back"), (s, st) -> {
             Registry.get(RareUpgradeMenu.class).send(s, team);
         });
-        option(I18n.t(session, "@Close", session.player), (s, st) -> {
+        option(I18n.t(session, "@Close"), (s, st) -> {
         });
     }
 }
