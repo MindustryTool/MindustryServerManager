@@ -269,7 +269,7 @@ public class CataliGamemode {
     public CataliTeamData createTeam(Player leader) {
         int id = 10;
 
-        while (hasTeam(id) || Team.get(id).active() || Vars.state.rules.waveTeam.id == id) {
+        while (hasTeam(id) || Team.get(id).active() || Vars.state.rules.waveTeam.id == id || id == Team.derelict.id) {
             id++;
             if (id > 200) {
                 throw new RuntimeException("Failed to find a free team ID");
