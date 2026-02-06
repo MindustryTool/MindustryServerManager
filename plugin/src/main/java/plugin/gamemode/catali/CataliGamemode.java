@@ -113,7 +113,9 @@ public class CataliGamemode {
             String message = I18n.t(player, "@No team");
 
             if (team != null) {
-                String units = Strings.join(", ", team.team.data().units.map(u -> u.type.emoji()));
+                String units = team.team.data().units.size > 0
+                        ? Strings.join(", ", team.team.data().units.map(u -> u.type.emoji()))
+                        : "@No unit";
 
                 message = I18n.t(player, "@Team ID:", String.valueOf(team.team.id), "\n",
                         "@Level:", String.valueOf(team.level.level), "\n",
@@ -176,6 +178,11 @@ public class CataliGamemode {
         for (var team : remove) {
             PluginEvents.fire(new TeamFallenEvent(team));
         }
+    }
+
+    @Listener
+    public void onWorldLoad(WorldLoadEvent event) {
+        Vars.state.rules.canGameOver = false;
     }
 
     @Listener
