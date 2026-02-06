@@ -49,6 +49,7 @@ public class UnitSpawner {
                         u.set(tile.worldx() + Mathf.random(largestUnit.hitSize),
                                 tile.worldy() + Mathf.random(largestUnit.hitSize));
                         u.add();
+                        Log.info("Spawning unit @ at tile @", unit, tile);
                     }, i);
                 }
             }

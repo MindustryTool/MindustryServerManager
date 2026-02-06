@@ -1,7 +1,6 @@
 package plugin.gamemode.catali.spawner;
 
 import arc.math.Mathf;
-import arc.util.Log;
 import mindustry.Vars;
 import mindustry.gen.Groups;
 import mindustry.world.Tile;
@@ -14,8 +13,6 @@ public class SpawnerHelper {
         var chunkCount = (int) Math.ceil(mapSize / (double) chunkSize);
         boolean[] chunks = new boolean[chunkCount];
         var attempts = 0;
-
-        Log.info("Spawning tile for occupied size @, chunk count: @", occupiedSize, chunkCount);
 
         do {
             attempts++;
@@ -43,8 +40,6 @@ public class SpawnerHelper {
             return tile;
 
         } while (attempts++ < chunkCount);
-
-        Log.warn("Failed to find spawn tile after @ attempts", attempts);
 
         return null;
     }
