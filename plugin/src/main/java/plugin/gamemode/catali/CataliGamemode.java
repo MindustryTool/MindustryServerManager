@@ -47,6 +47,8 @@ public class CataliGamemode {
 
     private final Seq<UnitType> coreUnits = Seq.with(UnitTypes.alpha, UnitTypes.beta, UnitTypes.gamma, UnitTypes.evoke,
             UnitTypes.incite, UnitTypes.emanate);
+    
+    private final Team SPECTATOR_TEAM = Team.get(255);
 
     @Init
     public void init() {
@@ -112,11 +114,12 @@ public class CataliGamemode {
                 var team = findTeam(player);
 
                 if (team == null) {
-                    player.sendMessage(I18n.t(player, "@User", "[accent]/play[]", "@to start a new team"));
+                    Call.infoPopup(player.con, I18n.t(player, "@User", "[accent]/play[]", "@to start a new team"), 2,
+                            Align.center, 0, 0, 0, 0);
                 }
 
                 if (player.unit() != null && coreUnits.contains(player.unit().type)) {
-                    player.team(Team.derelict);
+                    player.team(Team.get(255));
                     player.unit().kill();
                 }
             }
@@ -148,7 +151,7 @@ public class CataliGamemode {
                 playerTeam.spawning = true;
             }
         } else {
-            player.team(Team.derelict);
+            player.team(SPECTATOR_TEAM);
             player.sendMessage("[yellow]Type /play to start a new team!");
 
             Call.infoPopup(player.con, I18n.t(session, "[yellow]", "@Type", "[accent]/play[]", "@to start a new team"),
@@ -373,7 +376,7 @@ public class CataliGamemode {
 
         if (playerTeam == null) {
             int id = 10;
-            while (hasTeam(id) || Vars.state.rules.waveTeam.id == id || id == Team.derelict.id) {
+            while (hasTeam(id) || Vars.state.rules.waveTeam.id == id || id == SPECTATOR_TEAM.id) {
                 id++;
                 if (id > 250) {
                     throw new RuntimeException("Failed to find a free team ID");
