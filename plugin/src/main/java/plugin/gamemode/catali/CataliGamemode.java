@@ -377,6 +377,7 @@ public class CataliGamemode {
 
         if (teamUnit == null) {
             playerTeam.spawning = true;
+            leader.sendMessage(I18n.t(leader, "@Tap to spawn"));
         }
 
         return playerTeam;
