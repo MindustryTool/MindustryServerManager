@@ -7,6 +7,7 @@ import arc.util.Align;
 import arc.util.Log;
 import lombok.RequiredArgsConstructor;
 import mindustry.Vars;
+import mindustry.content.Blocks;
 import mindustry.content.UnitTypes;
 import mindustry.game.EventType.*;
 import mindustry.game.Team;
@@ -389,7 +390,7 @@ public class CataliGamemode {
     }
 
     public boolean isTileSafe(Tile tile, UnitType type) {
-        return tile != null && !tile.solid()
-                && Groups.unit.intersect(tile.worldx(), tile.worldy(), type.hitSize, type.hitSize).any();
+        return tile != null && tile.block() == Blocks.air
+                && !Groups.unit.intersect(tile.worldx(), tile.worldy(), type.hitSize, type.hitSize).any();
     }
 }
