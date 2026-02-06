@@ -5,6 +5,8 @@ import arc.struct.Seq;
 import arc.util.Align;
 import arc.util.Interval;
 import arc.util.Log;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.RequiredArgsConstructor;
 import mindustry.Vars;
 import mindustry.content.UnitTypes;
@@ -25,6 +27,8 @@ import plugin.event.SessionCreatedEvent;
 import plugin.gamemode.catali.data.*;
 import plugin.gamemode.catali.spawner.BlockSpawner;
 import plugin.gamemode.catali.spawner.UnitSpawner;
+import plugin.json.SeqDeserializer;
+import plugin.json.SeqSerializer;
 import plugin.service.I18n;
 import plugin.utils.TimeUtils;
 import plugin.utils.Utils;
@@ -35,6 +39,8 @@ import java.time.Duration;
 @RequiredArgsConstructor
 public class CataliGamemode {
 
+    @JsonSerialize(using = SeqSerializer.class)
+    @JsonDeserialize(using = SeqDeserializer.class)
     private final Seq<CataliTeamData> teams = new Seq<>();
 
     private final Interval interval = new Interval(2); // 0: unit spawn, 1: block spawn

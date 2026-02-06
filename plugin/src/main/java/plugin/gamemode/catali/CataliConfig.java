@@ -18,7 +18,7 @@ import plugin.json.BlockDeserializer;
 import plugin.json.DurationDeserializer;
 import plugin.json.DurationSerializer;
 import plugin.json.MappableContentSerializer;
-import plugin.json.UnitDeserializer;
+import plugin.json.UnitTypeDeserializer;
 
 import static mindustry.content.UnitTypes.*;
 import static mindustry.content.Blocks.*;
@@ -285,7 +285,7 @@ public class CataliConfig {
     @NoArgsConstructor
     public static class UnitRespawnTimeEntry {
         @JsonSerialize(using = MappableContentSerializer.class)
-        @JsonDeserialize(using = UnitDeserializer.class)
+        @JsonDeserialize(using = UnitTypeDeserializer.class)
         public UnitType unit;
 
         @JsonSerialize(using = DurationSerializer.class)
@@ -302,7 +302,7 @@ public class CataliConfig {
     @NoArgsConstructor
     public static class UnitExpEntry {
         @JsonSerialize(using = MappableContentSerializer.class)
-        @JsonDeserialize(using = UnitDeserializer.class)
+        @JsonDeserialize(using = UnitTypeDeserializer.class)
         public UnitType unit;
 
         public int exp;
@@ -347,11 +347,11 @@ public class CataliConfig {
     @NoArgsConstructor
     public static class UnitUpgradeEntry {
         @JsonSerialize(using = MappableContentSerializer.class)
-        @JsonDeserialize(using = UnitDeserializer.class)
+        @JsonDeserialize(using = UnitTypeDeserializer.class)
         public UnitType unit;
 
         @JsonSerialize(contentUsing = MappableContentSerializer.class)
-        @JsonDeserialize(contentUsing = UnitDeserializer.class)
+        @JsonDeserialize(contentUsing = UnitTypeDeserializer.class)
         public Set<UnitType> upgrades;
 
         public UnitUpgradeEntry(UnitType unit, Set<UnitType> upgrades) {
@@ -363,7 +363,7 @@ public class CataliConfig {
     @Data
     @NoArgsConstructor
     public static class UnitSpawnChance {
-        @JsonDeserialize(contentUsing = UnitDeserializer.class)
+        @JsonDeserialize(contentUsing = UnitTypeDeserializer.class)
         @JsonSerialize(contentUsing = MappableContentSerializer.class)
         public List<UnitType> units = new ArrayList<>();
         public int chances = 0;

@@ -3,15 +3,14 @@ package plugin.json;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
-import mindustry.gen.Groups;
-import mindustry.gen.Unit;
+import mindustry.game.Team;
 
 import java.io.IOException;
 
-public class UnitDeserializer extends JsonDeserializer<Unit> {
+public class TeamDeserializer extends JsonDeserializer<Team> {
     @Override
-    public Unit deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+    public Team deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
         int id = p.getIntValue();
-        return Groups.unit.getByID(id);
+        return Team.get(id);
     }
 }
