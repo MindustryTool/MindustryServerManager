@@ -1,6 +1,7 @@
 package plugin.commands.server;
 
 import arc.Core;
+import arc.util.Log;
 import plugin.annotations.Component;
 import plugin.commands.PluginServerCommand;
 
@@ -19,6 +20,12 @@ public class SettingCommand extends PluginServerCommand {
 
     @Override
     public void handle() {
-        Core.settings.put(key.asString(), value.asString());
+        if (value.hasValue()) {
+            Core.settings.put(key.asString(), value.asString());
+            Log.info("Setting @ to @", key.asString(), value.asString());
+        } else {
+            Core.settings.remove(key.asString());
+            Log.info("Setting @ removed", key.asString());
+        }
     }
 }
