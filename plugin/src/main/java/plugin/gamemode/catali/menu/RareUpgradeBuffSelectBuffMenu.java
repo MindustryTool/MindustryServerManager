@@ -1,27 +1,24 @@
 package plugin.gamemode.catali.menu;
 
-import arc.Events;
+import dto.Pair;
 import mindustry.gen.Unit;
+import plugin.PluginEvents;
 import plugin.annotations.Component;
 import plugin.core.Registry;
 import plugin.gamemode.catali.CataliConfig;
-import plugin.gamemode.catali.CataliGamemode;
+import plugin.gamemode.catali.data.CataliTeamData;
 import plugin.gamemode.catali.event.CataliBuffRareUpgrade;
 import plugin.menus.PluginMenu;
 import plugin.service.I18n;
 import plugin.type.Session;
 
 @Component
-public class RareUpgradeBuffSelectBuffMenu extends PluginMenu<Unit> {
+public class RareUpgradeBuffSelectBuffMenu extends PluginMenu<Pair<CataliTeamData, Unit>> {
 
     @Override
-    public void build(Session session, Unit unit) {
-        if (unit == null || unit.dead()) return;
-        
-        var gamemode = Registry.get(CataliGamemode.class);
-        var team = gamemode.findTeam(session.player);
-        
-        if (team == null) return;
+    public void build(Session session, Pair<CataliTeamData, Unit> pair) {
+        var team = pair.first;
+        var unit = pair.second;
 
         var availableEffectsAppliedTo = CataliConfig.selectBuffsCanBeApplied(unit);
 
@@ -30,19 +27,21 @@ public class RareUpgradeBuffSelectBuffMenu extends PluginMenu<Unit> {
 
         int i = 0;
         for (var effect : availableEffectsAppliedTo) {
-            if (i > 0 && i % 2 == 0) row();
-            
+            if (i > 0 && i % 2 == 0)
+                row();
+
             option(effect.emoji() + " " + effect.name, (s, st) -> {
-                Events.fire(new CataliBuffRareUpgrade(team, unit, effect));
+                PluginEvents.fire(new CataliBuffRareUpgrade(team, unit, effect));
             });
             i++;
         }
-        
+
         row();
 
         option(I18n.t(session, "@Back", session.player), (s, st) -> {
-            Registry.get(RareUpgradeBuffSelectUnitMenu.class).send(s, null);
+            Registry.get(RareUpgradeBuffSelectUnitMenu.class).send(s, team);
         });
-        option(I18n.t(session, "@Close", session.player), (s, st) -> {});
+        option(I18n.t(session, "@Close", session.player), (s, st) -> {
+        });
     }
 }

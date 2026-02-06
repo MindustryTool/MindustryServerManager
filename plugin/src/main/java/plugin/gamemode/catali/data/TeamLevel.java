@@ -14,17 +14,21 @@ public class TeamLevel {
     public int commonUpgradePoints = 0;
     public int rareUpgradePoints = 0;
 
-    public void addExp(float amount) {
+    public boolean addExp(float amount) {
+        boolean levelUp = false;
         currentExp += amount;
         while (currentExp >= requiredExp) {
             currentExp -= requiredExp;
             levelUp();
+            levelUp = true;
         }
+
+        return levelUp;
     }
 
     private void levelUp() {
         level++;
-        requiredExp *= 1.2f; // Simple scaling
+        requiredExp *= 1.2f;
         commonUpgradePoints++;
         if (level % 5 == 0) {
             rareUpgradePoints++;

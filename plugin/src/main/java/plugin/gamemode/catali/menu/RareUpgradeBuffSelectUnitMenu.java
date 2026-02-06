@@ -1,28 +1,29 @@
 package plugin.gamemode.catali.menu;
 
-import arc.struct.Seq;
-import mindustry.gen.Unit;
+import dto.Pair;
 import plugin.annotations.Component;
 import plugin.core.Registry;
+import plugin.gamemode.catali.data.CataliTeamData;
 import plugin.menus.PluginMenu;
 import plugin.service.I18n;
 import plugin.type.Session;
 
 @Component
-public class RareUpgradeBuffSelectUnitMenu extends PluginMenu<Seq<Unit>> {
+public class RareUpgradeBuffSelectUnitMenu extends PluginMenu<CataliTeamData> {
 
     @Override
-    public void build(Session session, Seq<Unit> availableUnitsToUpgrade) {
+    public void build(Session session, CataliTeamData team) {
         title = I18n.t(session, "@Select Unit for Buff", session.player);
         description = I18n.t(session, "@Choose a unit to apply a buff to.", session.player);
 
         int i = 0;
-        for (var unit : availableUnitsToUpgrade) {
-            if (i > 0 && i % 2 == 0)
+        for (var unit : team.getTeamUnits()) {
+            if (i > 0 && i % 2 == 0) {
                 row();
+            }
 
             option(unit.type.emoji() + " " + unit.type.name, (s, st) -> {
-                Registry.get(RareUpgradeBuffSelectBuffMenu.class).send(s, unit);
+                Registry.get(RareUpgradeBuffSelectBuffMenu.class).send(s, Pair.of(team, unit));
             });
             i++;
         }
@@ -30,7 +31,7 @@ public class RareUpgradeBuffSelectUnitMenu extends PluginMenu<Seq<Unit>> {
         row();
 
         option(I18n.t(session, "@Back", session.player), (s, st) -> {
-            Registry.get(RareUpgradeMenu.class).send(s, null);
+            Registry.get(RareUpgradeMenu.class).send(s, team);
         });
         option(I18n.t(session, "@Close", session.player), (s, st) -> {
         });

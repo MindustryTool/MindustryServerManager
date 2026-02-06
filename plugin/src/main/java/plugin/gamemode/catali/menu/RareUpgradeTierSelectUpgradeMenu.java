@@ -1,28 +1,39 @@
 package plugin.gamemode.catali.menu;
 
-import arc.struct.Seq;
-import mindustry.type.UnitType;
+import dto.Pair;
+import mindustry.gen.Unit;
+import plugin.PluginEvents;
 import plugin.annotations.Component;
 import plugin.core.Registry;
+import plugin.gamemode.catali.CataliConfig;
+import plugin.gamemode.catali.data.CataliTeamData;
+import plugin.gamemode.catali.event.CataliTierRareUpgrade;
 import plugin.menus.PluginMenu;
 import plugin.service.I18n;
 import plugin.type.Session;
 
 @Component
-public class RareUpgradeTierSelectUpgradeMenu extends PluginMenu<Seq<UnitType>> {
+public class RareUpgradeTierSelectUpgradeMenu extends PluginMenu<Pair<CataliTeamData, Unit>> {
 
     @Override
-    public void build(Session session, Seq<UnitType> availableUnitsUpgradeTo) {
+    public void build(Session session, Pair<CataliTeamData, Unit> pair) {
+        var team = pair.first;
+        var unit = pair.second;
+
         title = I18n.t(session, "@Select Evolution", session.player);
         description = I18n.t(session, "@Choose what this unit should evolve into.", session.player);
 
+        var config = Registry.get(CataliConfig.class);
+        var availableUnitsUpgradeTo = config.getUnitEvolutions(unit.type);
+
         int i = 0;
         for (var upgrade : availableUnitsUpgradeTo) {
-            if (i > 0 && i % 2 == 0)
+            if (i > 0 && i % 2 == 0) {
                 row();
+            }
 
             option(upgrade.emoji() + " " + upgrade.name, (s, st) -> {
-
+                PluginEvents.fire(new CataliTierRareUpgrade(team, unit, upgrade));
             });
             i++;
         }
@@ -30,7 +41,7 @@ public class RareUpgradeTierSelectUpgradeMenu extends PluginMenu<Seq<UnitType>> 
         row();
 
         option(I18n.t(session, "@Back", session.player), (s, st) -> {
-            Registry.get(RareUpgradeTierSelectUnitMenu.class).send(s, null);
+            Registry.get(RareUpgradeTierSelectUnitMenu.class).send(s, team);
         });
         option(I18n.t(session, "@Close", session.player), (s, st) -> {
         });

@@ -28,9 +28,12 @@ import plugin.annotations.Persistence;
 import plugin.event.SessionCreatedEvent;
 import plugin.gamemode.catali.data.*;
 import plugin.gamemode.catali.event.*;
+import plugin.gamemode.catali.menu.CommonUpgradeMenu;
+import plugin.gamemode.catali.menu.RareUpgradeMenu;
 import plugin.gamemode.catali.spawner.BlockSpawner;
 import plugin.gamemode.catali.spawner.UnitSpawner;
 import plugin.service.I18n;
+import plugin.service.SessionHandler;
 import plugin.utils.TimeUtils;
 import plugin.utils.Utils;
 
@@ -52,6 +55,7 @@ public class CataliGamemode {
     private final UnitSpawner unitSpawner;
     private final BlockSpawner blockSpawner;
     private final CataliConfig config;
+    private final SessionHandler sessionHandler;
 
     private final Seq<UnitType> coreUnits = Seq.with(UnitTypes.alpha, UnitTypes.beta, UnitTypes.gamma, UnitTypes.evoke,
             UnitTypes.incite, UnitTypes.emanate);
@@ -128,7 +132,7 @@ public class CataliGamemode {
                         String.valueOf(team.level.rareUpgradePoints), "[white]\n",
                         "@Unit:", units, "\n");
 
-                Call.infoPopup(player.con, message, 2, Align.right | Align.top, 120, 0, 0, 0);
+                Call.infoPopup(player.con, message, 2, Align.right | Align.top, 180, 0, 0, 0);
             }
         }
     }
@@ -151,7 +155,7 @@ public class CataliGamemode {
 
     private void updateRespawn() {
         for (CataliTeamData data : teams) {
-            var respawns = data.respawn.getRespawnUnit();
+            var respawns = data.respawn.getRespawnUnit().select(respawn -> respawn.respawnAt.isBefore(Instant.now()));
             for (var entry : respawns) {
                 var unit = spawnUnitForTeam(data, entry.type);
 
@@ -232,6 +236,29 @@ public class CataliGamemode {
     }
 
     @Listener
+    public void onUnitBuff(CataliBuffRareUpgrade event) {
+        var team = event.team;
+        var unit = event.unit;
+        var buff = event.effect;
+
+        unit.apply(buff);
+
+        team.level.rareUpgradePoints--;
+    }
+
+    @Listener
+    public void onUnitUpgrade(CataliTierRareUpgrade event) {
+        var team = event.team;
+        var unit = event.unit;
+        var upgrade = event.upgradeTo;
+
+        unit.kill();
+        spawnUnitForTeam(team, upgrade);
+
+        team.level.rareUpgradePoints--;
+    }
+
+    @Listener
     public void onTap(TapEvent event) {
         var playerTeam = findTeam(event.player);
 
@@ -290,7 +317,8 @@ public class CataliGamemode {
         event.team.respawn.addUnit(event.type, respawnTime);
 
         event.team.eachMember(player -> {
-            player.sendMessage(I18n.t(player, "[scarlet]", event.type.emoji(), "@destroyed! Respawning in", timeStr));
+            player.sendMessage(
+                    I18n.t(player, event.type.emoji(), "[scarlet]", "@destroyed! Respawning in", "[accent]", timeStr));
         });
     }
 
@@ -340,6 +368,12 @@ public class CataliGamemode {
     }
 
     @Listener
+    public void onRareUpgradeSpawn(CataliSpawnRareUpgrade event) {
+        spawnUnitForTeam(event.team, UnitTypes.poly);
+        event.team.level.rareUpgradePoints--;
+    }
+
+    @Listener
     public void onBlockDestroy(BuildingBulletDestroyEvent e) {
         var bulletOwner = e.bullet.owner();
 
@@ -364,12 +398,37 @@ public class CataliGamemode {
     public void onExpGain(ExpGainEvent event) {
         float calAmount = event.amount;
 
-        event.team.level.addExp(calAmount);
         event.team.eachMember(player -> {
             Call.label(player.con, "[green]+" + calAmount + "exp", 2, //
                     event.x + Mathf.random(5),
                     event.y + Mathf.random(5));
         });
+        boolean levelUp = event.team.level.addExp(calAmount);
+
+        if (!levelUp) {
+            return;
+        }
+
+        var leaderPlayer = event.team.getLeader();
+        if (leaderPlayer == null) {
+            Log.info("No leader player for team @", event.team.team);
+            return;
+        }
+
+        var session = sessionHandler.get(leaderPlayer).orElse(null);
+
+        if (session == null) {
+            Log.info("No session for leader player @", leaderPlayer.name);
+            return;
+        }
+
+        if (event.team.level.commonUpgradePoints > 0) {
+            new CommonUpgradeMenu().send(session, event.team);
+        }
+
+        if (event.team.level.rareUpgradePoints > 0) {
+            new RareUpgradeMenu().send(session, event.team);
+        }
     }
 
     private Unit spawnUnitForTeam(CataliTeamData data, UnitType type) {
