@@ -318,19 +318,15 @@ public class CataliGamemode {
 
     public void assignUnitForPlayer(CataliTeamData team, Player player) {
         for (var unit : team.units) {
-            var hasPlayer = false;
             for (var p : Groups.player) {
                 if (p.unit() == unit) {
-                    hasPlayer = true;
                     break;
                 }
             }
 
-            if (hasPlayer == false) {
-                player.unit(unit);
-                Log.info("Assigned unit @ to player @", unit.type, player.name);
-                return;
-            }
+            player.unit(unit);
+            Log.info("Assigned unit @ to player @", unit.type, player.name);
+            return;
         }
         Log.info("No available unit for player @", player.name);
     }
