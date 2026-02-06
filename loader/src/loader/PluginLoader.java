@@ -19,6 +19,7 @@ import mindustry.mod.Plugin;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import arc.ApplicationListener;
 import arc.Core;
 import arc.Events;
 import arc.files.Fi;
@@ -94,6 +95,15 @@ public class PluginLoader extends Plugin {
         Log.info("Loaded plugins: " + loaded);
 
         System.out.println("MindustryToolPluginLoader initialized");
+
+        Core.app.addListener(new ApplicationListener() {
+            @Override
+            public void exit() {
+                for (var plugin : PLUGINS) {
+                    unloadPlugin(plugin);
+                }
+            }
+        });
     }
 
     private void registerEventListener() {

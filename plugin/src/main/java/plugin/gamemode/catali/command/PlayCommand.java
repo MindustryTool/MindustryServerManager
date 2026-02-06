@@ -1,12 +1,14 @@
 package plugin.gamemode.catali.command;
 
 import plugin.annotations.Component;
+import plugin.annotations.Lazy;
 import plugin.commands.PluginClientCommand;
 import plugin.core.Registry;
 import plugin.gamemode.catali.CataliGamemode;
 import plugin.type.Session;
 
 @Component
+@Lazy
 public class PlayCommand extends PluginClientCommand {
     public PlayCommand() {
         setName("play");
