@@ -1,45 +1,55 @@
 package plugin.gamemode.catali.spawner;
 
 import arc.math.Mathf;
+import arc.struct.Seq;
 import mindustry.Vars;
 import mindustry.gen.Groups;
 import mindustry.world.Tile;
 
 public class SpawnerHelper {
     public static Tile getSpawnTile(float occupiedSize) {
-        var mapSize = Vars.world.width() * Vars.world.height();
+        int worldWidth = Vars.world.width();
+        int worldHeight = Vars.world.height();
 
-        var chunkSize = 16;
-        var chunkCount = (int) Math.ceil(mapSize / (double) chunkSize);
-        boolean[] chunks = new boolean[chunkCount];
-        var attempts = 0;
+        final int chunkSize = 16;
 
-        do {
-            attempts++;
-            var chunkIndex = Mathf.random(0, chunkCount - 1);
+        int chunksX = Mathf.ceil(worldWidth / (float) chunkSize);
+        int chunksY = Mathf.ceil(worldHeight / (float) chunkSize);
+        int chunkCount = chunksX * chunksY;
 
-            if (chunks[chunkIndex]) {
-                continue;
+        Seq<Integer> indices = new Seq<>(chunkCount);
+        for (int i = 0; i < chunkCount; i++) {
+            indices.set(i, i);
+        }
+
+        indices.shuffle();
+
+        for (int index : indices) {
+            int chunkX = index % chunksX;
+            int chunkY = index / chunksX;
+
+            int startX = chunkX * chunkSize;
+            int startY = chunkY * chunkSize;
+
+            // Try multiple random spots inside the chunk
+            for (int i = 0; i < 4; i++) {
+                int x = startX + Mathf.random(chunkSize - 1);
+                int y = startY + Mathf.random(chunkSize - 1);
+
+                if (Vars.world.tile(x, y) == null)
+                    continue;
+
+                Tile tile = Vars.world.tile(x, y);
+                if (tile == null || tile.block() != null)
+                    continue;
+
+                // expensive check LAST
+                if (Groups.unit.intersect(x, y, occupiedSize, occupiedSize).any())
+                    continue;
+
+                return tile;
             }
-
-            chunks[chunkIndex] = true;
-
-            var chunkX = chunkIndex % chunkSize;
-            var chunkY = chunkIndex / chunkSize;
-
-            var spawnX = chunkX * chunkSize + Mathf.random(0, chunkSize);
-            var spawnY = chunkY * chunkSize + Mathf.random(0, chunkSize);
-
-            var tile = Vars.world.tile(spawnX, spawnY);
-
-            if (tile == null || tile.block() != null
-                    || Groups.unit.intersect(spawnX, spawnY, occupiedSize, occupiedSize).any()) {
-                continue;
-            }
-
-            return tile;
-
-        } while (attempts++ < chunkCount);
+        }
 
         return null;
     }
