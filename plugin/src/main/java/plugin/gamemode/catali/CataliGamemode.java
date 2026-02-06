@@ -294,9 +294,9 @@ public class CataliGamemode {
             return playerTeam;
         }
 
-        while (hasTeam(id) || Team.get(id).active() || Vars.state.rules.waveTeam.id == id || id == Team.derelict.id) {
+        while (hasTeam(id) || Vars.state.rules.waveTeam.id == id || id == Team.derelict.id) {
             id++;
-            if (id > 200) {
+            if (id > 250) {
                 throw new RuntimeException("Failed to find a free team ID");
             }
         }

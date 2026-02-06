@@ -21,8 +21,6 @@ public class SpawnerHelper {
             attempts++;
             var chunkIndex = Mathf.random(0, chunkCount - 1);
 
-            Log.info("Attempt @, chunk index: @", attempts, chunkIndex);
-
             if (chunks[chunkIndex]) {
                 continue;
             }
