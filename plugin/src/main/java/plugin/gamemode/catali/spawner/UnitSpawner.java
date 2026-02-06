@@ -21,12 +21,11 @@ public class UnitSpawner {
     public void spawn(Team team) {
         for (var entry : config.unitSpawnChance) {
             if (Mathf.chance(entry.chances)) {
-
                 var count = team.data().unitCount;
                 var maxCount = Groups.player.size() * 30;
 
                 if (count >= maxCount) {
-                    return;
+                    break;
                 }
 
                 var largestUnit = entry.units.stream().max((a, b) -> Float.compare(a.hitSize, b.hitSize)).orElse(null);
@@ -37,6 +36,10 @@ public class UnitSpawner {
                 }
 
                 var tile = SpawnerHelper.getSpawnTile(largestUnit.hitSize);
+
+                if (tile == null) {
+                    return;
+                }
 
                 for (int i = 0; i < entry.units.size(); i++) {
                     var unit = entry.units.get(i);

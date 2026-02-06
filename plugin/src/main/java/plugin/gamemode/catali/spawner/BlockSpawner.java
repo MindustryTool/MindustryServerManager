@@ -35,7 +35,7 @@ public class BlockSpawner {
                 Log.info("Total build count: @, spawn count: @", totalBuildCount, spawnCount);
 
                 if (totalBuildCount >= spawnCount) {
-                    return;
+                    break;
                 }
 
                 var tile = SpawnerHelper.getSpawnTile(block.size);

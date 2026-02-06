@@ -57,6 +57,8 @@ public class CataliGamemode {
         for (var block : Vars.content.blocks()) {
             Vars.state.rules.bannedBlocks.add(block);
         }
+
+        Log.info("[accent]Cataio gamemode loaded");
     }
 
     @Listener
