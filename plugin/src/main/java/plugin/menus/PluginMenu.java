@@ -18,13 +18,11 @@ public abstract class PluginMenu<T> {
     public String description = "";
     public Session session = null;
     public T state = null;
+    public boolean isSent = false;
 
     public final Instant createdAt = Instant.now();
 
     private Seq<Seq<HudOption<T>>> options = new Seq<>(new Seq<>());
-
-    public PluginMenu() {
-    }
 
     public final int getMenuId() {
         return Registry.get(PluginMenuService.class).getMenuId(getClass());
@@ -52,6 +50,10 @@ public abstract class PluginMenu<T> {
     public abstract void build(Session session, T state);
 
     public void show() {
+        if (isSent) {
+            Thread.dumpStack();
+        }
+
         String[][] optionTexts = new String[options.size][];
 
         for (int i = 0; i < options.size; i++) {
@@ -59,6 +61,8 @@ public abstract class PluginMenu<T> {
 
             optionTexts[i] = op.map(data -> data.getText()).toArray(String.class);
         }
+
+        isSent = true;
 
         Call.menu(session.player.con, getMenuId(), title, description, optionTexts);
     }
