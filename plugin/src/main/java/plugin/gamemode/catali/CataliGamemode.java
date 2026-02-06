@@ -70,19 +70,7 @@ public class CataliGamemode {
 
         if (playerTeam != null) {
             player.team(playerTeam.team);
-            for (var unit : playerTeam.units) {
-                var hasPlayer = false;
-                for (var p : Groups.player) {
-                    if (p.unit() == unit) {
-                        hasPlayer = true;
-                        break;
-                    }
-                }
-
-                if (hasPlayer == false) {
-                    player.unit(unit);
-                }
-            }
+            assignUnitForPlayer(playerTeam, player);
         } else {
             player.team(Team.derelict);
             player.sendMessage("[yellow]Type /play to start a new team!");
@@ -322,6 +310,22 @@ public class CataliGamemode {
 
     public boolean hasTeam(int id) {
         return teams.contains(team -> team.team.id == id);
+    }
+
+    public void assignUnitForPlayer(CataliTeamData team, Player player) {
+        for (var unit : team.units) {
+            var hasPlayer = false;
+            for (var p : Groups.player) {
+                if (p.unit() == unit) {
+                    hasPlayer = true;
+                    break;
+                }
+            }
+
+            if (hasPlayer == false) {
+                player.unit(unit);
+            }
+        }
     }
 
     public CataliTeamData createTeam(Player leader) {
