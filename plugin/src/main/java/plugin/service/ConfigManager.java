@@ -32,6 +32,10 @@ public class ConfigManager {
         String path = config.value();
         Fi file = Vars.dataDirectory.child(path);
 
+        if (!file.exists()) {
+            file.parent().mkdirs();
+        }
+
         // Initial load
         load(instance, file);
 
@@ -63,7 +67,8 @@ public class ConfigManager {
             }
             Log.info("Loaded configuration for @ from @", instance.getClass().getSimpleName(), file.name());
         } catch (Exception e) {
-            Log.err("Failed to load configuration for @", instance.getClass().getName(), e);
+            Log.err("Failed to load configuration for @", instance.getClass().getName());
+            Log.err(e);
         }
     }
 
