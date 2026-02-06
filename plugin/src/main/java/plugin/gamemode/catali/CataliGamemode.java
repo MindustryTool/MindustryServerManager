@@ -123,7 +123,11 @@ public class CataliGamemode {
         for (CataliTeamData data : teams) {
             var respawns = data.respawn.getRespawnUnit();
             for (var entry : respawns) {
-                spawnUnitForTeam(data, entry.type);
+                var unit = spawnUnitForTeam(data, entry.type);
+
+                if (unit == null) {
+                    data.respawn.addUnit(entry.type, Duration.ofSeconds(1));
+                }
             }
         }
     }
@@ -308,7 +312,9 @@ public class CataliGamemode {
 
         var unit = spawnUnitForTeam(data, UnitTypes.poly);
 
-        if (unit != null) {
+        if (unit == null) {
+            data.respawn.addUnit(UnitTypes.poly, Duration.ofSeconds(1));
+        } else {
             var coreUnit = leader.unit();
             leader.unit(unit);
             coreUnit.kill();
