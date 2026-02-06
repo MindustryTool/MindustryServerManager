@@ -373,12 +373,6 @@ public class CataliGamemode {
 
         leader.team(playerTeam.team);
 
-        var coreUnit = leader.unit();
-
-        if (coreUnit != null) {
-            coreUnit.kill();
-        }
-
         var teamUnit = playerTeam.getTeamUnits().firstOpt();
 
         if (teamUnit == null) {
