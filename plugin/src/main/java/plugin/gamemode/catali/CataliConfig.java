@@ -2,10 +2,8 @@ package plugin.gamemode.catali;
 
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -17,13 +15,11 @@ import mindustry.type.UnitType;
 import mindustry.world.Block;
 import plugin.annotations.Component;
 import plugin.annotations.Configuration;
-import plugin.json.BlockKeyDeserializer;
+import plugin.json.BlockDeserializer;
 import plugin.json.DurationDeserializer;
 import plugin.json.DurationSerializer;
 import plugin.json.MappableContentSerializer;
-import plugin.json.MappableKeySerializer;
 import plugin.json.UnitDeserializer;
-import plugin.json.UnitKeyDeserializer;
 
 import static mindustry.content.UnitTypes.*;
 import static mindustry.content.Blocks.*;
@@ -41,212 +37,202 @@ public class CataliConfig {
     @JsonDeserialize(using = DurationDeserializer.class)
     public Duration enemyBlockSpawnTime = Duration.ofMinutes(2);
 
-    @JsonSerialize(keyUsing = MappableKeySerializer.class, contentUsing = DurationSerializer.class)
-    @JsonDeserialize(keyUsing = UnitKeyDeserializer.class, contentUsing = DurationDeserializer.class)
-    public Map<UnitType, Duration> unitRespawnTime = new HashMap<>();
+    public List<UnitRespawnTimeEntry> unitRespawnTime = new ArrayList<>();
 
-    @JsonSerialize(keyUsing = MappableKeySerializer.class)
-    @JsonDeserialize(keyUsing = UnitKeyDeserializer.class)
-    public Map<UnitType, Integer> unitExp = new HashMap<>();
+    public List<UnitExpEntry> unitExp = new ArrayList<>();
 
-    @JsonSerialize(keyUsing = MappableKeySerializer.class)
-    @JsonDeserialize(keyUsing = BlockKeyDeserializer.class)
-    public Map<Block, Integer> blockExp = new HashMap<>();
+    public List<BlockExpEntry> blockExp = new ArrayList<>();
 
-    @JsonSerialize(keyUsing = MappableKeySerializer.class)
-    @JsonDeserialize(keyUsing = BlockKeyDeserializer.class)
-    public Map<Block, Integer> blockSpawnChance = new HashMap<>();
+    public List<BlockSpawnChanceEntry> blockSpawnChance = new ArrayList<>();
 
-    @JsonSerialize(keyUsing = MappableKeySerializer.class)
-    @JsonDeserialize(keyUsing = UnitKeyDeserializer.class)
-    public Map<UnitType, Set<UnitType>> unitUpgrade = new HashMap<>();
+    public List<UnitUpgradeEntry> unitUpgrade = new ArrayList<>();
 
     public List<UnitSpawnChance> unitSpawnChance = new ArrayList<>();
 
     {
-        unitExp.put(dagger, 30);
-        unitExp.put(nova, 24);
-        unitExp.put(flare, 14);
-        unitExp.put(poly, 80);
-        unitExp.put(mace, 110);
-        unitExp.put(pulsar, 64);
-        unitExp.put(horizon, 68);
-        unitExp.put(mega, 92);
-        unitExp.put(risso, 60);
-        unitExp.put(retusa, 54);
-        unitExp.put(stell, 170);
-        unitExp.put(merui, 136);
-        unitExp.put(elude, 120);
-        unitExp.put(fortress, 180);
-        unitExp.put(quasar, 128);
-        unitExp.put(zenith, 140);
-        unitExp.put(quad, 1200);
-        unitExp.put(minke, 120);
-        unitExp.put(oxynoe, 112);
-        unitExp.put(locus, 420);
-        unitExp.put(cleroi, 220);
-        unitExp.put(avert, 220);
-        unitExp.put(scepter, 1800);
-        unitExp.put(vela, 1640);
-        unitExp.put(antumbra, 1440);
-        unitExp.put(oct, 3000);
-        unitExp.put(bryde, 182);
-        unitExp.put(cyerce, 174);
-        unitExp.put(precept, 1000);
-        unitExp.put(anthicus, 580);
-        unitExp.put(obviate, 460);
-        unitExp.put(reign, 4000);
-        unitExp.put(corvus, 3000);
-        unitExp.put(eclipse, 4000);
-        unitExp.put(sei, 2000);
-        unitExp.put(aegires, 2200);
-        unitExp.put(vanquish, 2200);
-        unitExp.put(tecta, 1460);
-        unitExp.put(quell, 1200);
-        unitExp.put(omura, 4400);
-        unitExp.put(navanax, 4000);
-        unitExp.put(conquer, 4400);
-        unitExp.put(collaris, 3600);
-        unitExp.put(disrupt, 2400);
+        unitExp.add(new UnitExpEntry(dagger, 30));
+        unitExp.add(new UnitExpEntry(nova, 24));
+        unitExp.add(new UnitExpEntry(flare, 14));
+        unitExp.add(new UnitExpEntry(poly, 80));
+        unitExp.add(new UnitExpEntry(mace, 110));
+        unitExp.add(new UnitExpEntry(pulsar, 64));
+        unitExp.add(new UnitExpEntry(horizon, 68));
+        unitExp.add(new UnitExpEntry(mega, 92));
+        unitExp.add(new UnitExpEntry(risso, 60));
+        unitExp.add(new UnitExpEntry(retusa, 54));
+        unitExp.add(new UnitExpEntry(stell, 170));
+        unitExp.add(new UnitExpEntry(merui, 136));
+        unitExp.add(new UnitExpEntry(elude, 120));
+        unitExp.add(new UnitExpEntry(fortress, 180));
+        unitExp.add(new UnitExpEntry(quasar, 128));
+        unitExp.add(new UnitExpEntry(zenith, 140));
+        unitExp.add(new UnitExpEntry(quad, 1200));
+        unitExp.add(new UnitExpEntry(minke, 120));
+        unitExp.add(new UnitExpEntry(oxynoe, 112));
+        unitExp.add(new UnitExpEntry(locus, 420));
+        unitExp.add(new UnitExpEntry(cleroi, 220));
+        unitExp.add(new UnitExpEntry(avert, 220));
+        unitExp.add(new UnitExpEntry(scepter, 1800));
+        unitExp.add(new UnitExpEntry(vela, 1640));
+        unitExp.add(new UnitExpEntry(antumbra, 1440));
+        unitExp.add(new UnitExpEntry(oct, 3000));
+        unitExp.add(new UnitExpEntry(bryde, 182));
+        unitExp.add(new UnitExpEntry(cyerce, 174));
+        unitExp.add(new UnitExpEntry(precept, 1000));
+        unitExp.add(new UnitExpEntry(anthicus, 580));
+        unitExp.add(new UnitExpEntry(obviate, 460));
+        unitExp.add(new UnitExpEntry(reign, 4000));
+        unitExp.add(new UnitExpEntry(corvus, 3000));
+        unitExp.add(new UnitExpEntry(eclipse, 4000));
+        unitExp.add(new UnitExpEntry(sei, 2000));
+        unitExp.add(new UnitExpEntry(aegires, 2200));
+        unitExp.add(new UnitExpEntry(vanquish, 2200));
+        unitExp.add(new UnitExpEntry(tecta, 1460));
+        unitExp.add(new UnitExpEntry(quell, 1200));
+        unitExp.add(new UnitExpEntry(omura, 4400));
+        unitExp.add(new UnitExpEntry(navanax, 4000));
+        unitExp.add(new UnitExpEntry(conquer, 4400));
+        unitExp.add(new UnitExpEntry(collaris, 3600));
+        unitExp.add(new UnitExpEntry(disrupt, 2400));
 
-        unitRespawnTime.put(dagger, Duration.ofSeconds(60));
-        unitRespawnTime.put(nova, Duration.ofSeconds(60));
-        unitRespawnTime.put(crawler, Duration.ofSeconds(60));
-        unitRespawnTime.put(flare, Duration.ofSeconds(60));
-        unitRespawnTime.put(poly, Duration.ofSeconds(30));
-        unitRespawnTime.put(risso, Duration.ofSeconds(80));
-        unitRespawnTime.put(retusa, Duration.ofSeconds(80));
-        unitRespawnTime.put(stell, Duration.ofSeconds(80));
-        unitRespawnTime.put(merui, Duration.ofSeconds(80));
-        unitRespawnTime.put(mace, Duration.ofSeconds(100));
-        unitRespawnTime.put(pulsar, Duration.ofSeconds(100));
-        unitRespawnTime.put(atrax, Duration.ofSeconds(100));
-        unitRespawnTime.put(horizon, Duration.ofSeconds(100));
-        unitRespawnTime.put(minke, Duration.ofSeconds(120));
-        unitRespawnTime.put(oxynoe, Duration.ofSeconds(120));
-        unitRespawnTime.put(locus, Duration.ofSeconds(120));
-        unitRespawnTime.put(cleroi, Duration.ofSeconds(120));
-        unitRespawnTime.put(avert, Duration.ofSeconds(100));
-        unitRespawnTime.put(fortress, Duration.ofSeconds(140));
-        unitRespawnTime.put(quasar, Duration.ofSeconds(140));
-        unitRespawnTime.put(spiroct, Duration.ofSeconds(140));
-        unitRespawnTime.put(zenith, Duration.ofSeconds(140));
-        unitRespawnTime.put(mega, Duration.ofSeconds(60));
-        unitRespawnTime.put(bryde, Duration.ofSeconds(180));
-        unitRespawnTime.put(cyerce, Duration.ofSeconds(180));
-        unitRespawnTime.put(precept, Duration.ofSeconds(180));
-        unitRespawnTime.put(anthicus, Duration.ofSeconds(180));
-        unitRespawnTime.put(obviate, Duration.ofSeconds(140));
-        unitRespawnTime.put(scepter, Duration.ofSeconds(200));
-        unitRespawnTime.put(vela, Duration.ofSeconds(200));
-        unitRespawnTime.put(arkyid, Duration.ofSeconds(200));
-        unitRespawnTime.put(antumbra, Duration.ofSeconds(200));
-        unitRespawnTime.put(quad, Duration.ofSeconds(160));
-        unitRespawnTime.put(sei, Duration.ofSeconds(240));
-        unitRespawnTime.put(aegires, Duration.ofSeconds(240));
-        unitRespawnTime.put(vanquish, Duration.ofSeconds(240));
-        unitRespawnTime.put(tecta, Duration.ofSeconds(240));
-        unitRespawnTime.put(quell, Duration.ofSeconds(180));
-        unitRespawnTime.put(reign, Duration.ofSeconds(240));
-        unitRespawnTime.put(corvus, Duration.ofSeconds(240));
-        unitRespawnTime.put(toxopid, Duration.ofSeconds(240));
-        unitRespawnTime.put(eclipse, Duration.ofSeconds(240));
-        unitRespawnTime.put(oct, Duration.ofSeconds(160));
-        unitRespawnTime.put(omura, Duration.ofSeconds(300));
-        unitRespawnTime.put(navanax, Duration.ofSeconds(300));
-        unitRespawnTime.put(conquer, Duration.ofSeconds(300));
-        unitRespawnTime.put(collaris, Duration.ofSeconds(300));
-        unitRespawnTime.put(disrupt, Duration.ofSeconds(220));
+        unitRespawnTime.add(new UnitRespawnTimeEntry(dagger, Duration.ofSeconds(60)));
+        unitRespawnTime.add(new UnitRespawnTimeEntry(nova, Duration.ofSeconds(60)));
+        unitRespawnTime.add(new UnitRespawnTimeEntry(crawler, Duration.ofSeconds(60)));
+        unitRespawnTime.add(new UnitRespawnTimeEntry(flare, Duration.ofSeconds(60)));
+        unitRespawnTime.add(new UnitRespawnTimeEntry(poly, Duration.ofSeconds(30)));
+        unitRespawnTime.add(new UnitRespawnTimeEntry(risso, Duration.ofSeconds(80)));
+        unitRespawnTime.add(new UnitRespawnTimeEntry(retusa, Duration.ofSeconds(80)));
+        unitRespawnTime.add(new UnitRespawnTimeEntry(stell, Duration.ofSeconds(80)));
+        unitRespawnTime.add(new UnitRespawnTimeEntry(merui, Duration.ofSeconds(80)));
+        unitRespawnTime.add(new UnitRespawnTimeEntry(mace, Duration.ofSeconds(100)));
+        unitRespawnTime.add(new UnitRespawnTimeEntry(pulsar, Duration.ofSeconds(100)));
+        unitRespawnTime.add(new UnitRespawnTimeEntry(atrax, Duration.ofSeconds(100)));
+        unitRespawnTime.add(new UnitRespawnTimeEntry(horizon, Duration.ofSeconds(100)));
+        unitRespawnTime.add(new UnitRespawnTimeEntry(minke, Duration.ofSeconds(120)));
+        unitRespawnTime.add(new UnitRespawnTimeEntry(oxynoe, Duration.ofSeconds(120)));
+        unitRespawnTime.add(new UnitRespawnTimeEntry(locus, Duration.ofSeconds(120)));
+        unitRespawnTime.add(new UnitRespawnTimeEntry(cleroi, Duration.ofSeconds(120)));
+        unitRespawnTime.add(new UnitRespawnTimeEntry(avert, Duration.ofSeconds(100)));
+        unitRespawnTime.add(new UnitRespawnTimeEntry(fortress, Duration.ofSeconds(140)));
+        unitRespawnTime.add(new UnitRespawnTimeEntry(quasar, Duration.ofSeconds(140)));
+        unitRespawnTime.add(new UnitRespawnTimeEntry(spiroct, Duration.ofSeconds(140)));
+        unitRespawnTime.add(new UnitRespawnTimeEntry(zenith, Duration.ofSeconds(140)));
+        unitRespawnTime.add(new UnitRespawnTimeEntry(mega, Duration.ofSeconds(60)));
+        unitRespawnTime.add(new UnitRespawnTimeEntry(bryde, Duration.ofSeconds(180)));
+        unitRespawnTime.add(new UnitRespawnTimeEntry(cyerce, Duration.ofSeconds(180)));
+        unitRespawnTime.add(new UnitRespawnTimeEntry(precept, Duration.ofSeconds(180)));
+        unitRespawnTime.add(new UnitRespawnTimeEntry(anthicus, Duration.ofSeconds(180)));
+        unitRespawnTime.add(new UnitRespawnTimeEntry(obviate, Duration.ofSeconds(140)));
+        unitRespawnTime.add(new UnitRespawnTimeEntry(scepter, Duration.ofSeconds(200)));
+        unitRespawnTime.add(new UnitRespawnTimeEntry(vela, Duration.ofSeconds(200)));
+        unitRespawnTime.add(new UnitRespawnTimeEntry(arkyid, Duration.ofSeconds(200)));
+        unitRespawnTime.add(new UnitRespawnTimeEntry(antumbra, Duration.ofSeconds(200)));
+        unitRespawnTime.add(new UnitRespawnTimeEntry(quad, Duration.ofSeconds(160)));
+        unitRespawnTime.add(new UnitRespawnTimeEntry(sei, Duration.ofSeconds(240)));
+        unitRespawnTime.add(new UnitRespawnTimeEntry(aegires, Duration.ofSeconds(240)));
+        unitRespawnTime.add(new UnitRespawnTimeEntry(vanquish, Duration.ofSeconds(240)));
+        unitRespawnTime.add(new UnitRespawnTimeEntry(tecta, Duration.ofSeconds(240)));
+        unitRespawnTime.add(new UnitRespawnTimeEntry(quell, Duration.ofSeconds(180)));
+        unitRespawnTime.add(new UnitRespawnTimeEntry(reign, Duration.ofSeconds(240)));
+        unitRespawnTime.add(new UnitRespawnTimeEntry(corvus, Duration.ofSeconds(240)));
+        unitRespawnTime.add(new UnitRespawnTimeEntry(toxopid, Duration.ofSeconds(240)));
+        unitRespawnTime.add(new UnitRespawnTimeEntry(eclipse, Duration.ofSeconds(240)));
+        unitRespawnTime.add(new UnitRespawnTimeEntry(oct, Duration.ofSeconds(160)));
+        unitRespawnTime.add(new UnitRespawnTimeEntry(omura, Duration.ofSeconds(300)));
+        unitRespawnTime.add(new UnitRespawnTimeEntry(navanax, Duration.ofSeconds(300)));
+        unitRespawnTime.add(new UnitRespawnTimeEntry(conquer, Duration.ofSeconds(300)));
+        unitRespawnTime.add(new UnitRespawnTimeEntry(collaris, Duration.ofSeconds(300)));
+        unitRespawnTime.add(new UnitRespawnTimeEntry(disrupt, Duration.ofSeconds(220)));
 
-        blockExp.put(copperWall, 32);
-        blockExp.put(copperWallLarge, 128);
-        blockExp.put(titaniumWall, 44);
-        blockExp.put(titaniumWallLarge, 176);
-        blockExp.put(berylliumWall, 52);
-        blockExp.put(berylliumWallLarge, 208);
-        blockExp.put(plastaniumWall, 52);
-        blockExp.put(plastaniumWallLarge, 208);
-        blockExp.put(tungstenWall, 72);
-        blockExp.put(tungstenWallLarge, 288);
-        blockExp.put(thoriumWall, 80);
-        blockExp.put(thoriumWallLarge, 320);
-        blockExp.put(phaseWall, 60);
-        blockExp.put(phaseWallLarge, 240);
-        blockExp.put(surgeWall, 92);
-        blockExp.put(surgeWallLarge, 368);
-        blockExp.put(carbideWall, 108);
-        blockExp.put(carbideWallLarge, 432);
-        blockExp.put(reinforcedSurgeWall, 100);
-        blockExp.put(reinforcedSurgeWallLarge, 400);
-        blockExp.put(container, 75);
-        blockExp.put(vault, 225);
-        blockExp.put(reinforcedContainer, 250);
-        blockExp.put(reinforcedVault, 750);
+        blockExp.add(new BlockExpEntry(copperWall, 32));
+        blockExp.add(new BlockExpEntry(copperWallLarge, 128));
+        blockExp.add(new BlockExpEntry(titaniumWall, 44));
+        blockExp.add(new BlockExpEntry(titaniumWallLarge, 176));
+        blockExp.add(new BlockExpEntry(berylliumWall, 52));
+        blockExp.add(new BlockExpEntry(berylliumWallLarge, 208));
+        blockExp.add(new BlockExpEntry(plastaniumWall, 52));
+        blockExp.add(new BlockExpEntry(plastaniumWallLarge, 208));
+        blockExp.add(new BlockExpEntry(tungstenWall, 72));
+        blockExp.add(new BlockExpEntry(tungstenWallLarge, 288));
+        blockExp.add(new BlockExpEntry(thoriumWall, 80));
+        blockExp.add(new BlockExpEntry(thoriumWallLarge, 320));
+        blockExp.add(new BlockExpEntry(phaseWall, 60));
+        blockExp.add(new BlockExpEntry(phaseWallLarge, 240));
+        blockExp.add(new BlockExpEntry(surgeWall, 92));
+        blockExp.add(new BlockExpEntry(surgeWallLarge, 368));
+        blockExp.add(new BlockExpEntry(carbideWall, 108));
+        blockExp.add(new BlockExpEntry(carbideWallLarge, 432));
+        blockExp.add(new BlockExpEntry(reinforcedSurgeWall, 100));
+        blockExp.add(new BlockExpEntry(reinforcedSurgeWallLarge, 400));
+        blockExp.add(new BlockExpEntry(container, 75));
+        blockExp.add(new BlockExpEntry(vault, 225));
+        blockExp.add(new BlockExpEntry(reinforcedContainer, 250));
+        blockExp.add(new BlockExpEntry(reinforcedVault, 750));
 
-        blockSpawnChance.put(copperWall, 200);
-        blockSpawnChance.put(copperWallLarge, 50);
-        blockSpawnChance.put(titaniumWall, 100);
-        blockSpawnChance.put(titaniumWallLarge, 20);
-        blockSpawnChance.put(berylliumWall, 67);
-        blockSpawnChance.put(berylliumWallLarge, 13);
-        blockSpawnChance.put(plastaniumWall, 57);
-        blockSpawnChance.put(plastaniumWallLarge, 11);
-        blockSpawnChance.put(tungstenWall, 50);
-        blockSpawnChance.put(tungstenWallLarge, 10);
-        blockSpawnChance.put(thoriumWall, 50);
-        blockSpawnChance.put(thoriumWallLarge, 9);
-        blockSpawnChance.put(phaseWall, 40);
-        blockSpawnChance.put(phaseWallLarge, 8);
-        blockSpawnChance.put(surgeWall, 25);
-        blockSpawnChance.put(surgeWallLarge, 5);
-        blockSpawnChance.put(carbideWall, 20);
-        blockSpawnChance.put(carbideWallLarge, 4);
-        blockSpawnChance.put(reinforcedSurgeWall, 17);
-        blockSpawnChance.put(reinforcedSurgeWallLarge, 3);
-        blockSpawnChance.put(container, 10);
-        blockSpawnChance.put(vault, 4);
-        blockSpawnChance.put(reinforcedContainer, 4);
-        blockSpawnChance.put(reinforcedVault, 1);
-        blockSpawnChance.put(thoriumReactor, 1);
+        blockSpawnChance.add(new BlockSpawnChanceEntry(copperWall, 200));
+        blockSpawnChance.add(new BlockSpawnChanceEntry(copperWallLarge, 50));
+        blockSpawnChance.add(new BlockSpawnChanceEntry(titaniumWall, 100));
+        blockSpawnChance.add(new BlockSpawnChanceEntry(titaniumWallLarge, 20));
+        blockSpawnChance.add(new BlockSpawnChanceEntry(berylliumWall, 67));
+        blockSpawnChance.add(new BlockSpawnChanceEntry(berylliumWallLarge, 13));
+        blockSpawnChance.add(new BlockSpawnChanceEntry(plastaniumWall, 57));
+        blockSpawnChance.add(new BlockSpawnChanceEntry(plastaniumWallLarge, 11));
+        blockSpawnChance.add(new BlockSpawnChanceEntry(tungstenWall, 50));
+        blockSpawnChance.add(new BlockSpawnChanceEntry(tungstenWallLarge, 10));
+        blockSpawnChance.add(new BlockSpawnChanceEntry(thoriumWall, 50));
+        blockSpawnChance.add(new BlockSpawnChanceEntry(thoriumWallLarge, 9));
+        blockSpawnChance.add(new BlockSpawnChanceEntry(phaseWall, 40));
+        blockSpawnChance.add(new BlockSpawnChanceEntry(phaseWallLarge, 8));
+        blockSpawnChance.add(new BlockSpawnChanceEntry(surgeWall, 25));
+        blockSpawnChance.add(new BlockSpawnChanceEntry(surgeWallLarge, 5));
+        blockSpawnChance.add(new BlockSpawnChanceEntry(carbideWall, 20));
+        blockSpawnChance.add(new BlockSpawnChanceEntry(carbideWallLarge, 4));
+        blockSpawnChance.add(new BlockSpawnChanceEntry(reinforcedSurgeWall, 17));
+        blockSpawnChance.add(new BlockSpawnChanceEntry(reinforcedSurgeWallLarge, 3));
+        blockSpawnChance.add(new BlockSpawnChanceEntry(container, 10));
+        blockSpawnChance.add(new BlockSpawnChanceEntry(vault, 4));
+        blockSpawnChance.add(new BlockSpawnChanceEntry(reinforcedContainer, 4));
+        blockSpawnChance.add(new BlockSpawnChanceEntry(reinforcedVault, 1));
+        blockSpawnChance.add(new BlockSpawnChanceEntry(thoriumReactor, 1));
 
-        unitUpgrade.put(poly, set(dagger, flare, retusa, nova, mega));
-        unitUpgrade.put(dagger, set(mace, atrax, stell));
-        unitUpgrade.put(mace, set(fortress));
-        unitUpgrade.put(fortress, set(scepter));
-        unitUpgrade.put(scepter, set(reign));
-        unitUpgrade.put(atrax, set(spiroct));
-        unitUpgrade.put(spiroct, set(arkyid));
-        unitUpgrade.put(arkyid, set(toxopid));
-        unitUpgrade.put(stell, set(locus));
-        unitUpgrade.put(locus, set(precept));
-        unitUpgrade.put(precept, set(vanquish));
-        unitUpgrade.put(vanquish, set(conquer));
-        unitUpgrade.put(flare, set(horizon, elude));
-        unitUpgrade.put(horizon, set(zenith));
-        unitUpgrade.put(zenith, set(antumbra));
-        unitUpgrade.put(antumbra, set(eclipse));
-        unitUpgrade.put(elude, set(avert));
-        unitUpgrade.put(avert, set(obviate));
-        unitUpgrade.put(obviate, set(quell));
-        unitUpgrade.put(quell, set(disrupt));
-        unitUpgrade.put(retusa, set(oxynoe, risso));
-        unitUpgrade.put(oxynoe, set(cyerce));
-        unitUpgrade.put(cyerce, set(aegires));
-        unitUpgrade.put(aegires, set(navanax));
-        unitUpgrade.put(risso, set(minke));
-        unitUpgrade.put(minke, set(bryde));
-        unitUpgrade.put(bryde, set(sei));
-        unitUpgrade.put(sei, set(omura));
-        unitUpgrade.put(nova, set(pulsar, merui));
-        unitUpgrade.put(pulsar, set(quasar));
-        unitUpgrade.put(quasar, set(vela));
-        unitUpgrade.put(vela, set(corvus));
-        unitUpgrade.put(merui, set(cleroi));
-        unitUpgrade.put(cleroi, set(anthicus));
-        unitUpgrade.put(anthicus, set(tecta));
-        unitUpgrade.put(tecta, set(collaris));
-        unitUpgrade.put(mega, set(quad));
-        unitUpgrade.put(quad, set(oct));
+        unitUpgrade.add(new UnitUpgradeEntry(poly, set(dagger, flare, retusa, nova, mega)));
+        unitUpgrade.add(new UnitUpgradeEntry(dagger, set(mace, atrax, stell)));
+        unitUpgrade.add(new UnitUpgradeEntry(mace, set(fortress)));
+        unitUpgrade.add(new UnitUpgradeEntry(fortress, set(scepter)));
+        unitUpgrade.add(new UnitUpgradeEntry(scepter, set(reign)));
+        unitUpgrade.add(new UnitUpgradeEntry(atrax, set(spiroct)));
+        unitUpgrade.add(new UnitUpgradeEntry(spiroct, set(arkyid)));
+        unitUpgrade.add(new UnitUpgradeEntry(arkyid, set(toxopid)));
+        unitUpgrade.add(new UnitUpgradeEntry(stell, set(locus)));
+        unitUpgrade.add(new UnitUpgradeEntry(locus, set(precept)));
+        unitUpgrade.add(new UnitUpgradeEntry(precept, set(vanquish)));
+        unitUpgrade.add(new UnitUpgradeEntry(vanquish, set(conquer)));
+        unitUpgrade.add(new UnitUpgradeEntry(flare, set(horizon, elude)));
+        unitUpgrade.add(new UnitUpgradeEntry(horizon, set(zenith)));
+        unitUpgrade.add(new UnitUpgradeEntry(zenith, set(antumbra)));
+        unitUpgrade.add(new UnitUpgradeEntry(antumbra, set(eclipse)));
+        unitUpgrade.add(new UnitUpgradeEntry(elude, set(avert)));
+        unitUpgrade.add(new UnitUpgradeEntry(avert, set(obviate)));
+        unitUpgrade.add(new UnitUpgradeEntry(obviate, set(quell)));
+        unitUpgrade.add(new UnitUpgradeEntry(quell, set(disrupt)));
+        unitUpgrade.add(new UnitUpgradeEntry(retusa, set(oxynoe, risso)));
+        unitUpgrade.add(new UnitUpgradeEntry(oxynoe, set(cyerce)));
+        unitUpgrade.add(new UnitUpgradeEntry(cyerce, set(aegires)));
+        unitUpgrade.add(new UnitUpgradeEntry(aegires, set(navanax)));
+        unitUpgrade.add(new UnitUpgradeEntry(risso, set(minke)));
+        unitUpgrade.add(new UnitUpgradeEntry(minke, set(bryde)));
+        unitUpgrade.add(new UnitUpgradeEntry(bryde, set(sei)));
+        unitUpgrade.add(new UnitUpgradeEntry(sei, set(omura)));
+        unitUpgrade.add(new UnitUpgradeEntry(nova, set(pulsar, merui)));
+        unitUpgrade.add(new UnitUpgradeEntry(pulsar, set(quasar)));
+        unitUpgrade.add(new UnitUpgradeEntry(quasar, set(vela)));
+        unitUpgrade.add(new UnitUpgradeEntry(vela, set(corvus)));
+        unitUpgrade.add(new UnitUpgradeEntry(merui, set(cleroi)));
+        unitUpgrade.add(new UnitUpgradeEntry(cleroi, set(anthicus)));
+        unitUpgrade.add(new UnitUpgradeEntry(anthicus, set(tecta)));
+        unitUpgrade.add(new UnitUpgradeEntry(tecta, set(collaris)));
+        unitUpgrade.add(new UnitUpgradeEntry(mega, set(quad)));
+        unitUpgrade.add(new UnitUpgradeEntry(quad, set(oct)));
 
         unitSpawnChance.add(new UnitSpawnChance(10, dagger, mace, atrax, pulsar, horizon));
         unitSpawnChance.add(new UnitSpawnChance(12, crawler, flare, oxynoe, locus, scepter));
@@ -262,7 +248,7 @@ public class CataliConfig {
         unitSpawnChance.add(new UnitSpawnChance(23, stell, retusa, mega, quad, tecta));
         unitSpawnChance.add(new UnitSpawnChance(13, dagger, mace, oxynoe, zenith, horizon));
         unitSpawnChance.add(new UnitSpawnChance(14, minke, oxynoe, retusa, zenith, spiroct));
-        unitSpawnChance.add(new UnitSpawnChance(18, crawler, horizon, poly, antumbra, sei));
+        unitSpawnChance.add(new UnitSpawnChance(15, crawler, horizon, poly, antumbra, sei));
         unitSpawnChance.add(new UnitSpawnChance(20, stell, mega, oxynoe, fortress, tecta));
         unitSpawnChance.add(new UnitSpawnChance(21, minke, oxynoe, locus, mega, scepter));
         unitSpawnChance.add(new UnitSpawnChance(23, risso, oxynoe, mega, locus, antumbra));
@@ -300,6 +286,85 @@ public class CataliConfig {
         unitSpawnChance.add(new UnitSpawnChance(17, stell, mega, retusa, locus, tecta, poly));
         unitSpawnChance.add(new UnitSpawnChance(16, minke, locus, fortress, spiroct, poly));
 
+    }
+
+    @Data
+    @NoArgsConstructor
+    public static class UnitRespawnTimeEntry {
+        @JsonSerialize(using = MappableContentSerializer.class)
+        @JsonDeserialize(using = UnitDeserializer.class)
+        public UnitType unit;
+
+        @JsonSerialize(using = DurationSerializer.class)
+        @JsonDeserialize(using = DurationDeserializer.class)
+        public Duration respawnTime;
+
+        public UnitRespawnTimeEntry(UnitType unit, Duration respawnTime) {
+            this.unit = unit;
+            this.respawnTime = respawnTime;
+        }
+    }
+
+    @Data
+    @NoArgsConstructor
+    public static class UnitExpEntry {
+        @JsonSerialize(using = MappableContentSerializer.class)
+        @JsonDeserialize(using = UnitDeserializer.class)
+        public UnitType unit;
+
+        public int exp;
+
+        public UnitExpEntry(UnitType unit, int exp) {
+            this.unit = unit;
+            this.exp = exp;
+        }
+    }
+
+    @Data
+    @NoArgsConstructor
+    public static class BlockExpEntry {
+        @JsonSerialize(using = MappableContentSerializer.class)
+        @JsonDeserialize(using = BlockDeserializer.class)
+        public Block block;
+
+        public int exp;
+
+        public BlockExpEntry(Block block, int exp) {
+            this.block = block;
+            this.exp = exp;
+        }
+    }
+
+    @Data
+    @NoArgsConstructor
+    public static class BlockSpawnChanceEntry {
+        @JsonSerialize(using = MappableContentSerializer.class)
+        @JsonDeserialize(using = BlockDeserializer.class)
+        public Block block;
+
+        public int chance;
+
+        public BlockSpawnChanceEntry(Block block, int chance) {
+            this.block = block;
+            this.chance = chance;
+        }
+    }
+
+    @Data
+    @NoArgsConstructor
+    public static class UnitUpgradeEntry {
+        @JsonSerialize(using = MappableContentSerializer.class)
+        @JsonDeserialize(using = UnitDeserializer.class)
+        public UnitType unit;
+
+        @JsonSerialize(contentUsing = MappableContentSerializer.class)
+        @JsonDeserialize(contentUsing = UnitDeserializer.class)
+        public Set<UnitType> upgrades;
+
+        public UnitUpgradeEntry(UnitType unit, Set<UnitType> upgrades) {
+            this.unit = unit;
+            this.upgrades = upgrades;
+        }
     }
 
     @Data

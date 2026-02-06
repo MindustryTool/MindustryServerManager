@@ -20,9 +20,9 @@ public class BlockSpawner {
     public void spawn(Team team) {
         Block blockToSpawn = null;
 
-        for (var entry : config.blockSpawnChance.entrySet()) {
-            var block = entry.getKey();
-            var spawnChance = entry.getValue();
+        for (var entry : config.blockSpawnChance) {
+            var block = entry.block;
+            var spawnChance = entry.chance;
 
             if (Mathf.chance(spawnChance)) {
                 blockToSpawn = block;

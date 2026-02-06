@@ -124,7 +124,8 @@ public class CataliGamemode {
         CataliTeamData victimTeam = teams.find(team -> team.team.id == e.unit.team.id && team.units.contains(e.unit));
 
         if (victimTeam != null) {
-            var respawnTime = config.unitRespawnTime.get(e.unit.type);
+            var respawnTime = Utils.find(config.unitRespawnTime, item -> item.unit == e.unit.type,
+                    item -> item.respawnTime);
 
             if (respawnTime == null) {
                 respawnTime = Duration.ofSeconds(10);
@@ -145,7 +146,7 @@ public class CataliGamemode {
 
         if (bulletOwner instanceof Teamc teamc) {
             var killerTeam = teams.find(team -> team.team.id == teamc.team().id);
-            var exp = config.unitExp.get(e.unit.type);
+            var exp = Utils.find(config.unitExp, item -> item.unit == e.unit.type, item -> item.exp);
 
             if (exp == null) {
                 exp = 10;
@@ -177,7 +178,7 @@ public class CataliGamemode {
 
         if (bulletOwner instanceof Teamc teamc) {
             var killerTeam = teams.find(team -> team.team.id == teamc.team().id);
-            var exp = config.blockExp.get(e.build.block);
+            var exp = Utils.find(config.blockExp, item -> item.block == e.build.block, item -> item.exp);
 
             if (exp == null) {
                 exp = 10;

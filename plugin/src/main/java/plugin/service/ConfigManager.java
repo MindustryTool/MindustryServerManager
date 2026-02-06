@@ -40,15 +40,15 @@ public class ConfigManager {
     }
 
     private void load(Object instance, Fi file) {
-        if (!file.exists()) {
-            Log.warn("Configuration file not found: @", file.absolutePath());
-
-            String json = JsonUtils.toJsonString(instance);
-            file.writeString(json);
-
-            return;
-        }
         try {
+            if (!file.exists()) {
+                Log.warn("Configuration file not found: @", file.absolutePath());
+
+                String json = JsonUtils.toJsonString(instance);
+                file.writeString(json);
+
+                return;
+            }
             String json = new String(Files.readAllBytes(file.file().toPath()), StandardCharsets.UTF_8);
             Object newData = JsonUtils.readJsonAsClass(json, instance.getClass());
 

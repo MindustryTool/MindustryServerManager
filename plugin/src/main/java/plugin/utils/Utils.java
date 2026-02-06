@@ -14,6 +14,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -355,4 +357,21 @@ public class Utils {
         return sb.toString();
     }
 
+    public static <T> T find(Iterable<T> iterable, Predicate<T> predicate) {
+        for (T t : iterable) {
+            if (predicate.test(t)) {
+                return t;
+            }
+        }
+        return null;
+    }
+
+    public static <T, R> R find(Iterable<T> iterable, Predicate<T> predicate, Function<T, R> mapper) {
+        for (T t : iterable) {
+            if (predicate.test(t)) {
+                return mapper.apply(t);
+            }
+        }
+        return null;
+    }
 }
