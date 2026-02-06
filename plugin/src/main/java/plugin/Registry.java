@@ -38,12 +38,10 @@ public final class Registry {
                     continue;
                 }
 
-                if (currentGamemode != null) {
-                    if (clazz.isAnnotationPresent(Gamemode.class)) {
-                        Gamemode gamemode = clazz.getAnnotation(Gamemode.class);
-                        if (!Objects.equals(currentGamemode, gamemode.value())) {
-                            continue;
-                        }
+                if (clazz.isAnnotationPresent(Gamemode.class)) {
+                    Gamemode gamemode = clazz.getAnnotation(Gamemode.class);
+                    if (!Objects.equals(currentGamemode, gamemode.value())) {
+                        continue;
                     }
                 }
 
