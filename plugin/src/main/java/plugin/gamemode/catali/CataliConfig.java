@@ -29,11 +29,11 @@ public class CataliConfig {
 
     @JsonSerialize(using = DurationSerializer.class)
     @JsonDeserialize(using = DurationDeserializer.class)
-    public Duration enemyUnitSpawnTime = Duration.ofMinutes(1);
+    public Duration enemyUnitSpawnTime = Duration.ofSeconds(1);
 
     @JsonSerialize(using = DurationSerializer.class)
     @JsonDeserialize(using = DurationDeserializer.class)
-    public Duration enemyBlockSpawnTime = Duration.ofMinutes(2);
+    public Duration enemyBlockSpawnTime = Duration.ofSeconds(2);
 
     public List<UnitRespawnTimeEntry> unitRespawnTime = new ArrayList<>();
     public List<UnitExpEntry> unitExp = new ArrayList<>();
