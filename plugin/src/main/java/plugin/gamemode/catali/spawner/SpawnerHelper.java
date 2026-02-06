@@ -15,9 +15,13 @@ public class SpawnerHelper {
         boolean[] chunks = new boolean[chunkCount];
         var attempts = 0;
 
+        Log.info("Spawning tile for occupied size @, chunk count: @", occupiedSize, chunkCount);
+
         do {
             attempts++;
             var chunkIndex = Mathf.random(0, chunkCount);
+
+            Log.info("Attempt @, chunk index: @", attempts, chunkIndex);
 
             if (chunks[chunkIndex]) {
                 continue;

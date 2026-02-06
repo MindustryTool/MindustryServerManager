@@ -5,6 +5,7 @@ import arc.util.Log;
 import arc.util.Timer;
 import lombok.RequiredArgsConstructor;
 import mindustry.game.Team;
+import mindustry.gen.Groups;
 import mindustry.gen.Unit;
 import plugin.annotations.Component;
 import plugin.annotations.Lazy;
@@ -20,6 +21,13 @@ public class UnitSpawner {
 
     public void spawn(Team team) {
         UnitSpawnChance entry = null;
+
+        var count = team.data().unitCount;
+        var maxCount = Groups.player.size() * 30;
+
+        if (count >= maxCount) {
+            return;
+        }
 
         for (var item : config.unitSpawnChance) {
             if (Mathf.chance(item.chances)) {
