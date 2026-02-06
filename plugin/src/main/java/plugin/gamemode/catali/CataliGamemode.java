@@ -158,7 +158,7 @@ public class CataliGamemode {
 
     @Listener
     public void onUnitDestroy(UnitBulletDestroyEvent e) {
-        CataliTeamData victimTeam = teams.find(team -> team.team.id == e.unit.team.id && team.units.contains(e.unit));
+        CataliTeamData victimTeam = teams.find(team -> team.team.id == e.unit.team.id);
 
         if (victimTeam != null) {
             victimTeam.units.remove(e.unit);
@@ -339,11 +339,9 @@ public class CataliGamemode {
     }
 
     public CataliTeamData createTeam(Player leader) {
-        int id = 10;
-
         var playerTeam = teams.find(team -> team.metadata.members.contains(leader.uuid()));
-
         if (playerTeam == null) {
+            int id = 10;
             while (hasTeam(id) || Vars.state.rules.waveTeam.id == id || id == Team.derelict.id) {
                 id++;
                 if (id > 250) {
@@ -356,21 +354,22 @@ public class CataliGamemode {
 
             teams.add(playerTeam);
 
-            leader.team(newTeam);
-
-            var unit = spawnUnitForTeam(playerTeam, UnitTypes.poly);
-
-            if (unit == null) {
-                playerTeam.respawn.addUnit(UnitTypes.poly, Duration.ofSeconds(1));
-            } else {
-                var coreUnit = leader.unit();
-                leader.unit(unit);
-                if (coreUnit != null) {
-                    coreUnit.kill();
-                }
-            }
         } else {
             leader.sendMessage(I18n.t(leader, "@You already have a team!"));
+        }
+
+        leader.team(playerTeam.team);
+
+        var unit = spawnUnitForTeam(playerTeam, UnitTypes.poly);
+
+        if (unit == null) {
+            playerTeam.respawn.addUnit(UnitTypes.poly, Duration.ofSeconds(1));
+        } else {
+            var coreUnit = leader.unit();
+            leader.unit(unit);
+            if (coreUnit != null) {
+                coreUnit.kill();
+            }
         }
 
         return playerTeam;

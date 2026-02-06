@@ -44,7 +44,8 @@ public class TrailService {
             var userTrail = session.getData().trail;
             if (userTrail != null) {
                 var trail = trails.get(userTrail);
-                if (trail != null && trail.allowed(session)) {
+                if (trail != null && trail.allowed(session) && session.player.unit() != null
+                        && session.player.unit().isValid()) {
                     trail.render.get(session.player.x, session.player.y);
                 }
             }
