@@ -39,15 +39,21 @@ public class Control extends Plugin implements MindustryToolPlugin {
 
     @Override
     public void init() {
-        Registry.init(getClass().getPackage().getName());
+        try {
+            Registry.init(getClass().getPackage().getName());
 
-        DB.init();
+            DB.init();
 
-        SCHEDULER.schedule(this::autoHost, 60, TimeUnit.SECONDS);
-        SCHEDULER.schedule(this::autoPause, 10, TimeUnit.SECONDS);
-        SCHEDULER.scheduleWithFixedDelay(this::sendTips, 3, 3, TimeUnit.MINUTES);
+            SCHEDULER.schedule(this::autoHost, 60, TimeUnit.SECONDS);
+            SCHEDULER.schedule(this::autoPause, 10, TimeUnit.SECONDS);
+            SCHEDULER.scheduleWithFixedDelay(this::sendTips, 3, 3, TimeUnit.MINUTES);
 
-        state = PluginState.LOADED;
+            state = PluginState.LOADED;
+
+        } catch (Exception e) {
+            Log.err("Failed to init plugin", e);
+            unload();
+        }
     }
 
     @Override
