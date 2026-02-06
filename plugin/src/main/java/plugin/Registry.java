@@ -29,6 +29,10 @@ public final class Registry {
             currentGamemode = Core.settings.getString("plugin.gamemode", null);
 
             for (Class<?> clazz : components) {
+                if (clazz.isAnnotation() || clazz.isInterface()) {
+                    continue;
+                }
+
                 // Check Lazy
                 if (isLazy(clazz)) {
                     continue;

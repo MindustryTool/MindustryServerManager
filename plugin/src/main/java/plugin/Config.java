@@ -1,12 +1,10 @@
 package plugin;
 
 import lombok.NoArgsConstructor;
-import plugin.annotations.Component;
 import plugin.annotations.Configuration;
 
 @Configuration("config.json")
 @NoArgsConstructor
-@Component
 public class Config {
 
     public static final String PLUGIN_VERSION = "0.0.1";
