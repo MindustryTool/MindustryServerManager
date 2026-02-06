@@ -126,10 +126,14 @@ public class CataliGamemode {
 
                 message = I18n.t(player, "@Team ID:", String.valueOf(team.team.id), "\n",
                         "@Level:",
-                        String.valueOf(team.level.level) + "(" + String.valueOf(team.level.currentExp) + "/"
-                                + String.valueOf(team.level.requiredExp) + ")",
+                        String.valueOf(team.level.level) + "(" + String.valueOf((int) team.level.currentExp) + "/"
+                                + String.valueOf((int) team.level.requiredExp) + ")",
                         "\n",
                         "@Member:", String.valueOf(team.members.size), "\n",
+                        "Hp:", String.format("%.2f", team.upgrades.healthMultiplier) + "%\n",
+                        "Dmg:", String.format("%.2f", team.upgrades.damageMultiplier) + "%\n",
+                        "Exp:", String.format("%.2f", team.upgrades.expMultiplier) + "%\n",
+                        "Regen:", String.format("%.2f", team.upgrades.regenMultiplier) + "%\n",
                         "@Upgrades:", "", String.valueOf(team.level.commonUpgradePoints), "[accent]",
                         String.valueOf(team.level.rareUpgradePoints), "[white]\n",
                         "@Unit:", units, "\n");
