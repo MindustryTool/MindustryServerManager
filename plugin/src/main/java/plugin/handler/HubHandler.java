@@ -281,6 +281,7 @@ public class HubHandler {
                     "[#E3F2FD]Players: []" + server.getPlayers() + "\n" +
                     "[#BBDEFB]Map: []" + newLine(server.getMapName()) + "[]\n" +
                     "[#90CAF9]Mode: []" + server.getModeIcon() + " " + server.getMode() + "[]\n" +
+                    "[#405AF9]Version: []" + server.getGameVersion() + "[]\n" +
                     (mods.isEmpty() ? "" : "[#4FC3F7]Mods:[] " + mods) + "[]\n\n" +
                     (server.getStatus().isOnline() ? "[accent]" : "[sky]") + I18n.t(locale, "@Tap to join server")
                     + "\n";
