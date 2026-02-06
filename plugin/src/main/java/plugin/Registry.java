@@ -187,7 +187,8 @@ public final class Registry {
                         try {
                             method.invoke(instance, event);
                         } catch (Exception e) {
-                            Log.err("Failed to invoke listener @ in @", method.getName(), clazz.getName(), e);
+                            Log.err("Failed to invoke listener @ in @", method.getName(), clazz.getName());
+                            Log.err(e);
                         }
                     });
                 } else if (paramCount == 0) {
