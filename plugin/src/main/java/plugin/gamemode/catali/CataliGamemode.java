@@ -108,18 +108,14 @@ public class CataliGamemode {
     }
 
     public void update() {
-        Log.info("Wave team: @", Vars.state.rules.waveTeam);
         if (!Vars.state.isGame()) {
             return;
         }
-
-        unitSpawner.spawn(Vars.state.rules.waveTeam);
 
         if (interval.get(0, config.enemyUnitSpawnTime.toMillis() / 1000)) {
             unitSpawner.spawn(Vars.state.rules.waveTeam);
         }
 
-        blockSpawner.spawn(Vars.state.rules.waveTeam);
         if (interval.get(1, config.enemyBlockSpawnTime.toMillis() / 1000)) {
             blockSpawner.spawn(Vars.state.rules.waveTeam);
         }
