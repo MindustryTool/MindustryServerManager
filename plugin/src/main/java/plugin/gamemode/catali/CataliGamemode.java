@@ -134,6 +134,14 @@ public class CataliGamemode {
                 leader.sendMessage(I18n.t(leader, "@Tap to spawn"));
             }
         }
+
+        for (var player : Groups.player) {
+            var team = findTeam(player);
+
+            if (team == null) {
+                player.sendMessage(I18n.t(player, "@User", "[accent]/play[]", "@to start a new team"));
+            }
+        }
     }
 
     @Listener
@@ -309,6 +317,7 @@ public class CataliGamemode {
         var playerTeam = teams.find(team -> team.metadata.members.contains(leader.uuid()));
 
         if (playerTeam != null) {
+            leader.sendMessage(I18n.t(leader, "@You already have a team!"));
             return playerTeam;
         }
 
