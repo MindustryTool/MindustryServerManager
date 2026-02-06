@@ -1,14 +1,18 @@
 package plugin;
 
 import arc.Core;
+import arc.files.Fi;
 import arc.func.Cons;
 import arc.util.Log;
+import mindustry.Vars;
 import org.reflections.Reflections;
 import org.reflections.scanners.Scanners;
 import plugin.annotations.*;
 import plugin.service.ConfigManager;
+import plugin.utils.JsonUtils;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.*;
 
@@ -54,6 +58,32 @@ public final class Registry {
 
     public static void destroy() {
         instances.values().forEach(obj -> {
+            // Process @Persistence saving
+            for (Field field : obj.getClass().getDeclaredFields()) {
+                if (field.isAnnotationPresent(Persistence.class)) {
+                    try {
+                        field.setAccessible(true);
+                        Persistence persistence = field.getAnnotation(Persistence.class);
+                        String path = persistence.value();
+                        Fi file = Vars.dataDirectory.child(path);
+
+                        Object value = field.get(obj);
+                        if (value != null) {
+                            if (!file.exists()) {
+                                file.parent().mkdirs();
+                            }
+                            String json = JsonUtils.toJsonString(value);
+                            file.writeString(json);
+                            Log.info("Saved persistence for field @ in @ to @", field.getName(),
+                                    obj.getClass().getSimpleName(), path);
+                        }
+                    } catch (Exception e) {
+                        Log.err("Failed to save persistence for field @ in @", field.getName(),
+                                obj.getClass().getName(), e);
+                    }
+                }
+            }
+
             // Process @Destroy
             for (Method method : obj.getClass().getDeclaredMethods()) {
                 if (method.isAnnotationPresent(Destroy.class)) {
@@ -160,6 +190,28 @@ public final class Registry {
 
         if (clazz.isAnnotationPresent(Configuration.class)) {
             configManager.process(instance);
+        }
+
+        // Process @Persistence
+        for (Field field : clazz.getDeclaredFields()) {
+            if (field.isAnnotationPresent(Persistence.class)) {
+                try {
+                    field.setAccessible(true);
+                    Persistence persistence = field.getAnnotation(Persistence.class);
+                    String path = persistence.value();
+                    Fi file = Vars.dataDirectory.child(path);
+
+                    if (file.exists()) {
+                        String json = file.readString();
+                        Object value = JsonUtils.readJson(json, field.getGenericType());
+                        field.set(instance, value);
+                        Log.info("Loaded persistence for field @ in @ from @", field.getName(), clazz.getSimpleName(),
+                                path);
+                    }
+                } catch (Exception e) {
+                    Log.err("Failed to load persistence for field @ in @", field.getName(), clazz.getName(), e);
+                }
+            }
         }
 
         // Scan for @Init

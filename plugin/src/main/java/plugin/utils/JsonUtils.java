@@ -51,6 +51,14 @@ public class JsonUtils {
         }
     }
 
+    public static Object readJson(String data, java.lang.reflect.Type type) {
+        try {
+            return objectMapper.readValue(data, objectMapper.getTypeFactory().constructType(type));
+        } catch (Exception e) {
+            throw new RuntimeException("Can not parse to json: " + e.getMessage(), e);
+        }
+    }
+
     public static JsonNode readJson(String data) {
         try {
             return objectMapper.readTree(data);
