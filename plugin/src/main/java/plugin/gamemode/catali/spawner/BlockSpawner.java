@@ -40,8 +40,7 @@ public class BlockSpawner {
                 }
 
                 Core.app.post(() -> {
-                    tile.setBlock(block, team);
-                    tile.block().update = true;
+                    tile.setNet(block, team, 0);
                     Log.info("Spawned block @ at tile @", block, tile);
                 });
             }

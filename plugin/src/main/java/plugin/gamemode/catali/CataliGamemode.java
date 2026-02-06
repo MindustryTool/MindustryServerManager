@@ -89,49 +89,59 @@ public class CataliGamemode {
         }
 
         Core.app.post(() -> {
-            for (CataliTeamData data : teams) {
-                var respawns = data.respawn.getRespawnUnit();
-                for (var entry : respawns) {
-                    var unit = spawnUnitForTeam(data, entry.type);
-
-                    if (unit == null) {
-                        data.respawn.addUnit(entry.type, Duration.ofSeconds(1));
-                    }
-                }
-            }
-
-            Seq<CataliTeamData> remove = new Seq<>();
-
-            for (var team : teams) {
-                if (!team.hasUnit() && team.timeoutAt().isBefore(Instant.now())) {
-                    remove.add(team);
-                } else if (team.spawning == true) {
-                    var leader = Groups.player.find(player -> player.uuid().equals(team.leaderUuid));
-
-                    if (leader == null) {
-                        continue;
-                    }
-
-                    Call.infoPopup(leader.con, I18n.t(leader, "@Tap to spawn"), 2, Align.center, 0, 0, 0, 0);
-                }
-            }
-
-            teams.removeAll(remove);
-
-            for (var player : Groups.player) {
-                var team = findTeam(player);
-
-                if (team == null) {
-                    Call.infoPopup(player.con, I18n.t(player, "@User", "[accent]/play[]", "@to start a new team"), 2,
-                            Align.center, 0, 0, 0, 0);
-                }
-
-                if (player.unit() != null && coreUnits.contains(player.unit().type)) {
-                    player.team(Team.get(255));
-                    player.unit().kill();
-                }
-            }
+            updateRespawn();
+            updateTeam();
+            updatePlayer();
         });
+    }
+
+    private void updatePlayer() {
+        for (var player : Groups.player) {
+            var team = findTeam(player);
+
+            if (team == null) {
+                Call.infoPopup(player.con, I18n.t(player, "@User", "[accent]/play[]", "@to start a new team"), 2,
+                        Align.center, 0, 0, 0, 0);
+            }
+
+            if (player.unit() != null && coreUnits.contains(player.unit().type)) {
+                player.team(Team.get(255));
+                player.unit().kill();
+            }
+        }
+    }
+
+    private void updateRespawn() {
+        for (CataliTeamData data : teams) {
+            var respawns = data.respawn.getRespawnUnit();
+            for (var entry : respawns) {
+                var unit = spawnUnitForTeam(data, entry.type);
+
+                if (unit == null) {
+                    data.respawn.addUnit(entry.type, Duration.ofSeconds(1));
+                }
+            }
+        }
+    }
+
+    private void updateTeam() {
+        Seq<CataliTeamData> remove = new Seq<>();
+
+        for (var team : teams) {
+            if (!team.hasUnit() && Instant.now().isAfter(team.timeoutAt())) {
+                remove.add(team);
+            } else if (team.spawning == true) {
+                var leader = Groups.player.find(player -> player.uuid().equals(team.leaderUuid));
+
+                if (leader == null) {
+                    continue;
+                }
+
+                Call.infoPopup(leader.con, I18n.t(leader, "@Tap to spawn"), 2, Align.center, 0, 0, 0, 0);
+            }
+        }
+
+        teams.removeAll(remove);
     }
 
     @Listener
