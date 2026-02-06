@@ -5,6 +5,7 @@ import arc.math.Mathf;
 import arc.struct.Seq;
 import arc.util.Align;
 import arc.util.Log;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import mindustry.Vars;
 import mindustry.content.Blocks;
@@ -19,6 +20,7 @@ import mindustry.gen.Unit;
 import mindustry.type.UnitType;
 import mindustry.world.Tile;
 import plugin.Control;
+import plugin.PluginEvents;
 import plugin.annotations.Gamemode;
 import plugin.annotations.Init;
 import plugin.annotations.Listener;
@@ -63,6 +65,8 @@ public class CataliGamemode {
         for (var block : Vars.content.blocks()) {
             Vars.state.rules.bannedBlocks.add(block);
         }
+
+        Vars.state.rules.canGameOver = false;
 
         Control.SCHEDULER.scheduleWithFixedDelay(this::update, 0, 2, TimeUnit.SECONDS);
         Control.SCHEDULER.scheduleWithFixedDelay(this::spawn, 0, 2, TimeUnit.SECONDS);
@@ -141,7 +145,21 @@ public class CataliGamemode {
             }
         }
 
-        teams.removeAll(remove);
+        for (var team : remove) {
+            PluginEvents.fire(new TeamFallenEvent(team));
+        }
+    }
+
+    @Listener
+    public void onTeamFallen(TeamFallenEvent event) {
+        teams.remove(event.team);
+
+        Utils.forEachPlayerLocale((locale, players) -> {
+            String message = I18n.t(locale, "[scarlet]", "@Team", event.team.team.id, "@has been eliminated!");
+            for (var player : players) {
+                player.sendMessage(message);
+            }
+        });
     }
 
     @Listener
@@ -166,7 +184,7 @@ public class CataliGamemode {
             if (playerTeam.hasUnit()) {
                 assignUnitForPlayer(playerTeam, player);
             } else {
-                teams.remove(playerTeam);
+                PluginEvents.fire(new TeamFallenEvent(playerTeam));
             }
         } else {
             player.team(SPECTATOR_TEAM);
@@ -210,13 +228,7 @@ public class CataliGamemode {
 
         if (victimTeam != null) {
             if (!victimTeam.hasUnit()) {
-                teams.remove(victimTeam);
-                Utils.forEachPlayerLocale((locale, players) -> {
-                    String message = I18n.t(locale, "[scarlet]", "@Team", victimTeam.team.id, "@has been eliminated!");
-                    for (var player : players) {
-                        player.sendMessage(message);
-                    }
-                });
+                PluginEvents.fire(new TeamFallenEvent(victimTeam));
             } else {
                 var respawnTime = Utils.find(config.unitRespawnTime, item -> item.unit == e.unit.type,
                         item -> item.respawnTime);
@@ -423,5 +435,14 @@ public class CataliGamemode {
     public boolean isTileSafe(Tile tile, UnitType type) {
         return tile != null && tile.block() == Blocks.air
                 && !Groups.unit.intersect(tile.worldx(), tile.worldy(), type.hitSize, type.hitSize).any();
+    }
+
+    @Data
+    public static class TeamFallenEvent {
+        public final CataliTeamData team;
+
+        public TeamFallenEvent(CataliTeamData team) {
+            this.team = team;
+        }
     }
 }
