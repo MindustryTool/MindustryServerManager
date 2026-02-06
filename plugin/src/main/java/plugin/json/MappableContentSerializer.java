@@ -3,14 +3,15 @@ package plugin.json;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
-import mindustry.type.UnitType;
+
+import mindustry.ctype.MappableContent;
 
 import java.io.IOException;
 
-public class MappableContentSerializer extends JsonSerializer<UnitType> {
+public class MappableContentSerializer extends JsonSerializer<MappableContent> {
 
     @Override
-    public void serialize(UnitType value, JsonGenerator gen, SerializerProvider serializers)
+    public void serialize(MappableContent value, JsonGenerator gen, SerializerProvider serializers)
             throws IOException {
 
         if (value == null) {

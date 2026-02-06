@@ -17,12 +17,13 @@ import mindustry.type.UnitType;
 import mindustry.world.Block;
 import plugin.annotations.Component;
 import plugin.annotations.Configuration;
+import plugin.json.BlockKeyDeserializer;
 import plugin.json.DurationDeserializer;
 import plugin.json.DurationSerializer;
-import plugin.json.MappableContentDeserializer;
-import plugin.json.MappableContentKeyDeserializer;
 import plugin.json.MappableContentSerializer;
 import plugin.json.MappableKeySerializer;
+import plugin.json.UnitDeserializer;
+import plugin.json.UnitKeyDeserializer;
 
 import static mindustry.content.UnitTypes.*;
 import static mindustry.content.Blocks.*;
@@ -41,23 +42,23 @@ public class CataliConfig {
     public Duration enemyBlockSpawnTime = Duration.ofMinutes(2);
 
     @JsonSerialize(keyUsing = MappableKeySerializer.class, contentUsing = DurationSerializer.class)
-    @JsonDeserialize(keyUsing = MappableContentKeyDeserializer.class, contentUsing = DurationDeserializer.class)
+    @JsonDeserialize(keyUsing = UnitKeyDeserializer.class, contentUsing = DurationDeserializer.class)
     public Map<UnitType, Duration> unitRespawnTime = new HashMap<>();
 
     @JsonSerialize(keyUsing = MappableKeySerializer.class)
-    @JsonDeserialize(keyUsing = MappableContentKeyDeserializer.class)
+    @JsonDeserialize(keyUsing = UnitKeyDeserializer.class)
     public Map<UnitType, Integer> unitExp = new HashMap<>();
 
     @JsonSerialize(keyUsing = MappableKeySerializer.class)
-    @JsonDeserialize(keyUsing = MappableContentKeyDeserializer.class)
+    @JsonDeserialize(keyUsing = BlockKeyDeserializer.class)
     public Map<Block, Integer> blockExp = new HashMap<>();
 
     @JsonSerialize(keyUsing = MappableKeySerializer.class)
-    @JsonDeserialize(keyUsing = MappableContentKeyDeserializer.class)
+    @JsonDeserialize(keyUsing = BlockKeyDeserializer.class)
     public Map<Block, Integer> blockSpawnChance = new HashMap<>();
 
     @JsonSerialize(keyUsing = MappableKeySerializer.class)
-    @JsonDeserialize(keyUsing = MappableContentKeyDeserializer.class)
+    @JsonDeserialize(keyUsing = UnitKeyDeserializer.class)
     public Map<UnitType, Set<UnitType>> unitUpgrade = new HashMap<>();
 
     public List<UnitSpawnChance> unitSpawnChance = new ArrayList<>();
@@ -303,10 +304,10 @@ public class CataliConfig {
 
     @Data
     public static class UnitSpawnChance {
-        @JsonDeserialize(using = MappableContentDeserializer.class)
+        @JsonDeserialize(using = UnitDeserializer.class)
         @JsonSerialize(using = MappableContentSerializer.class)
-        public int chances = 0;
         public List<UnitType> units = new ArrayList<>();
+        public int chances = 0;
 
         public UnitSpawnChance(int chances, UnitType... units) {
             this.chances = chances;

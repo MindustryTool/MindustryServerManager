@@ -8,7 +8,7 @@ import mindustry.type.UnitType;
 
 import java.io.IOException;
 
-public class MappableContentDeserializer extends JsonDeserializer<UnitType> {
+public class UnitDeserializer extends JsonDeserializer<UnitType> {
 
     @Override
     public UnitType deserialize(JsonParser p, DeserializationContext ctxt)

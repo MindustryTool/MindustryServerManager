@@ -3,20 +3,19 @@ package plugin.json;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.KeyDeserializer;
 import mindustry.Vars;
-import mindustry.type.UnitType;
 
 import java.io.IOException;
 
-public class MappableContentKeyDeserializer extends KeyDeserializer {
+public class BlockKeyDeserializer extends KeyDeserializer {
 
     @Override
-    public UnitType deserializeKey(String key, DeserializationContext ctxt)
+    public mindustry.world.Block deserializeKey(String key, DeserializationContext ctxt)
             throws IOException {
 
-        UnitType unit = Vars.content.unit(key);
+        mindustry.world.Block unit = Vars.content.block(key);
 
         if (unit == null) {
-            throw new IllegalArgumentException("Unknown UnitType key: " + key);
+            throw new IllegalArgumentException("Unknown mindustry.world.Block key: " + key);
         }
 
         return unit;
