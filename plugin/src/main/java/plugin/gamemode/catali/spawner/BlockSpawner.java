@@ -3,6 +3,7 @@ package plugin.gamemode.catali.spawner;
 import arc.math.Mathf;
 import lombok.RequiredArgsConstructor;
 import mindustry.Vars;
+import mindustry.game.Team;
 import mindustry.gen.Groups;
 import mindustry.world.Block;
 import plugin.annotations.Component;
@@ -16,7 +17,7 @@ public class BlockSpawner {
 
     private final CataliConfig config;
 
-    public void spawn() {
+    public void spawn(Team team) {
         Block blockToSpawn = null;
 
         for (var entry : config.blockSpawnChance.entrySet()) {
@@ -48,6 +49,6 @@ public class BlockSpawner {
             return;
         }
 
-        tile.setBlock(blockToSpawn);
+        tile.setBlock(blockToSpawn, team);
     }
 }

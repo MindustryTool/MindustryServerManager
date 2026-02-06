@@ -108,7 +108,7 @@ public class CataliGamemode {
         }
 
         if (interval.get(1, config.enemyBlockSpawnTime.toSeconds())) {
-            blockSpawner.spawn();
+            blockSpawner.spawn(Vars.state.rules.waveTeam);
         }
 
         for (CataliTeamData data : teams) {
@@ -265,7 +265,7 @@ public class CataliGamemode {
     public CataliTeamData createTeam(Player leader) {
         int id = 10;
 
-        while (hasTeam(id) || Team.get(id).active()) {
+        while (hasTeam(id) || Team.get(id).active() || Vars.state.rules.waveTeam.id == id) {
             id++;
             if (id > 200) {
                 throw new RuntimeException("Failed to find a free team ID");
