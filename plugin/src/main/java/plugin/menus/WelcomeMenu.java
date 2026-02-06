@@ -4,7 +4,7 @@ import arc.struct.Seq;
 import mindustry.gen.Call;
 import mindustry.gen.Iconc;
 import plugin.Config;
-import plugin.Registry;
+import plugin.core.Registry;
 import plugin.service.ApiGateway;
 import plugin.type.Session;
 

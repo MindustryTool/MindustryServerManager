@@ -2,8 +2,8 @@ package plugin.menus;
 
 import mindustry.gen.Call;
 import mindustry.gen.Player;
-import plugin.Registry;
 import plugin.Tasks;
+import plugin.core.Registry;
 import plugin.service.ApiGateway;
 import plugin.service.I18n;
 import plugin.type.Session;

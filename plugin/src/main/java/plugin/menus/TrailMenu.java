@@ -1,7 +1,7 @@
 package plugin.menus;
 
 import arc.struct.Seq;
-import plugin.Registry;
+import plugin.core.Registry;
 import plugin.service.I18n;
 import plugin.service.TrailService;
 import plugin.type.Session;

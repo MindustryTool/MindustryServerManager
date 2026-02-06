@@ -1,4 +1,4 @@
-package plugin.service;
+package plugin.core;
 
 import arc.files.Fi;
 import arc.util.Log;

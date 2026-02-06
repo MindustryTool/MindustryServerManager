@@ -22,6 +22,7 @@ import plugin.service.I18n;
 import plugin.utils.Utils;
 import plugin.commands.ClientCommandHandler;
 import plugin.commands.ServerCommandHandler;
+import plugin.core.Registry;
 import plugin.database.DB;
 import plugin.event.PluginUnloadEvent;
 import loader.MindustryToolPlugin;

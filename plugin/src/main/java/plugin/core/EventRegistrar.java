@@ -1,4 +1,4 @@
-package plugin.service;
+package plugin.core;
 
 import arc.func.Cons;
 import arc.util.Log;

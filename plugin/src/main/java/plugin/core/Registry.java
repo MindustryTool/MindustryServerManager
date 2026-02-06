@@ -1,13 +1,10 @@
-package plugin;
+package plugin.core;
 
 import arc.Core;
 import arc.util.Log;
 import org.reflections.Reflections;
 import org.reflections.scanners.Scanners;
 import plugin.annotations.*;
-import plugin.service.ConfigManager;
-import plugin.service.EventRegistrar;
-import plugin.service.PersistenceManager;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;

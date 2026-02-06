@@ -23,6 +23,7 @@ import mindustry.gen.Player;
 import mindustry.net.Administration.PlayerInfo;
 import plugin.Config;
 import plugin.commands.ServerCommandHandler;
+import plugin.core.Registry;
 import plugin.service.I18n;
 import plugin.service.SessionHandler;
 import plugin.service.SessionService;
@@ -38,8 +39,6 @@ import dto.ServerStateDto;
 import plugin.utils.Utils;
 import io.javalin.Javalin;
 import io.javalin.http.ContentType;
-
-import plugin.Registry;
 
 public class GeneralController {
 

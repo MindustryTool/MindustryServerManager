@@ -1,6 +1,6 @@
 package plugin.menus;
 
-import plugin.Registry;
+import plugin.core.Registry;
 import plugin.service.AdminService;
 import plugin.service.I18n;
 import plugin.service.SessionHandler;

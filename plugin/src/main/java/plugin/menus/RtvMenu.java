@@ -3,7 +3,7 @@ package plugin.menus;
 import arc.struct.Seq;
 import mindustry.gen.Iconc;
 import mindustry.maps.Map;
-import plugin.Registry;
+import plugin.core.Registry;
 import plugin.service.I18n;
 import plugin.service.MapRating;
 import plugin.service.VoteService;

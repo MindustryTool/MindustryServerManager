@@ -1,12 +1,12 @@
 package plugin.commands.client;
 
-import plugin.Registry;
 import plugin.annotations.Component;
 import plugin.type.PaginationRequest;
 import plugin.type.Session;
 import plugin.utils.ServerUtils;
 import arc.struct.Seq;
 import plugin.commands.PluginClientCommand;
+import plugin.core.Registry;
 import plugin.service.ApiGateway;
 import plugin.service.I18n;
 

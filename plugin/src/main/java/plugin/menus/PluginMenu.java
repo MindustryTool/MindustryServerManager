@@ -7,8 +7,8 @@ import arc.util.Log;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import mindustry.gen.Call;
-import plugin.Registry;
 import plugin.Tasks;
+import plugin.core.Registry;
 import plugin.service.PluginMenuService;
 import plugin.type.Session;
 

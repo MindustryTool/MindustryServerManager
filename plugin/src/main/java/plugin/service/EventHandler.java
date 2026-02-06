@@ -27,10 +27,10 @@ import plugin.menus.RateMapMenu;
 import plugin.menus.WelcomeMenu;
 import dto.PlayerDto;
 import plugin.utils.Utils;
-import plugin.Registry;
 import plugin.Tasks;
 import plugin.annotations.Component;
 import plugin.annotations.Listener;
+import plugin.core.Registry;
 import mindustry.ui.dialogs.LanguageDialog;
 import java.time.Instant;
 

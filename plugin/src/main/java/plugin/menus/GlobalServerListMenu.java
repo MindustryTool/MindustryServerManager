@@ -2,8 +2,8 @@ package plugin.menus;
 
 import arc.util.Log;
 import mindustry.gen.Call;
-import plugin.Registry;
 import plugin.commands.ClientCommandHandler;
+import plugin.core.Registry;
 import plugin.service.ApiGateway;
 import plugin.service.I18n;
 import plugin.type.PaginationRequest;

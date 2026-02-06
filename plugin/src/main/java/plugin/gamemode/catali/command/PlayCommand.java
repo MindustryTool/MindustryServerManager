@@ -1,8 +1,8 @@
 package plugin.gamemode.catali.command;
 
-import plugin.Registry;
 import plugin.annotations.Component;
 import plugin.commands.PluginClientCommand;
+import plugin.core.Registry;
 import plugin.gamemode.catali.CataliGamemode;
 import plugin.type.Session;
 

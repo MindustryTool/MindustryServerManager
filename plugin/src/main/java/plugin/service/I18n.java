@@ -6,7 +6,7 @@ import arc.struct.Seq;
 import arc.util.Log;
 import arc.util.Strings;
 import mindustry.gen.Player;
-import plugin.Registry;
+import plugin.core.Registry;
 import plugin.type.Session;
 import plugin.utils.Utils;
 

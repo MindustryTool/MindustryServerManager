@@ -8,9 +8,9 @@ import arc.util.CommandHandler.CommandResponse;
 import arc.struct.Seq;
 import arc.util.CommandHandler;
 import lombok.Getter;
-import plugin.Registry;
 import plugin.annotations.Component;
 import plugin.annotations.Destroy;
+import plugin.core.Registry;
 import plugin.type.PrevCommand;
 
 @Component

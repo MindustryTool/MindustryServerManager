@@ -1,8 +1,8 @@
 package plugin.commands.client;
 
-import plugin.Registry;
 import plugin.annotations.Component;
 import plugin.commands.PluginClientCommand;
+import plugin.core.Registry;
 import plugin.menus.RtvMenu;
 import plugin.service.VoteService;
 import plugin.type.Session;

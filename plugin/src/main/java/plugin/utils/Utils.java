@@ -44,7 +44,7 @@ import mindustry.maps.MapException;
 import mindustry.type.UnitType;
 import plugin.Control;
 import plugin.PluginState;
-import plugin.Registry;
+import plugin.core.Registry;
 
 public class Utils {
 
