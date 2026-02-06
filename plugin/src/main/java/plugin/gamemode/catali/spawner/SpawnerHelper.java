@@ -36,16 +36,13 @@ public class SpawnerHelper {
                 int x = startX + Mathf.random(chunkSize - 1);
                 int y = startY + Mathf.random(chunkSize - 1);
 
-                if (Vars.world.tile(x, y) == null)
-                    continue;
-
                 Tile tile = Vars.world.tile(x, y);
                 if (tile == null || tile.block() != null)
                     continue;
 
-                // expensive check LAST
-                if (Groups.unit.intersect(x, y, occupiedSize, occupiedSize).any())
+                if (Groups.unit.intersect(x, y, occupiedSize, occupiedSize).any()) {
                     continue;
+                }
 
                 return tile;
             }

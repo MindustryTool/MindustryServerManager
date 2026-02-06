@@ -2,7 +2,6 @@ package plugin.gamemode.catali.spawner;
 
 import arc.math.Mathf;
 import arc.util.Log;
-import arc.util.Timer;
 import lombok.RequiredArgsConstructor;
 import mindustry.game.Team;
 import mindustry.gen.Groups;
@@ -20,7 +19,7 @@ public class UnitSpawner {
 
     public void spawn(Team team) {
         for (var entry : config.unitSpawnChance) {
-            if (Mathf.chance(entry.chances)) {
+            if (Mathf.chance(entry.chances / 100)) {
                 var count = team.data().unitCount;
                 var maxCount = Groups.player.size() * 30;
 
@@ -44,13 +43,12 @@ public class UnitSpawner {
                 for (int i = 0; i < entry.units.size(); i++) {
                     var unit = entry.units.get(i);
 
-                    Timer.schedule(() -> {
-                        Unit u = unit.create(team);
-                        u.set(tile.worldx() + Mathf.random(largestUnit.hitSize),
-                                tile.worldy() + Mathf.random(largestUnit.hitSize));
-                        u.add();
-                        Log.info("Spawning unit @ at tile @", unit, tile);
-                    }, i);
+                    Unit u = unit.create(team);
+                    u.set(tile.worldx() + Mathf.random(largestUnit.hitSize),
+                            tile.worldy() + Mathf.random(largestUnit.hitSize));
+                    u.add();
+
+                    Log.info("Spawning unit @ at tile @", unit, tile);
                 }
             }
         }

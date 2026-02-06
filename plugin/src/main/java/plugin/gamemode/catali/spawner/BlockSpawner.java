@@ -22,7 +22,7 @@ public class BlockSpawner {
             var block = entry.block;
             var spawnChance = entry.chance;
 
-            if (Mathf.chance(spawnChance)) {
+            if (Mathf.chance(spawnChance / 100)) {
                 var mapSize = Vars.world.width() * Vars.world.height();
                 var spawnCount = mapSize * 0.05;
 
