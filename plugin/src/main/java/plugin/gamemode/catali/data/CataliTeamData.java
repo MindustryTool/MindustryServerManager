@@ -7,12 +7,17 @@ import lombok.NoArgsConstructor;
 
 import java.time.Instant;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
 import mindustry.game.Team;
 import mindustry.gen.Groups;
 import mindustry.gen.Player;
 import mindustry.gen.Unit;
 import plugin.core.Registry;
 import plugin.gamemode.catali.CataliConfig;
+import plugin.json.TeamDeserializer;
+import plugin.json.TeamSerializer;
 
 @Data
 @NoArgsConstructor
@@ -20,6 +25,9 @@ public class CataliTeamData {
     public String leaderUuid;
     public Instant createdTime = Instant.now();
     public Instant lastLeaderOnlineTime = Instant.now();
+
+    @JsonSerialize(using = TeamSerializer.class)
+    @JsonDeserialize(using = TeamDeserializer.class)
     public Team team;
     public TeamLevel level;
     public TeamRespawn respawn;
