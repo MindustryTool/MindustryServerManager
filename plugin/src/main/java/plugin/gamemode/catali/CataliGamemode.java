@@ -136,7 +136,7 @@ public class CataliGamemode {
             }
 
             if (player.unit() != null && coreUnits.contains(player.unit().type)) {
-                player.team(Team.get(255));
+                player.team(SPECTATOR_TEAM);
                 player.unit().kill();
             }
         }
@@ -253,28 +253,33 @@ public class CataliGamemode {
 
         CataliTeamData victimTeam = teams.find(team -> team.team.id == e.unit.team.id);
 
-        if (victimTeam != null) {
-            if (!victimTeam.hasUnit()) {
-                PluginEvents.fire(new TeamFallenEvent(victimTeam));
-            } else {
-                var respawnTime = Utils.find(config.unitRespawnTime, item -> item.unit == e.unit.type,
-                        item -> item.respawnTime);
-
-                if (respawnTime == null) {
-                    respawnTime = Duration.ofSeconds(10);
-                    Log.warn("Missing respawn time for unit @", e.unit.type.name);
-                }
-
-                var timeStr = TimeUtils.toString(respawnTime);
-
-                victimTeam.respawn.addUnit(e.unit.type, respawnTime);
-
-                victimTeam.eachMember(player -> {
-                    player.sendMessage(
-                            I18n.t(player, "[scarlet]", e.unit.type.emoji(), "@destroyed! Respawning in", timeStr));
-                });
-            }
+        if (victimTeam == null) {
+            return;
         }
+
+        if (victimTeam.hasUnit()) {
+            PluginEvents.fire(new TeamUnitDeadEvent(victimTeam, e.unit.type));
+        } else {
+            PluginEvents.fire(new TeamFallenEvent(victimTeam));
+        }
+    }
+
+    @Listener
+    public void onTeamUnitDead(TeamUnitDeadEvent event) {
+        var respawnTime = Utils.find(config.unitRespawnTime, item -> item.unit == event.type, item -> item.respawnTime);
+
+        if (respawnTime == null) {
+            respawnTime = Duration.ofSeconds(10);
+            Log.warn("Missing respawn time for unit @", event.type.name);
+        }
+
+        var timeStr = TimeUtils.toString(respawnTime);
+
+        event.team.respawn.addUnit(event.type, respawnTime);
+
+        event.team.eachMember(player -> {
+            player.sendMessage(I18n.t(player, "[scarlet]", event.type.emoji(), "@destroyed! Respawning in", timeStr));
+        });
     }
 
     @Listener
@@ -470,6 +475,17 @@ public class CataliGamemode {
 
         public TeamFallenEvent(CataliTeamData team) {
             this.team = team;
+        }
+    }
+
+    @Data
+    public static class TeamUnitDeadEvent {
+        public final CataliTeamData team;
+        public final UnitType type;
+
+        public TeamUnitDeadEvent(CataliTeamData team, UnitType type) {
+            this.team = team;
+            this.type = type;
         }
     }
 }

@@ -29,6 +29,7 @@ public class CataliTeamData {
     public TeamRespawn respawn;
     public TeamUpgrades upgrades;
     public Seq<String> members = new Seq<>();
+    // Cores increase exp recv
 
     public boolean spawning = true;
 
