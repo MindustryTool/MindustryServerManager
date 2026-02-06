@@ -80,7 +80,6 @@ public class CataliGamemode {
         Control.SCHEDULER.scheduleWithFixedDelay(this::update, 0, 1, TimeUnit.SECONDS);
         Control.SCHEDULER.scheduleWithFixedDelay(this::spawn, 0, 2, TimeUnit.SECONDS);
 
-        Log.info(config);
         Log.info("[accent]Cataio gamemode loaded");
     }
 
@@ -126,7 +125,10 @@ public class CataliGamemode {
                         : "@No unit";
 
                 message = I18n.t(player, "@Team ID:", String.valueOf(team.team.id), "\n",
-                        "@Level:", String.valueOf(team.level.level), "\n",
+                        "@Level:",
+                        String.valueOf(team.level.level) + "(" + String.valueOf(team.level.currentExp) + "/"
+                                + String.valueOf(team.level.requiredExp) + ")",
+                        "\n",
                         "@Member:", String.valueOf(team.members.size), "\n",
                         "@Upgrades:", "", String.valueOf(team.level.commonUpgradePoints), "[accent]",
                         String.valueOf(team.level.rareUpgradePoints), "[white]\n",
