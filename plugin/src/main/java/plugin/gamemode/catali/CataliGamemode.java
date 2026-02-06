@@ -95,10 +95,14 @@ public class CataliGamemode {
         }
 
         Core.app.post(() -> {
-            updateRespawn();
-            updateTeam();
-            updatePlayer();
-            updateStatsHud();
+            try {
+                updateRespawn();
+                updateTeam();
+                updatePlayer();
+                updateStatsHud();
+            } catch (Exception e) {
+                Log.err("Failed to update stats hud", e);
+            }
         });
     }
 
@@ -106,27 +110,20 @@ public class CataliGamemode {
         for (var player : Groups.player) {
             var team = findTeam(player);
 
-            String[] stats = null;
+            String message = I18n.t(player, "@No team");
 
-            if (team == null) {
-                stats = new String[] {
-                        "@No team"
-                };
-            } else {
+            if (team != null) {
                 String units = Strings.join(", ", team.team.data().units.map(u -> u.type.emoji()));
 
-                stats = new String[] {
-                        "@Team ID:", String.valueOf(team.team.id), "\n",
+                message = I18n.t(player, "@Team ID:", String.valueOf(team.team.id), "\n",
                         "@Level:", String.valueOf(team.level.level), "\n",
                         "@Member:", String.valueOf(team.members.size), "\n",
                         "@Upgrades:", "", String.valueOf(team.level.commonUpgradePoints), "[accent]",
                         String.valueOf(team.level.rareUpgradePoints), "[white]\n",
-                        "@Unit:", units, "\n",
-                };
-            }
+                        "@Unit:", units, "\n");
 
-            Call.infoPopup(player.con, I18n.t(player, (Object[]) stats), 2,
-                    Align.right | Align.top, 50, 0, 0, 0);
+                Call.infoPopup(player.con, message, 2, Align.right | Align.top, 50, 0, 0, 0);
+            }
         }
     }
 
