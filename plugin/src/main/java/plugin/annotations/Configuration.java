@@ -8,6 +8,7 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 @Component
+@Lazy
 public @interface Configuration {
     /**
      * The path to the JSON configuration file.
