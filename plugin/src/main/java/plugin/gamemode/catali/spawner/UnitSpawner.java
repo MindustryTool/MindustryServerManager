@@ -19,7 +19,7 @@ public class UnitSpawner {
 
     public void spawn(Team team) {
         for (var entry : config.unitSpawnChance) {
-            if (Mathf.chance(entry.chances / 100)) {
+            if (Mathf.chance(entry.chances)) {
                 var count = team.data().unitCount;
                 var maxCount = Groups.player.size() * 30;
 

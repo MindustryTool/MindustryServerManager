@@ -162,31 +162,31 @@ public class CataliConfig {
         blockExp.add(new BlockExpEntry(reinforcedContainer, 250));
         blockExp.add(new BlockExpEntry(reinforcedVault, 750));
 
-        blockSpawnChance.add(new BlockSpawnChanceEntry(copperWall, 200));
-        blockSpawnChance.add(new BlockSpawnChanceEntry(copperWallLarge, 50));
-        blockSpawnChance.add(new BlockSpawnChanceEntry(titaniumWall, 100));
-        blockSpawnChance.add(new BlockSpawnChanceEntry(titaniumWallLarge, 20));
-        blockSpawnChance.add(new BlockSpawnChanceEntry(berylliumWall, 67));
-        blockSpawnChance.add(new BlockSpawnChanceEntry(berylliumWallLarge, 13));
-        blockSpawnChance.add(new BlockSpawnChanceEntry(plastaniumWall, 57));
-        blockSpawnChance.add(new BlockSpawnChanceEntry(plastaniumWallLarge, 11));
-        blockSpawnChance.add(new BlockSpawnChanceEntry(tungstenWall, 50));
-        blockSpawnChance.add(new BlockSpawnChanceEntry(tungstenWallLarge, 10));
-        blockSpawnChance.add(new BlockSpawnChanceEntry(thoriumWall, 50));
-        blockSpawnChance.add(new BlockSpawnChanceEntry(thoriumWallLarge, 9));
-        blockSpawnChance.add(new BlockSpawnChanceEntry(phaseWall, 40));
-        blockSpawnChance.add(new BlockSpawnChanceEntry(phaseWallLarge, 8));
-        blockSpawnChance.add(new BlockSpawnChanceEntry(surgeWall, 25));
-        blockSpawnChance.add(new BlockSpawnChanceEntry(surgeWallLarge, 5));
-        blockSpawnChance.add(new BlockSpawnChanceEntry(carbideWall, 20));
-        blockSpawnChance.add(new BlockSpawnChanceEntry(carbideWallLarge, 4));
-        blockSpawnChance.add(new BlockSpawnChanceEntry(reinforcedSurgeWall, 17));
-        blockSpawnChance.add(new BlockSpawnChanceEntry(reinforcedSurgeWallLarge, 3));
-        blockSpawnChance.add(new BlockSpawnChanceEntry(container, 10));
-        blockSpawnChance.add(new BlockSpawnChanceEntry(vault, 4));
-        blockSpawnChance.add(new BlockSpawnChanceEntry(reinforcedContainer, 4));
-        blockSpawnChance.add(new BlockSpawnChanceEntry(reinforcedVault, 1));
-        blockSpawnChance.add(new BlockSpawnChanceEntry(thoriumReactor, 1));
+        blockSpawnChance.add(new BlockSpawnChanceEntry(copperWall, 2.0));
+        blockSpawnChance.add(new BlockSpawnChanceEntry(copperWallLarge, 0.5));
+        blockSpawnChance.add(new BlockSpawnChanceEntry(titaniumWall, 1.0));
+        blockSpawnChance.add(new BlockSpawnChanceEntry(titaniumWallLarge, 0.2));
+        blockSpawnChance.add(new BlockSpawnChanceEntry(berylliumWall, 0.67));
+        blockSpawnChance.add(new BlockSpawnChanceEntry(berylliumWallLarge, 0.13));
+        blockSpawnChance.add(new BlockSpawnChanceEntry(plastaniumWall, 0.57));
+        blockSpawnChance.add(new BlockSpawnChanceEntry(plastaniumWallLarge, 0.11));
+        blockSpawnChance.add(new BlockSpawnChanceEntry(tungstenWall, 0.5));
+        blockSpawnChance.add(new BlockSpawnChanceEntry(tungstenWallLarge, 0.1));
+        blockSpawnChance.add(new BlockSpawnChanceEntry(thoriumWall, 0.5));
+        blockSpawnChance.add(new BlockSpawnChanceEntry(thoriumWallLarge, 0.09));
+        blockSpawnChance.add(new BlockSpawnChanceEntry(phaseWall, 0.4));
+        blockSpawnChance.add(new BlockSpawnChanceEntry(phaseWallLarge, 0.08));
+        blockSpawnChance.add(new BlockSpawnChanceEntry(surgeWall, 0.25));
+        blockSpawnChance.add(new BlockSpawnChanceEntry(surgeWallLarge, 0.05));
+        blockSpawnChance.add(new BlockSpawnChanceEntry(carbideWall, 0.2));
+        blockSpawnChance.add(new BlockSpawnChanceEntry(carbideWallLarge, 0.04));
+        blockSpawnChance.add(new BlockSpawnChanceEntry(reinforcedSurgeWall, 0.17));
+        blockSpawnChance.add(new BlockSpawnChanceEntry(reinforcedSurgeWallLarge, 0.03));
+        blockSpawnChance.add(new BlockSpawnChanceEntry(container, 0.1));
+        blockSpawnChance.add(new BlockSpawnChanceEntry(vault, 0.04));
+        blockSpawnChance.add(new BlockSpawnChanceEntry(reinforcedContainer, 0.04));
+        blockSpawnChance.add(new BlockSpawnChanceEntry(reinforcedVault, 0.01));
+        blockSpawnChance.add(new BlockSpawnChanceEntry(thoriumReactor, 0.01));
 
         unitUpgrade.add(new UnitUpgradeEntry(poly, set(dagger, flare, retusa, nova, mega)));
         unitUpgrade.add(new UnitUpgradeEntry(dagger, set(mace, atrax, stell)));
@@ -227,57 +227,57 @@ public class CataliConfig {
         unitUpgrade.add(new UnitUpgradeEntry(mega, set(quad)));
         unitUpgrade.add(new UnitUpgradeEntry(quad, set(oct)));
 
-        unitSpawnChance.add(new UnitSpawnChance(10, dagger, mace, atrax, pulsar, horizon));
-        unitSpawnChance.add(new UnitSpawnChance(12, crawler, flare, oxynoe, locus, scepter));
-        unitSpawnChance.add(new UnitSpawnChance(15, stell, merui, mega, bryde, scepter));
-        unitSpawnChance.add(new UnitSpawnChance(18, risso, retusa, zenith, quad, sei));
-        unitSpawnChance.add(new UnitSpawnChance(20, nova, poly, fortress, spiroct, tecta));
-        unitSpawnChance.add(new UnitSpawnChance(14, dagger, atrax, vela, oxynoe, tecta));
-        unitSpawnChance.add(new UnitSpawnChance(17, risso, minke, cyerce, antumbra, vanquish));
-        unitSpawnChance.add(new UnitSpawnChance(21, pulsar, locus, horizon, oxynoe, bryde));
-        unitSpawnChance.add(new UnitSpawnChance(16, dagger, flare, stell, oxynoe, merui));
-        unitSpawnChance.add(new UnitSpawnChance(19, risso, pulsar, mega, zenith, vanquish));
-        unitSpawnChance.add(new UnitSpawnChance(22, nova, fortress, mega, poly, locus));
-        unitSpawnChance.add(new UnitSpawnChance(23, stell, retusa, mega, quad, tecta));
-        unitSpawnChance.add(new UnitSpawnChance(13, dagger, mace, oxynoe, zenith, horizon));
-        unitSpawnChance.add(new UnitSpawnChance(14, minke, oxynoe, retusa, zenith, spiroct));
-        unitSpawnChance.add(new UnitSpawnChance(15, crawler, horizon, poly, antumbra, sei));
-        unitSpawnChance.add(new UnitSpawnChance(20, stell, mega, oxynoe, fortress, tecta));
-        unitSpawnChance.add(new UnitSpawnChance(21, minke, oxynoe, locus, mega, scepter));
-        unitSpawnChance.add(new UnitSpawnChance(23, risso, oxynoe, mega, locus, antumbra));
-        unitSpawnChance.add(new UnitSpawnChance(17, flare, mace, spiroct, horizon, quell));
-        unitSpawnChance.add(new UnitSpawnChance(16, flare, mace, atrax, mega, locus));
-        unitSpawnChance.add(new UnitSpawnChance(20, dagger, fortress, minke, spiroct, sei));
-        unitSpawnChance.add(new UnitSpawnChance(22, risso, retusa, cyerce, mega, oxynoe));
-        unitSpawnChance.add(new UnitSpawnChance(19, pulsar, locus, bryde, minke, quad));
-        unitSpawnChance.add(new UnitSpawnChance(21, minke, quasar, spiroct, bryde, oxynoe));
-        unitSpawnChance.add(new UnitSpawnChance(15, dagger, oxynoe, locus, mega, quell));
-        unitSpawnChance.add(new UnitSpawnChance(23, risso, zenith, mega, tecta, scepter));
-        unitSpawnChance.add(new UnitSpawnChance(20, dagger, mace, quasar, spiroct, locus));
-        unitSpawnChance.add(new UnitSpawnChance(22, pulsar, oxynoe, mega, quasar, sei));
-        unitSpawnChance.add(new UnitSpawnChance(18, stell, mega, oxynoe, tecta, locus));
-        unitSpawnChance.add(new UnitSpawnChance(19, dagger, quasar, fortress, minke, poly));
-        unitSpawnChance.add(new UnitSpawnChance(24, flare, zenith, mega, spiroct, vanquish));
-        unitSpawnChance.add(new UnitSpawnChance(17, crawler, pulsar, retusa, fortress, quell));
-        unitSpawnChance.add(new UnitSpawnChance(21, pulsar, oxynoe, spiroct, tecta, mega));
-        unitSpawnChance.add(new UnitSpawnChance(20, stell, fortress, horizon, spiroct, tecta));
-        unitSpawnChance.add(new UnitSpawnChance(15, dagger, mace, mega, oxynoe, quell));
-        unitSpawnChance.add(new UnitSpawnChance(22, minke, mega, fortress, pulsar, spiroct));
-        unitSpawnChance.add(new UnitSpawnChance(18, dagger, locus, bryde, zenith, spiroct));
-        unitSpawnChance.add(new UnitSpawnChance(23, minke, poly, zenith, fortress, mega));
-        unitSpawnChance.add(new UnitSpawnChance(25, flare, mega, zenith, pulsar, quad, tecta));
-        unitSpawnChance.add(new UnitSpawnChance(19, dagger, mega, pulsar, bryde, oxynoe, locus));
-        unitSpawnChance.add(new UnitSpawnChance(20, flare, mega, quasar, locus, tecta, zenith));
-        unitSpawnChance.add(new UnitSpawnChance(16, minke, horizon, fortress, retusa, spiroct));
-        unitSpawnChance.add(new UnitSpawnChance(21, minke, locus, fortress, quasar, poly));
-        unitSpawnChance.add(new UnitSpawnChance(22, risso, minke, horizon, mega, fortress));
-        unitSpawnChance.add(new UnitSpawnChance(24, stell, quasar, zenith, fortress, tecta));
-        unitSpawnChance.add(new UnitSpawnChance(21, pulsar, locus, spiroct, retusa, poly));
-        unitSpawnChance.add(new UnitSpawnChance(18, dagger, mace, fortress, mega, quasar));
-        unitSpawnChance.add(new UnitSpawnChance(23, risso, pulsar, mega, locus, spiroct));
-        unitSpawnChance.add(new UnitSpawnChance(20, minke, quasar, fortress, spiroct, bryde));
-        unitSpawnChance.add(new UnitSpawnChance(17, stell, mega, retusa, locus, tecta, poly));
-        unitSpawnChance.add(new UnitSpawnChance(16, minke, locus, fortress, spiroct, poly));
+        unitSpawnChance.add(new UnitSpawnChance(0.1, dagger, mace, atrax, pulsar, horizon));
+        unitSpawnChance.add(new UnitSpawnChance(0.12, crawler, flare, oxynoe, locus, scepter));
+        unitSpawnChance.add(new UnitSpawnChance(0.15, stell, merui, mega, bryde, scepter));
+        unitSpawnChance.add(new UnitSpawnChance(0.18, risso, retusa, zenith, quad, sei));
+        unitSpawnChance.add(new UnitSpawnChance(0.2, nova, poly, fortress, spiroct, tecta));
+        unitSpawnChance.add(new UnitSpawnChance(0.14, dagger, atrax, vela, oxynoe, tecta));
+        unitSpawnChance.add(new UnitSpawnChance(0.17, risso, minke, cyerce, antumbra, vanquish));
+        unitSpawnChance.add(new UnitSpawnChance(0.21, pulsar, locus, horizon, oxynoe, bryde));
+        unitSpawnChance.add(new UnitSpawnChance(0.16, dagger, flare, stell, oxynoe, merui));
+        unitSpawnChance.add(new UnitSpawnChance(0.19, risso, pulsar, mega, zenith, vanquish));
+        unitSpawnChance.add(new UnitSpawnChance(0.22, nova, fortress, mega, poly, locus));
+        unitSpawnChance.add(new UnitSpawnChance(0.23, stell, retusa, mega, quad, tecta));
+        unitSpawnChance.add(new UnitSpawnChance(0.13, dagger, mace, oxynoe, zenith, horizon));
+        unitSpawnChance.add(new UnitSpawnChance(0.14, minke, oxynoe, retusa, zenith, spiroct));
+        unitSpawnChance.add(new UnitSpawnChance(0.15, crawler, horizon, poly, antumbra, sei));
+        unitSpawnChance.add(new UnitSpawnChance(0.2, stell, mega, oxynoe, fortress, tecta));
+        unitSpawnChance.add(new UnitSpawnChance(0.21, minke, oxynoe, locus, mega, scepter));
+        unitSpawnChance.add(new UnitSpawnChance(0.23, risso, oxynoe, mega, locus, antumbra));
+        unitSpawnChance.add(new UnitSpawnChance(0.17, flare, mace, spiroct, horizon, quell));
+        unitSpawnChance.add(new UnitSpawnChance(0.16, flare, mace, atrax, mega, locus));
+        unitSpawnChance.add(new UnitSpawnChance(0.2, dagger, fortress, minke, spiroct, sei));
+        unitSpawnChance.add(new UnitSpawnChance(0.22, risso, retusa, cyerce, mega, oxynoe));
+        unitSpawnChance.add(new UnitSpawnChance(0.19, pulsar, locus, bryde, minke, quad));
+        unitSpawnChance.add(new UnitSpawnChance(0.21, minke, quasar, spiroct, bryde, oxynoe));
+        unitSpawnChance.add(new UnitSpawnChance(0.15, dagger, oxynoe, locus, mega, quell));
+        unitSpawnChance.add(new UnitSpawnChance(0.23, risso, zenith, mega, tecta, scepter));
+        unitSpawnChance.add(new UnitSpawnChance(0.2, dagger, mace, quasar, spiroct, locus));
+        unitSpawnChance.add(new UnitSpawnChance(0.22, pulsar, oxynoe, mega, quasar, sei));
+        unitSpawnChance.add(new UnitSpawnChance(0.18, stell, mega, oxynoe, tecta, locus));
+        unitSpawnChance.add(new UnitSpawnChance(0.19, dagger, quasar, fortress, minke, poly));
+        unitSpawnChance.add(new UnitSpawnChance(0.24, flare, zenith, mega, spiroct, vanquish));
+        unitSpawnChance.add(new UnitSpawnChance(0.17, crawler, pulsar, retusa, fortress, quell));
+        unitSpawnChance.add(new UnitSpawnChance(0.21, pulsar, oxynoe, spiroct, tecta, mega));
+        unitSpawnChance.add(new UnitSpawnChance(0.2, stell, fortress, horizon, spiroct, tecta));
+        unitSpawnChance.add(new UnitSpawnChance(0.15, dagger, mace, mega, oxynoe, quell));
+        unitSpawnChance.add(new UnitSpawnChance(0.22, minke, mega, fortress, pulsar, spiroct));
+        unitSpawnChance.add(new UnitSpawnChance(0.18, dagger, locus, bryde, zenith, spiroct));
+        unitSpawnChance.add(new UnitSpawnChance(0.23, minke, poly, zenith, fortress, mega));
+        unitSpawnChance.add(new UnitSpawnChance(0.25, flare, mega, zenith, pulsar, quad, tecta));
+        unitSpawnChance.add(new UnitSpawnChance(0.19, dagger, mega, pulsar, bryde, oxynoe, locus));
+        unitSpawnChance.add(new UnitSpawnChance(0.2, flare, mega, quasar, locus, tecta, zenith));
+        unitSpawnChance.add(new UnitSpawnChance(0.16, minke, horizon, fortress, retusa, spiroct));
+        unitSpawnChance.add(new UnitSpawnChance(0.21, minke, locus, fortress, quasar, poly));
+        unitSpawnChance.add(new UnitSpawnChance(0.22, risso, minke, horizon, mega, fortress));
+        unitSpawnChance.add(new UnitSpawnChance(0.24, stell, quasar, zenith, fortress, tecta));
+        unitSpawnChance.add(new UnitSpawnChance(0.21, pulsar, locus, spiroct, retusa, poly));
+        unitSpawnChance.add(new UnitSpawnChance(0.18, dagger, mace, fortress, mega, quasar));
+        unitSpawnChance.add(new UnitSpawnChance(0.23, risso, pulsar, mega, locus, spiroct));
+        unitSpawnChance.add(new UnitSpawnChance(0.2, minke, quasar, fortress, spiroct, bryde));
+        unitSpawnChance.add(new UnitSpawnChance(0.17, stell, mega, retusa, locus, tecta, poly));
+        unitSpawnChance.add(new UnitSpawnChance(0.16, minke, locus, fortress, spiroct, poly));
 
     }
 
@@ -335,9 +335,9 @@ public class CataliConfig {
         @JsonDeserialize(using = BlockDeserializer.class)
         public Block block;
 
-        public int chance;
+        public double chance;
 
-        public BlockSpawnChanceEntry(Block block, int chance) {
+        public BlockSpawnChanceEntry(Block block, double chance) {
             this.block = block;
             this.chance = chance;
         }
@@ -366,9 +366,9 @@ public class CataliConfig {
         @JsonDeserialize(contentUsing = UnitTypeDeserializer.class)
         @JsonSerialize(contentUsing = MappableContentSerializer.class)
         public List<UnitType> units = new ArrayList<>();
-        public int chances = 0;
+        public double chances = 0;
 
-        public UnitSpawnChance(int chances, UnitType... units) {
+        public UnitSpawnChance(double chances, UnitType... units) {
             this.chances = chances;
             this.units = list(units);
         }
