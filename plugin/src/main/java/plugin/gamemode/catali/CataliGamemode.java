@@ -56,9 +56,49 @@ public class CataliGamemode {
             Vars.state.rules.bannedBlocks.add(block);
         }
 
-        Control.SCHEDULER.scheduleWithFixedDelay(this::update, 0, 1, TimeUnit.SECONDS);
+        Control.SCHEDULER.scheduleWithFixedDelay(this::update, 0, 2, TimeUnit.SECONDS);
 
         Log.info("[accent]Cataio gamemode loaded");
+    }
+
+    public void update() {
+        if (!Vars.state.isGame()) {
+            return;
+        }
+
+        unitSpawner.spawn(Vars.state.rules.waveTeam);
+        blockSpawner.spawn(Vars.state.rules.waveTeam);
+
+        for (CataliTeamData data : teams) {
+            var respawns = data.respawn.getRespawnUnit();
+            for (var entry : respawns) {
+                var unit = spawnUnitForTeam(data, entry.type);
+
+                if (unit == null) {
+                    data.respawn.addUnit(entry.type, Duration.ofSeconds(1));
+                }
+            }
+        }
+
+        for (var team : teams) {
+            if (team.spawning == true) {
+                var leader = Groups.player.find(player -> player.uuid().equals(team.metadata.leaderUuid));
+
+                if (leader == null) {
+                    continue;
+                }
+
+                leader.sendMessage(I18n.t(leader, "@Tap to spawn"));
+            }
+        }
+
+        for (var player : Groups.player) {
+            var team = findTeam(player);
+
+            if (team == null) {
+                player.sendMessage(I18n.t(player, "@User", "[accent]/play[]", "@to start a new team"));
+            }
+        }
     }
 
     @Listener
@@ -107,46 +147,6 @@ public class CataliGamemode {
 
     public CataliTeamData findTeam(Player player) {
         return teams.find(team -> team.metadata.members.contains(player.uuid()));
-    }
-
-    public void update() {
-        if (!Vars.state.isGame()) {
-            return;
-        }
-
-        unitSpawner.spawn(Vars.state.rules.waveTeam);
-        blockSpawner.spawn(Vars.state.rules.waveTeam);
-
-        for (CataliTeamData data : teams) {
-            var respawns = data.respawn.getRespawnUnit();
-            for (var entry : respawns) {
-                var unit = spawnUnitForTeam(data, entry.type);
-
-                if (unit == null) {
-                    data.respawn.addUnit(entry.type, Duration.ofSeconds(1));
-                }
-            }
-        }
-
-        for (var team : teams) {
-            if (team.spawning == true) {
-                var leader = Groups.player.find(player -> player.uuid().equals(team.metadata.leaderUuid));
-
-                if (leader == null) {
-                    continue;
-                }
-
-                leader.sendMessage(I18n.t(leader, "@Tap to spawn"));
-            }
-        }
-
-        for (var player : Groups.player) {
-            var team = findTeam(player);
-
-            if (team == null) {
-                player.sendMessage(I18n.t(player, "@User", "[accent]/play[]", "@to start a new team"));
-            }
-        }
     }
 
     @Listener
