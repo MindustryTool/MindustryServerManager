@@ -10,8 +10,6 @@ import mindustry.gen.Player;
 import mindustry.gen.Unit;
 import plugin.json.UnitDeserializer;
 import plugin.json.UnitSerializer;
-import plugin.json.SeqDeserializer;
-import plugin.json.SeqSerializer;
 import plugin.json.TeamDeserializer;
 import plugin.json.TeamSerializer;
 
@@ -23,8 +21,8 @@ public class CataliTeamData {
     public TeamLevel level;
     public TeamRespawn respawn;
     public TeamUpgrades upgrades;
-    @JsonSerialize(using = SeqSerializer.class, contentUsing = UnitSerializer.class)
-    @JsonDeserialize(using = SeqDeserializer.class, contentUsing = UnitDeserializer.class)
+    @JsonSerialize(contentUsing = UnitSerializer.class)
+    @JsonDeserialize(contentUsing = UnitDeserializer.class)
     public Seq<Unit> units = new Seq<>();
 
     public boolean spawning = true;

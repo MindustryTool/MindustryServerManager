@@ -7,9 +7,10 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 
 import java.io.IOException;
 
-public class SeqSerializer extends JsonSerializer<Seq<?>> {
+@SuppressWarnings("rawtypes")
+public class SeqSerializer extends JsonSerializer<Seq> {
     @Override
-    public void serialize(Seq<?> value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+    public void serialize(Seq value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
         gen.writeStartArray();
         for (Object o : value) {
             gen.writeObject(o);

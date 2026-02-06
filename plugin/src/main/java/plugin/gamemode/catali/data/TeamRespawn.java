@@ -4,8 +4,6 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import mindustry.type.UnitType;
 import plugin.json.MappableContentSerializer;
-import plugin.json.SeqDeserializer;
-import plugin.json.SeqSerializer;
 import plugin.json.UnitTypeDeserializer;
 
 import java.time.Duration;
@@ -14,8 +12,6 @@ import java.time.Instant;
 import arc.struct.Seq;
 
 public class TeamRespawn {
-    @JsonSerialize(using = SeqSerializer.class)
-    @JsonDeserialize(using = SeqDeserializer.class)
     public Seq<RespawnEntry> respawn = new Seq<>();
 
     public static class RespawnEntry {
