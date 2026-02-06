@@ -3,6 +3,7 @@ package plugin.gamemode.catali;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -203,44 +204,44 @@ public class CataliConfig {
         blockSpawnChance.put(reinforcedVault, 1);
         blockSpawnChance.put(thoriumReactor, 1);
 
-        unitUpgrade.put(poly, Set.of(dagger, flare, retusa, nova, mega));
-        unitUpgrade.put(dagger, Set.of(mace, atrax, stell));
-        unitUpgrade.put(mace, Set.of(fortress));
-        unitUpgrade.put(fortress, Set.of(scepter));
-        unitUpgrade.put(scepter, Set.of(reign));
-        unitUpgrade.put(atrax, Set.of(spiroct));
-        unitUpgrade.put(spiroct, Set.of(arkyid));
-        unitUpgrade.put(arkyid, Set.of(toxopid));
-        unitUpgrade.put(stell, Set.of(locus));
-        unitUpgrade.put(locus, Set.of(precept));
-        unitUpgrade.put(precept, Set.of(vanquish));
-        unitUpgrade.put(vanquish, Set.of(conquer));
-        unitUpgrade.put(flare, Set.of(horizon, elude));
-        unitUpgrade.put(horizon, Set.of(zenith));
-        unitUpgrade.put(zenith, Set.of(antumbra));
-        unitUpgrade.put(antumbra, Set.of(eclipse));
-        unitUpgrade.put(elude, Set.of(avert));
-        unitUpgrade.put(avert, Set.of(obviate));
-        unitUpgrade.put(obviate, Set.of(quell));
-        unitUpgrade.put(quell, Set.of(disrupt));
-        unitUpgrade.put(retusa, Set.of(oxynoe, risso));
-        unitUpgrade.put(oxynoe, Set.of(cyerce));
-        unitUpgrade.put(cyerce, Set.of(aegires));
-        unitUpgrade.put(aegires, Set.of(navanax));
-        unitUpgrade.put(risso, Set.of(minke));
-        unitUpgrade.put(minke, Set.of(bryde));
-        unitUpgrade.put(bryde, Set.of(sei));
-        unitUpgrade.put(sei, Set.of(omura));
-        unitUpgrade.put(nova, Set.of(pulsar, merui));
-        unitUpgrade.put(pulsar, Set.of(quasar));
-        unitUpgrade.put(quasar, Set.of(vela));
-        unitUpgrade.put(vela, Set.of(corvus));
-        unitUpgrade.put(merui, Set.of(cleroi));
-        unitUpgrade.put(cleroi, Set.of(anthicus));
-        unitUpgrade.put(anthicus, Set.of(tecta));
-        unitUpgrade.put(tecta, Set.of(collaris));
-        unitUpgrade.put(mega, Set.of(quad));
-        unitUpgrade.put(quad, Set.of(oct));
+        unitUpgrade.put(poly, set(dagger, flare, retusa, nova, mega));
+        unitUpgrade.put(dagger, set(mace, atrax, stell));
+        unitUpgrade.put(mace, set(fortress));
+        unitUpgrade.put(fortress, set(scepter));
+        unitUpgrade.put(scepter, set(reign));
+        unitUpgrade.put(atrax, set(spiroct));
+        unitUpgrade.put(spiroct, set(arkyid));
+        unitUpgrade.put(arkyid, set(toxopid));
+        unitUpgrade.put(stell, set(locus));
+        unitUpgrade.put(locus, set(precept));
+        unitUpgrade.put(precept, set(vanquish));
+        unitUpgrade.put(vanquish, set(conquer));
+        unitUpgrade.put(flare, set(horizon, elude));
+        unitUpgrade.put(horizon, set(zenith));
+        unitUpgrade.put(zenith, set(antumbra));
+        unitUpgrade.put(antumbra, set(eclipse));
+        unitUpgrade.put(elude, set(avert));
+        unitUpgrade.put(avert, set(obviate));
+        unitUpgrade.put(obviate, set(quell));
+        unitUpgrade.put(quell, set(disrupt));
+        unitUpgrade.put(retusa, set(oxynoe, risso));
+        unitUpgrade.put(oxynoe, set(cyerce));
+        unitUpgrade.put(cyerce, set(aegires));
+        unitUpgrade.put(aegires, set(navanax));
+        unitUpgrade.put(risso, set(minke));
+        unitUpgrade.put(minke, set(bryde));
+        unitUpgrade.put(bryde, set(sei));
+        unitUpgrade.put(sei, set(omura));
+        unitUpgrade.put(nova, set(pulsar, merui));
+        unitUpgrade.put(pulsar, set(quasar));
+        unitUpgrade.put(quasar, set(vela));
+        unitUpgrade.put(vela, set(corvus));
+        unitUpgrade.put(merui, set(cleroi));
+        unitUpgrade.put(cleroi, set(anthicus));
+        unitUpgrade.put(anthicus, set(tecta));
+        unitUpgrade.put(tecta, set(collaris));
+        unitUpgrade.put(mega, set(quad));
+        unitUpgrade.put(quad, set(oct));
 
         unitSpawnChance.add(new UnitSpawnChance(10, dagger, mace, atrax, pulsar, horizon));
         unitSpawnChance.add(new UnitSpawnChance(12, crawler, flare, oxynoe, locus, scepter));
@@ -305,7 +306,25 @@ public class CataliConfig {
 
         public UnitSpawnChance(int chances, UnitType... units) {
             this.chances = chances;
-            this.units = List.of(units);
+            this.units = list(units);
         }
+    }
+
+    @SafeVarargs
+    private static <T> HashSet<T> set(T... items) {
+        var set = new HashSet<T>();
+        for (var item : items) {
+            set.add(item);
+        }
+        return set;
+    }
+
+    @SafeVarargs
+    private static <T> ArrayList<T> list(T... items) {
+        var list = new ArrayList<T>();
+        for (var item : items) {
+            list.add(item);
+        }
+        return list;
     }
 }

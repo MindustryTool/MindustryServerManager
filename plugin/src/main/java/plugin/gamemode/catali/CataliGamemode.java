@@ -103,11 +103,11 @@ public class CataliGamemode {
             return;
         }
 
-        if (interval.get(0, config.enemyUnitSpawnTime.toSeconds())) {
+        if (interval.get(0, config.enemyUnitSpawnTime.toMillis() / 1000)) {
             unitSpawner.spawn(Vars.state.rules.waveTeam);
         }
 
-        if (interval.get(1, config.enemyBlockSpawnTime.toSeconds())) {
+        if (interval.get(1, config.enemyBlockSpawnTime.toMillis() / 1000)) {
             blockSpawner.spawn(Vars.state.rules.waveTeam);
         }
 
