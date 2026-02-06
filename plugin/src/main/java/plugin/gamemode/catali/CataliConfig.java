@@ -361,6 +361,7 @@ public class CataliConfig {
     }
 
     @Data
+    @NoArgsConstructor
     public static class UnitSpawnChance {
         @JsonDeserialize(contentUsing = UnitDeserializer.class)
         @JsonSerialize(contentUsing = MappableContentSerializer.class)

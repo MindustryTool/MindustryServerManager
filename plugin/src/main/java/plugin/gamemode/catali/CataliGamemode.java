@@ -66,15 +66,15 @@ public class CataliGamemode {
 
         var playerTeam = findTeam(player);
 
-        if (player != null) {
+        if (playerTeam != null) {
             player.team(playerTeam.team);
+        } else {
+            player.team(Team.derelict);
+            player.sendMessage("[yellow]Type /play to start a new team!");
+
+            Call.infoPopup(player.con, I18n.t(session, "[yellow]", "@Type", "[accent]/play[]", "@to start a new team"),
+                    5, Align.center, 5, 5, 5, 5);
         }
-
-        player.team(Team.derelict);
-        player.sendMessage("[yellow]Type /play to start a new team!");
-
-        Call.infoPopup(player.con, I18n.t(session, "[yellow]", "@Type", "[accent]/play[]", "@to start a new team"),
-                5, Align.center, 5, 5, 5, 5);
     }
 
     @Listener
@@ -173,7 +173,6 @@ public class CataliGamemode {
                 });
             }
         }
-
     }
 
     @Listener
