@@ -70,6 +70,10 @@ public class CataliGamemode {
         Log.info("[accent]Cataio gamemode loaded");
     }
 
+    public CataliTeamData findTeam(Player player) {
+        return teams.find(team -> team.members.contains(player.uuid()));
+    }
+
     public void spawn() {
         Log.info("Spawning units and blocks");
         unitSpawner.spawn(Vars.state.rules.waveTeam);
@@ -188,10 +192,6 @@ public class CataliGamemode {
         }
     }
 
-    public CataliTeamData findTeam(Player player) {
-        return teams.find(team -> team.team == player.team());
-    }
-
     @Listener
     public void onUnitDestroy(UnitDestroyEvent e) {
         if (coreUnits.contains(e.unit.type)) {
@@ -199,8 +199,6 @@ public class CataliGamemode {
         }
 
         CataliTeamData victimTeam = teams.find(team -> team.team.id == e.unit.team.id);
-
-        Thread.dumpStack();
 
         if (victimTeam != null) {
             if (!victimTeam.hasUnit()) {

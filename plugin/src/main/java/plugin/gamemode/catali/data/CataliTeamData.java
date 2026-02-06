@@ -24,6 +24,7 @@ public class CataliTeamData {
     public TeamLevel level;
     public TeamRespawn respawn;
     public TeamUpgrades upgrades;
+    public Seq<String> members = new Seq<>();
 
     public boolean spawning = true;
 
