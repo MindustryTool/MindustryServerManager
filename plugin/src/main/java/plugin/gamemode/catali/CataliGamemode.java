@@ -33,6 +33,8 @@ import plugin.service.I18n;
 import plugin.utils.TimeUtils;
 import plugin.utils.Utils;
 
+import static mindustry.content.UnitTypes.poly;
+
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
@@ -205,6 +207,7 @@ public class CataliGamemode {
             if (spawnable) {
                 Unit starter = UnitTypes.poly.create(playerTeam.team);
 
+                
                 starter.set(spawnX, spawnY);
                 starter.add();
 

@@ -2,7 +2,6 @@ package plugin.gamemode.catali.spawner;
 
 import arc.Core;
 import arc.math.Mathf;
-import arc.util.Log;
 import lombok.RequiredArgsConstructor;
 import mindustry.Vars;
 import mindustry.game.Team;
@@ -41,7 +40,6 @@ public class BlockSpawner {
 
                 Core.app.post(() -> {
                     tile.setNet(block, team, 0);
-                    Log.info("Spawned block @ at tile @", block, tile);
                 });
             }
         }
