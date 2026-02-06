@@ -19,7 +19,7 @@ public class SpawnerHelper {
 
         do {
             attempts++;
-            var chunkIndex = Mathf.random(0, chunkCount);
+            var chunkIndex = Mathf.random(0, chunkCount - 1);
 
             Log.info("Attempt @, chunk index: @", attempts, chunkIndex);
 
