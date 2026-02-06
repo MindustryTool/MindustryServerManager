@@ -116,6 +116,7 @@ public class CataliGamemode {
                 }
 
                 if (player.unit() != null && coreUnits.contains(player.unit().type)) {
+                    player.team(Team.derelict);
                     player.unit().kill();
                 }
             }
