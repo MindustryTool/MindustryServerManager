@@ -26,7 +26,7 @@ public abstract class PluginServerCommand extends PluginCommand {
             Tasks.io("Server command", () -> {
                 try {
                     var copy = this.getClass().getDeclaredConstructor().newInstance();
-                    Param.parse(params, args);
+                    Param.parse(copy.params, args);
                     copy.handle();
                 } catch (ParamException e) {
                     Log.err(e.getMessage());

@@ -56,7 +56,7 @@ public abstract class PluginClientCommand extends PluginCommand {
                 Tasks.io("Client command", () -> {
                     try {
                         var copy = this.getClass().getDeclaredConstructor().newInstance();
-                        Param.parse(params, args);
+                        Param.parse(copy.params, args);
                         copy.handle(session);
                     } catch (ParamException e) {
                         session.player.sendMessage(I18n.t(
