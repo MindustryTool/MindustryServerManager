@@ -27,6 +27,7 @@ import plugin.annotations.Listener;
 import plugin.annotations.Persistence;
 import plugin.event.SessionCreatedEvent;
 import plugin.gamemode.catali.data.*;
+import plugin.gamemode.catali.data.TeamRespawn.RespawnEntry;
 import plugin.gamemode.catali.event.*;
 import plugin.gamemode.catali.menu.CommonUpgradeMenu;
 import plugin.gamemode.catali.menu.RareUpgradeMenu;
@@ -138,7 +139,8 @@ public class CataliGamemode {
 
                 message = I18n.t(player, "@Team ID:", String.valueOf(team.team.id), "\n",
                         "@Level:",
-                        String.valueOf(team.level.level) + " [gray](" + String.valueOf((int) team.level.currentExp) + "/"
+                        String.valueOf(team.level.level) + " [gray](" + String.valueOf((int) team.level.currentExp)
+                                + "/"
                                 + String.valueOf((int) team.level.requiredExp) + ")[white]",
                         "\n",
                         "@Member:", String.valueOf(team.members.size), "\n",
@@ -174,14 +176,16 @@ public class CataliGamemode {
 
     private void updateRespawn() {
         for (CataliTeamData data : teams) {
-            var respawns = data.respawn.getRespawnUnit().select(respawn -> respawn.respawnAt.isBefore(Instant.now()));
+            Seq<RespawnEntry> removed = new Seq<>();
+            var respawns = data.respawn.getRespawnUnit();
             for (var entry : respawns) {
                 var unit = spawnUnitForTeam(data, entry.type);
 
-                if (unit == null) {
-                    data.respawn.addUnit(entry.type, Duration.ofSeconds(1));
+                if (unit != null) {
+                    removed.add(entry);
                 }
             }
+            data.respawn.respawn.removeAll(removed);
         }
     }
 

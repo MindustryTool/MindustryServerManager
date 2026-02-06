@@ -38,10 +38,6 @@ public class TeamRespawn {
     public Seq<RespawnEntry> getRespawnUnit() {
         var needRespawn = respawn.select(entry -> entry.respawnAt.isAfter(Instant.now()));
 
-        if (needRespawn.size > 0) {
-            respawn.removeAll(needRespawn);
-        }
-
         return needRespawn;
     }
 }
