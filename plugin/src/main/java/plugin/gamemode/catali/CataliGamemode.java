@@ -58,19 +58,21 @@ public class CataliGamemode {
         }
 
         Control.SCHEDULER.scheduleWithFixedDelay(this::update, 0, 2, TimeUnit.SECONDS);
+        Control.SCHEDULER.scheduleWithFixedDelay(this::spawn, 0, 2, TimeUnit.SECONDS);
 
         Log.info(config);
         Log.info("[accent]Cataio gamemode loaded");
+    }
 
+    public void spawn() {
+        unitSpawner.spawn(Vars.state.rules.waveTeam);
+        blockSpawner.spawn(Vars.state.rules.waveTeam);
     }
 
     public void update() {
         if (!Vars.state.isGame()) {
             return;
         }
-
-        unitSpawner.spawn(Vars.state.rules.waveTeam);
-        blockSpawner.spawn(Vars.state.rules.waveTeam);
 
         Core.app.post(() -> {
             for (CataliTeamData data : teams) {
