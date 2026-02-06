@@ -27,6 +27,7 @@ import mindustry.net.ArcNetProvider;
 import mindustry.net.Net;
 import plugin.Config;
 import plugin.annotations.Component;
+import plugin.annotations.ConditionOn;
 import plugin.annotations.Init;
 import plugin.annotations.Listener;
 import plugin.Control;
@@ -38,6 +39,7 @@ import plugin.utils.Utils;
 
 @Component
 @RequiredArgsConstructor
+@ConditionOn(Config.OnHub.class)
 public class HubService {
 
     private final Seq<ServerCore> serverCores = new Seq<>();

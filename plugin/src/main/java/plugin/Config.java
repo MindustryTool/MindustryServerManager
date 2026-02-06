@@ -1,11 +1,19 @@
 package plugin;
 
 import lombok.NoArgsConstructor;
+import plugin.annotations.Condition;
 import plugin.annotations.Configuration;
 
 @Configuration("config.json")
 @NoArgsConstructor
 public class Config {
+
+    public static class OnHub implements Condition {
+        @Override
+        public boolean check() {
+            return IS_HUB;
+        }
+    }
 
     public static final String PLUGIN_VERSION = "0.0.1";
 
