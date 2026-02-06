@@ -1,5 +1,6 @@
 package plugin.gamemode.catali;
 
+import arc.Core;
 import arc.math.Mathf;
 import arc.struct.Seq;
 import arc.util.Align;
@@ -71,36 +72,38 @@ public class CataliGamemode {
         unitSpawner.spawn(Vars.state.rules.waveTeam);
         blockSpawner.spawn(Vars.state.rules.waveTeam);
 
-        for (CataliTeamData data : teams) {
-            var respawns = data.respawn.getRespawnUnit();
-            for (var entry : respawns) {
-                var unit = spawnUnitForTeam(data, entry.type);
+        Core.app.post(() -> {
+            for (CataliTeamData data : teams) {
+                var respawns = data.respawn.getRespawnUnit();
+                for (var entry : respawns) {
+                    var unit = spawnUnitForTeam(data, entry.type);
 
-                if (unit == null) {
-                    data.respawn.addUnit(entry.type, Duration.ofSeconds(1));
+                    if (unit == null) {
+                        data.respawn.addUnit(entry.type, Duration.ofSeconds(1));
+                    }
                 }
             }
-        }
 
-        for (var team : teams) {
-            if (team.spawning == true) {
-                var leader = Groups.player.find(player -> player.uuid().equals(team.metadata.leaderUuid));
+            for (var team : teams) {
+                if (team.spawning == true) {
+                    var leader = Groups.player.find(player -> player.uuid().equals(team.metadata.leaderUuid));
 
-                if (leader == null) {
-                    continue;
+                    if (leader == null) {
+                        continue;
+                    }
+
+                    leader.sendMessage(I18n.t(leader, "@Tap to spawn"));
                 }
-
-                leader.sendMessage(I18n.t(leader, "@Tap to spawn"));
             }
-        }
 
-        for (var player : Groups.player) {
-            var team = findTeam(player);
+            for (var player : Groups.player) {
+                var team = findTeam(player);
 
-            if (team == null) {
-                player.sendMessage(I18n.t(player, "@User", "[accent]/play[]", "@to start a new team"));
+                if (team == null) {
+                    player.sendMessage(I18n.t(player, "@User", "[accent]/play[]", "@to start a new team"));
+                }
             }
-        }
+        });
     }
 
     @Listener
@@ -161,9 +164,9 @@ public class CataliGamemode {
         CataliTeamData victimTeam = teams.find(team -> team.team.id == e.unit.team.id);
 
         if (victimTeam != null) {
-            victimTeam.units.remove(e.unit);
+            boolean hasUnit = Groups.unit.find(unit -> unit.team == victimTeam.team && unit.isValid()) != null;
 
-            if (victimTeam.units.size <= 0) {
+            if (hasUnit) {
                 teams.remove(victimTeam);
                 Utils.forEachPlayerLocale((locale, players) -> {
                     String message = I18n.t(locale, "[scarlet]", "@Team", victimTeam.team.id, "@has been eliminated!");
@@ -324,18 +327,15 @@ public class CataliGamemode {
     }
 
     public void assignUnitForPlayer(CataliTeamData team, Player player) {
-        for (var unit : team.units) {
-            for (var p : Groups.player) {
-                if (p.unit() == unit) {
-                    break;
-                }
-            }
+        var freeUnit = Groups.unit
+                .find(unit -> unit.team == team.team && Groups.player.find(p -> p.unit() == unit) == null);
 
-            player.unit(unit);
-            Log.info("Assigned unit @ to player @", unit.type, player.name);
-            return;
+        if (freeUnit != null) {
+            player.unit(freeUnit);
+            Log.info("Assigned unit @ to player @", freeUnit.type, player.name);
+        } else {
+            Log.info("No available unit for player @", player.name);
         }
-        Log.info("No available unit for player @", player.name);
     }
 
     public CataliTeamData createTeam(Player leader) {

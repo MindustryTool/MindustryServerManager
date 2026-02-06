@@ -1,7 +1,6 @@
 package plugin.gamemode.catali.data;
 
 import arc.func.Cons;
-import arc.struct.Seq;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -10,7 +9,6 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import mindustry.game.Team;
 import mindustry.gen.Groups;
 import mindustry.gen.Player;
-import mindustry.gen.Unit;
 import plugin.json.UnitDeserializer;
 import plugin.json.UnitSerializer;
 import plugin.json.TeamDeserializer;
@@ -28,7 +26,6 @@ public class CataliTeamData {
     public TeamUpgrades upgrades;
     @JsonSerialize(contentUsing = UnitSerializer.class)
     @JsonDeserialize(contentUsing = UnitDeserializer.class)
-    public Seq<Unit> units = new Seq<>();
 
     public boolean spawning = true;
 
