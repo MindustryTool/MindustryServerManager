@@ -17,7 +17,7 @@ import mindustry.gen.Teamc;
 import mindustry.gen.Unit;
 import mindustry.type.UnitType;
 import mindustry.world.Tile;
-import plugin.PluginEvents;
+import plugin.Control;
 import plugin.annotations.Gamemode;
 import plugin.annotations.Init;
 import plugin.annotations.Listener;
@@ -31,6 +31,7 @@ import plugin.utils.TimeUtils;
 import plugin.utils.Utils;
 
 import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 
 @Gamemode("catali")
 @RequiredArgsConstructor
@@ -47,8 +48,6 @@ public class CataliGamemode {
 
     @Init
     public void init() {
-        PluginEvents.run(Trigger.update, this::onUpdate);
-
         Vars.content.units().forEach(u -> u.flying = u.naval ? true : u.flying);
 
         UnitTypes.omura.abilities.clear();
@@ -59,6 +58,8 @@ public class CataliGamemode {
         for (var block : Vars.content.blocks()) {
             Vars.state.rules.bannedBlocks.add(block);
         }
+
+        Control.SCHEDULER.scheduleWithFixedDelay(this::update, 0, 1, TimeUnit.SECONDS);
 
         Log.info("[accent]Cataio gamemode loaded");
     }
@@ -106,7 +107,7 @@ public class CataliGamemode {
         return teams.find(team -> team.metadata.members.contains(player.uuid()));
     }
 
-    public void onUpdate() {
+    public void update() {
         Log.info("Wave team: @", Vars.state.rules.waveTeam);
         if (!Vars.state.isGame()) {
             return;
