@@ -124,6 +124,14 @@ public class CataliGamemode {
                         ? Strings.join(", ", team.team.data().units.map(u -> u.type.emoji()))
                         : "@No unit";
 
+                String respawn = team.respawn.getRespawn().size > 0
+                        ? Strings.join(" ",
+                                team.respawn.getRespawn()
+                                        .map(resp -> resp.type.emoji()
+                                                + TimeUtils.toString(Duration.between(Instant.now(), resp.respawnAt))
+                                                + " "))
+                        : "@No unit";
+
                 message = I18n.t(player, "@Team ID:", String.valueOf(team.team.id), "\n",
                         "@Level:",
                         String.valueOf(team.level.level) + "(" + String.valueOf((int) team.level.currentExp) + "/"
@@ -136,7 +144,8 @@ public class CataliGamemode {
                         "Regen:", String.format("%.2f", team.upgrades.regenMultiplier) + "%\n",
                         "@Upgrades:", "", String.valueOf(team.level.commonUpgradePoints), "[accent]",
                         String.valueOf(team.level.rareUpgradePoints), "[white]\n",
-                        "@Unit:", units, "\n");
+                        "@Unit:", units, "\n",
+                        "@Respawn:", respawn + "\n");
 
                 Call.infoPopup(player.con, message, 2, Align.right | Align.top, 180, 0, 0, 0);
             }
