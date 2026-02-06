@@ -339,8 +339,15 @@ public class CataliGamemode {
     }
 
     public CataliTeamData createTeam(Player leader) {
-        var playerTeam = teams.find(team -> team.metadata.members.contains(leader.uuid()));
-        if (playerTeam == null) {
+        var playerTeam = findTeam(leader);
+        var team = playerTeam != null ? playerTeam.team : null;
+        var isValidTeam = playerTeam != null && Groups.unit.find(unit -> unit.team == team) != null;
+
+        if (!isValidTeam) {
+            if (playerTeam != null) {
+                teams.remove(playerTeam);
+            }
+
             int id = 10;
             while (hasTeam(id) || Vars.state.rules.waveTeam.id == id || id == Team.derelict.id) {
                 id++;
