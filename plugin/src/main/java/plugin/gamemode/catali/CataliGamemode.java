@@ -71,8 +71,11 @@ public class CataliGamemode {
     }
 
     public void spawn() {
+        Log.info("Spawning units and blocks");
         unitSpawner.spawn(Vars.state.rules.waveTeam);
+        Log.info("Units spawned");
         blockSpawner.spawn(Vars.state.rules.waveTeam);
+        Log.info("Blocks spawned");
     }
 
     public void update() {
