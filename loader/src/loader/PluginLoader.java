@@ -99,7 +99,7 @@ public class PluginLoader extends Plugin {
         Core.app.addListener(new ApplicationListener() {
             @Override
             public void exit() {
-                for (var plugin : PLUGINS) {
+                for (PluginData plugin : PLUGINS) {
                     unloadPlugin(plugin);
                 }
             }
