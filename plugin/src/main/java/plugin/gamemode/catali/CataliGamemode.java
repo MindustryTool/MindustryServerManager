@@ -161,7 +161,7 @@ public class CataliGamemode {
     }
 
     public CataliTeamData findTeam(Player player) {
-        return teams.find(team -> team.metadata.members.contains(player.uuid()));
+        return teams.find(team -> team.team == player.team());
     }
 
     @Listener

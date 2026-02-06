@@ -35,14 +35,15 @@ public class CataliConfig {
     @JsonDeserialize(using = DurationDeserializer.class)
     public Duration enemyBlockSpawnTime = Duration.ofSeconds(2);
 
-    public List<UnitRespawnTimeEntry> unitRespawnTime = new ArrayList<>();
-    public List<UnitExpEntry> unitExp = new ArrayList<>();
-    public List<BlockExpEntry> blockExp = new ArrayList<>();
-    public List<BlockSpawnChanceEntry> blockSpawnChance = new ArrayList<>();
-    public List<UnitUpgradeEntry> unitUpgrade = new ArrayList<>();
-    public List<UnitSpawnChance> unitSpawnChance = new ArrayList<>();
+    public List<UnitRespawnTimeEntry> unitRespawnTime = _getUnitRespawnTime();
+    public List<UnitExpEntry> unitExp = _getUnitExp();
+    public List<BlockExpEntry> blockExp = _getBlockExp();
+    public List<BlockSpawnChanceEntry> blockSpawnChance = _getBlockSpawnChance();
+    public List<UnitUpgradeEntry> unitUpgrade = _getUnitUpgrade();
+    public List<UnitSpawnChance> unitSpawnChance = _getUnitSpawnChance();
 
-    {
+    private List<UnitExpEntry> _getUnitExp() {
+        List<UnitExpEntry> unitExp = new ArrayList<>();
         unitExp.add(new UnitExpEntry(dagger, 30));
         unitExp.add(new UnitExpEntry(nova, 24));
         unitExp.add(new UnitExpEntry(flare, 14));
@@ -87,6 +88,11 @@ public class CataliConfig {
         unitExp.add(new UnitExpEntry(conquer, 4400));
         unitExp.add(new UnitExpEntry(collaris, 3600));
         unitExp.add(new UnitExpEntry(disrupt, 2400));
+        return unitExp;
+    }
+
+    private List<UnitRespawnTimeEntry> _getUnitRespawnTime() {
+        List<UnitRespawnTimeEntry> unitRespawnTime = new ArrayList<>();
 
         unitRespawnTime.add(new UnitRespawnTimeEntry(dagger, Duration.ofSeconds(60)));
         unitRespawnTime.add(new UnitRespawnTimeEntry(nova, Duration.ofSeconds(60)));
@@ -137,6 +143,11 @@ public class CataliConfig {
         unitRespawnTime.add(new UnitRespawnTimeEntry(collaris, Duration.ofSeconds(300)));
         unitRespawnTime.add(new UnitRespawnTimeEntry(disrupt, Duration.ofSeconds(220)));
 
+        return unitRespawnTime;
+    }
+
+    private List<BlockExpEntry> _getBlockExp() {
+        List<BlockExpEntry> blockExp = new ArrayList<>();
         blockExp.add(new BlockExpEntry(copperWall, 32));
         blockExp.add(new BlockExpEntry(copperWallLarge, 128));
         blockExp.add(new BlockExpEntry(titaniumWall, 44));
@@ -161,6 +172,12 @@ public class CataliConfig {
         blockExp.add(new BlockExpEntry(vault, 225));
         blockExp.add(new BlockExpEntry(reinforcedContainer, 250));
         blockExp.add(new BlockExpEntry(reinforcedVault, 750));
+
+        return blockExp;
+    }
+
+    private List<BlockSpawnChanceEntry> _getBlockSpawnChance() {
+        List<BlockSpawnChanceEntry> blockSpawnChance = new ArrayList<>();
 
         blockSpawnChance.add(new BlockSpawnChanceEntry(copperWall, 2.0));
         blockSpawnChance.add(new BlockSpawnChanceEntry(copperWallLarge, 0.5));
@@ -187,6 +204,12 @@ public class CataliConfig {
         blockSpawnChance.add(new BlockSpawnChanceEntry(reinforcedContainer, 0.04));
         blockSpawnChance.add(new BlockSpawnChanceEntry(reinforcedVault, 0.01));
         blockSpawnChance.add(new BlockSpawnChanceEntry(thoriumReactor, 0.01));
+
+        return blockSpawnChance;
+    }
+
+    private List<UnitUpgradeEntry> _getUnitUpgrade() {
+        List<UnitUpgradeEntry> unitUpgrade = new ArrayList<>();
 
         unitUpgrade.add(new UnitUpgradeEntry(poly, set(dagger, flare, retusa, nova, mega)));
         unitUpgrade.add(new UnitUpgradeEntry(dagger, set(mace, atrax, stell)));
@@ -226,6 +249,12 @@ public class CataliConfig {
         unitUpgrade.add(new UnitUpgradeEntry(tecta, set(collaris)));
         unitUpgrade.add(new UnitUpgradeEntry(mega, set(quad)));
         unitUpgrade.add(new UnitUpgradeEntry(quad, set(oct)));
+
+        return unitUpgrade;
+    }
+
+    private List<UnitSpawnChance> _getUnitSpawnChance() {
+        List<UnitSpawnChance> unitSpawnChance = new ArrayList<>();
 
         unitSpawnChance.add(new UnitSpawnChance(0.1, dagger, mace, atrax, pulsar, horizon));
         unitSpawnChance.add(new UnitSpawnChance(0.12, crawler, flare, oxynoe, locus, scepter));
@@ -279,6 +308,7 @@ public class CataliConfig {
         unitSpawnChance.add(new UnitSpawnChance(0.17, stell, mega, retusa, locus, tecta, poly));
         unitSpawnChance.add(new UnitSpawnChance(0.16, minke, locus, fortress, spiroct, poly));
 
+        return unitSpawnChance;
     }
 
     @Data
