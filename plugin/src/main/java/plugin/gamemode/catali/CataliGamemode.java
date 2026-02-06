@@ -45,6 +45,9 @@ public class CataliGamemode {
     private final BlockSpawner blockSpawner;
     private final CataliConfig config;
 
+    private final Seq<UnitType> coreUnits = Seq.with(UnitTypes.alpha, UnitTypes.beta, UnitTypes.gamma, UnitTypes.evoke,
+            UnitTypes.incite, UnitTypes.emanate);
+
     @Init
     public void init() {
         Vars.content.units().forEach(u -> u.flying = u.naval ? true : u.flying);
@@ -87,8 +90,12 @@ public class CataliGamemode {
                 }
             }
 
+            Seq<CataliTeamData> remove = new Seq<>();
+
             for (var team : teams) {
-                if (team.spawning == true) {
+                if (!team.hasUnit()) {
+                    remove.add(team);
+                } else if (team.spawning == true) {
                     var leader = Groups.player.find(player -> player.uuid().equals(team.metadata.leaderUuid));
 
                     if (leader == null) {
@@ -99,11 +106,17 @@ public class CataliGamemode {
                 }
             }
 
+            teams.removeAll(remove);
+
             for (var player : Groups.player) {
                 var team = findTeam(player);
 
                 if (team == null) {
                     player.sendMessage(I18n.t(player, "@User", "[accent]/play[]", "@to start a new team"));
+                }
+
+                if (player.unit() != null && coreUnits.contains(player.unit().type)) {
+                    player.unit().kill();
                 }
             }
         });
@@ -127,7 +140,12 @@ public class CataliGamemode {
 
         if (playerTeam != null) {
             player.team(playerTeam.team);
-            assignUnitForPlayer(playerTeam, player);
+
+            if (playerTeam.hasUnit()) {
+                assignUnitForPlayer(playerTeam, player);
+            } else {
+                playerTeam.spawning = true;
+            }
         } else {
             player.team(Team.derelict);
             player.sendMessage("[yellow]Type /play to start a new team!");
@@ -153,6 +171,8 @@ public class CataliGamemode {
                 starter.set(spawnX, spawnY);
                 starter.add();
 
+                event.player.unit(starter);
+
                 playerTeam.spawning = false;
             } else {
                 Call.infoPopup(event.player.con, I18n.t(event.player, "[scarlet]", "@Tile is not safe to spawn"),
@@ -167,13 +187,10 @@ public class CataliGamemode {
 
     @Listener
     public void onUnitDestroy(UnitDestroyEvent e) {
-        Log.info(e);
         CataliTeamData victimTeam = teams.find(team -> team.team.id == e.unit.team.id);
 
         if (victimTeam != null) {
-            boolean hasUnit = victimTeam.hasUnit();
-
-            if (!hasUnit) {
+            if (!victimTeam.hasUnit()) {
                 teams.remove(victimTeam);
                 Utils.forEachPlayerLocale((locale, players) -> {
                     String message = I18n.t(locale, "[scarlet]", "@Team", victimTeam.team.id, "@has been eliminated!");
@@ -204,7 +221,6 @@ public class CataliGamemode {
 
     @Listener
     public void onUnitDestroy(UnitBulletDestroyEvent e) {
-        Log.info(e);
         var bulletOwner = e.bullet.owner();
 
         if (bulletOwner instanceof Teamc teamc) {
@@ -373,9 +389,7 @@ public class CataliGamemode {
 
         leader.team(playerTeam.team);
 
-        var teamUnit = playerTeam.getTeamUnits().firstOpt();
-
-        if (teamUnit == null) {
+        if (!playerTeam.hasUnit()) {
             playerTeam.spawning = true;
             leader.sendMessage(I18n.t(leader, "@Tap to spawn"));
         }

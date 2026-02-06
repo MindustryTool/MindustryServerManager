@@ -46,7 +46,7 @@ public class CataliTeamData {
     public Seq<Unit> getTeamUnits() {
         Seq<Unit> units = new Seq<>();
         for (var unit : Groups.unit) {
-            if (unit.team == team) {
+            if (unit.team == team && unit.isValid()) {
                 units.add(unit);
             }
         }
@@ -55,6 +55,6 @@ public class CataliTeamData {
     }
 
     public boolean hasUnit() {
-        return Groups.unit.find(unit -> unit.team == team) != null;
+        return Groups.unit.find(unit -> unit.team == team && unit.isValid()) != null;
     }
 }

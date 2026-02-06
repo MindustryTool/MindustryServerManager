@@ -3,7 +3,6 @@ package plugin.gamemode.catali.spawner;
 import arc.math.Mathf;
 import arc.struct.Seq;
 import mindustry.Vars;
-import mindustry.gen.Groups;
 import mindustry.world.Tile;
 
 public class SpawnerHelper {
@@ -41,9 +40,9 @@ public class SpawnerHelper {
                     continue;
                 }
 
-                if (Groups.unit.intersect(tile.worldx(), tile.worldy(), occupiedSize, occupiedSize).any()) {
-                    continue;
-                }
+                // if (Groups.unit.intersect(tile.worldx(), tile.worldy(), occupiedSize, occupiedSize).any()) {
+                //     continue;
+                // }
 
                 return tile;
             }
