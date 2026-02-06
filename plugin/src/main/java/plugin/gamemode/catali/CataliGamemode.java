@@ -18,6 +18,7 @@ import mindustry.gen.Player;
 import mindustry.gen.Teamc;
 import mindustry.gen.Unit;
 import mindustry.type.UnitType;
+import mindustry.world.Block;
 import mindustry.world.Tile;
 import plugin.Control;
 import plugin.PluginEvents;
@@ -76,6 +77,10 @@ public class CataliGamemode {
         }
 
         Vars.state.rules.canGameOver = false;
+
+        Vars.netServer.assigner = (player, players) -> {
+            return SPECTATOR_TEAM;
+        };
 
         Control.SCHEDULER.scheduleWithFixedDelay(this::update, 0, 1, TimeUnit.SECONDS);
         Control.SCHEDULER.scheduleWithFixedDelay(this::spawn, 0, 2, TimeUnit.SECONDS);
@@ -204,7 +209,7 @@ public class CataliGamemode {
     }
 
     @Listener
-    public void onWorldLoad(WorldLoadEvent event) {
+    public void onWorldLoad(WorldLoadEndEvent event) {
         Vars.state.rules.canGameOver = false;
     }
 
