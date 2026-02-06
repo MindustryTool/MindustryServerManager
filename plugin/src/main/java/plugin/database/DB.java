@@ -2,14 +2,19 @@ package plugin.database;
 
 import java.io.File;
 import java.sql.Connection;
+import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Enumeration;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import arc.util.Log;
+import plugin.Control;
+import plugin.PluginEvents;
 import plugin.annotations.Destroy;
+import plugin.event.PluginUnloadEvent;
 
 public class DB {
     private static final String DATABASE_DIR = "./config/database";
@@ -42,6 +47,8 @@ public class DB {
             databasePath = databaseFile.getAbsolutePath();
 
             Log.info("SQLite database initialized at: " + databasePath);
+
+            PluginEvents.run(PluginUnloadEvent.class, DB::close);
 
         } catch (Exception e) {
             throw new RuntimeException("Failed to initialize SQLite database", e);
@@ -124,7 +131,6 @@ public class DB {
         }
     }
 
-    @Destroy
     public static void close() {
         lock.writeLock().lock();
         try {
@@ -138,5 +144,20 @@ public class DB {
             lock.writeLock().unlock();
         }
         connection = null;
+
+        Enumeration<Driver> drivers = DriverManager.getDrivers();
+        ClassLoader pluginClassLoader = Control.class.getClassLoader();
+
+        while (drivers.hasMoreElements()) {
+            Driver driver = drivers.nextElement();
+            if (driver.getClass().getClassLoader() == pluginClassLoader) {
+                try {
+                    DriverManager.deregisterDriver(driver);
+                } catch (SQLException e) {
+                    Log.err(e);
+                }
+            }
+        }
+
     }
 }

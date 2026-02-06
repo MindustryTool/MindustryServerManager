@@ -292,8 +292,8 @@ public class CataliGamemode {
 
         if (bulletOwner instanceof Teamc teamc) {
             var killerTeam = teams.find(team -> team.team.id == teamc.team().id);
+
             if (killerTeam == null) {
-                Log.warn("Missing team for unit @", e.unit.type.name);
                 return;
             }
 
@@ -304,24 +304,27 @@ public class CataliGamemode {
                 Log.warn("Missing exp for unit @", e.unit.type.name);
             }
 
-            killerTeam.level.addExp(exp);
-            displayExp(killerTeam, exp, e.unit.x, e.unit.y);
+            PluginEvents.fire(new ExpGainEvent(killerTeam, exp, e.unit.x, e.unit.y));
 
             CataliTeamData victimTeam = teams.find(team -> team.team.id == e.unit.team.id);
 
-            // Catch stray unit
             if (victimTeam == null) {
-                spawnUnitForTeam(killerTeam, e.unit.type);
-                Utils.forEachPlayerLocale((locale, players) -> {
-                    String message = I18n.t(locale, "[green]", "@Team", killerTeam.team.id,
-                            "@has caught a stray unit!");
-
-                    for (var player : players) {
-                        player.sendMessage(message);
-                    }
-                });
+                PluginEvents.fire(new TeamUnitDeadEvent(killerTeam, e.unit.type));
             }
         }
+    }
+
+    @Listener
+    public void onTrayUnitCaught(TrayUnitCaughtEvent event) {
+        spawnUnitForTeam(event.team, event.type);
+        Utils.forEachPlayerLocale((locale, players) -> {
+            String message = I18n.t(locale, "[green]", "@Team", event.team.team.id,
+                    "@has caught a stray unit!");
+
+            for (var player : players) {
+                player.sendMessage(message);
+            }
+        });
     }
 
     @Listener
@@ -342,14 +345,19 @@ public class CataliGamemode {
                 Log.warn("Missing exp for block @", e.build.block.name);
             }
 
-            killerTeam.level.addExp(exp);
-            displayExp(killerTeam, exp, e.build.x, e.build.y);
+            PluginEvents.fire(new ExpGainEvent(killerTeam, exp, e.build.x, e.build.y));
         }
     }
 
-    private void displayExp(CataliTeamData team, int amount, float x, float y) {
-        team.eachMember(player -> {
-            Call.label(player.con, "[green]+" + amount + "exp", 2, x + Mathf.random(5), y + Mathf.random(5));
+    @Listener
+    public void onExpGain(ExpGainEvent event) {
+        float calAmount = event.amount;
+
+        event.team.level.addExp(calAmount);
+        event.team.eachMember(player -> {
+            Call.label(player.con, "[green]+" + calAmount + "exp", 2, //
+                    event.x + Mathf.random(5),
+                    event.y + Mathf.random(5));
         });
     }
 
@@ -449,6 +457,8 @@ public class CataliGamemode {
             Team newTeam = Team.get(id);
             playerTeam = new CataliTeamData(newTeam, leader.uuid());
 
+            PluginEvents.fire(new TeamCreatedEvent(playerTeam));
+
             teams.add(playerTeam);
         } else {
             leader.sendMessage(I18n.t(leader, "@You already have a team!"));
@@ -470,22 +480,37 @@ public class CataliGamemode {
     }
 
     @Data
-    public static class TeamFallenEvent {
+    @RequiredArgsConstructor
+    public static class TrayUnitCaughtEvent {
         public final CataliTeamData team;
-
-        public TeamFallenEvent(CataliTeamData team) {
-            this.team = team;
-        }
+        public final UnitType type;
     }
 
     @Data
+    @RequiredArgsConstructor
+    public static class TeamFallenEvent {
+        public final CataliTeamData team;
+    }
+
+    @Data
+    @RequiredArgsConstructor
     public static class TeamUnitDeadEvent {
         public final CataliTeamData team;
         public final UnitType type;
+    }
 
-        public TeamUnitDeadEvent(CataliTeamData team, UnitType type) {
-            this.team = team;
-            this.type = type;
-        }
+    @Data
+    @RequiredArgsConstructor
+    public static class ExpGainEvent {
+        public final CataliTeamData team;
+        public final int amount;
+        public final float x;
+        public final float y;
+    }
+
+    @Data
+    @RequiredArgsConstructor
+    public static class TeamCreatedEvent {
+        public final CataliTeamData team;
     }
 }
