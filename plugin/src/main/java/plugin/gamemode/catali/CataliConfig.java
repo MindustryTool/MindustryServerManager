@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import mindustry.type.UnitType;
 import mindustry.world.Block;
 import plugin.annotations.Configuration;
@@ -26,6 +27,7 @@ import static mindustry.content.UnitTypes.*;
 import static mindustry.content.Blocks.*;
 
 @Configuration("catali.json")
+@NoArgsConstructor
 public class CataliConfig {
 
     @JsonSerialize(using = DurationSerializer.class)
