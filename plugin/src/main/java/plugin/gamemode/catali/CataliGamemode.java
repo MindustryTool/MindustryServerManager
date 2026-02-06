@@ -105,6 +105,7 @@ public class CataliGamemode {
     }
 
     public void onUpdate() {
+        Log.info("Wave team: @", Vars.state.rules.waveTeam);
         if (!Vars.state.isGame()) {
             return;
         }
@@ -273,6 +274,12 @@ public class CataliGamemode {
 
     public CataliTeamData createTeam(Player leader) {
         int id = 10;
+
+        var playerTeam = teams.find(team -> team.metadata.members.contains(leader.uuid()));
+
+        if (playerTeam != null) {
+            return playerTeam;
+        }
 
         while (hasTeam(id) || Team.get(id).active() || Vars.state.rules.waveTeam.id == id || id == Team.derelict.id) {
             id++;
