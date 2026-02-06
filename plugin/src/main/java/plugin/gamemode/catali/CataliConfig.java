@@ -25,6 +25,7 @@ import static mindustry.content.Blocks.*;
 
 @Configuration("catali.json")
 @NoArgsConstructor
+@Data
 public class CataliConfig {
 
     @JsonSerialize(using = DurationSerializer.class)
