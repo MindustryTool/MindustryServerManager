@@ -3,7 +3,6 @@ package plugin.gamemode.catali;
 import arc.math.Mathf;
 import arc.struct.Seq;
 import arc.util.Align;
-import arc.util.Interval;
 import arc.util.Log;
 import lombok.RequiredArgsConstructor;
 import mindustry.Vars;
@@ -39,8 +38,6 @@ public class CataliGamemode {
 
     @Persistence("catali-teams.json")
     private final Seq<CataliTeamData> teams = new Seq<>();
-
-    private final Interval interval = new Interval(2); // 0: unit spawn, 1: block spawn
 
     private final UnitSpawner unitSpawner;
     private final BlockSpawner blockSpawner;
@@ -112,13 +109,8 @@ public class CataliGamemode {
             return;
         }
 
-        if (interval.get(0, config.enemyUnitSpawnTime.toMillis() / 1000)) {
-            unitSpawner.spawn(Vars.state.rules.waveTeam);
-        }
-
-        if (interval.get(1, config.enemyBlockSpawnTime.toMillis() / 1000)) {
-            blockSpawner.spawn(Vars.state.rules.waveTeam);
-        }
+        unitSpawner.spawn(Vars.state.rules.waveTeam);
+        blockSpawner.spawn(Vars.state.rules.waveTeam);
 
         for (CataliTeamData data : teams) {
             var respawns = data.respawn.getRespawnUnit();
@@ -128,6 +120,18 @@ public class CataliGamemode {
                 if (unit == null) {
                     data.respawn.addUnit(entry.type, Duration.ofSeconds(1));
                 }
+            }
+        }
+
+        for (var team : teams) {
+            if (team.spawning == true) {
+                var leader = Groups.player.find(player -> player.uuid().equals(team.metadata.leaderUuid));
+
+                if (leader == null) {
+                    continue;
+                }
+
+                leader.sendMessage(I18n.t(leader, "@Tap to spawn"));
             }
         }
     }
