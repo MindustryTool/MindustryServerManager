@@ -153,6 +153,9 @@ public class CataliGamemode {
                 starter.add();
 
                 playerTeam.spawning = false;
+            } else {
+                Call.infoPopup(event.player.con, I18n.t(event.player, "[scarlet]", "@Tile is not safe to spawn"),
+                        5, Align.center, 5, 5, 5, 5);
             }
         }
     }
