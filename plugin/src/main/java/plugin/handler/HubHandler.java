@@ -305,7 +305,7 @@ public class HubHandler {
         for (int i = 0; i < word.length; i++) {
             sb.append(word[i]);
 
-            if (currentLength > 25) {
+            if (currentLength > 20) {
                 sb.append("\n");
                 currentLength = 0;
             } else {

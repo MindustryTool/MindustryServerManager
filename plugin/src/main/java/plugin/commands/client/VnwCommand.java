@@ -9,6 +9,7 @@ import mindustry.gen.Groups;
 import plugin.Control;
 import plugin.Registry;
 import plugin.annotations.Component;
+import plugin.annotations.Destroy;
 import plugin.commands.PluginClientCommand;
 import plugin.handler.I18n;
 import plugin.handler.SessionHandler;
@@ -17,9 +18,9 @@ import plugin.utils.Utils;
 
 @Component
 public class VnwCommand extends PluginClientCommand {
-    private int waveVoted = -1;
-    private ScheduledFuture<?> voteTimeout;
-    private ScheduledFuture<?> voteCountDown;
+    private static int waveVoted = -1;
+    private static ScheduledFuture<?> voteTimeout;
+    private static ScheduledFuture<?> voteCountDown;
 
     private Param numberParam;
 
@@ -132,5 +133,16 @@ public class VnwCommand extends PluginClientCommand {
             });
             startCountDown(time - 10);
         }, 10, TimeUnit.SECONDS);
+    }
+
+    @Destroy
+    public void destroy() {
+        if (voteTimeout != null) {
+            voteTimeout.cancel(true);
+        }
+
+        if (voteCountDown != null) {
+            voteCountDown.cancel(true);
+        }
     }
 }
