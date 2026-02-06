@@ -1,5 +1,10 @@
 package plugin.gamemode.catali.data;
 
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
 public class TeamUpgrades {
     // Stat multipliers (1.0 = base)
     public float healthMultiplier = 1.0f;

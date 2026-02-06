@@ -3,6 +3,11 @@ package plugin.gamemode.catali.data;
 import java.util.HashSet;
 import java.util.Set;
 
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
 public class TeamMetadata {
     public int teamId;
     public String leaderUuid;

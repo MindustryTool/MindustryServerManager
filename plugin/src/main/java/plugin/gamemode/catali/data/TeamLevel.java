@@ -1,10 +1,15 @@
 package plugin.gamemode.catali.data;
 
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
 public class TeamLevel {
     public int level = 1;
     public float currentExp = 0;
     public float requiredExp = 1000;
-    
+
     // Available points
     public int commonUpgradePoints = 0;
     public int rareUpgradePoints = 0;

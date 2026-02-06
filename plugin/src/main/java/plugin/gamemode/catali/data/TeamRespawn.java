@@ -10,7 +10,11 @@ import java.time.Duration;
 import java.time.Instant;
 
 import arc.struct.Seq;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
+@Data
+@NoArgsConstructor
 public class TeamRespawn {
     public Seq<RespawnEntry> respawn = new Seq<>();
 
@@ -19,9 +23,6 @@ public class TeamRespawn {
         @JsonDeserialize(using = UnitTypeDeserializer.class)
         public UnitType type;
         public Instant respawnAt;
-
-        public RespawnEntry() {
-        }
 
         public RespawnEntry(UnitType type, Duration duration) {
             this.type = type;
