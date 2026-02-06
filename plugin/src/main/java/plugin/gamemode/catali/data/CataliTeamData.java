@@ -38,6 +38,7 @@ public class CataliTeamData {
         this.level = new TeamLevel();
         this.respawn = new TeamRespawn();
         this.upgrades = new TeamUpgrades();
+        members.add(leaderUuid);
     }
 
     public Instant timeoutAt() {

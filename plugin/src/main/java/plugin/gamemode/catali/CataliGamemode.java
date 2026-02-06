@@ -105,7 +105,7 @@ public class CataliGamemode {
 
             if (team == null) {
                 Call.infoPopup(player.con, I18n.t(player, "@User", "[accent]/play[]", "@to start a new team"), 2,
-                        Align.center, 0, 0, 0, 0);
+                        Align.center, 0, 0, 30, 0);
             }
 
             if (player.unit() != null && coreUnits.contains(player.unit().type)) {
