@@ -8,11 +8,11 @@ import plugin.service.I18n;
 
 public class RankUtils {
     public static String getRankString(Locale locale, Seq<RankData> players) {
-        StringBuilder sb = new StringBuilder("[]\n");
+        StringBuilder sb = new StringBuilder("[white]\n");
 
         sb.append(I18n.t(locale, "[accent]", Utils.padRight("@Rank", 10)))
                 .append(Utils.padRight("Exp", 20))
-                .append("[]\n");
+                .append("[white]\n");
 
         for (int i = 0; i < players.size; i++) {
             var data = players.get(i).data;
@@ -40,13 +40,13 @@ public class RankUtils {
             String levelStr = String.valueOf(ExpUtils.levelFromTotalExp(totalExp));
 
             sb.append(Utils.padRight(rank, 10))
-                    .append("[] ")
+                    .append("[white] ")
                     .append(Utils.padRight("[" + levelStr + "] (" + totalExp + ")", 20))
-                    .append("[] ")
+                    .append("[white] ")
                     .append(data.name)
                     .append("\n");
         }
 
-        return sb.append("[]\n").toString();
+        return sb.append("[white]\n").toString();
     }
 }

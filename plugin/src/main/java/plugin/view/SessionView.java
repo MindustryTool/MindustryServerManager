@@ -28,7 +28,7 @@ public class SessionView {
             language = player.locale;
         }
 
-        return "[]|" + language + "| " + "[]<" + "[accent]" + level + "[]> " + playerName;
+        return "[white]|" + language + "| " + "[white]<" + "[accent]" + level + "[white]> " + playerName;
     }
 
     public static String getInfoString(Session session, SessionData data) {
@@ -43,7 +43,7 @@ public class SessionView {
         info.append("Player: ").append(player.name)
                 .append("\n")
                 .append(LanguageDialog.getDisplayName(locale))
-                .append("[]\n")
+                .append("[white]\n")
                 .append("[sky]Level: ")
                 .append(level)
                 .append(" (")
@@ -51,7 +51,7 @@ public class SessionView {
                 .append("/")
                 .append(ExpUtils.expCapOfLevel(level))
                 .append(")")
-                .append("[]\n");
+                .append("[white]\n");
 
         // in millis
         long seconds = (data.playTime + session.sessionPlayTime()) / 1000;
@@ -68,7 +68,7 @@ public class SessionView {
                 .append(" (")
                 .append(ExpUtils.playTimeToExp(data.playTime + session.sessionPlayTime()))
                 .append("exp)")
-                .append("[]\n");
+                .append("[white]\n");
 
         for (Map.Entry<Short, Long> entry : data.kills.entrySet()) {
             UnitType unit = Vars.content.unit(entry.getKey());
@@ -83,7 +83,7 @@ public class SessionView {
 
             try {
                 char icon = Utils.icon(unit);
-                info.append("[]").append(icon).append(": ").append(entry.getValue())
+                info.append("[white]").append(icon).append(": ").append(entry.getValue())
                         .append(" (")
                         .append(ExpUtils.unitHealthToExp(unit.health * entry.getValue()))
                         .append("exp)")
@@ -102,7 +102,7 @@ public class SessionView {
     }
 
     public static String getAdminLoginMessage(Locale locale, String playerName) {
-        return I18n.t(locale, "@An admin logged in:[] ", playerName);
+        return I18n.t(locale, "@An admin logged in:[white] ", playerName);
     }
     
     public static String getKillMessage(Locale locale, String playerName, long count, UnitType unit, long exp) {
