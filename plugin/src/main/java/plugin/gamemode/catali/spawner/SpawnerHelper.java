@@ -11,7 +11,7 @@ public class SpawnerHelper {
         int worldWidth = Vars.world.width();
         int worldHeight = Vars.world.height();
 
-        final int chunkSize = 16;
+        final int chunkSize = 100;
 
         int chunksX = Mathf.ceil(worldWidth / (float) chunkSize);
         int chunksY = Mathf.ceil(worldHeight / (float) chunkSize);
