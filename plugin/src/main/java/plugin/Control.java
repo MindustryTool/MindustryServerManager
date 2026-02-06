@@ -60,8 +60,10 @@ public class Control extends Plugin implements MindustryToolPlugin {
 
     private void checkInvalidState() {
         if (Vars.state.isGame() && !Vars.net.server() && state == PluginState.LOADED) {
-            Log.err("Server in invalid state, auto unload: state=@, server=@, plugin-state=@", Vars.state,
+            Log.err("Server in invalid state, auto exit: state=@, server=@, plugin-state=@", Vars.state,
                     Vars.net.server(), state);
+            unload();
+            Core.app.exit();
         }
     }
 
