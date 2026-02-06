@@ -1,6 +1,7 @@
 package plugin.utils;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.List;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -12,8 +13,22 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import arc.struct.Seq;
+import mindustry.ctype.MappableContent;
+import mindustry.game.Team;
+import mindustry.gen.Unit;
+import mindustry.type.UnitType;
+import mindustry.world.Block;
+import plugin.json.BlockDeserializer;
+import plugin.json.DurationDeserializer;
+import plugin.json.DurationSerializer;
+import plugin.json.MappableContentSerializer;
 import plugin.json.SeqDeserializer;
 import plugin.json.SeqSerializer;
+import plugin.json.TeamDeserializer;
+import plugin.json.TeamSerializer;
+import plugin.json.UnitDeserializer;
+import plugin.json.UnitSerializer;
+import plugin.json.UnitTypeDeserializer;
 
 public class JsonUtils {
 
@@ -23,7 +38,16 @@ public class JsonUtils {
             .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
             .registerModule(new SimpleModule()
                     .addDeserializer(Seq.class, new SeqDeserializer())
-                    .addSerializer(Seq.class, new SeqSerializer()))
+                    .addSerializer(Seq.class, new SeqSerializer())
+                    .addDeserializer(Block.class, new BlockDeserializer())
+                    .addDeserializer(Duration.class, new DurationDeserializer())
+                    .addSerializer(Duration.class, new DurationSerializer())
+                    .addDeserializer(Team.class, new TeamDeserializer())
+                    .addSerializer(Team.class, new TeamSerializer())
+                    .addSerializer(MappableContent.class, new MappableContentSerializer())
+                    .addSerializer(Unit.class, new UnitSerializer())
+                    .addDeserializer(Unit.class, new UnitDeserializer())
+                    .addDeserializer(UnitType.class, new UnitTypeDeserializer()))
             .registerModule(new JavaTimeModule());
 
     public static String toJsonString(Object data) {
