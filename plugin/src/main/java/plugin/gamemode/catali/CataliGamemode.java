@@ -156,6 +156,11 @@ public class CataliGamemode {
 
         if (bulletOwner instanceof Teamc teamc) {
             var killerTeam = teams.find(team -> team.team.id == teamc.team().id);
+            if (killerTeam == null) {
+                Log.warn("Missing team for unit @", e.unit.type.name);
+                return;
+            }
+
             var exp = Utils.find(config.unitExp, item -> item.unit == e.unit.type, item -> item.exp);
 
             if (exp == null) {
@@ -187,6 +192,11 @@ public class CataliGamemode {
 
         if (bulletOwner instanceof Teamc teamc) {
             var killerTeam = teams.find(team -> team.team.id == teamc.team().id);
+            if (killerTeam == null) {
+                Log.warn("Missing team for block @", e.build.block.name);
+                return;
+            }
+
             var exp = Utils.find(config.blockExp, item -> item.block == e.build.block, item -> item.exp);
 
             if (exp == null) {
