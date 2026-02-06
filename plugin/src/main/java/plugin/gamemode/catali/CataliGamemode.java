@@ -66,6 +66,10 @@ public class CataliGamemode {
         var session = event.session;
         var player = session.player;
 
+        if (player.unit() != null) {
+            player.unit().kill();
+        }
+
         var playerTeam = findTeam(player);
 
         if (playerTeam != null) {
@@ -359,7 +363,9 @@ public class CataliGamemode {
         } else {
             var coreUnit = leader.unit();
             leader.unit(unit);
-            coreUnit.kill();
+            if (coreUnit != null) {
+                coreUnit.kill();
+            }
         }
 
         return data;
