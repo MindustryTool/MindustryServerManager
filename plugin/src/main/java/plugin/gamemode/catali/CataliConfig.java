@@ -15,6 +15,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import mindustry.type.UnitType;
 import mindustry.world.Block;
+import plugin.annotations.Component;
 import plugin.annotations.Configuration;
 import plugin.json.DurationDeserializer;
 import plugin.json.DurationSerializer;
@@ -28,6 +29,7 @@ import static mindustry.content.Blocks.*;
 
 @Configuration("catali.json")
 @NoArgsConstructor
+@Component
 public class CataliConfig {
 
     @JsonSerialize(using = DurationSerializer.class)
