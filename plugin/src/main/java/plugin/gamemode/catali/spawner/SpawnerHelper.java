@@ -3,7 +3,6 @@ package plugin.gamemode.catali.spawner;
 import arc.math.Mathf;
 import arc.struct.Seq;
 import mindustry.Vars;
-import mindustry.content.Blocks;
 import mindustry.gen.Groups;
 import mindustry.world.Tile;
 
