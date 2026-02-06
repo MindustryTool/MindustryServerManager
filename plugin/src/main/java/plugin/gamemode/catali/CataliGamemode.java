@@ -57,9 +57,6 @@ public class CataliGamemode {
         for (var block : Vars.content.blocks()) {
             Vars.state.rules.bannedBlocks.add(block);
         }
-        for (var unit : Vars.content.units()) {
-            Vars.state.rules.bannedUnits.add(unit);
-        }
     }
 
     @Listener
