@@ -160,13 +160,14 @@ public class CataliGamemode {
     }
 
     @Listener
-    public void onUnitDestroy(UnitBulletDestroyEvent e) {
+    public void onUnitDestroy(UnitDestroyEvent e) {
+        Log.info(e);
         CataliTeamData victimTeam = teams.find(team -> team.team.id == e.unit.team.id);
 
         if (victimTeam != null) {
-            boolean hasUnit = Groups.unit.find(unit -> unit.team == victimTeam.team && unit.isValid()) != null;
+            boolean hasUnit = victimTeam.hasUnit();
 
-            if (hasUnit) {
+            if (!hasUnit) {
                 teams.remove(victimTeam);
                 Utils.forEachPlayerLocale((locale, players) -> {
                     String message = I18n.t(locale, "[scarlet]", "@Team", victimTeam.team.id, "@has been eliminated!");
@@ -193,7 +194,11 @@ public class CataliGamemode {
                 });
             }
         }
+    }
 
+    @Listener
+    public void onUnitDestroy(UnitBulletDestroyEvent e) {
+        Log.info(e);
         var bulletOwner = e.bullet.owner();
 
         if (bulletOwner instanceof Teamc teamc) {
@@ -212,6 +217,8 @@ public class CataliGamemode {
 
             killerTeam.level.addExp(exp);
             displayExp(killerTeam, exp, e.unit.x, e.unit.y);
+
+            CataliTeamData victimTeam = teams.find(team -> team.team.id == e.unit.team.id);
 
             // Catch stray unit
             if (victimTeam == null) {
@@ -258,7 +265,7 @@ public class CataliGamemode {
     }
 
     private Unit spawnUnitForTeam(CataliTeamData data, UnitType type) {
-        var leaderPlayer = Groups.player.find(p -> p.team() == data.team);
+        var leaderPlayer = Groups.player.find(p -> p.uuid().equals(data.metadata.leaderUuid));
 
         if (leaderPlayer == null) {
             Log.info("No leader player for team @", data.team);
@@ -340,14 +347,8 @@ public class CataliGamemode {
 
     public CataliTeamData createTeam(Player leader) {
         var playerTeam = findTeam(leader);
-        var team = playerTeam != null ? playerTeam.team : null;
-        var isValidTeam = playerTeam != null && Groups.unit.find(unit -> unit.team == team) != null;
 
-        if (!isValidTeam) {
-            if (playerTeam != null) {
-                teams.remove(playerTeam);
-            }
-
+        if (playerTeam == null) {
             int id = 10;
             while (hasTeam(id) || Vars.state.rules.waveTeam.id == id || id == Team.derelict.id) {
                 id++;
@@ -360,23 +361,22 @@ public class CataliGamemode {
             playerTeam = new CataliTeamData(newTeam, leader.uuid());
 
             teams.add(playerTeam);
-
         } else {
             leader.sendMessage(I18n.t(leader, "@You already have a team!"));
         }
 
         leader.team(playerTeam.team);
 
-        var unit = spawnUnitForTeam(playerTeam, UnitTypes.poly);
+        var coreUnit = leader.unit();
 
-        if (unit == null) {
-            playerTeam.respawn.addUnit(UnitTypes.poly, Duration.ofSeconds(1));
-        } else {
-            var coreUnit = leader.unit();
-            leader.unit(unit);
-            if (coreUnit != null) {
-                coreUnit.kill();
-            }
+        if (coreUnit != null) {
+            coreUnit.kill();
+        }
+
+        var teamUnit = playerTeam.getTeamUnits().firstOpt();
+
+        if (teamUnit == null) {
+            playerTeam.spawning = true;
         }
 
         return playerTeam;

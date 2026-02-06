@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import arc.struct.Seq;
 import plugin.json.SeqDeserializer;
@@ -22,7 +23,8 @@ public class JsonUtils {
             .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
             .registerModule(new SimpleModule()
                     .addDeserializer(Seq.class, new SeqDeserializer())
-                    .addSerializer(Seq.class, new SeqSerializer()));
+                    .addSerializer(Seq.class, new SeqSerializer()))
+            .registerModule(new JavaTimeModule());
 
     public static String toJsonString(Object data) {
         try {

@@ -1,6 +1,7 @@
 package plugin.gamemode.catali.data;
 
 import arc.func.Cons;
+import arc.struct.Seq;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -9,8 +10,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import mindustry.game.Team;
 import mindustry.gen.Groups;
 import mindustry.gen.Player;
-import plugin.json.UnitDeserializer;
-import plugin.json.UnitSerializer;
+import mindustry.gen.Unit;
 import plugin.json.TeamDeserializer;
 import plugin.json.TeamSerializer;
 
@@ -24,8 +24,6 @@ public class CataliTeamData {
     public TeamLevel level;
     public TeamRespawn respawn;
     public TeamUpgrades upgrades;
-    @JsonSerialize(contentUsing = UnitSerializer.class)
-    @JsonDeserialize(contentUsing = UnitDeserializer.class)
 
     public boolean spawning = true;
 
@@ -45,4 +43,18 @@ public class CataliTeamData {
         });
     }
 
+    public Seq<Unit> getTeamUnits() {
+        Seq<Unit> units = new Seq<>();
+        for (var unit : Groups.unit) {
+            if (unit.team == team) {
+                units.add(unit);
+            }
+        }
+
+        return units;
+    }
+
+    public boolean hasUnit() {
+        return Groups.unit.find(unit -> unit.team == team) != null;
+    }
 }
