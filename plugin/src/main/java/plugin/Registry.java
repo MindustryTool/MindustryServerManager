@@ -26,7 +26,7 @@ public final class Registry {
             Reflections reflections = new Reflections(packageName, Scanners.TypesAnnotated);
             Set<Class<?>> components = reflections.getTypesAnnotatedWith(Component.class);
 
-            currentGamemode = Core.settings.getString("mindustrytool.gamemode", null);
+            currentGamemode = Core.settings.getString("plugin.gamemode", null);
 
             for (Class<?> clazz : components) {
                 // Check Lazy

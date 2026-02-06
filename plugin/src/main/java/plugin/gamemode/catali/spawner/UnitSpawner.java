@@ -4,7 +4,6 @@ import arc.math.Mathf;
 import arc.util.Log;
 import arc.util.Timer;
 import lombok.RequiredArgsConstructor;
-import mindustry.Vars;
 import mindustry.game.Team;
 import mindustry.gen.Unit;
 import plugin.annotations.Component;
@@ -46,7 +45,7 @@ public class UnitSpawner {
             var unit = entry.units.get(i);
 
             Timer.schedule(() -> {
-                Unit u = unit.create(Vars.state.rules.waveTeam);
+                Unit u = unit.create(team);
                 u.set(tile.worldx() + Mathf.random(largestUnit.hitSize),
                         tile.worldy() + Mathf.random(largestUnit.hitSize));
                 u.add();
