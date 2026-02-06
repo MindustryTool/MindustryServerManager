@@ -80,6 +80,8 @@ public class HttpServer {
                 Log.info("Server unloaded");
                 throw new ServerUnloadedException();
             }
+
+            Log.info("[" + ctx.method().name() + "] " + ctx.fullUrl());
         });
 
         GeneralController.init(app);
