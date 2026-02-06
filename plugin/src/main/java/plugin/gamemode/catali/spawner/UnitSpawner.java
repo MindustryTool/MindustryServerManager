@@ -1,5 +1,6 @@
 package plugin.gamemode.catali.spawner;
 
+import arc.Core;
 import arc.math.Mathf;
 import arc.util.Log;
 import lombok.RequiredArgsConstructor;
@@ -43,12 +44,14 @@ public class UnitSpawner {
                 for (int i = 0; i < entry.units.size(); i++) {
                     var unit = entry.units.get(i);
 
-                    Unit u = unit.create(team);
-                    u.set(tile.worldx() + Mathf.random(largestUnit.hitSize),
-                            tile.worldy() + Mathf.random(largestUnit.hitSize));
-                    u.add();
+                    Core.app.post(() -> {
+                        Unit u = unit.create(team);
+                        u.set(tile.worldx() + Mathf.random(largestUnit.hitSize),
+                                tile.worldy() + Mathf.random(largestUnit.hitSize));
+                        u.add();
 
-                    Log.info("Spawning unit @ at tile @", unit, tile);
+                        Log.info("Spawning unit @ at tile @", unit, tile);
+                    });
                 }
             }
         }

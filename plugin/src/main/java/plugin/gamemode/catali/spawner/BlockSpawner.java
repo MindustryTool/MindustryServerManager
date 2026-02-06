@@ -1,5 +1,6 @@
 package plugin.gamemode.catali.spawner;
 
+import arc.Core;
 import arc.math.Mathf;
 import arc.util.Log;
 import lombok.RequiredArgsConstructor;
@@ -38,8 +39,10 @@ public class BlockSpawner {
                     return;
                 }
 
-                tile.setBlock(block, team);
-                Log.info("Spawned block @ at tile @", block, tile);
+                Core.app.post(() -> {
+                    tile.setBlock(block, team);
+                    Log.info("Spawned block @ at tile @", block, tile);
+                });
             }
         }
     }
