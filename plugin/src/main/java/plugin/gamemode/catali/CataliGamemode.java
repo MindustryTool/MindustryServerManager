@@ -47,7 +47,7 @@ public class CataliGamemode {
 
     private final Seq<UnitType> coreUnits = Seq.with(UnitTypes.alpha, UnitTypes.beta, UnitTypes.gamma, UnitTypes.evoke,
             UnitTypes.incite, UnitTypes.emanate);
-    
+
     private final Team SPECTATOR_TEAM = Team.get(255);
 
     @Init
@@ -191,6 +191,10 @@ public class CataliGamemode {
 
     @Listener
     public void onUnitDestroy(UnitDestroyEvent e) {
+        if (coreUnits.contains(e.unit.type)) {
+            return;
+        }
+
         CataliTeamData victimTeam = teams.find(team -> team.team.id == e.unit.team.id);
 
         Thread.dumpStack();
@@ -227,6 +231,10 @@ public class CataliGamemode {
 
     @Listener
     public void onUnitDestroy(UnitBulletDestroyEvent e) {
+        if (coreUnits.contains(e.unit.type)) {
+            return;
+        }
+
         var bulletOwner = e.bullet.owner();
 
         if (bulletOwner instanceof Teamc teamc) {
