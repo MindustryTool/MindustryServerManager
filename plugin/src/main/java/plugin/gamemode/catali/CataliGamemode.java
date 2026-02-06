@@ -343,38 +343,37 @@ public class CataliGamemode {
 
         var playerTeam = teams.find(team -> team.metadata.members.contains(leader.uuid()));
 
-        if (playerTeam != null) {
-            leader.sendMessage(I18n.t(leader, "@You already have a team!"));
-            return playerTeam;
-        }
-
-        while (hasTeam(id) || Vars.state.rules.waveTeam.id == id || id == Team.derelict.id) {
-            id++;
-            if (id > 250) {
-                throw new RuntimeException("Failed to find a free team ID");
+        if (playerTeam == null) {
+            while (hasTeam(id) || Vars.state.rules.waveTeam.id == id || id == Team.derelict.id) {
+                id++;
+                if (id > 250) {
+                    throw new RuntimeException("Failed to find a free team ID");
+                }
             }
-        }
 
-        Team newTeam = Team.get(id);
-        CataliTeamData data = new CataliTeamData(newTeam, leader.uuid());
+            Team newTeam = Team.get(id);
+            playerTeam = new CataliTeamData(newTeam, leader.uuid());
 
-        teams.add(data);
+            teams.add(playerTeam);
 
-        leader.team(newTeam);
+            leader.team(newTeam);
 
-        var unit = spawnUnitForTeam(data, UnitTypes.poly);
+            var unit = spawnUnitForTeam(playerTeam, UnitTypes.poly);
 
-        if (unit == null) {
-            data.respawn.addUnit(UnitTypes.poly, Duration.ofSeconds(1));
+            if (unit == null) {
+                playerTeam.respawn.addUnit(UnitTypes.poly, Duration.ofSeconds(1));
+            } else {
+                var coreUnit = leader.unit();
+                leader.unit(unit);
+                if (coreUnit != null) {
+                    coreUnit.kill();
+                }
+            }
         } else {
-            var coreUnit = leader.unit();
-            leader.unit(unit);
-            if (coreUnit != null) {
-                coreUnit.kill();
-            }
+            leader.sendMessage(I18n.t(leader, "@You already have a team!"));
         }
 
-        return data;
+        return playerTeam;
     }
 
     public boolean isTileSafe(Tile tile, UnitType type) {
