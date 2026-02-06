@@ -58,7 +58,9 @@ public class CataliGamemode {
 
         Control.SCHEDULER.scheduleWithFixedDelay(this::update, 0, 2, TimeUnit.SECONDS);
 
+        Log.info(config);
         Log.info("[accent]Cataio gamemode loaded");
+
     }
 
     public void update() {
@@ -99,6 +101,11 @@ public class CataliGamemode {
                 player.sendMessage(I18n.t(player, "@User", "[accent]/play[]", "@to start a new team"));
             }
         }
+    }
+
+    @Listener
+    public void worldLoadEvent(WorldLoadBeginEvent event) {
+        teams.clear();
     }
 
     @Listener
