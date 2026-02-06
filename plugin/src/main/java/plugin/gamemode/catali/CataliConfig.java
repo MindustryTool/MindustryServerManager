@@ -36,15 +36,10 @@ public class CataliConfig {
     public Duration enemyBlockSpawnTime = Duration.ofMinutes(2);
 
     public List<UnitRespawnTimeEntry> unitRespawnTime = new ArrayList<>();
-
     public List<UnitExpEntry> unitExp = new ArrayList<>();
-
     public List<BlockExpEntry> blockExp = new ArrayList<>();
-
     public List<BlockSpawnChanceEntry> blockSpawnChance = new ArrayList<>();
-
     public List<UnitUpgradeEntry> unitUpgrade = new ArrayList<>();
-
     public List<UnitSpawnChance> unitSpawnChance = new ArrayList<>();
 
     {
@@ -367,8 +362,8 @@ public class CataliConfig {
 
     @Data
     public static class UnitSpawnChance {
-        @JsonDeserialize(using = UnitDeserializer.class)
-        @JsonSerialize(using = MappableContentSerializer.class)
+        @JsonDeserialize(contentUsing = UnitDeserializer.class)
+        @JsonSerialize(contentUsing = MappableContentSerializer.class)
         public List<UnitType> units = new ArrayList<>();
         public int chances = 0;
 
