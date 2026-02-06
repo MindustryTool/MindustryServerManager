@@ -13,7 +13,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import arc.util.Log;
 import plugin.Control;
 import plugin.PluginEvents;
-import plugin.annotations.Destroy;
 import plugin.event.PluginUnloadEvent;
 
 public class DB {
