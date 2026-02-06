@@ -6,11 +6,16 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import arc.struct.Seq;
+import mindustry.content.StatusEffects;
+import mindustry.gen.Unit;
+
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import mindustry.type.StatusEffect;
 import mindustry.type.UnitType;
 import mindustry.world.Block;
 import plugin.annotations.Configuration;
@@ -42,6 +47,23 @@ public class CataliConfig {
     public List<BlockSpawnChanceEntry> blockSpawnChance = _getBlockSpawnChance();
     public List<UnitUpgradeEntry> unitUpgrade = _getUnitUpgrade();
     public List<UnitSpawnChance> unitSpawnChance = _getUnitSpawnChance();
+
+    public Set<UnitType> getUnitEvolutions(UnitType type) {
+        for (var entry : unitUpgrade) {
+            if (entry.unit == type) {
+                return entry.upgrades;
+            }
+        }
+        return new HashSet<>();
+    }
+
+    public static Seq<Unit> selectUnitsCanBeBuff(Seq<Unit> units) {
+        return units;
+    }
+
+    public static Seq<StatusEffect> selectBuffsCanBeApplied(Unit unit) {
+        return Seq.with(StatusEffects.overdrive, StatusEffects.boss, StatusEffects.shielded);
+    }
 
     private List<UnitExpEntry> _getUnitExp() {
         List<UnitExpEntry> unitExp = new ArrayList<>();

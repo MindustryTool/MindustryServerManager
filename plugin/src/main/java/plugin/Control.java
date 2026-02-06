@@ -48,12 +48,20 @@ public class Control extends Plugin implements MindustryToolPlugin {
             SCHEDULER.schedule(this::autoHost, 60, TimeUnit.SECONDS);
             SCHEDULER.schedule(this::autoPause, 10, TimeUnit.SECONDS);
             SCHEDULER.scheduleWithFixedDelay(this::sendTips, 3, 3, TimeUnit.MINUTES);
+            SCHEDULER.scheduleWithFixedDelay(this::checkInvalidState, 10, 3, TimeUnit.MINUTES);
 
             state = PluginState.LOADED;
 
         } catch (Exception e) {
             Log.err("Failed to init plugin", e);
             unload();
+        }
+    }
+
+    private void checkInvalidState() {
+        if (Vars.state.isGame() && !Vars.net.server() && state == PluginState.LOADED) {
+            Log.err("Server in invalid state, auto unload: state=@, server=@, plugin-state=@", Vars.state,
+                    Vars.net.server(), state);
         }
     }
 

@@ -304,8 +304,8 @@ public class ServerService {
     }
 
     @PostConstruct
-    @Scheduled(fixedDelay = 10, timeUnit = TimeUnit.MINUTES)
-    private void autoTurnOfCron() {
+    @Scheduled(fixedDelay = 2, timeUnit = TimeUnit.MINUTES)
+    private void autoTurnOffCron() {
         // var runningWithAutoTurnOff = containers.stream()//
         // .filter(container -> container.getState().equalsIgnoreCase("running"))//
         // .filter(container ->

@@ -95,8 +95,7 @@ public class DockerNodeManager implements NodeManager {
                         .withLabelFilter(Map.of(Const.serverIdLabel, request.getId().toString()))//
                         .exec();
 
-
-                if (containers.size() == 1){
+                if (containers.size() == 1) {
                     emitter.next(LogEvent.info(serverId, "Container exists, skip creating"));
                     emitter.complete();
                     return;
@@ -199,13 +198,9 @@ public class DockerNodeManager implements NodeManager {
 
                 List<String> args = List.of(
                         "-XX:+UseContainerSupport",
+                        "-XX:+UseSerialGC",
                         "-XX:MaxRAMPercentage=75.0",
                         "-XX:+CrashOnOutOfMemoryError",
-                        "-XX:+UseSerialGC",
-                        "-XX:+AlwaysPreTouch",
-                        "-XX:MaxHeapFreeRatio=20",
-                        "-XX:MinHeapFreeRatio=10",
-                        "-XX:GCTimeRatio=99",
                         "-XX:MaxRAM=" + request.getMemory() + "m");
 
                 env.addAll(request.getEnv().entrySet().stream().map(v -> v.getKey() + "=" + v.getValue()).toList());
@@ -228,6 +223,7 @@ public class DockerNodeManager implements NodeManager {
                                 // in bytes
                                 .withCpuPeriod(100000l)
                                 .withCpuQuota((long) ((request.getCpu() * 100000l)))
+                                .withMemory(request.getMemory() * 1024 * 1024l)
                                 .withRestartPolicy(request.getIsAutoTurnOff()//
                                         ? RestartPolicy.noRestart()
                                         : RestartPolicy.unlessStoppedRestart())

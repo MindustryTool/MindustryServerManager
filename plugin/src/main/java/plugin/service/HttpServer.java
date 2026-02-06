@@ -30,7 +30,6 @@ import io.javalin.Javalin;
 import io.javalin.json.JavalinJackson;
 import io.javalin.plugin.bundled.RouteOverviewPlugin;
 import lombok.RequiredArgsConstructor;
-import mindustry.Vars;
 import mindustry.game.EventType.StateChangeEvent;
 import io.javalin.http.sse.SseClient;
 
@@ -80,12 +79,6 @@ public class HttpServer {
             if (Control.state != PluginState.LOADED) {
                 Log.info("Server unloaded");
                 throw new ServerUnloadedException();
-            }
-
-            if (Vars.state.isGame()) {
-                Log.info("Active: @", Vars.net.active());
-                Log.info("Server: @", Vars.net.server());
-                Log.info("State: @", Control.state);
             }
         });
 

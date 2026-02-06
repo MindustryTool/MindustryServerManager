@@ -6,7 +6,6 @@ import arc.struct.Seq;
 import arc.util.Align;
 import arc.util.Log;
 import arc.util.Strings;
-import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import mindustry.Vars;
 import mindustry.content.Blocks;
@@ -28,6 +27,7 @@ import plugin.annotations.Listener;
 import plugin.annotations.Persistence;
 import plugin.event.SessionCreatedEvent;
 import plugin.gamemode.catali.data.*;
+import plugin.gamemode.catali.event.*;
 import plugin.gamemode.catali.spawner.BlockSpawner;
 import plugin.gamemode.catali.spawner.UnitSpawner;
 import plugin.service.I18n;
@@ -44,6 +44,10 @@ public class CataliGamemode {
 
     @Persistence("catali-teams.json")
     private final Seq<CataliTeamData> teams = new Seq<>();
+
+    public Seq<CataliTeamData> getAllTeams() {
+        return teams;
+    }
 
     private final UnitSpawner unitSpawner;
     private final BlockSpawner blockSpawner;
@@ -477,40 +481,5 @@ public class CataliGamemode {
     public boolean isTileSafe(Tile tile, UnitType type) {
         return tile != null && tile.block() == Blocks.air
                 && !Groups.unit.intersect(tile.worldx(), tile.worldy(), type.hitSize, type.hitSize).any();
-    }
-
-    @Data
-    @RequiredArgsConstructor
-    public static class TrayUnitCaughtEvent {
-        public final CataliTeamData team;
-        public final UnitType type;
-    }
-
-    @Data
-    @RequiredArgsConstructor
-    public static class TeamFallenEvent {
-        public final CataliTeamData team;
-    }
-
-    @Data
-    @RequiredArgsConstructor
-    public static class TeamUnitDeadEvent {
-        public final CataliTeamData team;
-        public final UnitType type;
-    }
-
-    @Data
-    @RequiredArgsConstructor
-    public static class ExpGainEvent {
-        public final CataliTeamData team;
-        public final int amount;
-        public final float x;
-        public final float y;
-    }
-
-    @Data
-    @RequiredArgsConstructor
-    public static class TeamCreatedEvent {
-        public final CataliTeamData team;
     }
 }

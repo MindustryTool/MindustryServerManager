@@ -29,6 +29,12 @@ public class CataliTeamData {
     public TeamRespawn respawn;
     public TeamUpgrades upgrades;
     public Seq<String> members = new Seq<>();
+    public String nextLeaderUuid;
+    public Seq<String> joinRequests = new Seq<>();
+
+    public void assignNextLeader(String uuid) {
+        this.nextLeaderUuid = uuid;
+    }
     // Cores increase exp recv
 
     public boolean spawning = true;
