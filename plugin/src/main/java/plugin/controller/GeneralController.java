@@ -263,12 +263,7 @@ public class GeneralController {
                 Log.err("Not hosting. Host a game first.");
             } else {
                 String message = ctx.body();
-                Utils.forEachPlayerLocale((locale, players) -> {
-                    String msg = I18n.t(locale, "[white]", "@" + message);
-                    for (var p : players) {
-                        p.sendMessage(msg);
-                    }
-                });
+                Call.sendMessage("[scarlet][Server][white] " + message);
             }
 
             ctx.result();
