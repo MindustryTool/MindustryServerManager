@@ -278,13 +278,14 @@ public class HubService {
 
         Utils.forEachPlayerLocale((locale, players) -> {
 
-            String message = (server.getIsOfficial() ? "[gold]" + Iconc.star + "[] " : "") + newLine(name) + "[]\n" +
-                    newLine(description) + "[]\n\n" +
-                    "[#E3F2FD]Players: []" + server.getPlayers() + "\n" +
-                    "[#BBDEFB]Map: []" + newLine(server.getMapName()) + "[]\n" +
-                    "[#90CAF9]Mode: []" + server.getModeIcon() + " " + server.getMode() + "[]\n" +
-                    "[#405AF9]Version: []" + server.getGameVersion() + "[]\n" +
-                    (mods.isEmpty() ? "" : "[#4FC3F7]Mods:[] " + mods) + "[]\n\n" +
+            String message = (server.getIsOfficial() ? "[gold]" + Iconc.star + "[white] " : "") + newLine(name)
+                    + "[white]\n" +
+                    newLine(description) + "[white]\n\n" +
+                    "[#E3F2FD]Players: [white]" + server.getPlayers() + "\n" +
+                    "[#BBDEFB]Map: [white]" + newLine(server.getMapName()) + "[white]\n" +
+                    "[#90CAF9]Mode: [white]" + server.getModeIcon() + " " + server.getMode() + "[white]\n" +
+                    "[#405AF9]Version: [white]" + server.getGameVersion() + "[white]\n" +
+                    (mods.isEmpty() ? "" : "[#4FC3F7]Mods:[] " + mods) + "[white]\n\n" +
                     (server.getStatus().isOnline() ? "[accent]" : "[sky]") + I18n.t(locale, "@Tap to join server")
                     + "\n";
 

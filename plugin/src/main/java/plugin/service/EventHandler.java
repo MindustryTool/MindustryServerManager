@@ -165,7 +165,7 @@ public class EventHandler {
                     }
 
                     String translatedChat = "[sky][" + LanguageDialog.getDisplayName(locale) + "][] "
-                            + player.name + "[]: "
+                            + player.name + "[white]: "
                             + result.getTranslatedText();
 
                     for (var p : ps) {
@@ -248,7 +248,7 @@ public class EventHandler {
                 } else {
                     session.player.sendMessage(I18n.t(session.locale,
                             "@You are not logged in, consider log in via ", " MindustryTool ", "@using",
-                            " [accent]/login[]"));
+                            " [accent]/login[white]"));
                 }
             });
 

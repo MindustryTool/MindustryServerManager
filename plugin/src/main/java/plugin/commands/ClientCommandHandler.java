@@ -53,7 +53,7 @@ public class ClientCommandHandler {
     // ... onServerChoose ...
     public void onServerChoose(Session session, String id, String name) {
         session.player.sendMessage(I18n.t(session.locale,
-                "[green]", "@Starting server ", "[]", name, ", ", "[]", "@redirection will happen soon"));
+                "[green]", "@Starting server ", "[white]", name, ", ", "[white]", "@redirection will happen soon"));
 
         try {
             Tasks.io("Redirect Server", () -> {
@@ -62,7 +62,8 @@ public class ClientCommandHandler {
                 session.player.sendMessage(I18n.t(session.locale, "[green]", "@Redirecting"));
                 Utils.forEachPlayerLocale((locale, players) -> {
                     String msg = I18n.t(locale, session.player.coloredName(), " ", "[green]",
-                            "@redirecting to server ", "[]", name, ", []", "@use ", "[accent]", "/servers", "[]",
+                            "@redirecting to server ", "[white]", name, ", [white]", "@use ", "[accent]", "/servers",
+                            "[white]",
                             " ", "@to follow");
 
                     for (var p : players) {

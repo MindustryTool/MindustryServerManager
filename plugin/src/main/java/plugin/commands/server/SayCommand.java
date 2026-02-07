@@ -23,7 +23,7 @@ public class SayCommand extends PluginServerCommand {
             return;
         }
 
-        Call.sendMessage("[]" + messageParam.asString());
+        Call.sendMessage("[white]" + messageParam.asString());
         Log.info("&fi&lcServer: &fr@", "&lw" + messageParam.asString());
     }
 }

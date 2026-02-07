@@ -60,7 +60,8 @@ public class Control extends Plugin implements MindustryToolPlugin {
 
     private void checkInvalidState() {
         if (Vars.state.isGame() && !Vars.net.server() && state == PluginState.LOADED) {
-            Log.err("Server in invalid state, auto exit: state=@, server=@, plugin-state=@", Vars.state.getState().name(),
+            Log.err("Server in invalid state, auto exit: state=@, server=@, plugin-state=@",
+                    Vars.state.getState().name(),
                     Vars.net.server(), state);
             unload();
             Core.app.exit();
@@ -165,7 +166,7 @@ public class Control extends Plugin implements MindustryToolPlugin {
         tips.add((locale) -> I18n.t(locale, "@Be respectful — toxic behavior may lead to punishment"));
         tips.add((locale) -> I18n.t(locale, "@Report griefers instead of arguing in chat"));
         tips.add((locale) -> I18n.t(locale, "@Admins are here to help — ask nicely"));
-        tips.add((locale) -> "[]" + Iconc.blockRouter + "Router chains");
+        tips.add((locale) -> "[white]" + Iconc.blockRouter + "Router chains");
         tips.add((locale) -> I18n.t(locale, "@Have fun!!!"));
         tips.add((locale) -> "The factory must grow!!!");
         tips.add((locale) -> I18n.t(locale, "@Reach level", " ", Config.COLOR_NAME_LEVEL, " ",
@@ -176,7 +177,7 @@ public class Control extends Plugin implements MindustryToolPlugin {
         Tasks.io("Send tip", () -> {
             Utils.forEachPlayerLocale((locale, players) -> {
                 for (var player : players) {
-                    player.sendMessage("\n[sky]" + tip.get(locale) + "[]\n");
+                    player.sendMessage("\n[sky]" + tip.get(locale) + "[white]\n");
                 }
             });
         });

@@ -264,7 +264,7 @@ public class GeneralController {
             } else {
                 String message = ctx.body();
                 Utils.forEachPlayerLocale((locale, players) -> {
-                    String msg = I18n.t(locale, "[]", "@" + message);
+                    String msg = I18n.t(locale, "[white]", "@" + message);
                     for (var p : players) {
                         p.sendMessage(msg);
                     }

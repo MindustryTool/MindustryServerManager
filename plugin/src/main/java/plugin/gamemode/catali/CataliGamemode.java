@@ -163,7 +163,7 @@ public class CataliGamemode {
             var team = findTeam(player);
 
             if (team == null) {
-                Call.infoPopup(player.con, I18n.t(player, "@User", "[accent]/play[]", "@to start a new team"), 2,
+                Call.infoPopup(player.con, I18n.t(player, "@User", "[accent]/play[white]", "@to start a new team"), 2,
                         Align.center, 0, 0, 30, 0);
             }
 
