@@ -2,7 +2,7 @@ package plugin.gamemode.catali.menu;
 
 import arc.struct.Seq;
 import mindustry.gen.Groups;
-import plugin.annotations.Component;
+import plugin.annotations.Gamemode;
 import plugin.core.Registry;
 import plugin.gamemode.catali.CataliGamemode;
 import plugin.gamemode.catali.data.CataliTeamData;
@@ -11,7 +11,7 @@ import plugin.service.I18n;
 import plugin.service.SessionHandler;
 import plugin.type.Session;
 
-@Component
+@Gamemode("catali")
 public class JoinTeamMenu extends PluginMenu<Void> {
 
     @Override

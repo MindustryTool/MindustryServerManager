@@ -1,7 +1,7 @@
 package plugin.gamemode.catali.menu;
 
 import plugin.PluginEvents;
-import plugin.annotations.Component;
+import plugin.annotations.Gamemode;
 import plugin.core.Registry;
 import plugin.gamemode.catali.data.CataliTeamData;
 import plugin.gamemode.catali.event.CataliSpawnRareUpgrade;
@@ -9,7 +9,7 @@ import plugin.menus.PluginMenu;
 import plugin.service.I18n;
 import plugin.type.Session;
 
-@Component
+@Gamemode("catali")
 public class RareUpgradeMenu extends PluginMenu<CataliTeamData> {
 
     @Override

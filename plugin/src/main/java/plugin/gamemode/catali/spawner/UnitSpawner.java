@@ -7,12 +7,10 @@ import lombok.RequiredArgsConstructor;
 import mindustry.game.Team;
 import mindustry.gen.Groups;
 import mindustry.gen.Unit;
-import plugin.annotations.Component;
-import plugin.annotations.Lazy;
+import plugin.annotations.Gamemode;
 import plugin.gamemode.catali.CataliConfig;
 
-@Component
-@Lazy
+@Gamemode("catali")
 @RequiredArgsConstructor
 public class UnitSpawner {
 

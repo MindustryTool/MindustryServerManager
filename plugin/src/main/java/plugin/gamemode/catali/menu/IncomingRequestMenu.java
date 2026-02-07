@@ -1,14 +1,14 @@
 package plugin.gamemode.catali.menu;
 
 import mindustry.gen.Player;
-import plugin.annotations.Component;
+import plugin.annotations.Gamemode;
 import plugin.core.Registry;
 import plugin.gamemode.catali.CataliGamemode;
 import plugin.menus.PluginMenu;
 import plugin.service.I18n;
 import plugin.type.Session;
 
-@Component
+@Gamemode("catali")
 public class IncomingRequestMenu extends PluginMenu<Player> {
 
     @Override

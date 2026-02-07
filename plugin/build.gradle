@@ -48,7 +48,7 @@ dependencies{
     // testImplementation 'org.projectlombok:lombok:1.18.10'
     // testImplementation files('lib/MindustryToolPluginLoader.jar')
 
-    
+    implementation fileTree(dir: 'libs', include: ['*.jar'])    
 
 }
 

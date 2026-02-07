@@ -1,7 +1,7 @@
 package plugin.gamemode.catali.menu;
 
 import dto.Pair;
-import plugin.annotations.Component;
+import plugin.annotations.Gamemode;
 import plugin.core.Registry;
 import plugin.gamemode.catali.data.CataliCommonUpgrade;
 import plugin.gamemode.catali.data.CataliTeamData;
@@ -9,7 +9,7 @@ import plugin.menus.PluginMenu;
 import plugin.service.I18n;
 import plugin.type.Session;
 
-@Component
+@Gamemode("catali")
 public class CommonUpgradeMenu extends PluginMenu<CataliTeamData> {
 
     @Override
