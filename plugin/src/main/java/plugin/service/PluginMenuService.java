@@ -70,12 +70,12 @@ public class PluginMenuService {
     public void onMenuOptionChoose(MenuOptionChooseEvent event) {
         var targetMenu = menus.find(m -> m.getMenuId() == event.menuId && m.session.player == event.player);
 
-        menus.remove(m -> m.session.player == event.player && m.isSent());
-
         if (targetMenu == null) {
             showNext(event.player);
             return;
         }
+
+        menus.remove(targetMenu);
 
         if (event.option < 0) {
             showNext(event.player);

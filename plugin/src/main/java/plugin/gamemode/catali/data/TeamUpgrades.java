@@ -43,18 +43,18 @@ public class TeamUpgrades {
     }
 
     public void levelUpHealth(int amount) {
-        damageLevel += amount;
+        damageLevel += amount * 0.05;
     }
 
     public void levelUpDamage(int amount) {
-        damageLevel += amount;
+        damageLevel += amount * 0.05;
     }
 
     public void levelUpREGEN(int amount) {
-        regenLevel += amount;
+        regenLevel += amount * 0.05;
     }
 
     public void levelUpExp(int amount) {
-        expLevel += amount;
+        expLevel += amount * 0.05;
     }
 }
