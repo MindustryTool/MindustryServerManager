@@ -575,6 +575,8 @@ public class CataliGamemode {
             }
 
             Team newTeam = Team.get(id);
+            newTeam.rules().rtsAi = true;
+
             playerTeam = new CataliTeamData(newTeam, leader.uuid());
 
             PluginEvents.fire(new TeamCreatedEvent(playerTeam));
