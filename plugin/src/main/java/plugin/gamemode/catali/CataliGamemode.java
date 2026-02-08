@@ -246,6 +246,12 @@ public class CataliGamemode {
         var leader = event.team.getLeader();
         var teamName = leader != null ? leader.name : event.team.team.id;
 
+        Groups.unit.forEach(unit -> {
+            if (unit.team == event.team.team) {
+                unit.kill();
+            }
+        });
+
         Utils.forEachPlayerLocale((locale, players) -> {
             String message = I18n.t(locale, "[scarlet]", "@Team", teamName, "@has been eliminated!");
             for (var player : players) {
