@@ -14,6 +14,7 @@ import arc.struct.Seq;
 import arc.util.*;
 import mindustry.Vars;
 import mindustry.core.GameState.State;
+import mindustry.gen.Call;
 import mindustry.gen.Groups;
 import mindustry.gen.Iconc;
 import plugin.service.ApiGateway;
@@ -51,6 +52,8 @@ public class Control extends Plugin implements MindustryToolPlugin {
             SCHEDULER.scheduleWithFixedDelay(this::checkInvalidState, 10, 3, TimeUnit.MINUTES);
 
             state = PluginState.LOADED;
+
+            Call.sendMessage("[lime]Server controller restarted");
 
         } catch (Exception e) {
             Log.err("Failed to init plugin", e);
