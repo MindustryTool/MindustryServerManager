@@ -1,13 +1,11 @@
 package plugin.gamemode.catali.data;
 
 import lombok.EqualsAndHashCode;
-import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import mindustry.gen.Unit;
 
 @NoArgsConstructor
-@Getter
 @ToString
 @EqualsAndHashCode
 public class TeamUpgrades {
@@ -24,9 +22,25 @@ public class TeamUpgrades {
     private int expLevel = 0;
 
     public void apply(Unit unit) {
-        unit.maxHealth = unit.type.health * healthMultiplier;
+        unit.maxHealth = unit.type.health * getHealthMultiplier();
         unit.health = unit.maxHealth;
-        unit.damageMultiplier(damageMultiplier);
+        unit.damageMultiplier(getDamageMultiplier());
+    }
+
+    public float getDamageMultiplier() {
+        return damageMultiplier * damageLevel + 1;
+    }
+
+    public float getRegenMultiplier() {
+        return regenMultiplier * regenLevel + 1;
+    }
+
+    public float getExpMultiplier() {
+        return expMultiplier * expLevel + 1;
+    }
+
+    public float getHealthMultiplier() {
+        return healthMultiplier * healthLevel + 1;
     }
 
     public void levelUpHealth(int amount) {

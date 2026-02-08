@@ -166,10 +166,13 @@ public class CataliGamemode {
                                 + String.valueOf((int) team.level.requiredExp) + ")[white]",
                         "\n",
                         "@Member:", String.valueOf(team.members.size), "\n",
-                        "[sky]Hp:", String.format("%.2f", team.upgrades.getHealthMultiplier()) + "%[white]\n",
-                        "[red]Dmg:", String.format("%.2f", team.upgrades.getDamageMultiplier()) + "%[white]\n",
-                        "[accent]Exp:", String.format("%.2f", team.upgrades.getExpMultiplier()) + "%[white]\n",
-                        "[green]Regen:", String.format("%.2f", team.upgrades.getRegenMultiplier()) + "%[white]\n",
+                        "[sky]Hp:", String.format("%.2f", team.upgrades.getHealthMultiplier() * 100) + "%[white]\n",
+                        "[red]Dmg:", String.format("%.2f", team.upgrades.getDamageMultiplier()
+                                * 100) + "%[white]\n",
+                        "[accent]Exp:", String.format("%.2f", team.upgrades.getExpMultiplier()
+                                * 100) + "%[white]\n",
+                        "[green]Regen:", String.format("%.2f", team.upgrades.getRegenMultiplier()
+                                * 100) + "%[white]\n",
                         "@Upgrades:", "", String.valueOf(team.level.commonUpgradePoints), "[accent]",
                         String.valueOf(team.level.rareUpgradePoints), "[white]\n",
                         "@Unit:", units, "\n",
