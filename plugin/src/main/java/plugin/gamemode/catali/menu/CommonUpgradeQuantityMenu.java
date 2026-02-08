@@ -49,14 +49,12 @@ public class CommonUpgradeQuantityMenu extends PluginMenu<Pair<CataliTeamData, C
 
         row();
 
-        if (level.commonUpgradePoints >= 6) {
-            option(I18n.t(session, "@All Points"), (s, st) -> {
-                team.consumeUpgrade(upgrade, level.commonUpgradePoints);
-                if (level.commonUpgradePoints > 0) {
-                    Registry.get(CommonUpgradeMenu.class).send(s, team);
-                }
-            });
-        }
+        option(I18n.t(session, "@All Points"), (s, st) -> {
+            team.consumeUpgrade(upgrade, level.commonUpgradePoints);
+            if (level.commonUpgradePoints > 0) {
+                Registry.get(CommonUpgradeMenu.class).send(s, team);
+            }
+        });
 
         row();
 
