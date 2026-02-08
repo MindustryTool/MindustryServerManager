@@ -22,7 +22,7 @@ public class BlockSpawner {
 
             if (Mathf.chance(spawnChance)) {
                 var mapSize = Vars.world.width() * Vars.world.height();
-                var spawnCount = mapSize * 0.05;
+                var spawnCount = mapSize * 0.20;
 
                 var totalBuildCount = Groups.build.size();
 
