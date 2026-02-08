@@ -7,11 +7,13 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import mindustry.type.UnitType;
 import plugin.json.MappableContentSerializer;
 import plugin.json.UnitTypeDeserializer;
 
 @Data
+@NoArgsConstructor
 public class RespawnEntry {
     @JsonSerialize(using = MappableContentSerializer.class)
     @JsonDeserialize(using = UnitTypeDeserializer.class)
