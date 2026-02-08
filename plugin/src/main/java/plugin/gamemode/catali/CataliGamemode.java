@@ -114,6 +114,7 @@ public class CataliGamemode {
             Vars.state.rules.bannedBlocks.add(block);
         }
 
+        Vars.state.rules.bannedUnits.clear();
         Vars.state.rules.canGameOver = false;
     }
 
