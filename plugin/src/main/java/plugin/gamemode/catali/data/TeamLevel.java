@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 public class TeamLevel {
     public int level = 1;
     public float currentExp = 0;
-    public float requiredExp = 100;
+    public float requiredExp = 10;
 
     public int commonUpgradePoints = 0;
     public int rareUpgradePoints = 0;

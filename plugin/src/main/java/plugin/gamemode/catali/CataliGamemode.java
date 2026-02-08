@@ -200,7 +200,7 @@ public class CataliGamemode {
                         Align.center, 0, 0, 30, 0);
             } else if (team.level.level == 1 && team.level.currentExp == 0) {
                 Call.infoPopup(player.con, I18n.t(player, "@Destroy block to get [accent]exp[white]"), 2,
-                        Align.center, 0, 0, 30, 0);
+                        Align.center, 0, 0, 80, 0);
             }
 
             if (player.unit() != null && coreUnits.contains(player.unit().type)) {
