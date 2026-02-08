@@ -50,10 +50,6 @@ public class HubService {
 
     @Init
     public void init() {
-        if (!Config.IS_HUB) {
-            return;
-        }
-
         for (var block : Vars.content.blocks()) {
             Vars.state.rules.bannedBlocks.add(block);
         }
@@ -125,7 +121,7 @@ public class HubService {
 
                 int players = Groups.player.size();
 
-                if (Config.IS_HUB && servers.size > 0) {
+                if (servers.size > 0) {
                     try {
                         var serverData = servers
                                 .random();
@@ -133,7 +129,8 @@ public class HubService {
                         var totalPlayers = servers.sum(s -> (int) s.getPlayers());
 
                         if (serverData != null) {
-                            description += " -> " + serverData.getName();
+                            name = serverData.getName() + " [lime][HUB]";
+                            description = serverData.getDescription();
                             map = serverData.getMapName() == null ? "" : serverData.getMapName();
                             players = totalPlayers;
                         }
@@ -184,10 +181,6 @@ public class HubService {
 
     @Listener
     private void onTap(TapEvent event) {
-        if (!plugin.Config.IS_HUB) {
-            return;
-        }
-
         if (event.tile == null) {
             return;
         }
