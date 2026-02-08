@@ -44,7 +44,7 @@ public class ApiGateway {
             .build();
 
     private final Cache<String, String> translationCache = Caffeine.newBuilder()
-            .expireAfterAccess(Duration.ofHours(1))
+            .expireAfterAccess(Duration.ofMinutes(30))
             .build();
 
     public void requestConnection() {
@@ -222,6 +222,12 @@ public class ApiGateway {
             Log.err("[" + targetLanguage.getLanguage() + "] Failed to translate texts: " + texts + " to"
                     + targetLanguage + "\n"
                     + e.getMessage());
+
+            for (var text : texts) {
+                var cacheKey = String.format("%s:%s", text, languageCode);
+                translationCache.put(cacheKey, text);
+            }
+
             return texts;
         }
     }

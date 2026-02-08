@@ -15,7 +15,8 @@ public class CommonUpgradeMenu extends PluginMenu<CataliTeamData> {
     @Override
     public void build(Session session, CataliTeamData team) {
         title = I18n.t(session, "@Common Upgrades");
-        description = I18n.t(session, "@Select an attribute to upgrade.");
+        description = I18n.t(session, "@You have", team.level.commonUpgradePoints, "@upgrade points",
+                "@Select an attribute to upgrade.");
 
         option(I18n.t(session, "@Damage"), (s, st) -> {
             if (team.level.commonUpgradePoints == 1) {

@@ -342,6 +342,7 @@ public class CataliGamemode {
                 Unit unit = UnitTypes.poly.create(playerTeam.team);
 
                 unit.set(spawnX, spawnY);
+
                 Core.app.post(() -> {
                     unit.add();
                     event.player.unit(unit);
