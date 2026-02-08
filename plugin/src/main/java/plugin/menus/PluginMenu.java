@@ -82,7 +82,9 @@ public abstract class PluginMenu<T> {
                 try {
                     copy.build(session, state);
                 } catch (Exception e) {
+                    session.player.sendMessage("[scarlet]Error: [white]" + e.getMessage());
                     Log.err("Failed to build menu @ for player @ with state @", copy, session, state);
+                    Log.err(e);
                     return;
                 }
 
