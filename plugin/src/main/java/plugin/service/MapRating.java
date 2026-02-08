@@ -5,6 +5,7 @@ import java.util.HashMap;
 import arc.Core;
 import arc.util.Log;
 import lombok.Data;
+import lombok.RequiredArgsConstructor;
 import mindustry.gen.Iconc;
 import mindustry.maps.Map;
 import plugin.utils.JsonUtils;
@@ -21,7 +22,7 @@ public class MapRating {
     public static class MapRatingEntry {
         public int[] stars = new int[5];
 
-        public float avg() {
+        public MapRatingStat stat() {
             int totalVotes = 0;
             int totalScore = 0;
 
@@ -33,8 +34,19 @@ public class MapRating {
                 totalScore += count * starValue;
             }
 
-            return totalVotes == 0 ? 0f : (float) totalScore / totalVotes;
+            if (totalVotes == 0) {
+                return new MapRatingStat(0, 0);
+            }
+
+            return new MapRatingStat(totalVotes, totalScore / totalVotes);
         }
+    }
+
+    @Data
+    @RequiredArgsConstructor
+    public static class MapRatingStat {
+        public final int totalVotes;
+        public final int avgScore;
     }
 
     private static MapRatingData load() {
@@ -66,26 +78,26 @@ public class MapRating {
 
             save(data);
 
-    } catch (Exception e) {
+        } catch (Exception e) {
             Log.err("Failed to update map rating", e);
         }
     }
 
-    public static float getAvg(Map map) {
+    public static MapRatingStat getStat(Map map) {
         try {
             String mapId = map.file.nameWithoutExtension();
             MapRatingData data = load();
             MapRatingEntry entry = data.mapRatings.getOrDefault(mapId, new MapRatingEntry());
 
-            return entry.avg();
+            return entry.stat();
         } catch (Exception e) {
             Log.err(e);
-            return 0;
+            return new MapRatingStat(0, 0);
         }
     }
 
     public static String getAvgString(Map map) {
-        float score = getAvg(map);
+        float score = getStat(map).avgScore;
 
         return String.format(avgScoreColor(score) + "%.2f" + "[gold]" + Iconc.star, score);
     }

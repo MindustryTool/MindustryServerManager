@@ -12,17 +12,14 @@ import plugin.type.Session;
 public class RtvMenu extends PluginMenu<Integer> {
     private static final int MAPS_PER_PAGE = 7;
 
-    public RtvMenu() {
-    }
-
     @Override
     public void build(Session session, Integer page) {
         var voteHandler = Registry.get(VoteService.class);
         Seq<Map> maps = new Seq<>(voteHandler.getMaps());
 
         maps.sort((a, b) -> {
-            var ar = MapRating.getAvg(a);
-            var br = MapRating.getAvg(b);
+            var ar = MapRating.getStat(a).avgScore;
+            var br = MapRating.getStat(b).avgScore;
 
             if (ar == 0) {
                 ar = 6;
@@ -52,14 +49,14 @@ public class RtvMenu extends PluginMenu<Integer> {
 
         for (int i = start; i < end; i++) {
             Map map = maps.get(i);
-            float rating = MapRating.getAvg(map);
-            String ratingColor = MapRating.avgScoreColor(rating);
+            var stats = MapRating.getStat(map);
+            String ratingColor = MapRating.avgScoreColor(stats.avgScore);
 
             String voted = voteHandler.isVoted(session.player, map.file.nameWithoutExtension())
                     ? I18n.t(session.locale, "[accent]", "@Voted")
                     : "";
-            String text = String.format("%s%s%.2f [gold]%c []%s", voted, ratingColor, rating, Iconc.star,
-                    map.name());
+            String text = String.format("%s%s%.2f [gold]%c []%s (%s)", voted, ratingColor, stats.avgScore, Iconc.star,
+                    map.name(), stats.totalVotes);
 
             option(text, (p, s) -> {
                 voteHandler.handleVote(session.player, map);

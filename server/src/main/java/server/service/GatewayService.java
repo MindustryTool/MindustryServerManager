@@ -420,8 +420,9 @@ public class GatewayService {
                                 Log.warn("Invalid event: " + event.asText());
                             }
 
+                            lastHeartBeatAt = Instant.now();
+
                             if (name == "heartbeat") {
-                                lastHeartBeatAt = Instant.now();
                                 return;
                             }
 

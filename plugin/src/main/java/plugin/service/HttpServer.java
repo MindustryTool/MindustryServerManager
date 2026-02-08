@@ -41,7 +41,7 @@ public class HttpServer {
     private SseClient eventListener = null;
     private Instant lastSendEvent = Instant.now();
 
-    private final Duration HEARTBEAT_DURATION = Duration.ofSeconds(30);
+    private final Duration HEARTBEAT_DURATION = Duration.ofSeconds(10);
 
     private final ApiGateway apiGateway;
 
