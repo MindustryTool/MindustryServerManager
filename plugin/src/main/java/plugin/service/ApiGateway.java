@@ -147,7 +147,8 @@ public class ApiGateway {
 
             return result.getTranslatedText();
         } catch (Exception e) {
-            Log.err("[" + targetLanguage.getLanguage() + "] Failed to translate text: " + text + "\n" + e.getMessage());
+            Log.err("[" + targetLanguage.getLanguage() + "] Failed to translate text: " + text + " to " + targetLanguage
+                    + "\n" + e.getMessage());
             return text;
         }
     }
@@ -172,6 +173,11 @@ public class ApiGateway {
 
             if (cached != null) {
                 future.complete(cached);
+                continue;
+            }
+
+            if (targetLanguage.equals(Locale.ENGLISH)) {
+                future.complete(text);
                 continue;
             }
 
@@ -213,7 +219,8 @@ public class ApiGateway {
 
             return Seq.with(result).map(r -> r.getNow("This should never happen"));
         } catch (Exception e) {
-            Log.err("[" + targetLanguage.getLanguage() + "] Failed to translate texts: " + texts + "\n"
+            Log.err("[" + targetLanguage.getLanguage() + "] Failed to translate texts: " + texts + " to"
+                    + targetLanguage + "\n"
                     + e.getMessage());
             return texts;
         }
