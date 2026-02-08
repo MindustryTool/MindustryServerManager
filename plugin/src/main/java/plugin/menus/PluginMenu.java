@@ -23,6 +23,7 @@ public abstract class PluginMenu<T> {
 
     @Getter
     private boolean isSent = false;
+    private boolean sendable = false;
 
     public final Instant createdAt = Instant.now();
 
@@ -54,6 +55,16 @@ public abstract class PluginMenu<T> {
     public abstract void build(Session session, T state);
 
     public void show() {
+        if (isSent) {
+            Log.err("Menu @ has been sent at @", this, createdAt);
+            Thread.dumpStack();
+        }
+
+        if (!sendable) {
+            Log.err("Cant send @", this);
+            Thread.dumpStack();
+        }
+
         isSent = true;
 
         Tasks.io("Show Menu: " + getMenuId(), () -> {
@@ -64,10 +75,6 @@ public abstract class PluginMenu<T> {
                 Log.err("Failed to build menu @ for player @ with state @", this, session, state);
                 Log.err(e);
                 return;
-            }
-
-            if (isSent) {
-                Thread.dumpStack();
             }
 
             options.removeAll(op -> op.size == 0);
@@ -95,6 +102,7 @@ public abstract class PluginMenu<T> {
                 copy.session = session;
                 copy.state = state;
                 copy.options = new Seq<>(new Seq<>());
+                copy.sendable = true;
 
                 var handler = Registry.get(PluginMenuService.class);
                 var playerMenus = handler.getValidMenus(session.player);
