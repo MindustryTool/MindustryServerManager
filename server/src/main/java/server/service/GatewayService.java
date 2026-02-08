@@ -27,7 +27,6 @@ import lombok.extern.slf4j.Slf4j;
 import server.EnvConfig;
 import server.config.Const;
 import server.manager.NodeManager;
-import server.service.GatewayService.GatewayClient.ConnectionState;
 import dto.LoginDto;
 import dto.PlayerDto;
 import dto.PlayerInfoDto;
