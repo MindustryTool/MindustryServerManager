@@ -39,6 +39,7 @@ import dto.ModDto;
 import dto.ServerConfig;
 import dto.ServerMetadata;
 import dto.ServerStateDto;
+import events.ServerEvents;
 import events.ServerEvents.LogEvent;
 import enums.NodeRemoveReason;
 import events.ServerEvents.StartEvent;
@@ -106,6 +107,8 @@ public class DockerNodeManager implements NodeManager {
                     dockerClient.removeContainerCmd(container.getId())
                             .withForce(true)
                             .exec();
+                    
+                    emitter.next(LogEvent.info(serverId, "Container removed"));
                 }
 
                 emitter.next(LogEvent.info(serverId, "Pulling image: " + request.getImage()));
@@ -293,7 +296,7 @@ public class DockerNodeManager implements NodeManager {
                 .withForce(true)
                 .exec();
 
-        Log.info("Removed: " + container.getNames()[0] + " for reason: " + reason);
+        eventBus.emit(ServerEvents.LogEvent.info(id, "Removed: " + container.getNames()[0] + " for reason: " + reason));
 
         return Mono.empty();
     }
