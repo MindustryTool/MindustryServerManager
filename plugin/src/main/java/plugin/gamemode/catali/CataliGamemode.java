@@ -266,7 +266,7 @@ public class CataliGamemode {
         Seq<CataliTeamData> remove = new Seq<>();
 
         for (var team : teams) {
-            if (!team.hasUnit() || Instant.now().isAfter(team.timeoutAt())) {
+            if (!team.hasUnit() || (team.getLeader() == null && Instant.now().isAfter(team.timeoutAt()))) {
                 remove.add(team);
             } else if (team.spawning == true) {
                 var leader = Groups.player.find(player -> player.uuid().equals(team.leaderUuid));
