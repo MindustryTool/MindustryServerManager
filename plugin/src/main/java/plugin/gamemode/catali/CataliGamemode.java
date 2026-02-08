@@ -85,11 +85,12 @@ public class CataliGamemode {
     }
 
     @Listener
-    public void onWorldLoad(WorldLoadEndEvent event) {
+    public void onPlay(PlayEvent event) {
         applyGameRules();
     }
 
     private void applyGameRules() {
+        Vars.logic.reset();
         Vars.content.units().forEach(unit -> {
             unit.flying = unit.naval ? true : unit.flying;
             unit.aiController = () -> new DefenderAI();
