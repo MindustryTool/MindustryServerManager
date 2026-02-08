@@ -93,6 +93,7 @@ public class CataliGamemode {
 
         Vars.state.rules.waveTeam = ENEMY_TEAM;
         Vars.state.rules.waves = false;
+
         UnitTypes.omura.abilities.clear();
         UnitTypes.omura.weapons.get(0).bullet.damage /= 2;
 
@@ -181,6 +182,9 @@ public class CataliGamemode {
 
             if (team == null) {
                 Call.infoPopup(player.con, I18n.t(player, "@User", "[accent]/play[white]", "@to start a new team"), 2,
+                        Align.center, 0, 0, 30, 0);
+            } else if (team.level.level == 1 && team.level.currentExp == 0) {
+                Call.infoPopup(player.con, I18n.t(player, "@Destroy block to get [accent]exp[white]"), 2,
                         Align.center, 0, 0, 30, 0);
             }
 
@@ -318,12 +322,12 @@ public class CataliGamemode {
             var spawnable = isTileSafe(event.tile, UnitTypes.poly);
 
             if (spawnable) {
-                Unit starter = UnitTypes.poly.create(playerTeam.team);
+                Unit unit = UnitTypes.poly.create(playerTeam.team);
 
-                starter.set(spawnX, spawnY);
-                starter.add();
+                unit.set(spawnX, spawnY);
+                Core.app.post(() -> unit.add());
 
-                event.player.unit(starter);
+                event.player.unit(unit);
 
                 playerTeam.spawning = false;
             } else {
@@ -537,13 +541,13 @@ public class CataliGamemode {
             return null;
         }
 
-        Unit u = type.create(data.team);
-        u.set(safeTile.worldx(), safeTile.worldy());
-        u.add();
+        Unit unit = type.create(data.team);
+        unit.set(safeTile.worldx(), safeTile.worldy());
+        Core.app.post(() -> unit.add());
 
-        data.upgrades.apply(u);
+        data.upgrades.apply(unit);
 
-        return u;
+        return unit;
     }
 
     public boolean hasTeam(int id) {
