@@ -73,7 +73,7 @@ public class CataliGamemode {
 
     private final Team SPECTATOR_TEAM = Team.get(255);
     private final Team ENEMY_TEAM = Team.crux;
-    private final Team BLOCK_TEAM = Team.derelict;
+    private final Team BLOCK_TEAM = Team.get(254);
 
     @Init
     public void init() {
@@ -503,6 +503,10 @@ public class CataliGamemode {
         Unit leaderUnit = Groups.unit.find(u -> u == leaderPlayer.unit());
 
         if (leaderUnit == null) {
+            leaderUnit = data.getTeamUnits().firstOpt();
+        }
+
+        if (leaderUnit == null) {
             Log.info("No leader unit for player @", leaderPlayer.name);
             return null;
         }
@@ -577,7 +581,7 @@ public class CataliGamemode {
             int id = 20;
             while (hasTeam(id) || ENEMY_TEAM.id == id || id == SPECTATOR_TEAM.id || id == BLOCK_TEAM.id) {
                 id++;
-                if (id > 250) {
+                if (id > 240) {
                     throw new RuntimeException("Failed to find a free team ID");
                 }
             }
