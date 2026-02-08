@@ -2,6 +2,7 @@ package plugin.menus;
 
 import java.time.Instant;
 
+import arc.Core;
 import arc.struct.Seq;
 import arc.util.Log;
 import lombok.Data;
@@ -84,7 +85,7 @@ public abstract class PluginMenu<T> {
     }
 
     public void send(Session session, T state) {
-        synchronized (session.player) {
+        Core.app.post(() -> {
             try {
                 @SuppressWarnings("unchecked")
                 PluginMenu<T> copy = getClass().getDeclaredConstructor().newInstance();
@@ -98,6 +99,11 @@ public abstract class PluginMenu<T> {
                 var handler = Registry.get(PluginMenuService.class);
                 var playerMenus = handler.getValidMenus(session.player);
 
+                if (playerMenus.contains(m -> m.getMenuId() == copy.getMenuId())) {
+                    Log.warn("Player @ already have menu @", session.player, copy);
+                    return;
+                }
+
                 handler.add(copy);
 
                 if (!playerMenus.contains(m -> m.isSent)) {
@@ -107,7 +113,7 @@ public abstract class PluginMenu<T> {
                 session.player.sendMessage("[scarlet]Error: [white]" + e.getMessage());
                 Log.err(e);
             }
-        }
+        });
     }
 
     @SuppressWarnings("unchecked")

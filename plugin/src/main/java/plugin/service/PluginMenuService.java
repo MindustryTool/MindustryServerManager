@@ -6,13 +6,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import arc.Core;
 import arc.struct.Seq;
 import arc.util.Log;
 import mindustry.game.EventType.MenuOptionChooseEvent;
 import mindustry.gen.Call;
 import mindustry.gen.Player;
 import plugin.Control;
-import plugin.Tasks;
 import plugin.annotations.Component;
 import plugin.annotations.Destroy;
 import plugin.annotations.Init;
@@ -62,21 +62,21 @@ public class PluginMenuService {
 
     @Listener
     public void onMenuOptionChoose(MenuOptionChooseEvent event) {
-        var targetMenu = menus.find(m -> m.getMenuId() == event.menuId && m.session.player == event.player);
+        Core.app.post(() -> {
+            var targetMenu = menus.find(m -> m.getMenuId() == event.menuId && m.session.player == event.player);
 
-        if (targetMenu == null) {
-            showNext(event.player);
-            return;
-        }
+            if (targetMenu == null) {
+                showNext(event.player);
+                return;
+            }
 
-        menus.remove(targetMenu);
+            menus.remove(targetMenu);
 
-        if (event.option < 0) {
-            showNext(event.player);
-            return;
-        }
+            if (event.option < 0) {
+                showNext(event.player);
+                return;
+            }
 
-        Tasks.io("Menu Option Choose: " + targetMenu.getMenuId(), () -> {
             HudOption<Object> selectedOption = null;
 
             int i = 0;
@@ -96,21 +96,19 @@ public class PluginMenuService {
                 }
             }
 
-            synchronized (event.player) {
-                if (selectedOption != null && selectedOption.getCallback() != null) {
-                    Call.hideFollowUpMenu(event.player.con, targetMenu.getMenuId());
+            if (selectedOption != null && selectedOption.getCallback() != null) {
+                Call.hideFollowUpMenu(event.player.con, targetMenu.getMenuId());
 
-                    var session = Registry.get(SessionHandler.class).get(event.player).orElse(null);
+                var session = Registry.get(SessionHandler.class).get(event.player).orElse(null);
 
-                    if (session == null) {
-                        Log.err("Failed to get session for player @", event.player);
-                        Thread.dumpStack();
-                    } else {
-                        selectedOption.getCallback().accept(session, targetMenu.state);
-                    }
+                if (session == null) {
+                    Log.err("Failed to get session for player @", event.player);
+                    Thread.dumpStack();
+                } else {
+                    selectedOption.getCallback().accept(session, targetMenu.state);
                 }
-                showNext(event.player);
             }
+            showNext(event.player);
         });
     }
 

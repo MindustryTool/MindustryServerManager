@@ -12,7 +12,7 @@ public class PlayerInfoMenu extends PluginMenu<Session> {
     }
 
     @Override
-    public void build(Session Session, Session caller) {
+    public void build(Session session, Session caller) {
         this.title = I18n.t(session.locale, "@Servers");
 
         Registry.get(SessionHandler.class).each(p -> {
