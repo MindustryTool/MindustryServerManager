@@ -44,7 +44,7 @@ public class RankUtils {
                     .append(Utils.padRight("[" + levelStr + "] (" + totalExp + ")", 20))
                     .append("[white] ")
                     .append(data.name)
-                    .append("\n");
+                    .append("[white]\n");
         }
 
         return sb.append("[white]\n").toString();
