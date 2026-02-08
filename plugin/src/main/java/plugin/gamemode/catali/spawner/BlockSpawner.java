@@ -16,20 +16,20 @@ public class BlockSpawner {
     private final CataliConfig config;
 
     public void spawn(Team team) {
+        var mapSize = Vars.world.width() * Vars.world.height();
+        var spawnCount = mapSize * 0.20;
+
+        var totalBuildCount = Groups.build.size();
+
+        if (totalBuildCount >= spawnCount) {
+            return;
+        }
+        
         for (var entry : config.blockSpawnChance) {
             var block = entry.block;
             var spawnChance = entry.chance;
 
             if (Mathf.chance(spawnChance)) {
-                var mapSize = Vars.world.width() * Vars.world.height();
-                var spawnCount = mapSize * 0.20;
-
-                var totalBuildCount = Groups.build.size();
-
-                if (totalBuildCount >= spawnCount) {
-                    break;
-                }
-
                 var tile = SpawnerHelper.getSpawnTile(block.size);
 
                 if (tile == null) {
