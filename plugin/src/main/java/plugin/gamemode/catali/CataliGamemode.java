@@ -97,6 +97,7 @@ public class CataliGamemode {
 
         Vars.state.rules.waveTeam = ENEMY_TEAM;
         Vars.state.rules.waves = false;
+        Vars.state.rules.disableUnitCap = true;
 
         UnitTypes.omura.abilities.clear();
         UnitTypes.omura.weapons.get(0).bullet.damage /= 2;
@@ -547,9 +548,9 @@ public class CataliGamemode {
 
         Unit unit = type.create(data.team);
         unit.set(safeTile.worldx(), safeTile.worldy());
-        Core.app.post(() -> unit.add());
-
         data.upgrades.apply(unit);
+
+        Core.app.post(() -> unit.add());
 
         return unit;
     }
