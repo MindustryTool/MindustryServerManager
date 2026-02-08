@@ -47,6 +47,10 @@ public class ApiGateway {
             .expireAfterAccess(Duration.ofMinutes(30))
             .build();
 
+    private final Cache<String, Boolean> failedTranslationCache = Caffeine.newBuilder()
+            .expireAfterAccess(Duration.ofMinutes(1))
+            .build();
+
     public void requestConnection() {
         HttpUtils.get(HttpUtils.get(GATEWAY_URL, "servers", SERVER_ID, "request-connection"));
     }
@@ -134,6 +138,10 @@ public class ApiGateway {
 
         var cacheKey = String.format("%s:%s", text, languageCode);
 
+        if (failedTranslationCache.getIfPresent(cacheKey) != null) {
+            return text;
+        }
+
         var cached = translationCache.getIfPresent(cacheKey);
 
         if (cached != null) {
@@ -149,6 +157,7 @@ public class ApiGateway {
         } catch (Exception e) {
             Log.err("[" + targetLanguage.getLanguage() + "] Failed to translate text: " + text + " to " + targetLanguage
                     + "\n" + e.getMessage());
+            failedTranslationCache.put(cacheKey, true);
             return text;
         }
     }
@@ -176,6 +185,11 @@ public class ApiGateway {
                 continue;
             }
 
+            if (failedTranslationCache.getIfPresent(cacheKey) != null) {
+                future.complete(text);
+                continue;
+            }
+
             if (targetLanguage.equals(Locale.ENGLISH)) {
                 future.complete(text);
                 continue;
@@ -200,6 +214,7 @@ public class ApiGateway {
                             future.completeExceptionally(
                                     new RuntimeException("Error while translating: " + text, error));
                         }
+                        failedTranslationCache.put(cacheKey, true);
                     })
                     .submit(res -> {
                         try {
