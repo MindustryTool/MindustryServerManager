@@ -9,6 +9,7 @@ import arc.util.Strings;
 import lombok.RequiredArgsConstructor;
 import mindustry.Vars;
 import mindustry.ai.types.DefenderAI;
+import mindustry.content.StatusEffects;
 import mindustry.content.UnitTypes;
 import mindustry.game.EventType.*;
 import mindustry.game.Team;
@@ -17,6 +18,7 @@ import mindustry.gen.Groups;
 import mindustry.gen.Player;
 import mindustry.gen.Teamc;
 import mindustry.gen.Unit;
+import mindustry.type.StatusEffect;
 import mindustry.type.UnitType;
 import mindustry.type.unit.MissileUnitType;
 import plugin.Control;
@@ -72,6 +74,8 @@ public class CataliGamemode {
     private final Team SPECTATOR_TEAM = Team.get(255);
     private final Team ENEMY_TEAM = Team.crux;
     private final Team BLOCK_TEAM = Team.get(254);
+
+    private final Seq<Unit> shouldNotRespawn = new Seq<>();
 
     @Init
     public void init() {
@@ -322,6 +326,22 @@ public class CataliGamemode {
         var upgrade = event.upgradeTo;
 
         team.spawnUnit(upgrade, spawned -> {
+            for (var field : StatusEffects.class.getDeclaredFields()) {
+                try {
+                    var effect = field.get(null);
+
+                    if (!(effect instanceof StatusEffect statusEffect)) {
+                        continue;
+                    }
+
+                    if (unit.hasEffect(statusEffect)) {
+                        spawned.apply(statusEffect);
+                    }
+                } catch (IllegalArgumentException | IllegalAccessException e) {
+                    e.printStackTrace();
+                }
+            }
+            shouldNotRespawn.add(unit);
             unit.kill();
         });
 
@@ -330,7 +350,12 @@ public class CataliGamemode {
 
     @Listener
     public void onTeamCreated(TeamCreatedEvent event) {
-
+        Utils.forEachPlayerLocale((locale, players) -> {
+            String message = I18n.t(locale, "[scarlet]", "@Team", event.team.team.id, "@has been created!");
+            for (var player : players) {
+                player.sendMessage(message);
+            }
+        });
     }
 
     @Listener
@@ -364,6 +389,11 @@ public class CataliGamemode {
     @Listener
     public void onUnitDestroy(UnitDestroyEvent e) {
         if (coreUnits.contains(e.unit.type)) {
+            return;
+        }
+
+        if (shouldNotRespawn.contains(e.unit)) {
+            shouldNotRespawn.remove(e.unit);
             return;
         }
 
