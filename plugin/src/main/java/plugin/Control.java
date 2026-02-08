@@ -42,9 +42,8 @@ public class Control extends Plugin implements MindustryToolPlugin {
     @Override
     public void init() {
         try {
-            Registry.init(getClass().getPackage().getName());
-
             DB.init();
+            Registry.init(getClass().getPackage().getName());
 
             SCHEDULER.schedule(this::autoHost, 60, TimeUnit.SECONDS);
             SCHEDULER.schedule(this::autoPause, 10, TimeUnit.SECONDS);
@@ -107,6 +106,7 @@ public class Control extends Plugin implements MindustryToolPlugin {
 
         PluginEvents.fire(new PluginUnloadEvent());
         Registry.destroy();
+        DB.close();
         PluginEvents.unregister();
 
         Log.info("Server controller stopped: " + this);

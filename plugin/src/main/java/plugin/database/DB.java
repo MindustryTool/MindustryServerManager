@@ -12,8 +12,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import arc.util.Log;
 import plugin.Control;
-import plugin.PluginEvents;
-import plugin.event.PluginUnloadEvent;
 
 public class DB {
     private static final String DATABASE_DIR = "./config/database";
@@ -46,8 +44,6 @@ public class DB {
             databasePath = databaseFile.getAbsolutePath();
 
             Log.info("SQLite database initialized at: " + databasePath);
-
-            PluginEvents.run(PluginUnloadEvent.class, DB::close);
 
         } catch (Exception e) {
             throw new RuntimeException("Failed to initialize SQLite database", e);
