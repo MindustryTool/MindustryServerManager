@@ -9,7 +9,6 @@ import arc.util.Strings;
 import lombok.RequiredArgsConstructor;
 import mindustry.Vars;
 import mindustry.ai.types.DefenderAI;
-import mindustry.content.Blocks;
 import mindustry.content.UnitTypes;
 import mindustry.game.EventType.*;
 import mindustry.game.Team;
@@ -20,7 +19,6 @@ import mindustry.gen.Teamc;
 import mindustry.gen.Unit;
 import mindustry.type.UnitType;
 import mindustry.type.unit.MissileUnitType;
-import mindustry.world.Tile;
 import plugin.Control;
 import plugin.PluginEvents;
 import plugin.annotations.Gamemode;
@@ -29,7 +27,6 @@ import plugin.annotations.Listener;
 import plugin.annotations.Persistence;
 import plugin.event.SessionCreatedEvent;
 import plugin.gamemode.catali.data.CataliTeamData;
-import plugin.gamemode.catali.data.RespawnEntry;
 import plugin.gamemode.catali.event.CataliBuffRareUpgrade;
 import plugin.gamemode.catali.event.CataliSpawnRareUpgrade;
 import plugin.gamemode.catali.event.CataliTierRareUpgrade;
@@ -213,6 +210,8 @@ public class CataliGamemode {
                     });
                 });
             }
+
+            data.attempToSpawn();
         }
     }
 

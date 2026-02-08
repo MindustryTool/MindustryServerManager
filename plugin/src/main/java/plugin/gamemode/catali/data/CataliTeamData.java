@@ -201,6 +201,7 @@ public class CataliTeamData {
         Core.app.post(() -> {
             unit.add();
             callback.accept(unit);
+            spawnQueue.remove(first);
         });
 
         return true;
