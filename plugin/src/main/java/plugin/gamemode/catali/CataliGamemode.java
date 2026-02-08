@@ -8,6 +8,7 @@ import arc.util.Log;
 import arc.util.Strings;
 import lombok.RequiredArgsConstructor;
 import mindustry.Vars;
+import mindustry.ai.types.DefenderAI;
 import mindustry.content.Blocks;
 import mindustry.content.UnitTypes;
 import mindustry.game.EventType.*;
@@ -89,7 +90,10 @@ public class CataliGamemode {
     }
 
     private void applyGameRules() {
-        Vars.content.units().forEach(u -> u.flying = u.naval ? true : u.flying);
+        Vars.content.units().forEach(unit -> {
+            unit.flying = unit.naval ? true : unit.flying;
+            unit.aiController = () -> new DefenderAI();
+        });
 
         Vars.state.rules.waveTeam = ENEMY_TEAM;
         Vars.state.rules.waves = false;
