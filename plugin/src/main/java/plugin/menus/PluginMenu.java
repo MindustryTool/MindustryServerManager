@@ -98,6 +98,7 @@ public abstract class PluginMenu<T> {
                 }
             });
         } catch (Exception e) {
+            session.player.sendMessage("[scarlet]Error: [white]" + e.getMessage());
             Log.err(e);
         }
     }
