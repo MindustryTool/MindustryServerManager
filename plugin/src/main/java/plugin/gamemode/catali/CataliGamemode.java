@@ -76,6 +76,18 @@ public class CataliGamemode {
 
     @Init
     public void init() {
+        UnitTypes.collaris.speed /= 2;
+        UnitTypes.omura.weapons.get(0).bullet.damage /= 2;
+
+        Vars.content.units().forEach(unit -> {
+            unit.flying = unit.naval ? true : unit.flying;
+            unit.aiController = () -> new DefenderAI();
+        });
+
+        Vars.netServer.assigner = (player, players) -> {
+            return SPECTATOR_TEAM;
+        };
+
         applyGameRules();
 
         Control.SCHEDULER.scheduleWithFixedDelay(this::update, 0, 1, TimeUnit.SECONDS);
@@ -90,29 +102,15 @@ public class CataliGamemode {
     }
 
     private void applyGameRules() {
-        Vars.content.units().forEach(unit -> {
-            unit.flying = unit.naval ? true : unit.flying;
-            unit.aiController = () -> new DefenderAI();
-        });
-
         Vars.state.rules.waveTeam = ENEMY_TEAM;
         Vars.state.rules.waves = false;
         Vars.state.rules.disableUnitCap = true;
-
-        UnitTypes.omura.abilities.clear();
-        UnitTypes.omura.weapons.get(0).bullet.damage /= 2;
-
-        UnitTypes.collaris.speed /= 2;
 
         for (var block : Vars.content.blocks()) {
             Vars.state.rules.bannedBlocks.add(block);
         }
 
         Vars.state.rules.canGameOver = false;
-
-        Vars.netServer.assigner = (player, players) -> {
-            return SPECTATOR_TEAM;
-        };
     }
 
     public CataliTeamData findTeam(Player player) {

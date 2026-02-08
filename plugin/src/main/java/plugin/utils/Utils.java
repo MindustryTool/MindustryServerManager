@@ -301,8 +301,8 @@ public class Utils {
 
             return imageBytes;
 
-        } catch (Throwable throwable) {
-            Log.err(throwable.getMessage());
+        } catch (Exception err) {
+            Log.err(err);
         }
 
         return new byte[0];
