@@ -139,45 +139,50 @@ public class CataliGamemode {
     }
 
     private void updateStatsHud() {
-        for (var player : Groups.player) {
-            var team = findTeam(player);
+        try {
+            for (var player : Groups.player) {
+                var team = findTeam(player);
 
-            String message = I18n.t(player, "@No team");
+                String message = I18n.t(player, "@No team");
 
-            if (team != null) {
-                String units = team.team.data().units.size > 0
-                        ? Strings.join(", ", team.team.data().units.map(u -> u.type.emoji()))
-                        : "@No unit";
+                if (team != null) {
+                    String units = team.team.data().units.size > 0
+                            ? Strings.join(", ", team.team.data().units.map(u -> u.type.emoji()))
+                            : "@No unit";
 
-                String respawn = team.respawn.getRespawn().size > 0
-                        ? Strings.join(" ",
-                                team.respawn.getRespawn()
-                                        .map(resp -> resp.type.emoji()
-                                                + TimeUtils.toString(Duration.between(Instant.now(), resp.respawnAt))
-                                                + " "))
-                        : "@No unit";
+                    String respawn = team.respawn.getRespawn().size > 0
+                            ? Strings.join(" ",
+                                    team.respawn.getRespawn()
+                                            .map(resp -> resp.type.emoji()
+                                                    + TimeUtils
+                                                            .toString(Duration.between(Instant.now(), resp.respawnAt))
+                                                    + " "))
+                            : "@No unit";
 
-                message = I18n.t(player, "@Team ID:", String.valueOf(team.team.id), "\n",
-                        "@Level:",
-                        String.valueOf(team.level.level) + " [gray](" + String.valueOf((int) team.level.currentExp)
-                                + "/"
-                                + String.valueOf((int) team.level.requiredExp) + ")[white]",
-                        "\n",
-                        "@Member:", String.valueOf(team.members.size), "\n",
-                        "[sky]Hp:", String.format("%.2f", team.upgrades.getHealthMultiplier() * 100) + "%[white]\n",
-                        "[red]Dmg:", String.format("%.2f", team.upgrades.getDamageMultiplier()
-                                * 100) + "%[white]\n",
-                        "[accent]Exp:", String.format("%.2f", team.upgrades.getExpMultiplier()
-                                * 100) + "%[white]\n",
-                        "[green]Regen:", String.format("%.2f", team.upgrades.getRegenMultiplier()
-                                * 100) + "%[white]\n",
-                        "@Upgrades:", "", String.valueOf(team.level.commonUpgradePoints), "[accent]",
-                        String.valueOf(team.level.rareUpgradePoints), "[white]\n",
-                        "@Unit:", units, "\n",
-                        "@Respawn:", respawn + "\n");
+                    message = I18n.t(player, "@Team ID:", String.valueOf(team.team.id), "\n",
+                            "@Level:",
+                            String.valueOf(team.level.level) + " [gray](" + String.valueOf((int) team.level.currentExp)
+                                    + "/"
+                                    + String.valueOf((int) team.level.requiredExp) + ")[white]",
+                            "\n",
+                            "@Member:", String.valueOf(team.members.size), "\n",
+                            "[sky]Hp:", String.format("%.2f", team.upgrades.getHealthMultiplier() * 100) + "%[white]\n",
+                            "[red]Dmg:", String.format("%.2f", team.upgrades.getDamageMultiplier()
+                                    * 100) + "%[white]\n",
+                            "[accent]Exp:", String.format("%.2f", team.upgrades.getExpMultiplier()
+                                    * 100) + "%[white]\n",
+                            "[green]Regen:", String.format("%.2f", team.upgrades.getRegenMultiplier()
+                                    * 100) + "%[white]\n",
+                            "@Upgrades:", "", String.valueOf(team.level.commonUpgradePoints), "[accent]",
+                            String.valueOf(team.level.rareUpgradePoints), "[white]\n",
+                            "@Unit:", units, "\n",
+                            "@Respawn:", respawn + "\n");
 
-                Call.infoPopup(player.con, message, 1.1f, Align.right | Align.top, 180, 0, 0, 0);
+                    Call.infoPopup(player.con, message, 1.1f, Align.right | Align.top, 180, 0, 0, 0);
+                }
             }
+        } catch (Exception e) {
+            Log.err("Failed to update stats hud", e);
         }
     }
 
