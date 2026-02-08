@@ -124,6 +124,7 @@ public class HubService {
                 if (servers.size > 0) {
                     try {
                         var serverData = servers
+                                .select(s -> s.getPlayers() > 0)
                                 .random();
 
                         var totalPlayers = servers.sum(s -> (int) s.getPlayers());

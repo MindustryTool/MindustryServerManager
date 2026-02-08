@@ -220,8 +220,11 @@ public class CataliGamemode {
     public void onTeamFallen(TeamFallenEvent event) {
         teams.remove(event.team);
 
+        var leader = event.team.getLeader();
+        var teamName = leader != null ? leader.name : event.team.team.id;
+
         Utils.forEachPlayerLocale((locale, players) -> {
-            String message = I18n.t(locale, "[scarlet]", "@Team", event.team.team.id, "@has been eliminated!");
+            String message = I18n.t(locale, "[scarlet]", "@Team", teamName, "@has been eliminated!");
             for (var player : players) {
                 player.sendMessage(message);
             }
