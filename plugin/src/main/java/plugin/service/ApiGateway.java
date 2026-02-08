@@ -223,11 +223,6 @@ public class ApiGateway {
                     + targetLanguage + "\n"
                     + e.getMessage());
 
-            for (var text : texts) {
-                var cacheKey = String.format("%s:%s", text, languageCode);
-                translationCache.put(cacheKey, text);
-            }
-
             return texts;
         }
     }
