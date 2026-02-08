@@ -65,8 +65,7 @@ public class GatewayService {
 
     public Mono<Boolean> isHosting(UUID serverId) {
         if (cache.containsKey(serverId)) {
-            return cache.get(serverId)
-                    .flatMap(gateway -> gateway.server().isHosting());
+            return cache.get(serverId).flatMap(gateway -> gateway.server().isHosting());
         }
 
         return Mono.just(false);
@@ -137,11 +136,11 @@ public class GatewayService {
         @Getter
         private final Server server;
 
-        private final Instant createdAt = Instant.now();
         private Instant disconnectedAt = null;
         private ConnectionState state = ConnectionState.CONNECTING;
         private Instant lastHeartBeatAt = Instant.now();
 
+        private final Instant createdAt = Instant.now();
         private final Disposable eventJob;
         private final Disposable heartbeatJob;
 
@@ -471,6 +470,7 @@ public class GatewayService {
                                 .onErrorComplete(ApiError.class)
                                 .subscribe();
 
+                        eventBus.emit(LogEvent.error(id, "Fetch event timeout"));
                         eventBus.emit(new StopEvent(id, NodeRemoveReason.FETCH_EVENT_TIMEOUT));
                     })
                     .doOnError(error -> Log.err(error.getMessage()))

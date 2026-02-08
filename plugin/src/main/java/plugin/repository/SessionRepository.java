@@ -189,7 +189,7 @@ public class SessionRepository {
             });
 
         } catch (Exception e) {
-            Log.err("Failed to create sessions table: @", e.getMessage());
+            Log.err("Failed to create sessions table: @", e);
         }
     }
 }

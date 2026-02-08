@@ -71,11 +71,28 @@ public class CataliGamemode {
             UnitTypes.incite, UnitTypes.emanate);
 
     private final Team SPECTATOR_TEAM = Team.get(255);
+    private final Team ENEMY_TEAM = Team.crux;
 
     @Init
     public void init() {
+        applyGameRules();
+
+        Control.SCHEDULER.scheduleWithFixedDelay(this::update, 0, 1, TimeUnit.SECONDS);
+        Control.SCHEDULER.scheduleWithFixedDelay(this::spawn, 0, 2, TimeUnit.SECONDS);
+
+        Log.info("[accent]Cataio gamemode loaded");
+    }
+
+    @Listener
+    public void onWorldLoad(WorldLoadEndEvent event) {
+        applyGameRules();
+    }
+
+    private void applyGameRules() {
         Vars.content.units().forEach(u -> u.flying = u.naval ? true : u.flying);
 
+        Vars.state.rules.waveTeam = ENEMY_TEAM;
+        Vars.state.rules.waves = false;
         UnitTypes.omura.abilities.clear();
         UnitTypes.omura.weapons.get(0).bullet.damage /= 2;
 
@@ -90,24 +107,15 @@ public class CataliGamemode {
         Vars.netServer.assigner = (player, players) -> {
             return SPECTATOR_TEAM;
         };
-
-        Control.SCHEDULER.scheduleWithFixedDelay(this::update, 0, 1, TimeUnit.SECONDS);
-        Control.SCHEDULER.scheduleWithFixedDelay(this::spawn, 0, 2, TimeUnit.SECONDS);
-
-        Log.info("[accent]Cataio gamemode loaded");
     }
 
     public CataliTeamData findTeam(Player player) {
         return teams.find(team -> team.members.contains(player.uuid()));
     }
 
-    public Team enemyTeam() {
-        return Vars.state.rules.waveTeam;
-    }
-
     public void spawn() {
-        unitSpawner.spawn(enemyTeam());
-        blockSpawner.spawn(enemyTeam());
+        unitSpawner.spawn(ENEMY_TEAM);
+        blockSpawner.spawn(ENEMY_TEAM);
     }
 
     public void update() {
@@ -218,11 +226,6 @@ public class CataliGamemode {
         for (var team : remove) {
             PluginEvents.fire(new TeamFallenEvent(team));
         }
-    }
-
-    @Listener
-    public void onWorldLoad(WorldLoadEndEvent event) {
-        Vars.state.rules.canGameOver = false;
     }
 
     @Listener
@@ -564,7 +567,7 @@ public class CataliGamemode {
 
         if (playerTeam == null) {
             int id = 20;
-            while (hasTeam(id) || enemyTeam().id == id || id == SPECTATOR_TEAM.id) {
+            while (hasTeam(id) || ENEMY_TEAM.id == id || id == SPECTATOR_TEAM.id) {
                 id++;
                 if (id > 250) {
                     throw new RuntimeException("Failed to find a free team ID");

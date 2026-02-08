@@ -243,10 +243,9 @@ public class PluginLoader extends Plugin {
 
             if (plugin != null) {
                 plugin.unload();
+                pluginManager.stopPlugin(pluginData.getId());
+                pluginManager.unloadPlugin(pluginData.getId());
             }
-
-            pluginManager.stopPlugin(pluginData.getId());
-            pluginManager.unloadPlugin(pluginData.getId());
 
             Log.info("[green]Unloaded plugin: " + pluginData.getName());
         } catch (Exception e) {
