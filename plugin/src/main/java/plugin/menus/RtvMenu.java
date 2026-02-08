@@ -56,7 +56,7 @@ public class RtvMenu extends PluginMenu<Integer> {
                     ? I18n.t(session.locale, "[accent]", "@Voted")
                     : "";
             String text = String.format("%s%s%.2f [gold]%c []%s (%s)", voted, ratingColor, stats.avgScore, Iconc.star,
-                    map.name(), stats.totalVotes);
+                    map.name(), String.valueOf(stats.totalVotes));
 
             option(text, (p, s) -> {
                 voteHandler.handleVote(session.player, map);
