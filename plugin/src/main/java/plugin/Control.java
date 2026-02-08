@@ -18,7 +18,6 @@ import mindustry.gen.Call;
 import mindustry.gen.Groups;
 import mindustry.gen.Iconc;
 import plugin.service.ApiGateway;
-import plugin.service.HttpServer;
 import plugin.service.I18n;
 import plugin.utils.Utils;
 import plugin.commands.ClientCommandHandler;
@@ -142,11 +141,6 @@ public class Control extends Plugin implements MindustryToolPlugin {
         if (!Vars.state.isPaused() && Groups.player.size() == 0) {
             Vars.state.set(State.paused);
             Log.info("No player: paused");
-        }
-
-        var httpServer = Registry.get(HttpServer.class);
-        if (httpServer != null && httpServer.isConnected()) {
-            Registry.get(ApiGateway.class).requestConnection();
         }
     }
 

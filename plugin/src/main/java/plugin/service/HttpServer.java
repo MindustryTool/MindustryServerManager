@@ -21,6 +21,7 @@ import plugin.annotations.Init;
 import plugin.annotations.Listener;
 import plugin.Control;
 import plugin.controller.GeneralController;
+import plugin.core.Registry;
 import plugin.event.SessionCreatedEvent;
 import plugin.event.SessionRemovedEvent;
 import dto.ServerStateDto;
@@ -115,6 +116,8 @@ public class HttpServer {
 
         app.start(9999);
         Log.info("Http server started on port 9999");
+
+        Registry.get(ApiGateway.class).requestConnection();
 
         // PluginEvents.run(PluginUnloadEvent.class, this::unload); // Handled by
         // destroy()
