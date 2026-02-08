@@ -1,6 +1,7 @@
 package plugin.service;
 
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -40,6 +41,24 @@ public class PluginMenuService {
                 return delete;
             });
         }, 0, 1, TimeUnit.MINUTES);
+
+        Control.SCHEDULER.scheduleWithFixedDelay(() -> {
+            HashMap<String, Seq<PluginMenu<?>>> playerMenus = new HashMap<>();
+
+            for (var menu : menus) {
+                if (menu.session.player.con == null || !menu.session.player.con.isConnected()) {
+                    continue;
+                }
+
+                playerMenus.computeIfAbsent(menu.session.player.uuid(), k -> new Seq<>()).add(menu);
+            }
+
+            for (var entry : playerMenus.entrySet()) {
+                if (entry.getValue().any() && !entry.getValue().contains(v -> v.isSent())) {
+                    entry.getValue().first().show();
+                }
+            }
+        }, 0, 1, TimeUnit.SECONDS);
     }
 
     @Listener
