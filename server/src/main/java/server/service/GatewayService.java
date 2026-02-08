@@ -27,6 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 import server.EnvConfig;
 import server.config.Const;
 import server.manager.NodeManager;
+import server.service.GatewayService.GatewayClient.ConnectionState;
 import dto.LoginDto;
 import dto.PlayerDto;
 import dto.PlayerInfoDto;
@@ -71,7 +72,7 @@ public class GatewayService {
         return Mono.just(false);
     }
 
-    public Mono<GatewayClient> of(UUID serverId) {
+    public synchronized Mono<GatewayClient> of(UUID serverId) {
         return cache.computeIfAbsent(serverId,
                 _id -> Mono.<GatewayClient>create(
                         (emittor) -> new GatewayClient(serverId, emittor::success, emittor::error))
@@ -388,13 +389,16 @@ public class GatewayService {
                         .uri("events")
                         .accept(MediaType.TEXT_EVENT_STREAM)
                         .retrieve()
-                        .bodyToFlux(JsonNode.class);
+                        .bodyToFlux(JsonNode.class)
+                        .concatWith(Mono.error(
+                                new ApiError(HttpStatus.REQUEST_TIMEOUT,
+                                        "SSE stream completed, This should not happend")));
             }
         }
 
         private Disposable createFetchEventJob(Consumer<GatewayClient> onConnect, Consumer<Throwable> onError) {
             return this.server.getEvents()
-                    .flatMap(event -> {
+                    .doOnNext(event -> {
                         if (state != ConnectionState.CONNECTED) {
                             state = ConnectionState.CONNECTED;
                             disconnectedAt = null;
@@ -407,16 +411,12 @@ public class GatewayService {
 
                             if (name == null) {
                                 Log.warn("Invalid event: " + event.asText());
-
-                                return Mono.empty();
                             }
 
                             var eventType = ServerEvents.getEventMap().get(name);
 
                             if (eventType == null) {
                                 Log.warn("Invalid event name: " + name + " in " + ServerEvents.getEventMap().keySet());
-
-                                return Mono.empty();
                             }
 
                             BaseEvent data = (BaseEvent) Utils.readJsonAsClass(event, eventType);
@@ -425,8 +425,6 @@ public class GatewayService {
                         } catch (Exception e) {
                             Log.err(e);
                         }
-
-                        return Mono.empty();
                     })
                     .onErrorMap(WebClientRequestException.class, error -> {
                         if (error.getCause() instanceof UnknownHostException) {
@@ -447,15 +445,7 @@ public class GatewayService {
                         if (state != ConnectionState.DISCONNECTED) {
                             state = ConnectionState.DISCONNECTED;
 
-                            if (error instanceof ApiError apiError) {
-                                if (apiError.status == HttpStatus.NOT_FOUND) {
-                                    eventBus.emit(new StopEvent(id, NodeRemoveReason.FETCH_EVENT_NOT_FOUND));
-                                } else {
-                                    eventBus.emit(new StopEvent(id, apiError.status.getReasonPhrase()));
-                                }
-                            } else {
-                                eventBus.emit(new DisconnectEvent(id));
-                            }
+                            eventBus.emit(new DisconnectEvent(id));
                         }
                     })
                     .onErrorComplete(error -> error instanceof ApiError apiError && apiError.status.is5xxServerError())

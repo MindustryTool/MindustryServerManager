@@ -147,6 +147,11 @@ public class HttpServer {
             eventListener = null;
         });
 
+        if (eventListener != null && !eventListener.terminated()){
+            Log.info("Client already connected");
+            client.close();
+        }
+
         Log.info("Client connected");
 
         client.keepAlive();
