@@ -230,7 +230,7 @@ public class CataliGamemode {
             var team = findTeam(player);
 
             if (team == null) {
-                Call.infoPopup(player.con, I18n.t(player, "@User", "[accent]/play[white]", "@to start a new team"), 2,
+                Call.infoPopup(player.con, I18n.t(player, "@User", "[accent]/p[white]", "@to start a new team"), 2,
                         Align.center, 0, 0, 30, 0);
             } else if (team.level.level == 1 && team.level.currentExp == 0) {
                 Call.infoPopup(player.con, I18n.t(player, "@Destroy block to get", "[accent]exp[white]"), 2,

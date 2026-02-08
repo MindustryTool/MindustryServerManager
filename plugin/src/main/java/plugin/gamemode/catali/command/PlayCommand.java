@@ -9,7 +9,7 @@ import plugin.type.Session;
 @Gamemode("catali")
 public class PlayCommand extends PluginClientCommand {
     public PlayCommand() {
-        setName("play");
+        setName("p");
         setDescription("Start playing in Catali gamemode");
         setAdmin(false);
     }
