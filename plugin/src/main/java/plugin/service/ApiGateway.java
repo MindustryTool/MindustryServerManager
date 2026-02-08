@@ -234,7 +234,7 @@ public class ApiGateway {
 
             return Seq.with(result).map(r -> r.getNow("This should never happen"));
         } catch (Exception e) {
-            Log.warn("[" + targetLanguage.getLanguage() + "] Failed to translate texts: " + texts + " to"
+            Log.warn("[" + targetLanguage.getLanguage() + "] Failed to translate texts: " + texts + " to "
                     + targetLanguage + "\n"
                     + e.getMessage());
 

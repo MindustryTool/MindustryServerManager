@@ -98,7 +98,7 @@ public abstract class PluginMenu<T> {
                 copy.options.removeAll(op -> op.size == 0);
 
                 var playerMenus = handler.getValidMenus(session.player);
-                if (playerMenus.size == 1) {
+                if (playerMenus.size <= 1) {
                     copy.show();
                 }
             });
