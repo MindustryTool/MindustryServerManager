@@ -2,6 +2,9 @@ package plugin.gamemode.catali.spawner;
 
 import arc.math.Mathf;
 import mindustry.Vars;
+import mindustry.content.Blocks;
+import mindustry.gen.Groups;
+import mindustry.type.UnitType;
 import mindustry.world.Tile;
 
 public class SpawnerHelper {
@@ -27,5 +30,10 @@ public class SpawnerHelper {
         }
 
         return null;
+    }
+
+    public static boolean isTileSafe(Tile tile, UnitType type) {
+        return tile != null && tile.block() == Blocks.air
+                && !Groups.unit.intersect(tile.worldx(), tile.worldy(), type.hitSize, type.hitSize).any();
     }
 }

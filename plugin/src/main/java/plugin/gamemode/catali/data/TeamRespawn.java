@@ -20,6 +20,8 @@ public class TeamRespawn {
     public Seq<RespawnEntry> getRespawnUnit() {
         var needRespawn = respawn.select(entry -> entry.respawnAt.isBefore(Instant.now()));
 
+        respawn.removeAll(needRespawn);
+
         return needRespawn;
     }
 }

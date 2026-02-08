@@ -42,6 +42,7 @@ import plugin.gamemode.catali.event.TrayUnitCaughtEvent;
 import plugin.gamemode.catali.menu.CommonUpgradeMenu;
 import plugin.gamemode.catali.menu.RareUpgradeMenu;
 import plugin.gamemode.catali.spawner.BlockSpawner;
+import plugin.gamemode.catali.spawner.SpawnerHelper;
 import plugin.gamemode.catali.spawner.UnitSpawner;
 import plugin.service.I18n;
 import plugin.service.SessionHandler;
@@ -204,16 +205,14 @@ public class CataliGamemode {
 
     private void updateRespawn() {
         for (CataliTeamData data : teams) {
-            Seq<RespawnEntry> removed = new Seq<>();
             var respawns = data.respawn.getRespawnUnit();
             for (var entry : respawns) {
-                var unit = spawnUnitForTeam(data, entry.type);
-
-                if (unit != null) {
-                    removed.add(entry);
-                }
+                data.spawnUnit(entry.type, (spawned) -> {
+                    data.eachMember(member -> {
+                        member.sendMessage(I18n.t(member, spawned.type.emoji(), "@respaned"));
+                    });
+                });
             }
-            data.respawn.respawn.removeAll(removed);
         }
     }
 
@@ -318,10 +317,16 @@ public class CataliGamemode {
         var unit = event.unit;
         var upgrade = event.upgradeTo;
 
-        unit.kill();
-        spawnUnitForTeam(team, upgrade);
+        team.spawnUnit(upgrade, spawned -> {
+            unit.kill();
+        });
 
         team.level.rareUpgradePoints--;
+    }
+
+    @Listener
+    public void onTeamCreated(TeamCreatedEvent event) {
+
     }
 
     @Listener
@@ -332,15 +337,16 @@ public class CataliGamemode {
             var spawnX = event.tile.worldx();
             var spawnY = event.tile.worldy();
 
-            var spawnable = isTileSafe(event.tile, UnitTypes.poly);
+            var spawnable = SpawnerHelper.isTileSafe(event.tile, UnitTypes.poly);
 
             if (spawnable) {
                 Unit unit = UnitTypes.poly.create(playerTeam.team);
 
                 unit.set(spawnX, spawnY);
-                Core.app.post(() -> unit.add());
-
-                event.player.unit(unit);
+                Core.app.post(() -> {
+                    unit.add();
+                    event.player.unit(unit);
+                });
 
                 playerTeam.spawning = false;
             } else {
@@ -382,7 +388,7 @@ public class CataliGamemode {
             Log.warn("Missing respawn time for unit @", event.type.name);
         }
 
-        var timeStr = TimeUtils.toString(respawnTime);
+        var timeStr = TimeUtils.toRelativeSeconds(respawnTime);
 
         event.team.respawn.addUnit(event.type, respawnTime);
 
@@ -419,6 +425,7 @@ public class CataliGamemode {
             CataliTeamData victimTeam = teams.find(team -> team.team.id == e.unit.team.id);
 
             if (victimTeam == null) {
+                // Cal chances
                 PluginEvents.fire(new TrayUnitCaughtEvent(killerTeam, e.unit.type));
             }
         }
@@ -426,7 +433,6 @@ public class CataliGamemode {
 
     @Listener
     public void onTrayUnitCaught(TrayUnitCaughtEvent event) {
-        spawnUnitForTeam(event.team, event.type);
         Utils.forEachPlayerLocale((locale, players) -> {
             String message = I18n.t(locale, "[green]", "@Team", event.team.team.id,
                     "@has caught a stray unit!");
@@ -435,11 +441,16 @@ public class CataliGamemode {
                 player.sendMessage(message);
             }
         });
+
+        event.team.spawnUnit(event.type, unit -> {
+
+        });
     }
 
     @Listener
     public void onRareUpgradeSpawn(CataliSpawnRareUpgrade event) {
-        spawnUnitForTeam(event.team, UnitTypes.poly);
+        event.team.spawnUnit(UnitTypes.poly, unit -> {
+        });
         event.team.level.rareUpgradePoints--;
     }
 
@@ -502,71 +513,6 @@ public class CataliGamemode {
         }
     }
 
-    private Unit spawnUnitForTeam(CataliTeamData data, UnitType type) {
-        var leaderPlayer = Groups.player.find(p -> p.uuid().equals(data.leaderUuid));
-
-        if (leaderPlayer == null) {
-            return null;
-        }
-
-        Unit leaderUnit = Groups.unit.find(u -> u == leaderPlayer.unit());
-
-        if (leaderUnit == null) {
-            leaderUnit = data.getTeamUnits().firstOpt();
-        }
-
-        if (leaderUnit == null) {
-            Log.info("No leader unit for player @", leaderPlayer.name);
-            return null;
-        }
-
-        Tile safeTile = null;
-        Tile tile = null;
-        int maxSearchRange = 10;
-        // Search for safe tile arround
-
-        for (int i = 1; i < maxSearchRange; i++) {
-            for (int x = 1 - i; x < i; x++) {
-                tile = Vars.world.tile(leaderUnit.tileX() + x, leaderUnit.tileY() - i);
-                if (isTileSafe(tile, type)) {
-                    safeTile = tile;
-                    break;
-                }
-                tile = Vars.world.tile(leaderUnit.tileX() + x, leaderUnit.tileY() + i);
-                if (isTileSafe(tile, type)) {
-                    safeTile = tile;
-                    break;
-                }
-            }
-
-            for (int y = 1 - i; y < i; y++) {
-                tile = Vars.world.tile(leaderUnit.tileX() - i, leaderUnit.tileY() + y);
-                if (isTileSafe(tile, type)) {
-                    safeTile = tile;
-                    break;
-                }
-                tile = Vars.world.tile(leaderUnit.tileX() + i, leaderUnit.tileY() + y);
-                if (isTileSafe(tile, type)) {
-                    safeTile = tile;
-                    break;
-                }
-            }
-        }
-
-        if (safeTile == null) {
-            Log.info("No safe tile found for team @", data.team);
-            return null;
-        }
-
-        Unit unit = type.create(data.team);
-        unit.set(safeTile.worldx(), safeTile.worldy());
-        data.upgrades.apply(unit);
-
-        Core.app.post(() -> unit.add());
-
-        return unit;
-    }
-
     public boolean hasTeam(int id) {
         return teams.contains(team -> team.team.id == id);
     }
@@ -615,10 +561,5 @@ public class CataliGamemode {
         }
 
         return playerTeam;
-    }
-
-    public boolean isTileSafe(Tile tile, UnitType type) {
-        return tile != null && tile.block() == Blocks.air
-                && !Groups.unit.intersect(tile.worldx(), tile.worldy(), type.hitSize, type.hitSize).any();
     }
 }

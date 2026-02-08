@@ -42,6 +42,38 @@ public class TimeUtils {
         return out.toString();
     }
 
+    public static String toRelativeSeconds(Duration duration) {
+        if (duration == null || duration.isZero()) {
+            return "0ms";
+        }
+
+        long ms = duration.toMillis();
+        StringBuilder out = new StringBuilder();
+
+        long days = ms / 86_400_000L;
+        ms %= 86_400_000L;
+
+        long hours = ms / 3_600_000L;
+        ms %= 3_600_000L;
+
+        long minutes = ms / 60_000L;
+        ms %= 60_000L;
+
+        long seconds = ms / 1_000L;
+        ms %= 1_000L;
+
+        if (days > 0)
+            out.append(days).append("d");
+        if (hours > 0)
+            out.append(hours).append("h");
+        if (minutes > 0)
+            out.append(minutes).append("m");
+        if (seconds > 0)
+            out.append(seconds).append("s");
+
+        return out.toString();
+    }
+
     public static Duration parse(String input) {
         if (input == null || input.trim().isEmpty()) {
             throw new IllegalArgumentException("Time string is empty");
