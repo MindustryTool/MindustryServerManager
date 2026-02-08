@@ -9,11 +9,10 @@ import mindustry.gen.Unit;
 @ToString
 @EqualsAndHashCode
 public class TeamUpgrades {
-    // Stat multipliers (1.0 = base)
-    private float healthMultiplier = 1.0f;
-    private float damageMultiplier = 1.0f;
-    private float regenMultiplier = 1.0f; // This might need custom logic to apply
-    private float expMultiplier = 1.0f;
+    private float healthMultiplier = 0.05f;
+    private float damageMultiplier = 0.05f;
+    private float regenMultiplier = 0.05f; // This might need custom logic to apply
+    private float expMultiplier = 0.05f;
 
     // Upgrade levels for tracking
     private int healthLevel = 0;
