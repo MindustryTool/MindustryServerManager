@@ -47,6 +47,7 @@ public class CataliTeamData {
     public Seq<String> joinRequests = new Seq<>();
     public boolean spawning = true;
     public Seq<Pair<UnitType, Consumer<Unit>>> spawnQueue = new Seq<>();
+    public final int MAX_UNIT_COUNT = 10;
 
     public CataliTeamData(Team team, String leaderUuid) {
         this.team = team;
@@ -205,5 +206,9 @@ public class CataliTeamData {
         });
 
         return true;
+    }
+
+    public boolean canHaveMoreUnit() {
+        return getTeamUnits().size + spawnQueue.size + respawn.respawn.size < MAX_UNIT_COUNT;
     }
 }

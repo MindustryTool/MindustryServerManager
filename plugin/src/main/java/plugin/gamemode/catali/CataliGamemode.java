@@ -137,10 +137,15 @@ public class CataliGamemode {
                 updateRespawn();
                 updateTeam();
                 updatePlayer();
+                healCore();
             } catch (Exception e) {
                 Log.err("Failed to update stats hud", e);
             }
         });
+    }
+
+    private void healCore() {
+        Team.sharded.cores().each(core -> core.heal());
     }
 
     private void updateStatsHud() {
@@ -261,7 +266,7 @@ public class CataliGamemode {
         });
 
         Utils.forEachPlayerLocale((locale, players) -> {
-            String message = I18n.t(locale, "[scarlet]", "@Team", teamName, "[scarlet]","@has been eliminated!");
+            String message = I18n.t(locale, "[scarlet]", "@Team", teamName, "[scarlet]", "@has been eliminated!");
             for (var player : players) {
                 player.sendMessage(message);
             }
