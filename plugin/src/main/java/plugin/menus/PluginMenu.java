@@ -82,6 +82,7 @@ public abstract class PluginMenu<T> {
             copy.options = new Seq<>(new Seq<>());
 
             var handler = Registry.get(PluginMenuService.class);
+
             handler.add(copy);
 
             Tasks.io("Show Menu: " + getMenuId(), () -> {
@@ -97,8 +98,7 @@ public abstract class PluginMenu<T> {
                 copy.options.removeAll(op -> op.size == 0);
 
                 var playerMenus = handler.getValidMenus(session.player);
-
-                if (playerMenus.size == 0) {
+                if (playerMenus.size == 1) {
                     copy.show();
                 }
             });
