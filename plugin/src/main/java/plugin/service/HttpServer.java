@@ -142,15 +142,15 @@ public class HttpServer {
     }
 
     private synchronized void onClientConnect(SseClient client) {
-        client.onClose(() -> {
-            Log.info("Client disconnected");
-            eventListener = null;
-        });
-
         if (eventListener != null && !eventListener.terminated()) {
             Log.info("Client already connected");
             client.close();
         }
+
+        client.onClose(() -> {
+            Log.info("Client disconnected");
+            eventListener = null;
+        });
 
         Log.info("Client connected");
 
