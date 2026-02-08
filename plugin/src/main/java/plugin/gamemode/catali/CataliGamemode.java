@@ -250,7 +250,7 @@ public class CataliGamemode {
             for (var entry : respawns) {
                 data.spawnUnit(entry.type, (spawned) -> {
                     data.eachMember(member -> {
-                        member.sendMessage(I18n.t(member, spawned.type.emoji(), "@respaned"));
+                        member.sendMessage(I18n.t(member, spawned.type.emoji(), "@respawned"));
                     });
                 });
             }

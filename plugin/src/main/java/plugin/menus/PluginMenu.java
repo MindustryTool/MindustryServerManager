@@ -106,6 +106,11 @@ public abstract class PluginMenu<T> {
 
                 var handler = Registry.get(PluginMenuService.class);
                 var playerMenus = handler.getValidMenus(session.player);
+                var exists = playerMenus.find(m -> m == copy);
+
+                if (exists != null) {
+                    Log.err("Menu @ already in the list", copy);
+                }
 
                 if (playerMenus.contains(m -> m.getMenuId() == copy.getMenuId())) {
                     Log.warn("Player @ already have menu @", session.player, copy);
