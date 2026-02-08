@@ -68,6 +68,10 @@ public class CataliTeamData {
         return lastLeaderOnlineTime.plusSeconds(60 * 2);
     }
 
+    public void refreshTimeout() {
+        lastLeaderOnlineTime = Instant.now();
+    }
+
     public void eachMember(Cons<Player> cons) {
         Groups.player.each(player -> {
             if (player.team() == team) {
@@ -115,10 +119,10 @@ public class CataliTeamData {
             case HEALTH:
                 upgrades.levelUpHealth(amount);
                 break;
-            case HEALING:
-                upgrades.levelUpHealing(amount);
+            case REGEN:
+                upgrades.levelUpREGEN(amount);
                 break;
-            case EXPENRIENCE:
+            case EXP:
                 upgrades.levelUpExp(amount);
                 break;
         }

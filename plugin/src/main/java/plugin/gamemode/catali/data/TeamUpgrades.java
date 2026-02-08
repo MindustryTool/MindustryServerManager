@@ -50,7 +50,7 @@ public class TeamUpgrades {
         damageLevel += amount;
     }
 
-    public void levelUpHealing(int amount) {
+    public void levelUpREGEN(int amount) {
         regenLevel += amount;
     }
 

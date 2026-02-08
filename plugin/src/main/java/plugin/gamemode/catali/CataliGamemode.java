@@ -399,6 +399,8 @@ public class CataliGamemode {
         var playerTeam = findTeam(event.player);
 
         if (playerTeam != null && playerTeam.spawning == true) {
+            playerTeam.refreshTimeout();
+
             var spawnX = event.tile.worldx();
             var spawnY = event.tile.worldy();
 
