@@ -5,7 +5,6 @@ import arc.math.Mathf;
 import arc.struct.Seq;
 import arc.util.Align;
 import arc.util.Log;
-import arc.util.Strings;
 import lombok.RequiredArgsConstructor;
 import mindustry.Vars;
 import mindustry.ai.types.DefenderAI;
@@ -93,6 +92,21 @@ public class CataliGamemode {
 
         applyGameRules();
 
+        for (var team : teams) {
+            var leader = Groups.player.find(player -> team.leaderUuid.equals(team.leaderUuid));
+
+            if (leader != null) {
+                leader.team(team.team);
+            }
+
+            for (var member : team.members) {
+                var memberPlayer = Groups.player.find(player -> member.equals(player.uuid()));
+                if (memberPlayer != null) {
+                    memberPlayer.team(team.team);
+                }
+            }
+        }
+
         Control.SCHEDULER.scheduleWithFixedDelay(this::updateStatsHud, 0, 1, TimeUnit.SECONDS);
         Control.SCHEDULER.scheduleWithFixedDelay(this::update, 0, 1, TimeUnit.SECONDS);
         Control.SCHEDULER.scheduleWithFixedDelay(this::spawn, 0, 2, TimeUnit.SECONDS);
@@ -156,17 +170,35 @@ public class CataliGamemode {
                 String message = I18n.t(player, "@No team");
 
                 if (team != null) {
+                    StringBuilder sb = new StringBuilder();
+
+                    for (int i = 0; i < team.team.data().units.size; i++) {
+                        Unit unit = team.team.data().units.get(i);
+                        sb.append(unit.type.emoji()).append(" ");
+                        if (i % 5 == 4) {
+                            sb.append("\n");
+                        }
+                    }
+
                     String units = team.team.data().units.size > 0
-                            ? Strings.join(", ", team.team.data().units.map(u -> u.type.emoji()))
+                            ? sb.toString()
                             : "@No unit";
 
+                    StringBuilder respawnSb = new StringBuilder();
+
+                    for (int i = 0; i < team.respawn.getRespawn().size; i++) {
+                        var respawnEntry = team.respawn.getRespawn().get(i);
+                        respawnSb.append(respawnEntry.type.emoji())
+                                .append(" ")
+                                .append(TimeUtils.toSeconds(Duration.between(Instant.now(), respawnEntry.respawnAt)))
+                                .append(" ");
+                        if (i % 5 == 4) {
+                            respawnSb.append("\n");
+                        }
+                    }
+
                     String respawn = team.respawn.getRespawn().size > 0
-                            ? Strings.join(" ",
-                                    team.respawn.getRespawn()
-                                            .map(resp -> resp.type.emoji()
-                                                    + TimeUtils
-                                                            .toString(Duration.between(Instant.now(), resp.respawnAt))
-                                                    + " "))
+                            ? respawnSb.toString()
                             : "@No unit";
 
                     message = I18n.t(player, "@Team ID:", String.valueOf(team.team.id), "\n",
@@ -429,7 +461,7 @@ public class CataliGamemode {
             Log.warn("Missing respawn time for unit @", event.type.name);
         }
 
-        var timeStr = TimeUtils.toRelativeSeconds(respawnTime);
+        var timeStr = TimeUtils.toSeconds(respawnTime);
 
         event.team.respawn.addUnit(event.type, respawnTime);
 

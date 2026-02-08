@@ -42,7 +42,7 @@ public class TimeUtils {
         return out.toString();
     }
 
-    public static String toRelativeSeconds(Duration duration) {
+    public static String toSeconds(Duration duration) {
         if (duration == null || duration.isZero()) {
             return "0ms";
         }
