@@ -17,9 +17,11 @@ public class RareUpgradeMenu extends PluginMenu<CataliTeamData> {
         title = I18n.t(session, "@Rare Upgrades");
         description = I18n.t(session, "@Select a rare upgrade type.");
 
-        option(I18n.t(session, "@Spawn Unit"), (s, st) -> {
-            PluginEvents.fire(new CataliSpawnRareUpgrade(team));
-        });
+        if (team.canHaveMoreUnit()) {
+            option(I18n.t(session, "@Spawn Unit"), (s, st) -> {
+                PluginEvents.fire(new CataliSpawnRareUpgrade(team));
+            });
+        }
 
         row();
 

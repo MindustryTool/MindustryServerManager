@@ -466,6 +466,10 @@ public class CataliGamemode {
             CataliTeamData victimTeam = teams.find(team -> team.team.id == e.unit.team.id);
 
             if (victimTeam == null) {
+                if (!killerTeam.canHaveMoreUnit()) {
+                    return;
+                }
+
                 // Cal chances
                 PluginEvents.fire(new TrayUnitCaughtEvent(killerTeam, e.unit.type));
             }

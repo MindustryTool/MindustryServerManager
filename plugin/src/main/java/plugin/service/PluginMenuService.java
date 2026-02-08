@@ -124,7 +124,7 @@ public class PluginMenuService {
     }
 
     public void add(PluginMenu<?> menu) {
-        menus.add(menu);
+        menus.insert(0, menu);
     }
 
     public Seq<PluginMenu<?>> getValidMenus(Player player) {
