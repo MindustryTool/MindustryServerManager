@@ -91,6 +91,7 @@ public class CataliGamemode {
 
         applyGameRules();
 
+        Control.SCHEDULER.scheduleWithFixedDelay(this::updateStatsHud, 0, 1, TimeUnit.SECONDS);
         Control.SCHEDULER.scheduleWithFixedDelay(this::update, 0, 1, TimeUnit.SECONDS);
         Control.SCHEDULER.scheduleWithFixedDelay(this::spawn, 0, 2, TimeUnit.SECONDS);
 
@@ -133,7 +134,6 @@ public class CataliGamemode {
                 updateRespawn();
                 updateTeam();
                 updatePlayer();
-                updateStatsHud();
             } catch (Exception e) {
                 Log.err("Failed to update stats hud", e);
             }
@@ -178,7 +178,7 @@ public class CataliGamemode {
                         "@Unit:", units, "\n",
                         "@Respawn:", respawn + "\n");
 
-                Call.infoPopup(player.con, message, 2, Align.right | Align.top, 180, 0, 0, 0);
+                Call.infoPopup(player.con, message, 1.1f, Align.right | Align.top, 180, 0, 0, 0);
             }
         }
     }
