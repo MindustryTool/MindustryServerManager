@@ -5,6 +5,7 @@ import java.time.Instant;
 import arc.struct.Seq;
 import arc.util.Log;
 import lombok.Data;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import mindustry.gen.Call;
 import plugin.Tasks;
@@ -18,7 +19,9 @@ public abstract class PluginMenu<T> {
     public String description = "";
     public Session session = null;
     public T state = null;
-    public boolean isSent = false;
+
+    @Getter
+    private boolean isSent = false;
 
     public final Instant createdAt = Instant.now();
 
@@ -91,7 +94,7 @@ public abstract class PluginMenu<T> {
                 copy.options.removeAll(op -> op.size == 0);
 
                 var handler = Registry.get(PluginMenuService.class);
-                var playerMenus = handler.getMenus(session.player);
+                var playerMenus = handler.getValidMenus(session.player);
 
                 handler.add(copy);
 
