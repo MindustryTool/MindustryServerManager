@@ -46,7 +46,7 @@ public class MapRating {
     @RequiredArgsConstructor
     public static class MapRatingStat {
         public final int totalVotes;
-        public final int avgScore;
+        public final float avgScore;
     }
 
     private static MapRatingData load() {

@@ -273,7 +273,7 @@ public class Utils {
                 }
             });
 
-            var bytes = future.get(10, TimeUnit.SECONDS);
+            var bytes = future.get(500, TimeUnit.MILLISECONDS);
 
             if (bytes.length == 0) {
                 return new byte[0];
@@ -289,8 +289,8 @@ public class Utils {
                     .post("https://api.mindustry-tool.com", "api", "v4", "maps", "image-json")
                     .header("Content-Type", "application/json")
                     .content(JsonUtils.toJsonString(body))
-                    .timeout(30000)
-                    .error(error -> Log.err(error.getMessage()))
+                    .timeout(60000)
+                    .error(error -> Log.err("Fail to generate map preview", error.getMessage()))
                     .submit((res) -> {
                         tempImageFile.write(res.getResultAsStream(), false);
                     });
