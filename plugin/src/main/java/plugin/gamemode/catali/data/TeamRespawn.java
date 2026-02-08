@@ -1,11 +1,6 @@
 package plugin.gamemode.catali.data;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import mindustry.type.UnitType;
-import plugin.json.MappableContentSerializer;
-import plugin.json.UnitTypeDeserializer;
-
 import java.time.Duration;
 import java.time.Instant;
 
@@ -17,19 +12,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class TeamRespawn {
     public Seq<RespawnEntry> respawn = new Seq<>();
-
-    @Data
-    public static class RespawnEntry {
-        @JsonSerialize(using = MappableContentSerializer.class)
-        @JsonDeserialize(using = UnitTypeDeserializer.class)
-        public UnitType type;
-        public Instant respawnAt;
-
-        public RespawnEntry(UnitType type, Duration duration) {
-            this.type = type;
-            this.respawnAt = Instant.now().plus(duration);
-        }
-    }
 
     public void addUnit(UnitType type, Duration duration) {
         respawn.add(new RespawnEntry(type, duration));

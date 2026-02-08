@@ -18,6 +18,7 @@ import mindustry.gen.Player;
 import mindustry.gen.Teamc;
 import mindustry.gen.Unit;
 import mindustry.type.UnitType;
+import mindustry.type.unit.MissileUnitType;
 import mindustry.world.Tile;
 import plugin.Control;
 import plugin.PluginEvents;
@@ -26,9 +27,16 @@ import plugin.annotations.Init;
 import plugin.annotations.Listener;
 import plugin.annotations.Persistence;
 import plugin.event.SessionCreatedEvent;
-import plugin.gamemode.catali.data.*;
-import plugin.gamemode.catali.data.TeamRespawn.RespawnEntry;
-import plugin.gamemode.catali.event.*;
+import plugin.gamemode.catali.data.CataliTeamData;
+import plugin.gamemode.catali.data.RespawnEntry;
+import plugin.gamemode.catali.event.CataliBuffRareUpgrade;
+import plugin.gamemode.catali.event.CataliSpawnRareUpgrade;
+import plugin.gamemode.catali.event.CataliTierRareUpgrade;
+import plugin.gamemode.catali.event.ExpGainEvent;
+import plugin.gamemode.catali.event.TeamCreatedEvent;
+import plugin.gamemode.catali.event.TeamFallenEvent;
+import plugin.gamemode.catali.event.TeamUnitDeadEvent;
+import plugin.gamemode.catali.event.TrayUnitCaughtEvent;
 import plugin.gamemode.catali.menu.CommonUpgradeMenu;
 import plugin.gamemode.catali.menu.RareUpgradeMenu;
 import plugin.gamemode.catali.spawner.BlockSpawner;
@@ -316,6 +324,10 @@ public class CataliGamemode {
             return;
         }
 
+        if (e.unit.type instanceof MissileUnitType){
+            return;
+        }
+
         CataliTeamData victimTeam = teams.find(team -> team.team.id == e.unit.team.id);
 
         if (victimTeam == null) {
@@ -436,8 +448,8 @@ public class CataliGamemode {
         }
 
         var leaderPlayer = event.team.getLeader();
+
         if (leaderPlayer == null) {
-            Log.info("No leader player for team @", event.team.team);
             return;
         }
 
@@ -461,7 +473,6 @@ public class CataliGamemode {
         var leaderPlayer = Groups.player.find(p -> p.uuid().equals(data.leaderUuid));
 
         if (leaderPlayer == null) {
-            Log.info("No leader player for team @", data.team);
             return null;
         }
 
