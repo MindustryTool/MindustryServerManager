@@ -488,6 +488,11 @@ public class GatewayService {
                                             + Utils.toReadableString(Duration.between(disconnectedAt, Instant.now())));
                         }
 
+                        try {
+                            heartbeatJob.dispose();
+                        } catch (Exception e) {
+                            Log.err(e);
+                        }
                     })
                     .subscribeOn(Schedulers.boundedElastic())
                     .subscribe();
