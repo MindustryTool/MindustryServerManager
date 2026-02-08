@@ -14,8 +14,10 @@ import mindustry.game.Team;
 import mindustry.gen.Groups;
 import mindustry.gen.Player;
 import mindustry.gen.Unit;
+import plugin.PluginEvents;
 import plugin.core.Registry;
 import plugin.gamemode.catali.CataliConfig;
+import plugin.gamemode.catali.event.TeamUpgradeChangedEvent;
 import plugin.json.TeamDeserializer;
 import plugin.json.TeamSerializer;
 
@@ -88,30 +90,29 @@ public class CataliTeamData {
         return Groups.player.find(player -> player.uuid().equals(leaderUuid));
     }
 
-    public void upgrade(CataliCommonUpgrade upgrade, int amount) {
-        if (this.level.commonUpgradePoints < amount)
+    public void consumeUpgrade(CataliCommonUpgrade upgrade, int amount) {
+        if (this.level.commonUpgradePoints < amount) {
             return;
+        }
 
         this.level.commonUpgradePoints -= amount;
         var upgrades = this.upgrades;
 
         switch (upgrade) {
             case DAMAGE:
-                upgrades.damageLevel += amount;
-                upgrades.damageMultiplier += 0.1f * amount;
+                upgrades.levelUpDamage(amount);
                 break;
             case HEALTH:
-                upgrades.healthLevel += amount;
-                upgrades.healthMultiplier += 0.1f * amount;
+                upgrades.levelUpHealth(amount);
                 break;
             case HEALING:
-                upgrades.regenLevel += amount;
-                upgrades.regenMultiplier += 0.1f * amount;
+                upgrades.levelUpHealing(amount);
                 break;
             case EXPENRIENCE:
-                upgrades.expLevel += amount;
-                upgrades.expMultiplier += 0.1f * amount;
+                upgrades.levelUpExp(amount);
                 break;
         }
+
+        PluginEvents.fire(new TeamUpgradeChangedEvent(this));
     }
 }

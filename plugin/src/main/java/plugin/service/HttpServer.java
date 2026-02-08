@@ -147,7 +147,7 @@ public class HttpServer {
             eventListener = null;
         });
 
-        if (eventListener != null && !eventListener.terminated()){
+        if (eventListener != null && !eventListener.terminated()) {
             Log.info("Client already connected");
             client.close();
         }
@@ -217,9 +217,13 @@ public class HttpServer {
 
         buffer.clear();
 
-        if (app != null) {
-            app.stop();
-            app = null;
+        try {
+            if (app != null) {
+                app.stop();
+                app = null;
+            }
+        } catch (Exception e) {
+            Log.err("Failed to stop http server", e);
         }
     }
 

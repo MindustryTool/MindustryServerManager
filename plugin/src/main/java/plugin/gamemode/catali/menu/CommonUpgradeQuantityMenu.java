@@ -23,32 +23,38 @@ public class CommonUpgradeQuantityMenu extends PluginMenu<Pair<CataliTeamData, C
         description = I18n.t(session, "@Select how many points to spend.");
 
         option("1", (s, st) -> {
-            team.upgrade(upgrade, 1);
+            team.consumeUpgrade(upgrade, 1);
             if (level.commonUpgradePoints > 0) {
                 Registry.get(CommonUpgradeMenu.class).send(s, team);
             }
         });
 
-        option("2", (s, st) -> {
-            team.upgrade(upgrade, 2);
-            if (level.commonUpgradePoints > 0) {
-                Registry.get(CommonUpgradeMenu.class).send(s, team);
-            }
-        });
+        if (level.commonUpgradePoints >= 2) {
+            option("2", (s, st) -> {
+                team.consumeUpgrade(upgrade, 2);
+                if (level.commonUpgradePoints > 0) {
+                    Registry.get(CommonUpgradeMenu.class).send(s, team);
+                }
+            });
+        }
 
-        option("5", (s, st) -> {
-            if (level.commonUpgradePoints > 0) {
-                team.upgrade(upgrade, 5);
-                Registry.get(CommonUpgradeMenu.class).send(s, team);
-            }
-        });
+        if (level.commonUpgradePoints >= 5) {
+            option("5", (s, st) -> {
+                team.consumeUpgrade(upgrade, 5);
+                if (level.commonUpgradePoints > 0) {
+                    Registry.get(CommonUpgradeMenu.class).send(s, team);
+                }
+            });
+        }
 
         row();
 
-        option(I18n.t(session, "@All Points"), (s, st) -> {
-            team.upgrade(upgrade, level.commonUpgradePoints);
-            Registry.get(CommonUpgradeMenu.class).send(s, team);
-        });
+        if (level.commonUpgradePoints >= 6) {
+            option(I18n.t(session, "@All Points"), (s, st) -> {
+                team.consumeUpgrade(upgrade, level.commonUpgradePoints);
+                Registry.get(CommonUpgradeMenu.class).send(s, team);
+            });
+        }
 
         row();
 

@@ -1,20 +1,51 @@
 package plugin.gamemode.catali.data;
 
-import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
+import mindustry.gen.Unit;
 
-@Data
 @NoArgsConstructor
+@Getter
+@ToString
+@EqualsAndHashCode
 public class TeamUpgrades {
     // Stat multipliers (1.0 = base)
-    public float healthMultiplier = 1.0f;
-    public float damageMultiplier = 1.0f;
-    public float regenMultiplier = 1.0f; // This might need custom logic to apply
-    public float expMultiplier = 1.0f;
+    private float healthMultiplier = 1.0f;
+    private float damageMultiplier = 1.0f;
+    private float regenMultiplier = 1.0f; // This might need custom logic to apply
+    private float expMultiplier = 1.0f;
 
     // Upgrade levels for tracking
-    public int healthLevel = 0;
-    public int damageLevel = 0;
-    public int regenLevel = 0;
-    public int expLevel = 0;
+    private int healthLevel = 0;
+    private int damageLevel = 0;
+    private int regenLevel = 0;
+    private int expLevel = 0;
+
+    public void apply(Unit unit) {
+        unit.maxHealth = unit.type.health * healthMultiplier;
+        unit.health = unit.maxHealth;
+        unit.damageMultiplier(damageMultiplier);
+    }
+
+    public void levelUpHealth(int amount) {
+        damageLevel += amount;
+        damageMultiplier += 0.1f * amount;
+    }
+
+    public void levelUpDamage(int amount) {
+        damageLevel += amount;
+        damageMultiplier += 0.1f * amount;
+    }
+
+    public void levelUpHealing(int amount) {
+        regenLevel += amount;
+        regenMultiplier += 0.1f * amount;
+    }
+
+    public void levelUpExp(int amount) {
+        expLevel += amount;
+        expMultiplier += 0.1f * amount;
+    }
 }

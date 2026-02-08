@@ -36,6 +36,7 @@ import plugin.gamemode.catali.event.ExpGainEvent;
 import plugin.gamemode.catali.event.TeamCreatedEvent;
 import plugin.gamemode.catali.event.TeamFallenEvent;
 import plugin.gamemode.catali.event.TeamUnitDeadEvent;
+import plugin.gamemode.catali.event.TeamUpgradeChangedEvent;
 import plugin.gamemode.catali.event.TrayUnitCaughtEvent;
 import plugin.gamemode.catali.menu.CommonUpgradeMenu;
 import plugin.gamemode.catali.menu.RareUpgradeMenu;
@@ -152,10 +153,10 @@ public class CataliGamemode {
                                 + String.valueOf((int) team.level.requiredExp) + ")[white]",
                         "\n",
                         "@Member:", String.valueOf(team.members.size), "\n",
-                        "[sky]Hp:", String.format("%.2f", team.upgrades.healthMultiplier) + "%[white]\n",
-                        "[red]Dmg:", String.format("%.2f", team.upgrades.damageMultiplier) + "%[white]\n",
-                        "[accent]Exp:", String.format("%.2f", team.upgrades.expMultiplier) + "%[white]\n",
-                        "[green]Regen:", String.format("%.2f", team.upgrades.regenMultiplier) + "%[white]\n",
+                        "[sky]Hp:", String.format("%.2f", team.upgrades.getHealthMultiplier()) + "%[white]\n",
+                        "[red]Dmg:", String.format("%.2f", team.upgrades.getDamageMultiplier()) + "%[white]\n",
+                        "[accent]Exp:", String.format("%.2f", team.upgrades.getExpMultiplier()) + "%[white]\n",
+                        "[green]Regen:", String.format("%.2f", team.upgrades.getRegenMultiplier()) + "%[white]\n",
                         "@Upgrades:", "", String.valueOf(team.level.commonUpgradePoints), "[accent]",
                         String.valueOf(team.level.rareUpgradePoints), "[white]\n",
                         "@Unit:", units, "\n",
@@ -245,6 +246,17 @@ public class CataliGamemode {
     }
 
     @Listener
+    public void onTeamUpgradeChanged(TeamUpgradeChangedEvent event) {
+        var team = event.team;
+
+        Groups.unit.forEach(unit -> {
+            if (unit.team == team.team) {
+                team.upgrades.apply(unit);
+            }
+        });
+    }
+
+    @Listener
     public void onPlayerJoin(SessionCreatedEvent event) {
         var session = event.session;
         var player = session.player;
@@ -324,7 +336,7 @@ public class CataliGamemode {
             return;
         }
 
-        if (e.unit.type instanceof MissileUnitType){
+        if (e.unit.type instanceof MissileUnitType) {
             return;
         }
 
@@ -434,13 +446,14 @@ public class CataliGamemode {
 
     @Listener
     public void onExpGain(ExpGainEvent event) {
-        float calAmount = event.amount;
+        float calAmount = event.amount * event.team.upgrades.getExpMultiplier();
 
         event.team.eachMember(player -> {
             Call.label(player.con, "[green]+" + calAmount + "exp", 2, //
                     event.x + Mathf.random(5),
                     event.y + Mathf.random(5));
         });
+
         boolean levelUp = event.team.level.addExp(calAmount);
 
         if (!levelUp) {
@@ -525,10 +538,7 @@ public class CataliGamemode {
         u.set(safeTile.worldx(), safeTile.worldy());
         u.add();
 
-        // Apply upgrades
-        u.maxHealth *= data.upgrades.healthMultiplier;
-        u.health = u.maxHealth;
-        u.damageMultiplier(data.upgrades.damageMultiplier);
+        data.upgrades.apply(u);
 
         return u;
     }
