@@ -53,21 +53,34 @@ public abstract class PluginMenu<T> {
     public abstract void build(Session session, T state);
 
     public void show() {
-        if (isSent) {
-            Thread.dumpStack();
-        }
-
-        String[][] optionTexts = new String[options.size][];
-
-        for (int i = 0; i < options.size; i++) {
-            var op = options.get(i);
-
-            optionTexts[i] = op.map(data -> data.getText()).toArray(String.class);
-        }
-
         isSent = true;
 
-        Call.menu(session.player.con, getMenuId(), title, description, optionTexts);
+        Tasks.io("Show Menu: " + getMenuId(), () -> {
+            try {
+                this.build(session, state);
+            } catch (Exception e) {
+                session.player.sendMessage("[scarlet]Error: [white]" + e.getMessage());
+                Log.err("Failed to build menu @ for player @ with state @", this, session, state);
+                Log.err(e);
+                return;
+            }
+
+            if (isSent) {
+                Thread.dumpStack();
+            }
+
+            options.removeAll(op -> op.size == 0);
+
+            String[][] optionTexts = new String[options.size][];
+
+            for (int i = 0; i < options.size; i++) {
+                var op = options.get(i);
+
+                optionTexts[i] = op.map(data -> data.getText()).toArray(String.class);
+            }
+
+            Call.menu(session.player.con, getMenuId(), title, description, optionTexts);
+        });
     }
 
     public void send(Session session, T state) {
@@ -82,27 +95,14 @@ public abstract class PluginMenu<T> {
                 copy.state = state;
                 copy.options = new Seq<>(new Seq<>());
 
-                Tasks.io("Show Menu: " + getMenuId(), () -> {
-                    try {
-                        copy.build(session, state);
-                    } catch (Exception e) {
-                        session.player.sendMessage("[scarlet]Error: [white]" + e.getMessage());
-                        Log.err("Failed to build menu @ for player @ with state @", copy, session, state);
-                        Log.err(e);
-                        return;
-                    }
+                var handler = Registry.get(PluginMenuService.class);
+                var playerMenus = handler.getValidMenus(session.player);
 
-                    copy.options.removeAll(op -> op.size == 0);
+                handler.add(copy);
 
-                    var handler = Registry.get(PluginMenuService.class);
-                    var playerMenus = handler.getValidMenus(session.player);
-                    
-                    handler.add(copy);
-
-                    if (!playerMenus.contains(m -> m.isSent)) {
-                        copy.show();
-                    }
-                });
+                if (!playerMenus.contains(m -> m.isSent)) {
+                    copy.show();
+                }
             } catch (Exception e) {
                 session.player.sendMessage("[scarlet]Error: [white]" + e.getMessage());
                 Log.err(e);

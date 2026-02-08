@@ -109,6 +109,7 @@ public class PluginMenuService {
                         selectedOption.getCallback().accept(session, targetMenu.state);
                     }
                 }
+                showNext(event.player);
             }
         });
     }
