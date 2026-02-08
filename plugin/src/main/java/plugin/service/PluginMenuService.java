@@ -52,12 +52,6 @@ public class PluginMenuService {
 
                 playerMenus.computeIfAbsent(menu.session.player.uuid(), k -> new Seq<>()).add(menu);
             }
-
-            for (var entry : playerMenus.entrySet()) {
-                if (entry.getValue().any() && !entry.getValue().contains(v -> v.isSent())) {
-                    entry.getValue().first().show();
-                }
-            }
         }, 0, 1, TimeUnit.SECONDS);
     }
 
@@ -115,8 +109,6 @@ public class PluginMenuService {
                         selectedOption.getCallback().accept(session, targetMenu.state);
                     }
                 }
-
-                showNext(event.player);
             }
         });
     }
