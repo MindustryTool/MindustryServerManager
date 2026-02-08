@@ -199,7 +199,7 @@ public class CataliGamemode {
                 Call.infoPopup(player.con, I18n.t(player, "@User", "[accent]/play[white]", "@to start a new team"), 2,
                         Align.center, 0, 0, 30, 0);
             } else if (team.level.level == 1 && team.level.currentExp == 0) {
-                Call.infoPopup(player.con, I18n.t(player, "@Destroy block to get [accent]exp[white]"), 2,
+                Call.infoPopup(player.con, I18n.t(player, "@Destroy block to get", "[accent]exp[white]"), 2,
                         Align.center, 0, 0, 80, 0);
             }
 
@@ -261,7 +261,7 @@ public class CataliGamemode {
         });
 
         Utils.forEachPlayerLocale((locale, players) -> {
-            String message = I18n.t(locale, "[scarlet]", "@Team", teamName, "@has been eliminated!");
+            String message = I18n.t(locale, "[scarlet]", "@Team", teamName, "[scarlet]","@has been eliminated!");
             for (var player : players) {
                 player.sendMessage(message);
             }
@@ -352,7 +352,7 @@ public class CataliGamemode {
     @Listener
     public void onTeamCreated(TeamCreatedEvent event) {
         Utils.forEachPlayerLocale((locale, players) -> {
-            String message = I18n.t(locale, "[scarlet]", "@Team", event.team.team.id, "@has been created!");
+            String message = I18n.t(locale, "[green]", "@Team", event.team.team.id, "@has been created!");
             for (var player : players) {
                 player.sendMessage(message);
             }
@@ -593,7 +593,7 @@ public class CataliGamemode {
 
         if (!playerTeam.hasUnit()) {
             playerTeam.spawning = true;
-            leader.sendMessage(I18n.t(leader, "@Tap to spawn"));
+            leader.sendMessage(I18n.t(leader, "@Cick to where you want to start"));
         }
 
         return playerTeam;
