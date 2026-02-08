@@ -18,19 +18,36 @@ public class CommonUpgradeMenu extends PluginMenu<CataliTeamData> {
         description = I18n.t(session, "@Select an attribute to upgrade.");
 
         option(I18n.t(session, "@Damage"), (s, st) -> {
-            Registry.get(CommonUpgradeQuantityMenu.class).send(s, Pair.of(team, CataliCommonUpgrade.DAMAGE));
+            if (team.level.commonUpgradePoints == 1) {
+                team.consumeUpgrade(CataliCommonUpgrade.DAMAGE, 1);
+            } else {
+                Registry.get(CommonUpgradeQuantityMenu.class).send(s, Pair.of(team, CataliCommonUpgrade.DAMAGE));
+            }
         });
         option(I18n.t(session, "@Health"), (s, st) -> {
-            Registry.get(CommonUpgradeQuantityMenu.class).send(s, Pair.of(team, CataliCommonUpgrade.HEALTH));
+            if (team.level.commonUpgradePoints == 1) {
+                team.consumeUpgrade(CataliCommonUpgrade.DAMAGE, 1);
+            } else {
+                Registry.get(CommonUpgradeQuantityMenu.class).send(s, Pair.of(team, CataliCommonUpgrade.HEALTH));
+            }
         });
 
         row();
 
         option(I18n.t(session, "@Regeneration"), (s, st) -> {
-            Registry.get(CommonUpgradeQuantityMenu.class).send(s, Pair.of(team, CataliCommonUpgrade.HEALING));
+            if (team.level.commonUpgradePoints == 1) {
+                team.consumeUpgrade(CataliCommonUpgrade.DAMAGE, 1);
+            } else {
+                Registry.get(CommonUpgradeQuantityMenu.class).send(s, Pair.of(team, CataliCommonUpgrade.HEALING));
+            }
         });
+
         option(I18n.t(session, "@Experience"), (s, st) -> {
-            Registry.get(CommonUpgradeQuantityMenu.class).send(s, Pair.of(team, CataliCommonUpgrade.EXPENRIENCE));
+            if (team.level.commonUpgradePoints == 1) {
+                team.consumeUpgrade(CataliCommonUpgrade.DAMAGE, 1);
+            } else {
+                Registry.get(CommonUpgradeQuantityMenu.class).send(s, Pair.of(team, CataliCommonUpgrade.EXPENRIENCE));
+            }
         });
 
         row();

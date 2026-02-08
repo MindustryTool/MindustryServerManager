@@ -18,7 +18,7 @@ public class TeamRespawn {
     }
 
     public Seq<RespawnEntry> getRespawnUnit() {
-        var needRespawn = respawn.select(entry -> entry.respawnAt.isAfter(Instant.now()));
+        var needRespawn = respawn.select(entry -> entry.respawnAt.isBefore(Instant.now()));
 
         return needRespawn;
     }

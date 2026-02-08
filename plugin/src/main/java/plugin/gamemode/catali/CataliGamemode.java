@@ -419,7 +419,7 @@ public class CataliGamemode {
             CataliTeamData victimTeam = teams.find(team -> team.team.id == e.unit.team.id);
 
             if (victimTeam == null) {
-                PluginEvents.fire(new TeamUnitDeadEvent(killerTeam, e.unit.type));
+                PluginEvents.fire(new TrayUnitCaughtEvent(killerTeam, e.unit.type));
             }
         }
     }
