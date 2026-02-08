@@ -36,6 +36,7 @@ import dto.ServerStateDto;
 import events.BaseEvent;
 import events.ServerEvents;
 import events.ServerEvents.DisconnectEvent;
+import events.ServerEvents.LogEvent;
 import events.ServerEvents.StartEvent;
 import enums.NodeRemoveReason;
 import events.ServerEvents.StopEvent;
@@ -80,6 +81,7 @@ public class GatewayService {
 
     @PreDestroy
     private void cancelAll() {
+        Log.info("Cancel all GatewayClient");
         cache.values()
                 .forEach(mono -> mono
                         .doOnError(ApiError.class, error -> Log.err(error.getMessage()))
@@ -123,6 +125,8 @@ public class GatewayService {
     @Accessors(fluent = true)
     public class GatewayClient {
 
+        private static final Duration HEARTBEAT_TIMEOUT_DURATION = Duration.ofSeconds(20);
+
         enum ConnectionState {
             CONNECTED, DISCONNECTED, CONNECTING
         }
@@ -136,13 +140,16 @@ public class GatewayService {
         private final Instant createdAt = Instant.now();
         private Instant disconnectedAt = null;
         private ConnectionState state = ConnectionState.CONNECTING;
+        private Instant lastHeartBeatAt = Instant.now();
 
         private final Disposable eventJob;
+        private final Disposable heartbeatJob;
 
         public GatewayClient(UUID id, Consumer<GatewayClient> onConnect, Consumer<Throwable> onError) {
             this.id = id;
             this.server = new Server();
             this.eventJob = createFetchEventJob(onConnect, onError);
+            this.heartbeatJob = createHeartbeatJob();
 
             Log.info("Create GatewayClient for server: " + id);
         }
@@ -153,6 +160,7 @@ public class GatewayService {
 
         public void cancel() {
             eventJob.dispose();
+            heartbeatJob.dispose();
         }
 
         public class Server {
@@ -412,6 +420,11 @@ public class GatewayService {
                                 Log.warn("Invalid event: " + event.asText());
                             }
 
+                            if (name == "heartbeat") {
+                                lastHeartBeatAt = Instant.now();
+                                return;
+                            }
+
                             var eventType = ServerEvents.getEventMap().get(name);
 
                             if (eventType == null) {
@@ -474,6 +487,18 @@ public class GatewayService {
                                             + Utils.toReadableString(Duration.between(disconnectedAt, Instant.now())));
                         }
 
+                    })
+                    .subscribeOn(Schedulers.boundedElastic())
+                    .subscribe();
+        }
+
+        private Disposable createHeartbeatJob() {
+            return Flux.interval(HEARTBEAT_TIMEOUT_DURATION)
+                    .doOnNext(value -> {
+                        if (Instant.now().isAfter(lastHeartBeatAt.plus(HEARTBEAT_TIMEOUT_DURATION))) {
+                            Log.warn("Heartbeat timeout for client: " + id);
+                            eventBus.emit(LogEvent.error(id, "Heartbeat timeout"));
+                        }
                     })
                     .subscribeOn(Schedulers.boundedElastic())
                     .subscribe();
