@@ -145,4 +145,9 @@ public abstract class PluginMenu<T> {
     public interface PlayerPressCallback<T> {
         void accept(Session session, T state);
     }
+
+    @Override
+    public String toString() {
+        return this.getClass().getSimpleName() + "(" + getMenuId() + ")[" + sendable  +", " + isSent + "]";
+    }
 }

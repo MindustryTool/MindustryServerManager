@@ -32,27 +32,16 @@ public class PluginMenuService {
     public void init() {
         Control.SCHEDULER.scheduleWithFixedDelay(() -> {
             menus.removeAll(m -> {
-                var delete = Instant.now().isAfter(m.createdAt.plusSeconds(30));
+                var delete = Instant.now().isAfter(m.createdAt.plusSeconds(60 * 2));
 
                 if (delete && m.session.player.con != null && m.session.player.con.isConnected()) {
                     Call.hideFollowUpMenu(m.session.player.con, m.getMenuId());
+                    Log.info("Hidden menu @ for player @", m, m.session.player);
                 }
 
                 return delete;
             });
         }, 0, 1, TimeUnit.MINUTES);
-
-        Control.SCHEDULER.scheduleWithFixedDelay(() -> {
-            HashMap<String, Seq<PluginMenu<?>>> playerMenus = new HashMap<>();
-
-            for (var menu : menus) {
-                if (menu.session.player.con == null || !menu.session.player.con.isConnected()) {
-                    continue;
-                }
-
-                playerMenus.computeIfAbsent(menu.session.player.uuid(), k -> new Seq<>()).add(menu);
-            }
-        }, 0, 1, TimeUnit.SECONDS);
     }
 
     @Listener
@@ -114,7 +103,8 @@ public class PluginMenuService {
 
     public void showNext(Player player) {
         var remainingMenus = getValidMenus(player);
-
+        Log.info("Remaining menus: @", remainingMenus);
+        
         if (remainingMenus.size > 0) {
             remainingMenus.first().show();
         }
@@ -135,6 +125,8 @@ public class PluginMenuService {
 
     public void add(PluginMenu<?> menu) {
         menus.insert(0, menu);
+        Log.info("Added menu @ to menus", menu);
+        Log.info("Current menus: @", menus);
     }
 
     public Seq<PluginMenu<?>> getValidMenus(Player player) {
