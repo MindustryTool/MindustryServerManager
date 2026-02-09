@@ -93,7 +93,7 @@ public class CataliGamemode {
 
             if (leader != null) {
                 leader.team(team.team);
-                if (team.hasUnit()){
+                if (team.hasUnit()) {
                     assignUnitForPlayer(team, leader);
                 }
             }
@@ -102,7 +102,7 @@ public class CataliGamemode {
                 var memberPlayer = Groups.player.find(player -> member.equals(player.uuid()));
                 if (memberPlayer != null) {
                     memberPlayer.team(team.team);
-                    if (team.hasUnit()){
+                    if (team.hasUnit()) {
                         assignUnitForPlayer(team, memberPlayer);
                     }
                 }
@@ -143,9 +143,16 @@ public class CataliGamemode {
         return teams.find(teamData -> teamData.team == team);
     }
 
+    public int findTeamMaxLevel() {
+        return teams.map(m -> m.level.level).max(level -> level);
+    }
+
     public void spawn() {
-        unitSpawner.spawn(ENEMY_TEAM);
         blockSpawner.spawn(BLOCK_TEAM);
+
+        if (findTeamMaxLevel() > config.unitStartSpawnLevel) {
+            unitSpawner.spawn(ENEMY_TEAM);
+        }
     }
 
     public void updateLogic() {
@@ -379,6 +386,10 @@ public class CataliGamemode {
                         continue;
                     }
 
+                    if (statusEffect == StatusEffects.invincible) {
+                        continue;
+                    }
+
                     if (unit.hasEffect(statusEffect)) {
                         spawned.apply(statusEffect);
                     }
@@ -418,6 +429,7 @@ public class CataliGamemode {
             if (spawnable) {
                 Unit unit = UnitTypes.poly.create(playerTeam.team);
 
+                unit.apply(StatusEffects.invincible, 60 * 60 * 5);
                 unit.set(spawnX, spawnY);
 
                 Core.app.post(() -> {

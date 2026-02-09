@@ -48,6 +48,8 @@ public class CataliConfig {
     public List<UnitUpgradeEntry> unitUpgrade = _getUnitUpgrade();
     public List<UnitSpawnChance> unitSpawnChance = _getUnitSpawnChance();
 
+    public int unitStartSpawnLevel = 15;
+
     public Set<UnitType> getUnitEvolutions(UnitType type) {
         for (var entry : unitUpgrade) {
             if (entry.unit == type) {
