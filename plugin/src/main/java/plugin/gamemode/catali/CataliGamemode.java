@@ -170,7 +170,7 @@ public class CataliGamemode {
             for (var unit : Groups.unit) {
                 var teamData = findTeam(unit.team);
                 if (teamData != null) {
-                    unit.heal(5 * teamData.upgrades.getHealthMultiplier());
+                    unit.heal(2 * teamData.upgrades.getHealthMultiplier());
                 }
             }
         } catch (Exception e) {

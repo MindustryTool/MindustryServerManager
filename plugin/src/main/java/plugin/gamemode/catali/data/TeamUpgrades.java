@@ -9,7 +9,7 @@ import mindustry.gen.Unit;
 public class TeamUpgrades {
     private float baseHealthMultiplier = 0.05f;
     private float baseDamageMultiplier = 0.05f;
-    private float baseRegenMultiplier = 0.05f; // This might need custom logic to apply
+    private float baseRegenMultiplier = 0.1f; // This might need custom logic to apply
     private float baseExpMultiplier = 0.05f;
 
     // Upgrade levels for tracking

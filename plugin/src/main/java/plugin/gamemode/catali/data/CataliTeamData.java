@@ -12,9 +12,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.function.Consumer;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-
 import mindustry.Vars;
 import mindustry.game.Team;
 import mindustry.gen.Groups;
@@ -27,8 +24,6 @@ import plugin.core.Registry;
 import plugin.gamemode.catali.CataliConfig;
 import plugin.gamemode.catali.event.TeamUpgradeChangedEvent;
 import plugin.gamemode.catali.spawner.SpawnerHelper;
-import plugin.json.TeamDeserializer;
-import plugin.json.TeamSerializer;
 
 @Data
 @NoArgsConstructor
@@ -37,8 +32,6 @@ public class CataliTeamData {
     public Instant createdTime = Instant.now();
     public Instant lastLeaderOnlineTime = Instant.now();
 
-    @JsonSerialize(using = TeamSerializer.class)
-    @JsonDeserialize(using = TeamDeserializer.class)
     public Team team;
     public TeamLevel level;
     public TeamUpgrades upgrades;
