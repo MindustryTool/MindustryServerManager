@@ -495,11 +495,6 @@ public class CataliGamemode {
             return;
         }
 
-        if (shouldNotRespawn.contains(e.unit)) {
-            shouldNotRespawn.remove(e.unit);
-            return;
-        }
-
         if (e.unit.type instanceof MissileUnitType) {
             return;
         }
@@ -507,6 +502,16 @@ public class CataliGamemode {
         CataliTeamData victimTeam = teams.find(team -> team.team.id == e.unit.team.id);
 
         if (victimTeam == null) {
+            return;
+        }
+
+        if (e.unit.isPlayer()) {
+            var player = e.unit.getPlayer();
+            assignUnitForPlayer(victimTeam, player);
+        }
+
+        if (shouldNotRespawn.contains(e.unit)) {
+            shouldNotRespawn.remove(e.unit);
             return;
         }
 
