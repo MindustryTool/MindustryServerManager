@@ -89,15 +89,6 @@ public class CataliGamemode {
         applyGameRules();
 
         for (var team : teams) {
-            var leader = Groups.player.find(player -> team.leaderUuid.equals(team.leaderUuid));
-
-            if (leader != null) {
-                leader.team(team.team);
-                if (team.hasUnit()) {
-                    assignUnitForPlayer(team, leader);
-                }
-            }
-
             for (var member : team.members) {
                 var memberPlayer = Groups.player.find(player -> member.equals(player.uuid()));
                 if (memberPlayer != null) {
