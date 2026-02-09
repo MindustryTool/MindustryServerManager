@@ -81,6 +81,7 @@ public class CataliGamemode {
     @Init
     public void init() {
         UnitTypes.collaris.speed = 0.95f;
+        UnitTypes.oct.speed = 0.35f;
         UnitTypes.omura.weapons.get(0).bullet.damage = 500f;
 
         Vars.content.units().forEach(unit -> {
@@ -211,7 +212,7 @@ public class CataliGamemode {
                 String message = I18n.t(player, "@No team");
 
                 if (team != null) {
-                    StringBuilder sb = new StringBuilder();
+                    StringBuilder sb = new StringBuilder("=====================\n");
 
                     for (int i = 0; i < team.team.data().units.size; i++) {
                         Unit unit = team.team.data().units.get(i);
@@ -582,7 +583,7 @@ public class CataliGamemode {
     @Listener
     public void onTrayUnitCaught(TrayUnitCaughtEvent event) {
         Utils.forEachPlayerLocale((locale, players) -> {
-            String message = I18n.t(locale, "[green]", "@Team", event.team.team.id,
+            String message = I18n.t(locale, "[green]", "@Team", event.team.name(),
                     "@has caught a stray unit!");
 
             for (var player : players) {
