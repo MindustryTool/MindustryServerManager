@@ -1,6 +1,5 @@
 package plugin.gamemode.catali.spawner;
 
-import arc.Core;
 import arc.math.Mathf;
 import lombok.RequiredArgsConstructor;
 import mindustry.Vars;
@@ -24,7 +23,7 @@ public class BlockSpawner {
         if (totalBuildCount >= spawnCount) {
             return;
         }
-        
+
         for (var entry : config.blockSpawnChance) {
             var block = entry.block;
             var spawnChance = entry.chance;
@@ -36,9 +35,7 @@ public class BlockSpawner {
                     return;
                 }
 
-                Core.app.post(() -> {
-                    tile.setNet(block, team, 0);
-                });
+                tile.setNet(block, team, 0);
             }
         }
     }
