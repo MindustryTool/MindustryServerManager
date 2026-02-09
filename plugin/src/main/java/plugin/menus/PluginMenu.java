@@ -2,6 +2,7 @@ package plugin.menus;
 
 import java.time.Instant;
 
+import arc.math.Mathf;
 import arc.struct.Seq;
 import arc.util.Log;
 import lombok.Data;
@@ -22,7 +23,7 @@ public abstract class PluginMenu<T> {
     public Seq<Seq<HudOption<T>>> options = new Seq<>(new Seq<>());
 
     public final int getMenuId() {
-        return Registry.get(PluginMenuService.class).getMenuId(getClass());
+        return Mathf.random(1000, Integer.MAX_VALUE);
     }
 
     public void option(String text, PlayerPressCallback<T> callback) {

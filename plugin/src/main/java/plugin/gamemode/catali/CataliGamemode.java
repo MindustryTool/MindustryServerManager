@@ -571,40 +571,42 @@ public class CataliGamemode {
 
     @Listener
     public synchronized void onExpGain(ExpGainEvent event) {
-        float total = event.amount * event.team.upgrades.getExpMultiplier();
+        Core.app.post(() -> {
+            float total = event.amount * event.team.upgrades.getExpMultiplier();
 
-        event.team.eachMember(player -> {
-            Call.label(player.con, "[green]+" + total + "exp", 2, //
-                    event.x + Mathf.random(5),
-                    event.y + Mathf.random(5));
+            event.team.eachMember(player -> {
+                Call.label(player.con, "[green]+" + total + "exp", 2, //
+                        event.x + Mathf.random(5),
+                        event.y + Mathf.random(5));
+            });
+
+            boolean levelUp = event.team.level.addExp(total);
+
+            if (!levelUp) {
+                return;
+            }
+
+            var leaderPlayer = event.team.leader();
+
+            if (leaderPlayer == null) {
+                return;
+            }
+
+            var session = sessionHandler.get(leaderPlayer).orElse(null);
+
+            if (session == null) {
+                Log.info("No session for leader player @", leaderPlayer.name);
+                return;
+            }
+
+            if (event.team.level.commonUpgradePoints > 0) {
+                new CommonUpgradeMenu().send(session, event.team);
+            }
+
+            if (event.team.level.rareUpgradePoints > 0) {
+                new RareUpgradeMenu().send(session, event.team);
+            }
         });
-
-        boolean levelUp = event.team.level.addExp(total);
-
-        if (!levelUp) {
-            return;
-        }
-
-        var leaderPlayer = event.team.leader();
-
-        if (leaderPlayer == null) {
-            return;
-        }
-
-        var session = sessionHandler.get(leaderPlayer).orElse(null);
-
-        if (session == null) {
-            Log.info("No session for leader player @", leaderPlayer.name);
-            return;
-        }
-
-        if (event.team.level.commonUpgradePoints > 0) {
-            new CommonUpgradeMenu().send(session, event.team);
-        }
-
-        if (event.team.level.rareUpgradePoints > 0) {
-            new RareUpgradeMenu().send(session, event.team);
-        }
     }
 
     public synchronized boolean hasTeam(int id) {
