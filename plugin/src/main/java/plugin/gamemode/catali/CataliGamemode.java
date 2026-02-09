@@ -272,19 +272,18 @@ public class CataliGamemode {
 
             if (team == null) {
                 if (canRespawn(player)) {
-                    Call.infoPopup(player.con, I18n.t(player, "@User", "[accent]/p[white]", "@to start a new team"), 2,
+                    Call.infoPopup(player.con, I18n.t(player, "@User", "[accent]/p[white]", "@to start a new team"), 1,
                             Align.center, 0, 0, 30, 0);
                 } else {
                     Call.infoPopup(player.con,
                             I18n.t(player, "@Respawn in",
-                                    String.valueOf(TimeUtils
-                                            .toSeconds(Duration.between(Instant.now(), respawnCountdown.get(player))))),
-                            2,
+                                    TimeUtils.toSeconds(Duration.between(Instant.now(), respawnCountdown.get(player)))),
+                            1,
                             Align.center, 0, 0, 30, 0);
                 }
 
             } else if (team.level.level == 1 && team.level.currentExp == 0) {
-                Call.infoPopup(player.con, I18n.t(player, "@Destroy block to get", "[accent]exp[white]"), 2,
+                Call.infoPopup(player.con, I18n.t(player, "@Destroy block to get", "[accent]exp[white]"), 1,
                         Align.center, 0, 0, 80, 0);
             }
 
@@ -568,7 +567,7 @@ public class CataliGamemode {
                     return;
                 }
 
-                if (Mathf.chance(0.1f)) {
+                if (Mathf.chance(0.25f)) {
                     PluginEvents.fire(new TrayUnitCaughtEvent(killerTeam, e.unit.type));
                 }
             }
