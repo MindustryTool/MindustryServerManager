@@ -157,6 +157,7 @@ public class PluginMenuService {
     @Destroy
     public void destroy() {
         menus.clear();
+        activeMenus.clear();
         CLASS_IDS.clear();
     }
 

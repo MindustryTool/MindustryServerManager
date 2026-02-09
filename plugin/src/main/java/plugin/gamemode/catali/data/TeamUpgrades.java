@@ -9,10 +9,10 @@ import mindustry.gen.Unit;
 @ToString
 @EqualsAndHashCode
 public class TeamUpgrades {
-    private float healthMultiplier = 0.05f;
-    private float damageMultiplier = 0.05f;
-    private float regenMultiplier = 0.05f; // This might need custom logic to apply
-    private float expMultiplier = 0.05f;
+    private float baseHealthMultiplier = 0.05f;
+    private float baseDamageMultiplier = 0.05f;
+    private float baseRegenMultiplier = 0.05f; // This might need custom logic to apply
+    private float baseExpMultiplier = 0.05f;
 
     // Upgrade levels for tracking
     private int healthLevel = 0;
@@ -27,19 +27,19 @@ public class TeamUpgrades {
     }
 
     public float getDamageMultiplier() {
-        return damageMultiplier * damageLevel + 1;
+        return baseDamageMultiplier * damageLevel + 1;
     }
 
     public float getRegenMultiplier() {
-        return regenMultiplier * regenLevel + 1;
+        return baseRegenMultiplier * regenLevel + 1;
     }
 
     public float getExpMultiplier() {
-        return expMultiplier * expLevel + 1;
+        return baseExpMultiplier * expLevel + 1;
     }
 
     public float getHealthMultiplier() {
-        return healthMultiplier * healthLevel + 1;
+        return baseHealthMultiplier * healthLevel + 1;
     }
 
     public void levelUpHealth(int amount) {
@@ -50,7 +50,7 @@ public class TeamUpgrades {
         damageLevel += amount;
     }
 
-    public void levelUpREGEN(int amount) {
+    public void levelUpRegen(int amount) {
         regenLevel += amount;
     }
 

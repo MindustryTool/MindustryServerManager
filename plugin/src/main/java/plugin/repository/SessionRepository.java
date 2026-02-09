@@ -110,7 +110,7 @@ public class SessionRepository {
         public SessionData data;
     }
 
-    public Seq<RankData> getLeaderBoard(int size) {
+    public Seq<RankData> leaderBoard(int size) {
         var sql = "SELECT uuid, data FROM sessions ORDER BY totalExp DESC LIMIT ?";
 
         return DB.prepare(sql, statement -> {

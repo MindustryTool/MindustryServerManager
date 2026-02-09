@@ -17,7 +17,7 @@ public class RareUpgradeBuffSelectUnitMenu extends PluginMenu<CataliTeamData> {
         description = I18n.t(session, "@Choose a unit to apply a buff to.");
 
         int i = 0;
-        for (var unit : team.getTeamUnits()) {
+        for (var unit : team.units()) {
             if (i > 0 && i % 2 == 0) {
                 row();
             }

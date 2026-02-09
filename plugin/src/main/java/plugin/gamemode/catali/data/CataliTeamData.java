@@ -80,7 +80,7 @@ public class CataliTeamData {
         });
     }
 
-    public Seq<Unit> getTeamUnits() {
+    public Seq<Unit> units() {
         Seq<Unit> units = new Seq<>();
         for (var unit : Groups.unit) {
             if (unit.team == team && unit.isValid()) {
@@ -93,19 +93,19 @@ public class CataliTeamData {
 
     public Seq<Unit> getUpgradeableUnits() {
         var config = Registry.get(CataliConfig.class);
-        return getTeamUnits().select(unit -> config.getUnitEvolutions(unit.type).size() > 0);
+        return units().select(unit -> config.getUnitEvolutions(unit.type).size() > 0);
     }
 
     public boolean hasUnit() {
         return Groups.unit.find(unit -> unit.team == team && unit.isValid()) != null;
     }
 
-    public Player getLeader() {
+    public Player leader() {
         return Groups.player.find(player -> player.uuid().equals(leaderUuid));
     }
 
     public String name() {
-        var leader = getLeader();
+        var leader = leader();
         var teamName = leader != null ? leader.name : String.valueOf(team.id);
 
         return teamName;
@@ -127,7 +127,7 @@ public class CataliTeamData {
                 upgrades.levelUpHealth(amount);
                 break;
             case REGEN:
-                upgrades.levelUpREGEN(amount);
+                upgrades.levelUpRegen(amount);
                 break;
             case EXP:
                 upgrades.levelUpExp(amount);
@@ -165,7 +165,7 @@ public class CataliTeamData {
         Unit leaderUnit = Groups.unit.find(u -> u == leaderPlayer.unit());
 
         if (leaderUnit == null) {
-            leaderUnit = getTeamUnits().firstOpt();
+            leaderUnit = units().firstOpt();
         }
 
         if (leaderUnit == null) {
@@ -175,7 +175,7 @@ public class CataliTeamData {
 
         Tile safeTile = null;
         Tile tile = null;
-        int maxSearchRange = 10;
+        int maxSearchRange = 5;
         // Search for safe tile arround
 
         for (int i = 1; i < maxSearchRange; i++) {
@@ -225,6 +225,6 @@ public class CataliTeamData {
     }
 
     public boolean canHaveMoreUnit() {
-        return getTeamUnits().size + spawnQueue.size + respawn.respawn.size < MAX_UNIT_COUNT;
+        return units().size + spawnQueue.size + respawn.respawn.size < MAX_UNIT_COUNT;
     }
 }

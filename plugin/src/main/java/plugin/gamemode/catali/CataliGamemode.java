@@ -58,10 +58,6 @@ public class CataliGamemode {
     @Persistence("catali-teams.json")
     private final Seq<CataliTeamData> teams = new Seq<>();
 
-    public Seq<CataliTeamData> getAllTeams() {
-        return teams;
-    }
-
     private final UnitSpawner unitSpawner;
     private final BlockSpawner blockSpawner;
     private final CataliConfig config;
@@ -200,11 +196,10 @@ public class CataliGamemode {
 
                     StringBuilder respawnSb = new StringBuilder();
 
-                    for (int i = 0; i < team.respawn.getRespawn().size; i++) {
-                        var respawnEntry = team.respawn.getRespawn().get(i);
-                        respawnSb.append(respawnEntry.type.emoji())
+                    for (var entry : team.respawn.respawn.sort(v -> v.respawnAt.getEpochSecond())) {
+                        respawnSb.append(entry.type.emoji())
                                 .append(" ")
-                                .append(TimeUtils.toSeconds(Duration.between(Instant.now(), respawnEntry.respawnAt)))
+                                .append(TimeUtils.toSeconds(Duration.between(Instant.now(), entry.respawnAt)))
                                 .append("\n");
                     }
 
@@ -274,7 +269,7 @@ public class CataliGamemode {
         Seq<CataliTeamData> remove = new Seq<>();
 
         for (var team : teams) {
-            if ((!team.hasUnit() && team.isTimeout()) || (team.getLeader() == null && team.isTimeout())) {
+            if ((!team.hasUnit() && team.isTimeout()) || (team.leader() == null && team.isTimeout())) {
                 remove.add(team);
             } else if (team.spawning == true) {
                 var leader = Groups.player.find(player -> player.uuid().equals(team.leaderUuid));
@@ -303,7 +298,8 @@ public class CataliGamemode {
         });
 
         Utils.forEachPlayerLocale((locale, players) -> {
-            String message = I18n.t(locale, "[scarlet]", "@Team", event.team.name(), "[scarlet]", "@has been eliminated!");
+            String message = I18n.t(locale, "[scarlet]", "@Team", event.team.name(), "[scarlet]",
+                    "@has been eliminated!");
             for (var player : players) {
                 player.sendMessage(message);
             }
@@ -580,7 +576,7 @@ public class CataliGamemode {
             return;
         }
 
-        var leaderPlayer = event.team.getLeader();
+        var leaderPlayer = event.team.leader();
 
         if (leaderPlayer == null) {
             return;

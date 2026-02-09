@@ -63,7 +63,7 @@ public class SessionHandler {
 
         Tasks.io("Send Leader Board",
                 () -> event.player.sendMessage(RankUtils.getRankString(Utils.parseLocale(event.player.locale),
-                        sessionRepository.getLeaderBoard(10))));
+                        sessionRepository.leaderBoard(10))));
     }
 
     @Listener
