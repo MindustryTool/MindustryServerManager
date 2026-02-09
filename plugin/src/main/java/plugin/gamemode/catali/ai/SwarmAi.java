@@ -23,7 +23,7 @@ public class SwarmAi extends AIController {
                 moveTo(target, (target instanceof Sized s ? s.hitSize() / 2f * 1.1f : 0f) + unit.hitSize / 2f
                         + unit.range() / 2, 50f, false, null);
                 unit.lookAt(target);
-            } else {
+            } else if (!unit.within(swarmPosition, swarmRange / 2)) {
                 moveTo(swarmPosition, 8 * 10, 50f, false, null);
                 unit.lookAt(swarmPosition);
             }
