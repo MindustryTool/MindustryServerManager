@@ -108,8 +108,9 @@ public class CataliGamemode {
         }
 
         Control.SCHEDULER.scheduleWithFixedDelay(this::updateStatsHud, 0, 1, TimeUnit.SECONDS);
-        Control.SCHEDULER.scheduleWithFixedDelay(this::update, 0, 1, TimeUnit.SECONDS);
+        Control.SCHEDULER.scheduleWithFixedDelay(this::updateLogic, 0, 1, TimeUnit.SECONDS);
         Control.SCHEDULER.scheduleWithFixedDelay(this::spawn, 0, 1, TimeUnit.SECONDS);
+        Control.SCHEDULER.scheduleAtFixedRate(this::healTeamUnit, 0, 1, TimeUnit.SECONDS);
 
         Log.info("[accent]Cataio gamemode loaded");
     }
@@ -136,12 +137,16 @@ public class CataliGamemode {
         return teams.find(team -> team.members.contains(player.uuid()));
     }
 
+    public CataliTeamData findTeam(Team team) {
+        return teams.find(teamData -> teamData.team == team);
+    }
+
     public void spawn() {
         unitSpawner.spawn(ENEMY_TEAM);
         blockSpawner.spawn(BLOCK_TEAM);
     }
 
-    public void update() {
+    public void updateLogic() {
         if (!Vars.state.isGame()) {
             return;
         }
@@ -156,6 +161,15 @@ public class CataliGamemode {
                 Log.err("Failed to update stats hud", e);
             }
         });
+    }
+
+    private void healTeamUnit() {
+        for (var unit : Groups.unit) {
+            var teamData = findTeam(unit.team);
+            if (teamData != null) {
+                unit.healFract(5 * teamData.upgrades.getHealthMultiplier());
+            }
+        }
     }
 
     private void healCore() {
@@ -515,9 +529,14 @@ public class CataliGamemode {
             }
         });
 
-        event.team.spawnUnit(event.type, unit -> {
+        var respawnTime = Utils.find(config.unitRespawnTime, item -> item.unit == event.type, item -> item.respawnTime);
 
-        });
+        if (respawnTime == null) {
+            respawnTime = Duration.ofSeconds(10);
+            Log.warn("Missing respawn time for unit @", event.type.name);
+        }
+
+        event.team.respawn.addUnit(event.type, respawnTime);
     }
 
     @Listener
@@ -549,7 +568,7 @@ public class CataliGamemode {
     }
 
     @Listener
-    public void onExpGain(ExpGainEvent event) {
+    public synchronized void onExpGain(ExpGainEvent event) {
         float calAmount = event.amount * event.team.upgrades.getExpMultiplier();
 
         event.team.eachMember(player -> {
@@ -586,7 +605,7 @@ public class CataliGamemode {
         }
     }
 
-    public boolean hasTeam(int id) {
+    public synchronized boolean hasTeam(int id) {
         return teams.contains(team -> team.team.id == id);
     }
 
@@ -602,7 +621,7 @@ public class CataliGamemode {
         }
     }
 
-    public CataliTeamData createTeam(Player leader) {
+    public synchronized CataliTeamData createTeam(Player leader) {
         var playerTeam = findTeam(leader);
 
         if (playerTeam == null) {
