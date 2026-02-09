@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
@@ -125,24 +126,31 @@ public class Utils {
     }
 
     private static synchronized void appPostWithTimeout(Runnable r, int timeout, String taskName) {
-        CompletableFuture<Void> v = new CompletableFuture<>();
+        CompletableFuture<Void> future = new CompletableFuture<>();
         Core.app.post(() -> {
+
+            ScheduledFuture<Boolean> timeoutTask = Control.SCHEDULER.schedule(
+                    () -> future.completeExceptionally(new TimeoutException("Task timeout: " + taskName)), timeout,
+                    TimeUnit.MILLISECONDS);
+
             try {
                 r.run();
-                v.complete(null);
+                timeoutTask.cancel(true);
+                future.complete(null);
             } catch (Throwable e) {
-                v.completeExceptionally(e);
+                timeoutTask.cancel(true);
+                future.completeExceptionally(e);
             }
         });
         try {
-            v.get(timeout, TimeUnit.MILLISECONDS);
+            future.get(Math.max(10 * 1000, timeout), TimeUnit.MILLISECONDS);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
             throw new RuntimeException("Time out when executing: " + r.toString() + " in " + timeout + "ms", e);
         }
     }
 
     public static <T> T appPostWithTimeout(Supplier<T> fn, String taskName) {
-        return appPostWithTimeout(fn, 100, taskName);
+        return appPostWithTimeout(fn, 200, taskName);
     }
 
     private static synchronized <T> T appPostWithTimeout(Supplier<T> fn, int timeout, String taskName) {
@@ -150,15 +158,21 @@ public class Utils {
 
         CompletableFuture<T> future = new CompletableFuture<T>();
         Core.app.post(() -> {
+            ScheduledFuture<Boolean> timeoutTask = Control.SCHEDULER.schedule(
+                    () -> future.completeExceptionally(new TimeoutException("Task timeout: " + taskName)), timeout,
+                    TimeUnit.MILLISECONDS);
             try {
-                future.complete(fn.get());
+                var result = fn.get();
+                timeoutTask.cancel(true);
+                future.complete(result);
             } catch (Throwable e) {
+                timeoutTask.cancel(true);
                 future.completeExceptionally(e);
             }
         });
 
         try {
-            return future.get(timeout, TimeUnit.MILLISECONDS);
+            return future.get(Math.max(10 * 1000, timeout), TimeUnit.MILLISECONDS);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
             throw new RuntimeException("Time out when executing: " + fn.toString() + " in " + timeout + "ms", e);
         }
