@@ -10,7 +10,7 @@ import mindustry.gen.Teamc;
 public class SwarmAi extends AIController {
 
     public final Vec2 swarmPosition;
-    public final float swarmRange = 100f;
+    public final float swarmRange = 8f * 100;
 
     public SwarmAi(Vec2 swarmPosition) {
         this.swarmPosition = swarmPosition;
@@ -18,9 +18,15 @@ public class SwarmAi extends AIController {
 
     @Override
     public void updateMovement() {
-        if (target != null && unit.dst(target) < swarmRange) {
-            moveTo(target, (target instanceof Sized s ? s.hitSize() / 2f * 1.1f : 0f) + unit.hitSize / 2f + 15f, 50f);
-            unit.lookAt(target);
+        if (target != null) {
+            if (unit.dst(swarmPosition) < swarmRange) {
+                moveTo(target, (target instanceof Sized s ? s.hitSize() / 2f * 1.1f : 0f) + unit.hitSize / 2f + 15f,
+                        50f);
+                unit.lookAt(target);
+            } else {
+                moveTo(swarmPosition, 40, 50f);
+                unit.lookAt(swarmPosition);
+            }
         }
     }
 
