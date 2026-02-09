@@ -44,7 +44,7 @@ public class Control extends Plugin implements MindustryToolPlugin {
             DB.init();
             Registry.init(getClass().getPackage().getName());
 
-            SCHEDULER.schedule(this::autoHost, 60, TimeUnit.SECONDS);
+            SCHEDULER.schedule(this::autoHost, 20, TimeUnit.SECONDS);
             SCHEDULER.schedule(this::autoPause, 10, TimeUnit.SECONDS);
             SCHEDULER.scheduleWithFixedDelay(this::sendTips, 3, 3, TimeUnit.MINUTES);
             SCHEDULER.scheduleWithFixedDelay(this::checkInvalidState, 10, 3, TimeUnit.MINUTES);
