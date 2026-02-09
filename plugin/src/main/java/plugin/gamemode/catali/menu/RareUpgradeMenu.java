@@ -13,6 +13,11 @@ import plugin.type.Session;
 public class RareUpgradeMenu extends PluginMenu<CataliTeamData> {
 
     @Override
+    public boolean valid() {
+        return state.level.rareUpgradePoints > 0;
+    }
+
+    @Override
     public void build(Session session, CataliTeamData team) {
         title = I18n.t(session, "@Rare Upgrades");
         description = I18n.t(session, "@Select a rare upgrade type.");

@@ -199,13 +199,20 @@ public class CataliTeamData {
                 return false;
             }
 
+            int minX = 0;
+            int minY = 0;
+            int maxX = Vars.state.map.width;
+            int maxY = Vars.state.map.height;
+
             for (var unit : units) {
-                spawnX += unit.tileX();
-                spawnY += unit.tileY();
+                minX = Math.min(minX, unit.tileX());
+                minY = Math.min(minY, unit.tileY());
+                maxX = Math.max(maxX, unit.tileX());
+                maxY = Math.max(maxY, unit.tileY());
             }
 
-            spawnX /= units.size;
-            spawnY /= units.size;
+            spawnX = minX + (maxX - minX) / 2;
+            spawnY = minY + (maxY - minY) / 2;
         }
 
         if (spawnX < 0 || spawnY < 0) {

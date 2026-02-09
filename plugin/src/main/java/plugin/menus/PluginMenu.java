@@ -49,6 +49,10 @@ public abstract class PluginMenu<T> {
         build(session, state);
     }
 
+    public boolean valid() {
+        return true;
+    }
+
     protected abstract void build(Session session, T state);
 
     public void send(Session session, T state) {

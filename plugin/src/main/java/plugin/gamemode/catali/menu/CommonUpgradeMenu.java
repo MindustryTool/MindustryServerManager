@@ -13,6 +13,11 @@ import plugin.type.Session;
 public class CommonUpgradeMenu extends PluginMenu<CataliTeamData> {
 
     @Override
+    public boolean valid() {
+        return state.level.commonUpgradePoints > 0;
+    }
+
+    @Override
     public void build(Session session, CataliTeamData team) {
         title = I18n.t(session, "@Common Upgrades");
         description = I18n.t(session, "@You have", team.level.commonUpgradePoints, "@upgrade points",

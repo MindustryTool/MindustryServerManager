@@ -10,7 +10,7 @@ public class JoinTeamMenu extends PluginMenu<Void> {
 
     @Override
     public void build(Session session, Void state) {
-        
+
         title = I18n.t(session, "@Join Team");
         description = I18n.t(session, "@Select a team leader to request joining.");
 

@@ -3,7 +3,6 @@ package plugin.service;
 import java.time.Instant;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import arc.Core;
 import arc.struct.Seq;
@@ -25,8 +24,6 @@ import plugin.menus.PluginMenu.HudOption;
 @Component
 @RequiredArgsConstructor
 public class PluginMenuService {
-    private final AtomicInteger ID_GEN = new AtomicInteger(1000);
-    private final ConcurrentHashMap<Class<?>, Integer> CLASS_IDS = new ConcurrentHashMap<>();
     private final Seq<PluginMenu<?>> menus = new Seq<>();
     private final ConcurrentHashMap<Player, PluginMenu<?>> activeMenus = new ConcurrentHashMap<>();
 
@@ -114,6 +111,7 @@ public class PluginMenuService {
     public void showNext(Player player) {
         Core.app.post(() -> {
             try {
+                menus.removeAll(m -> !m.valid());
                 var remainingMenus = getPlayerMenus(player);
                 var hasActiveMenu = activeMenus.containsKey(player);
 
@@ -158,20 +156,13 @@ public class PluginMenuService {
     public void destroy() {
         menus.clear();
         activeMenus.clear();
-        CLASS_IDS.clear();
-    }
-
-    public int getMenuId(Class<?> cls) {
-        return CLASS_IDS.computeIfAbsent(cls, c -> {
-            var id = ID_GEN.getAndIncrement();
-            return id;
-        });
     }
 
     public void add(PluginMenu<?> menu) {
         if (menus.contains(m -> m.getClass().equals(menu.getClass()))) {
             return;
         }
+
         menus.insert(0, menu);
     }
 
