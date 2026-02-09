@@ -1,5 +1,7 @@
 package plugin.service;
 
+import java.util.function.Function;
+
 import arc.Core;
 import arc.util.Log;
 import mindustry.Vars;
@@ -21,6 +23,19 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class SessionService {
     private final SessionRepository sessionRepository;
+
+    public Function<Session, Integer> getLevel = session -> {
+        SessionData data = session.getData();
+
+        // Using existing logic for compatibility: calculating exp based on session play
+        // time
+        long currentSessionTime = session.sessionPlayTime();
+        long calculatedExp = ExpUtils.getTotalExp(data, currentSessionTime);
+
+        int level = ExpUtils.levelFromTotalExp(calculatedExp);
+
+        return level;
+    };
 
     public void addKill(Session session, UnitType unit, int amount) {
         if (amount <= 0)
@@ -64,14 +79,8 @@ public class SessionService {
     }
 
     public void update(Session session) {
-        SessionData data = session.getData();
-
-        // Using existing logic for compatibility: calculating exp based on session play
-        // time
-        long currentSessionTime = session.sessionPlayTime();
-        long calculatedExp = ExpUtils.getTotalExp(data, currentSessionTime);
-
-        int level = ExpUtils.levelFromTotalExp(calculatedExp);
+        var data = session.getData();
+        int level = getLevel.apply(session);
 
         if (level != session.currentLevel) {
             if (session.currentLevel != 0) {
@@ -88,9 +97,6 @@ public class SessionService {
 
             session.currentLevel = level;
 
-            // Update player name with new level
-            // Ideally UI updates should be separate, but name update is part of the state
-            // sync here
             Core.app.post(() -> {
                 session.player.name(SessionView.getPlayerName(session.player, data, level));
             });

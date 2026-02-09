@@ -44,6 +44,7 @@ import plugin.gamemode.catali.spawner.SpawnerHelper;
 import plugin.gamemode.catali.spawner.UnitSpawner;
 import plugin.service.I18n;
 import plugin.service.SessionHandler;
+import plugin.service.SessionService;
 import plugin.utils.TimeUtils;
 import plugin.utils.Utils;
 
@@ -62,6 +63,7 @@ public class CataliGamemode {
     private final BlockSpawner blockSpawner;
     private final CataliConfig config;
     private final SessionHandler sessionHandler;
+    private final SessionService sessionService;
 
     private final Seq<UnitType> coreUnits = Seq.with(UnitTypes.alpha, UnitTypes.beta, UnitTypes.gamma, UnitTypes.evoke,
             UnitTypes.incite, UnitTypes.emanate);
@@ -87,7 +89,23 @@ public class CataliGamemode {
         };
 
         applyGameRules();
+        restoreTeam();
 
+        sessionService.getLevel = session -> {
+            var team = findTeam(session.player);
+            return team != null ? team.level.level : 0;
+        };
+
+        Control.SCHEDULER.scheduleWithFixedDelay(this::updateStatsHud, 0, 1, TimeUnit.SECONDS);
+        Control.SCHEDULER.scheduleWithFixedDelay(this::updateLogic, 0, 1, TimeUnit.SECONDS);
+        Control.SCHEDULER.scheduleWithFixedDelay(this::spawn, 0, 200, TimeUnit.MILLISECONDS);
+        Control.SCHEDULER.scheduleAtFixedRate(this::healTeamUnit, 0, 1, TimeUnit.SECONDS);
+        Control.SCHEDULER.scheduleAtFixedRate(this::updateCoreExp, 0, 1, TimeUnit.SECONDS);
+
+        Log.info("[accent]Cataio gamemode loaded");
+    }
+
+    private void restoreTeam() {
         for (var team : teams) {
             for (var member : team.members) {
                 var memberPlayer = Groups.player.find(player -> member.equals(player.uuid()));
@@ -99,13 +117,6 @@ public class CataliGamemode {
                 }
             }
         }
-
-        Control.SCHEDULER.scheduleWithFixedDelay(this::updateStatsHud, 0, 1, TimeUnit.SECONDS);
-        Control.SCHEDULER.scheduleWithFixedDelay(this::updateLogic, 0, 1, TimeUnit.SECONDS);
-        Control.SCHEDULER.scheduleWithFixedDelay(this::spawn, 0, 200, TimeUnit.MILLISECONDS);
-        Control.SCHEDULER.scheduleAtFixedRate(this::healTeamUnit, 0, 1, TimeUnit.SECONDS);
-
-        Log.info("[accent]Cataio gamemode loaded");
     }
 
     @Listener
@@ -124,6 +135,9 @@ public class CataliGamemode {
 
         Vars.state.rules.bannedUnits.clear();
         Vars.state.rules.canGameOver = false;
+        Vars.state.rules.coreCapture = true;
+
+        Team.sharded.rules().blockHealthMultiplier = 1;
     }
 
     public CataliTeamData findTeam(Player player) {
@@ -159,9 +173,16 @@ public class CataliGamemode {
             updateRespawn();
             updateTeam();
             updatePlayer();
-            healCore();
         } catch (Exception e) {
             Log.err("Failed to update stats hud", e);
+        }
+    }
+
+    private void updateCoreExp() {
+        for (var team : teams) {
+            for (var core : team.team.cores()) {
+                PluginEvents.fire(new ExpGainEvent(team, 5, core.getX(), core.getY()));
+            }
         }
     }
 
@@ -176,10 +197,6 @@ public class CataliGamemode {
         } catch (Exception e) {
             Log.err("Failed to heal team unit", e);
         }
-    }
-
-    private void healCore() {
-        Team.sharded.cores().each(core -> core.heal());
     }
 
     private void updateStatsHud() {
