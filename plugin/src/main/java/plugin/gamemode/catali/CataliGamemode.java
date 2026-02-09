@@ -363,10 +363,16 @@ public class CataliGamemode {
     }
 
     @Listener
-    public void onUnitUpgrade(CataliTierRareUpgrade event) {
+    public synchronized void onUnitUpgrade(CataliTierRareUpgrade event) {
+        if (event.team.level.rareUpgradePoints <= 0) {
+            return;
+        }
+
         var team = event.team;
         var unit = event.unit;
         var upgrade = event.upgradeTo;
+
+        team.level.rareUpgradePoints--;
 
         team.spawnUnit(upgrade, spawned -> {
             for (var field : StatusEffects.class.getDeclaredFields()) {
@@ -392,7 +398,6 @@ public class CataliGamemode {
             unit.kill();
         });
 
-        team.level.rareUpgradePoints--;
     }
 
     @Listener
