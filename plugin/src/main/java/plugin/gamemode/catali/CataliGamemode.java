@@ -214,7 +214,7 @@ public class CataliGamemode {
                             "@Unit:", units, "\n",
                             "@Respawn:", respawn + "\n");
 
-                    Call.infoPopup(player.con, message, 1.1f, Align.right | Align.top, 180, 0, 0, 0);
+                    Call.infoPopup(player.con, message, 1.1f, Align.right | Align.top, 200, 0, 0, 0);
                 }
             }
         } catch (Exception e) {

@@ -275,19 +275,10 @@ public class Utils {
             tempFile.file().createNewFile();
             tempImageFile.file().createNewFile();
 
-            var future = new CompletableFuture<byte[]>();
-
-            Core.app.post(() -> {
-                try {
-                    SaveIO.save(tempFile);
-                    future.complete(tempFile.readBytes());
-                } catch (Exception e) {
-                    Log.err("Failed to generate save file", e);
-                    future.completeExceptionally(e);
-                }
-            });
-
-            var bytes = future.get(100, TimeUnit.MILLISECONDS);
+            var bytes = appPostWithTimeout(() -> {
+                SaveIO.save(tempFile);
+                return (tempFile.readBytes());
+            }, 0, "Generate map preview");
 
             if (bytes.length == 0) {
                 return new byte[0];
