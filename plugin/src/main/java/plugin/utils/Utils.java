@@ -273,7 +273,7 @@ public class Utils {
                 }
             });
 
-            var bytes = future.get(500, TimeUnit.MILLISECONDS);
+            var bytes = future.get(1500, TimeUnit.MILLISECONDS);
 
             if (bytes.length == 0) {
                 return new byte[0];
