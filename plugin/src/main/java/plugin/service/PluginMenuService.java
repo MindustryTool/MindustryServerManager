@@ -40,7 +40,6 @@ public class PluginMenuService {
 
                 if (delete && m.session.player.con != null && m.session.player.con.isConnected()) {
                     Call.hideFollowUpMenu(m.session.player.con, m.getMenuId());
-                    Log.info("Hidden menu @ for player @", m, m.session.player);
                 }
 
                 return delete;
@@ -170,8 +169,6 @@ public class PluginMenuService {
 
     public void add(PluginMenu<?> menu) {
         menus.insert(0, menu);
-        Log.info("Added menu @ to menus", menu);
-        Log.info("Current menus: @", menus);
     }
 
     public Seq<PluginMenu<?>> getPlayerMenus(Player player) {

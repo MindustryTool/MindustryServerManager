@@ -92,8 +92,6 @@ public class CataliGamemode {
 
         applyGameRules();
 
-        Log.info("Teams: @", teams);
-
         for (var team : teams) {
             var leader = Groups.player.find(player -> team.leaderUuid.equals(team.leaderUuid));
 
