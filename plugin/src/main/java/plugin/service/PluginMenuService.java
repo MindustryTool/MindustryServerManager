@@ -12,6 +12,7 @@ import mindustry.game.EventType.MenuOptionChooseEvent;
 import mindustry.gen.Call;
 import mindustry.gen.Player;
 import plugin.Control;
+import plugin.Tasks;
 import plugin.annotations.Component;
 import plugin.annotations.Destroy;
 import plugin.annotations.Init;
@@ -26,11 +27,12 @@ public class PluginMenuService {
     private final AtomicInteger ID_GEN = new AtomicInteger(1000);
     private final ConcurrentHashMap<Class<?>, Integer> CLASS_IDS = new ConcurrentHashMap<>();
     private final Seq<PluginMenu<?>> menus = new Seq<>();
+    private final ConcurrentHashMap<Player, PluginMenu<?>> activeMenus = new ConcurrentHashMap<>();
 
     @Init
     public void init() {
         Control.SCHEDULER.scheduleWithFixedDelay(() -> {
-            menus.removeAll(m -> {
+            activeMenus.values().removeIf(m -> {
                 var delete = Instant.now().isAfter(m.createdAt.plusSeconds(60 * 2));
 
                 if (delete && m.session.player.con != null && m.session.player.con.isConnected()) {
@@ -40,72 +42,106 @@ public class PluginMenuService {
 
                 return delete;
             });
-        }, 0, 1, TimeUnit.MINUTES);
+
+            for (var menu : menus) {
+                var hasActive = activeMenus.containsKey(menu.session.player);
+                if (!hasActive) {
+                    showNext(menu.session.player);
+                }
+            }
+        }, 0, 1, TimeUnit.SECONDS);
     }
 
     @Listener
     public void onSessionRemoved(SessionRemovedEvent event) {
         menus.removeAll(m -> m.session.player == event.session.player);
+        activeMenus.remove(event.session.player);
     }
 
     @Listener
     public void onMenuOptionChoose(MenuOptionChooseEvent event) {
-        var targetMenu = menus.find(m -> m.getMenuId() == event.menuId && m.session.player == event.player);
+        Core.app.post(() -> {
+            var targetMenu = activeMenus.remove(event.player);
 
-        if (targetMenu == null) {
-            showNext(event.player);
-            return;
-        }
+            if (targetMenu == null) {
+                showNext(event.player);
+                return;
+            }
 
-        menus.remove(targetMenu);
+            if (event.option < 0) {
+                showNext(event.player);
+                return;
+            }
 
-        if (event.option < 0) {
-            showNext(event.player);
-            return;
-        }
+            HudOption<Object> selectedOption = null;
 
-        HudOption<Object> selectedOption = null;
+            int i = 0;
 
-        int i = 0;
-
-        if (event.option >= 0) {
-            Seq<HudOption<Object>> flatten = targetMenu.getFlattenedOptions();
-            for (var op : flatten) {
-                if (i == event.option) {
-                    selectedOption = op;
-                    break;
+            if (event.option >= 0) {
+                Seq<HudOption<Object>> flatten = targetMenu.getFlattenedOptions();
+                for (var op : flatten) {
+                    if (i == event.option) {
+                        selectedOption = op;
+                        break;
+                    }
+                    i++;
                 }
-                i++;
+
+                if (selectedOption == null) {
+                    Log.err("Failed to find selected option for menu @ with id @", targetMenu, event.option);
+                }
             }
 
-            if (selectedOption == null) {
-                Log.err("Failed to find selected option for menu @ with id @", targetMenu, event.option);
+            if (selectedOption != null && selectedOption.getCallback() != null) {
+                Call.hideFollowUpMenu(event.player.con, targetMenu.getMenuId());
+
+                var session = Registry.get(SessionHandler.class).get(event.player).orElse(null);
+
+                if (session == null) {
+                    Log.err("Failed to get session for player @", event.player);
+                    Thread.dumpStack();
+                } else {
+                    selectedOption.getCallback().accept(session, targetMenu.state);
+                }
             }
-        }
 
-        if (selectedOption != null && selectedOption.getCallback() != null) {
-            Call.hideFollowUpMenu(event.player.con, targetMenu.getMenuId());
-
-            var session = Registry.get(SessionHandler.class).get(event.player).orElse(null);
-
-            if (session == null) {
-                Log.err("Failed to get session for player @", event.player);
-                Thread.dumpStack();
-            } else {
-                selectedOption.getCallback().accept(session, targetMenu.state);
-            }
-        }
-
-        showNext(event.player);
+            showNext(event.player);
+        });
     }
 
     public void showNext(Player player) {
         Core.app.post(() -> {
-            var remainingMenus = getValidMenus(player);
-            Log.info("Remaining menus: @", remainingMenus);
+            var remainingMenus = getPlayerMenus(player);
+            var hasActiveMenu = activeMenus.containsKey(player);
 
-            if (remainingMenus.size > 0) {
-                remainingMenus.first().show();
+            if (!hasActiveMenu) {
+                var menu = remainingMenus.first();
+
+                menus.remove(menu);
+                activeMenus.put(player, menu);
+
+                Tasks.io("Show Menu: " + menu.getMenuId(), () -> {
+                    try {
+                        menu.build();
+                    } catch (Exception e) {
+                        menu.session.player.sendMessage("[scarlet]Error: [white]" + e.getMessage());
+                        Log.err("Failed to build menu @ for player @ with state @", this, menu.session, menu.state);
+                        Log.err(e);
+                        return;
+                    }
+
+                    menu.options.removeAll(op -> op.size == 0);
+
+                    String[][] optionTexts = new String[menu.options.size][];
+
+                    for (int i = 0; i < menu.options.size; i++) {
+                        var op = menu.options.get(i);
+
+                        optionTexts[i] = op.map(data -> data.getText()).toArray(String.class);
+                    }
+
+                    Call.menu(menu.session.player.con, menu.getMenuId(), menu.title, menu.description, optionTexts);
+                });
             }
         });
     }
@@ -129,7 +165,7 @@ public class PluginMenuService {
         Log.info("Current menus: @", menus);
     }
 
-    public Seq<PluginMenu<?>> getValidMenus(Player player) {
+    public Seq<PluginMenu<?>> getPlayerMenus(Player player) {
         return menus.select(m -> m.session.player == player);
     }
 }
