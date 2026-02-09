@@ -7,7 +7,6 @@ import arc.util.Align;
 import arc.util.Log;
 import lombok.RequiredArgsConstructor;
 import mindustry.Vars;
-import mindustry.ai.types.DefenderAI;
 import mindustry.content.StatusEffects;
 import mindustry.content.UnitTypes;
 import mindustry.game.EventType.*;
@@ -86,7 +85,6 @@ public class CataliGamemode {
 
         Vars.content.units().forEach(unit -> {
             unit.flying = unit.naval ? true : unit.flying;
-            unit.aiController = () -> new DefenderAI();
         });
 
         Vars.netServer.assigner = (player, players) -> {

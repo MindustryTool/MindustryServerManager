@@ -20,12 +20,18 @@ public class SwarmAi extends AIController {
     public void updateMovement() {
         if (target != null) {
             if (unit.dst(swarmPosition) < swarmRange) {
-                moveTo(target, (target instanceof Sized s ? s.hitSize() / 2f * 1.1f : 0f) + unit.hitSize / 2f + 15f,
-                        50f);
+                moveTo(target, (target instanceof Sized s ? s.hitSize() / 2f * 1.1f : 0f) + unit.hitSize / 2f
+                        + unit.range() / 2, 50f, true, null);
                 unit.lookAt(target);
             } else {
-                moveTo(swarmPosition, 40, 50f);
+                moveTo(swarmPosition, 8 * 10, 50f, true, null);
                 unit.lookAt(swarmPosition);
+            }
+
+            for (var mount : unit.mounts) {
+                if (mount.weapon.controllable && mount.weapon.bullet.collidesGround) {
+                    mount.target = target;
+                }
             }
         }
     }
