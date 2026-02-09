@@ -10,7 +10,7 @@ public class TeamUpgrades {
     private float baseHealthMultiplier = 0.05f;
     private float baseDamageMultiplier = 0.05f;
     private float baseRegenMultiplier = 0.1f; // This might need custom logic to apply
-    private float baseExpMultiplier = 0.2f;
+    private float baseExpMultiplier = 0.1f;
 
     // Upgrade levels for tracking
     private int healthLevel = 0;
