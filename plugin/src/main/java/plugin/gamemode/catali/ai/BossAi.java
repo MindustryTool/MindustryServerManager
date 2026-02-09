@@ -29,7 +29,13 @@ public class BossAi extends AIController {
 
     @Override
     public Teamc findTarget(float x, float y, float range, boolean air, boolean ground) {
-        var strongest = Registry.get(CataliGamemode.class).findStrongestTeam().orElse(null);
+        var gamemode = Registry.getOrNull(CataliGamemode.class);
+
+        if (gamemode == null) {
+            return null;
+        }
+
+        var strongest = gamemode.findStrongestTeam().orElse(null);
 
         if (strongest != null) {
             return strongest.units().firstOpt();

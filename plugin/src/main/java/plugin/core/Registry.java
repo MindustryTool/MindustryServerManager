@@ -83,6 +83,12 @@ public final class Registry {
         }
         return (T) obj;
     }
+    
+    @SuppressWarnings("unchecked")
+    public static <T> T getOrNull(Class<T> type) {
+        Object obj = instances.get(type);
+        return (T) obj;
+    }
 
     public static <T> List<T> getAll(Class<T> type) {
         List<T> list = new ArrayList<>();
