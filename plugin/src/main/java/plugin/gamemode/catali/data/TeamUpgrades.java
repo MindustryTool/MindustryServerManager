@@ -41,7 +41,7 @@ public class TeamUpgrades {
     }
 
     public void levelUpHealth(int amount) {
-        damageLevel += amount;
+        healthLevel += amount;
     }
 
     public void levelUpDamage(int amount) {
