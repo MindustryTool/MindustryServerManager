@@ -27,7 +27,7 @@ public class TeamLevel {
 
     private void levelUp() {
         level++;
-        requiredExp *= 1.2f;
+        requiredExp *= 1.15f;
         commonUpgradePoints++;
         if (level % 5 == 0) {
             rareUpgradePoints++;

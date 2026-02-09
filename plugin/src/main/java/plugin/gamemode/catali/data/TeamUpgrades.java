@@ -1,13 +1,11 @@
 package plugin.gamemode.catali.data;
 
-import lombok.EqualsAndHashCode;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
 import mindustry.gen.Unit;
 
 @NoArgsConstructor
-@ToString
-@EqualsAndHashCode
+@Data
 public class TeamUpgrades {
     private float baseHealthMultiplier = 0.05f;
     private float baseDamageMultiplier = 0.05f;
