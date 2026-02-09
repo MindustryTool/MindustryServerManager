@@ -111,37 +111,43 @@ public class PluginMenuService {
 
     public void showNext(Player player) {
         Core.app.post(() -> {
-            var remainingMenus = getPlayerMenus(player);
-            var hasActiveMenu = activeMenus.containsKey(player);
+            try {
+                var remainingMenus = getPlayerMenus(player);
+                var hasActiveMenu = activeMenus.containsKey(player);
 
-            if (!hasActiveMenu) {
-                var menu = remainingMenus.first();
+                if (!hasActiveMenu && !remainingMenus.isEmpty()) {
+                    var menu = remainingMenus.first();
 
-                menus.remove(menu);
-                activeMenus.put(player, menu);
+                    menus.remove(menu);
+                    activeMenus.put(player, menu);
 
-                Tasks.io("Show Menu: " + menu.getMenuId(), () -> {
-                    try {
-                        menu.build();
-                    } catch (Exception e) {
-                        menu.session.player.sendMessage("[scarlet]Error: [white]" + e.getMessage());
-                        Log.err("Failed to build menu @ for player @ with state @", this, menu.session, menu.state);
-                        Log.err(e);
-                        return;
-                    }
+                    Tasks.io("Show Menu: " + menu.getMenuId(), () -> {
+                        try {
+                            menu.build();
+                        } catch (Exception e) {
+                            menu.session.player.sendMessage("[scarlet]Error: [white]" + e.getMessage());
+                            Log.err("Failed to build menu @ for player @ with state @", this, menu.session, menu.state);
+                            Log.err(e);
+                            return;
+                        }
 
-                    menu.options.removeAll(op -> op.size == 0);
+                        menu.options.removeAll(op -> op.size == 0);
 
-                    String[][] optionTexts = new String[menu.options.size][];
+                        String[][] optionTexts = new String[menu.options.size][];
 
-                    for (int i = 0; i < menu.options.size; i++) {
-                        var op = menu.options.get(i);
+                        for (int i = 0; i < menu.options.size; i++) {
+                            var op = menu.options.get(i);
 
-                        optionTexts[i] = op.map(data -> data.getText()).toArray(String.class);
-                    }
+                            optionTexts[i] = op.map(data -> data.getText()).toArray(String.class);
+                        }
 
-                    Call.menu(menu.session.player.con, menu.getMenuId(), menu.title, menu.description, optionTexts);
-                });
+                        Call.menu(menu.session.player.con, menu.getMenuId(), menu.title, menu.description, optionTexts);
+                    });
+                }
+            } catch (Exception e) {
+                Log.err("Failed to show next menu for player @", player);
+                Log.err(e);
+                player.sendMessage("[scarlet]Error: [white]" + e.getMessage());
             }
         });
     }
