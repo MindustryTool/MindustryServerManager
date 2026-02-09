@@ -59,7 +59,7 @@ public class GeneralController {
         });
 
         app.get("hosting", (ctx) -> {
-            var hosting = Utils.appPostWithTimeout(() -> Vars.state.isGame(), "Get hosting status");
+            var hosting = Vars.state.isGame();
             ctx.contentType(ContentType.APPLICATION_JSON);
             ctx.json(hosting);
         });

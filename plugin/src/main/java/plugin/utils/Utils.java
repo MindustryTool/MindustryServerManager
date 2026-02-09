@@ -142,7 +142,7 @@ public class Utils {
     }
 
     public static <T> T appPostWithTimeout(Supplier<T> fn, String taskName) {
-        return appPostWithTimeout(fn, 500, taskName);
+        return appPostWithTimeout(fn, 100, taskName);
     }
 
     private static synchronized <T> T appPostWithTimeout(Supplier<T> fn, int timeout, String taskName) {
@@ -273,7 +273,7 @@ public class Utils {
                 }
             });
 
-            var bytes = future.get(1500, TimeUnit.MILLISECONDS);
+            var bytes = future.get(100, TimeUnit.MILLISECONDS);
 
             if (bytes.length == 0) {
                 return new byte[0];

@@ -8,6 +8,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import arc.Core;
 import arc.struct.Seq;
 import arc.util.Log;
+import lombok.RequiredArgsConstructor;
 import mindustry.game.EventType.MenuOptionChooseEvent;
 import mindustry.gen.Call;
 import mindustry.gen.Player;
@@ -17,17 +18,19 @@ import plugin.annotations.Component;
 import plugin.annotations.Destroy;
 import plugin.annotations.Init;
 import plugin.annotations.Listener;
-import plugin.core.Registry;
 import plugin.event.SessionRemovedEvent;
 import plugin.menus.PluginMenu;
 import plugin.menus.PluginMenu.HudOption;
 
 @Component
+@RequiredArgsConstructor
 public class PluginMenuService {
     private final AtomicInteger ID_GEN = new AtomicInteger(1000);
     private final ConcurrentHashMap<Class<?>, Integer> CLASS_IDS = new ConcurrentHashMap<>();
     private final Seq<PluginMenu<?>> menus = new Seq<>();
     private final ConcurrentHashMap<Player, PluginMenu<?>> activeMenus = new ConcurrentHashMap<>();
+
+    private final SessionHandler sessionHandler;
 
     @Init
     public void init() {
@@ -95,7 +98,7 @@ public class PluginMenuService {
             if (selectedOption != null && selectedOption.getCallback() != null) {
                 Call.hideFollowUpMenu(event.player.con, targetMenu.getMenuId());
 
-                var session = Registry.get(SessionHandler.class).get(event.player).orElse(null);
+                var session = sessionHandler.get(event.player).orElse(null);
 
                 if (session == null) {
                     Log.err("Failed to get session for player @", event.player);
