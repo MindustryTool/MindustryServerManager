@@ -234,7 +234,7 @@ public class CataliGamemode {
                                 .append("\n");
                     }
 
-                    String respawn = team.getRespawnReadyUnit().size > 0
+                    String respawn = team.getRespawn().size > 0
                             ? respawnSb.toString()
                             : "@No unit";
 
@@ -297,7 +297,7 @@ public class CataliGamemode {
 
     private void updateRespawn() {
         for (CataliTeamData data : teams) {
-            var respawns = data.getRespawnReadyUnit();
+            var respawns = data.removeRespawnReadyUnit();
             for (var entry : respawns) {
                 data.spawnUnit(entry.type, (spawned) -> {
                     data.eachMember(member -> {

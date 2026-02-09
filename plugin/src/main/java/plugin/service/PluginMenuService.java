@@ -36,7 +36,7 @@ public class PluginMenuService {
     public void init() {
         Control.SCHEDULER.scheduleWithFixedDelay(() -> {
             activeMenus.values().removeIf(m -> {
-                var delete = Instant.now().isAfter(m.createdAt.plusSeconds(60 * 2));
+                var delete = Instant.now().isAfter(m.createdAt.plusSeconds(60));
 
                 if (delete && m.session.player.con != null && m.session.player.con.isConnected()) {
                     Call.hideFollowUpMenu(m.session.player.con, m.getMenuId());

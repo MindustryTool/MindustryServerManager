@@ -59,7 +59,11 @@ public class CataliTeamData {
         respawn.add(new RespawnEntry(type, duration));
     }
 
-    public Seq<RespawnEntry> getRespawnReadyUnit() {
+    public Seq<RespawnEntry> getRespawn() {
+        return respawn;
+    }
+
+    public Seq<RespawnEntry> removeRespawnReadyUnit() {
         var needRespawn = respawn.select(entry -> entry.respawnAt.isBefore(Instant.now()));
 
         respawn.removeAll(needRespawn);
