@@ -21,10 +21,10 @@ public class SwarmAi extends AIController {
         if (target != null) {
             if (unit.dst(swarmPosition) < swarmRange) {
                 moveTo(target, (target instanceof Sized s ? s.hitSize() / 2f * 1.1f : 0f) + unit.hitSize / 2f
-                        + unit.range() / 2, 50f, true, null);
+                        + unit.range() / 2, 50f, false, null);
                 unit.lookAt(target);
             } else {
-                moveTo(swarmPosition, 8 * 10, 50f, true, null);
+                moveTo(swarmPosition, 8 * 10, 50f, false, null);
                 unit.lookAt(swarmPosition);
             }
 
