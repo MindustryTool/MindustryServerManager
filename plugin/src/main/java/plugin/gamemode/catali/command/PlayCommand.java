@@ -17,10 +17,13 @@ public class PlayCommand extends PluginClientCommand {
     @Override
     public void handle(Session session) {
         var gamemode = Registry.get(CataliGamemode.class);
-        var team = gamemode.createTeam(session.player);
 
-        if (session.player.unit() == null) {
-            gamemode.assignUnitForPlayer(team, session.player);
+        if (gamemode.canRespawn(session.player)) {
+            var team = gamemode.createTeam(session.player);
+
+            if (session.player.unit() == null) {
+                gamemode.assignUnitForPlayer(team, session.player);
+            }
         }
     }
 }

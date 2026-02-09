@@ -50,6 +50,7 @@ import plugin.utils.Utils;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 @Gamemode("catali")
@@ -58,6 +59,8 @@ public class CataliGamemode {
 
     @Persistence("catali-teams.json")
     private final Seq<CataliTeamData> teams = new Seq<>();
+
+    private final ConcurrentHashMap<Player, Instant> respawnCountdown = new ConcurrentHashMap<>();
 
     private final UnitSpawner unitSpawner;
     private final BlockSpawner blockSpawner;
@@ -71,6 +74,7 @@ public class CataliGamemode {
     private final Team SPECTATOR_TEAM = Team.get(255);
     private final Team ENEMY_TEAM = Team.crux;
     private final Team BLOCK_TEAM = Team.get(254);
+    private final Duration RESPAWN_COOLDOWN = Duration.ofSeconds(10);
 
     private final Seq<Unit> shouldNotRespawn = new Seq<>();
 
@@ -258,13 +262,27 @@ public class CataliGamemode {
         }
     }
 
+    public boolean canRespawn(Player player) {
+        return respawnCountdown.get(player) == null || Instant.now().isAfter(respawnCountdown.get(player));
+    }
+
     private void updatePlayer() {
         for (var player : Groups.player) {
             var team = findTeam(player);
 
             if (team == null) {
-                Call.infoPopup(player.con, I18n.t(player, "@User", "[accent]/p[white]", "@to start a new team"), 2,
-                        Align.center, 0, 0, 30, 0);
+                if (canRespawn(player)) {
+                    Call.infoPopup(player.con, I18n.t(player, "@User", "[accent]/p[white]", "@to start a new team"), 2,
+                            Align.center, 0, 0, 30, 0);
+                } else {
+                    Call.infoPopup(player.con,
+                            I18n.t(player, "@Respawn in",
+                                    String.valueOf(TimeUtils
+                                            .toSeconds(Duration.between(Instant.now(), respawnCountdown.get(player))))),
+                            2,
+                            Align.center, 0, 0, 30, 0);
+                }
+
             } else if (team.level.level == 1 && team.level.currentExp == 0) {
                 Call.infoPopup(player.con, I18n.t(player, "@Destroy block to get", "[accent]exp[white]"), 2,
                         Align.center, 0, 0, 80, 0);
@@ -317,6 +335,11 @@ public class CataliGamemode {
     @Listener
     public void onTeamFallen(TeamFallenEvent event) {
         teams.remove(event.team);
+        var leader = event.team.leader();
+
+        if (leader != null) {
+            respawnCountdown.put(leader, Instant.now().plus(RESPAWN_COOLDOWN));
+        }
 
         Groups.unit.forEach(unit -> {
             if (unit.team == event.team.team) {
