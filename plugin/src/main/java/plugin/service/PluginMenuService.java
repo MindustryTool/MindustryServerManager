@@ -169,6 +169,9 @@ public class PluginMenuService {
     }
 
     public void add(PluginMenu<?> menu) {
+        if (menus.contains(m -> m.getClass().equals(menu.getClass()))) {
+            return;
+        }
         menus.insert(0, menu);
     }
 

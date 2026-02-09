@@ -82,17 +82,19 @@ public class SessionService {
         var data = session.getData();
         int level = getLevel.apply(session);
 
-        if (level > session.currentLevel) {
+        if (level != session.currentLevel) {
             if (session.currentLevel != 0) {
                 int oldLevel = session.currentLevel;
                 int newLevel = level;
 
-                Tasks.io("Update level", () -> {
-                    Utils.forEachPlayerLocale((locale, players) -> {
-                        String message = SessionView.getLevelUpMessage(locale, oldLevel, newLevel);
-                        players.forEach(p -> p.sendMessage(session.player.name + message));
+                if (level > session.currentLevel) {
+                    Tasks.io("Update level", () -> {
+                        Utils.forEachPlayerLocale((locale, players) -> {
+                            String message = SessionView.getLevelUpMessage(locale, oldLevel, newLevel);
+                            players.forEach(p -> p.sendMessage(session.player.name + message));
+                        });
                     });
-                });
+                }
             }
 
             session.currentLevel = level;
