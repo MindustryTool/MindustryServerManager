@@ -104,6 +104,13 @@ public class CataliTeamData {
         return Groups.player.find(player -> player.uuid().equals(leaderUuid));
     }
 
+    public String name() {
+        var leader = getLeader();
+        var teamName = leader != null ? leader.name : String.valueOf(team.id);
+
+        return teamName;
+    }
+
     public void consumeUpgrade(CataliCommonUpgrade upgrade, int amount) {
         if (this.level.commonUpgradePoints < amount) {
             return;

@@ -167,7 +167,7 @@ public class CataliGamemode {
         for (var unit : Groups.unit) {
             var teamData = findTeam(unit.team);
             if (teamData != null) {
-                unit.healFract(5 * teamData.upgrades.getHealthMultiplier());
+                unit.heal(5 * teamData.upgrades.getHealthMultiplier());
             }
         }
     }
@@ -296,9 +296,6 @@ public class CataliGamemode {
     public void onTeamFallen(TeamFallenEvent event) {
         teams.remove(event.team);
 
-        var leader = event.team.getLeader();
-        var teamName = leader != null ? leader.name : event.team.team.id;
-
         Groups.unit.forEach(unit -> {
             if (unit.team == event.team.team) {
                 unit.kill();
@@ -306,7 +303,7 @@ public class CataliGamemode {
         });
 
         Utils.forEachPlayerLocale((locale, players) -> {
-            String message = I18n.t(locale, "[scarlet]", "@Team", teamName, "[scarlet]", "@has been eliminated!");
+            String message = I18n.t(locale, "[scarlet]", "@Team", event.team.name(), "[scarlet]", "@has been eliminated!");
             for (var player : players) {
                 player.sendMessage(message);
             }
@@ -397,7 +394,7 @@ public class CataliGamemode {
     @Listener
     public void onTeamCreated(TeamCreatedEvent event) {
         Utils.forEachPlayerLocale((locale, players) -> {
-            String message = I18n.t(locale, "[green]", "@Team", event.team.team.id, "@has been created!");
+            String message = I18n.t(locale, "[green]", "@Team", event.team.name(), "@has been created!");
             for (var player : players) {
                 player.sendMessage(message);
             }
@@ -569,15 +566,15 @@ public class CataliGamemode {
 
     @Listener
     public synchronized void onExpGain(ExpGainEvent event) {
-        float calAmount = event.amount * event.team.upgrades.getExpMultiplier();
+        float total = event.amount * event.team.upgrades.getExpMultiplier();
 
         event.team.eachMember(player -> {
-            Call.label(player.con, "[green]+" + calAmount + "exp", 2, //
+            Call.label(player.con, "[green]+" + total + "exp", 2, //
                     event.x + Mathf.random(5),
                     event.y + Mathf.random(5));
         });
 
-        boolean levelUp = event.team.level.addExp(calAmount);
+        boolean levelUp = event.team.level.addExp(total);
 
         if (!levelUp) {
             return;
