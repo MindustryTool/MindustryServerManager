@@ -26,7 +26,7 @@ public class RareUpgradeTierSelectUpgradeMenu extends PluginMenu<Pair<CataliTeam
         description = I18n.t(session, "@Choose what this unit should evolve into.");
 
 
-        var canGainExpUnit = Seq.with(UnitTypes.aegires, UnitTypes.oct, UnitTypes.quad);
+        var cannotGainExpUnit = Seq.with(UnitTypes.aegires, UnitTypes.oct, UnitTypes.quad);
         var config = Registry.get(CataliConfig.class);
         
         var availableUnitsUpgradeTo = config.getUnitEvolutions(unit.type);
@@ -37,7 +37,7 @@ public class RareUpgradeTierSelectUpgradeMenu extends PluginMenu<Pair<CataliTeam
                 row();
             }
 
-            if (!canGainExpUnit.contains(upgrade) && team.units().size <= 1) {
+            if (cannotGainExpUnit.contains(upgrade) && team.units().size <= 1) {
                 continue;
             }
 
