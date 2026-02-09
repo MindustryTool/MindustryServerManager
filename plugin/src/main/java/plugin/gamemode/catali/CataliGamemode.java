@@ -74,8 +74,8 @@ public class CataliGamemode {
 
     @Init
     public void init() {
-        UnitTypes.collaris.speed /= 2;
-        UnitTypes.omura.weapons.get(0).bullet.damage /= 2;
+        UnitTypes.collaris.speed = 0.55f;
+        UnitTypes.omura.weapons.get(0).bullet.damage = 500f;
 
         Vars.content.units().forEach(unit -> {
             unit.flying = unit.naval ? true : unit.flying;
