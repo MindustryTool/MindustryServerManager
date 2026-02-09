@@ -193,10 +193,7 @@ public class CataliGamemode {
                         respawnSb.append(respawnEntry.type.emoji())
                                 .append(" ")
                                 .append(TimeUtils.toSeconds(Duration.between(Instant.now(), respawnEntry.respawnAt)))
-                                .append(" ");
-                        if (i % 5 == 4) {
-                            respawnSb.append("\n");
-                        }
+                                .append("\n");
                     }
 
                     String respawn = team.respawn.getRespawn().size > 0
@@ -265,8 +262,7 @@ public class CataliGamemode {
         Seq<CataliTeamData> remove = new Seq<>();
 
         for (var team : teams) {
-            if ((!team.hasUnit() && Instant.now().isAfter(team.timeoutAt()))
-                    || (team.getLeader() == null && Instant.now().isAfter(team.timeoutAt()))) {
+            if ((!team.hasUnit() && team.isTimeout()) || (team.getLeader() == null && team.isTimeout())) {
                 remove.add(team);
             } else if (team.spawning == true) {
                 var leader = Groups.player.find(player -> player.uuid().equals(team.leaderUuid));

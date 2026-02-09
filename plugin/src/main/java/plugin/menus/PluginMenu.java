@@ -2,7 +2,6 @@ package plugin.menus;
 
 import java.time.Instant;
 
-import arc.Core;
 import arc.struct.Seq;
 import arc.util.Log;
 import lombok.Data;
@@ -92,41 +91,39 @@ public abstract class PluginMenu<T> {
     }
 
     public void send(Session session, T state) {
-        Core.app.post(() -> {
-            try {
-                @SuppressWarnings("unchecked")
-                PluginMenu<T> copy = getClass().getDeclaredConstructor().newInstance();
+        try {
+            @SuppressWarnings("unchecked")
+            PluginMenu<T> copy = getClass().getDeclaredConstructor().newInstance();
 
-                copy.title = title;
-                copy.description = description;
-                copy.session = session;
-                copy.state = state;
-                copy.options = new Seq<>(new Seq<>());
-                copy.sendable = true;
+            copy.title = title;
+            copy.description = description;
+            copy.session = session;
+            copy.state = state;
+            copy.options = new Seq<>(new Seq<>());
+            copy.sendable = true;
 
-                var handler = Registry.get(PluginMenuService.class);
-                var playerMenus = handler.getValidMenus(session.player);
-                var exists = playerMenus.find(m -> m == copy);
+            var handler = Registry.get(PluginMenuService.class);
+            var playerMenus = handler.getValidMenus(session.player);
+            var exists = playerMenus.find(m -> m == copy);
 
-                if (exists != null) {
-                    Log.err("Menu @ already in the list", copy);
-                }
-
-                if (playerMenus.contains(m -> m.getMenuId() == copy.getMenuId())) {
-                    Log.warn("Player @ already have menu @", session.player, copy);
-                    return;
-                }
-
-                handler.add(copy);
-
-                if (!playerMenus.contains(m -> m.isSent)) {
-                    copy.show();
-                }
-            } catch (Exception e) {
-                session.player.sendMessage("[scarlet]Error: [white]" + e.getMessage());
-                Log.err(e);
+            if (exists != null) {
+                Log.err("Menu @ already in the list", copy);
             }
-        });
+
+            if (playerMenus.contains(m -> m.getMenuId() == copy.getMenuId())) {
+                Log.warn("Player @ already have menu @", session.player, copy);
+                return;
+            }
+
+            handler.add(copy);
+
+            if (!playerMenus.contains(m -> m.isSent)) {
+                copy.show();
+            }
+        } catch (Exception e) {
+            session.player.sendMessage("[scarlet]Error: [white]" + e.getMessage());
+            Log.err(e);
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -148,6 +145,6 @@ public abstract class PluginMenu<T> {
 
     @Override
     public String toString() {
-        return this.getClass().getSimpleName() + "(" + getMenuId() + ")[" + sendable  +", " + isSent + "]";
+        return this.getClass().getSimpleName() + "(" + getMenuId() + ")[" + sendable + ", " + isSent + "]";
     }
 }

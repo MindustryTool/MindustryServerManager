@@ -64,8 +64,8 @@ public class CataliTeamData {
         this.nextLeaderUuid = uuid;
     }
 
-    public Instant timeoutAt() {
-        return lastLeaderOnlineTime.plusSeconds(60 * 2);
+    public boolean isTimeout() {
+        return Instant.now().isAfter(lastLeaderOnlineTime.plusSeconds(60 * 2));
     }
 
     public void refreshTimeout() {

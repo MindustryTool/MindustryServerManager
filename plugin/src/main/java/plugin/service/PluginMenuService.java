@@ -1,7 +1,6 @@
 package plugin.service;
 
 import java.time.Instant;
-import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -51,63 +50,64 @@ public class PluginMenuService {
 
     @Listener
     public void onMenuOptionChoose(MenuOptionChooseEvent event) {
-        Core.app.post(() -> {
-            var targetMenu = menus.find(m -> m.getMenuId() == event.menuId && m.session.player == event.player);
+        var targetMenu = menus.find(m -> m.getMenuId() == event.menuId && m.session.player == event.player);
 
-            if (targetMenu == null) {
-                showNext(event.player);
-                return;
-            }
-
-            menus.remove(targetMenu);
-
-            if (event.option < 0) {
-                showNext(event.player);
-                return;
-            }
-
-            HudOption<Object> selectedOption = null;
-
-            int i = 0;
-
-            if (event.option >= 0) {
-                Seq<HudOption<Object>> flatten = targetMenu.getFlattenedOptions();
-                for (var op : flatten) {
-                    if (i == event.option) {
-                        selectedOption = op;
-                        break;
-                    }
-                    i++;
-                }
-
-                if (selectedOption == null) {
-                    Log.err("Failed to find selected option for menu @ with id @", targetMenu, event.option);
-                }
-            }
-
-            if (selectedOption != null && selectedOption.getCallback() != null) {
-                Call.hideFollowUpMenu(event.player.con, targetMenu.getMenuId());
-
-                var session = Registry.get(SessionHandler.class).get(event.player).orElse(null);
-
-                if (session == null) {
-                    Log.err("Failed to get session for player @", event.player);
-                    Thread.dumpStack();
-                } else {
-                    selectedOption.getCallback().accept(session, targetMenu.state);
-                }
-            }
+        if (targetMenu == null) {
             showNext(event.player);
-        });
+            return;
+        }
+
+        menus.remove(targetMenu);
+
+        if (event.option < 0) {
+            showNext(event.player);
+            return;
+        }
+
+        HudOption<Object> selectedOption = null;
+
+        int i = 0;
+
+        if (event.option >= 0) {
+            Seq<HudOption<Object>> flatten = targetMenu.getFlattenedOptions();
+            for (var op : flatten) {
+                if (i == event.option) {
+                    selectedOption = op;
+                    break;
+                }
+                i++;
+            }
+
+            if (selectedOption == null) {
+                Log.err("Failed to find selected option for menu @ with id @", targetMenu, event.option);
+            }
+        }
+
+        if (selectedOption != null && selectedOption.getCallback() != null) {
+            Call.hideFollowUpMenu(event.player.con, targetMenu.getMenuId());
+
+            var session = Registry.get(SessionHandler.class).get(event.player).orElse(null);
+
+            if (session == null) {
+                Log.err("Failed to get session for player @", event.player);
+                Thread.dumpStack();
+            } else {
+                selectedOption.getCallback().accept(session, targetMenu.state);
+            }
+        }
+
+        showNext(event.player);
     }
 
     public void showNext(Player player) {
-        var remainingMenus = getValidMenus(player);
-        Log.info("Remaining menus: @", remainingMenus);
-        
-        if (remainingMenus.size > 0) {
-            remainingMenus.first().show();
-        }
+        Core.app.post(() -> {
+            var remainingMenus = getValidMenus(player);
+            Log.info("Remaining menus: @", remainingMenus);
+
+            if (remainingMenus.size > 0) {
+                remainingMenus.first().show();
+            }
+        });
     }
 
     @Destroy
