@@ -139,10 +139,14 @@ public class CataliGamemode {
     }
 
     public void spawn() {
-        blockSpawner.spawn(BLOCK_TEAM);
+        try {
+            blockSpawner.spawn(BLOCK_TEAM);
 
-        if (findTeamMaxLevel() > config.unitStartSpawnLevel) {
-            unitSpawner.spawn(ENEMY_TEAM);
+            if (findTeamMaxLevel() > config.unitStartSpawnLevel) {
+                unitSpawner.spawn(ENEMY_TEAM);
+            }
+        } catch (Exception e) {
+            Log.err("Failed to spawn unit", e);
         }
     }
 
@@ -151,24 +155,26 @@ public class CataliGamemode {
             return;
         }
 
-        Core.app.post(() -> {
-            try {
-                updateRespawn();
-                updateTeam();
-                updatePlayer();
-                healCore();
-            } catch (Exception e) {
-                Log.err("Failed to update stats hud", e);
-            }
-        });
+        try {
+            updateRespawn();
+            updateTeam();
+            updatePlayer();
+            healCore();
+        } catch (Exception e) {
+            Log.err("Failed to update stats hud", e);
+        }
     }
 
     private void healTeamUnit() {
-        for (var unit : Groups.unit) {
-            var teamData = findTeam(unit.team);
-            if (teamData != null) {
-                unit.heal(5 * teamData.upgrades.getHealthMultiplier());
+        try {
+            for (var unit : Groups.unit) {
+                var teamData = findTeam(unit.team);
+                if (teamData != null) {
+                    unit.heal(5 * teamData.upgrades.getHealthMultiplier());
+                }
             }
+        } catch (Exception e) {
+            Log.err("Failed to heal team unit", e);
         }
     }
 

@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import mindustry.type.UnitType;
 import plugin.json.MappableContentSerializer;
 import plugin.json.UnitTypeDeserializer;
@@ -17,7 +18,10 @@ import plugin.json.UnitTypeDeserializer;
 public class RespawnEntry {
     @JsonSerialize(using = MappableContentSerializer.class)
     @JsonDeserialize(using = UnitTypeDeserializer.class)
+    @NonNull
     public UnitType type;
+
+    @NonNull
     public Instant respawnAt;
 
     public RespawnEntry(UnitType type, Duration duration) {
