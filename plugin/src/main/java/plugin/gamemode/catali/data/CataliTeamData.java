@@ -189,12 +189,29 @@ public class CataliTeamData {
 
         Unit leaderUnit = Groups.unit.find(u -> u == leaderPlayer.unit());
 
-        if (leaderUnit == null) {
-            leaderUnit = units().firstOpt();
+        var spawnX = -1;
+        var spawnY = -1;
+
+        if (leaderUnit != null) {
+            spawnX = leaderUnit.tileX();
+            spawnY = leaderUnit.tileY();
+        } else {
+            var units = units();
+
+            if (units.isEmpty()) {
+                return false;
+            }
+
+            for (var unit : units) {
+                spawnX += unit.tileX();
+                spawnY += unit.tileY();
+            }
+
+            spawnX /= units.size;
+            spawnY /= units.size;
         }
 
-        if (leaderUnit == null) {
-            Log.info("No leader unit for player @", leaderPlayer.name);
+        if (spawnX < 0 || spawnY < 0) {
             return false;
         }
 
@@ -205,12 +222,12 @@ public class CataliTeamData {
 
         for (int i = 1; i < maxSearchRange; i++) {
             for (int x = 1 - i; x < i; x++) {
-                tile = Vars.world.tile(leaderUnit.tileX() + x, leaderUnit.tileY() - i);
+                tile = Vars.world.tile(spawnX + x, spawnY - i);
                 if (SpawnerHelper.isTileSafe(tile, type)) {
                     safeTile = tile;
                     break;
                 }
-                tile = Vars.world.tile(leaderUnit.tileX() + x, leaderUnit.tileY() + i);
+                tile = Vars.world.tile(spawnX + x, spawnY + i);
                 if (SpawnerHelper.isTileSafe(tile, type)) {
                     safeTile = tile;
                     break;
@@ -218,12 +235,12 @@ public class CataliTeamData {
             }
 
             for (int y = 1 - i; y < i; y++) {
-                tile = Vars.world.tile(leaderUnit.tileX() - i, leaderUnit.tileY() + y);
+                tile = Vars.world.tile(spawnX - i, spawnY + y);
                 if (SpawnerHelper.isTileSafe(tile, type)) {
                     safeTile = tile;
                     break;
                 }
-                tile = Vars.world.tile(leaderUnit.tileX() + i, leaderUnit.tileY() + y);
+                tile = Vars.world.tile(spawnX + i, spawnY + y);
                 if (SpawnerHelper.isTileSafe(tile, type)) {
                     safeTile = tile;
                     break;
