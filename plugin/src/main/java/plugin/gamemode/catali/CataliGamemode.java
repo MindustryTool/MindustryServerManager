@@ -50,6 +50,7 @@ import plugin.utils.Utils;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
@@ -152,16 +153,17 @@ public class CataliGamemode {
         return teams.find(teamData -> teamData.team == team);
     }
 
-    public int findTeamMaxLevel() {
-        return teams.map(m -> m.level.level).max(level -> level);
+    public Optional<CataliTeamData> findStrongestTeam() {
+        var res = teams.max(m -> m.level.level);
+        return Optional.ofNullable(res);
     }
 
     public void spawn() {
         try {
             blockSpawner.spawn(BLOCK_TEAM);
 
-            if (findTeamMaxLevel() > config.unitStartSpawnLevel) {
-                unitSpawner.spawn(ENEMY_TEAM);
+            if (findStrongestTeam().map(t -> t.level.level).orElse(0) > config.unitStartSpawnLevel) {
+                unitSpawner.spawn(this, ENEMY_TEAM);
             }
         } catch (Exception e) {
             Log.err("Failed to spawn unit", e);

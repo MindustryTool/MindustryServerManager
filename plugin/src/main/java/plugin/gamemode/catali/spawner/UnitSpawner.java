@@ -10,6 +10,8 @@ import mindustry.gen.Groups;
 import mindustry.gen.Unit;
 import plugin.annotations.Gamemode;
 import plugin.gamemode.catali.CataliConfig;
+import plugin.gamemode.catali.CataliGamemode;
+import plugin.gamemode.catali.ai.BossAi;
 import plugin.gamemode.catali.ai.SwarmAi;
 
 @Gamemode("catali")
@@ -18,7 +20,10 @@ public class UnitSpawner {
 
     private final CataliConfig config;
 
-    public void spawn(Team team) {
+    public void spawn(CataliGamemode gamemode, Team team) {
+        var canSpawnBoss = gamemode.findStrongestTeam().map(t -> t.level.level >= config.bossStartSpawnLevel)
+                .orElse(false);
+
         for (var entry : config.unitSpawnChance) {
             if (Mathf.chance(entry.chances)) {
                 var count = team.data().unitCount;
@@ -46,8 +51,14 @@ public class UnitSpawner {
 
                     Core.app.post(() -> {
                         Unit u = unit.create(team);
-                        var position = new Vec2(tile.worldx(), tile.worldy());
-                        u.controller(new SwarmAi(position));
+
+                        if (canSpawnBoss && Mathf.chance(0.1)) {
+                            u.controller(new BossAi());
+                        } else {
+                            var position = new Vec2(tile.worldx(), tile.worldy());
+                            u.controller(new SwarmAi(position));
+                        }
+
                         u.set(tile.worldx() + Mathf.random(largestUnit.hitSize),
                                 tile.worldy() + Mathf.random(largestUnit.hitSize));
                         u.add();

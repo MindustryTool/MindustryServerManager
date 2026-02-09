@@ -49,6 +49,7 @@ public class CataliConfig {
     public List<UnitSpawnChance> unitSpawnChance = _getUnitSpawnChance();
 
     public int unitStartSpawnLevel = 15;
+    public int bossStartSpawnLevel = 25;
 
     public Set<UnitType> getUnitEvolutions(UnitType type) {
         for (var entry : unitUpgrade) {

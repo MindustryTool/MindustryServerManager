@@ -43,7 +43,7 @@ public class CataliTeamData {
     public Seq<RespawnEntry> respawn = new Seq<>();
     public Seq<Unit> despawnQueue = new Seq<>();
 
-    public final int MAX_UNIT_COUNT = 10;
+    public final int MAX_UNIT_COUNT = 20;
 
     public CataliTeamData(Team team, String leaderUuid) {
         this.team = team;

@@ -45,6 +45,8 @@ public abstract class PluginClientCommand extends PluginCommand {
                     return;
                 }
 
+                Log.info("@ used by @", name, player.name);
+
                 var session = Registry.get(SessionHandler.class).get(player).orElse(null);
 
                 if (session == null) {
