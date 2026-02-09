@@ -639,13 +639,13 @@ public class CataliGamemode {
         Core.app.post(() -> {
             float total = event.amount * event.team.upgrades.getExpMultiplier();
 
+            boolean levelUp = event.team.level.addExp(total);
+
             event.team.eachMember(player -> {
-                Call.label(player.con, "[green]+" + total + "exp", 2, //
+                Call.label(player.con, String.format("[green]+%.2fexp", total), 2, //
                         event.x + Mathf.random(5),
                         event.y + Mathf.random(5));
             });
-
-            boolean levelUp = event.team.level.addExp(total);
 
             if (!levelUp) {
                 return;
