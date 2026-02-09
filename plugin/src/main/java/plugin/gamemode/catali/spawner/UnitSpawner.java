@@ -2,7 +2,6 @@ package plugin.gamemode.catali.spawner;
 
 import arc.Core;
 import arc.math.Mathf;
-import arc.math.geom.Vec2;
 import arc.util.Log;
 import lombok.RequiredArgsConstructor;
 import mindustry.game.Team;
@@ -11,7 +10,6 @@ import mindustry.gen.Unit;
 import plugin.annotations.Gamemode;
 import plugin.gamemode.catali.CataliConfig;
 import plugin.gamemode.catali.CataliGamemode;
-import plugin.gamemode.catali.ai.SwarmAi;
 
 @Gamemode("catali")
 @RequiredArgsConstructor
@@ -47,9 +45,6 @@ public class UnitSpawner {
 
                     Core.app.post(() -> {
                         Unit u = unit.create(team);
-
-                        var position = new Vec2(tile.worldx(), tile.worldy());
-                        u.controller(new SwarmAi(position));
 
                         u.set(tile.worldx() + Mathf.random(largestUnit.hitSize),
                                 tile.worldy() + Mathf.random(largestUnit.hitSize));
