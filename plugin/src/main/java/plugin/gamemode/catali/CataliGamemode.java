@@ -102,7 +102,7 @@ public class CataliGamemode {
 
         Control.SCHEDULER.scheduleWithFixedDelay(this::updateStatsHud, 0, 1, TimeUnit.SECONDS);
         Control.SCHEDULER.scheduleWithFixedDelay(this::updateLogic, 0, 1, TimeUnit.SECONDS);
-        Control.SCHEDULER.scheduleWithFixedDelay(this::spawn, 0, 250, TimeUnit.MILLISECONDS);
+        Control.SCHEDULER.scheduleWithFixedDelay(this::spawn, 0, 200, TimeUnit.MILLISECONDS);
         Control.SCHEDULER.scheduleAtFixedRate(this::healTeamUnit, 0, 1, TimeUnit.SECONDS);
 
         Log.info("[accent]Cataio gamemode loaded");
@@ -200,14 +200,14 @@ public class CataliGamemode {
 
                     StringBuilder respawnSb = new StringBuilder();
 
-                    for (var entry : team.respawn.respawn.sort(v -> v.respawnAt.getEpochSecond())) {
+                    for (var entry : team.respawn.sort(v -> v.respawnAt.getEpochSecond())) {
                         respawnSb.append(entry.type.emoji())
                                 .append(" ")
                                 .append(TimeUtils.toSeconds(Duration.between(Instant.now(), entry.respawnAt)))
                                 .append("\n");
                     }
 
-                    String respawn = team.respawn.getRespawn().size > 0
+                    String respawn = team.getRespawnReadyUnit().size > 0
                             ? respawnSb.toString()
                             : "@No unit";
 
@@ -256,7 +256,7 @@ public class CataliGamemode {
 
     private void updateRespawn() {
         for (CataliTeamData data : teams) {
-            var respawns = data.respawn.getRespawnUnit();
+            var respawns = data.getRespawnReadyUnit();
             for (var entry : respawns) {
                 data.spawnUnit(entry.type, (spawned) -> {
                     data.eachMember(member -> {
@@ -374,7 +374,7 @@ public class CataliGamemode {
 
         team.level.rareUpgradePoints--;
 
-        team.spawnUnit(upgrade, spawned -> {
+        team.upgradeUnit(upgrade, unit, spawned -> {
             for (var field : StatusEffects.class.getDeclaredFields()) {
                 try {
                     var effect = field.get(null);
@@ -395,7 +395,6 @@ public class CataliGamemode {
                 }
             }
             shouldNotRespawn.add(unit);
-            unit.kill();
         });
 
     }
@@ -480,7 +479,7 @@ public class CataliGamemode {
 
         var timeStr = TimeUtils.toSeconds(respawnTime);
 
-        event.team.respawn.addUnit(event.type, respawnTime);
+        event.team.addRespawnUnit(event.type, respawnTime);
 
         event.team.eachMember(player -> {
             player.sendMessage(
@@ -543,7 +542,7 @@ public class CataliGamemode {
             Log.warn("Missing respawn time for unit @", event.type.name);
         }
 
-        event.team.respawn.addUnit(event.type, respawnTime);
+        event.team.addRespawnUnit(event.type, respawnTime);
     }
 
     @Listener

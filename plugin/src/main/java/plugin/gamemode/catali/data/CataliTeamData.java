@@ -8,6 +8,7 @@ import dto.Pair;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.function.Consumer;
 
@@ -40,13 +41,14 @@ public class CataliTeamData {
     @JsonDeserialize(using = TeamDeserializer.class)
     public Team team;
     public TeamLevel level;
-    public TeamRespawn respawn;
     public TeamUpgrades upgrades;
     public Seq<String> members = new Seq<>();
     public String nextLeaderUuid;
     public Seq<String> joinRequests = new Seq<>();
     public boolean spawning = true;
     public Seq<Pair<UnitType, Consumer<Unit>>> spawnQueue = new Seq<>();
+    public Seq<RespawnEntry> respawn = new Seq<>();
+    public Seq<Unit> despawnQueue = new Seq<>();
 
     public final int MAX_UNIT_COUNT = 10;
 
@@ -54,11 +56,22 @@ public class CataliTeamData {
         this.team = team;
         this.leaderUuid = leaderUuid;
         this.level = new TeamLevel();
-        this.respawn = new TeamRespawn();
         this.upgrades = new TeamUpgrades();
         // Cores increase exp recv
 
         members.add(leaderUuid);
+    }
+
+    public void addRespawnUnit(UnitType type, Duration duration) {
+        respawn.add(new RespawnEntry(type, duration));
+    }
+
+    public Seq<RespawnEntry> getRespawnReadyUnit() {
+        var needRespawn = respawn.select(entry -> entry.respawnAt.isBefore(Instant.now()));
+
+        respawn.removeAll(needRespawn);
+
+        return needRespawn;
     }
 
     public void assignNextLeader(String uuid) {
@@ -94,7 +107,8 @@ public class CataliTeamData {
 
     public Seq<Unit> getUpgradeableUnits() {
         var config = Registry.get(CataliConfig.class);
-        return units().select(unit -> config.getUnitEvolutions(unit.type).size() > 0);
+
+        return units().select(unit -> config.getUnitEvolutions(unit.type).size() > 0 && !despawnQueue.contains(unit));
     }
 
     public boolean hasUnit() {
@@ -136,6 +150,16 @@ public class CataliTeamData {
         }
 
         PluginEvents.fire(new TeamUpgradeChangedEvent(this));
+    }
+
+    public synchronized boolean upgradeUnit(UnitType type, Unit unit, Consumer<Unit> callback) {
+        despawnQueue.add(unit);
+        spawnQueue.add(Pair.of(type, (unitSpawned) -> {
+            despawnQueue.remove(unit);
+            callback.accept(unitSpawned);
+            unit.kill();
+        }));
+        return true;
     }
 
     public synchronized boolean spawnUnit(UnitType type, Consumer<Unit> callback) {
@@ -226,6 +250,6 @@ public class CataliTeamData {
     }
 
     public boolean canHaveMoreUnit() {
-        return units().size + spawnQueue.size + respawn.respawn.size < MAX_UNIT_COUNT;
+        return units().size + spawnQueue.size + respawn.size < MAX_UNIT_COUNT;
     }
 }
