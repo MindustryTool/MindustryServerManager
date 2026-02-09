@@ -93,19 +93,25 @@ public class CataliGamemode {
 
             if (leader != null) {
                 leader.team(team.team);
+                if (team.hasUnit()){
+                    assignUnitForPlayer(team, leader);
+                }
             }
 
             for (var member : team.members) {
                 var memberPlayer = Groups.player.find(player -> member.equals(player.uuid()));
                 if (memberPlayer != null) {
                     memberPlayer.team(team.team);
+                    if (team.hasUnit()){
+                        assignUnitForPlayer(team, memberPlayer);
+                    }
                 }
             }
         }
 
         Control.SCHEDULER.scheduleWithFixedDelay(this::updateStatsHud, 0, 1, TimeUnit.SECONDS);
         Control.SCHEDULER.scheduleWithFixedDelay(this::updateLogic, 0, 1, TimeUnit.SECONDS);
-        Control.SCHEDULER.scheduleWithFixedDelay(this::spawn, 0, 50, TimeUnit.MILLISECONDS);
+        Control.SCHEDULER.scheduleWithFixedDelay(this::spawn, 0, 250, TimeUnit.MILLISECONDS);
         Control.SCHEDULER.scheduleAtFixedRate(this::healTeamUnit, 0, 1, TimeUnit.SECONDS);
 
         Log.info("[accent]Cataio gamemode loaded");
