@@ -353,6 +353,10 @@ public class CataliGamemode {
 
     @Listener
     public void onUnitBuff(CataliBuffRareUpgrade event) {
+        if (event.team.level.rareUpgradePoints <= 0) {
+            return;
+        }
+
         var team = event.team;
         var unit = event.unit;
         var buff = event.effect;
@@ -547,6 +551,10 @@ public class CataliGamemode {
 
     @Listener
     public void onRareUpgradeSpawn(CataliSpawnRareUpgrade event) {
+        if (event.team.level.rareUpgradePoints <= 0) {
+            return;
+        }
+
         event.team.spawnUnit(UnitTypes.poly, unit -> {
         });
         event.team.level.rareUpgradePoints--;
