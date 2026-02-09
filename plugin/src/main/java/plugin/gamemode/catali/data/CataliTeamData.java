@@ -137,7 +137,7 @@ public class CataliTeamData {
         PluginEvents.fire(new TeamUpgradeChangedEvent(this));
     }
 
-    public boolean spawnUnit(UnitType type, Consumer<Unit> callback) {
+    public synchronized boolean spawnUnit(UnitType type, Consumer<Unit> callback) {
         if (spawnQueue.size > MAX_UNIT_COUNT) {
             return false;
         }

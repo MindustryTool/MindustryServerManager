@@ -17,7 +17,7 @@ public class BlockSpawner {
 
     public void spawn(Team team) {
         var mapSize = Vars.world.width() * Vars.world.height();
-        var spawnCount = mapSize * 0.20;
+        var spawnCount = mapSize * 0.25;
 
         var totalBuildCount = Groups.build.size();
 
