@@ -568,8 +568,9 @@ public class CataliGamemode {
                     return;
                 }
 
-                // Cal chances
-                PluginEvents.fire(new TrayUnitCaughtEvent(killerTeam, e.unit.type));
+                if (Mathf.chance(0.1f)) {
+                    PluginEvents.fire(new TrayUnitCaughtEvent(killerTeam, e.unit.type));
+                }
             }
         }
     }
