@@ -142,13 +142,13 @@ public class GatewayService {
 
         private final Instant createdAt = Instant.now();
         private final Disposable eventJob;
-        private final Disposable heartbeatJob;
+
+        private Disposable heartbeatJob;
 
         public GatewayClient(UUID id, Consumer<GatewayClient> onConnect, Consumer<Throwable> onError) {
             this.id = id;
             this.server = new Server();
             this.eventJob = createFetchEventJob(onConnect, onError);
-            this.heartbeatJob = createHeartbeatJob();
 
             Log.info("Create GatewayClient for server: " + id);
         }
@@ -410,6 +410,11 @@ public class GatewayService {
                             disconnectedAt = null;
                             eventBus.emit(new StartEvent(id));
                             onConnect.accept(this);
+
+                            if (heartbeatJob != null && !heartbeatJob.isDisposed()) {
+                                heartbeatJob.dispose();
+                            }
+                            heartbeatJob = createHeartbeatJob();
                         }
 
                         try {
