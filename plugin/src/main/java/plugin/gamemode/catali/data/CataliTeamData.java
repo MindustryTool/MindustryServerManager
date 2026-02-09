@@ -199,10 +199,10 @@ public class CataliTeamData {
                 return false;
             }
 
-            int minX = 0;
-            int minY = 0;
-            int maxX = Vars.state.map.width;
-            int maxY = Vars.state.map.height;
+            int minX = Vars.state.map.width;
+            int minY = Vars.state.map.height;
+            int maxX = 0;
+            int maxY = 0;
 
             for (var unit : units) {
                 minX = Math.min(minX, unit.tileX());

@@ -424,6 +424,7 @@ public class CataliGamemode {
         team.level.rareUpgradePoints--;
 
         team.upgradeUnit(upgrade, unit, spawned -> {
+            shouldNotRespawn.add(unit);
             for (var field : StatusEffects.class.getDeclaredFields()) {
                 try {
                     var effect = field.get(null);
@@ -443,7 +444,6 @@ public class CataliGamemode {
                     e.printStackTrace();
                 }
             }
-            shouldNotRespawn.add(unit);
         });
 
     }
