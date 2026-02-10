@@ -152,7 +152,8 @@ public class ServerService {
 
                     Flux<LogEvent> external = sink.asFlux();
 
-                    return Flux.merge(external, internalFlow);
+                    return Flux.merge(external,
+                            internalFlow.doFinally(signal -> sink.emitComplete(Sinks.EmitFailureHandler.FAIL_FAST)));
                 },
                 sink -> cleanup(serverId, sink),
                 (sink, err) -> cleanup(serverId, sink),
