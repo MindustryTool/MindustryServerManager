@@ -52,6 +52,7 @@ public class ConfigManager {
 
             for (Field field : instance.getClass().getDeclaredFields()) {
                 if (Modifier.isStatic(field.getModifiers()) || Modifier.isFinal(field.getModifiers())) {
+                    Log.warn("Field @ is static or final, skip loading", field.getName());
                     continue;
                 }
 
