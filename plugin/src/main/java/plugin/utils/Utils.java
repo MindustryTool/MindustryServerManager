@@ -71,7 +71,6 @@ public class Utils {
 
             if (Vars.state.isGame()) {
                 Log.warn("Already hosting. Type 'stop' to stop hosting first.");
-                Thread.dumpStack();
                 return;
             }
 

@@ -363,7 +363,6 @@ public class GeneralController {
     private static synchronized void host(StartServerDto request) {
         if (Vars.state.isGame()) {
             Log.warn("API: Already hosting. Type 'stop' to stop hosting first.");
-            Thread.dumpStack();
             return;
         }
 
@@ -374,7 +373,7 @@ public class GeneralController {
         if (commands != null && !commands.trim().isEmpty()) {
             String[] commandsArray = commands.split("\n");
             for (String command : commandsArray) {
-                Log.info("Host command: " + command);
+                Log.info("[sky]Host command: " + command);
                 Registry.get(ServerCommandHandler.class).execute(command, (_ignore) -> {
                 });
             }

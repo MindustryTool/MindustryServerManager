@@ -100,7 +100,7 @@ public class Control extends mindustry.mod.Plugin {
     private void autoHost() {
         try {
             if (!Vars.state.isGame()) {
-                Log.info("Server not hosting, auto host");
+                Log.info("[sky]Server not hosting, auto host");
                 Registry.get(ApiGateway.class).host(SERVER_ID.toString());
             }
         } catch (Exception e) {
