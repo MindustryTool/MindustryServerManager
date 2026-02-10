@@ -96,7 +96,7 @@ public class Control extends mindustry.mod.Plugin {
         Log.info("Server controller unloaded");
     }
 
-    @Schedule(delay = 5, unit = TimeUnit.SECONDS)
+    @Schedule(delay = 10, unit = TimeUnit.SECONDS)
     private void autoHost() {
         try {
             if (!Vars.state.isGame()) {
