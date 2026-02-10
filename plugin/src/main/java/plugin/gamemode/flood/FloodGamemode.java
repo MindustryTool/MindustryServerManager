@@ -136,7 +136,6 @@ public class FloodGamemode {
             if (evolveAt < Time.millis()) {
                 var next = nextTier(build);
                 if (next == null) {
-                    Log.warn("No next tier for @ at x=@ y=@", build, tile.x, tile.y);
                     continue;
                 }
 
@@ -169,7 +168,7 @@ public class FloodGamemode {
     }
 
     private void setFlood(Tile tile, FloodTile floodTile) {
-        tile.setNet(floodTile.block);
+        tile.setNet(floodTile.block, Team.crux, 0);
         floods[index(tile)] = Time.millis() + floodTile.evolveTime;
     }
 
