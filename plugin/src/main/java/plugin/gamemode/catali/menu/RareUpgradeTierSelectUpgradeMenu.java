@@ -1,8 +1,6 @@
 package plugin.gamemode.catali.menu;
 
-import arc.struct.Seq;
 import dto.Pair;
-import mindustry.content.UnitTypes;
 import mindustry.gen.Unit;
 import plugin.PluginEvents;
 import plugin.annotations.Gamemode;
@@ -25,20 +23,14 @@ public class RareUpgradeTierSelectUpgradeMenu extends PluginMenu<Pair<CataliTeam
         title = I18n.t(session, "@Select Evolution");
         description = I18n.t(session, "@Choose what this unit should evolve into.");
 
-
-        var cannotGainExpUnit = Seq.with(UnitTypes.aegires, UnitTypes.oct, UnitTypes.quad);
         var config = Registry.get(CataliConfig.class);
-        
+
         var availableUnitsUpgradeTo = config.getUnitEvolutions(unit.type);
 
         int i = 0;
         for (var upgrade : availableUnitsUpgradeTo) {
             if (i > 0 && i % 2 == 0) {
                 row();
-            }
-
-            if (cannotGainExpUnit.contains(upgrade) && team.units().size <= 1) {
-                continue;
             }
 
             option(upgrade.emoji() + " " + upgrade.name, (s, st) -> {
