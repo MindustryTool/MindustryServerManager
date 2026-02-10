@@ -2,8 +2,10 @@ package plugin.commands.server;
 
 import mindustry.gen.Call;
 import plugin.PluginUpdater;
+import plugin.annotations.Component;
 import plugin.commands.PluginServerCommand;
 
+@Component
 public class RestartServerCommand extends PluginServerCommand {
     private final PluginUpdater updater;
 

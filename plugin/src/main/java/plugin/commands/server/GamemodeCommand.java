@@ -2,9 +2,11 @@ package plugin.commands.server;
 
 import arc.Core;
 import arc.util.Log;
+import plugin.annotations.Component;
 import plugin.commands.PluginServerCommand;
 import plugin.core.Registry;
 
+@Component
 public class GamemodeCommand extends PluginServerCommand {
 
     Param param;
