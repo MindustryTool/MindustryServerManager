@@ -296,7 +296,7 @@ public class DockerNodeManager implements NodeManager {
                 .withForce(true)
                 .exec();
 
-        eventBus.emit(ServerEvents.LogEvent.info(id, "Removed: " + container.getNames()[0] + " for reason: " + reason));
+        eventBus.emit(ServerEvents.LogEvent.error(id, "Removed: " + container.getNames()[0] + " for reason: " + reason));
 
         return Mono.empty();
     }
