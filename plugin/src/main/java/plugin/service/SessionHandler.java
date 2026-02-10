@@ -18,7 +18,6 @@ import plugin.PluginEvents;
 import plugin.Tasks;
 import plugin.annotations.Component;
 import plugin.annotations.Destroy;
-import plugin.annotations.Init;
 import plugin.annotations.Listener;
 import plugin.annotations.Schedule;
 import plugin.event.PlayerKillUnitEvent;
@@ -37,11 +36,6 @@ public class SessionHandler {
 
     private final SessionRepository sessionRepository;
     private final SessionService sessionService;
-
-    @Init
-    public void init() {
-        Core.app.post(() -> Groups.player.each(this::put));
-    }
 
     @Listener
     public void onPlayerKillUnit(PlayerKillUnitEvent event) {

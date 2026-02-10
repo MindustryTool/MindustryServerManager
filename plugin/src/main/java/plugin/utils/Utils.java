@@ -49,15 +49,7 @@ import plugin.core.Scheduler;
 
 public class Utils {
 
-    private static boolean isHosting = false;
-
     public synchronized static void host(String mapName, String mode) {
-        if (isHosting) {
-            Log.warn("Can not start new host request while, previous still running");
-        }
-
-        isHosting = true;
-
         if (Control.state == PluginState.UNLOADED) {
             Log.warn("Server unloaded, can not host");
             return;
@@ -117,8 +109,6 @@ public class Utils {
 
         } catch (MapException event) {
             Log.err("@: @", event.map.plainName(), event.getMessage());
-        } finally {
-            isHosting = false;
         }
     }
 

@@ -42,14 +42,14 @@ public class Scheduler {
         if (schedule.fixedRate() > -1) {
             scheduler.scheduleAtFixedRate(runnable, Math.max(0, schedule.delay()), schedule.fixedRate(),
                     schedule.unit());
-            Log.info("Scheduled @" + method + " with fixed rate " + schedule.fixedRate() + " " + schedule.unit());
+            Log.info("Scheduled " + method + " with fixed rate " + schedule.fixedRate() + " " + schedule.unit());
         } else if (schedule.fixedDelay() > -1) {
             scheduler.scheduleWithFixedDelay(runnable, Math.max(0, schedule.delay()), schedule.fixedDelay(),
                     schedule.unit());
-            Log.info("Scheduled @" + method + " with fixed delay " + schedule.fixedDelay() + " " + schedule.unit());
+            Log.info("Scheduled " + method + " with fixed delay " + schedule.fixedDelay() + " " + schedule.unit());
         } else if (schedule.delay() > -1) {
             scheduler.schedule(runnable, schedule.delay(), schedule.unit());
-            Log.info("Scheduled @" + method + " with delay " + schedule.delay() + " " + schedule.unit());
+            Log.info("Scheduled " + method + " with delay " + schedule.delay() + " " + schedule.unit());
         } else {
             Log.warn("Invalid scheduler " + schedule);
         }
