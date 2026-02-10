@@ -228,7 +228,7 @@ public class DockerNodeManager implements NodeManager {
                                 .withCpuQuota((long) ((request.getCpu() * 100000l)))
                                 .withMemory(request.getMemory() * 1024 * 1024l)
                                 .withRestartPolicy(request.getIsAutoTurnOff()//
-                                        ? RestartPolicy.unlessStoppedRestart()
+                                        ? RestartPolicy.noRestart()
                                         : RestartPolicy.unlessStoppedRestart())
                                 .withAutoRemove(request.getIsAutoTurnOff())
                                 .withLogConfig(new LogConfig(LogConfig.LoggingType.JSON_FILE, Map.of(
