@@ -80,13 +80,13 @@ public class ApiGateway {
         Object lock = Utils.getHostingLock(targetServerId);
 
         synchronized (lock) {
-            Log.info("Hosting server: " + targetServerId);
+            Log.info("[sky]Hosting server: " + targetServerId);
             try {
                 return HttpUtils.send(HttpUtils.post(GATEWAY_URL, "servers", targetServerId, "host"), 90000,
                         String.class);
             } finally {
                 Utils.releaseHostingLock(targetServerId);
-                Log.info("Finish hosting server: " + targetServerId);
+                Log.info("[sky]Finish hosting server: " + targetServerId);
             }
         }
 

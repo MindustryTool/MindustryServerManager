@@ -4,10 +4,25 @@ import arc.func.Cons;
 import arc.util.Log;
 import plugin.PluginEvents;
 import plugin.annotations.Listener;
+import plugin.annotations.Trigger;
 
 import java.lang.reflect.Method;
 
 public class EventRegistrar {
+
+    public void register(Trigger trigger, Object instance, Method method) {
+        if (method.getParameterCount() == 0) {
+            PluginEvents.run(trigger.value(), () -> {
+                try {
+                    method.invoke(instance);
+                } catch (Exception e) {
+                    Log.err("Failed to invoke trigger @ in @", method.getName(), instance.getClass().getName(), e);
+                }
+            });
+        } else {
+            Log.err("@Trigger method @ in @ must have 0 parameters", method.getName(), instance.getClass().getName());
+        }
+    }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public void register(Listener listener, Object instance, Method method) {

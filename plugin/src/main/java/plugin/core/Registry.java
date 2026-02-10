@@ -24,6 +24,8 @@ public final class Registry {
     private static final PersistenceManager persistenceManager = get(PersistenceManager.class);
     private static final EventRegistrar eventRegistrar = get(EventRegistrar.class);
 
+    public static final String GAMEMODE_KEY = "plugin-gamemode";
+
     private static String currentGamemode;
 
     public static void init(String packageName) {
@@ -31,7 +33,7 @@ public final class Registry {
             Reflections reflections = new Reflections(packageName, Scanners.TypesAnnotated);
             Set<Class<?>> components = reflections.getTypesAnnotatedWith(Component.class);
 
-            currentGamemode = Core.settings.getString("plugin-gamemode", null);
+            currentGamemode = Core.settings.getString(GAMEMODE_KEY, null);
 
             for (Class<?> clazz : components) {
                 if (clazz.isAnnotation() || clazz.isInterface()) {
@@ -216,6 +218,7 @@ public final class Registry {
 
             withAnnotation(method, Schedule.class, a -> scheduler.process(a, instance, method));
             withAnnotation(method, Listener.class, a -> eventRegistrar.register(a, instance, method));
+            withAnnotation(method, Trigger.class, a -> eventRegistrar.register(a, instance, method));
         }
 
         initialized.add(instance);
