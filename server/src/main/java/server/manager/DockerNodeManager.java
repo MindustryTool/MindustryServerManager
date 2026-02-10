@@ -104,10 +104,8 @@ public class DockerNodeManager implements NodeManager {
 
                 for (var container : containers) {
                     emitter.next(LogEvent.info(serverId, "Removing container " + container.getNames()[0]));
-                    dockerClient.removeContainerCmd(container.getId())
-                            .withForce(true)
-                            .exec();
-                    
+                    removeContainer(container.getId());
+
                     emitter.next(LogEvent.info(serverId, "Container removed"));
                 }
 
@@ -292,13 +290,18 @@ public class DockerNodeManager implements NodeManager {
             Log.info("Stopped: " + container.getNames()[0]);
         }
 
-        dockerClient.removeContainerCmd(container.getId())
-                .withForce(true)
-                .exec();
+        removeContainer(container.getId());
 
-        eventBus.emit(ServerEvents.LogEvent.error(id, "Removed: " + container.getNames()[0] + " for reason: " + reason));
+        eventBus.emit(
+                ServerEvents.LogEvent.error(id, "Removed: " + container.getNames()[0] + " for reason: " + reason));
 
         return Mono.empty();
+    }
+
+    private synchronized void removeContainer(String id) {
+        dockerClient.removeContainerCmd(id)
+                .withForce(true)
+                .exec();
     }
 
     private Optional<ServerMetadata> readMetadataFromContainer(Container container) {
@@ -323,9 +326,7 @@ public class DockerNodeManager implements NodeManager {
 
             return Optional.of(metadata);
         } catch (Exception _e) {
-            dockerClient.removeContainerCmd(container.getId())
-                    .withForce(true)
-                    .exec();
+            removeContainer(container.getId());
 
             Log.info("Removed: " + container.getNames()[0] + ", invalid config ");
 

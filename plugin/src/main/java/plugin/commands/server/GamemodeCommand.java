@@ -19,6 +19,8 @@ public class GamemodeCommand extends PluginServerCommand {
     @Override
     public void handle() {
         Core.settings.put(Registry.GAMEMODE_KEY, param.asString());
+        Core.settings.forceSave();
+
         Log.info("Set gamemode to: " + param.asString());
     }
 }
