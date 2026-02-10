@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -49,66 +50,82 @@ import plugin.core.Scheduler;
 
 public class Utils {
 
+    private static final ConcurrentHashMap<String, Object> hostingLock = new ConcurrentHashMap<>();
+
+    public static final Object getHostingLock(String serverId) {
+        return hostingLock.computeIfAbsent(serverId, k -> new Object());
+    }
+
+    public static void releaseHostingLock(String serverId) {
+        hostingLock.remove(serverId);
+    }
+
     public synchronized static void host(String mapName, String mode) {
-        if (Control.state == PluginState.UNLOADED) {
-            Log.warn("Server unloaded, can not host");
-            return;
-        }
+        var lock = getHostingLock(Control.SERVER_ID.toString());
 
-        if (Vars.state.isGame()) {
-            Log.warn("Already hosting. Type 'stop' to stop hosting first.");
-            Thread.dumpStack();
-            return;
-        }
+        synchronized (lock) {
+            if (Control.state == PluginState.UNLOADED) {
+                Log.warn("Server unloaded, can not host");
+                return;
+            }
 
-        try {
-            Gamemode preset = Gamemode.survival;
+            if (Vars.state.isGame()) {
+                Log.warn("Already hosting. Type 'stop' to stop hosting first.");
+                Thread.dumpStack();
+                return;
+            }
 
-            if (mode != null) {
-                try {
-                    preset = Gamemode.valueOf(mode.toLowerCase());
-                    Core.settings.put("lastServerMode", preset.name());
+            try {
+                Gamemode preset = Gamemode.survival;
 
-                    Class<?> clazz = Class.forName("mindustry.server.ServerControl");
+                if (mode != null) {
+                    try {
+                        preset = Gamemode.valueOf(mode.toLowerCase());
+                        Core.settings.put("lastServerMode", preset.name());
 
-                    for (var listener : Core.app.getListeners()) {
-                        if (listener.getClass().equals(clazz)) {
-                            Reflect.set(clazz, listener, "lastMode", preset);
-                            Log.info("Set gamemode to: " + preset.name());
-                            break;
+                        Class<?> clazz = Class.forName("mindustry.server.ServerControl");
+
+                        for (var listener : Core.app.getListeners()) {
+                            if (listener.getClass().equals(clazz)) {
+                                Reflect.set(clazz, listener, "lastMode", preset);
+                                Log.info("Set gamemode to: " + preset.name());
+                                break;
+                            }
                         }
+                    } catch (Exception event) {
+                        Log.err("No gamemode '@' found.", mode);
+                        return;
                     }
-                } catch (Exception event) {
-                    Log.err("No gamemode '@' found.", mode);
-                    return;
                 }
-            }
 
-            Map result;
+                Map result;
 
-            if (mapName != null) {
-                result = Vars.maps.all().find(map -> map.plainName().replace('_', ' ')
-                        .equalsIgnoreCase(Strings.stripColors(mapName).replace('_', ' ')));
+                if (mapName != null) {
+                    result = Vars.maps.all().find(map -> map.plainName().replace('_', ' ')
+                            .equalsIgnoreCase(Strings.stripColors(mapName).replace('_', ' ')));
 
-                if (result == null) {
-                    Log.err("No map with name '@' found.", mapName);
-                    return;
+                    if (result == null) {
+                        Log.err("No map with name '@' found.", mapName);
+                        return;
+                    }
+                } else {
+                    result = Vars.maps.getShuffleMode().next(preset, Vars.state.map);
+                    Log.info("Randomized next map to be @.", result.plainName());
                 }
-            } else {
-                result = Vars.maps.getShuffleMode().next(preset, Vars.state.map);
-                Log.info("Randomized next map to be @.", result.plainName());
+
+                Log.info("Hosting map @ with mode @.", result.plainName(), preset.name());
+
+                Vars.logic.reset();
+                Vars.world.loadMap(result, result.applyRules(preset));
+                Vars.state.rules = result.applyRules(preset);
+                Vars.logic.play();
+                Vars.netServer.openServer();
+
+            } catch (MapException event) {
+                Log.err("@: @", event.map.plainName(), event.getMessage());
+            } finally {
+                releaseHostingLock(Control.SERVER_ID.toString());
             }
-
-            Log.info("Hosting map @ with mode @.", result.plainName(), preset.name());
-
-            Vars.logic.reset();
-            Vars.world.loadMap(result, result.applyRules(preset));
-            Vars.state.rules = result.applyRules(preset);
-            Vars.logic.play();
-            Vars.netServer.openServer();
-
-        } catch (MapException event) {
-            Log.err("@: @", event.map.plainName(), event.getMessage());
         }
     }
 

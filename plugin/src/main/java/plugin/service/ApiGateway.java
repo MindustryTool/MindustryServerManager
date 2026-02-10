@@ -7,7 +7,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 import com.github.benmanes.caffeine.cache.Cache;
@@ -21,6 +20,7 @@ import plugin.annotations.Component;
 import plugin.annotations.Destroy;
 import plugin.utils.HttpUtils;
 import plugin.utils.JsonUtils;
+import plugin.utils.Utils;
 import plugin.Control;
 import plugin.type.PaginationRequest;
 import plugin.type.TranslationDto;
@@ -35,8 +35,6 @@ public class ApiGateway {
     private final String GATEWAY_URL = "http://server-manager-v2:8088/gateway/v2";
     private final String API_URL = "https://api.mindustry-tool.com/api/v4/";
     private final String SERVER_ID = Control.SERVER_ID.toString();
-
-    private final ConcurrentHashMap<String, Object> locks = new ConcurrentHashMap<>();
 
     private Cache<PaginationRequest, List<ServerDto>> serverQueryCache = Caffeine.newBuilder()
             .expireAfterWrite(Duration.ofSeconds(15))
@@ -79,7 +77,7 @@ public class ApiGateway {
     }
 
     public String host(String targetServerId) {
-        Object lock = locks.computeIfAbsent(targetServerId, k -> new Object());
+        Object lock = Utils.getHostingLock(targetServerId);
 
         synchronized (lock) {
             Log.info("Hosting server: " + targetServerId);
@@ -87,7 +85,7 @@ public class ApiGateway {
                 return HttpUtils.send(HttpUtils.post(GATEWAY_URL, "servers", targetServerId, "host"), 90000,
                         String.class);
             } finally {
-                locks.remove(targetServerId);
+                Utils.releaseHostingLock(targetServerId);
                 Log.info("Finish hosting server: " + targetServerId);
             }
         }
@@ -155,8 +153,9 @@ public class ApiGateway {
 
             return result.getTranslatedText();
         } catch (Exception e) {
-            Log.warn("[" + targetLanguage.getLanguage() + "] Failed to translate text: " + text + " to " + targetLanguage
-                    + "\n" + e.getMessage());
+            Log.warn(
+                    "[" + targetLanguage.getLanguage() + "] Failed to translate text: " + text + " to " + targetLanguage
+                            + "\n" + e.getMessage());
             failedTranslationCache.put(cacheKey, true);
             return text;
         }
