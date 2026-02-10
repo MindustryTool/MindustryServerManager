@@ -15,6 +15,7 @@ import mindustry.content.Blocks;
 import mindustry.game.EventType;
 import mindustry.game.Team;
 import mindustry.gen.Building;
+import mindustry.gen.Call;
 import mindustry.world.Block;
 import mindustry.world.Tile;
 import mindustry.world.blocks.storage.CoreBlock;
@@ -62,6 +63,13 @@ public class FloodGamemode {
         }
 
         return null;
+    }
+
+    @Schedule(fixedRate = 1, unit = TimeUnit.SECONDS)
+    public void updateUI() {
+        for (var core : suppressed.keySet()) {
+            Call.label("Suppressed", 1.1f, core.getX(), core.getY());
+        }
     }
 
     @Schedule(fixedDelay = 1, unit = TimeUnit.SECONDS)
