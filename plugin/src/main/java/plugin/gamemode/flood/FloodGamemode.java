@@ -40,13 +40,13 @@ public class FloodGamemode {
 
     @Persistence("flood/config.json")
     private Seq<FloodTile> floodTiles = Seq.with(
-            new FloodTile(Blocks.conveyor, 32f, 60 * 20),
-            new FloodTile(Blocks.titaniumConveyor, 64f, 60 * 40),
-            new FloodTile(Blocks.copperWall, 64f, 60 * 60),
-            new FloodTile(Blocks.titaniumWall, 64f, 60 * 80),
-            new FloodTile(Blocks.plastaniumWall, 64f, 60 * 100),
-            new FloodTile(Blocks.thoriumWall, 64f, 60 * 120),
-            new FloodTile(Blocks.phaseWall, 64f, 60 * 140)//
+            new FloodTile(Blocks.conveyor, 32f, 1000 * 20),
+            new FloodTile(Blocks.titaniumConveyor, 64f, 1000 * 40),
+            new FloodTile(Blocks.copperWall, 64f, 1000 * 60),
+            new FloodTile(Blocks.titaniumWall, 64f, 1000 * 80),
+            new FloodTile(Blocks.plastaniumWall, 64f, 1000 * 100),
+            new FloodTile(Blocks.thoriumWall, 64f, 1000 * 120),
+            new FloodTile(Blocks.phaseWall, 64f, 1000 * 140)//
     );
 
     private FloodTile nextTier(Building building) {
@@ -78,21 +78,20 @@ public class FloodGamemode {
 
         Seq<Tile> tiles = new Seq<>();
 
-        suppressed.values().removeIf(time -> time < startedAt);
+        suppressed.entrySet().removeIf(e -> e.getValue() < Time.millis());
 
         for (var core : Team.crux.cores()) {
             if (suppressed.containsKey(core)) {
-                return;
+                continue;
             }
 
             tiles.add(around(core));
+        }
 
-            for (var tile : tiles) {
-                if (tile.build != null && tile.build.team != Team.crux) {
-                    tile.build.damage(floodTiles.get(0).damage);
-                }
+        for (var tile : tiles) {
+            if (tile.build != null && tile.build.team != Team.crux) {
+                tile.build.damage(floodTiles.get(0).damage);
             }
-
         }
 
         if (tiles.isEmpty()) {
@@ -148,8 +147,6 @@ public class FloodGamemode {
             }
 
             for (Tile neighbor : around(tile.build)) {
-                var index = index(tile);
-
                 var neighborBuild = neighbor.build;
 
                 if (neighborBuild == null) {
@@ -163,7 +160,7 @@ public class FloodGamemode {
                             neighborBuild.damage(currentTier.damage);
                         }
                     } else if (!spreaded[index(neighbor)]) {
-                        spreaded[index] = true;
+                        spreaded[index(neighbor)] = true;
                         queue.add(neighbor);
                     }
                 }
