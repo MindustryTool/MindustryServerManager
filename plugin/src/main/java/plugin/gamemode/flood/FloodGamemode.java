@@ -40,13 +40,13 @@ public class FloodGamemode {
 
     @Persistence("flood/config.json")
     private Seq<FloodTile> floodTiles = Seq.with(
-            new FloodTile(Blocks.conveyor, 32f, 1000 * 20),
-            new FloodTile(Blocks.titaniumConveyor, 64f, 1000 * 40),
-            new FloodTile(Blocks.copperWall, 64f, 1000 * 60),
-            new FloodTile(Blocks.titaniumWall, 64f, 1000 * 80),
-            new FloodTile(Blocks.plastaniumWall, 64f, 1000 * 100),
-            new FloodTile(Blocks.thoriumWall, 64f, 1000 * 120),
-            new FloodTile(Blocks.phaseWall, 64f, 1000 * 140)//
+            new FloodTile(Blocks.conveyor, 32f, 1000 * 5),
+            new FloodTile(Blocks.titaniumConveyor, 64f, 1000 * 10),
+            new FloodTile(Blocks.copperWall, 64f, 1000 * 20),
+            new FloodTile(Blocks.titaniumWall, 64f, 1000 * 40),
+            new FloodTile(Blocks.plastaniumWall, 64f, 1000 * 80),
+            new FloodTile(Blocks.thoriumWall, 64f, 1000 * 140),
+            new FloodTile(Blocks.phaseWall, 64f, 1000 * 200)//
     );
 
     private FloodTile nextTier(Building building) {
