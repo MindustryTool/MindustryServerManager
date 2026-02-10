@@ -18,10 +18,12 @@ import mindustry.gen.Groups;
 import mindustry.gen.Player;
 import mindustry.gen.Unit;
 import mindustry.type.UnitType;
+import mindustry.type.unit.MissileUnitType;
 import mindustry.world.Tile;
 import plugin.PluginEvents;
 import plugin.core.Registry;
 import plugin.gamemode.catali.CataliConfig;
+import plugin.gamemode.catali.CataliGamemode;
 import plugin.gamemode.catali.event.TeamUpgradeChangedEvent;
 import plugin.gamemode.catali.spawner.SpawnerHelper;
 
@@ -42,7 +44,7 @@ public class CataliTeamData {
     public Seq<Pair<UnitType, Consumer<Unit>>> spawnQueue = new Seq<>();
     public Seq<RespawnEntry> respawn = new Seq<>();
     public Seq<Unit> despawnQueue = new Seq<>();
-
+    public boolean inCoreRange = false;
     public final int MAX_UNIT_COUNT = 20;
 
     public CataliTeamData(Team team, String leaderUuid) {
@@ -94,9 +96,19 @@ public class CataliTeamData {
     public Seq<Unit> units() {
         Seq<Unit> units = new Seq<>();
         for (var unit : Groups.unit) {
-            if (unit.team == team && unit.isValid()) {
-                units.add(unit);
+            if (unit.team != team || !unit.isValid()) {
+                continue;
             }
+
+            if (unit.type instanceof MissileUnitType) {
+                continue;
+            }
+
+            if (CataliGamemode.coreUnits.contains(unit.type)) {
+                continue;
+            }
+
+            units.add(unit);
         }
 
         return units;

@@ -68,7 +68,8 @@ public class CataliGamemode {
     private final SessionHandler sessionHandler;
     private final SessionService sessionService;
 
-    private final Seq<UnitType> coreUnits = Seq.with(UnitTypes.alpha, UnitTypes.beta, UnitTypes.gamma, UnitTypes.evoke,
+    public static final Seq<UnitType> coreUnits = Seq.with(UnitTypes.alpha, UnitTypes.beta, UnitTypes.gamma,
+            UnitTypes.evoke,
             UnitTypes.incite, UnitTypes.emanate);
 
     private final Team SPECTATOR_TEAM = Team.get(255);
@@ -77,6 +78,7 @@ public class CataliGamemode {
     private final Duration RESPAWN_COOLDOWN = Duration.ofSeconds(10);
 
     private final Seq<Unit> shouldNotRespawn = new Seq<>();
+    private final Seq<CataliTeamData> inCoreRange = new Seq<>();
 
     @Init
     public void init() {
@@ -139,9 +141,9 @@ public class CataliGamemode {
 
         Vars.state.rules.bannedUnits.clear();
         Vars.state.rules.canGameOver = false;
-        Vars.state.rules.coreCapture = true;
+        Vars.state.rules.coreCapture = false;
 
-        Team.sharded.rules().blockHealthMultiplier = 1;
+        Team.sharded.rules().blockHealthMultiplier = 999999;
     }
 
     public CataliTeamData findTeam(Player player) {
@@ -178,16 +180,42 @@ public class CataliGamemode {
             updateRespawn();
             updateTeam();
             updatePlayer();
+            healShardedCores();
         } catch (Exception e) {
             Log.err("Failed to update stats hud", e);
         }
     }
 
+    private void healShardedCores() {
+        for (var core : Team.sharded.cores()) {
+            core.heal();
+        }
+    }
+
     private void updateCoreExp() {
         for (var team : teams) {
-            for (var core : team.team.cores()) {
-                PluginEvents.fire(new ExpGainEvent(team, 5, core.getX(), core.getY()));
+            var within = false;
+
+            for (var core : Team.sharded.cores()) {
+                for (var unit : team.units()) {
+                    if (unit.within(core, Vars.tilesize * 50)) {
+                        within = true;
+                        break;
+                    }
+                }
             }
+            if (!within) {
+                continue;
+            }
+
+            if (inCoreRange.contains(team) && within == false) {
+                team.eachMember(player -> player.sendMessage(I18n.t(player, "@Leaved core range")));
+            } else if (!inCoreRange.contains(team) && within == true) {
+                team.eachMember(player -> player.sendMessage(I18n.t(player, "@Enter core range, gain +20% exp")));
+                inCoreRange.add(team);
+            }
+
+            team.inCoreRange = within;
         }
     }
 
@@ -377,6 +405,8 @@ public class CataliGamemode {
         var session = event.session;
         var player = session.player;
 
+        player.team(SPECTATOR_TEAM);
+
         if (player.unit() != null) {
             player.unit().kill();
         }
@@ -392,7 +422,6 @@ public class CataliGamemode {
                 PluginEvents.fire(new TeamFallenEvent(playerTeam));
             }
         } else {
-            player.team(SPECTATOR_TEAM);
             createTeam(player);
         }
     }
@@ -636,7 +665,8 @@ public class CataliGamemode {
     @Listener
     public synchronized void onExpGain(ExpGainEvent event) {
         Core.app.post(() -> {
-            float total = event.amount * event.team.upgrades.getExpMultiplier();
+            float coreExpBonus = event.team.inCoreRange ? 1.2f : 1f;
+            float total = event.amount * event.team.upgrades.getExpMultiplier() * coreExpBonus;
 
             boolean levelUp = event.team.level.addExp(total);
 
