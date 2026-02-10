@@ -20,7 +20,6 @@ public class TeamUpgrades {
 
     public void apply(Unit unit) {
         unit.maxHealth = unit.type.health * getHealthMultiplier();
-        unit.health = unit.maxHealth;
         unit.damageMultiplier(getDamageMultiplier());
     }
 
