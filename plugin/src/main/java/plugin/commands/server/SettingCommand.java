@@ -27,5 +27,7 @@ public class SettingCommand extends PluginServerCommand {
             Core.settings.remove(key.asString());
             Log.info("Setting @ removed", key.asString());
         }
+
+        Core.settings.forceSave();
     }
 }
