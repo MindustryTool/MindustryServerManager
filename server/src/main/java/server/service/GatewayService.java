@@ -426,7 +426,7 @@ public class GatewayService {
 
                             lastHeartBeatAt = Instant.now();
 
-                            if (name == "heartbeat") {
+                            if (name.equals("heartbeat")) {
                                 return;
                             }
 
@@ -466,16 +466,16 @@ public class GatewayService {
                         }
                     })
                     .onErrorComplete(error -> error instanceof ApiError apiError && apiError.status.is5xxServerError())
-                    .retryWhen(Retry.fixedDelay(60, Duration.ofSeconds(1)))
+                    .retryWhen(Retry.fixedDelay(120, Duration.ofSeconds(1)))
                     .onErrorMap(Exceptions::isRetryExhausted,
                             error -> new ApiError(HttpStatus.BAD_REQUEST, "Events timeout: " + error.getMessage()))
-                    .doOnError(_ignore -> {
+                    .doOnError(err -> {
                         nodeManager.remove(id, NodeRemoveReason.FETCH_EVENT_TIMEOUT)
                                 .doOnError(ApiError.class, error -> Log.err(error.getMessage()))
                                 .onErrorComplete(ApiError.class)
                                 .subscribe();
 
-                        eventBus.emit(LogEvent.error(id, "Fetch event timeout"));
+                        eventBus.emit(LogEvent.error(id, "Fetch event timeout: " + err.getMessage()));
                         eventBus.emit(new StopEvent(id, NodeRemoveReason.FETCH_EVENT_TIMEOUT));
                     })
                     .doOnError(error -> Log.err(error.getMessage()))
