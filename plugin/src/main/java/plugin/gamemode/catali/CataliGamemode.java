@@ -474,7 +474,7 @@ public class CataliGamemode {
             if (spawnable) {
                 Unit unit = UnitTypes.poly.create(playerTeam.team);
 
-                unit.apply(StatusEffects.invincible, 60 * 60 * 5);
+                unit.apply(StatusEffects.invincible, 60 * 30);
                 unit.set(spawnX, spawnY);
 
                 Core.app.post(() -> {
