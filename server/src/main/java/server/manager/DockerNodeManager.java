@@ -384,7 +384,7 @@ public class DockerNodeManager implements NodeManager {
     }
 
     @PostConstruct
-    @Scheduled(fixedDelay = 1, timeUnit = TimeUnit.MINUTES)
+    @Scheduled(fixedDelay = 5, timeUnit = TimeUnit.SECONDS)
     private void findAndAttachToLogs() {
         var containers = listContainers();
 

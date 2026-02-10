@@ -440,15 +440,17 @@ public class GatewayService {
                             eventBus.emit(data);
 
                         } catch (Exception e) {
-                            Log.err(e);
+                            Log.err("[@] Error while fetch event: @", id, e.getMessage());
                         }
                     })
                     .onErrorMap(WebClientRequestException.class, error -> {
                         if (error.getCause() instanceof UnknownHostException) {
+                            Log.err("[@] Unknown host: @", id, error.getMessage());
                             return new ApiError(HttpStatus.NOT_FOUND, "Server not found: " + error.getMessage());
                         }
 
                         if (Utils.isConnectionException(error.getCause())) {
+                            Log.err("[@] Connection error: @", id, error.getMessage());
                             return new ApiError(HttpStatus.NOT_FOUND, "Can not connect: " + error.getMessage());
                         }
 
@@ -465,7 +467,14 @@ public class GatewayService {
                             eventBus.emit(new DisconnectEvent(id));
                         }
                     })
-                    .onErrorComplete(error -> error instanceof ApiError apiError && apiError.status.is5xxServerError())
+                    .onErrorComplete(error -> {
+                        if (error instanceof ApiError apiError && apiError.status.is5xxServerError()) {
+                            Log.err("[@] 5xx error: @", id, apiError.status);
+                            return true;
+                        }
+
+                        return false;
+                    })
                     .retryWhen(Retry.fixedDelay(120, Duration.ofSeconds(1)))
                     .onErrorMap(Exceptions::isRetryExhausted,
                             error -> new ApiError(HttpStatus.BAD_REQUEST, "Events timeout: " + error.getMessage()))
@@ -478,7 +487,6 @@ public class GatewayService {
                         eventBus.emit(LogEvent.error(id, "Fetch event timeout: " + err.getMessage()));
                         eventBus.emit(new StopEvent(id, NodeRemoveReason.FETCH_EVENT_TIMEOUT));
                     })
-                    .doOnError(error -> Log.err(error.getMessage()))
                     .doOnError((error) -> onError.accept(error))
                     .onErrorComplete(ApiError.class)
                     .doFinally(signal -> {
