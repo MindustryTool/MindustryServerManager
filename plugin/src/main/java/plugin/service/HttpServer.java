@@ -76,7 +76,8 @@ public class HttpServer {
 
         app.beforeMatched((ctx) -> {
             if (Control.state != PluginState.LOADED) {
-                Log.info("Server unloaded");
+                Log.warn("Server unloaded");
+                Thread.dumpStack();
                 throw new ServerUnloadedException();
             }
 

@@ -50,7 +50,12 @@ public class GeneralController {
         });
 
         app.get("image", ctx -> {
-            ctx.contentType(ContentType.IMAGE_PNG).result(Utils.mapPreview());
+            try {
+                var image = Utils.mapPreview();
+                ctx.contentType(ContentType.IMAGE_PNG).result(image);
+            } catch (Exception e) {
+                ctx.status(500).result(e.getMessage());
+            }
         });
 
         app.get("plugin-version", ctx -> {
@@ -357,7 +362,8 @@ public class GeneralController {
 
     private static synchronized void host(StartServerDto request) {
         if (Vars.state.isGame()) {
-            Log.info("Already hosting. Type 'stop' to stop hosting first.");
+            Log.warn("API: Already hosting. Type 'stop' to stop hosting first.");
+            Thread.dumpStack();
             return;
         }
 

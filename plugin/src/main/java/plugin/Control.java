@@ -66,7 +66,7 @@ public class Control extends mindustry.mod.Plugin {
     @Schedule(delay = 10, fixedDelay = 3, unit = TimeUnit.MINUTES)
     private void checkInvalidState() {
         if (Vars.state.isGame() && !Vars.net.server() && state == PluginState.LOADED) {
-            Log.err("Server in invalid state, auto exit: state=@, server=@, plugin-state=@",
+            Log.err("[scarlet]Server in invalid state, auto exit: state=@, server=@, plugin-state=@",
                     Vars.state.getState().name(),
                     Vars.net.server(), state);
             unload();
@@ -116,7 +116,7 @@ public class Control extends mindustry.mod.Plugin {
         }
     }
 
-    @Schedule(delay = 15, fixedDelay = 15, unit = TimeUnit.SECONDS)
+    @Schedule(delay = 5, fixedDelay = 5, unit = TimeUnit.SECONDS)
     private void autoPause() {
         if (!Vars.state.isPaused() && Groups.player.size() == 0) {
             Vars.state.set(State.paused);
