@@ -150,10 +150,10 @@ public class ServerService {
                             gatewayService.of(serverId)
                                     .flatMapMany(gatewayClient -> hostCallGateway(request, gatewayClient)));
 
-                    Flux<LogEvent> external = sink.asFlux();
+                    Flux<LogEvent> external = sink.asFlux()
+                            .takeUntilOther(internalFlow.ignoreElements());
 
-                    return Flux.merge(external,
-                            internalFlow.doFinally(signal -> sink.emitComplete(Sinks.EmitFailureHandler.FAIL_FAST)));
+                    return Flux.merge(external, internalFlow);
                 },
                 sink -> cleanup(serverId, sink),
                 (sink, err) -> cleanup(serverId, sink),
