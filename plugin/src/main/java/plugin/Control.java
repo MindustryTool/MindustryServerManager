@@ -21,7 +21,6 @@ import plugin.annotations.Schedule;
 import plugin.commands.ClientCommandHandler;
 import plugin.commands.ServerCommandHandler;
 import plugin.core.Registry;
-import plugin.core.Scheduler;
 import plugin.database.DB;
 import plugin.event.PluginUnloadEvent;
 import plugin.event.UnloadServerEvent;
@@ -46,12 +45,10 @@ public class Control extends mindustry.mod.Plugin {
         try {
             DB.init();
             Registry.init(getClass().getPackage().getName());
+            Registry.get(this.getClass());
 
             registerEventListener();
             registerTriggerListener();
-
-            Registry.get(Scheduler.class).scheduleWithFixedDelay(this::checkInvalidState, 10, 3,
-                    TimeUnit.MINUTES);
 
             state = PluginState.LOADED;
 
@@ -96,12 +93,7 @@ public class Control extends mindustry.mod.Plugin {
         DB.close();
         PluginEvents.unregister();
 
-        Log.info("Server controller unloaded: " + this);
-    }
-
-    @Override
-    protected void finalize() throws Throwable {
-        System.out.println("Finalizing " + this);
+        Log.info("Server controller unloaded");
     }
 
     @Schedule(delay = 15, unit = TimeUnit.SECONDS)
