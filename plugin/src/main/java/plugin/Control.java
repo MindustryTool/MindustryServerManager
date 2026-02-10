@@ -4,7 +4,6 @@ import java.util.Locale;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-import arc.ApplicationListener;
 import arc.Core;
 import arc.Events;
 import arc.func.Func;
@@ -25,12 +24,13 @@ import plugin.core.Registry;
 import plugin.core.Scheduler;
 import plugin.database.DB;
 import plugin.event.PluginUnloadEvent;
+import plugin.event.UnloadServerEvent;
 
 public class Control extends mindustry.mod.Plugin {
 
     public static PluginState state = PluginState.LOADING;
-
     public static final UUID SERVER_ID = UUID.fromString(System.getenv("SERVER_ID"));
+
     private static String[] tags = { "", "", "[yellow]", "[red]", "" };
 
     @Override
@@ -40,6 +40,7 @@ public class Control extends mindustry.mod.Plugin {
             String result = Log.format(tags[level1.ordinal()] + text + "&fr");
             System.out.println(result);
         };
+
         Core.settings.put("startedAt", System.currentTimeMillis());
 
         try {
@@ -54,12 +55,7 @@ public class Control extends mindustry.mod.Plugin {
 
             state = PluginState.LOADED;
 
-            Core.app.addListener(new ApplicationListener() {
-                @Override
-                public void exit() {
-                    unload();
-                }
-            });
+            PluginEvents.run(UnloadServerEvent.class, this::unload);
 
         } catch (Exception e) {
             Log.err("Failed to init plugin", e);
@@ -74,7 +70,7 @@ public class Control extends mindustry.mod.Plugin {
                     Vars.state.getState().name(),
                     Vars.net.server(), state);
             unload();
-            Core.app.exit();
+            System.exit(0);
         }
     }
 

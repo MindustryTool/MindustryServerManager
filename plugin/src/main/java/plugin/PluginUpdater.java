@@ -12,6 +12,7 @@ import mindustry.Vars;
 import mindustry.gen.Groups;
 import plugin.annotations.Component;
 import plugin.annotations.Schedule;
+import plugin.event.UnloadServerEvent;
 
 @Component
 public class PluginUpdater {
@@ -85,7 +86,8 @@ public class PluginUpdater {
 
         Log.info("[cyan]Plugin updated, restarting...");
 
-        Core.app.exit();
+        PluginEvents.fire(new UnloadServerEvent());
+        System.exit(0);
     }
 
     private String readCurrentUpdatedAt(PluginData plugin) {
