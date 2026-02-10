@@ -44,13 +44,11 @@ public class SessionService {
         SessionData data = session.getData();
         long totalKills;
 
-        // Synchronize on data to ensure thread safety for mutations
         synchronized (data) {
             totalKills = data.kills.getOrDefault(unit.id, 0L) + amount;
             data.kills.put(unit.id, totalKills);
         }
 
-        // Explicitly mark dirty for persistence
         sessionRepository.markDirty(session.player.uuid());
 
         checkKillMilestone(session, unit, totalKills);

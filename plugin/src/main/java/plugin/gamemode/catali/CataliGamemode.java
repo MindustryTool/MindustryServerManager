@@ -290,7 +290,6 @@ public class CataliGamemode {
 
             if (player.unit() != null && coreUnits.contains(player.unit().type)) {
                 player.team(SPECTATOR_TEAM);
-                player.unit().kill();
             }
         }
     }
@@ -381,7 +380,7 @@ public class CataliGamemode {
             player.unit().kill();
         }
 
-        var playerTeam = teams.find(team -> team.leaderUuid.equals(player.uuid()));
+        var playerTeam = teams.find(team -> team.members.contains(player.uuid()));
 
         if (playerTeam != null) {
             player.team(playerTeam.team);

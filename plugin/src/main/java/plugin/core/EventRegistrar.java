@@ -9,8 +9,8 @@ import java.lang.reflect.Method;
 
 public class EventRegistrar {
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    public void register(Object instance) {
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    public static void register(Object instance) {
         Class<?> clazz = instance.getClass();
 
         for (Method method : clazz.getDeclaredMethods()) {

@@ -17,8 +17,6 @@ public final class Registry {
     private static final Set<Object> initialized = new HashSet<>();
 
     private static final ConfigManager configManager = new ConfigManager();
-    private static final PersistenceManager persistenceManager = new PersistenceManager();
-    private static final EventRegistrar eventRegistrar = new EventRegistrar();
 
     private static String currentGamemode;
 
@@ -55,7 +53,7 @@ public final class Registry {
 
     public static void destroy() {
         instances.values().forEach(obj -> {
-            persistenceManager.save(obj);
+            PersistenceManager.save(obj);
 
             // Process @Destroy
             for (Method method : obj.getClass().getDeclaredMethods()) {
@@ -69,6 +67,7 @@ public final class Registry {
                 }
             }
         });
+
         configManager.destroy();
         instances.clear();
         initialized.clear();
@@ -83,7 +82,7 @@ public final class Registry {
         }
         return (T) obj;
     }
-    
+
     @SuppressWarnings("unchecked")
     public static <T> T getOrNull(Class<T> type) {
         Object obj = instances.get(type);
@@ -170,7 +169,7 @@ public final class Registry {
             configManager.process(instance);
         }
 
-        persistenceManager.load(instance);
+        PersistenceManager.load(instance);
 
         for (Method method : clazz.getDeclaredMethods()) {
             if (method.isAnnotationPresent(Init.class)) {
@@ -183,7 +182,7 @@ public final class Registry {
             }
         }
 
-        eventRegistrar.register(instance);
+        EventRegistrar.register(instance);
 
         initialized.add(instance);
     }

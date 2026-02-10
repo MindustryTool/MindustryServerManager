@@ -52,8 +52,6 @@ public class Utils {
             .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)//
             .findAndRegisterModules();
 
-    public static final Json json = new Json();
-
     public static byte[] toByteArray(BufferedImage image) {
         try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -129,7 +127,7 @@ public class Utils {
             return null;
         }
 
-        ModMeta meta = json.fromJson(ModMeta.class, Jval.read(metaFile.readString()).toString(Jformat.plain));
+        ModMeta meta = new Json().fromJson(ModMeta.class, Jval.read(metaFile.readString()).toString(Jformat.plain));
         meta.cleanup();
         return meta;
     }

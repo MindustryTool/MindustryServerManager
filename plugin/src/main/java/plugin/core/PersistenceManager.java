@@ -10,7 +10,7 @@ import java.lang.reflect.Field;
 
 public class PersistenceManager {
 
-    public void load(Object instance) {
+    public static void load(Object instance) {
         Class<?> clazz = instance.getClass();
         for (Field field : clazz.getDeclaredFields()) {
             if (field.isAnnotationPresent(Persistence.class)) {
@@ -35,7 +35,7 @@ public class PersistenceManager {
         }
     }
 
-    public void save(Object instance) {
+    public static void save(Object instance) {
         Class<?> clazz = instance.getClass();
         for (Field field : clazz.getDeclaredFields()) {
             if (field.isAnnotationPresent(Persistence.class)) {
