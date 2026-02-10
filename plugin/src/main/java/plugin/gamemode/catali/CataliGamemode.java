@@ -2,6 +2,7 @@ package plugin.gamemode.catali;
 
 import arc.Core;
 import arc.math.Mathf;
+import arc.math.geom.Vec2;
 import arc.struct.Seq;
 import arc.util.Align;
 import arc.util.Log;
@@ -408,6 +409,8 @@ public class CataliGamemode {
         player.team(SPECTATOR_TEAM);
 
         if (player.unit() != null) {
+            var center = new Vec2(Vars.world.unitWidth() / 2, Vars.world.unitHeight() / 2);
+            player.unit().set(center);
             player.unit().kill();
         }
 
