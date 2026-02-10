@@ -19,9 +19,9 @@ import plugin.annotations.Component;
 import plugin.annotations.Destroy;
 import plugin.annotations.Init;
 import plugin.annotations.Listener;
+import plugin.annotations.Schedule;
 import plugin.Control;
 import plugin.controller.GeneralController;
-import plugin.core.Registry;
 import plugin.event.SessionCreatedEvent;
 import plugin.event.SessionRemovedEvent;
 import dto.ServerStateDto;
@@ -48,8 +48,6 @@ public class HttpServer {
 
     @Init
     public void init() {
-        Control.SCHEDULER.scheduleWithFixedDelay(this::sendStateUpdate, 0, 30, TimeUnit.SECONDS);
-
         if (app != null) {
             app.stop();
         }
@@ -117,19 +115,16 @@ public class HttpServer {
         app.start(9999);
         Log.info("Http server started on port 9999");
 
-        Registry.get(ApiGateway.class).requestConnection();
+        apiGateway.requestConnection();
+    }
 
-        // PluginEvents.run(PluginUnloadEvent.class, this::unload); // Handled by
-        // destroy()
-
-        Control.SCHEDULER.scheduleWithFixedDelay(
-                () -> {
-                    if (!isConnected()) {
-                        apiGateway.requestConnection();
-                    } else if (Duration.between(lastSendEvent, Instant.now()).compareTo(HEARTBEAT_DURATION) > 0) {
-                        sendStateUpdate();
-                    }
-                }, 5, 2, TimeUnit.SECONDS);
+    @Schedule(delay = 5, fixedDelay = 1, unit = TimeUnit.SECONDS)
+    private void keepAlive() {
+        if (!isConnected()) {
+            apiGateway.requestConnection();
+        } else if (Duration.between(lastSendEvent, Instant.now()).compareTo(HEARTBEAT_DURATION) > 0) {
+            sendStateUpdate();
+        }
     }
 
     public void fire(Object event) {

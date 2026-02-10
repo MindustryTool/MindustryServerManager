@@ -1,0 +1,7 @@
+{
+  "name": "Controller",
+  "author": "Sharrlotte",
+  "main": "plugin.Control",
+  "description": "MindustryTool server controller plugin",
+  "version": 1.0
+}

@@ -3,6 +3,7 @@ package plugin.commands;
 import arc.util.CommandHandler;
 import arc.util.Log;
 import plugin.Tasks;
+import plugin.core.Registry;
 
 public abstract class PluginServerCommand extends PluginCommand {
     public abstract void handle();
@@ -25,7 +26,7 @@ public abstract class PluginServerCommand extends PluginCommand {
         handler.register(name, paramText.toString(), description, (args) -> {
             Tasks.io("Server command", () -> {
                 try {
-                    var copy = this.getClass().getDeclaredConstructor().newInstance();
+                    var copy = Registry.createNew(this.getClass());
                     Param.parse(copy.params, args);
                     copy.handle();
                 } catch (ParamException e) {

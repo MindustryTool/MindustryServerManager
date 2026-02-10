@@ -2,38 +2,35 @@ package plugin;
 
 import java.util.Locale;
 import java.util.UUID;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import org.pf4j.Plugin;
-
+import arc.ApplicationListener;
 import arc.Core;
+import arc.Events;
 import arc.func.Func;
 import arc.struct.Seq;
 import arc.util.*;
 import mindustry.Vars;
 import mindustry.core.GameState.State;
-import mindustry.gen.Call;
+import mindustry.game.EventType;
 import mindustry.gen.Groups;
 import mindustry.gen.Iconc;
 import plugin.service.ApiGateway;
 import plugin.service.I18n;
 import plugin.utils.Utils;
+import plugin.annotations.Schedule;
 import plugin.commands.ClientCommandHandler;
 import plugin.commands.ServerCommandHandler;
 import plugin.core.Registry;
+import plugin.core.Scheduler;
 import plugin.database.DB;
 import plugin.event.PluginUnloadEvent;
-import loader.MindustryToolPlugin;
 
-public class Control extends Plugin implements MindustryToolPlugin {
+public class Control extends mindustry.mod.Plugin {
 
     public static PluginState state = PluginState.LOADING;
 
     public static final UUID SERVER_ID = UUID.fromString(System.getenv("SERVER_ID"));
-
-    public static final ScheduledExecutorService SCHEDULER = Executors.newSingleThreadScheduledExecutor();
 
     public Control() {
     }
@@ -44,14 +41,20 @@ public class Control extends Plugin implements MindustryToolPlugin {
             DB.init();
             Registry.init(getClass().getPackage().getName());
 
-            SCHEDULER.schedule(this::autoHost, 15, TimeUnit.SECONDS);
-            SCHEDULER.schedule(this::autoPause, 10, TimeUnit.SECONDS);
-            SCHEDULER.scheduleWithFixedDelay(this::sendTips, 3, 3, TimeUnit.MINUTES);
-            SCHEDULER.scheduleWithFixedDelay(this::checkInvalidState, 10, 3, TimeUnit.MINUTES);
+            registerEventListener();
+            registerTriggerListener();
+
+            Registry.get(Scheduler.class).scheduleWithFixedDelay(this::checkInvalidState, 10, 3,
+                    TimeUnit.MINUTES);
 
             state = PluginState.LOADED;
 
-            Call.sendMessage("[lime]Server controller restarted");
+            Core.app.addListener(new ApplicationListener() {
+                @Override
+                public void exit() {
+                    unload();
+                }
+            });
 
         } catch (Exception e) {
             Log.err("Failed to init plugin", e);
@@ -59,6 +62,7 @@ public class Control extends Plugin implements MindustryToolPlugin {
         }
     }
 
+    @Schedule(delay = 10, fixedDelay = 3, unit = TimeUnit.MINUTES)
     private void checkInvalidState() {
         if (Vars.state.isGame() && !Vars.net.server() && state == PluginState.LOADED) {
             Log.err("Server in invalid state, auto exit: state=@, server=@, plugin-state=@",
@@ -79,27 +83,10 @@ public class Control extends Plugin implements MindustryToolPlugin {
         Core.app.post(() -> Registry.get(ClientCommandHandler.class).registerCommands(handler));
     }
 
-    @Override
-    public void onEvent(Object event) {
-        try {
-            if (state != PluginState.LOADED) {
-                return;
-            }
-
-            PluginEvents.fire(event);
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    @Override
     public void unload() {
         state = PluginState.UNLOADED;
 
         Log.info("Unload");
-
-        SCHEDULER.shutdownNow();
 
         Tasks.destroy();
 
@@ -108,17 +95,7 @@ public class Control extends Plugin implements MindustryToolPlugin {
         DB.close();
         PluginEvents.unregister();
 
-        Log.info("Server controller stopped: " + this);
-    }
-
-    @Override
-    public void stop() {
-        Log.info("Stop: " + this);
-    }
-
-    @Override
-    public void delete() {
-        Log.info("Server controller deleted: " + this);
+        Log.info("Server controller unloaded: " + this);
     }
 
     @Override
@@ -126,6 +103,7 @@ public class Control extends Plugin implements MindustryToolPlugin {
         System.out.println("Finalizing " + this);
     }
 
+    @Schedule(delay = 15, unit = TimeUnit.SECONDS)
     private void autoHost() {
         try {
             if (!Vars.state.isGame()) {
@@ -137,6 +115,7 @@ public class Control extends Plugin implements MindustryToolPlugin {
         }
     }
 
+    @Schedule(delay = 15, fixedDelay = 15, unit = TimeUnit.SECONDS)
     private void autoPause() {
         if (!Vars.state.isPaused() && Groups.player.size() == 0) {
             Vars.state.set(State.paused);
@@ -144,6 +123,7 @@ public class Control extends Plugin implements MindustryToolPlugin {
         }
     }
 
+    @Schedule(fixedDelay = 3, unit = TimeUnit.MINUTES)
     private void sendTips() {
         Seq<Func<Locale, String>> tips = new Seq<>();
 
@@ -178,5 +158,30 @@ public class Control extends Plugin implements MindustryToolPlugin {
                 }
             });
         });
+    }
+
+    private void registerEventListener() {
+        for (Class<?> clazz : EventType.class.getDeclaredClasses()) {
+            Events.on(clazz, this::onEvent);
+        }
+    }
+
+    private void registerTriggerListener() {
+        for (EventType.Trigger trigger : EventType.Trigger.values()) {
+            Events.run(trigger, () -> onEvent(trigger));
+        }
+    }
+
+    public void onEvent(Object event) {
+        try {
+            if (state != PluginState.LOADED) {
+                return;
+            }
+
+            PluginEvents.fire(event);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }

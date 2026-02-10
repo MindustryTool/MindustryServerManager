@@ -7,6 +7,7 @@ import java.util.LinkedList;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -40,6 +41,7 @@ import server.utils.Utils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.Sinks;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.retry.Retry;
@@ -56,6 +58,7 @@ public class ServerService {
 
     private final ConcurrentHashMap<UUID, EnumSet<ServerFlag>> serverFlags = new ConcurrentHashMap<>();
     private final LinkedList<FluxSink<BaseEvent>> eventSinks = new LinkedList<>();
+    private final ConcurrentHashMap<UUID, Consumer<LogEvent>> hostListeners = new ConcurrentHashMap<>();
 
     private static enum ServerFlag {
         KILL,
@@ -81,6 +84,14 @@ public class ServerService {
                     if (sink != null && !sink.isCancelled())
                         sink.next(event);
                 });
+            }
+
+            if (event instanceof LogEvent logEvent) {
+                var listener = hostListeners.get(event.getServerId());
+
+                if (listener != null) {
+                    listener.accept(logEvent);
+                }
             }
         });
     }
@@ -122,15 +133,40 @@ public class ServerService {
     }
 
     public Flux<LogEvent> host(ServerConfig request) {
-        var serverId = request.getId();
+        UUID serverId = request.getId();
 
-        return Flux.concat(//
-                Mono.just(LogEvent.info(serverId, "Server not hosting, create server")),
-                nodeManager.create(request),
-                Mono.just(LogEvent.info(serverId, "Connecting to gateway...")),
-                gatewayService.of(serverId).flatMapMany(gatewayClient -> hostCallGateway(request, gatewayClient)))
-                .onErrorResume(err -> Mono.just(LogEvent.error(serverId, err.getMessage())).then(Mono.error(err)))
-                .doOnError(Log::err);
+        Mono<Sinks.Many<LogEvent>> supplier = Mono.fromSupplier(() -> Sinks.many()
+                .multicast()
+                .onBackpressureBuffer());
+
+        return Flux.usingWhen(supplier,
+                sink -> {
+                    hostListeners.put(serverId, event -> sink.emitNext(event, Sinks.EmitFailureHandler.FAIL_FAST));
+
+                    Flux<LogEvent> internalFlow = Flux.concat(
+                            Mono.just(LogEvent.info(serverId, "Server not hosting, create server")),
+                            nodeManager.create(request),
+                            Mono.just(LogEvent.info(serverId, "Connecting to gateway...")),
+                            gatewayService.of(serverId)
+                                    .flatMapMany(gatewayClient -> hostCallGateway(request, gatewayClient)));
+
+                    Flux<LogEvent> external = sink.asFlux();
+
+                    return Flux.merge(external, internalFlow);
+                },
+                sink -> cleanup(serverId, sink),
+                (sink, err) -> cleanup(serverId, sink),
+                sink -> cleanup(serverId, sink)//
+        )
+                .doOnError(Log::err)
+                .onErrorResume(err -> Mono.just(LogEvent.error(serverId, err.getMessage())));
+    }
+
+    private Mono<Void> cleanup(UUID serverId, Sinks.Many<LogEvent> sink) {
+        return Mono.fromRunnable(() -> {
+            hostListeners.remove(serverId);
+            sink.emitComplete(Sinks.EmitFailureHandler.FAIL_FAST);
+        });
     }
 
     private Flux<LogEvent> hostCallGateway(ServerConfig request, GatewayClient gatewayClient) {
@@ -304,7 +340,7 @@ public class ServerService {
     }
 
     @PostConstruct
-    @Scheduled(fixedDelay = 2, timeUnit = TimeUnit.MINUTES)
+    @Scheduled(fixedDelay = 5, timeUnit = TimeUnit.MINUTES)
     private void autoTurnOffCron() {
         // var runningWithAutoTurnOff = containers.stream()//
         // .filter(container -> container.getState().equalsIgnoreCase("running"))//

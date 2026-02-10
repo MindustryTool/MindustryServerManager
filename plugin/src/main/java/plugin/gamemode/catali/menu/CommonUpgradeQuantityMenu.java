@@ -25,7 +25,7 @@ public class CommonUpgradeQuantityMenu extends PluginMenu<Pair<CataliTeamData, C
         option("1", (s, st) -> {
             team.consumeUpgrade(upgrade, 1);
             if (level.commonUpgradePoints > 0) {
-                Registry.get(CommonUpgradeMenu.class).send(s, team);
+                Registry.createNew(CommonUpgradeMenu.class).send(s, team);
             }
         });
 
@@ -33,7 +33,7 @@ public class CommonUpgradeQuantityMenu extends PluginMenu<Pair<CataliTeamData, C
             option("2", (s, st) -> {
                 team.consumeUpgrade(upgrade, 2);
                 if (level.commonUpgradePoints > 0) {
-                    Registry.get(CommonUpgradeMenu.class).send(s, team);
+                    Registry.createNew(CommonUpgradeMenu.class).send(s, team);
                 }
             });
         }
@@ -42,7 +42,7 @@ public class CommonUpgradeQuantityMenu extends PluginMenu<Pair<CataliTeamData, C
             option("5", (s, st) -> {
                 team.consumeUpgrade(upgrade, 5);
                 if (level.commonUpgradePoints > 0) {
-                    Registry.get(CommonUpgradeMenu.class).send(s, team);
+                    Registry.createNew(CommonUpgradeMenu.class).send(s, team);
                 }
             });
         }
@@ -52,14 +52,14 @@ public class CommonUpgradeQuantityMenu extends PluginMenu<Pair<CataliTeamData, C
         option(I18n.t(session, "@All Points"), (s, st) -> {
             team.consumeUpgrade(upgrade, level.commonUpgradePoints);
             if (level.commonUpgradePoints > 0) {
-                Registry.get(CommonUpgradeMenu.class).send(s, team);
+                Registry.createNew(CommonUpgradeMenu.class).send(s, team);
             }
         });
 
         row();
 
         option(I18n.t(session, "@Back"), (s, st) -> {
-            Registry.get(CommonUpgradeMenu.class).send(s, team);
+            Registry.createNew(CommonUpgradeMenu.class).send(s, team);
         });
         option(I18n.t(session, "@Close"), (s, st) -> {
         });

@@ -16,7 +16,7 @@ import plugin.annotations.Component;
 import plugin.annotations.Destroy;
 import plugin.annotations.Init;
 import plugin.annotations.Listener;
-import plugin.Control;
+import plugin.annotations.Schedule;
 import plugin.type.SessionData;
 import plugin.utils.ExpUtils;
 import plugin.utils.JsonUtils;
@@ -30,7 +30,6 @@ public class SessionRepository {
     @Init
     public void init() {
         createTableIfNotExists();
-        Control.SCHEDULER.scheduleWithFixedDelay(this::flushBatch, 10, 30, TimeUnit.SECONDS);
     }
 
     @Listener
@@ -90,6 +89,7 @@ public class SessionRepository {
         dirty.remove(uuid);
     }
 
+    @Schedule(delay = 10, fixedDelay = 10, unit = TimeUnit.SECONDS)
     public void flushBatch() {
         if (dirty.isEmpty()) {
             return;

@@ -27,14 +27,14 @@ public class CommonUpgradeMenu extends PluginMenu<CataliTeamData> {
             if (team.level.commonUpgradePoints == 1) {
                 team.consumeUpgrade(CataliCommonUpgrade.DAMAGE, 1);
             } else {
-                Registry.get(CommonUpgradeQuantityMenu.class).send(s, Pair.of(team, CataliCommonUpgrade.DAMAGE));
+                Registry.createNew(CommonUpgradeQuantityMenu.class).send(s, Pair.of(team, CataliCommonUpgrade.DAMAGE));
             }
         });
         option(I18n.t(session, "@Health"), (s, st) -> {
             if (team.level.commonUpgradePoints == 1) {
                 team.consumeUpgrade(CataliCommonUpgrade.HEALTH, 1);
             } else {
-                Registry.get(CommonUpgradeQuantityMenu.class).send(s, Pair.of(team, CataliCommonUpgrade.HEALTH));
+                Registry.createNew(CommonUpgradeQuantityMenu.class).send(s, Pair.of(team, CataliCommonUpgrade.HEALTH));
             }
         });
 
@@ -44,7 +44,7 @@ public class CommonUpgradeMenu extends PluginMenu<CataliTeamData> {
             if (team.level.commonUpgradePoints == 1) {
                 team.consumeUpgrade(CataliCommonUpgrade.REGEN, 1);
             } else {
-                Registry.get(CommonUpgradeQuantityMenu.class).send(s, Pair.of(team, CataliCommonUpgrade.REGEN));
+                Registry.createNew(CommonUpgradeQuantityMenu.class).send(s, Pair.of(team, CataliCommonUpgrade.REGEN));
             }
         });
 
@@ -52,7 +52,7 @@ public class CommonUpgradeMenu extends PluginMenu<CataliTeamData> {
             if (team.level.commonUpgradePoints == 1) {
                 team.consumeUpgrade(CataliCommonUpgrade.EXP, 1);
             } else {
-                Registry.get(CommonUpgradeQuantityMenu.class).send(s, Pair.of(team, CataliCommonUpgrade.EXP));
+                Registry.createNew(CommonUpgradeQuantityMenu.class).send(s, Pair.of(team, CataliCommonUpgrade.EXP));
             }
         });
 

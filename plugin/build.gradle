@@ -25,18 +25,16 @@ dependencies{
     implementation 'io.javalin:javalin:6.7.0'
     implementation 'com.github.ben-manes.caffeine:caffeine:2.9.3'
     implementation 'org.reflections:reflections:0.10.2'
+    implementation 'org.xerial:sqlite-jdbc:3.43.2.0'
 
     implementation project(':dto')
 
-    compileOnly  'org.xerial:sqlite-jdbc:3.43.2.0'
-    compileOnly project(':loader')
-    compileOnly "org.pf4j:pf4j:3.13.0"
     compileOnly 'org.projectlombok:lombok:1.18.30'
     compileOnly "com.github.Anuken.Arc:arc-core:$mindustryVersion"
     compileOnly "com.github.Anuken.Mindustry:core:$mindustryVersion"
 
+
     annotationProcessor 'org.projectlombok:lombok:1.18.30'
-    annotationProcessor 'org.pf4j:pf4j:3.13.0'
     annotationProcessor "com.github.Anuken:jabel:$jabelVersion"
 
     // testImplementation 'org.junit.jupiter:junit-jupiter:5.10.0'
@@ -71,5 +69,9 @@ jar{
                 include "META-INF/services/**"
             }
         }
+    }
+
+    from(project.projectDir){
+        include "plugin.json"
     }
 }

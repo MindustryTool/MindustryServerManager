@@ -1,22 +1,24 @@
 package plugin.gamemode.catali.menu;
 
+import lombok.RequiredArgsConstructor;
 import mindustry.gen.Player;
 import plugin.annotations.Gamemode;
-import plugin.core.Registry;
 import plugin.gamemode.catali.CataliGamemode;
 import plugin.menus.PluginMenu;
 import plugin.service.I18n;
 import plugin.type.Session;
 
 @Gamemode("catali")
+@RequiredArgsConstructor
 public class IncomingRequestMenu extends PluginMenu<Player> {
+
+    private final CataliGamemode gamemode;
 
     @Override
     public void build(Session session, Player requester) {
         if (requester == null)
             return;
 
-        var gamemode = Registry.get(CataliGamemode.class);
         var team = gamemode.findTeam(session.player);
 
         if (team == null)

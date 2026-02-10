@@ -1,6 +1,7 @@
 package plugin.gamemode.catali.menu;
 
 import dto.Pair;
+import lombok.RequiredArgsConstructor;
 import plugin.annotations.Gamemode;
 import plugin.core.Registry;
 import plugin.gamemode.catali.CataliConfig;
@@ -10,14 +11,15 @@ import plugin.service.I18n;
 import plugin.type.Session;
 
 @Gamemode("catali")
+@RequiredArgsConstructor
 public class RareUpgradeTierSelectUnitMenu extends PluginMenu<CataliTeamData> {
+
+    private final CataliConfig config;
 
     @Override
     public void build(Session session, CataliTeamData team) {
         title = I18n.t(session, "@Select Unit to Evolve");
         description = I18n.t(session, "@Choose a unit to evolve.");
-
-        var config = Registry.get(CataliConfig.class);
 
         int i = 0;
         for (var unit : team.getUpgradeableUnits()) {
@@ -32,7 +34,7 @@ public class RareUpgradeTierSelectUnitMenu extends PluginMenu<CataliTeamData> {
             }
 
             option(unit.type.emoji() + " " + unit.type.name, (s, st) -> {
-                Registry.get(RareUpgradeTierSelectUpgradeMenu.class).send(s, Pair.of(team, unit));
+                Registry.createNew(RareUpgradeTierSelectUpgradeMenu.class).send(s, Pair.of(team, unit));
             });
             i++;
         }
@@ -40,7 +42,7 @@ public class RareUpgradeTierSelectUnitMenu extends PluginMenu<CataliTeamData> {
         row();
 
         option(I18n.t(session, "@Back"), (s, st) -> {
-            Registry.get(RareUpgradeMenu.class).send(s, team);
+            Registry.createNew(RareUpgradeMenu.class).send(s, team);
         });
 
         option(I18n.t(session, "@Close"), (s, st) -> {

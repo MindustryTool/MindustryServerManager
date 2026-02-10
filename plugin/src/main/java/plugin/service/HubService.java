@@ -30,6 +30,7 @@ import plugin.annotations.Component;
 import plugin.annotations.ConditionOn;
 import plugin.annotations.Init;
 import plugin.annotations.Listener;
+import plugin.annotations.Schedule;
 import plugin.Control;
 import plugin.Tasks;
 import plugin.menus.ServerRedirectMenu;
@@ -61,20 +62,6 @@ public class HubService {
         setupCustomServerDiscovery();
         loadCores();
         refreshServerList();
-
-        Control.SCHEDULER.scheduleWithFixedDelay(() -> {
-            if (Groups.player.size() <= 0) {
-                return;
-            }
-            refreshServerList();
-        }, 0, 5, TimeUnit.SECONDS);
-
-        Control.SCHEDULER.scheduleAtFixedRate(() -> {
-            if (Groups.player.size() <= 0) {
-                return;
-            }
-            renderServerLabels();
-        }, 5, 5, TimeUnit.SECONDS);
     }
 
     @Listener(WorldLoadEvent.class)
@@ -216,7 +203,12 @@ public class HubService {
         }
     }
 
+    @Schedule(fixedDelay = 5, unit = TimeUnit.SECONDS)
     private void refreshServerList() {
+        if (Groups.player.size() <= 0) {
+            return;
+        }
+
         try {
             var request = new PaginationRequest()
                     .setPage(0)
@@ -241,7 +233,12 @@ public class HubService {
         }
     }
 
+    @Schedule(delay = 5, fixedDelay = 5, unit = TimeUnit.SECONDS)
     private void renderServerLabels() {
+        if (Groups.player.size() <= 0) {
+            return;
+        }
+
         var map = Vars.state.map;
 
         if (map == null) {

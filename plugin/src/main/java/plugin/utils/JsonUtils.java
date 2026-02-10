@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import arc.struct.Seq;
@@ -66,7 +67,7 @@ public class JsonUtils {
         }
     }
 
-    public static JsonNode createObjectNode() {
+    public static ObjectNode createObjectNode() {
         return objectMapper.createObjectNode();
     }
 

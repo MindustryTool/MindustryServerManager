@@ -2,9 +2,9 @@ package plugin.core;
 
 import arc.files.Fi;
 import arc.util.Log;
-import arc.util.Strings;
 import mindustry.Vars;
 import plugin.annotations.Configuration;
+import plugin.annotations.Destroy;
 import plugin.utils.JsonUtils;
 
 import java.lang.reflect.Field;
@@ -21,25 +21,16 @@ public class ConfigManager {
         return t;
     });
 
-    public void process(Object instance) {
-        Class<?> clazz = instance.getClass();
-        if (!clazz.isAnnotationPresent(Configuration.class)) {
-            throw new IllegalArgumentException(Strings.format("Class @ is not annotated with @", clazz.getName(),
-                    Configuration.class.getName()));
-        }
-
-        Configuration config = clazz.getAnnotation(Configuration.class);
+    public void process(Configuration config, Object instance) {
         String path = config.value();
+
         Fi file = Vars.dataDirectory.child(path);
 
         if (!file.exists()) {
             file.parent().mkdirs();
         }
 
-        // Initial load
         load(instance, file);
-
-        // Watch
         startWatcher(instance, file);
     }
 
@@ -48,11 +39,14 @@ public class ConfigManager {
             if (!file.exists()) {
                 Log.warn("Configuration file not found: @", file.absolutePath());
 
-                String json = JsonUtils.toJsonString(instance);
-                file.writeString(json);
+                if (instance != null) {
+                    String json = JsonUtils.toJsonString(instance);
+                    file.writeString(json);
+                }
 
                 return;
             }
+
             String json = new String(Files.readAllBytes(file.file().toPath()), StandardCharsets.UTF_8);
             Object newData = JsonUtils.readJsonAsClass(json, instance.getClass());
 
@@ -118,6 +112,7 @@ public class ConfigManager {
         });
     }
 
+    @Destroy
     public void destroy() {
         executor.shutdownNow();
     }

@@ -8,21 +8,23 @@ import plugin.service.ApiGateway;
 import plugin.service.I18n;
 import plugin.type.Session;
 import plugin.commands.PluginClientCommand;
-import plugin.core.Registry;
 
 @Component
 public class LoginCommand extends PluginClientCommand {
-    public LoginCommand() {
+    private final ApiGateway apiGateway;
+
+    public LoginCommand(ApiGateway apiGateway) {
         setName("login");
         setDescription("Login");
         setAdmin(false);
 
+        this.apiGateway = apiGateway;
     }
 
     @Override
     public void handle(Session session) {
         try {
-            LoginDto login = Registry.get(ApiGateway.class).login(session.player);
+            LoginDto login = apiGateway.login(session.player);
 
             var loginLink = login.getLoginLink();
 

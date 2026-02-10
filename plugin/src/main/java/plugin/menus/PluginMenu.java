@@ -58,7 +58,7 @@ public abstract class PluginMenu<T> {
     public void send(Session session, T state) {
         try {
             @SuppressWarnings("unchecked")
-            PluginMenu<T> copy = getClass().getDeclaredConstructor().newInstance();
+            PluginMenu<T> copy = Registry.createNew(this.getClass());
 
             copy.title = title;
             copy.description = description;

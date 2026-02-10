@@ -11,12 +11,11 @@ import lombok.RequiredArgsConstructor;
 import mindustry.game.EventType.MenuOptionChooseEvent;
 import mindustry.gen.Call;
 import mindustry.gen.Player;
-import plugin.Control;
 import plugin.Tasks;
 import plugin.annotations.Component;
 import plugin.annotations.Destroy;
-import plugin.annotations.Init;
 import plugin.annotations.Listener;
+import plugin.annotations.Schedule;
 import plugin.event.SessionRemovedEvent;
 import plugin.menus.PluginMenu;
 import plugin.menus.PluginMenu.HudOption;
@@ -29,23 +28,21 @@ public class PluginMenuService {
 
     private final SessionHandler sessionHandler;
 
-    @Init
-    public void init() {
-        Control.SCHEDULER.scheduleWithFixedDelay(() -> {
-            activeMenus.values().removeIf(m -> {
-                var delete = Instant.now().isAfter(m.createdAt.plusSeconds(60));
+    @Schedule(fixedDelay = 1, unit = TimeUnit.SECONDS)
+    public void cleanStaleMenus() {
+        activeMenus.values().removeIf(m -> {
+            var delete = Instant.now().isAfter(m.createdAt.plusSeconds(60));
 
-                if (delete && m.session.player.con != null) {
-                    try {
-                        Call.hideFollowUpMenu(m.session.player.con, m.getMenuId());
-                    } catch (Exception e) {
-                        Log.err("Failed to hide follow up menu", e);
-                    }
+            if (delete && m.session.player.con != null) {
+                try {
+                    Call.hideFollowUpMenu(m.session.player.con, m.getMenuId());
+                } catch (Exception e) {
+                    Log.err("Failed to hide follow up menu", e);
                 }
+            }
 
-                return delete;
-            });
-        }, 0, 1, TimeUnit.SECONDS);
+            return delete;
+        });
     }
 
     @Listener

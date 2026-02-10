@@ -1,65 +1,58 @@
 package plugin.core;
 
 import arc.files.Fi;
+import arc.struct.Seq;
 import arc.util.Log;
+import dto.Pair;
 import mindustry.Vars;
+import plugin.annotations.Destroy;
 import plugin.annotations.Persistence;
 import plugin.utils.JsonUtils;
 
 import java.lang.reflect.Field;
 
 public class PersistenceManager {
+    public final Seq<Pair<Object, Pair<Field, Persistence>>> persistenceObjects = new Seq<>();
 
-    public static void load(Object instance) {
-        Class<?> clazz = instance.getClass();
-        for (Field field : clazz.getDeclaredFields()) {
-            if (field.isAnnotationPresent(Persistence.class)) {
-                try {
-                    field.setAccessible(true);
-                    Persistence persistence = field.getAnnotation(Persistence.class);
-                    String path = persistence.value();
-                    Fi file = Vars.dataDirectory.child(path);
+    public void load(Field field, Persistence persistence, Object instance) {
+        persistenceObjects.add(new Pair<>(instance, new Pair<>(field, persistence)));
 
-                    if (file.exists()) {
-                        String json = file.readString();
-                        Object value = JsonUtils.readJson(json, field.getGenericType());
-                        field.set(instance, value);
-                        Log.info("Loaded persistence for field @ in @ from @", field.getName(), clazz.getSimpleName(),
-                                path);
-                    }
-                } catch (Exception e) {
-                    Log.err("Failed to load persistence for field @ in @", field.getName(), clazz.getName());
-                    Log.err(e);
-                }
+        String path = persistence.value();
+        Fi file = Vars.dataDirectory.child(path);
+
+        if (file.exists()) {
+            try {
+                String json = file.readString();
+                Object value = JsonUtils.readJson(json, field.getGenericType());
+                field.set(instance, value);
+                Log.info("Loaded persistence for field @ at @", field.getName(), path);
+            } catch (Exception e) {
+                Log.err("Failed to load persistence for field @ at @", field.getName(), path);
+                Log.err(e);
             }
         }
     }
 
-    public static void save(Object instance) {
-        Class<?> clazz = instance.getClass();
-        for (Field field : clazz.getDeclaredFields()) {
-            if (field.isAnnotationPresent(Persistence.class)) {
-                try {
-                    field.setAccessible(true);
-                    Persistence persistence = field.getAnnotation(Persistence.class);
-                    String path = persistence.value();
-                    Fi file = Vars.dataDirectory.child(path);
+    @Destroy
+    public void destroy() {
+        for (var pair : persistenceObjects) {
+            var instance = pair.first;
+            var field = pair.second.first;
+            var persistence = pair.second.second;
 
-                    Object value = field.get(instance);
-                    if (value != null) {
-                        if (!file.exists()) {
-                            file.parent().mkdirs();
-                        }
-                        String json = JsonUtils.toJsonString(value);
-                        file.writeString(json);
-                        Log.info("Saved persistence for field @ in @ to @", field.getName(),
-                                clazz.getSimpleName(), path);
-                    }
-                } catch (Exception e) {
-                    Log.err("Failed to save persistence for field @ in @", field.getName(),
-                            clazz.getName());
-                    Log.err(e);
+            try {
+                String path = persistence.value();
+                Fi file = Vars.dataDirectory.child(path);
+                Object value = field.get(instance);
+
+                if (value != null) {
+                    file.writeString(JsonUtils.toJsonString(value));
+                    Log.info("Saved persistence for field @ at @", field.getName(), path);
                 }
+            } catch (Exception e) {
+                Log.err("Failed to destroy persistence for field @ in @", field.getName(),
+                        instance.getClass().getSimpleName());
+                Log.err(e);
             }
         }
     }

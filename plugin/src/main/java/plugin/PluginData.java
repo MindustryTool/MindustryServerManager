@@ -1,4 +1,4 @@
-package loader;
+package plugin;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
@@ -11,49 +11,29 @@ import java.util.concurrent.TimeUnit;
 
 import arc.util.Http;
 import arc.util.Log;
-import arc.util.Http.HttpStatusException;
+import lombok.Data;
+import plugin.utils.JsonUtils;
 
+@Data
 public class PluginData {
     private static final String PLUGIN_API_URL = "https://api.mindustry-tool.com";
 
     private final String id;
-    private final String name;
+    private final String path;
     private final String owner;
     private final String repo;
     private final String tag;
 
-    public PluginData(String id, String name, String owner, String repo, String tag) {
+    public PluginData(String id, String path, String owner, String repo, String tag) {
         this.id = id;
-        this.name = name;
+        this.path = path;
         this.owner = owner;
         this.repo = repo;
         this.tag = tag;
     }
 
-    public String getId() {
-        return this.id;
-    }
-
-    public String getName() {
-        return this.name;
-    }
-
-    public String getOwner() {
-        return this.owner;
-    }
-
-    public String getRepo() {
-        return this.repo;
-    }
-
-    public String getTag() {
-        return this.tag;
-    }
-
-    public PluginVersion getPluginVersion() throws Exception {
+    public PluginVersion getPluginVersion() {
         try {
-
-            int timeout = 5000;
             CompletableFuture<PluginVersion> result = new CompletableFuture<>();
 
             Http.get(URI.create(PLUGIN_API_URL + "/api/v4/plugins/version?repo=" + this.repo + "&owner=" + this.owner
@@ -62,16 +42,18 @@ public class PluginData {
                         result.completeExceptionally(error);
                         Log.err(error);
                     })
-                    .timeout(timeout)
+                    .timeout(5000)
                     .submit(res -> {
                         String version = res.getResultAsString();
-                        PluginVersion pluginVersion = PluginLoader.objectMapper.readValue(version, PluginVersion.class);
+                        PluginVersion pluginVersion = JsonUtils.readJsonAsClass(version, PluginVersion.class);
 
                         result.complete(pluginVersion);
                     });
 
-            return result.get(timeout, TimeUnit.MILLISECONDS);
-        } catch (HttpStatusException e) {
+            var data = result.get(5000, TimeUnit.MILLISECONDS);
+
+            return data;
+        } catch (Exception e) {
             throw new RuntimeException("Error while getting plugin version " + this.id + ", " + e.getMessage());
         }
     }

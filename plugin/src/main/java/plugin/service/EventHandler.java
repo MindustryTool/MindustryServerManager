@@ -1,7 +1,5 @@
 package plugin.service;
 
-import java.util.concurrent.TimeUnit;
-
 import arc.util.Log;
 import arc.util.Strings;
 import mindustry.Vars;
@@ -103,19 +101,11 @@ public class EventHandler {
 
     @Listener
     private void onWorldLoadEnd(WorldLoadEndEvent event) {
-        Control.SCHEDULER.schedule(() -> {
-            if (!Vars.state.isPaused() && Groups.player.size() == 0) {
-                Vars.state.set(State.paused);
-                Log.info("No player: paused");
-            }
+        var currentMap = Vars.state.map;
 
-            var currentMap = Vars.state.map;
-
-            if (currentMap != null) {
-                Call.sendMessage(MapRating.getDisplayString(currentMap));
-            }
-
-        }, 5, TimeUnit.SECONDS);
+        if (currentMap != null) {
+            Call.sendMessage(MapRating.getDisplayString(currentMap));
+        }
 
         Tasks.cpu("update map preview", () -> {
             Utils.mapPreview();
@@ -194,19 +184,11 @@ public class EventHandler {
         }
 
         try {
-
             Player player = event.session.player;
 
             String playerName = player != null ? player.plainName() : "Unknown";
             String chat = Strings.format("@ leaved the server, current players: @", playerName,
                     Math.max(Groups.player.size() - 1, 0));
-
-            Control.SCHEDULER.schedule(() -> {
-                if (!Vars.state.isPaused() && Groups.player.size() == 0) {
-                    Vars.state.set(State.paused);
-                    Log.info("No player: paused");
-                }
-            }, 5, TimeUnit.SECONDS);
 
             httpServer.fire(new ServerEvents.ChatEvent(Control.SERVER_ID, chat));
 

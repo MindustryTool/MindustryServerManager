@@ -1,7 +1,6 @@
 package plugin.service;
 
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 import arc.func.Cons2;
@@ -15,7 +14,7 @@ import mindustry.entities.Effect;
 import mindustry.gen.Call;
 import plugin.annotations.Component;
 import plugin.annotations.Init;
-import plugin.Control;
+import plugin.annotations.Schedule;
 import plugin.type.Session;
 import plugin.utils.ExpUtils;
 
@@ -34,11 +33,9 @@ public class TrailService {
         Trail.create(this, "heal", Fx.healWave, TrailRequirement.level(35));
         Trail.create(this, "placeblock", Fx.placeBlock, TrailRequirement.level(50));
         Trail.create(this, "explotion", Fx.explosion, TrailRequirement.admin());
-
-        Control.SCHEDULER
-                .scheduleAtFixedRate(this::render, 0, 500, TimeUnit.MILLISECONDS);
     }
 
+    @Schedule(fixedRate = 500)
     private void render() {
         sessionHandler.each(session -> {
             var userTrail = session.getData().trail;

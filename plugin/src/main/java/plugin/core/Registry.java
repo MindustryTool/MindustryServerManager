@@ -6,9 +6,12 @@ import org.reflections.Reflections;
 import org.reflections.scanners.Scanners;
 import plugin.annotations.*;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.*;
+import java.util.function.Consumer;
 
 public final class Registry {
 
@@ -16,7 +19,10 @@ public final class Registry {
     private static final Set<Class<?>> creating = new HashSet<>();
     private static final Set<Object> initialized = new HashSet<>();
 
-    private static final ConfigManager configManager = new ConfigManager();
+    private static final ConfigManager configManager = get(ConfigManager.class);
+    private static final Scheduler scheduler = get(Scheduler.class);
+    private static final PersistenceManager persistenceManager = get(PersistenceManager.class);
+    private static final EventRegistrar eventRegistrar = get(EventRegistrar.class);
 
     private static String currentGamemode;
 
@@ -32,9 +38,24 @@ public final class Registry {
                     continue;
                 }
 
-                // Check Lazy
                 if (isLazy(clazz)) {
                     continue;
+                }
+
+                if (clazz.isAnnotationPresent(ConditionOn.class)) {
+                    ConditionOn annotation = clazz.getAnnotation(ConditionOn.class);
+                    Class<? extends Condition> conditionClass = annotation.value();
+                    try {
+                        Condition condition = conditionClass.getDeclaredConstructor().newInstance();
+
+                        if (!condition.check()) {
+                            Log.info("Skipping component @ due to condition @", clazz.getName(),
+                                    conditionClass.getName());
+                            continue;
+                        }
+                    } catch (Exception e) {
+                        throw new RuntimeException("Failed to check condition for " + clazz.getName(), e);
+                    }
                 }
 
                 if (clazz.isAnnotationPresent(Gamemode.class)) {
@@ -52,23 +73,19 @@ public final class Registry {
     }
 
     public static void destroy() {
-        instances.values().forEach(obj -> {
-            PersistenceManager.save(obj);
-
-            // Process @Destroy
+        for (Object obj : instances.values()) {
             for (Method method : obj.getClass().getDeclaredMethods()) {
-                if (method.isAnnotationPresent(Destroy.class)) {
+                withAnnotation(method, Destroy.class, d -> {
                     try {
                         method.setAccessible(true);
                         method.invoke(obj);
                     } catch (Exception e) {
                         Log.err("Failed to invoke @Destroy on " + obj.getClass().getName(), e);
                     }
-                }
+                });
             }
-        });
+        }
 
-        configManager.destroy();
         instances.clear();
         initialized.clear();
     }
@@ -76,16 +93,18 @@ public final class Registry {
     @SuppressWarnings("unchecked")
     public static <T> T get(Class<T> type) {
         Object obj = instances.get(type);
+
         if (obj == null) {
-            // Allow on-demand creation if it's a component or we want to allow lazy loading
             return (T) getOrCreate(type);
         }
+
         return (T) obj;
     }
 
     @SuppressWarnings("unchecked")
     public static <T> T getOrNull(Class<T> type) {
         Object obj = instances.get(type);
+
         return (T) obj;
     }
 
@@ -106,32 +125,26 @@ public final class Registry {
             return instance;
         }
 
-        // Check Gamemode
+        var instance = create(type);
+
+        instances.put(type, instance);
+
+        return instance;
+    }
+
+    private static Object create(Class<?> type) {
         if (type.isAnnotationPresent(Gamemode.class)) {
             Gamemode gamemode = type.getAnnotation(Gamemode.class);
             if (!Objects.equals(currentGamemode, gamemode.value())) {
-                throw new RuntimeException("Gamemode mismatch! Current: " + currentGamemode + ", Component: "
-                        + type.getName() + " expects " + gamemode.value());
+                throw new RuntimeException("Gamemode mismatch!" +
+                        "Current: " + currentGamemode +
+                        "\nComponent: " + type.getName() +
+                        "\nExpects " + gamemode.value());
             }
         }
 
         if (creating.contains(type)) {
             throw new RuntimeException("Circular dependency detected: " + type.getName());
-        }
-
-        if (type.isAnnotationPresent(ConditionOn.class)) {
-            ConditionOn annotation = type.getAnnotation(ConditionOn.class);
-            Class<? extends Condition> conditionClass = annotation.value();
-            try {
-                Condition condition = conditionClass.getDeclaredConstructor().newInstance();
-
-                if (!condition.check()) {
-                    Log.info("Skipping component @ due to condition @", type.getName(), conditionClass.getName());
-                    return null;
-                }
-            } catch (Exception e) {
-                throw new RuntimeException("Failed to check condition for " + type.getName(), e);
-            }
         }
 
         try {
@@ -142,11 +155,9 @@ public final class Registry {
                     .toArray();
 
             Object instance = constructor.newInstance(args);
-            instances.put(type, instance);
 
             Log.info("Registered component: @", type.getName());
 
-            // Initialize immediately
             initialize(instance);
 
             return instance;
@@ -158,6 +169,25 @@ public final class Registry {
         }
     }
 
+    @SuppressWarnings("unchecked")
+    public static <T> T createNew(Class<T> type) {
+        try {
+            Constructor<?> constructor = selectConstructor(type);
+
+            Object[] args = Arrays.stream(constructor.getParameterTypes())
+                    .map(Registry::get)
+                    .toArray();
+
+            Object instance = constructor.newInstance(args);
+
+            initialize(instance);
+
+            return (T) instance;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to create prototype " + type.getName(), e);
+        }
+    }
+
     private static void initialize(Object instance) {
         if (initialized.contains(instance)) {
             return;
@@ -165,24 +195,28 @@ public final class Registry {
 
         Class<?> clazz = instance.getClass();
 
-        if (clazz.isAnnotationPresent(Configuration.class)) {
-            configManager.process(instance);
+        withAnnotation(clazz, Configuration.class, a -> configManager.process(a, instance));
+
+        for (Field field : clazz.getDeclaredFields()) {
+            field.setAccessible(true);
+
+            withAnnotation(field, Persistence.class, f -> persistenceManager.load(field, f, instance));
         }
 
-        PersistenceManager.load(instance);
-
         for (Method method : clazz.getDeclaredMethods()) {
-            if (method.isAnnotationPresent(Init.class)) {
+            method.setAccessible(true);
+
+            withAnnotation(method, Init.class, a -> {
                 try {
-                    method.setAccessible(true);
                     method.invoke(instance);
                 } catch (Exception e) {
                     throw new RuntimeException("Failed to invoke @Init on " + clazz.getName(), e);
                 }
-            }
-        }
+            });
 
-        EventRegistrar.register(instance);
+            withAnnotation(method, Schedule.class, a -> scheduler.process(a, instance, method));
+            withAnnotation(method, Listener.class, a -> eventRegistrar.register(a, instance, method));
+        }
 
         initialized.add(instance);
     }
@@ -191,7 +225,8 @@ public final class Registry {
         if (type.isAnnotationPresent(Lazy.class)) {
             return true;
         }
-        for (java.lang.annotation.Annotation a : type.getAnnotations()) {
+
+        for (Annotation a : type.getAnnotations()) {
             if (a.annotationType().isAnnotationPresent(Lazy.class)) {
                 return true;
             }
@@ -214,7 +249,36 @@ public final class Registry {
             }
         }
 
-        throw new RuntimeException(
-                "Multiple constructors found in " + type.getName() + ", no default constructor");
+        throw new RuntimeException("Multiple constructors found in " + type.getName() + ", no default constructor");
+    }
+
+    private static <T extends Annotation> void withAnnotation(
+            Field method,
+            Class<T> annotation,
+            Consumer<T> consumer//
+    ) {
+        if (method.isAnnotationPresent(annotation)) {
+            consumer.accept(method.getAnnotation(annotation));
+        }
+    }
+
+    private static <T extends Annotation> void withAnnotation(
+            Method method,
+            Class<T> annotation,
+            Consumer<T> consumer//
+    ) {
+        if (method.isAnnotationPresent(annotation)) {
+            consumer.accept(method.getAnnotation(annotation));
+        }
+    }
+
+    private static <T extends Annotation> void withAnnotation(
+            Class<?> clazz,
+            Class<T> annotation,
+            Consumer<T> consumer//
+    ) {
+        if (clazz.isAnnotationPresent(annotation)) {
+            consumer.accept(clazz.getAnnotation(annotation));
+        }
     }
 }

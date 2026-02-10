@@ -14,13 +14,13 @@ import mindustry.game.EventType.PlayerLeave;
 import mindustry.gen.Groups;
 import mindustry.gen.Player;
 import mindustry.gen.TimedKillc;
-import plugin.Control;
 import plugin.PluginEvents;
 import plugin.Tasks;
 import plugin.annotations.Component;
 import plugin.annotations.Destroy;
 import plugin.annotations.Init;
 import plugin.annotations.Listener;
+import plugin.annotations.Schedule;
 import plugin.event.PlayerKillUnitEvent;
 import plugin.event.SessionCreatedEvent;
 import plugin.event.SessionRemovedEvent;
@@ -41,9 +41,6 @@ public class SessionHandler {
     @Init
     public void init() {
         Core.app.post(() -> Groups.player.each(this::put));
-
-        Control.SCHEDULER.scheduleWithFixedDelay(this::create, 10, 2, TimeUnit.SECONDS);
-        Control.SCHEDULER.scheduleWithFixedDelay(this::update, 0, 1, TimeUnit.SECONDS);
     }
 
     @Listener
@@ -75,10 +72,12 @@ public class SessionHandler {
         return data;
     }
 
+    @Schedule(delay = 10, fixedDelay = 2, unit = TimeUnit.SECONDS)
     private void create() {
         Core.app.post(() -> Groups.player.each(this::put));
     }
 
+    @Schedule(delay = 0, fixedDelay = 1, unit = TimeUnit.SECONDS)
     private void update() {
         each(sessionService::update);
     }

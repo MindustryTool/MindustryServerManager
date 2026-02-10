@@ -82,8 +82,7 @@ public class SessionView {
             }
 
             try {
-                char icon = Utils.icon(unit);
-                info.append("[white]").append(icon).append(": ").append(entry.getValue())
+                info.append("[white]").append(unit.emoji()).append(": ").append(entry.getValue())
                         .append(" (")
                         .append(ExpUtils.unitHealthToExp(unit.health * entry.getValue()))
                         .append("exp)")
@@ -108,7 +107,7 @@ public class SessionView {
     public static String getKillMessage(Locale locale, String playerName, long count, UnitType unit, long exp) {
          String formatted = Strings.format(" @ @ (+@exp)",
                 count,
-                Utils.icon(unit),
+                unit.emoji(),
                 exp);
 
         return I18n.t(locale, playerName, " ", "@killed", formatted);

@@ -20,12 +20,11 @@ import mindustry.gen.Unit;
 import mindustry.type.StatusEffect;
 import mindustry.type.UnitType;
 import mindustry.type.unit.MissileUnitType;
-import plugin.Control;
 import plugin.PluginEvents;
 import plugin.annotations.Gamemode;
 import plugin.annotations.Init;
 import plugin.annotations.Listener;
-import plugin.annotations.Persistence;
+import plugin.annotations.Schedule;
 import plugin.event.SessionCreatedEvent;
 import plugin.gamemode.catali.data.CataliTeamData;
 import plugin.gamemode.catali.event.CataliBuffRareUpgrade;
@@ -58,9 +57,7 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class CataliGamemode {
 
-    @Persistence("catali-teams.json")
     private final Seq<CataliTeamData> teams = new Seq<>();
-
     private final ConcurrentHashMap<Player, Instant> respawnCountdown = new ConcurrentHashMap<>();
 
     private final UnitSpawner unitSpawner;
@@ -69,9 +66,14 @@ public class CataliGamemode {
     private final SessionHandler sessionHandler;
     private final SessionService sessionService;
 
-    public static final Seq<UnitType> coreUnits = Seq.with(UnitTypes.alpha, UnitTypes.beta, UnitTypes.gamma,
+    public static final Seq<UnitType> coreUnits = Seq.with(
+            UnitTypes.alpha,
+            UnitTypes.beta,
+            UnitTypes.gamma,
             UnitTypes.evoke,
-            UnitTypes.incite, UnitTypes.emanate);
+            UnitTypes.incite,
+            UnitTypes.emanate//
+    );
 
     private final Team SPECTATOR_TEAM = Team.get(255);
     private final Team ENEMY_TEAM = Team.crux;
@@ -102,12 +104,6 @@ public class CataliGamemode {
             var team = findTeam(session.player);
             return team != null ? team.level.level : 0;
         };
-
-        Control.SCHEDULER.scheduleWithFixedDelay(this::updateStatsHud, 0, 1, TimeUnit.SECONDS);
-        Control.SCHEDULER.scheduleWithFixedDelay(this::updateLogic, 0, 1, TimeUnit.SECONDS);
-        Control.SCHEDULER.scheduleWithFixedDelay(this::spawn, 0, 200, TimeUnit.MILLISECONDS);
-        Control.SCHEDULER.scheduleAtFixedRate(this::healTeamUnit, 0, 1, TimeUnit.SECONDS);
-        Control.SCHEDULER.scheduleAtFixedRate(this::updateCoreExp, 0, 1, TimeUnit.SECONDS);
 
         Log.info("[accent]Cataio gamemode loaded");
     }
@@ -160,6 +156,7 @@ public class CataliGamemode {
         return Optional.ofNullable(res);
     }
 
+    @Schedule(fixedRate = 200, unit = TimeUnit.MILLISECONDS)
     public void spawn() {
         try {
             blockSpawner.spawn(BLOCK_TEAM);
@@ -172,7 +169,8 @@ public class CataliGamemode {
         }
     }
 
-    public void updateLogic() {
+    @Schedule(fixedRate = 1, unit = TimeUnit.SECONDS)
+    private void updateLogic() {
         if (!Vars.state.isGame()) {
             return;
         }
@@ -193,6 +191,7 @@ public class CataliGamemode {
         }
     }
 
+    @Schedule(fixedRate = 1, unit = TimeUnit.SECONDS)
     private void updateCoreExp() {
         for (var team : teams) {
             var within = false;
@@ -220,6 +219,7 @@ public class CataliGamemode {
         }
     }
 
+    @Schedule(fixedRate = 1, unit = TimeUnit.SECONDS)
     private void healTeamUnit() {
         try {
             for (var unit : Groups.unit) {
@@ -233,6 +233,7 @@ public class CataliGamemode {
         }
     }
 
+    @Schedule(fixedRate = 1, unit = TimeUnit.SECONDS)
     private void updateStatsHud() {
         try {
             for (var player : Groups.player) {

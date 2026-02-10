@@ -34,5 +34,6 @@ public class ServerConfig {
     private Boolean isDefault;
 
     private float cpu;
+
     private int memory;
 }

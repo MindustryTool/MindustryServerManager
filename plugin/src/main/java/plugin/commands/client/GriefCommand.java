@@ -2,7 +2,6 @@ package plugin.commands.client;
 
 import plugin.annotations.Component;
 import plugin.commands.PluginClientCommand;
-import plugin.core.Registry;
 import plugin.menus.GriefMenu;
 import plugin.service.AdminService;
 import plugin.type.Session;
@@ -10,17 +9,20 @@ import plugin.type.Session;
 @Component
 public class GriefCommand extends PluginClientCommand {
 
-    public GriefCommand() {
+    private final AdminService adminService;
+
+    public GriefCommand(AdminService adminService) {
         setName("grief");
         setDescription("Report a player");
         setAdmin(false);
+
+        this.adminService = adminService;
     }
 
     @Override
     public void handle(Session session) {
-        var adminHandler = Registry.get(AdminService.class);
-        if (adminHandler.isGriefVoting()) {
-            adminHandler.voteGrief(session);
+        if (adminService.isGriefVoting()) {
+            adminService.voteGrief(session);
             return;
         }
 

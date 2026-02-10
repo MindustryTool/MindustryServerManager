@@ -27,6 +27,7 @@ import arc.util.Log;
 import arc.util.Reflect;
 import arc.util.Strings;
 import arc.util.Time;
+import arc.util.Http.HttpStatusException;
 import dto.ModDto;
 import dto.ModMetaDto;
 import dto.PlayerDto;
@@ -36,16 +37,15 @@ import mindustry.Vars;
 import mindustry.core.Version;
 import mindustry.game.Gamemode;
 import mindustry.gen.Groups;
-import mindustry.gen.Iconc;
 import mindustry.gen.Player;
 import mindustry.io.MapIO;
 import mindustry.io.SaveIO;
 import mindustry.maps.Map;
 import mindustry.maps.MapException;
-import mindustry.type.UnitType;
 import plugin.Control;
 import plugin.PluginState;
 import plugin.core.Registry;
+import plugin.core.Scheduler;
 
 public class Utils {
 
@@ -127,11 +127,11 @@ public class Utils {
 
     private static synchronized void appPostWithTimeout(Runnable r, int timeout, String taskName) {
         CompletableFuture<Void> future = new CompletableFuture<>();
-        Core.app.post(() -> {
 
-            ScheduledFuture<Boolean> timeoutTask = Control.SCHEDULER.schedule(
-                    () -> future.completeExceptionally(new TimeoutException("Task timeout: " + taskName)), timeout,
-                    TimeUnit.MILLISECONDS);
+        Core.app.post(() -> {
+            ScheduledFuture<?> timeoutTask = Registry.get(Scheduler.class)
+                    .schedule(() -> future.completeExceptionally(new TimeoutException("Task timeout: " + taskName)),
+                            timeout, TimeUnit.MILLISECONDS);
 
             try {
                 r.run();
@@ -158,7 +158,7 @@ public class Utils {
 
         CompletableFuture<T> future = new CompletableFuture<T>();
         Core.app.post(() -> {
-            ScheduledFuture<Boolean> timeoutTask = Control.SCHEDULER.schedule(
+            ScheduledFuture<?> timeoutTask = Registry.get(Scheduler.class).schedule(
                     () -> future.completeExceptionally(new TimeoutException("Task timeout: " + taskName)), timeout,
                     TimeUnit.MILLISECONDS);
             try {
@@ -271,46 +271,42 @@ public class Utils {
             return new byte[0];
         }
 
-        try {
-            tempFile.file().createNewFile();
-            tempImageFile.file().createNewFile();
+        var bytes = appPostWithTimeout(() -> {
+            SaveIO.save(tempFile);
+            return (tempFile.readBytes());
+        }, 200, "Generate map preview");
 
-            var bytes = appPostWithTimeout(() -> {
-                SaveIO.save(tempFile);
-                return (tempFile.readBytes());
-            }, 100, "Generate map preview");
-
-            if (bytes.length == 0) {
-                return new byte[0];
-            }
-
-            HashMap<String, String> body = new HashMap<>();
-
-            byte[] imageBytes = tempImageFile.readBytes();
-
-            body.put("data", Base64.getEncoder().encodeToString(bytes));
-
-            HttpUtils
-                    .post("https://api.mindustry-tool.com", "api", "v4", "maps", "image-json")
-                    .header("Content-Type", "application/json")
-                    .content(JsonUtils.toJsonString(body))
-                    .timeout(60000)
-                    .error(error -> Log.err("Fail to generate map preview", error.getMessage()))
-                    .submit((res) -> {
-                        tempImageFile.write(res.getResultAsStream(), false);
-                    });
-
-            if (imageBytes.length == 0) {
-                return new byte[0];
-            }
-
-            return imageBytes;
-
-        } catch (Exception err) {
-            Log.err(err);
+        if (bytes.length == 0) {
+            return new byte[0];
         }
 
-        return new byte[0];
+        HashMap<String, String> body = new HashMap<>();
+
+        body.put("data", Base64.getEncoder().encodeToString(bytes));
+
+        HttpUtils
+                .post("https://api.mindustry-tool.com", "api", "v4", "maps", "image-json")
+                .header("Content-Type", "application/json")
+                .content(JsonUtils.toJsonString(body))
+                .timeout(120000)
+                .error(error -> {
+                    if (error instanceof HttpStatusException httpStatusException) {
+                        Log.err("Fail to generate map preview", httpStatusException.response.getResultAsString());
+                    } else {
+                        Log.err("Fail to generate map preview", error.getMessage());
+                    }
+                })
+                .submit((res) -> {
+                    tempImageFile.write(res.getResultAsStream(), false);
+                });
+
+        byte[] imageBytes = tempImageFile.readBytes();
+
+        if (imageBytes.length == 0) {
+            return new byte[0];
+        }
+
+        return imageBytes;
     }
 
     public static Locale parseLocale(String locale) {
@@ -330,10 +326,6 @@ public class Utils {
                 p -> groupByLocale.computeIfAbsent(parseLocale(p.locale()), k -> new ArrayList<>()).add(p));
 
         groupByLocale.forEach(cons);
-    }
-
-    public static char icon(UnitType type) {
-        return Reflect.get(Iconc.class, "unit" + Strings.capitalize(type.name));
     }
 
     public static String padRight(String text, int length) {

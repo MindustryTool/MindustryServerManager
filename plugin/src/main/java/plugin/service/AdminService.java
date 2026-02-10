@@ -21,7 +21,7 @@ import plugin.annotations.Component;
 import plugin.annotations.Destroy;
 import plugin.annotations.Init;
 import plugin.annotations.Listener;
-import plugin.Control;
+import plugin.core.Scheduler;
 import plugin.event.SessionRemovedEvent;
 import plugin.type.Session;
 import plugin.utils.Utils;
@@ -39,6 +39,7 @@ public class AdminService {
     private ScheduledFuture<?> voteTimeout;
 
     private final SessionHandler sessionHandler;
+    private final Scheduler scheduler;
 
     @Init
     public void init() {
@@ -164,7 +165,7 @@ public class AdminService {
             }
         });
 
-        voteTimeout = Control.SCHEDULER.schedule(() -> {
+        voteTimeout = scheduler.schedule(() -> {
             Utils.forEachPlayerLocale((locale, players) -> {
                 String msg = I18n.t(locale, "[scarlet]", "@Vote failed, not enough votes.");
                 for (var p : players) {
