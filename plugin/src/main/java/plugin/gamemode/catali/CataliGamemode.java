@@ -212,7 +212,7 @@ public class CataliGamemode {
                 String message = I18n.t(player, "@No team");
 
                 if (team != null) {
-                    StringBuilder sb = new StringBuilder("=====================\n");
+                    StringBuilder sb = new StringBuilder("");
 
                     for (int i = 0; i < team.team.data().units.size; i++) {
                         Unit unit = team.team.data().units.get(i);
@@ -239,7 +239,8 @@ public class CataliGamemode {
                             ? respawnSb.toString()
                             : "@No unit";
 
-                    message = I18n.t(player, "@Team ID:", String.valueOf(team.team.id), "\n",
+                    message = I18n.t(player, "=====================\n", "@Team ID:", String.valueOf(team.team.id),
+                            "\n",
                             "@Level:",
                             String.valueOf(team.level.level) + " [gray](" + String.valueOf((int) team.level.currentExp)
                                     + "/"
