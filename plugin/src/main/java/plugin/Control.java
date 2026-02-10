@@ -31,8 +31,15 @@ public class Control extends mindustry.mod.Plugin {
     public static PluginState state = PluginState.LOADING;
 
     public static final UUID SERVER_ID = UUID.fromString(System.getenv("SERVER_ID"));
+    protected static String[] tags = { "", "", "[yellow]", "[red]", "" };
 
     public Control() {
+        Log.useColors = false;
+        Log.logger = (level1, text) -> {
+            String result = Log.format(tags[level1.ordinal()] + text + "&fr");
+            System.out.println(result);
+        };
+        Core.settings.put("startedAt", System.currentTimeMillis());
     }
 
     @Override
