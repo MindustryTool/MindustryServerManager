@@ -95,7 +95,11 @@ public class FloodGamemode {
 
         }
 
-        var number = Mathf.random(0, tiles.size - 1);
+        if (tiles.isEmpty()) {
+            return;
+        }
+
+        var number = Mathf.random(0, tiles.size);
 
         boolean[] spreaded = new boolean[floods.length];
 

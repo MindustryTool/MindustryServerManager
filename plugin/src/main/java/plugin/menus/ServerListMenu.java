@@ -37,7 +37,7 @@ public class ServerListMenu extends PluginMenu<Integer> {
                 var mods = server.getMods();
 
                 if (mods != null) {
-                    mods.removeIf(m -> m.trim().equalsIgnoreCase("mindustrytoolplugin"));
+                    mods.removeIf(m -> m.trim().equalsIgnoreCase("Controller"));
                 }
 
                 if (server.getMapName() == null) {

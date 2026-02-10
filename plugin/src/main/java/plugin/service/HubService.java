@@ -262,7 +262,7 @@ public class HubService {
 
         var mods = new ArrayList<>(server.getMods());
 
-        mods.removeIf(m -> m.contains("mindustrytoolplugin") || m.contains("PluginLoader"));
+        mods.removeIf(m -> m.contains("Controller") || m.contains("PluginLoader"));
 
         var name = server.getName();
         var description = server.getDescription();
