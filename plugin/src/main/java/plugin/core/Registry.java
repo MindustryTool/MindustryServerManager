@@ -35,6 +35,10 @@ public final class Registry {
 
             currentGamemode = Core.settings.getString(GAMEMODE_KEY, null);
 
+            if (currentGamemode != null) {
+                Log.info("[sky]Current gamemode: " + currentGamemode);
+            }
+
             for (Class<?> clazz : components) {
                 if (clazz.isAnnotation() || clazz.isInterface()) {
                     continue;
