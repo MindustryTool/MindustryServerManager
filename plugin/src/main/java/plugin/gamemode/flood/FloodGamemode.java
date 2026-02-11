@@ -44,13 +44,13 @@ public class FloodGamemode {
 
     @Persistence("flood/config.json")
     private Seq<FloodTile> floodTiles = Seq.with(
-            new FloodTile(Blocks.conveyor, 32f, 1000 * 5),
-            new FloodTile(Blocks.titaniumConveyor, 64f, 1000 * 10),
-            new FloodTile(Blocks.copperWall, 64f, 1000 * 20),
-            new FloodTile(Blocks.titaniumWall, 64f, 1000 * 40),
-            new FloodTile(Blocks.plastaniumWall, 64f, 1000 * 80),
-            new FloodTile(Blocks.thoriumWall, 64f, 1000 * 140),
-            new FloodTile(Blocks.phaseWall, 64f, 1000 * 200)//
+            new FloodTile(Blocks.conveyor, 32f, 1000 * 10),
+            new FloodTile(Blocks.titaniumConveyor, 64f, 1000 * 20),
+            new FloodTile(Blocks.copperWall, 64f, 1000 * 40),
+            new FloodTile(Blocks.titaniumWall, 64f, 1000 * 80),
+            new FloodTile(Blocks.plastaniumWall, 64f, 1000 * 160),
+            new FloodTile(Blocks.thoriumWall, 64f, 1000 * 200),
+            new FloodTile(Blocks.phaseWall, 64f, 1000 * 280)//
     );
 
     private FloodTile nextTier(Building building) {
@@ -183,8 +183,7 @@ public class FloodGamemode {
                 var neighborBuild = neighbor.build;
 
                 if (neighborBuild == null) {
-                    Log.info(neighbor.block());
-                    if (spreadToNext && (neighbor.block() == null || neighbor.block() != Blocks.air)) {
+                    if (spreadToNext && (neighbor.block() == null || neighbor.block() == Blocks.air)) {
                         setFlood(neighbor, floodTiles.get(0));
                     }
                 } else {
