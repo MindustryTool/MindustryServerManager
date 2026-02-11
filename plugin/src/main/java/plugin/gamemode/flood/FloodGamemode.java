@@ -174,16 +174,17 @@ public class FloodGamemode {
             if (evolveAt < Time.millis()) {
                 var next = nextTier(build);
                 if (next != null) {
-                    spreadToNext = true;
                     setFlood(tile, next);
                 }
+                spreadToNext = true;
             }
 
             for (Tile neighbor : around(tile.build)) {
                 var neighborBuild = neighbor.build;
 
                 if (neighborBuild == null) {
-                    if (spreadToNext && neighbor.block() != Blocks.air) {
+                    Log.info(neighbor.block());
+                    if (spreadToNext && (neighbor.block() == null || neighbor.block() != Blocks.air)) {
                         setFlood(neighbor, floodTiles.get(0));
                     }
                 } else {
