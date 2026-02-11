@@ -22,6 +22,8 @@ import mindustry.gen.Groups;
 import mindustry.gen.Player;
 import mindustry.net.Administration.PlayerInfo;
 import plugin.Config;
+import plugin.Control;
+import plugin.PluginState;
 import plugin.commands.ServerCommandHandler;
 import plugin.core.Registry;
 import plugin.service.I18n;
@@ -64,7 +66,7 @@ public class GeneralController {
         });
 
         app.get("hosting", (ctx) -> {
-            var hosting = Vars.state.isGame();
+            var hosting = Vars.state.isGame() && Control.state == PluginState.LOADED;
             ctx.contentType(ContentType.APPLICATION_JSON);
             ctx.json(hosting);
         });
