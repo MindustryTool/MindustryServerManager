@@ -26,7 +26,6 @@ import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 import server.EnvConfig;
 import server.config.Const;
-import server.manager.NodeManager;
 import dto.LoginDto;
 import dto.PlayerDto;
 import dto.PlayerInfoDto;
@@ -55,7 +54,6 @@ public class GatewayService {
 
     private final EnvConfig envConfig;
     private final EventBus eventBus;
-    private final NodeManager nodeManager;
     private final ConcurrentHashMap<UUID, Mono<GatewayClient>> cache = new ConcurrentHashMap<>();
 
     @Getter
@@ -477,11 +475,6 @@ public class GatewayService {
                             .filter(error -> Instant.now().isBefore(lastHeartBeatAt.plus(Duration.ofMinutes(1)))))
                     .onErrorMap(error -> new ApiError(HttpStatus.BAD_REQUEST, "Events timeout: " + error.getMessage()))
                     .doOnError(err -> {
-                        nodeManager.remove(id, NodeRemoveReason.FETCH_EVENT_TIMEOUT)
-                                .doOnError(ApiError.class, error -> Log.err(error.getMessage()))
-                                .onErrorComplete(ApiError.class)
-                                .subscribe();
-
                         eventBus.emit(LogEvent.error(id, "Fetch event timeout: " + err.getMessage()));
                         eventBus.emit(new StopEvent(id, NodeRemoveReason.FETCH_EVENT_TIMEOUT));
                     })

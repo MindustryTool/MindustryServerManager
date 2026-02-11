@@ -302,6 +302,12 @@ public class DockerNodeManager implements NodeManager {
         dockerClient.removeContainerCmd(id)
                 .withForce(true)
                 .exec();
+
+        try {
+
+        } catch (Exception e) {
+            Log.err(e);
+        }
     }
 
     private Optional<ServerMetadata> readMetadataFromContainer(Container container) {

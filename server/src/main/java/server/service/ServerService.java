@@ -62,6 +62,7 @@ public class ServerService {
 
     private static enum ServerFlag {
         KILL,
+        NOT_RESPONSE,
         RESTART
     }
 
@@ -375,20 +376,32 @@ public class ServerService {
     }
 
     private Mono<Void> checkRunningServer(ServerConfig config, boolean shouldAutoTurnOff) {
-        if (config.getIsAutoTurnOff() == false) {
-            return Mono.empty();
-        }
-
         var serverId = config.getId();
         var flag = serverFlags.computeIfAbsent(serverId, (_ignore) -> EnumSet.noneOf(ServerFlag.class));
-
-        Log.info("Check server @ with flag @", config, flag);
 
         return gatewayService.of(serverId)//
                 .flatMap(client -> client.server().getState())//
                 .defaultIfEmpty(new ServerStateDto().setServerId(serverId).setStatus(ServerStatus.NOT_RESPONSE))
                 .flatMap(state -> {
-                    boolean shouldKill = state.getPlayers().isEmpty();
+                    if (state.getStatus().equals(ServerStatus.NOT_RESPONSE)) {
+                        Log.err("Server [@] not response", serverId);
+
+                        if (flag.contains(ServerFlag.NOT_RESPONSE)) {
+                            eventBus.emit(LogEvent.info(serverId, "[red][Orchestrator] Kill server for not response"));
+                            return remove(serverId, NodeRemoveReason.FETCH_EVENT_TIMEOUT);
+                        } else {
+                            eventBus.emit(LogEvent.info(serverId, "[red][Orchestrator] Server not response, flag to kill"));
+                            flag.add(ServerFlag.NOT_RESPONSE);
+                        }
+
+                        return Mono.empty();
+                    }
+
+                    if (flag.contains(ServerFlag.NOT_RESPONSE)) {
+                        flag.remove(ServerFlag.NOT_RESPONSE);
+                    }
+
+                    boolean shouldKill = state.getPlayers().isEmpty() && config.getIsAutoTurnOff();
 
                     if (shouldKill && shouldAutoTurnOff) {
                         if (flag.contains(ServerFlag.KILL)) {
