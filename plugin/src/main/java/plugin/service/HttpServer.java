@@ -80,15 +80,6 @@ public class HttpServer {
                 throw new ServerUnloadedException();
             }
 
-            if (Control.state == PluginState.LOADING) {
-                try {
-                    Control.loadedLatch.await(10, TimeUnit.SECONDS);
-                } catch (InterruptedException e) {
-                    Log.err("Failed to await loading latch", e);
-                    throw new IllegalStateException("Server is not loaded");
-                }
-            }
-
             Log.info("[" + ctx.method().name() + "] " + ctx.fullUrl());
         });
 

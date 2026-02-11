@@ -2,7 +2,6 @@ package plugin;
 
 import java.util.Locale;
 import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import arc.Core;
@@ -29,7 +28,6 @@ import plugin.event.UnloadServerEvent;
 public class Control extends mindustry.mod.Plugin {
 
     public static PluginState state = PluginState.LOADING;
-    public static final CountDownLatch loadedLatch = new CountDownLatch(1);
     public static final UUID SERVER_ID = UUID.fromString(System.getenv("SERVER_ID"));
 
     private static String[] tags = { "", "", "[yellow]", "[red]", "" };
@@ -53,7 +51,6 @@ public class Control extends mindustry.mod.Plugin {
             registerTriggerListener();
 
             state = PluginState.LOADED;
-            loadedLatch.countDown();
 
             PluginEvents.run(UnloadServerEvent.class, this::unload);
 
