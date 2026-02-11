@@ -49,29 +49,19 @@ public class FloodGamemode {
     }
 
     @Listener
-    private void onPlayer(EventType.PlayerJoin event) {
+    private void onPlayEvent(EventType.PlayEvent event) {
         applyRules();
     }
 
     @Listener
-    private void onWorldLoad(EventType.WorldLoadEvent event) {
+    public void onWorldLoadEnd(EventType.WorldLoadEndEvent event) {
+        floods = new long[Vars.world.width() * Vars.world.height()];
+        cores = Math.max(1, Team.crux.cores().size);
+        startedAt = Time.millis();
+        suppressed.clear();
+        damageReceived.clear();
+
         applyRules();
-    }
-
-    private FloodTile nextTier(Building building) {
-        var found = false;
-
-        for (var tile : config.floodTiles) {
-            if (found) {
-                return tile;
-            }
-
-            if (tile.block == building.block) {
-                found = true;
-            }
-        }
-
-        return null;
     }
 
     @Schedule(fixedRate = 1, unit = TimeUnit.SECONDS)
@@ -190,7 +180,7 @@ public class FloodGamemode {
             var evolveAt = floods[index(tile)];
 
             if (evolveAt > 0 && evolveAt < Time.millis()) {
-                var next = nextTier(build);
+                var next = config.nextTier(build);
                 if (next != null) {
                     setFlood(tile, next);
                 }
@@ -276,17 +266,6 @@ public class FloodGamemode {
         var destroyedCores = cores - Team.crux.cores().size;
 
         return 1f + (destroyedCores / cores) + (0.01f * elapsedMinutes);
-    }
-
-    @Listener
-    public void onWorldLoadEnd(EventType.WorldLoadEndEvent event) {
-        floods = new long[Vars.world.width() * Vars.world.height()];
-        cores = Math.max(1, Team.crux.cores().size);
-        startedAt = Time.millis();
-        suppressed.clear();
-        damageReceived.clear();
-
-        applyRules();
     }
 
     @Schedule(fixedRate = 1, unit = TimeUnit.SECONDS)

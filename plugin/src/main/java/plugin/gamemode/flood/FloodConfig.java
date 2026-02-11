@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import mindustry.content.Blocks;
+import mindustry.gen.Building;
 import mindustry.world.Block;
 import plugin.annotations.Configuration;
 
@@ -19,7 +20,7 @@ public class FloodConfig {
             new FloodTile(Blocks.titaniumWall, 192f, 1000 * 100),
             new FloodTile(Blocks.plastaniumWall, 224f, 1000 * 150),
             new FloodTile(Blocks.thoriumWall, 256f, 1000 * 180),
-            new FloodTile(Blocks.phaseWall, 288f, 1000 * 200),//
+            new FloodTile(Blocks.phaseWall, 288f, 1000 * 200), //
             new FloodTile(Blocks.surgeWall, 230f, 1000 * 200)//
     );
 
@@ -33,5 +34,21 @@ public class FloodConfig {
         Block block;
         float damage;
         long evolveTime;
+    }
+
+    public FloodTile nextTier(Building building) {
+        var found = false;
+
+        for (var tile : floodTiles) {
+            if (found) {
+                return tile;
+            }
+
+            if (tile.block == building.block) {
+                found = true;
+            }
+        }
+
+        return null;
     }
 }
