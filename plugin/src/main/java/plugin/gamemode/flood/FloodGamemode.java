@@ -135,6 +135,9 @@ public class FloodGamemode {
 
         while (!queue.isEmpty()) {
             Tile tile = queue.poll();
+            if (tile.block() != null) {
+                continue;
+            }
             var build = tile.build;
 
             // Not flood skip
