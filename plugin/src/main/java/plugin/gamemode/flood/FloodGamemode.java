@@ -4,6 +4,7 @@ import java.util.ArrayDeque;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
+import arc.Core;
 import arc.math.Mathf;
 import arc.struct.Seq;
 import arc.util.Log;
@@ -72,6 +73,14 @@ public class FloodGamemode {
         }
     }
 
+    @Listener
+    private void onBlockDestroy(EventType.BlockDestroyEvent event) {
+        var build = event.tile.build;
+        if (build != null && build.team == Team.crux) {
+            removeFlood(build.tile);
+        }
+    }
+
     @Schedule(fixedDelay = 1, unit = TimeUnit.SECONDS)
     public void update() {
         float startedAt = Time.millis();
@@ -90,7 +99,7 @@ public class FloodGamemode {
 
         for (var tile : tiles) {
             if (tile.build != null && tile.build.team != Team.crux) {
-                tile.build.damage(floodTiles.get(0).damage);
+                Core.app.post(() -> tile.build.damage(floodTiles.get(0).damage));
             }
         }
 
@@ -157,7 +166,7 @@ public class FloodGamemode {
                     if (neighborBuild.team != Team.crux) {
                         var currentTier = floodTiles.find(f -> f.block == build.block);
                         if (currentTier != null) {
-                            neighborBuild.damage(currentTier.damage);
+                            Core.app.post(() -> neighborBuild.damage(currentTier.damage));
                         }
                     } else if (!spreaded[index(neighbor)]) {
                         spreaded[index(neighbor)] = true;
@@ -171,6 +180,10 @@ public class FloodGamemode {
     private void setFlood(Tile tile, FloodTile floodTile) {
         tile.setNet(floodTile.block, Team.crux, 0);
         floods[index(tile)] = Time.millis() + floodTile.evolveTime;
+    }
+
+    private void removeFlood(Tile tile) {
+        floods[index(tile)] = 0;
     }
 
     private int index(Tile tile) {
