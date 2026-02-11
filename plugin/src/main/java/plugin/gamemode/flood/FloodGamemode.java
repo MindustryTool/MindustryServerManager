@@ -178,7 +178,7 @@ public class FloodGamemode {
     }
 
     private void setFlood(Tile tile, FloodTile floodTile) {
-        tile.setNet(floodTile.block, Team.crux, 0);
+        Core.app.post(() -> tile.setNet(floodTile.block, Team.crux, 0));
         floods[index(tile)] = Time.millis() + floodTile.evolveTime;
     }
 
