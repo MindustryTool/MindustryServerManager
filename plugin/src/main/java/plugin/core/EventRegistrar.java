@@ -19,7 +19,7 @@ public class EventRegistrar {
                     Log.err("Failed to invoke trigger @ in @", method.getName(), instance.getClass().getName(), e);
                 }
             });
-            Log.info("Registered trigger @ in @", method.getName(), instance.getClass().getName());
+            Log.info("Registered trigger @ in @", trigger.value(), method.getName());
         } else {
             Log.err("@Trigger method @ in @ must have 0 parameters", method.getName(), instance.getClass().getName());
         }

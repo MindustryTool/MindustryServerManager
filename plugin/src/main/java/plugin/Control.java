@@ -155,26 +155,37 @@ public class Control extends mindustry.mod.Plugin {
 
     private void registerEventListener() {
         for (Class<?> clazz : EventType.class.getDeclaredClasses()) {
-            Events.on(clazz, this::onEvent);
+            Events.on(clazz, event -> {
+                try {
+                    if (state != PluginState.LOADED) {
+                        return;
+                    }
+
+                    PluginEvents.fire(event);
+
+                } catch (Exception e) {
+                    Log.err("Failed to invoke event @", event, e);
+                    Log.err(e);
+                }
+            });
         }
     }
 
     private void registerTriggerListener() {
         for (EventType.Trigger trigger : EventType.Trigger.values()) {
-            Events.run(trigger, () -> onEvent(trigger));
-        }
-    }
+            Events.run(trigger, () -> {
+                try {
+                    if (state != PluginState.LOADED) {
+                        return;
+                    }
 
-    public void onEvent(Object event) {
-        try {
-            if (state != PluginState.LOADED) {
-                return;
-            }
+                    PluginEvents.fire(trigger);
 
-            PluginEvents.fire(event);
-
-        } catch (Exception e) {
-            e.printStackTrace();
+                } catch (Exception e) {
+                    Log.err("Failed to invoke trigger @", trigger);
+                    Log.err(e);
+                }
+            });
         }
     }
 }
