@@ -44,6 +44,8 @@ public class FloodGamemode {
     private void applyRules() {
         Vars.state.rules.enemyCoreBuildRadius = 0f;
         Team.crux.rules().extraCoreBuildRadius = 0f;
+
+        Log.info("Flood rules applied");
     }
 
     @Listener
