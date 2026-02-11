@@ -16,6 +16,7 @@ import mindustry.Vars;
 import mindustry.content.Blocks;
 import mindustry.game.EventType;
 import mindustry.game.Team;
+import mindustry.game.Teams;
 import mindustry.gen.Building;
 import mindustry.gen.Call;
 import mindustry.gen.Groups;
@@ -167,24 +168,25 @@ public class FloodGamemode {
             }
 
             var evolveAt = floods[index(tile)];
-            var spreadToNext = false;
 
             if (evolveAt > 0 && evolveAt < Time.millis()) {
                 var next = nextTier(build);
                 if (next != null) {
                     setFlood(tile, next);
                 }
-                spreadToNext = true;
-            } else {
-                spreadToNext = false;
             }
 
             for (Tile neighbor : around(tile.build)) {
                 var neighborBuild = neighbor.build;
 
                 if (neighborBuild == null) {
-                    if (spreadToNext && (neighbor.block() == Blocks.air || neighbor.block().alwaysReplace)) {
-                        setFlood(neighbor, config.floodTiles.get(0));
+                    if (neighbor.block() == Blocks.air || neighbor.block().alwaysReplace) {
+                        var time = floods[index(neighbor)];
+                        if (time <= 0) {
+                            floods[index(neighbor)] = Time.millis() + Mathf.random(1000 * 5, 1000 * 10);
+                        } else if (time <= Time.millis()) {
+                            setFlood(neighbor, config.floodTiles.get(0));
+                        }
                     }
                 } else {
                     if (neighborBuild.team != Team.crux) {
@@ -263,6 +265,9 @@ public class FloodGamemode {
         startedAt = Time.millis();
         suppressed.clear();
         damageReceived.clear();
+
+        Vars.state.rules.enemyCoreBuildRadius = 0f;
+        Team.crux.rules().extraCoreBuildRadius = 0f;
     }
 
     @Schedule(fixedRate = 1, unit = TimeUnit.SECONDS)
