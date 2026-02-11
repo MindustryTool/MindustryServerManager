@@ -153,7 +153,7 @@ public class PluginMenuService {
     }
 
     public void add(PluginMenu<?> menu) {
-        if (menus.contains(m -> m.getClass().equals(menu.getClass()))) {
+        if (menus.contains(m -> m.getClass().equals(menu.getClass()) && m.session.player == menu.session.player)) {
             return;
         }
 
