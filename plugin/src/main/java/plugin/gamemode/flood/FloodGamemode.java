@@ -60,7 +60,7 @@ public class FloodGamemode {
         for (var core : suppressed.keySet()) {
             Call.label("Suppressed", 1.1f, core.getX(), core.getY());
         }
-        Call.infoPopup("Flood: " + getFloodMultiplier() + "%", 1.1f, Align.center | Align.left, 4, 4, 4, 4);
+        Call.infoPopup("Flood: " + getFloodMultiplier() * 100 + "%", 1.1f, Align.center | Align.right, 4, 4, 4, 4);
     }
 
     @Listener
@@ -248,6 +248,14 @@ public class FloodGamemode {
     public float getFloodMultiplier() {
         var elapsedMinutes = (Time.millis() - startedAt) / 1000 / 60;
         var destroyedCores = cores - Team.crux.cores().size;
+
+        if (elapsedMinutes < 0){
+            Log.warn("Elapsed minutes is negative: " + elapsedMinutes);
+        }
+
+        if (destroyedCores < 0){
+            Log.warn("Destroyed cores is negative: " + destroyedCores);
+        }
 
         return destroyedCores / cores + 0.01f * elapsedMinutes;
     }
