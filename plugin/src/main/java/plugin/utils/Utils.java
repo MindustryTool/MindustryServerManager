@@ -292,9 +292,9 @@ public class Utils {
                 .timeout(120000)
                 .error(error -> {
                     if (error instanceof HttpStatusException httpStatusException) {
-                        Log.err("Fail to generate map preview", httpStatusException.response.getResultAsString());
+                        Log.err("Fail to generate map preview:" + httpStatusException.response.getResultAsString());
                     } else {
-                        Log.err("Fail to generate map preview", error.getMessage());
+                        Log.err("Fail to generate map preview: " + error.getMessage());
                     }
                 })
                 .submit((res) -> {
