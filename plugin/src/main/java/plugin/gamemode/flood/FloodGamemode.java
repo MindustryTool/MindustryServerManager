@@ -5,6 +5,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 import arc.Core;
+import arc.Events;
 import arc.math.Mathf;
 import arc.struct.Seq;
 import arc.util.Log;
@@ -33,7 +34,9 @@ public class FloodGamemode {
     private final ConcurrentHashMap<Building, Float> damageReceived = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<Building, Long> suppressed = new ConcurrentHashMap<>();
 
+    private long startedAt = 0;
     private long[] floods = new long[0];
+    private int cores = 1;
 
     private FloodTile nextTier(Building building) {
         var found = false;
@@ -86,7 +89,7 @@ public class FloodGamemode {
 
             var tile = unit.tileOn();
 
-            if (tile == null || tile.build == null) {
+            if (tile == null || tile.build == null || tile.build.team != Team.crux) {
                 continue;
             }
             var floodTile = config.floodTiles.find(t -> t.block == tile.build.block);
@@ -170,6 +173,8 @@ public class FloodGamemode {
                     setFlood(tile, next);
                 }
                 spreadToNext = true;
+            } else {
+                spreadToNext = false;
             }
 
             for (Tile neighbor : around(tile.build)) {
@@ -237,9 +242,18 @@ public class FloodGamemode {
         return tiles;
     }
 
+    public float getFloodMultiplier() {
+        var elapsedMinutes = (Time.millis() - startedAt) / 1000 / 60;
+        var destroyedCores = cores - Team.crux.cores().size;
+
+        return destroyedCores / cores + 0.01f * elapsedMinutes;
+    }
+
     @Listener
     public void onWorldLoadEnd(EventType.WorldLoadEndEvent event) {
         floods = new long[Vars.world.width() * Vars.world.height()];
+        cores = Math.max(1, Team.crux.cores().size);
+        startedAt = Time.millis();
         suppressed.clear();
         damageReceived.clear();
     }
@@ -253,6 +267,11 @@ public class FloodGamemode {
             if (damage > config.suppressThreshold) {
                 suppressed.put(core, Time.millis() + config.suppressTime);
             }
+            damageReceived.put(core, 0f);
+        }
+
+        if (suppressed.size() == Team.crux.cores().size) {
+            Events.fire(new EventType.GameOverEvent(Team.sharded));
         }
     }
 }
