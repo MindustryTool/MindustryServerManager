@@ -246,16 +246,11 @@ public class FloodGamemode {
     }
 
     public float getFloodMultiplier() {
+        // Well idk
+        cores = Math.max(cores, Team.crux.cores().size);
+
         var elapsedMinutes = (Time.millis() - startedAt) / 1000 / 60;
         var destroyedCores = cores - Team.crux.cores().size;
-
-        if (elapsedMinutes < 0){
-            Log.warn("Elapsed minutes is negative: " + elapsedMinutes);
-        }
-
-        if (destroyedCores < 0){
-            Log.warn("Destroyed cores is negative: " + destroyedCores);
-        }
 
         return destroyedCores / cores + 0.01f * elapsedMinutes;
     }
