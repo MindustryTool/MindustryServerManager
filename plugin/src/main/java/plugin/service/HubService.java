@@ -108,6 +108,8 @@ public class HubService {
 
                 int players = Groups.player.size();
 
+                var servers = Seq.with(apiGateway.getServers(new PaginationRequest().setPage(0).setSize(20)));
+
                 if (servers.size > 0) {
                     try {
                         var serverData = servers
