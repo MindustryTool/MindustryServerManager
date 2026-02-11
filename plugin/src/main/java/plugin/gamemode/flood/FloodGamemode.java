@@ -79,7 +79,8 @@ public class FloodGamemode {
         for (var core : suppressed.keySet()) {
             Call.label("Suppressed", 1.1f, core.getX(), core.getY());
         }
-        Call.infoPopup("Flood: " + getFloodMultiplier() * 100 + "%", 1.1f, Align.center | Align.right, 4, 4, 4, 4);
+        Call.infoPopup("Flood: " + getFloodMultiplier() * 100 + "%\n" +
+                "Suppressed: " + suppressed.size() + "/" + cores, 1.1f, Align.center | Align.right, 4, 4, 4, 4);
     }
 
     @Listener
