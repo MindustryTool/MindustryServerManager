@@ -359,6 +359,10 @@ public class ServerService {
                 .collectList()
                 .flatMapMany(servers -> {
                     // boolean shouldAutoTurnOff = servers.size() > MAX_RUNNING_SERVERS;
+                    var serversId = servers.stream().map(ServerConfig::getId).toList();
+
+                    serverFlags.entrySet()
+                            .removeIf(entry -> entry.getValue().isEmpty() || !serversId.contains(entry.getKey()));
 
                     return Flux.fromIterable(servers)
                             .flatMap(config -> checkRunningServer(config, true));
@@ -371,7 +375,6 @@ public class ServerService {
     }
 
     private Mono<Void> checkRunningServer(ServerConfig config, boolean shouldAutoTurnOff) {
-
         if (config.getIsAutoTurnOff() == false) {
             return Mono.empty();
         }
