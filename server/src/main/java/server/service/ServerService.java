@@ -401,7 +401,11 @@ public class ServerService {
                         flag.remove(ServerFlag.NOT_RESPONSE);
                     }
 
-                    boolean shouldKill = state.getPlayers().isEmpty() && config.getIsAutoTurnOff();
+                    if (config.getIsAutoTurnOff() == false) {
+                        return Mono.empty();
+                    }
+
+                    boolean shouldKill = state.getPlayers().isEmpty();
 
                     if (shouldKill && shouldAutoTurnOff) {
                         if (flag.contains(ServerFlag.KILL)) {
