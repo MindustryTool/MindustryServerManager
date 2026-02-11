@@ -270,7 +270,7 @@ public class FloodGamemode {
             damageReceived.put(core, 0f);
         }
 
-        if (suppressed.size() == Team.crux.cores().size) {
+        if (suppressed.size() == cores) {
             Events.fire(new EventType.GameOverEvent(Team.sharded));
         }
     }
