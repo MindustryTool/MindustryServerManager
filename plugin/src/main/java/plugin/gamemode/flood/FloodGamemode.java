@@ -17,6 +17,7 @@ import mindustry.game.EventType;
 import mindustry.game.Team;
 import mindustry.gen.Building;
 import mindustry.gen.Call;
+import mindustry.gen.Groups;
 import mindustry.world.Block;
 import mindustry.world.Tile;
 import mindustry.world.blocks.storage.CoreBlock;
@@ -78,6 +79,28 @@ public class FloodGamemode {
         var build = event.tile.build;
         if (build != null && build.team == Team.crux) {
             removeFlood(build.tile);
+        }
+    }
+
+    @Schedule(fixedDelay = 1, unit = TimeUnit.SECONDS)
+    private void updateUnitDamgeOnFlood() {
+        for (var unit : Groups.unit) {
+            if (unit.team == Team.crux) {
+                continue;
+            }
+
+            var tile = unit.tileOn();
+
+            if (tile == null || tile.build == null) {
+                continue;
+            }
+            var floodTile = floodTiles.find(t -> t.block == tile.build.block);
+
+            if (floodTile == null) {
+                continue;
+            }
+
+            Core.app.post(() -> unit.damage(floodTile.damage));
         }
     }
 
@@ -150,12 +173,10 @@ public class FloodGamemode {
 
             if (evolveAt < Time.millis()) {
                 var next = nextTier(build);
-                if (next == null) {
-                    continue;
+                if (next != null) {
+                    spreadToNext = true;
+                    setFlood(tile, next);
                 }
-
-                spreadToNext = true;
-                setFlood(tile, next);
             }
 
             for (Tile neighbor : around(tile.build)) {
