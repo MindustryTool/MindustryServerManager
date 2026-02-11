@@ -11,16 +11,16 @@ import plugin.annotations.Configuration;
 @Configuration("flood/config.json")
 public class FloodConfig {
     public Seq<FloodTile> floodTiles = Seq.with(
-            new FloodTile(Blocks.conveyor, 32f, 1000 * 15),
-            new FloodTile(Blocks.titaniumConveyor, 64f, 1000 * 30),
-            new FloodTile(Blocks.armoredConveyor, 64f, 1000 * 40),
-            new FloodTile(Blocks.scrapWall, 64f, 1000 * 60),
-            new FloodTile(Blocks.copperWall, 64f, 1000 * 60),
-            new FloodTile(Blocks.titaniumWall, 64f, 1000 * 100),
-            new FloodTile(Blocks.plastaniumWall, 64f, 1000 * 160),
-            new FloodTile(Blocks.thoriumWall, 64f, 1000 * 200),
-            new FloodTile(Blocks.phaseWall, 64f, 1000 * 280),//
-            new FloodTile(Blocks.surgeWall, 64f, 1000 * 280)//
+            new FloodTile(Blocks.conveyor, 32f, 1000 * 5),
+            new FloodTile(Blocks.titaniumConveyor, 64f, 1000 * 15),
+            new FloodTile(Blocks.armoredConveyor, 64f, 1000 * 25),
+            new FloodTile(Blocks.scrapWall, 64f, 1000 * 30),
+            new FloodTile(Blocks.copperWall, 64f, 1000 * 50),
+            new FloodTile(Blocks.titaniumWall, 64f, 1000 * 70),
+            new FloodTile(Blocks.plastaniumWall, 64f, 1000 * 90),
+            new FloodTile(Blocks.thoriumWall, 64f, 1000 * 100),
+            new FloodTile(Blocks.phaseWall, 64f, 1000 * 120),//
+            new FloodTile(Blocks.surgeWall, 64f, 1000 * 120)//
     );
 
     public float suppressThreshold = 500f;

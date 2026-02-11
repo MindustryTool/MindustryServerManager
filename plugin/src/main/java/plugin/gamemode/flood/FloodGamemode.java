@@ -8,6 +8,7 @@ import arc.Core;
 import arc.Events;
 import arc.math.Mathf;
 import arc.struct.Seq;
+import arc.util.Align;
 import arc.util.Log;
 import arc.util.Time;
 import lombok.RequiredArgsConstructor;
@@ -59,6 +60,7 @@ public class FloodGamemode {
         for (var core : suppressed.keySet()) {
             Call.label("Suppressed", 1.1f, core.getX(), core.getY());
         }
+        Call.infoPopup("Flood: " + getFloodMultiplier() + "%", 1.1f, Align.center | Align.left, 4, 4, 4, 4);
     }
 
     @Listener
@@ -201,7 +203,8 @@ public class FloodGamemode {
 
     private void setFlood(Tile tile, FloodTile floodTile) {
         Core.app.post(() -> tile.setNet(floodTile.block, Team.crux, 0));
-        floods[index(tile)] = Time.millis() + floodTile.evolveTime + Mathf.random(0, 1000 * 10);
+        floods[index(tile)] = (long) ((Time.millis() + floodTile.evolveTime) / getFloodMultiplier())
+                + Mathf.random(0, 1000 * 5);
     }
 
     private void removeFlood(Tile tile) {
