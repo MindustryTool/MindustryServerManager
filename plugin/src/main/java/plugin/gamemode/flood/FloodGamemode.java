@@ -252,7 +252,7 @@ public class FloodGamemode {
         var elapsedMinutes = (Time.millis() - startedAt) / 1000 / 60;
         var destroyedCores = cores - Team.crux.cores().size;
 
-        return destroyedCores / cores + 0.01f * elapsedMinutes;
+        return 1f + (destroyedCores / cores) + (0.01f * elapsedMinutes);
     }
 
     @Listener
