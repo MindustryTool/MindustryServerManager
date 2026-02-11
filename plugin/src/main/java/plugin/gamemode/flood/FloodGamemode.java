@@ -159,7 +159,7 @@ public class FloodGamemode {
         while (!queue.isEmpty()) {
             Tile tile = queue.poll();
 
-            if (tile.solid()) {
+            if (tile.block() != Blocks.air) {
                 continue;
             }
 
