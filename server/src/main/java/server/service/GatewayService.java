@@ -44,10 +44,8 @@ import jakarta.annotation.PreDestroy;
 import server.utils.ApiError;
 import server.utils.Utils;
 import reactor.core.Disposable;
-import reactor.core.Exceptions;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
 import reactor.util.retry.Retry;
 
 @Slf4j
@@ -138,7 +136,7 @@ public class GatewayService {
 
         private Instant disconnectedAt = null;
         private ConnectionState state = ConnectionState.CONNECTING;
-        private Instant lastHeartBeatAt = Instant.now();
+        private volatile Instant lastHeartBeatAt = Instant.now();
 
         private final Instant createdAt = Instant.now();
         private final Disposable eventJob;
@@ -403,7 +401,7 @@ public class GatewayService {
         }
 
         private Disposable createFetchEventJob(Consumer<GatewayClient> onConnect, Consumer<Throwable> onError) {
-            return this.server.getEvents()
+            return Flux.defer(() -> this.server.getEvents())
                     .doOnNext(event -> {
                         if (state != ConnectionState.CONNECTED) {
                             state = ConnectionState.CONNECTED;
@@ -475,9 +473,9 @@ public class GatewayService {
 
                         return false;
                     })
-                    .retryWhen(Retry.fixedDelay(60, Duration.ofSeconds(1)))
-                    .onErrorMap(Exceptions::isRetryExhausted,
-                            error -> new ApiError(HttpStatus.BAD_REQUEST, "Events timeout: " + error.getMessage()))
+                    .retryWhen(Retry.fixedDelay(Long.MAX_VALUE, Duration.ofSeconds(1))
+                            .filter(error -> Instant.now().isBefore(lastHeartBeatAt.plus(Duration.ofMinutes(1)))))
+                    .onErrorMap(error -> new ApiError(HttpStatus.BAD_REQUEST, "Events timeout: " + error.getMessage()))
                     .doOnError(err -> {
                         nodeManager.remove(id, NodeRemoveReason.FETCH_EVENT_TIMEOUT)
                                 .doOnError(ApiError.class, error -> Log.err(error.getMessage()))
@@ -507,7 +505,6 @@ public class GatewayService {
                             Log.err(e);
                         }
                     })
-                    .subscribeOn(Schedulers.boundedElastic())
                     .subscribe();
         }
 
@@ -519,7 +516,6 @@ public class GatewayService {
                             eventBus.emit(LogEvent.error(id, "Heartbeat timeout"));
                         }
                     })
-                    .subscribeOn(Schedulers.boundedElastic())
                     .subscribe();
         }
     }

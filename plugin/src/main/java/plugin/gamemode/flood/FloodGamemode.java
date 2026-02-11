@@ -163,8 +163,6 @@ public class FloodGamemode {
                 continue;
             }
 
-            floodTiles.get(0).block.canPlaceOn(tile, null, 0);
-
             var build = tile.build;
 
             // Not flood skip
