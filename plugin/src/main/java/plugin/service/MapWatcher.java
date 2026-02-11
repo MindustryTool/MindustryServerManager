@@ -66,11 +66,11 @@ public class MapWatcher {
                         maps.reload();
 
                         if (maps.all().size > beforeMaps) {
-                            info("@ new map(s) found and reloaded.", maps.all().size - beforeMaps);
+                            info("[sky]@ new map(s) found and reloaded.", maps.all().size - beforeMaps);
                         } else if (maps.all().size < beforeMaps) {
-                            info("@ old map(s) deleted.", beforeMaps - maps.all().size);
+                            info("[sky]@ old map(s) deleted.", beforeMaps - maps.all().size);
                         } else {
-                            info("Maps reloaded.");
+                            info("[sky]Maps reloaded.");
                         }
                     }
 
