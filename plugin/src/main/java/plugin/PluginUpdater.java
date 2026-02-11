@@ -49,6 +49,9 @@ public class PluginUpdater {
             needUpdate = true;
 
             writeUpdatedAt(pluginData, updatedAt);
+
+            Log.info("[cyan]Plugin @/@/@ updated, version: @", pluginData.getOwner(), pluginData.getRepo(),
+                    pluginData.getTag(), updatedAt);
         }
 
         if (!needUpdate && !isScheduled) {
