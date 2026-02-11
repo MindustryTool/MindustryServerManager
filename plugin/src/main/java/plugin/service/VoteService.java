@@ -69,6 +69,20 @@ public class VoteService {
     }
 
     public void vote(Player player, String mapId) {
+        if (player.admin) {
+            var map = getMaps().find(m -> m.file.nameWithoutExtension().equals(mapId));
+
+            if (map == null) {
+                player.sendMessage("Map not found.");
+                return;
+            }
+
+            Vars.maps.setNextMapOverride(map);
+            Events.fire(new EventType.GameOverEvent(Team.crux));
+            reset();
+            return;
+        }
+
         var vote = votes.get(mapId);
 
         if (vote == null) {

@@ -13,14 +13,14 @@ public class FloodConfig {
     public Seq<FloodTile> floodTiles = Seq.with(
             new FloodTile(Blocks.conveyor, 32f, 1000 * 5),
             new FloodTile(Blocks.titaniumConveyor, 64f, 1000 * 15),
-            new FloodTile(Blocks.armoredConveyor, 64f, 1000 * 25),
-            new FloodTile(Blocks.scrapWall, 64f, 1000 * 30),
-            new FloodTile(Blocks.copperWall, 64f, 1000 * 80),
-            new FloodTile(Blocks.titaniumWall, 64f, 1000 * 100),
-            new FloodTile(Blocks.plastaniumWall, 64f, 1000 * 150),
-            new FloodTile(Blocks.thoriumWall, 64f, 1000 * 180),
-            new FloodTile(Blocks.phaseWall, 64f, 1000 * 200),//
-            new FloodTile(Blocks.surgeWall, 64f, 1000 * 200)//
+            new FloodTile(Blocks.armoredConveyor, 96f, 1000 * 25),
+            new FloodTile(Blocks.scrapWall, 128f, 1000 * 30),
+            new FloodTile(Blocks.copperWall, 160f, 1000 * 80),
+            new FloodTile(Blocks.titaniumWall, 192f, 1000 * 100),
+            new FloodTile(Blocks.plastaniumWall, 224f, 1000 * 150),
+            new FloodTile(Blocks.thoriumWall, 256f, 1000 * 180),
+            new FloodTile(Blocks.phaseWall, 288f, 1000 * 200),//
+            new FloodTile(Blocks.surgeWall, 230f, 1000 * 200)//
     );
 
     public float suppressThreshold = 500f;
