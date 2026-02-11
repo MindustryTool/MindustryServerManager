@@ -203,7 +203,8 @@ public class FloodGamemode {
 
     private void setFlood(Tile tile, FloodTile floodTile) {
         Core.app.post(() -> tile.setNet(floodTile.block, Team.crux, 0));
-        floods[index(tile)] = (long) ((Time.millis() + floodTile.evolveTime) / getFloodMultiplier())
+
+        floods[index(tile)] = Time.millis() + (long) (floodTile.evolveTime / getFloodMultiplier())
                 + Mathf.random(0, 1000 * 5);
     }
 
