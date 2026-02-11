@@ -53,6 +53,11 @@ public class FloodGamemode {
         applyRules();
     }
 
+    @Listener
+    private void onWorldLoad(EventType.WorldLoadEvent event) {
+        applyRules();
+    }
+
     private FloodTile nextTier(Building building) {
         var found = false;
 
@@ -87,7 +92,6 @@ public class FloodGamemode {
 
     @Trigger(EventType.Trigger.update)
     private void updateCore() {
-        Log.info("Updating core damage");
         for (var core : Team.crux.cores()) {
             var damaged = core.maxHealth - core.health;
             core.maxHealth(100000000);
