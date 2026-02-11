@@ -16,7 +16,6 @@ import mindustry.Vars;
 import mindustry.content.Blocks;
 import mindustry.game.EventType;
 import mindustry.game.Team;
-import mindustry.game.Teams;
 import mindustry.gen.Building;
 import mindustry.gen.Call;
 import mindustry.gen.Groups;
@@ -76,6 +75,7 @@ public class FloodGamemode {
     private void updateCore() {
         for (var core : Team.crux.cores()) {
             var damaged = core.maxHealth - core.health;
+            core.maxHealth(100000000);
             core.heal();
             if (damaged > 0) {
                 damageReceived.put(core, damageReceived.getOrDefault(core, 0f) + damaged);
