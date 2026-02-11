@@ -99,7 +99,7 @@ public class FloodGamemode {
         }
     }
 
-    @Schedule(fixedDelay = 1, unit = TimeUnit.SECONDS)
+    @Schedule(fixedDelay = 500)
     public void update() {
         float startedAt = Time.millis();
 
