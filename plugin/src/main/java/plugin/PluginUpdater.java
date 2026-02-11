@@ -84,9 +84,8 @@ public class PluginUpdater {
             pluginFile.writeBytes(data);
         }
 
-        Log.info("[cyan]Plugin updated, restarting...");
-
         PluginEvents.fire(new UnloadServerEvent());
+        Log.info("[cyan]Plugin updated, restarting...");
         System.exit(0);
     }
 
