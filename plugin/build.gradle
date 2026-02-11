@@ -45,8 +45,6 @@ dependencies{
     // testImplementation 'org.projectlombok:lombok:1.18.10'
     // testImplementation files('lib/MindustryToolPluginLoader.jar')
 
-    implementation fileTree(dir: 'libs', include: ['*.jar'])    
-
 }
 
 jar{
@@ -56,20 +54,7 @@ jar{
     from{
         configurations.runtimeClasspath.collect{it.isDirectory() ? it : zipTree(it)}
     }
-
-    from(project.projectDir){
-        include "plugin.properties"
-        include "META-INF/plugin.properties"
-    }
-
-    from {
-        configurations.runtimeClasspath.collect {
-            it.isDirectory() ? [] : zipTree(it).matching {
-                include "META-INF/services/**"
-            }
-        }
-    }
-
+    
     from(project.projectDir){
         include "plugin.json"
     }
