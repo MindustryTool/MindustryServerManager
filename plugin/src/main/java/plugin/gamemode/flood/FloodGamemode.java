@@ -99,7 +99,7 @@ public class FloodGamemode {
         }
     }
 
-    @Schedule(fixedDelay = 500)
+    @Schedule(fixedDelay = 1, unit = TimeUnit.SECONDS)
     public void update() {
         float startedAt = Time.millis();
 
@@ -164,7 +164,7 @@ public class FloodGamemode {
             var evolveAt = floods[index(tile)];
             var spreadToNext = false;
 
-            if (evolveAt < Time.millis()) {
+            if (evolveAt > 0 && evolveAt < Time.millis()) {
                 var next = nextTier(build);
                 if (next != null) {
                     setFlood(tile, next);
@@ -196,7 +196,7 @@ public class FloodGamemode {
 
     private void setFlood(Tile tile, FloodTile floodTile) {
         Core.app.post(() -> tile.setNet(floodTile.block, Team.crux, 0));
-        floods[index(tile)] = Time.millis() + floodTile.evolveTime;
+        floods[index(tile)] = Time.millis() + floodTile.evolveTime + Mathf.random(0, 1000 * 10);
     }
 
     private void removeFlood(Tile tile) {
