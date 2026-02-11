@@ -183,14 +183,14 @@ public class FloodGamemode {
                 var neighborBuild = neighbor.build;
 
                 if (neighborBuild == null) {
-                    if (spreadToNext && neighbor.block() == Blocks.air) {
+                    if (spreadToNext && (neighbor.block() == Blocks.air || neighbor.block().alwaysReplace)) {
                         setFlood(neighbor, config.floodTiles.get(0));
                     }
                 } else {
                     if (neighborBuild.team != Team.crux) {
                         var currentTier = config.floodTiles.find(f -> f.block == build.block);
                         if (currentTier != null) {
-                            Core.app.post(() -> neighborBuild.damage(currentTier.damage));
+                            Core.app.post(() -> neighborBuild.damage(currentTier.damage * getFloodMultiplier()));
                         }
                     } else if (!spreaded[index(neighbor)]) {
                         spreaded[index(neighbor)] = true;
