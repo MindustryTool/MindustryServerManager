@@ -21,6 +21,7 @@ import mindustry.gen.Call;
 import mindustry.gen.Groups;
 import mindustry.world.Tile;
 import plugin.annotations.Gamemode;
+import plugin.annotations.Init;
 import plugin.annotations.Listener;
 import plugin.annotations.Schedule;
 import plugin.annotations.Trigger;
@@ -38,6 +39,17 @@ public class FloodGamemode {
     private long startedAt = 0;
     private long[] floods = new long[0];
     private int cores = 1;
+
+    @Init
+    private void applyRules() {
+        Vars.state.rules.enemyCoreBuildRadius = 0f;
+        Team.crux.rules().extraCoreBuildRadius = 0f;
+    }
+
+    @Listener
+    private void onPlayer(EventType.PlayerJoin event) {
+        applyRules();
+    }
 
     private FloodTile nextTier(Building building) {
         var found = false;
@@ -266,8 +278,7 @@ public class FloodGamemode {
         suppressed.clear();
         damageReceived.clear();
 
-        Vars.state.rules.enemyCoreBuildRadius = 0f;
-        Team.crux.rules().extraCoreBuildRadius = 0f;
+        applyRules();
     }
 
     @Schedule(fixedRate = 1, unit = TimeUnit.SECONDS)
