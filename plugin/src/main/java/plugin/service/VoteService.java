@@ -1,6 +1,8 @@
 package plugin.service;
 
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 import arc.Events;
 import arc.struct.Seq;
@@ -13,6 +15,7 @@ import mindustry.maps.Map;
 import plugin.annotations.Component;
 import plugin.annotations.Destroy;
 import plugin.annotations.Listener;
+import plugin.core.Scheduler;
 import plugin.event.SessionRemovedEvent;
 import plugin.utils.Utils;
 
@@ -21,6 +24,14 @@ public class VoteService {
     public final ConcurrentHashMap<String, Seq<String>> votes = new ConcurrentHashMap<>();
     public double ratio = 0.6;
     public Map lastMap = null;
+
+    private final Scheduler scheduler;
+    private ScheduledFuture<?> voteTimeout;
+    private ScheduledFuture<?> voteCountDown;
+
+    public VoteService(Scheduler scheduler) {
+        this.scheduler = scheduler;
+    }
 
     @Listener
     public void onSessionRemovedEvent(SessionRemovedEvent event) {
@@ -32,6 +43,7 @@ public class VoteService {
     public void destroy() {
         votes.clear();
         lastMap = null;
+        cancelTimers();
     }
 
     private void check() {
@@ -41,6 +53,19 @@ public class VoteService {
     public void reset() {
         votes.clear();
         lastMap = null;
+        cancelTimers();
+    }
+
+    private void cancelTimers() {
+        if (voteTimeout != null) {
+            voteTimeout.cancel(true);
+            voteTimeout = null;
+        }
+
+        if (voteCountDown != null) {
+            voteCountDown.cancel(true);
+            voteCountDown = null;
+        }
     }
 
     public void vote(Player player, String mapId) {
@@ -51,9 +76,44 @@ public class VoteService {
             votes.put(mapId, vote);
         }
 
+        if (voteTimeout == null || voteTimeout.isDone()) {
+            startTimeout();
+        }
+
         vote.add(player.uuid());
 
         check(mapId);
+    }
+
+    private void startTimeout() {
+        voteTimeout = scheduler.schedule(() -> {
+            Utils.forEachPlayerLocale((locale, players) -> {
+                String msg = I18n.t(locale, "[scarlet]", "@RTV failed, not enough votes.");
+                for (var p : players) {
+                    p.sendMessage(msg);
+                }
+            });
+            reset();
+        }, 60, TimeUnit.SECONDS);
+
+        startCountDown(50);
+    }
+
+    private void startCountDown(int time) {
+        if (time <= 0) {
+            return;
+        }
+
+        voteCountDown = scheduler.schedule(() -> {
+            Utils.forEachPlayerLocale((locale, players) -> {
+                String msg = I18n.t(locale, "[orange]", "@RTV timeout in", " ", time, " ",
+                        "@seconds.");
+                for (var p : players) {
+                    p.sendMessage(msg);
+                }
+            });
+            startCountDown(time - 10);
+        }, 10, TimeUnit.SECONDS);
     }
 
     private void removeVote(Player player, String mapId) {
