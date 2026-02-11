@@ -9,9 +9,7 @@ import arc.math.Mathf;
 import arc.struct.Seq;
 import arc.util.Log;
 import arc.util.Time;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import mindustry.Vars;
 import mindustry.content.Blocks;
 import mindustry.game.EventType;
@@ -19,44 +17,28 @@ import mindustry.game.Team;
 import mindustry.gen.Building;
 import mindustry.gen.Call;
 import mindustry.gen.Groups;
-import mindustry.world.Block;
 import mindustry.world.Tile;
-import mindustry.world.blocks.storage.CoreBlock;
 import plugin.annotations.Gamemode;
 import plugin.annotations.Listener;
-import plugin.annotations.Persistence;
 import plugin.annotations.Schedule;
+import plugin.annotations.Trigger;
+import plugin.gamemode.flood.FloodConfig.FloodTile;
 
 @Gamemode("flood")
+@RequiredArgsConstructor
 public class FloodGamemode {
 
-    @Data
-    @AllArgsConstructor
-    @NoArgsConstructor
-    public static class FloodTile {
-        Block block;
-        float damage;
-        long evolveTime;
-    }
+    private final FloodConfig config;
 
-    private ConcurrentHashMap<Building, Long> suppressed = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Building, Float> damageReceived = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Building, Long> suppressed = new ConcurrentHashMap<>();
+
     private long[] floods = new long[0];
-
-    @Persistence("flood/config.json")
-    private Seq<FloodTile> floodTiles = Seq.with(
-            new FloodTile(Blocks.conveyor, 32f, 1000 * 10),
-            new FloodTile(Blocks.titaniumConveyor, 64f, 1000 * 20),
-            new FloodTile(Blocks.copperWall, 64f, 1000 * 40),
-            new FloodTile(Blocks.titaniumWall, 64f, 1000 * 80),
-            new FloodTile(Blocks.plastaniumWall, 64f, 1000 * 160),
-            new FloodTile(Blocks.thoriumWall, 64f, 1000 * 200),
-            new FloodTile(Blocks.phaseWall, 64f, 1000 * 280)//
-    );
 
     private FloodTile nextTier(Building building) {
         var found = false;
 
-        for (var tile : floodTiles) {
+        for (var tile : config.floodTiles) {
             if (found) {
                 return tile;
             }
@@ -84,6 +66,17 @@ public class FloodGamemode {
         }
     }
 
+    @Trigger(EventType.Trigger.update)
+    private void updateCore() {
+        for (var core : Team.crux.cores()) {
+            var damaged = core.maxHealth - core.health;
+            core.heal();
+            if (damaged > 0) {
+                damageReceived.put(core, damageReceived.getOrDefault(core, 0f) + damaged);
+            }
+        }
+    }
+
     @Schedule(fixedDelay = 1, unit = TimeUnit.SECONDS)
     private void updateUnitDamgeOnFlood() {
         for (var unit : Groups.unit) {
@@ -96,7 +89,7 @@ public class FloodGamemode {
             if (tile == null || tile.build == null) {
                 continue;
             }
-            var floodTile = floodTiles.find(t -> t.block == tile.build.block);
+            var floodTile = config.floodTiles.find(t -> t.block == tile.build.block);
 
             if (floodTile == null) {
                 continue;
@@ -124,7 +117,7 @@ public class FloodGamemode {
 
         for (var tile : tiles) {
             if (tile.build != null && tile.build.team != Team.crux) {
-                Core.app.post(() -> tile.build.damage(floodTiles.get(0).damage));
+                Core.app.post(() -> tile.build.damage(config.floodTiles.get(0).damage));
             }
         }
 
@@ -139,7 +132,7 @@ public class FloodGamemode {
         for (int i = 0; i < number; i++) {
             var tile = tiles.random();
             if (tile.build == null) {
-                setFlood(tile, floodTiles.get(0));
+                setFlood(tile, config.floodTiles.get(0));
             } else {
                 spread(tile, spreaded);
             }
@@ -183,12 +176,12 @@ public class FloodGamemode {
                 var neighborBuild = neighbor.build;
 
                 if (neighborBuild == null) {
-                    if (spreadToNext && (neighbor.block() == null || neighbor.block() == Blocks.air)) {
-                        setFlood(neighbor, floodTiles.get(0));
+                    if (spreadToNext && neighbor.block() == Blocks.air) {
+                        setFlood(neighbor, config.floodTiles.get(0));
                     }
                 } else {
                     if (neighborBuild.team != Team.crux) {
-                        var currentTier = floodTiles.find(f -> f.block == build.block);
+                        var currentTier = config.floodTiles.find(f -> f.block == build.block);
                         if (currentTier != null) {
                             Core.app.post(() -> neighborBuild.damage(currentTier.damage));
                         }
@@ -247,14 +240,19 @@ public class FloodGamemode {
     @Listener
     public void onWorldLoadEnd(EventType.WorldLoadEndEvent event) {
         floods = new long[Vars.world.width() * Vars.world.height()];
+        suppressed.clear();
+        damageReceived.clear();
     }
 
-    @Listener
-    public void onBuildDamage(EventType.BuildDamageEvent event) {
-        var build = event.build;
+    @Schedule(fixedRate = 1, unit = TimeUnit.SECONDS)
+    private void updateSuppress() {
+        for (var entry : damageReceived.entrySet()) {
+            var core = entry.getKey();
+            var damage = entry.getValue();
 
-        if (build.team == Team.crux && build.block instanceof CoreBlock) {
-            suppressed.put(build, Time.millis() + 60 * 5);
+            if (damage > config.suppressThreshold) {
+                suppressed.put(core, Time.millis() + config.suppressTime);
+            }
         }
     }
 }
