@@ -475,7 +475,7 @@ public class GatewayService {
 
                         return false;
                     })
-                    .retryWhen(Retry.fixedDelay(120, Duration.ofSeconds(1)))
+                    .retryWhen(Retry.fixedDelay(60, Duration.ofSeconds(1)))
                     .onErrorMap(Exceptions::isRetryExhausted,
                             error -> new ApiError(HttpStatus.BAD_REQUEST, "Events timeout: " + error.getMessage()))
                     .doOnError(err -> {
