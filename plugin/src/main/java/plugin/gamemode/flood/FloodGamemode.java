@@ -11,6 +11,7 @@ import arc.util.Log;
 import arc.util.Time;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import mindustry.Vars;
 import mindustry.content.Blocks;
 import mindustry.game.EventType;
@@ -31,6 +32,7 @@ public class FloodGamemode {
 
     @Data
     @AllArgsConstructor
+    @NoArgsConstructor
     public static class FloodTile {
         Block block;
         float damage;
@@ -159,10 +161,6 @@ public class FloodGamemode {
         while (!queue.isEmpty()) {
             Tile tile = queue.poll();
 
-            if (tile.block() != Blocks.air) {
-                continue;
-            }
-
             var build = tile.build;
 
             // Not flood skip
@@ -185,7 +183,7 @@ public class FloodGamemode {
                 var neighborBuild = neighbor.build;
 
                 if (neighborBuild == null) {
-                    if (spreadToNext) {
+                    if (spreadToNext && neighbor.block() != Blocks.air) {
                         setFlood(neighbor, floodTiles.get(0));
                     }
                 } else {
