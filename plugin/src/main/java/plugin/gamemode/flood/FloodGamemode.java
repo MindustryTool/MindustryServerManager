@@ -156,10 +156,7 @@ public class FloodGamemode {
             return;
         }
 
-        var number = Mathf.random(0, tiles.size);
-
-        for (int i = 0; i < number; i++) {
-            var tile = tiles.random();
+        for (var tile : tiles) {
             if (tile.build == null) {
                 setFlood(tile, config.floodTiles.get(0));
             } else {
