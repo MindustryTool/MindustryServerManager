@@ -229,8 +229,8 @@ public class GeneralController {
             String[] commands = ctx.bodyAsClass(String[].class);
 
             if (commands != null) {
+                Log.info("[sky]Execute commands: " + Arrays.toString(commands));
                 for (String command : commands) {
-                    Log.info("[sky]" + command);
 
                     Registry.get(ServerCommandHandler.class).execute(command, response -> {
                         if (response.type == ResponseType.unknownCommand) {

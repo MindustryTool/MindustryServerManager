@@ -69,7 +69,7 @@ public class HttpServer {
 
             config.requestLogger.http((ctx, ms) -> {
                 if (!ctx.fullUrl().contains("state") && !ctx.fullUrl().contains("hosting")) {
-                    Log.info("[" + ctx.method().name() + "] " + Math.round(ms) + "ms " + ctx.fullUrl());
+                    Log.debug("[" + ctx.method().name() + "] " + Math.round(ms) + "ms " + ctx.fullUrl());
                 }
             });
         });
