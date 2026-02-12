@@ -29,7 +29,6 @@ import mindustry.type.UnitType;
 import mindustry.world.Tile;
 import mindustry.world.blocks.storage.CoreBlock.CoreBuild;
 import plugin.annotations.Gamemode;
-import plugin.annotations.Init;
 import plugin.annotations.Listener;
 import plugin.annotations.Schedule;
 import plugin.annotations.Trigger;
@@ -58,7 +57,6 @@ public class FloodGamemode {
     private Duration dayDuration = Duration.ofMinutes(6);
     private Duration nightDuration = Duration.ofMinutes(4);
 
-    @Init
     private void applyRules() {
         Vars.state.rules.enemyCoreBuildRadius = 0f;
         Team.crux.rules().extraCoreBuildRadius = 0f;
