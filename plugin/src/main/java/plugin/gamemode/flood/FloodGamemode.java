@@ -77,14 +77,6 @@ public class FloodGamemode {
                 "Suppressed: " + suppressed.size() + "/" + cores, 1.1f, Align.center | Align.right, 4, 4, 4, 4);
     }
 
-    @Listener
-    private void onBlockDestroy(EventType.BlockDestroyEvent event) {
-        var build = event.tile.build;
-        if (build != null && build.team == Team.crux) {
-            removeFlood(build.tile);
-        }
-    }
-
     @Trigger(EventType.Trigger.update)
     private void updateCore() {
         for (var core : Team.crux.cores()) {
@@ -125,8 +117,9 @@ public class FloodGamemode {
             return;
         }
 
+        suppressed.entrySet().removeIf(e -> e.getValue() < Time.millis());
+
         if (!processing) {
-            suppressed.entrySet().removeIf(e -> e.getValue() < Time.millis());
             coreIterator = Team.crux.cores().iterator();
             processing = true;
             spreaded.clear();
@@ -166,11 +159,13 @@ public class FloodGamemode {
 
     private void spread(Tile start, BitSet spreaded) {
         ArrayDeque<Tile> queue = new ArrayDeque<>();
-        int MAX_UPDATES = 100;
+        int MAX_UPDATES = 200;
         int updates = 0;
 
         spreaded.set(index(start), true);
         queue.add(start);
+
+        var currentTime = Time.millis();
 
         while (!queue.isEmpty() && updates < MAX_UPDATES) {
             Tile tile = queue.poll();
@@ -184,7 +179,7 @@ public class FloodGamemode {
 
             var evolveAt = floods[index(tile)];
 
-            if (evolveAt > 0 && evolveAt < Time.millis()) {
+            if (evolveAt > 0 && evolveAt < currentTime) {
                 var next = config.nextTier(build);
                 if (next != null) {
                     setFlood(tile, next);
@@ -223,12 +218,8 @@ public class FloodGamemode {
     private void setFlood(Tile tile, FloodTile floodTile) {
         Core.app.post(() -> tile.setNet(floodTile.block, Team.crux, 0));
 
-        floods[index(tile)] = Time.millis() + (long) (floodTile.evolveTime / getFloodMultiplier())
+        floods[index(tile)] = Time.millis() + (long) (floodTile.evolveTime * 1000 / getFloodMultiplier())
                 + Mathf.random(0, 1000 * 5);
-    }
-
-    private void removeFlood(Tile tile) {
-        floods[index(tile)] = 0;
     }
 
     private int index(Tile tile) {
