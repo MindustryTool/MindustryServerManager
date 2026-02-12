@@ -19,6 +19,7 @@ import mindustry.game.Team;
 import mindustry.gen.Building;
 import mindustry.gen.Call;
 import mindustry.gen.Groups;
+import mindustry.gen.Iconc;
 import mindustry.world.Tile;
 import plugin.annotations.Gamemode;
 import plugin.annotations.Init;
@@ -67,7 +68,7 @@ public class FloodGamemode {
     @Schedule(fixedRate = 1, unit = TimeUnit.SECONDS)
     public void updateUI() {
         for (var core : suppressed.keySet()) {
-            Call.label("Suppressed", 1.1f, core.getX(), core.getY());
+            Call.label("[scarlet]" + Iconc.warning + " *Suppressed*", 1.1f, core.getX(), core.getY());
         }
         Call.infoPopup("Flood: " + getFloodMultiplier() * 100 + "%\n" +
                 "Suppressed: " + suppressed.size() + "/" + cores, 1.1f, Align.center | Align.right, 4, 4, 4, 4);

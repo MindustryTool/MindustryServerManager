@@ -88,7 +88,5 @@ public class TrailService {
         public static TrailRequirement admin() {
             return new TrailRequirement("@You must be an admin to use this trail", session -> session.player.admin);
         }
-
     }
-
 }

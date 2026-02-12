@@ -5,6 +5,7 @@ import arc.util.Log;
 import org.reflections.Reflections;
 import org.reflections.scanners.Scanners;
 import plugin.annotations.*;
+import plugin.service.FileWatcherService;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
@@ -23,6 +24,7 @@ public final class Registry {
     private static final Scheduler scheduler = get(Scheduler.class);
     private static final PersistenceManager persistenceManager = get(PersistenceManager.class);
     private static final EventRegistrar eventRegistrar = get(EventRegistrar.class);
+    private static final FileWatcherService fileWatcherService = get(FileWatcherService.class);
 
     public static final String GAMEMODE_KEY = "plugin-gamemode";
 
@@ -167,7 +169,6 @@ public final class Registry {
             initialize(instance);
 
             return instance;
-
         } catch (Exception e) {
             throw new RuntimeException("Failed to create component " + type.getName(), e);
         } finally {
@@ -223,6 +224,7 @@ public final class Registry {
             withAnnotation(method, Schedule.class, a -> scheduler.process(a, instance, method));
             withAnnotation(method, Listener.class, a -> eventRegistrar.register(a, instance, method));
             withAnnotation(method, Trigger.class, a -> eventRegistrar.register(a, instance, method));
+            withAnnotation(method, FileWatcher.class, a -> fileWatcherService.process(a, instance, method));
         }
 
         initialized.add(instance);

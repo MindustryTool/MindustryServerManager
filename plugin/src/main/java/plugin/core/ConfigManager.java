@@ -4,22 +4,20 @@ import arc.files.Fi;
 import arc.util.Log;
 import mindustry.Vars;
 import plugin.annotations.Configuration;
-import plugin.annotations.Destroy;
+import plugin.service.FileWatcherService;
 import plugin.utils.JsonUtils;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 public class ConfigManager {
-    private final ExecutorService executor = Executors.newCachedThreadPool(r -> {
-        Thread t = new Thread(r, "ConfigWatcher");
-        t.setDaemon(true);
-        return t;
-    });
+    private final FileWatcherService fileWatcher;
+
+    public ConfigManager(FileWatcherService fileWatcher) {
+        this.fileWatcher = fileWatcher;
+    }
 
     public void process(Configuration config, Object instance) {
         String path = config.value();
@@ -70,51 +68,9 @@ public class ConfigManager {
     private void startWatcher(Object instance, Fi file) {
         Log.info("Create watcher for @ at @", instance.getClass(), file.absolutePath());
 
-        executor.submit(() -> {
-            try (WatchService watcher = FileSystems.getDefault().newWatchService()) {
-                Path dir = file.file().getAbsoluteFile().getParentFile().toPath();
-
-                dir.register(watcher, StandardWatchEventKinds.ENTRY_MODIFY);
-
-                while (true) {
-                    WatchKey key;
-                    try {
-                        key = watcher.take();
-                    } catch (InterruptedException x) {
-                        return;
-                    }
-
-                    for (WatchEvent<?> event : key.pollEvents()) {
-                        WatchEvent.Kind<?> kind = event.kind();
-                        if (kind == StandardWatchEventKinds.OVERFLOW)
-                            continue;
-
-                        @SuppressWarnings("unchecked")
-                        WatchEvent<Path> ev = (WatchEvent<Path>) event;
-                        Path filename = ev.context();
-
-                        if (filename.toString().equals(file.name())) {
-                            try {
-                                Thread.sleep(100);
-                            } catch (InterruptedException ignored) {
-                            }
-
-                            load(instance, file);
-                        }
-                    }
-
-                    boolean valid = key.reset();
-                    if (!valid)
-                        break;
-                }
-            } catch (Exception e) {
-                Log.err("Watcher failed for @", file.absolutePath(), e);
-            }
-        });
-    }
-
-    @Destroy
-    public void destroy() {
-        executor.shutdownNow();
+        fileWatcher.watch(file.file().toPath(),
+                path -> load(instance, file),
+                100,
+                StandardWatchEventKinds.ENTRY_MODIFY);
     }
 }
