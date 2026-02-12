@@ -65,6 +65,8 @@ public class FloodGamemode {
         spreaded = new BitSet(floods.length);
         cores = Team.crux.cores().size;
         startedAt = Time.millis();
+        cycleChangeAt = Instant.now();
+        isNight = false;
 
         suppressed.clear();
         damageReceived.clear();
@@ -146,7 +148,7 @@ public class FloodGamemode {
         if (Duration.between(cycleChangeAt, Instant.now()).compareTo(isNight ? nightDuration : dayDuration) >= 0) {
             isNight = !isNight;
             cycleChangeAt = Instant.now();
-            Vars.state.rules.lighting = !isNight;
+            Vars.state.rules.lighting = isNight;
             Call.setRules(Vars.state.rules);
         }
 
