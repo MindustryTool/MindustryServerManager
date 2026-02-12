@@ -4,7 +4,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.BitSet;
-import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
@@ -27,7 +26,6 @@ import mindustry.gen.Groups;
 import mindustry.gen.Iconc;
 import mindustry.type.UnitType;
 import mindustry.world.Tile;
-import mindustry.world.blocks.storage.CoreBlock.CoreBuild;
 import plugin.annotations.Gamemode;
 import plugin.annotations.Listener;
 import plugin.annotations.Schedule;
@@ -43,14 +41,13 @@ public class FloodGamemode {
 
     private final ConcurrentHashMap<Building, Float> damageReceived = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<Building, Long> suppressed = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Building, ArrayDeque<Tile>> floodQueues = new ConcurrentHashMap<>();
 
     private long startedAt = 0;
     private long[] floods = new long[0];
     BitSet spreaded = new BitSet(floods.length);
     private int cores = 1;
 
-    private Iterator<CoreBuild> coreIterator;
-    private boolean processing = false;
     private boolean isNight = false;
     private Instant cycleChangeAt = Instant.now();
 
@@ -70,6 +67,7 @@ public class FloodGamemode {
 
         suppressed.clear();
         damageReceived.clear();
+        floodQueues.clear();
 
         Log.info("Flood rules applied");
     }
@@ -184,57 +182,68 @@ public class FloodGamemode {
 
         suppressed.entrySet().removeIf(e -> e.getValue() < Time.millis());
 
-        if (!processing) {
-            coreIterator = Team.crux.cores().iterator();
-            processing = true;
-            spreaded.clear();
-        }
-
-        if (coreIterator == null || !coreIterator.hasNext()) {
-            processing = false;
+        var cores = Team.crux.cores();
+        if (cores.isEmpty()) {
             return;
         }
 
-        Building core = coreIterator.next();
+        int totalUpdates = 2000;
+        int updatesPerCore = totalUpdates / Math.max(1, cores.size);
+        float multiplier = getFloodMultiplier();
 
-        while (suppressed.containsKey(core) && coreIterator.hasNext()) {
-            core = coreIterator.next();
-        }
+        floodQueues.keySet().removeIf(b -> !b.isValid() || b.team != Team.crux);
 
-        var tiles = around(core);
-        var multiplier = getFloodMultiplier();
-
-        for (var tile : tiles) {
-            if (tile.build != null && tile.build.team != Team.crux) {
-                Core.app.post(() -> tile.build.damage(config.floodTiles.get(0).damage * multiplier));
+        boolean allEmpty = true;
+        for (var core : cores) {
+            var q = floodQueues.get(core);
+            if (q != null && !q.isEmpty()) {
+                allEmpty = false;
+                break;
             }
         }
 
-        if (tiles.isEmpty()) {
-            return;
+        if (allEmpty) {
+            spreaded.clear();
+            for (var core : cores) {
+                if (suppressed.containsKey(core))
+                    continue;
+
+                var queue = floodQueues.computeIfAbsent(core, k -> new ArrayDeque<>());
+                var tiles = around(core);
+                for (var tile : tiles) {
+                    if (tile.build != null && tile.build.team != Team.crux) {
+                        final var damage = config.floodTiles.get(0).damage * multiplier;
+                        Core.app.post(() -> tile.build.damage(damage));
+                    }
+
+                    if (tile.build == null) {
+                        setFlood(tile, config.floodTiles.get(0), multiplier);
+                    } else {
+                        if (!spreaded.get(index(tile))) {
+                            spreaded.set(index(tile), true);
+                            queue.add(tile);
+                        }
+                    }
+                }
+            }
         }
 
-        for (var tile : tiles) {
-            if (tile.build == null) {
-                setFlood(tile, config.floodTiles.get(0), multiplier);
-            } else {
-                spread(tile, spreaded, multiplier);
+        for (var core : cores) {
+            if (suppressed.containsKey(core))
+                continue;
+            var queue = floodQueues.get(core);
+            if (queue != null && !queue.isEmpty()) {
+                spread(queue, spreaded, multiplier, updatesPerCore);
             }
         }
     }
 
-    private void spread(Tile start, BitSet spreaded, float multiplier) {
-        int MAX_UPDATES = 100;
+    private void spread(ArrayDeque<Tile> queue, BitSet spreaded, float multiplier, int maxUpdates) {
         int updates = 0;
-
-        ArrayDeque<Tile> queue = new ArrayDeque<>(MAX_UPDATES);
-
-        spreaded.set(index(start), true);
-        queue.add(start);
 
         var currentTime = Time.millis();
 
-        while (!queue.isEmpty() && updates < MAX_UPDATES) {
+        while (!queue.isEmpty() && updates < maxUpdates) {
             Tile tile = queue.poll();
 
             var build = tile.build;
