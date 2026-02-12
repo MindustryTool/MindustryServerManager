@@ -137,10 +137,11 @@ public class FloodGamemode {
         }
 
         var tiles = around(core);
+        var multiplier = getFloodMultiplier();
 
         for (var tile : tiles) {
             if (tile.build != null && tile.build.team != Team.crux) {
-                Core.app.post(() -> tile.build.damage(config.floodTiles.get(0).damage));
+                Core.app.post(() -> tile.build.damage(config.floodTiles.get(0).damage * multiplier));
             }
         }
 
@@ -150,14 +151,14 @@ public class FloodGamemode {
 
         for (var tile : tiles) {
             if (tile.build == null) {
-                setFlood(tile, config.floodTiles.get(0));
+                setFlood(tile, config.floodTiles.get(0), multiplier);
             } else {
-                spread(tile, spreaded);
+                spread(tile, spreaded, multiplier);
             }
         }
     }
 
-    private void spread(Tile start, BitSet spreaded) {
+    private void spread(Tile start, BitSet spreaded, float multiplier) {
         ArrayDeque<Tile> queue = new ArrayDeque<>();
         int MAX_UPDATES = 200;
         int updates = 0;
@@ -182,7 +183,7 @@ public class FloodGamemode {
             if (evolveAt > 0 && evolveAt < currentTime) {
                 var next = config.nextTier(build);
                 if (next != null) {
-                    setFlood(tile, next);
+                    setFlood(tile, next, multiplier);
                     updates++;
                 }
             }
@@ -196,7 +197,7 @@ public class FloodGamemode {
                         if (time <= 0) {
                             floods[index(neighbor)] = currentTime + Mathf.random(1000 * 1, 1000 * 5);
                         } else if (time <= currentTime) {
-                            setFlood(neighbor, config.floodTiles.get(0));
+                            setFlood(neighbor, config.floodTiles.get(0), multiplier);
                             updates++;
                         }
                     }
@@ -204,7 +205,7 @@ public class FloodGamemode {
                     if (neighborBuild.team != Team.crux) {
                         var currentTier = config.floodTiles.find(f -> f.block == build.block);
                         if (currentTier != null) {
-                            Core.app.post(() -> neighborBuild.damage(currentTier.damage * getFloodMultiplier()));
+                            Core.app.post(() -> neighborBuild.damage(currentTier.damage * multiplier));
                         }
                     } else if (!spreaded.get(index(neighbor))) {
                         spreaded.set(index(neighbor), true);
@@ -215,10 +216,10 @@ public class FloodGamemode {
         }
     }
 
-    private void setFlood(Tile tile, FloodTile floodTile) {
+    private void setFlood(Tile tile, FloodTile floodTile, float multiplier) {
         Core.app.post(() -> tile.setNet(floodTile.block, Team.crux, 0));
 
-        floods[index(tile)] = Time.millis() + (long) (floodTile.evolveTime * 1000 / getFloodMultiplier())
+        floods[index(tile)] = Time.millis() + (long) (floodTile.evolveTime * 1000 / multiplier)
                 + Mathf.random(0, 1000 * 1);
     }
 
