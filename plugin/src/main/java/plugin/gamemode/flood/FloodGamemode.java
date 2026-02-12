@@ -290,7 +290,7 @@ public class FloodGamemode {
                     if (neighbor.block() == Blocks.air || neighbor.block().alwaysReplace) {
                         var time = floods[index(neighbor)];
                         if (time <= 0) {
-                            floods[index(neighbor)] = currentTime + Mathf.random(1000 * 1, 1000 * 5);
+                            floods[index(neighbor)] = currentTime + Mathf.random(1000 * 5, 1000 * 10);
                         } else if (time <= currentTime) {
                             setFlood(neighbor, config.floodTiles.get(0), multiplier);
                             updates++;
