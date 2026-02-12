@@ -1,5 +1,7 @@
 package plugin.gamemode.flood;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.BitSet;
 import java.util.Iterator;
@@ -16,12 +18,14 @@ import arc.util.Time;
 import lombok.RequiredArgsConstructor;
 import mindustry.Vars;
 import mindustry.content.Blocks;
+import mindustry.content.UnitTypes;
 import mindustry.game.EventType;
 import mindustry.game.Team;
 import mindustry.gen.Building;
 import mindustry.gen.Call;
 import mindustry.gen.Groups;
 import mindustry.gen.Iconc;
+import mindustry.type.UnitType;
 import mindustry.world.Tile;
 import mindustry.world.blocks.storage.CoreBlock.CoreBuild;
 import plugin.annotations.Gamemode;
@@ -30,6 +34,7 @@ import plugin.annotations.Listener;
 import plugin.annotations.Schedule;
 import plugin.annotations.Trigger;
 import plugin.gamemode.flood.FloodConfig.FloodTile;
+import plugin.utils.TimeUtils;
 
 @Gamemode("flood")
 @RequiredArgsConstructor
@@ -47,6 +52,11 @@ public class FloodGamemode {
 
     private Iterator<CoreBuild> coreIterator;
     private boolean processing = false;
+    private boolean isNight = false;
+    private Instant cycleChangeAt = Instant.now();
+
+    private Duration dayDuration = Duration.ofMinutes(6);
+    private Duration nightDuration = Duration.ofMinutes(4);
 
     @Init
     private void applyRules() {
@@ -57,6 +67,7 @@ public class FloodGamemode {
         spreaded = new BitSet(floods.length);
         cores = Team.crux.cores().size;
         startedAt = Time.millis();
+
         suppressed.clear();
         damageReceived.clear();
 
@@ -68,17 +79,63 @@ public class FloodGamemode {
         applyRules();
     }
 
+    @Schedule(fixedRate = 10, unit = TimeUnit.SECONDS)
+    private void spawnNightUnit() {
+        if (!isNight) {
+            return;
+        }
+
+        var unitCount = Groups.unit.count(u -> u.team == Team.crux);
+
+        if (unitCount >= 100) {
+            return;
+        }
+
+        var elapsedMinutes = (Time.millis() - startedAt) / 1_000L / 60L;
+        UnitType unitType = null;
+
+        if (elapsedMinutes < 5) {
+            unitType = null;
+        } else if (elapsedMinutes < 10) {
+            unitType = UnitTypes.atrax;
+        } else if (elapsedMinutes < 30) {
+            unitType = UnitTypes.spiroct;
+        } else if (elapsedMinutes < 60) {
+            unitType = UnitTypes.arkyid;
+        } else if (elapsedMinutes < 90) {
+            unitType = UnitTypes.toxopid;
+        }
+
+        if (unitType == null) {
+            return;
+        }
+
+        for (var core : Team.crux.cores()) {
+            var unit = unitType.create(Team.crux);
+            Core.app.post(() -> {
+                unit.set(core.getX(), core.getY());
+                unit.add();
+            });
+        }
+    }
+
     @Schedule(fixedRate = 1, unit = TimeUnit.SECONDS)
     public void updateUI() {
         for (var core : suppressed.keySet()) {
             Call.label("[scarlet]" + Iconc.warning + " *Suppressed*", 1.1f, core.getX(), core.getY());
         }
-        Call.infoPopup("Flood: " + getFloodMultiplier() * 100 + "%\n" +
-                "Suppressed: " + suppressed.size() + "/" + cores, 1.1f, Align.center | Align.right, 4, 4, 4, 4);
+
+        Duration time = Duration.between(cycleChangeAt.plus(isNight ? nightDuration : dayDuration), Instant.now());
+
+        Call.infoPopup((isNight ? "[scarlet]" : "") + "Flood: " + getFloodMultiplier() * 100 + "%\n" +
+                "Suppressed: " + suppressed.size() + "/" + cores + "\n" +
+                (isNight ? "Day in" : "Night in") + ": " + TimeUtils.toSeconds(time)
+        //
+                , 1.1f, Align.center | Align.right, 4, 4, 4, 4);
     }
 
     @Trigger(EventType.Trigger.update)
-    private void updateCore() {
+    private void update() {
         for (var core : Team.crux.cores()) {
             var damaged = core.maxHealth - core.health;
             core.maxHealth(100000000);
@@ -87,6 +144,14 @@ public class FloodGamemode {
                 damageReceived.put(core, damageReceived.getOrDefault(core, 0f) + damaged);
             }
         }
+
+        if (Duration.between(cycleChangeAt, Instant.now()).compareTo(isNight ? nightDuration : dayDuration) >= 0) {
+            isNight = !isNight;
+            cycleChangeAt = Instant.now();
+            Vars.state.rules.lighting = !isNight;
+            Call.setRules(Vars.state.rules);
+        }
+
     }
 
     @Schedule(fixedDelay = 1, unit = TimeUnit.SECONDS)
@@ -112,7 +177,7 @@ public class FloodGamemode {
     }
 
     @Schedule(fixedDelay = 34, unit = TimeUnit.MILLISECONDS)
-    public void update() {
+    public void updateFlood() {
         if (floods.length == 0) {
             return;
         }
@@ -159,9 +224,10 @@ public class FloodGamemode {
     }
 
     private void spread(Tile start, BitSet spreaded, float multiplier) {
-        ArrayDeque<Tile> queue = new ArrayDeque<>();
-        int MAX_UPDATES = 200;
+        int MAX_UPDATES = 150;
         int updates = 0;
+
+        ArrayDeque<Tile> queue = new ArrayDeque<>(MAX_UPDATES);
 
         spreaded.set(index(start), true);
         queue.add(start);
@@ -264,7 +330,7 @@ public class FloodGamemode {
         var elapsedMinutes = (Time.millis() - startedAt) / 1000 / 60;
         var destroyedCores = cores - Team.crux.cores().size;
 
-        return 1f + (destroyedCores / cores) + (0.01f * elapsedMinutes);
+        return 1f + (destroyedCores / cores) + (0.01f * elapsedMinutes) + (isNight ? 2 : 0);
     }
 
     @Schedule(fixedRate = 1, unit = TimeUnit.SECONDS)
