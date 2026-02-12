@@ -2,12 +2,14 @@ package plugin.gamemode.catali.command.client;
 
 import mindustry.game.Team;
 import plugin.PluginEvents;
+import plugin.annotations.Gamemode;
 import plugin.commands.PluginClientCommand;
 import plugin.gamemode.catali.CataliGamemode;
 import plugin.gamemode.catali.event.ExpGainEvent;
 import plugin.service.I18n;
 import plugin.type.Session;
 
+@Gamemode("catali")
 public class AddExpCommand extends PluginClientCommand {
 
     private final Param amountParam;
