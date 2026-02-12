@@ -309,8 +309,6 @@ public class FloodGamemode {
                 }
             }
         }
-
-        Log.info("Spreaded @ tiles", updates);
     }
 
     private void setFlood(Tile tile, FloodTile floodTile, float multiplier) {
