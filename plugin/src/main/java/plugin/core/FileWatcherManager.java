@@ -101,7 +101,7 @@ public class FileWatcherManager {
             WatcherRegistration reg = new WatcherRegistration(target, callback, debounceMs, isDirectory);
             keys.computeIfAbsent(key, k -> new CopyOnWriteArrayList<>()).add(reg);
 
-            Log.info("Started watching @", target);
+            Log.info("[gray]Started watching @", target);
         } catch (IOException e) {
             Log.err("Failed to register watcher for @", target, e);
         }

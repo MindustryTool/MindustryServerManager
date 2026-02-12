@@ -57,7 +57,7 @@ public class ConfigManager {
                 Object value = field.get(newData);
                 field.set(instance, value);
             }
-            Log.info("Loaded configuration for @ from @", instance.getClass().getSimpleName(), file.name());
+            Log.info("[gray]Loaded configuration for @ from @", instance.getClass().getSimpleName(), file.name());
         } catch (Exception e) {
             Log.err("Failed to load configuration for @", instance.getClass().getName());
             Log.err(e);
@@ -65,8 +65,6 @@ public class ConfigManager {
     }
 
     private void startWatcher(Object instance, Fi file) {
-        Log.info("Create watcher for @ at @", instance.getClass(), file.absolutePath());
-
         fileWatcher.watch(file.file().toPath(),
                 path -> load(instance, file),
                 100,

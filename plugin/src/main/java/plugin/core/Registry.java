@@ -163,7 +163,7 @@ public final class Registry {
 
             Object instance = constructor.newInstance(args);
 
-            Log.info("Registered component: @", type.getName());
+            Log.info("[gray]Registered component: @", type.getName());
 
             initialize(instance);
 

@@ -25,7 +25,7 @@ public class PersistenceManager {
                 String json = file.readString();
                 Object value = JsonUtils.readJson(json, field.getGenericType());
                 field.set(instance, value);
-                Log.info("Loaded persistence for field @ at @", field.getName(), path);
+                Log.info("[gray]Loaded persistence for field @ at @", field.getName(), path);
             } catch (Exception e) {
                 Log.err("Failed to load persistence for field @ at @", field.getName(), path);
                 Log.err(e);
@@ -47,7 +47,7 @@ public class PersistenceManager {
 
                 if (value != null) {
                     file.writeString(JsonUtils.toJsonString(value));
-                    Log.info("Saved persistence for field @ at @", field.getName(), path);
+                    Log.info("[gray]Saved persistence for field @ at @", field.getName(), path);
                 }
             } catch (Exception e) {
                 Log.err("Failed to destroy persistence for field @ in @", field.getName(),
