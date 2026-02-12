@@ -147,6 +147,11 @@ public class ServerService {
                     Flux<LogEvent> internalFlow = Flux.concat(
                             Mono.just(LogEvent.info(serverId, "Server not hosting, create server")),
                             nodeManager.create(request),
+                            Mono.just(LogEvent.info(serverId, "Delete old loader.jar")),
+                            nodeManager.deleteFile(serverId, "config/mindustry-tool-plugins")
+                                    .then(nodeManager.deleteFile(serverId, "config/mods/loader.jar"))
+                                    .then(Mono.just(LogEvent.info(serverId, "Cleanup finished")))
+                                    .onErrorResume(err -> Mono.just(LogEvent.info(serverId, err.getMessage()))),
                             Mono.just(LogEvent.info(serverId, "Connecting to gateway...")),
                             gatewayService.of(serverId)
                                     .flatMapMany(gatewayClient -> hostCallGateway(request, gatewayClient)));
@@ -390,7 +395,8 @@ public class ServerService {
                             eventBus.emit(LogEvent.info(serverId, "[red][Orchestrator] Kill server for not response"));
                             return remove(serverId, NodeRemoveReason.FETCH_EVENT_TIMEOUT);
                         } else {
-                            eventBus.emit(LogEvent.info(serverId, "[red][Orchestrator] Server not response, flag to kill"));
+                            eventBus.emit(
+                                    LogEvent.info(serverId, "[red][Orchestrator] Server not response, flag to kill"));
                             flag.add(ServerFlag.NOT_RESPONSE);
                         }
 

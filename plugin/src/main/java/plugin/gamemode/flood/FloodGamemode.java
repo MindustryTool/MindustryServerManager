@@ -1,6 +1,7 @@
 package plugin.gamemode.flood;
 
 import java.util.ArrayDeque;
+import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
@@ -21,6 +22,7 @@ import mindustry.gen.Call;
 import mindustry.gen.Groups;
 import mindustry.gen.Iconc;
 import mindustry.world.Tile;
+import mindustry.world.blocks.storage.CoreBlock.CoreBuild;
 import plugin.annotations.Gamemode;
 import plugin.annotations.Init;
 import plugin.annotations.Listener;
@@ -40,6 +42,9 @@ public class FloodGamemode {
     private long startedAt = 0;
     private long[] floods = new long[0];
     private int cores = 1;
+
+    private Iterator<CoreBuild> coreIterator;
+    private boolean processing = false;
 
     @Init
     private void applyRules() {
@@ -116,21 +121,26 @@ public class FloodGamemode {
         }
     }
 
-    @Schedule(fixedDelay = 1, unit = TimeUnit.SECONDS)
+    @Schedule(fixedDelay = 100, unit = TimeUnit.MILLISECONDS)
     public void update() {
-        float startedAt = Time.millis();
-
-        Seq<Tile> tiles = new Seq<>();
-
-        suppressed.entrySet().removeIf(e -> e.getValue() < Time.millis());
-
-        for (var core : Team.crux.cores()) {
-            if (suppressed.containsKey(core)) {
-                continue;
-            }
-
-            tiles.add(around(core));
+        if (!processing) {
+            suppressed.entrySet().removeIf(e -> e.getValue() < Time.millis());
+            coreIterator = Team.crux.cores().iterator();
+            processing = true;
         }
+
+        if (coreIterator == null || !coreIterator.hasNext()) {
+            processing = false;
+            return;
+        }
+
+        Building core = coreIterator.next();
+
+        while (suppressed.containsKey(core) && coreIterator.hasNext()) {
+            core = coreIterator.next();
+        }
+
+        var tiles = around(core);
 
         for (var tile : tiles) {
             if (tile.build != null && tile.build.team != Team.crux) {
@@ -153,12 +163,6 @@ public class FloodGamemode {
             } else {
                 spread(tile, spreaded);
             }
-        }
-
-        var elapsed = Time.millis() - startedAt;
-
-        if (elapsed > 1000) {
-            Log.warn("Flood spreaded in " + elapsed + "ms");
         }
     }
 
