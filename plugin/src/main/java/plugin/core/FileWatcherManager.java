@@ -1,4 +1,4 @@
-package plugin.service;
+package plugin.core;
 
 import arc.util.Log;
 import mindustry.Vars;
@@ -16,7 +16,7 @@ import java.util.concurrent.*;
 import java.util.function.Consumer;
 
 @Component
-public class FileWatcherService {
+public class FileWatcherManager {
     private final ExecutorService executor = Executors.newSingleThreadExecutor(r -> {
         Thread t = new Thread(r, "FileWatcherService");
         t.setDaemon(true);

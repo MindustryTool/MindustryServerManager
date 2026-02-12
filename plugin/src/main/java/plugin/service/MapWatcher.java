@@ -8,15 +8,16 @@ import mindustry.Vars;
 import mindustry.maps.Maps;
 import plugin.annotations.Component;
 import plugin.annotations.Init;
+import plugin.core.FileWatcherManager;
 
 import static arc.util.Log.info;
 
 @Component
 public class MapWatcher {
     File mapFolder = Vars.customMapDirectory.file();
-    private final FileWatcherService fileWatcher;
+    private final FileWatcherManager fileWatcher;
 
-    public MapWatcher(FileWatcherService fileWatcher) {
+    public MapWatcher(FileWatcherManager fileWatcher) {
         this.fileWatcher = fileWatcher;
     }
 

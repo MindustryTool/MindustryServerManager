@@ -4,7 +4,6 @@ import arc.files.Fi;
 import arc.util.Log;
 import mindustry.Vars;
 import plugin.annotations.Configuration;
-import plugin.service.FileWatcherService;
 import plugin.utils.JsonUtils;
 
 import java.lang.reflect.Field;
@@ -13,9 +12,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 
 public class ConfigManager {
-    private final FileWatcherService fileWatcher;
+    private final FileWatcherManager fileWatcher;
 
-    public ConfigManager(FileWatcherService fileWatcher) {
+    public ConfigManager(FileWatcherManager fileWatcher) {
         this.fileWatcher = fileWatcher;
     }
 
