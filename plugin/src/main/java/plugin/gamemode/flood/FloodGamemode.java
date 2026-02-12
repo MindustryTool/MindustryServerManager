@@ -193,7 +193,7 @@ public class FloodGamemode {
         }
     }
 
-    @Schedule(fixedDelay = 16, unit = TimeUnit.MILLISECONDS)
+    @Trigger(EventType.Trigger.update)
     public void updateFlood() {
         if (!shouldUpdate()) {
             return;
@@ -272,9 +272,7 @@ public class FloodGamemode {
                 primitive[i] = tiles.get(i);
             }
 
-            Core.app.post(() -> {
-                Call.setTileBlocks(block, Team.crux, primitive);
-            });
+            Call.setTileBlocks(block, Team.crux, primitive);
         }
 
         updatedTiles.clear();
