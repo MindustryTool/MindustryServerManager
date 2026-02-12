@@ -41,6 +41,7 @@ public class FloodGamemode {
 
     private long startedAt = 0;
     private long[] floods = new long[0];
+    boolean[] spreaded = new boolean[floods.length];
     private int cores = 1;
 
     private Iterator<CoreBuild> coreIterator;
@@ -62,6 +63,7 @@ public class FloodGamemode {
     @Listener
     public void onWorldLoadEnd(EventType.WorldLoadEndEvent event) {
         floods = new long[Vars.world.width() * Vars.world.height()];
+        spreaded = new boolean[floods.length];
         cores = Math.max(1, Team.crux.cores().size);
         startedAt = Time.millis();
         suppressed.clear();
@@ -127,6 +129,7 @@ public class FloodGamemode {
             suppressed.entrySet().removeIf(e -> e.getValue() < Time.millis());
             coreIterator = Team.crux.cores().iterator();
             processing = true;
+            spreaded = new boolean[floods.length];
         }
 
         if (coreIterator == null || !coreIterator.hasNext()) {
@@ -153,8 +156,6 @@ public class FloodGamemode {
         }
 
         var number = Mathf.random(0, tiles.size);
-
-        boolean[] spreaded = new boolean[floods.length];
 
         for (int i = 0; i < number; i++) {
             var tile = tiles.random();
