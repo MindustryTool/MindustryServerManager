@@ -3,6 +3,7 @@ package plugin.utils;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
@@ -51,6 +52,7 @@ import plugin.core.Scheduler;
 public class Utils {
 
     private static final ConcurrentHashMap<String, Object> hostingLock = new ConcurrentHashMap<>();
+    private static Instant lastImagePreviewAt = Instant.now();
 
     public static final Object getHostingLock(String serverId) {
         return hostingLock.computeIfAbsent(serverId, k -> new Object());
@@ -272,34 +274,38 @@ public class Utils {
             return new byte[0];
         }
 
-        var bytes = appPostWithTimeout(() -> {
-            SaveIO.save(tempFile);
-            return (tempFile.readBytes());
-        }, 200, "Generate map preview");
+        if (lastImagePreviewAt.plusSeconds(5).isBefore(Instant.now())) {
+            lastImagePreviewAt = Instant.now();
 
-        if (bytes.length == 0) {
-            return new byte[0];
+            var bytes = appPostWithTimeout(() -> {
+                SaveIO.save(tempFile);
+                return (tempFile.readBytes());
+            }, 200, "Generate map preview");
+
+            if (bytes.length == 0) {
+                return new byte[0];
+            }
+
+            HashMap<String, String> body = new HashMap<>();
+
+            body.put("data", Base64.getEncoder().encodeToString(bytes));
+
+            HttpUtils
+                    .post("https://api.mindustry-tool.com", "api", "v4", "maps", "image-json")
+                    .header("Content-Type", "application/json")
+                    .content(JsonUtils.toJsonString(body))
+                    .timeout(120000)
+                    .error(error -> {
+                        if (error instanceof HttpStatusException httpStatusException) {
+                            Log.err("Fail to generate map preview:" + httpStatusException.response.getResultAsString());
+                        } else {
+                            Log.err("Fail to generate map preview: " + error.getMessage());
+                        }
+                    })
+                    .submit((res) -> {
+                        tempImageFile.write(res.getResultAsStream(), false);
+                    });
         }
-
-        HashMap<String, String> body = new HashMap<>();
-
-        body.put("data", Base64.getEncoder().encodeToString(bytes));
-
-        HttpUtils
-                .post("https://api.mindustry-tool.com", "api", "v4", "maps", "image-json")
-                .header("Content-Type", "application/json")
-                .content(JsonUtils.toJsonString(body))
-                .timeout(120000)
-                .error(error -> {
-                    if (error instanceof HttpStatusException httpStatusException) {
-                        Log.err("Fail to generate map preview:" + httpStatusException.response.getResultAsString());
-                    } else {
-                        Log.err("Fail to generate map preview: " + error.getMessage());
-                    }
-                })
-                .submit((res) -> {
-                    tempImageFile.write(res.getResultAsStream(), false);
-                });
 
         byte[] imageBytes = tempImageFile.readBytes();
 
