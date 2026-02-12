@@ -121,6 +121,10 @@ public class FloodGamemode {
 
     @Schedule(fixedDelay = 100, unit = TimeUnit.MILLISECONDS)
     public void update() {
+        if (floods.length == 0) {
+            return;
+        }
+
         if (!processing) {
             suppressed.entrySet().removeIf(e -> e.getValue() < Time.millis());
             coreIterator = Team.crux.cores().iterator();
