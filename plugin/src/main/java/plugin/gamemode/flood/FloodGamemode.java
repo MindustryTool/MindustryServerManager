@@ -4,6 +4,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.BitSet;
+import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
@@ -25,7 +26,9 @@ import mindustry.gen.Call;
 import mindustry.gen.Groups;
 import mindustry.gen.Iconc;
 import mindustry.type.UnitType;
+import mindustry.world.Block;
 import mindustry.world.Tile;
+import mindustry.world.blocks.storage.CoreBlock.CoreBuild;
 import plugin.annotations.Gamemode;
 import plugin.annotations.Listener;
 import plugin.annotations.Schedule;
@@ -45,7 +48,8 @@ public class FloodGamemode {
 
     private long startedAt = 0;
     private long[] floods = new long[0];
-    BitSet spreaded = new BitSet(floods.length);
+    private BitSet spreaded = new BitSet(floods.length);
+    private HashMap<Block, Seq<Integer>> updatedTiles = new HashMap<>();
     private int cores = 1;
 
     private boolean isNight = false;
@@ -224,12 +228,16 @@ public class FloodGamemode {
 
         if (allEmpty) {
             spreaded.clear();
+            updatedTiles.clear();
+
             for (var core : cores) {
-                if (suppressed.containsKey(core))
+                if (suppressed.containsKey(core)) {
                     continue;
+                }
 
                 var queue = floodQueues.computeIfAbsent(core, k -> new ArrayDeque<>());
                 var tiles = around(core);
+
                 for (var tile : tiles) {
                     if (tile.build != null && tile.build.team != Team.crux) {
                         final var damage = config.floodTiles.get(0).damage * multiplier;
@@ -237,7 +245,7 @@ public class FloodGamemode {
                     }
 
                     if (tile.build == null) {
-                        setFlood(tile, config.floodTiles.get(0), multiplier);
+                        setFlood(tile, config.floodTiles.get(0), multiplier, updatedTiles);
                     } else {
                         if (!spreaded.get(index(tile))) {
                             spreaded.set(index(tile), true);
@@ -249,16 +257,37 @@ public class FloodGamemode {
         }
 
         for (var core : cores) {
-            if (suppressed.containsKey(core))
+            if (suppressed.containsKey(core)) {
                 continue;
+            }
+
             var queue = floodQueues.get(core);
+
             if (queue != null && !queue.isEmpty()) {
-                spread(queue, spreaded, multiplier, updatesPerCore);
+                spread(queue, spreaded, multiplier, updatesPerCore, updatedTiles);
             }
         }
+
+        //
+        for (var entry : updatedTiles.entrySet()) {
+            var block = entry.getKey();
+            var tiles = entry.getValue();
+
+            int[] primitive = new int[tiles.size];
+            for (int i = 0; i < tiles.size; i++) {
+                primitive[i] = tiles.get(i);
+            }
+
+            Core.app.post(() -> {
+                Call.setTileBlocks(block, Team.crux, primitive);
+            });
+        }
+
+        updatedTiles.clear();
     }
 
-    private void spread(ArrayDeque<Tile> queue, BitSet spreaded, float multiplier, int maxUpdates) {
+    private void spread(ArrayDeque<Tile> queue, BitSet spreaded, float multiplier, int maxUpdates,
+            HashMap<Block, Seq<Integer>> updatedTiles) {
         int updates = 0;
 
         var currentTime = Time.millis();
@@ -278,7 +307,7 @@ public class FloodGamemode {
             if (evolveAt > 0 && evolveAt < currentTime) {
                 var next = config.nextTier(build);
                 if (next != null) {
-                    setFlood(tile, next, multiplier);
+                    setFlood(tile, next, multiplier, updatedTiles);
                     updates++;
                 }
             }
@@ -292,7 +321,7 @@ public class FloodGamemode {
                         if (time <= 0) {
                             floods[index(neighbor)] = currentTime + Mathf.random(1000 * 5, 1000 * 10);
                         } else if (time <= currentTime) {
-                            setFlood(neighbor, config.floodTiles.get(0), multiplier);
+                            setFlood(neighbor, config.floodTiles.get(0), multiplier, updatedTiles);
                             updates++;
                         }
                     }
@@ -311,9 +340,8 @@ public class FloodGamemode {
         }
     }
 
-    private void setFlood(Tile tile, FloodTile floodTile, float multiplier) {
-        Core.app.post(() -> tile.setNet(floodTile.block, Team.crux, 0));
-
+    private void setFlood(Tile tile, FloodTile floodTile, float multiplier, HashMap<Block, Seq<Integer>> updatedTiles) {
+        updatedTiles.computeIfAbsent(floodTile.block, k -> new Seq<>()).add(tile.pos());
         floods[index(tile)] = Time.millis() + (long) (floodTile.evolveTime * 1000 / multiplier)
                 + Mathf.random(0, 1000 * 1);
     }
