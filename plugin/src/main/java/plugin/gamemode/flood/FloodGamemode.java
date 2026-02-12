@@ -77,7 +77,7 @@ public class FloodGamemode {
         applyRules();
     }
 
-    @Schedule(fixedRate = 10, unit = TimeUnit.SECONDS)
+    @Schedule(fixedRate = 30, unit = TimeUnit.SECONDS)
     private void spawnNightUnit() {
         if (!isNight) {
             return;
@@ -174,7 +174,7 @@ public class FloodGamemode {
         }
     }
 
-    @Schedule(fixedDelay = 34, unit = TimeUnit.MILLISECONDS)
+    @Schedule(fixedDelay = 60, unit = TimeUnit.MILLISECONDS)
     public void updateFlood() {
         if (floods.length == 0) {
             return;
