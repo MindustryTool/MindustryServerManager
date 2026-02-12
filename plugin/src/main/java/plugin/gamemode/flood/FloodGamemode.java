@@ -207,7 +207,7 @@ public class FloodGamemode {
             return;
         }
 
-        int totalUpdates = 100;
+        int totalUpdates = 50;
         int updatesPerCore = totalUpdates / Math.max(1, cores.size);
         float multiplier = getFloodMultiplier();
 
