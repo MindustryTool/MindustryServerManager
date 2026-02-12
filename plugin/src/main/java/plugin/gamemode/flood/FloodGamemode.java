@@ -121,7 +121,7 @@ public class FloodGamemode {
         }
     }
 
-    @Schedule(fixedDelay = 100, unit = TimeUnit.MILLISECONDS)
+    @Schedule(fixedDelay = 50, unit = TimeUnit.MILLISECONDS)
     public void update() {
         if (!processing) {
             suppressed.entrySet().removeIf(e -> e.getValue() < Time.millis());
