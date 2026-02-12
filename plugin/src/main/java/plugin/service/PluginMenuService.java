@@ -31,7 +31,7 @@ public class PluginMenuService {
     @Schedule(fixedDelay = 1, unit = TimeUnit.SECONDS)
     public void cleanStaleMenus() {
         activeMenus.values().removeIf(m -> {
-            var delete = Instant.now().isAfter(m.createdAt.plusSeconds(60));
+            var delete = Instant.now().isAfter(m.createdAt.plusSeconds(60 * 15));
 
             if (delete && m.session.player.con != null) {
                 try {
