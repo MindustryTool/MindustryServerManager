@@ -159,7 +159,7 @@ public class CataliGamemode {
         return Optional.ofNullable(res);
     }
 
-    @Schedule(fixedRate = 200, unit = TimeUnit.MILLISECONDS)
+    @Schedule(fixedRate = 50, unit = TimeUnit.MILLISECONDS)
     public void spawn() {
         if (!Vars.state.isPlaying()) {
             return;
@@ -323,7 +323,7 @@ public class CataliGamemode {
 
             if (team == null) {
                 if (canRespawn(player)) {
-                    Call.infoPopup(player.con, I18n.t(player, "@User", "[accent]/p[white]", "@to start a new team"), 1,
+                    Call.infoPopup(player.con, I18n.t(player, "@Use", "[accent]/p[white]", "@to start a new team"), 1,
                             Align.center, 0, 0, 30, 0);
                 } else {
                     Call.infoPopup(player.con,
