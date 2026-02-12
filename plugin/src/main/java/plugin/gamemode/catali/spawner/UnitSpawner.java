@@ -11,7 +11,8 @@ import mindustry.gen.Unit;
 import plugin.annotations.Gamemode;
 import plugin.gamemode.catali.CataliConfig;
 import plugin.gamemode.catali.CataliGamemode;
-import plugin.gamemode.catali.ai.GuardRadiusAI;
+import plugin.gamemode.catali.ai.FlyingRadiusAI;
+import plugin.gamemode.catali.ai.GroundRadiusAI;
 
 @Gamemode("catali")
 @RequiredArgsConstructor
@@ -49,8 +50,11 @@ public class UnitSpawner {
                         Unit u = unit.create(team);
                         var spawnX = tile.worldx() + Mathf.random(largestUnit.hitSize);
                         var spawnY = tile.worldy() + Mathf.random(largestUnit.hitSize);
+                        var radius = 50 * Vars.tilesize;
 
-                        u.controller(new GuardRadiusAI(maxCount, spawnY, 50 * Vars.tilesize));
+                        u.controller(unit.flying //
+                                ? new FlyingRadiusAI(spawnX, spawnY, radius)
+                                : new GroundRadiusAI(spawnX, spawnY, radius));
                         u.set(spawnX, spawnY);
                         u.add();
                     });

@@ -1,14 +1,14 @@
 package plugin.gamemode.catali.ai;
 
 import arc.math.geom.Vec2;
-import mindustry.ai.types.GroundAI;
+import mindustry.ai.types.FlyingAI;
 
-public class GuardRadiusAI extends GroundAI {
+public class FlyingRadiusAI extends FlyingAI {
 
     private final Vec2 center = new Vec2();
     private float radius;
 
-    public GuardRadiusAI(float x, float y, float radius) {
+    public FlyingRadiusAI(float x, float y, float radius) {
         this.center.set(x, y);
         this.radius = radius;
     }
