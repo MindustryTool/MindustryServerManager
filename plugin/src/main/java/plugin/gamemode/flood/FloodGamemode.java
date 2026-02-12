@@ -54,8 +54,8 @@ public class FloodGamemode {
     private boolean isNight = false;
     private Instant cycleChangeAt = Instant.now();
 
-    private Duration dayDuration = Duration.ofMinutes(6);
-    private Duration nightDuration = Duration.ofMinutes(4);
+    private Duration dayDuration = Duration.ofMinutes(12);
+    private Duration nightDuration = Duration.ofMinutes(8);
 
     private void applyRules() {
         Vars.state.rules.enemyCoreBuildRadius = 0f;
