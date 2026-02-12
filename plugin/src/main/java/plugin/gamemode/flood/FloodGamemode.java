@@ -224,7 +224,7 @@ public class FloodGamemode {
     }
 
     private void spread(Tile start, BitSet spreaded, float multiplier) {
-        int MAX_UPDATES = 150;
+        int MAX_UPDATES = 100;
         int updates = 0;
 
         ArrayDeque<Tile> queue = new ArrayDeque<>(MAX_UPDATES);

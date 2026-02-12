@@ -141,6 +141,8 @@ public class CataliGamemode {
         Vars.state.rules.coreCapture = false;
 
         Team.sharded.rules().blockHealthMultiplier = 999999;
+
+        Call.setRules(Vars.state.rules);
     }
 
     public CataliTeamData findTeam(Player player) {
