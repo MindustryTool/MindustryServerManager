@@ -102,15 +102,15 @@ public class FloodGamemode {
             unitType = UnitTypes.spiroct;
         } else if (elapsedMinutes < 60) {
             unitType = UnitTypes.arkyid;
-        } else if (elapsedMinutes < 90) {
+        } else {
             unitType = UnitTypes.toxopid;
         }
 
         if (unitType == null) {
             return;
         }
-
-        for (var core : Team.crux.cores()) {
+        for (int i = 0; i < suppressed.size(); i++) {
+            var core = Team.crux.cores().random();
             var unit = unitType.create(Team.crux);
             Core.app.post(() -> {
                 unit.set(core.getX(), core.getY());
@@ -328,7 +328,7 @@ public class FloodGamemode {
         cores = Math.max(Math.max(cores, Team.crux.cores().size), 1);
 
         var elapsedMinutes = (Time.millis() - startedAt) / 1000 / 60;
-        var destroyedCores = cores - Team.crux.cores().size;
+        var destroyedCores = (cores - Team.crux.cores().size) + suppressed.size();
 
         return 1f + (destroyedCores / cores) + (0.01f * elapsedMinutes) + (isNight ? 2 : 0);
     }
