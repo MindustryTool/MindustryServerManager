@@ -7,6 +7,7 @@ import arc.struct.Seq;
 import arc.util.Align;
 import arc.util.Log;
 import lombok.RequiredArgsConstructor;
+import lombok.var;
 import mindustry.Vars;
 import mindustry.content.StatusEffects;
 import mindustry.content.UnitTypes;
@@ -583,10 +584,24 @@ public class CataliGamemode {
             return;
         }
 
+        Team temp = null;
+
         var bulletOwner = e.bullet.owner();
 
-        if (bulletOwner instanceof Teamc teamc) {
-            var killerTeam = teams.find(team -> team.team.id == teamc.team().id);
+        if (bulletOwner != null && bulletOwner instanceof Teamc teamc) {
+            temp = teamc.team();
+        }
+
+        var shooter = e.bullet.shooter();
+
+        if (shooter != null && shooter instanceof Teamc teamc) {
+            temp = teamc.team();
+        }
+
+        Team team = temp;
+
+        if (team != null) {
+            var killerTeam = teams.find(t -> t.team.id == team.id);
 
             if (killerTeam == null) {
                 return;
@@ -601,7 +616,7 @@ public class CataliGamemode {
 
             PluginEvents.fire(new ExpGainEvent(killerTeam, exp, e.unit.x, e.unit.y));
 
-            CataliTeamData victimTeam = teams.find(team -> team.team.id == e.unit.team.id);
+            CataliTeamData victimTeam = teams.find(t -> t.team.id == e.unit.team.id);
 
             if (victimTeam == null) {
                 if (!killerTeam.canHaveMoreUnit()) {
