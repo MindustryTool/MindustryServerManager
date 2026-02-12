@@ -190,7 +190,7 @@ public class FloodGamemode {
         }
     }
 
-    @Schedule(fixedDelay = 60, unit = TimeUnit.MILLISECONDS)
+    @Schedule(fixedDelay = 16, unit = TimeUnit.MILLISECONDS)
     public void updateFlood() {
         if (!shouldUpdate()) {
             return;
