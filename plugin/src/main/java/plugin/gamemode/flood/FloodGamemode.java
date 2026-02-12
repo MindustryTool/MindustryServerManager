@@ -125,7 +125,7 @@ public class FloodGamemode {
             Call.label("[scarlet]" + Iconc.warning + " *Suppressed*", 1.1f, core.getX(), core.getY());
         }
 
-        Duration time = Duration.between(cycleChangeAt.plus(isNight ? nightDuration : dayDuration), Instant.now());
+        Duration time = Duration.between(Instant.now(), cycleChangeAt.plus(isNight ? nightDuration : dayDuration));
 
         Call.infoPopup((isNight ? "[scarlet]" : "") + "Flood: " + getFloodMultiplier() * 100 + "%\n" +
                 "Suppressed: " + suppressed.size() + "/" + cores + "\n" +
