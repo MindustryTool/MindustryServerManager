@@ -140,7 +140,7 @@ public class FloodGamemode {
                 "Suppressed: " + suppressed.size() + "/" + cores + "\n" +
                 (isNight ? "Day in" : "Night in") + ": " + TimeUtils.toSeconds(time)
         //
-                , 1.1f, Align.center | Align.right, 4, 4, 4, 4);
+                , 1.1f, Align.center | Align.right, 200, 4, 4, 4);
     }
 
     @Trigger(EventType.Trigger.update)
