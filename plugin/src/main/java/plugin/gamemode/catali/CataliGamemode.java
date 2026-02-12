@@ -614,24 +614,10 @@ public class CataliGamemode {
             return;
         }
 
-        Team temp = null;
-
-        var bulletOwner = e.bullet.owner();
-
-        if (bulletOwner != null && bulletOwner instanceof Teamc teamc) {
-            temp = teamc.team();
-        }
-
         var shooter = e.bullet.shooter();
 
         if (shooter != null && shooter instanceof Teamc teamc) {
-            temp = teamc.team();
-        }
-
-        Team team = temp;
-
-        if (team != null) {
-            var killerTeam = teams.find(t -> t.team.id == team.id);
+            var killerTeam = teams.find(t -> t.team.id == teamc.team().id);
 
             if (killerTeam == null) {
                 return;
@@ -693,10 +679,11 @@ public class CataliGamemode {
     }
 
     @Listener
-    public void onBlockDestroy(BuildingBulletDestroyEvent e) {
-        var bulletOwner = e.bullet.owner();
+    public void onBlockBulletDestroy(BuildingBulletDestroyEvent e) {
 
-        if (bulletOwner instanceof Teamc teamc) {
+        var shooter = e.bullet.shooter();
+
+        if (shooter != null && shooter instanceof Teamc teamc) {
             var killerTeam = teams.find(team -> team.team.id == teamc.team().id);
             if (killerTeam == null) {
                 return;
