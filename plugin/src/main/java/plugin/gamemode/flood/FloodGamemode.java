@@ -28,7 +28,6 @@ import mindustry.gen.Iconc;
 import mindustry.type.UnitType;
 import mindustry.world.Block;
 import mindustry.world.Tile;
-import mindustry.world.blocks.storage.CoreBlock.CoreBuild;
 import plugin.annotations.Gamemode;
 import plugin.annotations.Listener;
 import plugin.annotations.Schedule;
@@ -217,16 +216,27 @@ public class FloodGamemode {
 
         floodQueues.keySet().removeIf(b -> !b.isValid() || b.team != Team.crux);
 
-        boolean allEmpty = true;
-        for (var core : cores) {
-            var q = floodQueues.get(core);
-            if (q != null && !q.isEmpty()) {
-                allEmpty = false;
-                break;
-            }
-        }
+        boolean allEmpty = cores
+                .map(c -> floodQueues.get(c))
+                .allMatch(q -> q == null || q.isEmpty());
 
         if (allEmpty) {
+            // Flush
+            for (var entry : updatedTiles.entrySet()) {
+                var block = entry.getKey();
+                var tiles = entry.getValue();
+
+                int[] primitive = new int[tiles.size];
+                for (int i = 0; i < tiles.size; i++) {
+                    primitive[i] = tiles.get(i);
+                }
+
+                Core.app.post(() -> {
+                    Call.setTileBlocks(block, Team.crux, primitive);
+                });
+            }
+
+            updatedTiles.clear();
             spreaded.clear();
             updatedTiles.clear();
 
@@ -267,23 +277,6 @@ public class FloodGamemode {
                 spread(queue, spreaded, multiplier, updatesPerCore, updatedTiles);
             }
         }
-
-        //
-        for (var entry : updatedTiles.entrySet()) {
-            var block = entry.getKey();
-            var tiles = entry.getValue();
-
-            int[] primitive = new int[tiles.size];
-            for (int i = 0; i < tiles.size; i++) {
-                primitive[i] = tiles.get(i);
-            }
-
-            Core.app.post(() -> {
-                Call.setTileBlocks(block, Team.crux, primitive);
-            });
-        }
-
-        updatedTiles.clear();
     }
 
     private void spread(ArrayDeque<Tile> queue, BitSet spreaded, float multiplier, int maxUpdates,
