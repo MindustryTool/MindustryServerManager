@@ -8,7 +8,9 @@ import arc.Core;
 import arc.files.Fi;
 import arc.struct.Seq;
 import arc.util.Log;
+import arc.util.Strings;
 import mindustry.Vars;
+import mindustry.gen.Call;
 import mindustry.gen.Groups;
 import plugin.annotations.Component;
 import plugin.annotations.Schedule;
@@ -50,8 +52,9 @@ public class PluginUpdater {
 
             writeUpdatedAt(pluginData, updatedAt);
 
-            Log.info("[cyan]Plugin @/@/@ updated, version: @", pluginData.getOwner(), pluginData.getRepo(),
-                    pluginData.getTag(), updatedAt);
+            Call.sendMessage(Strings.format("[cyan]Plugin @/@/@ updated, version: @", pluginData.getOwner(),
+                    pluginData.getRepo(), pluginData.getTag(), updatedAt));
+            Call.sendMessage("[scarlet]Server scheduled for a restart");
         }
 
         if (!needUpdate && !isScheduled) {
