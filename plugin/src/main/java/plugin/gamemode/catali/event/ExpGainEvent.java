@@ -8,7 +8,7 @@ import plugin.gamemode.catali.data.CataliTeamData;
 @RequiredArgsConstructor
 public class ExpGainEvent {
     public final CataliTeamData team;
-    public final int amount;
+    public final float amount;
     public final float x;
     public final float y;
 }

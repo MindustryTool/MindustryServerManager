@@ -8,6 +8,7 @@ import java.util.Set;
 
 import arc.struct.Seq;
 import mindustry.content.StatusEffects;
+import mindustry.content.UnitTypes;
 import mindustry.gen.Unit;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -47,9 +48,20 @@ public class CataliConfig {
     public List<BlockSpawnChanceEntry> blockSpawnChance = _getBlockSpawnChance();
     public List<UnitUpgradeEntry> unitUpgrade = _getUnitUpgrade();
     public List<UnitSpawnChance> unitSpawnChance = _getUnitSpawnChance();
+    public Seq<UnitType> bossUnits = Seq.with(
+            UnitTypes.eclipse,
+            UnitTypes.toxopid,
+            UnitTypes.corvus,
+            UnitTypes.navanax,
+            UnitTypes.omura,
+            UnitTypes.conquer,
+            UnitTypes.reign//
+    );
 
     public int unitStartSpawnLevel = 15;
     public int bossStartSpawnLevel = 25;
+    public int bossRespawnSeconds = 120;
+    public float bossExpMultiplier = 10;
 
     public Set<UnitType> getUnitEvolutions(UnitType type) {
         for (var entry : unitUpgrade) {

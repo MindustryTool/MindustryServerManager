@@ -1,6 +1,7 @@
 package plugin.gamemode.catali;
 
 import arc.Core;
+import arc.graphics.Color;
 import arc.math.Mathf;
 import arc.math.geom.Vec2;
 import arc.struct.Seq;
@@ -9,9 +10,11 @@ import arc.util.Log;
 import lombok.RequiredArgsConstructor;
 import lombok.var;
 import mindustry.Vars;
+import mindustry.content.Fx;
 import mindustry.content.StatusEffects;
 import mindustry.content.UnitTypes;
 import mindustry.game.EventType.*;
+import mindustry.game.EventType;
 import mindustry.game.Team;
 import mindustry.gen.Call;
 import mindustry.gen.Groups;
@@ -26,6 +29,7 @@ import plugin.annotations.Gamemode;
 import plugin.annotations.Init;
 import plugin.annotations.Listener;
 import plugin.annotations.Schedule;
+import plugin.annotations.Trigger;
 import plugin.event.SessionCreatedEvent;
 import plugin.gamemode.catali.data.CataliTeamData;
 import plugin.gamemode.catali.event.CataliBuffRareUpgrade;
@@ -47,6 +51,8 @@ import plugin.service.SessionHandler;
 import plugin.service.SessionService;
 import plugin.utils.TimeUtils;
 import plugin.utils.Utils;
+
+import static mindustry.content.Blocks.separator;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -76,13 +82,20 @@ public class CataliGamemode {
             UnitTypes.emanate//
     );
 
-    private final Team SPECTATOR_TEAM = Team.get(255);
-    private final Team ENEMY_TEAM = Team.crux;
-    private final Team BLOCK_TEAM = Team.get(254);
     private final Duration RESPAWN_COOLDOWN = Duration.ofSeconds(10);
 
     private final Seq<Unit> shouldNotRespawn = new Seq<>();
     private final Seq<CataliTeamData> inCoreRange = new Seq<>();
+
+    private final Team SPECTATOR_TEAM = Team.get(255);
+    private final Team ENEMY_TEAM = Team.crux;
+    private final Team BLOCK_TEAM = Team.get(254);
+    private final Team BOSS_TEAM = Team.get(253);
+
+    private Unit boss = null;
+    private Instant bossSpawnAt = Instant.now();
+    private Vec2 bossSpawnPos = new Vec2();
+    private boolean canSpawnBoss = false;
 
     @Init
     public void init() {
@@ -159,6 +172,48 @@ public class CataliGamemode {
         return Optional.ofNullable(res);
     }
 
+    @Trigger(EventType.Trigger.update)
+    public void update() {
+        if (!Vars.state.isPlaying()) {
+            return;
+        }
+
+        for (var core : Team.sharded.cores()) {
+            core.maxHealth(10000000);
+            core.heal();
+        }
+
+        var highestLevel = findStrongestTeam().map(t -> t.level.level).orElse(0);
+        var canSpawnBoss = highestLevel >= config.bossStartSpawnLevel;
+
+        if (!canSpawnBoss) {
+            return;
+        }
+
+        if (bossSpawnPos.isZero()) {
+            var tile = SpawnerHelper.getSpawnTile(20);
+            if (tile != null) {
+                bossSpawnPos.set(tile);
+            }
+        } else {
+            Call.effect(Fx.launchAccelerator, bossSpawnPos.x, bossSpawnPos.y, 0, Color.white);
+        }
+
+        if (boss == null && Instant.now().isAfter(bossSpawnAt)) {
+            var bossType = config.bossUnits.random();
+            var bossHpMultiplier = (highestLevel - config.bossStartSpawnLevel + 1) * 0.01f;
+
+            bossSpawnAt = Instant.now().plusSeconds(1000000);
+            boss = bossType.create(BOSS_TEAM);
+            boss.set(bossSpawnPos);
+            boss.maxHealth(bossType.health * bossHpMultiplier);
+            boss.heal();
+            boss.add();
+
+            bossSpawnPos = new Vec2();
+        }
+    }
+
     @Schedule(fixedRate = 50, unit = TimeUnit.MILLISECONDS)
     public void spawn() {
         if (!Vars.state.isPlaying()) {
@@ -186,15 +241,8 @@ public class CataliGamemode {
             updateRespawn();
             updateTeam();
             updatePlayer();
-            healShardedCores();
         } catch (Exception e) {
             Log.err("Failed to update stats hud", e);
-        }
-    }
-
-    private void healShardedCores() {
-        for (var core : Team.sharded.cores()) {
-            core.heal();
         }
     }
 
@@ -231,7 +279,7 @@ public class CataliGamemode {
     }
 
     @Schedule(fixedRate = 1, unit = TimeUnit.SECONDS)
-    private void healTeamUnit() {
+    private void healUnit() {
         if (!Vars.state.isPlaying()) {
             return;
         }
@@ -242,6 +290,10 @@ public class CataliGamemode {
                 if (teamData != null) {
                     unit.heal(2 * teamData.upgrades.getHealthMultiplier());
                 }
+            }
+
+            if (boss != null) {
+                boss.heal(5);
             }
         } catch (Exception e) {
             Log.err("Failed to heal team unit", e);
@@ -288,22 +340,44 @@ public class CataliGamemode {
                             ? respawnSb.toString()
                             : "@No unit";
 
-                    message = I18n.t(player, "=====================\n", "@Team ID:", String.valueOf(team.team.id),
+                    String seperator = "=====================\n";
+                    String bossString = "";
+
+                    if (boss == null) {
+                        if (canSpawnBoss) {
+                            bossString = "Boss respawn in: "
+                                    + TimeUtils.toSeconds(Duration.between(Instant.now(), bossSpawnAt).abs());
+                        }
+                    } else {
+                        bossString = boss.type.emoji() + boss.health + "/" + boss.maxHealth;
+                    }
+
+                    String levelString = String.valueOf(team.level.level) + " [gray]("
+                            + String.valueOf((int) team.level.currentExp)
+                            + "/"
+                            + String.valueOf((int) team.level.requiredExp) + ")[white]";
+
+                    message = I18n.t(player, separator, "@Team ID:", String.valueOf(team.team.id),
                             "\n",
                             "@Level:",
-                            String.valueOf(team.level.level) + " [gray](" + String.valueOf((int) team.level.currentExp)
-                                    + "/"
-                                    + String.valueOf((int) team.level.requiredExp) + ")[white]",
+                            levelString,
                             "\n",
                             "@Member:", String.valueOf(team.members.size), "\n",
-                            "[sky]Hp:", String.format("%.2f", team.upgrades.getHealthMultiplier()) + "x[white]\n",
-                            "[red]Dmg:", String.format("%.2f", team.upgrades.getDamageMultiplier()) + "x[white]\n",
-                            "[accent]Exp:", String.format("%.2f", team.upgrades.getExpMultiplier()) + "x[white]\n",
-                            "[green]Regen:", String.format("%.2f", team.upgrades.getRegenMultiplier()) + "x[white]\n",
+                            "[sky]Hp:",
+                            String.format("%.2f", team.upgrades.getHealthMultiplier()) + "x[white]\n",
+                            "[red]Dmg:",
+                            String.format("%.2f", team.upgrades.getDamageMultiplier()) + "x[white]\n",
+                            "[accent]Exp:",
+                            String.format("%.2f", team.upgrades.getExpMultiplier()) + "x[white]\n",
+                            "[green]Regen:",
+                            String.format("%.2f", team.upgrades.getRegenMultiplier()) + "x[white]\n",
                             "@Upgrades:", "", String.valueOf(team.level.commonUpgradePoints), "[accent]",
                             String.valueOf(team.level.rareUpgradePoints), "[white]\n",
                             "@Unit:", units, "\n",
-                            "@Respawn:", respawn + "\n");
+                            "@Respawn:", respawn + "\n",
+                            seperator,
+                            bossString//
+                    );
 
                     Call.infoPopup(player.con, message, 1.1f, Align.right | Align.top, 200, 0, 0, 0);
                 }
@@ -566,6 +640,11 @@ public class CataliGamemode {
             return;
         }
 
+        if (e.unit == boss) {
+            bossSpawnAt = Instant.now().plusSeconds(config.bossRespawnSeconds);
+            boss = null;
+        }
+
         CataliTeamData victimTeam = teams.find(team -> team.team.id == e.unit.team.id);
 
         if (victimTeam == null) {
@@ -629,8 +708,10 @@ public class CataliGamemode {
                 exp = 10;
                 Log.warn("Missing exp for unit @", e.unit.type.name);
             }
+            var isBoss = e.unit == boss;
+            var multiplier = isBoss ? config.bossExpMultiplier : 1;
 
-            PluginEvents.fire(new ExpGainEvent(killerTeam, exp, e.unit.x, e.unit.y));
+            PluginEvents.fire(new ExpGainEvent(killerTeam, exp * multiplier, e.unit.x, e.unit.y));
 
             CataliTeamData victimTeam = teams.find(t -> t.team.id == e.unit.team.id);
 
