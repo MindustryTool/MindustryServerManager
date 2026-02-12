@@ -111,7 +111,7 @@ public class FloodGamemode {
         }
     }
 
-    @Schedule(fixedDelay = 100, unit = TimeUnit.MILLISECONDS)
+    @Schedule(fixedDelay = 34, unit = TimeUnit.MILLISECONDS)
     public void update() {
         if (floods.length == 0) {
             return;
