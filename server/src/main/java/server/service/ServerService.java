@@ -59,6 +59,7 @@ public class ServerService {
     private final ConcurrentHashMap<UUID, EnumSet<ServerFlag>> serverFlags = new ConcurrentHashMap<>();
     private final LinkedList<FluxSink<BaseEvent>> eventSinks = new LinkedList<>();
     private final ConcurrentHashMap<UUID, Consumer<LogEvent>> hostListeners = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<UUID, Flux<LogEvent>> hostFlux = new ConcurrentHashMap<>();
 
     private static enum ServerFlag {
         KILL,
@@ -136,11 +137,15 @@ public class ServerService {
     public Flux<LogEvent> host(ServerConfig request) {
         UUID serverId = request.getId();
 
+        if (hostFlux.containsKey(serverId)) {
+            return hostFlux.get(serverId);
+        }
+
         Mono<Sinks.Many<LogEvent>> supplier = Mono.fromSupplier(() -> Sinks.many()
                 .multicast()
                 .onBackpressureBuffer());
 
-        return Flux.usingWhen(supplier,
+        var flux = Flux.usingWhen(supplier,
                 sink -> {
                     hostListeners.put(serverId, event -> sink.emitNext(event, Sinks.EmitFailureHandler.FAIL_FAST));
 
@@ -167,6 +172,10 @@ public class ServerService {
         )
                 .doOnError(Log::err)
                 .onErrorResume(err -> Mono.just(LogEvent.error(serverId, err.getMessage())));
+
+        hostFlux.put(serverId, flux);
+
+        return flux.doFinally(signal -> hostFlux.remove(serverId));
     }
 
     private Mono<Void> cleanup(UUID serverId, Sinks.Many<LogEvent> sink) {
