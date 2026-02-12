@@ -374,7 +374,7 @@ public class CataliGamemode {
                             "@Upgrades:", "", String.valueOf(team.level.commonUpgradePoints), "[accent]",
                             String.valueOf(team.level.rareUpgradePoints), "[white]\n",
                             "@Unit:", units, "\n",
-                            "@Respawn:", respawn + "\n",
+                            "@Respawn:", respawn, "\n",
                             seperator,
                             bossString//
                     );

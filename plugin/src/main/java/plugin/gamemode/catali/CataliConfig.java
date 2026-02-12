@@ -249,8 +249,8 @@ public class CataliConfig {
     private List<UnitUpgradeEntry> _getUnitUpgrade() {
         List<UnitUpgradeEntry> unitUpgrade = new ArrayList<>();
 
-        unitUpgrade.add(new UnitUpgradeEntry(poly, set(dagger, flare, retusa, nova, mega)));
-        unitUpgrade.add(new UnitUpgradeEntry(dagger, set(mace, atrax, stell)));
+        unitUpgrade.add(new UnitUpgradeEntry(poly, set(dagger, flare, retusa, nova, mega, stell, elude, merui)));
+        unitUpgrade.add(new UnitUpgradeEntry(dagger, set(mace, atrax)));
         unitUpgrade.add(new UnitUpgradeEntry(mace, set(fortress)));
         unitUpgrade.add(new UnitUpgradeEntry(fortress, set(scepter)));
         unitUpgrade.add(new UnitUpgradeEntry(scepter, set(reign)));
@@ -261,7 +261,7 @@ public class CataliConfig {
         unitUpgrade.add(new UnitUpgradeEntry(locus, set(precept)));
         unitUpgrade.add(new UnitUpgradeEntry(precept, set(vanquish)));
         unitUpgrade.add(new UnitUpgradeEntry(vanquish, set(conquer)));
-        unitUpgrade.add(new UnitUpgradeEntry(flare, set(horizon, elude)));
+        unitUpgrade.add(new UnitUpgradeEntry(flare, set(horizon)));
         unitUpgrade.add(new UnitUpgradeEntry(horizon, set(zenith)));
         unitUpgrade.add(new UnitUpgradeEntry(zenith, set(antumbra)));
         unitUpgrade.add(new UnitUpgradeEntry(antumbra, set(eclipse)));
@@ -277,7 +277,7 @@ public class CataliConfig {
         unitUpgrade.add(new UnitUpgradeEntry(minke, set(bryde)));
         unitUpgrade.add(new UnitUpgradeEntry(bryde, set(sei)));
         unitUpgrade.add(new UnitUpgradeEntry(sei, set(omura)));
-        unitUpgrade.add(new UnitUpgradeEntry(nova, set(pulsar, merui)));
+        unitUpgrade.add(new UnitUpgradeEntry(nova, set(pulsar)));
         unitUpgrade.add(new UnitUpgradeEntry(pulsar, set(quasar)));
         unitUpgrade.add(new UnitUpgradeEntry(quasar, set(vela)));
         unitUpgrade.add(new UnitUpgradeEntry(vela, set(corvus)));

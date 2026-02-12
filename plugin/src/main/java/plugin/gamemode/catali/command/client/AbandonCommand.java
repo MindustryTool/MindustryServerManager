@@ -1,4 +1,4 @@
-package plugin.gamemode.catali.command;
+package plugin.gamemode.catali.command.client;
 
 import plugin.annotations.Gamemode;
 import plugin.commands.PluginClientCommand;
