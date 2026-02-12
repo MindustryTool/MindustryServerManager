@@ -54,6 +54,10 @@ public class FloodGamemode {
     private Duration dayDuration = Duration.ofMinutes(12);
     private Duration nightDuration = Duration.ofMinutes(8);
 
+    private boolean shouldUpdate() {
+        return Vars.state.isPlaying();
+    }
+
     private void applyRules() {
         Vars.state.rules.enemyCoreBuildRadius = 0f;
         Team.crux.rules().extraCoreBuildRadius = 0f;
@@ -119,6 +123,10 @@ public class FloodGamemode {
 
     @Schedule(fixedRate = 1, unit = TimeUnit.SECONDS)
     public void updateUI() {
+        if (!shouldUpdate()) {
+            return;
+        }
+
         for (var core : suppressed.keySet()) {
             Call.label("[scarlet]" + Iconc.warning + " *Suppressed*", 1.1f, core.getX(), core.getY());
         }
@@ -134,6 +142,10 @@ public class FloodGamemode {
 
     @Trigger(EventType.Trigger.update)
     private void update() {
+        if (!shouldUpdate()) {
+            return;
+        }
+
         for (var core : Team.crux.cores()) {
             var damaged = core.maxHealth - core.health;
             core.maxHealth(100000000);
@@ -154,6 +166,10 @@ public class FloodGamemode {
 
     @Schedule(fixedDelay = 1, unit = TimeUnit.SECONDS)
     private void updateUnitDamgeOnFlood() {
+        if (!shouldUpdate()) {
+            return;
+        }
+
         for (var unit : Groups.unit) {
             if (unit.team == Team.crux) {
                 continue;
@@ -176,6 +192,10 @@ public class FloodGamemode {
 
     @Schedule(fixedDelay = 60, unit = TimeUnit.MILLISECONDS)
     public void updateFlood() {
+        if (!shouldUpdate()) {
+            return;
+        }
+
         if (floods.length != Vars.world.width() * Vars.world.height()) {
             return;
         }
@@ -344,6 +364,10 @@ public class FloodGamemode {
 
     @Schedule(fixedRate = 1, unit = TimeUnit.SECONDS)
     private void updateSuppress() {
+        if (!shouldUpdate()) {
+            return;
+        }
+
         for (var entry : damageReceived.entrySet()) {
             var core = entry.getKey();
             var damage = entry.getValue();
