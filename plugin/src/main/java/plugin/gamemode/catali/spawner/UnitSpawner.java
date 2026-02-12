@@ -4,12 +4,14 @@ import arc.Core;
 import arc.math.Mathf;
 import arc.util.Log;
 import lombok.RequiredArgsConstructor;
+import mindustry.Vars;
 import mindustry.game.Team;
 import mindustry.gen.Groups;
 import mindustry.gen.Unit;
 import plugin.annotations.Gamemode;
 import plugin.gamemode.catali.CataliConfig;
 import plugin.gamemode.catali.CataliGamemode;
+import plugin.gamemode.catali.ai.GuardRadiusAI;
 
 @Gamemode("catali")
 @RequiredArgsConstructor
@@ -45,9 +47,11 @@ public class UnitSpawner {
 
                     Core.app.post(() -> {
                         Unit u = unit.create(team);
+                        var spawnX = tile.worldx() + Mathf.random(largestUnit.hitSize);
+                        var spawnY = tile.worldy() + Mathf.random(largestUnit.hitSize);
 
-                        u.set(tile.worldx() + Mathf.random(largestUnit.hitSize),
-                                tile.worldy() + Mathf.random(largestUnit.hitSize));
+                        u.controller(new GuardRadiusAI(maxCount, spawnY, 50 * Vars.tilesize));
+                        u.set(spawnX, spawnY);
                         u.add();
                     });
                 }
