@@ -178,7 +178,7 @@ public class FloodGamemode {
 
     @Schedule(fixedDelay = 60, unit = TimeUnit.MILLISECONDS)
     public void updateFlood() {
-        if (floods.length == 0) {
+        if (floods.length != Vars.world.width() * Vars.world.height()) {
             return;
         }
 
