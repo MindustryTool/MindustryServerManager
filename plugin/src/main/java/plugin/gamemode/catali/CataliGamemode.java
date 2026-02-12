@@ -161,6 +161,10 @@ public class CataliGamemode {
 
     @Schedule(fixedRate = 200, unit = TimeUnit.MILLISECONDS)
     public void spawn() {
+        if (!Vars.state.isPlaying()) {
+            return;
+        }
+
         try {
             blockSpawner.spawn(BLOCK_TEAM);
 
@@ -174,7 +178,7 @@ public class CataliGamemode {
 
     @Schedule(fixedRate = 1, unit = TimeUnit.SECONDS)
     private void updateLogic() {
-        if (!Vars.state.isGame()) {
+        if (!Vars.state.isPlaying()) {
             return;
         }
 
@@ -196,6 +200,10 @@ public class CataliGamemode {
 
     @Schedule(fixedRate = 1, unit = TimeUnit.SECONDS)
     private void updateCoreExp() {
+        if (!Vars.state.isPlaying()) {
+            return;
+        }
+
         for (var team : teams) {
             var within = false;
 
@@ -224,6 +232,10 @@ public class CataliGamemode {
 
     @Schedule(fixedRate = 1, unit = TimeUnit.SECONDS)
     private void healTeamUnit() {
+        if (!Vars.state.isPlaying()) {
+            return;
+        }
+
         try {
             for (var unit : Groups.unit) {
                 var teamData = findTeam(unit.team);
@@ -238,6 +250,10 @@ public class CataliGamemode {
 
     @Schedule(fixedRate = 1, unit = TimeUnit.SECONDS)
     private void updateStatsHud() {
+        if (!Vars.state.isPlaying()) {
+            return;
+        }
+
         try {
             for (var player : Groups.player) {
                 var team = findTeam(player);
@@ -527,6 +543,17 @@ public class CataliGamemode {
                         5, Align.center, 5, 5, 5, 5);
             }
         }
+    }
+
+    public void abandonUnit(Unit unit) {
+        shouldNotRespawn.add(unit);
+        Core.app.post(() -> {
+            unit.kill();
+        });
+    }
+
+    public void abandonTeam(CataliTeamData team) {
+        PluginEvents.fire(new TeamFallenEvent(team));
     }
 
     @Listener
