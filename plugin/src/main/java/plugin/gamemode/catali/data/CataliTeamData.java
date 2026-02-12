@@ -232,34 +232,39 @@ public class CataliTeamData {
         }
 
         Tile safeTile = null;
-        Tile tile = null;
-        int maxSearchRange = 5;
-        // Search for safe tile arround
 
-        for (int i = 1; i < maxSearchRange; i++) {
-            for (int x = 1 - i; x < i; x++) {
-                tile = Vars.world.tile(spawnX + x, spawnY - i);
-                if (SpawnerHelper.isTileSafe(tile, type)) {
-                    safeTile = tile;
-                    break;
-                }
-                tile = Vars.world.tile(spawnX + x, spawnY + i);
-                if (SpawnerHelper.isTileSafe(tile, type)) {
-                    safeTile = tile;
-                    break;
-                }
-            }
+        if (type.flying == true) {
+            safeTile = Vars.world.tile(spawnX, spawnY);
+        } else {
+            Tile tile = null;
+            int maxSearchRange = 5;
+            // Search for safe tile arround
 
-            for (int y = 1 - i; y < i; y++) {
-                tile = Vars.world.tile(spawnX - i, spawnY + y);
-                if (SpawnerHelper.isTileSafe(tile, type)) {
-                    safeTile = tile;
-                    break;
+            for (int i = 1; i < maxSearchRange; i++) {
+                for (int x = 1 - i; x < i; x++) {
+                    tile = Vars.world.tile(spawnX + x, spawnY - i);
+                    if (SpawnerHelper.isTileSafe(tile, type)) {
+                        safeTile = tile;
+                        break;
+                    }
+                    tile = Vars.world.tile(spawnX + x, spawnY + i);
+                    if (SpawnerHelper.isTileSafe(tile, type)) {
+                        safeTile = tile;
+                        break;
+                    }
                 }
-                tile = Vars.world.tile(spawnX + i, spawnY + y);
-                if (SpawnerHelper.isTileSafe(tile, type)) {
-                    safeTile = tile;
-                    break;
+
+                for (int y = 1 - i; y < i; y++) {
+                    tile = Vars.world.tile(spawnX - i, spawnY + y);
+                    if (SpawnerHelper.isTileSafe(tile, type)) {
+                        safeTile = tile;
+                        break;
+                    }
+                    tile = Vars.world.tile(spawnX + i, spawnY + y);
+                    if (SpawnerHelper.isTileSafe(tile, type)) {
+                        safeTile = tile;
+                        break;
+                    }
                 }
             }
         }

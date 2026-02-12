@@ -347,15 +347,18 @@ public class CataliGamemode {
         Seq<CataliTeamData> remove = new Seq<>();
 
         for (var team : teams) {
+            var leader = team.leader();
+
+            if (leader != null) {
+                team.refreshTimeout();
+            }
+
             if ((!team.hasUnit() && team.isTimeout()) || (team.leader() == null && team.isTimeout())) {
                 remove.add(team);
-            } else if (team.spawning == true) {
-                var leader = Groups.player.find(player -> player.uuid().equals(team.leaderUuid));
+                continue;
+            }
 
-                if (leader == null) {
-                    continue;
-                }
-
+            if (team.spawning == true && leader != null) {
                 Call.infoPopup(leader.con, I18n.t(leader, "@Tap to spawn"), 2, Align.center, 0, 0, 0, 0);
             }
         }
