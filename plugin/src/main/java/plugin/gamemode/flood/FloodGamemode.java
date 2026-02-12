@@ -1,6 +1,7 @@
 package plugin.gamemode.flood;
 
 import java.util.ArrayDeque;
+import java.util.BitSet;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -41,7 +42,7 @@ public class FloodGamemode {
 
     private long startedAt = 0;
     private long[] floods = new long[0];
-    boolean[] spreaded = new boolean[floods.length];
+    BitSet spreaded = new BitSet(floods.length);
     private int cores = 1;
 
     private Iterator<CoreBuild> coreIterator;
@@ -63,7 +64,7 @@ public class FloodGamemode {
     @Listener
     public void onWorldLoadEnd(EventType.WorldLoadEndEvent event) {
         floods = new long[Vars.world.width() * Vars.world.height()];
-        spreaded = new boolean[floods.length];
+        spreaded = new BitSet(floods.length);
         cores = Math.max(1, Team.crux.cores().size);
         startedAt = Time.millis();
         suppressed.clear();
@@ -123,13 +124,13 @@ public class FloodGamemode {
         }
     }
 
-    @Schedule(fixedDelay = 50, unit = TimeUnit.MILLISECONDS)
+    @Schedule(fixedDelay = 100, unit = TimeUnit.MILLISECONDS)
     public void update() {
         if (!processing) {
             suppressed.entrySet().removeIf(e -> e.getValue() < Time.millis());
             coreIterator = Team.crux.cores().iterator();
             processing = true;
-            spreaded = new boolean[floods.length];
+            spreaded.clear();
         }
 
         if (coreIterator == null || !coreIterator.hasNext()) {
@@ -167,10 +168,10 @@ public class FloodGamemode {
         }
     }
 
-    private void spread(Tile start, boolean[] spreaded) {
+    private void spread(Tile start, BitSet spreaded) {
         ArrayDeque<Tile> queue = new ArrayDeque<>();
 
-        spreaded[index(start)] = true;
+        spreaded.set(index(start), true);
         queue.add(start);
 
         while (!queue.isEmpty()) {
@@ -210,8 +211,8 @@ public class FloodGamemode {
                         if (currentTier != null) {
                             Core.app.post(() -> neighborBuild.damage(currentTier.damage * getFloodMultiplier()));
                         }
-                    } else if (!spreaded[index(neighbor)]) {
-                        spreaded[index(neighbor)] = true;
+                    } else if (!spreaded.get(index(neighbor))) {
+                        spreaded.set(index(neighbor), true);
                         queue.add(neighbor);
                     }
                 }
