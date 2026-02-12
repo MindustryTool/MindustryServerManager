@@ -221,22 +221,6 @@ public class FloodGamemode {
                 .allMatch(q -> q == null || q.isEmpty());
 
         if (allEmpty) {
-            // Flush
-            for (var entry : updatedTiles.entrySet()) {
-                var block = entry.getKey();
-                var tiles = entry.getValue();
-
-                int[] primitive = new int[tiles.size];
-                for (int i = 0; i < tiles.size; i++) {
-                    primitive[i] = tiles.get(i);
-                }
-
-                Core.app.post(() -> {
-                    Call.setTileBlocks(block, Team.crux, primitive);
-                });
-            }
-
-            updatedTiles.clear();
             spreaded.clear();
             updatedTiles.clear();
 
@@ -277,6 +261,24 @@ public class FloodGamemode {
                 spread(queue, spreaded, multiplier, updatesPerCore, updatedTiles);
             }
         }
+
+        // Flush
+        for (var entry : updatedTiles.entrySet()) {
+            var block = entry.getKey();
+            var tiles = entry.getValue();
+
+            int[] primitive = new int[tiles.size];
+            for (int i = 0; i < tiles.size; i++) {
+                primitive[i] = tiles.get(i);
+            }
+
+            Core.app.post(() -> {
+                Call.setTileBlocks(block, Team.crux, primitive);
+            });
+        }
+
+        updatedTiles.clear();
+
     }
 
     private void spread(ArrayDeque<Tile> queue, BitSet spreaded, float multiplier, int maxUpdates,
