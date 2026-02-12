@@ -53,23 +53,18 @@ public class FloodGamemode {
         Vars.state.rules.enemyCoreBuildRadius = 0f;
         Team.crux.rules().extraCoreBuildRadius = 0f;
 
+        floods = new long[Vars.world.width() * Vars.world.height()];
+        spreaded = new BitSet(floods.length);
+        cores = Team.crux.cores().size;
+        startedAt = Time.millis();
+        suppressed.clear();
+        damageReceived.clear();
+
         Log.info("Flood rules applied");
     }
 
     @Listener
     private void onPlayEvent(EventType.PlayEvent event) {
-        applyRules();
-    }
-
-    @Listener
-    public void onWorldLoadEnd(EventType.WorldLoadEndEvent event) {
-        floods = new long[Vars.world.width() * Vars.world.height()];
-        spreaded = new BitSet(floods.length);
-        cores = Math.max(1, Team.crux.cores().size);
-        startedAt = Time.millis();
-        suppressed.clear();
-        damageReceived.clear();
-
         applyRules();
     }
 
@@ -167,11 +162,13 @@ public class FloodGamemode {
 
     private void spread(Tile start, BitSet spreaded) {
         ArrayDeque<Tile> queue = new ArrayDeque<>();
+        int MAX_UPDATES = 100;
+        int updates = 0;
 
         spreaded.set(index(start), true);
         queue.add(start);
 
-        while (!queue.isEmpty()) {
+        while (!queue.isEmpty() && updates < MAX_UPDATES) {
             Tile tile = queue.poll();
 
             var build = tile.build;
@@ -187,6 +184,7 @@ public class FloodGamemode {
                 var next = config.nextTier(build);
                 if (next != null) {
                     setFlood(tile, next);
+                    updates++;
                 }
             }
 
@@ -200,6 +198,7 @@ public class FloodGamemode {
                             floods[index(neighbor)] = Time.millis() + Mathf.random(1000 * 5, 1000 * 10);
                         } else if (time <= Time.millis()) {
                             setFlood(neighbor, config.floodTiles.get(0));
+                            updates++;
                         }
                     }
                 } else {
