@@ -140,7 +140,7 @@ public class CataliTeamData {
         var leader = leader();
         var teamName = leader != null ? leader.name : String.valueOf(team.id);
 
-        return teamName;
+        return "[#" + team.color + "]" + teamName;
     }
 
     public void consumeUpgrade(CataliCommonUpgrade upgrade, int amount) {
