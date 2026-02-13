@@ -701,6 +701,10 @@ public class CataliGamemode {
             return;
         }
 
+        if (e.unit.type instanceof MissileUnitType) {
+            return;
+        }
+
         var shooter = e.bullet.shooter();
 
         if (shooter != null && shooter instanceof Teamc teamc) {
