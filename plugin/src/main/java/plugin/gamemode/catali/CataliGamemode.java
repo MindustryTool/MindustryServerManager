@@ -212,7 +212,8 @@ public class CataliGamemode {
             boss.set(bossSpawnPos);
             boss.maxHealth(bossType.health * bossHpMultiplier);
             boss.heal();
-            boss.add();
+
+            Core.app.post(() -> boss.add());
 
             bossSpawnPos = new Vec2();
         }
