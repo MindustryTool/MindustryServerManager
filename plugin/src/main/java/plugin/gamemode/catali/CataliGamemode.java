@@ -101,20 +101,12 @@ public class CataliGamemode {
 
     @Init
     public void init() {
-        UnitTypes.collaris.speed = 0.95f;
-        UnitTypes.oct.speed = 0.35f;
-        UnitTypes.omura.speed = 0.40f;
-        UnitTypes.navanax.speed = 0.5f;
-
-        Vars.content.units().forEach(unit -> {
-            unit.flying = unit.naval ? true : unit.flying;
-        });
-
         Vars.netServer.assigner = (player, players) -> {
             return SPECTATOR_TEAM;
         };
 
         applyGameRules();
+        balanceUnit();
         restoreTeam();
 
         sessionService.getLevel = session -> {
@@ -123,6 +115,17 @@ public class CataliGamemode {
         };
 
         Log.info("[accent]Cataio gamemode loaded");
+    }
+
+    private void balanceUnit() {
+        UnitTypes.collaris.speed = 0.95f;
+        UnitTypes.oct.speed = 0.35f;
+        UnitTypes.omura.speed = 0.40f;
+        UnitTypes.navanax.speed = 0.5f;
+
+        Vars.content.units().forEach(unit -> {
+            unit.flying = unit.naval ? true : unit.flying;
+        });
     }
 
     private boolean shouldUpdate() {
@@ -230,6 +233,7 @@ public class CataliGamemode {
             boss.heal();
             boss.apply(StatusEffects.boss);
             boss.apply(StatusEffects.overclock, Float.MAX_VALUE);
+            boss.apply(StatusEffects.fast, Float.MAX_VALUE);
 
             boss.add();
             bossSpawnPos = new Vec2();
