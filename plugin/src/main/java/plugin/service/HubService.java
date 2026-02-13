@@ -256,7 +256,9 @@ public class HubService {
             addServerMarker(objectives, core);
         }
 
-        Call.setObjectives(objectives);
+        if (objectives.any()) {
+            Call.setObjectives(objectives);
+        }
     }
 
     private void addServerMarker(MapObjectives objectives, ServerCore core) {
@@ -292,7 +294,6 @@ public class HubService {
         marker.world = true;
         marker.minimap = false;
         marker.fontSize = 1f;
-        
 
         MapObjective obj = new FlagObjective();
 
