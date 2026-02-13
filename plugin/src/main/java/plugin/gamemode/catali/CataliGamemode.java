@@ -52,8 +52,6 @@ import plugin.service.SessionService;
 import plugin.utils.TimeUtils;
 import plugin.utils.Utils;
 
-import static mindustry.content.Blocks.separator;
-
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
@@ -353,7 +351,7 @@ public class CataliGamemode {
                         ? respawnSb.toString()
                         : "@No unit";
 
-                String seperator = "=====================\n";
+                String separator = "=====================\n";
                 String bossString = "";
 
                 if (boss == null) {
@@ -370,11 +368,10 @@ public class CataliGamemode {
                         + "/"
                         + String.valueOf((int) team.level.requiredExp) + ")[white]";
 
-                message = I18n.t(player, separator, "@Team ID:", String.valueOf(team.team.id),
-                        "\n",
+                message = I18n.t(player, separator,
+                        "@Team ID:", String.valueOf(team.team.id), "\n",
                         "@Level:",
-                        levelString,
-                        "\n",
+                        levelString, "\n",
                         "@Member:", String.valueOf(team.members.size), "\n",
                         "[sky]Hp:",
                         String.format("%.2f", team.upgrades.getHealthMultiplier()) + "x[white]\n",
@@ -388,7 +385,7 @@ public class CataliGamemode {
                         String.valueOf(team.level.rareUpgradePoints), "[white]\n",
                         "@Unit:", units, "\n",
                         "@Respawn:", respawn, "\n",
-                        seperator,
+                        separator,
                         bossString//
                 );
 

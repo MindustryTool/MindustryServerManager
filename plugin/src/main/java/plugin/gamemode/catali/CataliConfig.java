@@ -77,7 +77,7 @@ public class CataliConfig {
     }
 
     public static Seq<StatusEffect> selectBuffsCanBeApplied(Unit unit) {
-        return Seq.with(StatusEffects.overdrive, StatusEffects.boss, StatusEffects.shielded, StatusEffects.fast, StatusEffects.overclock);
+        return Seq.with(StatusEffects.overdrive, StatusEffects.boss, StatusEffects.fast, StatusEffects.overclock);
     }
 
     private List<UnitExpEntry> _getUnitExp() {
