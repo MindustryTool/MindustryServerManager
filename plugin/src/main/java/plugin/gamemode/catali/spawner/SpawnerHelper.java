@@ -2,8 +2,6 @@ package plugin.gamemode.catali.spawner;
 
 import arc.math.Mathf;
 import mindustry.Vars;
-import mindustry.content.Blocks;
-import mindustry.gen.Groups;
 import mindustry.world.Tile;
 
 public class SpawnerHelper {
@@ -21,8 +19,8 @@ public class SpawnerHelper {
                 continue;
             }
 
-            for (int offsetX =0; offsetX < occupiedSize; offsetX++) {
-                for (int offsetY =0; offsetY < occupiedSize; offsetY++) {
+            for (int offsetX = 0; offsetX < occupiedSize; offsetX++) {
+                for (int offsetY = 0; offsetY < occupiedSize; offsetY++) {
                     var nextTile = Vars.world.tile(x + offsetX, y + offsetY);
 
                     if (!isTileSafe(nextTile, occupiedSize)) {
@@ -43,7 +41,9 @@ public class SpawnerHelper {
     }
 
     public static boolean isTileSafe(Tile tile, float occupiedSize) {
-        return tile != null && tile.block() == Blocks.air
-                && !Groups.unit.intersect(tile.worldx(), tile.worldy(), occupiedSize, occupiedSize).any();
+        return tile != null && !tile.solid()
+        // && !Groups.unit.intersect(tile.worldx(), tile.worldy(), occupiedSize,
+        // occupiedSize).any()
+        ;
     }
 }
