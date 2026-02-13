@@ -48,10 +48,6 @@ public class HttpServer {
 
     @Init
     public void init() {
-        if (app != null) {
-            app.stop();
-        }
-
         app = Javalin.create(config -> {
             config.showJavalinBanner = false;
             config.jsonMapper(new JavalinJackson().updateMapper(mapper -> {

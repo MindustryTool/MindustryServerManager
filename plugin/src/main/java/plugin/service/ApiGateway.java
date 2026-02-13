@@ -119,13 +119,19 @@ public class ApiGateway {
         body.put("source", "auto");
         body.put("target", languageCode);
 
-        var result = HttpUtils
-                .send(HttpUtils
-                        .post("https://api.mindustry-tool.com/api/v4/libre")
-                        .header("Content-Type", "application/json")//
-                        .content(JsonUtils.toJsonString(body)), 3000, TranslationDto.class);
+        try {
 
-        return result;
+            var result = HttpUtils
+                    .send(HttpUtils
+                            .post("https://api.mindustry-tool.com/api/v4/libre")
+                            .header("Content-Type", "application/json")//
+                            .content(JsonUtils.toJsonString(body)), 3000, TranslationDto.class);
+
+            return result;
+        } catch (Exception e) {
+            throw new RuntimeException(
+                    "Fail to translate: " + text + " to " + targetLanguage + ", error: " + e.getMessage());
+        }
     }
 
     public String translate(String text, Locale targetLanguage) {
