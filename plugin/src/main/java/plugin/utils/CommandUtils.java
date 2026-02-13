@@ -37,7 +37,11 @@ public class CommandUtils {
             }
 
             if (!param.isAnnotationPresent(Param.class)) {
-                resolved[i] = Registry.get(param.getType());
+                var dep = Registry.get(param.getType());
+                if (dep == null) {
+                    throw new ParamException("Dependency not found: " + param.getType().getSimpleName());
+                }
+                resolved[i] = dep;
                 continue;
             }
 
@@ -53,6 +57,11 @@ public class CommandUtils {
 
             if (argIndex >= args.length && meta.required()) {
                 throw new ParamException("Missing argument: " + param.getName());
+            }
+
+            if (argIndex > (args.length - 1) && meta.required() == false) {
+                resolved[i] = null;
+                continue;
             }
 
             String value = args[argIndex++];
