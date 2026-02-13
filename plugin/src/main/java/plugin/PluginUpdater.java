@@ -52,7 +52,7 @@ public class PluginUpdater {
 
             writeUpdatedAt(pluginData, updatedAt);
 
-            Call.sendMessage(Strings.format("[cyan]Plugin @/@/@ updated, version: @", pluginData.getOwner(),
+            Call.sendMessage(Strings.format("[#B388FF]Plugin @/@/@ updated, version: @", pluginData.getOwner(),
                     pluginData.getRepo(), pluginData.getTag(), updatedAt));
             Call.sendMessage("[scarlet]Server scheduled for a restart");
         }
