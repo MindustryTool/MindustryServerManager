@@ -491,17 +491,16 @@ public class GatewayService {
 
                         return false;
                     })
-                    .retryWhen(Retry.fixedDelay(Long.MAX_VALUE, Duration.ofSeconds(1))
+                    .retryWhen(Retry.fixedDelay(60, Duration.ofSeconds(1))
                             .filter(error -> Instant.now().isBefore(lastHeartBeatAt.plus(Duration.ofMinutes(1)))))
                     .onErrorMap(error -> new ApiError(HttpStatus.BAD_REQUEST, "Events timeout: " + error.getMessage()))
                     .doOnError(err -> {
                         eventBus.emit(LogEvent.error(id, "Fetch event timeout: " + err.getMessage()));
-                        eventBus.emit(new StopEvent(id, NodeRemoveReason.FETCH_EVENT_TIMEOUT));
                     })
                     .doOnError((error) -> onError.accept(error))
                     .onErrorComplete(ApiError.class)
                     .doFinally(signal -> {
-                        cache.remove(id);
+                        eventBus.emit(new StopEvent(id, NodeRemoveReason.FETCH_EVENT_TIMEOUT));
 
                         Log.info("Close GatewayClient: " + id + " with signal: " + signal);
                         Log.info("Running for: " + Utils.toReadableString(Duration.between(createdAt, Instant.now())));

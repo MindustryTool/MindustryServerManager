@@ -242,7 +242,7 @@ public class DockerNodeManager implements NodeManager {
 
                 dockerClient.startContainerCmd(containerId).exec();
 
-                logCallbacks.computeIfAbsent(serverId, _ignore -> createLogCallack(containerId, serverId));
+                attachLogCallback(containerId, serverId);
 
                 emitter.next(LogEvent.info(serverId, "Container " + containerId + " started"));
             } catch (Exception error) {
@@ -403,12 +403,16 @@ public class DockerNodeManager implements NodeManager {
                     var metadata = optional.orElseThrow();
                     var serverId = metadata.getConfig().getId();
 
-                    logCallbacks.computeIfAbsent(serverId, _ignore -> createLogCallack(container.getId(), serverId));
+                    attachLogCallback(container.getId(), serverId);
                 }
             } catch (Exception e) {
                 Log.err(e.getMessage());
             }
         }
+    }
+
+    private synchronized void attachLogCallback(String containerId, UUID serverId) {
+        logCallbacks.computeIfAbsent(serverId, _ignore -> createLogCallack(containerId, serverId));
     }
 
     @PreDestroy
@@ -468,9 +472,7 @@ public class DockerNodeManager implements NodeManager {
 
                             if (status.equalsIgnoreCase("start")) {
 
-                                logCallbacks.computeIfAbsent(
-                                        metadata.getConfig().getId(),
-                                        id -> createLogCallack(containerId, id));
+                                attachLogCallback(containerId, serverId);
 
                                 eventBus.emit(new StartEvent(serverId));
                             } else if (stopEvents.stream().anyMatch(stop -> status.equalsIgnoreCase(stop))) {
