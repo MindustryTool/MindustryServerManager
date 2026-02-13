@@ -19,6 +19,9 @@ import mindustry.core.Version;
 import mindustry.game.EventType.PlayerJoin;
 import mindustry.game.EventType.TapEvent;
 import mindustry.game.EventType.WorldLoadEvent;
+import mindustry.game.MapObjectives;
+import mindustry.game.MapObjectives.MapObjective;
+import mindustry.game.MapObjectives.TextMarker;
 import mindustry.game.Team;
 import mindustry.gen.Call;
 import mindustry.gen.Groups;
@@ -36,7 +39,6 @@ import plugin.Tasks;
 import plugin.menus.ServerRedirectMenu;
 import plugin.type.PaginationRequest;
 import plugin.type.ServerCore;
-import plugin.utils.Utils;
 
 @Component
 @RequiredArgsConstructor
@@ -247,20 +249,24 @@ public class HubService {
             return;
         }
 
+        MapObjectives objectives = new MapObjectives();
+
         for (var core : serverCores) {
-            renderServerLabel(core);
+            addServerMarker(objectives, core);
         }
+
+        Call.setObjectives(objectives);
     }
 
-    private void renderServerLabel(ServerCore core) {
+    private void addServerMarker(MapObjectives objectives, ServerCore core) {
         ServerDto server = core.getServer();
 
         if (server == null) {
             return;
         }
 
-        float labelX = core.getX();
-        float labelY = core.getY();
+        float x = core.getX();
+        float y = core.getY();
 
         var mods = new ArrayList<>(server.getMods());
 
@@ -269,23 +275,37 @@ public class HubService {
         var name = server.getName();
         var description = server.getDescription();
 
-        Utils.forEachPlayerLocale((locale, players) -> {
+        String message = (server.getIsOfficial() ? "[gold]" + Iconc.star + "[white] " : "") + newLine(name)
+                + "[white]\n" +
+                newLine(description) + "[white]\n\n" +
+                "[#E3F2FD]Players: [white]" + server.getPlayers() + "\n" +
+                "[#BBDEFB]Map: [white]" + newLine(server.getMapName()) + "[white]\n" +
+                "[#90CAF9]Mode: [white]" + server.getModeIcon() + " " + server.getMode() + "[white]\n" +
+                "[#405AF9]Version: [white]" + server.getGameVersion() + "[white]\n" +
+                (mods.isEmpty() ? "" : "[#4FC3F7]Mods:[] " + mods) + "[white]\n\n" +
+                (server.getStatus().isOnline() ? "[accent]" : "[sky]") + "@Tap to join server"
+                + "\n";
 
-            String message = (server.getIsOfficial() ? "[gold]" + Iconc.star + "[white] " : "") + newLine(name)
-                    + "[white]\n" +
-                    newLine(description) + "[white]\n\n" +
-                    "[#E3F2FD]Players: [white]" + server.getPlayers() + "\n" +
-                    "[#BBDEFB]Map: [white]" + newLine(server.getMapName()) + "[white]\n" +
-                    "[#90CAF9]Mode: [white]" + server.getModeIcon() + " " + server.getMode() + "[white]\n" +
-                    "[#405AF9]Version: [white]" + server.getGameVersion() + "[white]\n" +
-                    (mods.isEmpty() ? "" : "[#4FC3F7]Mods:[] " + mods) + "[white]\n\n" +
-                    (server.getStatus().isOnline() ? "[accent]" : "[sky]") + I18n.t(locale, "@Tap to join server")
-                    + "\n";
+        TextMarker marker = new TextMarker(message, x, y);
+        marker.autoscale = false; // key line
+        marker.world = true;
+        marker.minimap = false;
+        marker.fontSize = 1.4f;
 
-            for (var player : players) {
-                Call.label(player.con, message, 5, labelX, labelY);
+        MapObjective obj = new MapObjective() {
+            @Override
+            public boolean update() {
+                return false;
             }
-        });
+
+            @Override
+            public String text() {
+                return "";
+            }
+        };
+
+        obj.markers(marker);
+        objectives.add(obj);
     }
 
     public String newLine(String text) {
