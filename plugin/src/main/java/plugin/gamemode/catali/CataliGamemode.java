@@ -181,7 +181,7 @@ public class CataliGamemode {
     @Schedule(fixedRate = 1, unit = TimeUnit.SECONDS)
     private void updateBossEffect() {
         if (!bossSpawnPos.isZero()) {
-            Call.effect(Fx.launchAccelerator, bossSpawnPos.x, bossSpawnPos.y, 0, Color.white);
+            Call.effect(Fx.launchAccelerator, bossSpawnPos.x, bossSpawnPos.y, 0, Color.scarlet);
         }
 
         if (boss != null) {
