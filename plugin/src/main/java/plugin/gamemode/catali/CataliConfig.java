@@ -89,6 +89,7 @@ public class CataliConfig {
         unitExp.add(new UnitExpEntry(mace, 110));
         unitExp.add(new UnitExpEntry(pulsar, 64));
         unitExp.add(new UnitExpEntry(horizon, 68));
+        unitExp.add(new UnitExpEntry(atrax, 68));
         unitExp.add(new UnitExpEntry(mega, 92));
         unitExp.add(new UnitExpEntry(risso, 60));
         unitExp.add(new UnitExpEntry(retusa, 54));
@@ -96,6 +97,7 @@ public class CataliConfig {
         unitExp.add(new UnitExpEntry(merui, 136));
         unitExp.add(new UnitExpEntry(elude, 120));
         unitExp.add(new UnitExpEntry(fortress, 180));
+        unitExp.add(new UnitExpEntry(spiroct, 180));
         unitExp.add(new UnitExpEntry(quasar, 128));
         unitExp.add(new UnitExpEntry(zenith, 140));
         unitExp.add(new UnitExpEntry(quad, 1200));

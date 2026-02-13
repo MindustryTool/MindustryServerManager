@@ -270,7 +270,6 @@ public class CataliTeamData {
         }
 
         if (safeTile == null) {
-            Log.info("No safe tile found for team @", team);
             return false;
         }
 
