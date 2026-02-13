@@ -28,8 +28,10 @@ public class TeamLevel {
     private void levelUp() {
         level++;
 
-        if (level < 25) {
-            requiredExp *= 1.25f;
+        if (level < 10) {
+            requiredExp *= 1.35f;
+        } else if (level < 25) {
+            requiredExp *= 1.20f;
         } else if (level < 50) {
             requiredExp *= 1.15f;
         } else if (level < 100) {
