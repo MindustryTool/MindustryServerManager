@@ -33,6 +33,8 @@ public class ServerConfig {
 
     private Boolean isDefault;
 
+    private Boolean isOfficial;
+
     private float cpu;
 
     private int memory;
