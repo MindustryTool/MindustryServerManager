@@ -408,8 +408,7 @@ public class CataliGamemode {
 
             if (team == null) {
                 if (canRespawn(player)) {
-                    Call.infoPopup(player.con, I18n.t(player, "@Use", "[accent]/p[white]", "@to start a new team"), 1,
-                            Align.center, 0, 0, 30, 0);
+                    createTeam(player);
                 } else {
                     Call.infoPopup(player.con,
                             I18n.t(player, "@Respawn in",
