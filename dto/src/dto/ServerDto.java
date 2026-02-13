@@ -18,13 +18,13 @@ public class ServerDto {
     private String description;
     private String mode;
     private int port;
-    private ServerStatus status = ServerStatus.UNSET;
     private Boolean isOfficial;
     private Boolean isHub;
     private long players;
     private String mapName;
     private String gameVersion;
     private List<String> mods = new ArrayList<>();
+    private ServerStatus status = ServerStatus.UNSET;
 
     public char getModeIcon() {
         try {
