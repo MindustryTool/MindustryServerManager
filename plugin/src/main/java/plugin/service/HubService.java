@@ -293,7 +293,7 @@ public class HubService {
         marker.autoscale = false; // key line
         marker.world = true;
         marker.minimap = false;
-        marker.fontSize = 2f;
+        marker.fontSize = 1f;
 
         MapObjective obj = new FlagObjective();
 
