@@ -16,6 +16,7 @@ import mindustry.content.UnitTypes;
 import mindustry.game.EventType.*;
 import mindustry.game.EventType;
 import mindustry.game.Team;
+import mindustry.gen.Building;
 import mindustry.gen.Call;
 import mindustry.gen.Groups;
 import mindustry.gen.Player;
@@ -54,6 +55,7 @@ import plugin.utils.Utils;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -82,8 +84,9 @@ public class CataliGamemode {
 
     private final Duration RESPAWN_COOLDOWN = Duration.ofSeconds(10);
 
-    private final Seq<Unit> shouldNotRespawn = new Seq<>();
-    private final Seq<CataliTeamData> inCoreRange = new Seq<>();
+    private final HashSet<Unit> shouldNotRespawn = new HashSet<>();
+    private final HashSet<Building> expRecieved = new HashSet<>();
+    private final HashSet<CataliTeamData> inCoreRange = new HashSet<>();
 
     private final Team SPECTATOR_TEAM = Team.get(255);
     private final Team ENEMY_TEAM = Team.crux;
@@ -769,7 +772,38 @@ public class CataliGamemode {
     }
 
     @Listener
+    private void onBlockDestroy(BlockDestroyEvent e) {
+        var build = e.tile.build;
+        if (build == null) {
+            return;
+        }
+
+        if (!expRecieved.remove(build)) {
+            var exp = Utils.find(config.blockExp, item -> item.block == build.block, item -> item.exp);
+            if (exp == null) {
+                exp = 10;
+                Log.warn("Missing exp for block @", build.block.name);
+            }
+
+            var range = 10f * Vars.tilesize;
+
+            var closestUnit = Groups.unit.intersect(build.x - range / 2, build.y - range / 2, range, range).firstOpt();
+
+            if (closestUnit == null) {
+                return;
+            }
+            var team = findTeam(closestUnit.team);
+            if (team == null) {
+                return;
+            }
+
+            PluginEvents.fire(new ExpGainEvent(team, exp, build.x, build.y));
+        }
+    }
+
+    @Listener
     public void onBlockBulletDestroy(BuildingBulletDestroyEvent e) {
+        expRecieved.add(e.build);
 
         var shooter = e.bullet.shooter();
 
