@@ -201,14 +201,14 @@ public class CataliGamemode {
         }
 
         var highestLevel = findStrongestTeam().map(t -> t.level.level).orElse(0);
-        var canSpawnBoss = highestLevel >= config.bossStartSpawnLevel;
+        canSpawnBoss = highestLevel >= config.bossStartSpawnLevel;
 
         if (!canSpawnBoss) {
             return;
         }
 
         if (bossSpawnPos.isZero()) {
-            var tile = SpawnerHelper.getSpawnTile(20);
+            var tile = SpawnerHelper.getSpawnTile(1);
             if (tile != null) {
                 bossSpawnPos.set(tile);
             }
@@ -230,8 +230,7 @@ public class CataliGamemode {
             boss.apply(StatusEffects.boss);
             boss.apply(StatusEffects.overclock, Float.MAX_VALUE);
 
-            Core.app.post(() -> boss.add());
-
+            boss.add();
             bossSpawnPos = new Vec2();
         }
     }
