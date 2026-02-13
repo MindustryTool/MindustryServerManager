@@ -20,7 +20,7 @@ public class CommandUtils {
 
             if (param.getType() == Session.class) {
                 if (session == null) {
-                    throw new RuntimeException("Session is null");
+                    throw new ParamException("Session is null");
                 }
 
                 resolved[i] = session;
@@ -29,7 +29,7 @@ public class CommandUtils {
 
             if (param.getType() == Player.class) {
                 if (session == null) {
-                    throw new RuntimeException("Session is null");
+                    throw new ParamException("Session is null");
                 }
 
                 resolved[i] = session.player;
@@ -52,7 +52,7 @@ public class CommandUtils {
             }
 
             if (argIndex >= args.length && meta.required()) {
-                throw new RuntimeException("Missing argument: " + param.getName());
+                throw new ParamException("Missing argument: " + param.getName());
             }
 
             String value = args[argIndex++];
@@ -78,7 +78,7 @@ public class CommandUtils {
         if (type == boolean.class || type == Boolean.class)
             return Boolean.parseBoolean(value);
 
-        throw new RuntimeException("Unsupported param type: " + type.getName());
+        throw new ParamException("Unsupported param type: " + type.getSimpleName());
     }
 
     public static String toParamText(Method method) {
