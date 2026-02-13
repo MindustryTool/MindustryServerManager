@@ -1,5 +1,6 @@
 package plugin.commands;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -7,38 +8,53 @@ import arc.util.CommandHandler;
 import arc.util.Log;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import mindustry.gen.Call;
-import mindustry.gen.Groups;
-import plugin.Tasks;
+import mindustry.gen.Player;
+import plugin.annotations.ClientCommand;
 import plugin.annotations.Component;
 import plugin.annotations.Destroy;
-import plugin.core.Registry;
-import plugin.service.ApiGateway;
 import plugin.service.I18n;
-import plugin.type.Session;
+import plugin.service.SessionHandler;
+import plugin.utils.CommandUtils;
 import plugin.utils.Utils;
 
 @Component
 @RequiredArgsConstructor
 public class ClientCommandHandler {
 
+    private final SessionHandler sessionHandler;
+
+    @Getter
     private final List<PluginClientCommand> commands = new ArrayList<>();
 
     @Getter
     private CommandHandler handler;
 
-    private final ApiGateway apiGateway;
-
     public void registerCommands(CommandHandler handler) {
         this.handler = handler;
-
-        // Get all commands from registry
-        List<PluginClientCommand> registeredCommands = Registry.getAll(PluginClientCommand.class);
-        commands.addAll(registeredCommands);
 
         for (PluginClientCommand command : commands) {
             command.register(handler);
         }
+    }
+
+    public void addCommand(ClientCommand command, Method method, Object object) {
+        var name = command.name();
+        var description = command.description();
+
+        var admin = command.admin();
+
+        if (name == null || name.isEmpty()) {
+            throw new IllegalArgumentException("name");
+        }
+
+        if (description == null || description.isEmpty()) {
+            throw new IllegalArgumentException("description");
+        }
+
+        description = (admin ? "[scarlet]ADMIN[] - " : "") + description;
+
+        commands.add(
+                new PluginClientCommand(name, description, admin, method, object));
     }
 
     @Destroy
@@ -50,51 +66,51 @@ public class ClientCommandHandler {
         handler = null;
     }
 
-    // ... onServerChoose ...
-    public void onServerChoose(Session session, String id, String name) {
-        session.player.sendMessage(I18n.t(session.locale,
-                "[green]", "@Starting server ", "[white]", name, ", ", "[white]", "@redirection will happen soon"));
+    @Getter
+    @RequiredArgsConstructor
+    public class PluginClientCommand {
+        private final String name;
+        private final String description;
+        private final boolean admin;
+        private final Method method;
+        private final Object object;
 
-        try {
-            Tasks.io("Redirect Server", () -> {
-                var data = apiGateway.host(id);
+        public void register(CommandHandler handler) {
+            handler.register(name, CommandUtils.toParamText(method), description, this::handle);
+        }
 
-                session.player.sendMessage(I18n.t(session.locale, "[green]", "@Redirecting"));
-                Utils.forEachPlayerLocale((locale, players) -> {
-                    String msg = I18n.t(locale, session.player.coloredName(), " ", "[green]",
-                            "@redirecting to server ", "[white]", name, ", [white]", "@use ", "[accent]", "/servers",
-                            "[white]",
-                            " ", "@to follow");
+        public void handle(String[] args, Player player) {
+            if (admin && !player.admin) {
+                player.sendMessage(I18n.t(Utils.parseLocale(player.locale()), "[scarlet]",
+                        "@You must be admin to use this command."));
+                return;
+            }
 
-                    for (var p : players) {
-                        p.sendMessage(msg);
-                    }
-                });
+            var session = sessionHandler.get(player).orElse(null);
 
-                String host = "";
-                int port = 6567;
+            if (session == null) {
+                Log.info("[scarlet]Failed to get session for player.");
+                player.sendMessage(I18n.t(Utils.parseLocale(player.locale()), "[scarlet]",
+                        "@Failed to get session for player."));
+                Thread.dumpStack();
+                return;
+            }
 
-                var colon = data.lastIndexOf(":");
-
-                if (colon > 0) {
-                    host = data.substring(0, colon);
-                    port = Integer.parseInt(data.substring(colon + 1));
+            try {
+                if (method.getParameterCount() > 0) {
+                    var params = CommandUtils.mapParams(method, args, session);
+                    method.invoke(object, params);
                 } else {
-                    host = data;
+                    method.invoke(object);
                 }
-
-                final var h = host;
-                final var p = port;
-
-                Groups.player.forEach(target -> {
-                    Log.info("Redirecting player " + target.name + " to " + h + ":" + p);
-                    Call.connect(target.con, h, p);
-                });
-            });
-        } catch (Exception e) {
-            session.player.sendMessage(I18n.t(session.locale,
-                    "@Error: ", "@Can not load server"));
-            e.printStackTrace();
+            } catch (ParamException e) {
+                session.player.sendMessage(I18n.t(
+                        session.locale, "[scarlet]", "@Error: ", e.getMessage()));
+            } catch (Exception e) {
+                session.player.sendMessage(I18n.t(
+                        session.locale, "[scarlet]", "@Error"));
+                Log.err("Failed to execute command " + name, e);
+            }
         }
     }
 }

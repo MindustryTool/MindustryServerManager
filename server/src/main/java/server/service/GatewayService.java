@@ -176,6 +176,7 @@ public class GatewayService {
             if (heartbeatJob != null && !heartbeatJob.isDisposed()) {
                 heartbeatJob.dispose();
             }
+
         }
 
         public class Server {
@@ -491,8 +492,7 @@ public class GatewayService {
 
                         return false;
                     })
-                    .retryWhen(Retry.fixedDelay(60, Duration.ofSeconds(1))
-                            .filter(error -> Instant.now().isBefore(lastHeartBeatAt.plus(Duration.ofMinutes(1)))))
+                    .retryWhen(Retry.fixedDelay(60, Duration.ofSeconds(1)))
                     .onErrorMap(error -> new ApiError(HttpStatus.BAD_REQUEST, "Events timeout: " + error.getMessage()))
                     .doOnError(err -> {
                         eventBus.emit(LogEvent.error(id, "Fetch event timeout: " + err.getMessage()));

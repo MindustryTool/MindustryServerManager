@@ -1,14 +1,13 @@
 package plugin.menus;
 
 import arc.util.Log;
-import mindustry.gen.Call;
 import plugin.Cfg;
-import plugin.commands.ClientCommandHandler;
 import plugin.core.Registry;
 import plugin.service.ApiGateway;
 import plugin.service.I18n;
 import plugin.type.PaginationRequest;
 import plugin.type.Session;
+import plugin.utils.ServerUtils;
 import dto.ServerDto;
 
 import java.util.Comparator;
@@ -30,8 +29,6 @@ public class ServerListMenu extends PluginMenu<Integer> {
             this.title = I18n.t(session.locale, "@List of all servers");
             this.description = I18n.t(session.locale, "@" + Cfg.CHOOSE_SERVER_MESSAGE);
 
-            var clientCommandHandler = Registry.get(ClientCommandHandler.class);
-
             servers.stream().sorted(Comparator.comparing(ServerDto::getPlayers).reversed()).forEach(server -> {
                 row();
                 var mods = server.getMods();
@@ -42,41 +39,33 @@ public class ServerListMenu extends PluginMenu<Integer> {
 
                 if (server.getMapName() == null) {
                     option(String.format("[yellow]%s", server.getName()),
-                            (p, s) -> clientCommandHandler.onServerChoose(p, server.getId().toString(),
-                                    server.getName()));
+                            (p, s) -> ServerUtils.redirect(p.player, server));
                     option(I18n.t(session.locale, "[scarlet]", "@Server offline."),
-                            (p, s) -> clientCommandHandler.onServerChoose(p, server.getId().toString(),
-                                    server.getName()));
+                            (p, s) -> ServerUtils.redirect(p.player, server));
                 } else {
                     option(server.getName(),
-                            (p, s) -> clientCommandHandler.onServerChoose(p, server.getId().toString(),
-                                    server.getName()));
+                            (p, s) -> ServerUtils.redirect(p.player, server));
                     option(I18n.t(session.locale, "[lime]", "@Players:[] ", server.getPlayers()),
-                            (p, s) -> clientCommandHandler.onServerChoose(p, server.getId().toString(),
-                                    server.getName()));
+                            (p, s) -> ServerUtils.redirect(p.player, server));
 
                     row();
                     option(I18n.t(session.locale, "[cyan]", "@Gamemode:[] ",
                             server.getMode().toLowerCase()),
-                            (p, s) -> clientCommandHandler.onServerChoose(p, server.getId().toString(),
-                                    server.getName()));
+                            (p, s) -> ServerUtils.redirect(p.player, server));
                     option(I18n.t(session.locale, "[blue]", "@Map:[] ", server.getMapName()),
-                            (p, s) -> clientCommandHandler.onServerChoose(p, server.getId().toString(),
-                                    server.getName()));
+                            (p, s) -> ServerUtils.redirect(p.player, server));
                 }
 
                 if (server.getMods() != null && !server.getMods().isEmpty()) {
                     row();
                     option(I18n.t(session.locale, "[purple]", "@Mods:[] ", String.join(", ", mods)),
-                            (p, s) -> clientCommandHandler.onServerChoose(p, server.getId().toString(),
-                                    server.getName()));
+                            (p, s) -> ServerUtils.redirect(p.player, server));
                 }
 
                 if (server.getDescription() != null && !server.getDescription().trim().isEmpty()) {
                     row();
                     option(String.format("[grey]%s", server.getDescription()),
-                            (p, s) -> clientCommandHandler.onServerChoose(p, server.getId().toString(),
-                                    server.getName()));
+                            (p, s) -> ServerUtils.redirect(p.player, server));
                 }
 
                 row();
@@ -87,23 +76,11 @@ public class ServerListMenu extends PluginMenu<Integer> {
             if (page > 0) {
                 option(I18n.t(session.locale, "[orange]", "@Previous"),
                         (p, s) -> new ServerListMenu().send(p, s - 1));
-            } else {
-                option(I18n.t(session.locale, "@First page"), (p, s) -> {
-                    new ServerListMenu().send(p, s);
-                    Call.infoToast(p.player.con, I18n.t(session.locale, "@Please don't click there"),
-                            10f);
-                });
             }
 
             if (servers.size() == size) {
                 option(I18n.t(session.locale, "[lime]", "@Next"),
                         (p, s) -> new ServerListMenu().send(p, s + 1));
-            } else {
-                option(I18n.t(session.locale, "@No more"), (p, s) -> {
-                    new ServerListMenu().send(p, s);
-                    Call.infoToast(p.player.con, I18n.t(session.locale, "@Please don't click there"),
-                            10f);
-                });
             }
 
             row();
