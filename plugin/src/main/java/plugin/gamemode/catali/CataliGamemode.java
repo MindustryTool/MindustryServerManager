@@ -32,6 +32,7 @@ import plugin.annotations.Listener;
 import plugin.annotations.Schedule;
 import plugin.annotations.Trigger;
 import plugin.event.SessionCreatedEvent;
+import plugin.gamemode.catali.ai.TeamControlAI;
 import plugin.gamemode.catali.data.CataliTeamData;
 import plugin.gamemode.catali.event.CataliBuffRareUpgrade;
 import plugin.gamemode.catali.event.CataliSpawnRareUpgrade;
@@ -601,29 +602,47 @@ public class CataliGamemode {
     public void onTap(TapEvent event) {
         var playerTeam = findTeam(event.player);
 
-        if (playerTeam != null && playerTeam.spawning == true) {
-            playerTeam.refreshTimeout();
+        if (playerTeam != null) {
+            if (playerTeam.spawning == true) {
+                playerTeam.refreshTimeout();
 
-            var spawnX = event.tile.worldx();
-            var spawnY = event.tile.worldy();
+                var spawnX = event.tile.worldx();
+                var spawnY = event.tile.worldy();
 
-            var spawnable = SpawnerHelper.isTileSafe(event.tile, UnitTypes.poly.hitSize);
+                var spawnable = SpawnerHelper.isTileSafe(event.tile, UnitTypes.poly.hitSize);
 
-            if (spawnable) {
-                Unit unit = UnitTypes.poly.create(playerTeam.team);
+                if (spawnable) {
+                    Unit unit = UnitTypes.poly.create(playerTeam.team);
 
-                unit.apply(StatusEffects.invincible, 60 * 30);
-                unit.set(spawnX, spawnY);
+                    unit.apply(StatusEffects.invincible, 60 * 30);
+                    unit.set(spawnX, spawnY);
+                    unit.controller(new TeamControlAI(playerTeam));
+                    unit.add();
+                    event.player.unit(unit);
 
-                unit.add();
-                event.player.unit(unit);
-
-                playerTeam.spawning = false;
+                    playerTeam.spawning = false;
+                } else {
+                    Call.infoPopup(event.player.con, I18n.t(event.player, "[scarlet]", "@Tile is not safe to spawn"),
+                            5, Align.center, 5, 5, 5, 5);
+                }
             } else {
-                Call.infoPopup(event.player.con, I18n.t(event.player, "[scarlet]", "@Tile is not safe to spawn"),
-                        5, Align.center, 5, 5, 5, 5);
+                var x = event.tile.worldx();
+                var y = event.tile.worldy();
+
+                if (playerTeam.lastTile != null && playerTeam.lastTile == event.tile
+                        && Duration.between(playerTeam.lastTap, Instant.now()).toMillis() < 200) {
+                    playerTeam.shootAt.setZero();
+                    playerTeam.moveTo.setZero();
+                } else {
+                    playerTeam.shootAt.set(x, y);
+                    playerTeam.moveTo.set(x, y);
+                }
+
+                playerTeam.lastTile = event.tile;
+                playerTeam.lastTap = Instant.now();
             }
         }
+
     }
 
     public void abandonUnit(Unit unit) {

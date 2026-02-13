@@ -210,7 +210,7 @@ public class FloodGamemode {
             return;
         }
 
-        int totalUpdates = 20;
+        int totalUpdates = 5;
         int updatesPerCore = totalUpdates / Math.max(1, cores.size);
         float multiplier = getFloodMultiplier();
 
@@ -334,7 +334,7 @@ public class FloodGamemode {
     private void setFlood(Tile tile, FloodTile floodTile, float multiplier, HashMap<Block, Seq<Integer>> updatedTiles) {
         updatedTiles.computeIfAbsent(floodTile.block, k -> new Seq<>()).add(tile.pos());
         floods[index(tile)] = Time.millis() + (long) (floodTile.evolveTime * 1000 / multiplier)
-                + Mathf.random(0, 1000 * 1);
+                + Mathf.random(1000 * 10, 1000 * 15);
     }
 
     private int index(Tile tile) {

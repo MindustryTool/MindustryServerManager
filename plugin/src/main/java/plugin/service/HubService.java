@@ -290,7 +290,7 @@ public class HubService {
                 + "\n";
 
         TextMarker marker = new TextMarker(message, x, y);
-        marker.autoscale = false; // key line
+        marker.autoscale = false;
         marker.world = true;
         marker.minimap = false;
         marker.fontSize = 1f;

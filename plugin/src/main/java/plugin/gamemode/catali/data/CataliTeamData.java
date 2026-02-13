@@ -2,6 +2,7 @@ package plugin.gamemode.catali.data;
 
 import arc.Core;
 import arc.func.Cons;
+import arc.math.geom.Vec2;
 import arc.struct.Seq;
 import dto.Pair;
 import lombok.Data;
@@ -23,12 +24,14 @@ import plugin.PluginEvents;
 import plugin.core.Registry;
 import plugin.gamemode.catali.CataliConfig;
 import plugin.gamemode.catali.CataliGamemode;
+import plugin.gamemode.catali.ai.TeamControlAI;
 import plugin.gamemode.catali.event.TeamUpgradeChangedEvent;
 import plugin.gamemode.catali.spawner.SpawnerHelper;
 
 @Data
 @NoArgsConstructor
 public class CataliTeamData {
+    public boolean alive = true;
     public String leaderUuid;
     public Instant createdTime = Instant.now();
     public Instant lastLeaderOnlineTime = Instant.now();
@@ -44,6 +47,12 @@ public class CataliTeamData {
     public Seq<RespawnEntry> respawn = new Seq<>();
     public Seq<Unit> despawnQueue = new Seq<>();
     public boolean inCoreRange = false;
+
+    public Vec2 moveTo = new Vec2();
+    public Vec2 shootAt = new Vec2();
+    public Tile lastTile = null;
+    public Instant lastTap = Instant.now();
+
     public final int MAX_UNIT_COUNT = 20;
 
     public CataliTeamData(Team team, String leaderUuid) {
@@ -274,6 +283,8 @@ public class CataliTeamData {
 
         Unit unit = type.create(team);
         unit.set(safeTile.worldx(), safeTile.worldy());
+        unit.controller(new TeamControlAI(this));
+
         upgrades.apply(unit);
 
         Core.app.post(() -> {
