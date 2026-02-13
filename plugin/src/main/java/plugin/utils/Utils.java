@@ -62,6 +62,10 @@ public class Utils {
         hostingLock.remove(serverId);
     }
 
+    public static boolean isHosting(String serverId) {
+        return hostingLock.containsKey(serverId);
+    }
+
     public synchronized static void host(String mapName, String mode) {
         if (Control.state == PluginState.UNLOADED) {
             Log.warn("Server unloaded, can not host");

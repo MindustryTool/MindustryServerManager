@@ -11,6 +11,7 @@ import mindustry.core.GameState.State;
 import mindustry.game.EventType;
 import mindustry.gen.Groups;
 import plugin.service.ApiGateway;
+import plugin.utils.Utils;
 import plugin.annotations.Schedule;
 import plugin.commands.ClientCommandHandler;
 import plugin.commands.ServerCommandHandler;
@@ -93,7 +94,7 @@ public class Control extends mindustry.mod.Plugin {
     @Schedule(delay = 20, fixedDelay = 30, unit = TimeUnit.SECONDS)
     private void autoHost() {
         try {
-            if (!Vars.state.isGame()) {
+            if (!Vars.state.isGame() && !Utils.isHosting(SERVER_ID.toString())) {
                 Log.info("[sky]Server not hosting, auto host");
                 Registry.get(ApiGateway.class).host(SERVER_ID.toString());
             }
