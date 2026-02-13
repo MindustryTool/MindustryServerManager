@@ -4,7 +4,6 @@ import arc.math.Mathf;
 import mindustry.Vars;
 import mindustry.content.Blocks;
 import mindustry.gen.Groups;
-import mindustry.type.UnitType;
 import mindustry.world.Tile;
 
 public class SpawnerHelper {
@@ -18,7 +17,7 @@ public class SpawnerHelper {
 
             Tile tile = Vars.world.tile(x, y);
 
-            if (tile == null || tile.solid()) {
+            if (!isTileSafe(tile, occupiedSize)) {
                 continue;
             }
 
@@ -26,7 +25,7 @@ public class SpawnerHelper {
                 for (int offsetY =0; offsetY < occupiedSize; offsetY++) {
                     var nextTile = Vars.world.tile(x + offsetX, y + offsetY);
 
-                    if (nextTile == null || nextTile.solid()) {
+                    if (!isTileSafe(nextTile, occupiedSize)) {
                         return null;
                     }
                 }
@@ -43,8 +42,8 @@ public class SpawnerHelper {
         return null;
     }
 
-    public static boolean isTileSafe(Tile tile, UnitType type) {
+    public static boolean isTileSafe(Tile tile, float occupiedSize) {
         return tile != null && tile.block() == Blocks.air
-                && !Groups.unit.intersect(tile.worldx(), tile.worldy(), type.hitSize, type.hitSize).any();
+                && !Groups.unit.intersect(tile.worldx(), tile.worldy(), occupiedSize, occupiedSize).any();
     }
 }

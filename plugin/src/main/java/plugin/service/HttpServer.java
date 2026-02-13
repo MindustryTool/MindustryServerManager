@@ -221,7 +221,7 @@ public class HttpServer {
                 app = null;
             }
         } catch (Exception e) {
-            Log.err("Failed to stop http server", e);
+            Log.err("Failed to stop http server: " + e.getMessage());
         }
     }
 

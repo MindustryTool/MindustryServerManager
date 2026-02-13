@@ -587,7 +587,7 @@ public class CataliGamemode {
             var spawnX = event.tile.worldx();
             var spawnY = event.tile.worldy();
 
-            var spawnable = SpawnerHelper.isTileSafe(event.tile, UnitTypes.poly);
+            var spawnable = SpawnerHelper.isTileSafe(event.tile, UnitTypes.poly.hitSize);
 
             if (spawnable) {
                 Unit unit = UnitTypes.poly.create(playerTeam.team);
