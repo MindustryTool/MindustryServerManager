@@ -6,17 +6,23 @@ import mindustry.ai.types.FlyingAI;
 public class FlyingRadiusAI extends FlyingAI {
 
     private final Vec2 center = new Vec2();
-    private float radius;
+    private float radius, innerRadius;
 
     public FlyingRadiusAI(float x, float y, float radius) {
         this.center.set(x, y);
         this.radius = radius;
+        this.innerRadius = radius * 0.5f;
     }
 
     @Override
     public void updateMovement() {
         if (unit == null || unit.dead())
             return;
+
+        if (target == null) {
+            moveTo(center, innerRadius);
+            return;
+        }
 
         float dst = unit.dst(center);
 

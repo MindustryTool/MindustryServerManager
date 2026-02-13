@@ -86,7 +86,7 @@ public class FloodGamemode {
 
     @Schedule(fixedRate = 30, unit = TimeUnit.SECONDS)
     private void spawnNightUnit() {
-        if (!isNight) {
+        if (!isNight && shouldUpdate()) {
             return;
         }
 
