@@ -290,7 +290,7 @@ public class HubService {
         marker.autoscale = false; // key line
         marker.world = true;
         marker.minimap = false;
-        marker.fontSize = 1.4f;
+        marker.fontSize = 1f;
 
         MapObjective obj = new MapObjective() {
             @Override

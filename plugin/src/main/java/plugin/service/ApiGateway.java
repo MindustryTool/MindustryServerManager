@@ -79,9 +79,8 @@ public class ApiGateway {
     public String host(String targetServerId) {
         Object lock = Utils.getHostingLock(targetServerId);
 
-        Log.info("[sky]Hosting server: " + targetServerId);
-
         synchronized (lock) {
+            Log.info("[sky]Hosting server: " + targetServerId);
             try {
                 return HttpUtils.send(HttpUtils.post(GATEWAY_URL, "servers", targetServerId, "host"), 90000,
                         String.class);
