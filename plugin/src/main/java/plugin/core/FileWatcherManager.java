@@ -90,7 +90,7 @@ public class FileWatcherManager {
             try {
                 Files.createDirectories(dirToWatch);
             } catch (IOException e) {
-                Log.err("Failed to create directory @", dirToWatch, e);
+                Log.err("Failed to create directory" + dirToWatch, e);
                 return;
             }
         }

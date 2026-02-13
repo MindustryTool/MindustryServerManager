@@ -16,7 +16,8 @@ public class EventRegistrar {
                 try {
                     method.invoke(instance);
                 } catch (Exception e) {
-                    Log.err("Failed to invoke trigger @ in @", method.getName(), instance.getClass().getName(), e);
+                    Log.err("Failed to invoke trigger @ in @", method.getName(), instance.getClass().getName());
+                    Log.err(e);
                 }
             });
             Log.info("[gray]Registered trigger @ in @", trigger.value(), method.getName());
@@ -55,7 +56,8 @@ public class EventRegistrar {
                 try {
                     method.invoke(instance);
                 } catch (Exception e) {
-                    Log.err("Failed to invoke listener @ in @", method.getName(), clazz.getName(), e);
+                    Log.err("Failed to invoke listener @ in @", method.getName(), clazz.getName());
+                    Log.err(e);
                 }
             });
             Log.info("[gray]Registered listener @ in @", method.getName(), clazz.getName());
