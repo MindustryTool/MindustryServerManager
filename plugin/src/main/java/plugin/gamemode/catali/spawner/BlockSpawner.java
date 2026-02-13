@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import mindustry.Vars;
 import mindustry.game.Team;
 import mindustry.gen.Groups;
+import mindustry.world.Tile;
 import plugin.annotations.Gamemode;
 import plugin.gamemode.catali.CataliConfig;
 
@@ -30,15 +31,28 @@ public class BlockSpawner {
             var spawnChance = entry.chance;
 
             if (Mathf.chance(spawnChance)) {
-                var tile = SpawnerHelper.getSpawnTile(block.size);
+                int worldWidth = Vars.world.width();
+                int worldHeight = Vars.world.height();
 
-                if (tile == null) {
-                    return;
+                int randomX = Mathf.random(0, worldWidth - 1);
+                int randomY = Mathf.random(0, worldHeight - 1);
+
+                int x = randomX / 8 * 8;
+                int y = randomY / 8 * 8;
+                int clusterSize = Mathf.random(1, 10);
+
+                for (int i = 0; i < clusterSize; i++) {
+                    int offX = Mathf.random(-5, 5);
+                    int offY = Mathf.random(-5, 5);
+
+                    Tile tile = Vars.world.tile(x + offX, y + offY);
+
+                    if (!SpawnerHelper.isTileSafe(tile, block.size)) {
+                        continue;
+                    }
+
+                    Core.app.post(() -> tile.setBlock(block));
                 }
-
-                Core.app.post(() -> {
-                    tile.setNet(block, team, 0);
-                });
             }
         }
     }

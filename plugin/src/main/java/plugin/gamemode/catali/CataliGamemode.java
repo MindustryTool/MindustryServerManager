@@ -236,7 +236,7 @@ public class CataliGamemode {
         }
     }
 
-    @Schedule(fixedRate = 50, unit = TimeUnit.MILLISECONDS)
+    @Schedule(fixedRate = 100, unit = TimeUnit.MILLISECONDS)
     public void spawn() {
         if (!shouldUpdate()) {
             return;
