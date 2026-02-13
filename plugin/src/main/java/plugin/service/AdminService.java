@@ -16,7 +16,7 @@ import mindustry.game.EventType.ConnectionEvent;
 import mindustry.gen.Groups;
 import mindustry.net.Packets.Connect;
 import mindustry.net.Packets.KickReason;
-import plugin.Config;
+import plugin.Cfg;
 import plugin.annotations.Component;
 import plugin.annotations.Destroy;
 import plugin.annotations.Init;
@@ -31,7 +31,7 @@ import plugin.utils.Utils;
 public class AdminService {
 
     private final Cache<String, Instant> lastGriefReportTimes = Caffeine.newBuilder()
-            .expireAfterWrite(Config.GRIEF_REPORT_COOLDOWN, TimeUnit.SECONDS)
+            .expireAfterWrite(Cfg.GRIEF_REPORT_COOLDOWN, TimeUnit.SECONDS)
             .build();
 
     private Session reported = null;
@@ -51,7 +51,7 @@ public class AdminService {
 
                 con.kick("[scarlet]You has been banned from the server\n" +
                         "If you think this is a mistake, please contact the server administrator\n" +
-                        "Discord: " + Config.DISCORD_INVITE_URL);
+                        "Discord: " + Cfg.DISCORD_INVITE_URL);
             }
         });
     }
@@ -136,8 +136,8 @@ public class AdminService {
         Instant lastReportTime = lastGriefReportTimes.getIfPresent(player);
 
         if (lastReportTime != null) {
-            if (lastReportTime.plusSeconds(Config.GRIEF_REPORT_COOLDOWN).isAfter(Instant.now())) {
-                long remaining = lastReportTime.plusSeconds(Config.GRIEF_REPORT_COOLDOWN)
+            if (lastReportTime.plusSeconds(Cfg.GRIEF_REPORT_COOLDOWN).isAfter(Instant.now())) {
+                long remaining = lastReportTime.plusSeconds(Cfg.GRIEF_REPORT_COOLDOWN)
                         .getEpochSecond() - Instant.now().getEpochSecond();
 
                 player.player.sendMessage(I18n.t(player.locale,

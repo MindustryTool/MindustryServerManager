@@ -206,6 +206,7 @@ public class DockerNodeManager implements NodeManager {
 
                 env.addAll(request.getEnv().entrySet().stream().map(v -> v.getKey() + "=" + v.getValue()).toList());
                 env.add("IS_HUB=" + request.getIsHub());
+                env.add("IS_OFFICIAL=" + request.getIsOfficial());
                 env.add("SERVER_ID=" + serverId);
                 env.add("JAVA_TOOL_OPTIONS=" + String.join(" ", args));
 

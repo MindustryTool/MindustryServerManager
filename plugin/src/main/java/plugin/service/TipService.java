@@ -6,7 +6,7 @@ import java.util.concurrent.TimeUnit;
 import arc.func.Func;
 import arc.struct.Seq;
 import mindustry.gen.Iconc;
-import plugin.Config;
+import plugin.Cfg;
 import plugin.Tasks;
 import plugin.annotations.Component;
 import plugin.annotations.Init;
@@ -32,14 +32,14 @@ public class TipService {
         tips.add((locale) -> I18n.t(locale, "@Remember to respect other players"));
         tips.add((locale) -> I18n.t(locale, "@Remember to download and update", " MindustryTool"));
         tips.add((locale) -> I18n.t(locale, "@If you find this helpful please give us a star: ",
-                Config.GITHUB_URL));
+                Cfg.GITHUB_URL));
         tips.add((locale) -> I18n.t(locale, "@Be respectful — toxic behavior may lead to punishment"));
         tips.add((locale) -> I18n.t(locale, "@Report griefers instead of arguing in chat"));
         tips.add((locale) -> I18n.t(locale, "@Admins are here to help — ask nicely"));
         tips.add((locale) -> "[white]" + Iconc.blockRouter + "Router chains");
         tips.add((locale) -> I18n.t(locale, "@Have fun!!!"));
         tips.add((locale) -> "The factory must grow!!!");
-        tips.add((locale) -> I18n.t(locale, "@Reach level", " ", Config.COLOR_NAME_LEVEL, " ",
+        tips.add((locale) -> I18n.t(locale, "@Reach level", " ", Cfg.COLOR_NAME_LEVEL, " ",
                 "@to unlock colored name"));
     }
 

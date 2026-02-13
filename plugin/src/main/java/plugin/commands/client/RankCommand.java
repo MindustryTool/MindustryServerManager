@@ -1,12 +1,15 @@
 package plugin.commands.client;
 
+import plugin.Cfg;
 import plugin.annotations.Component;
+import plugin.annotations.ConditionOn;
 import plugin.commands.PluginClientCommand;
 import plugin.repository.SessionRepository;
 import plugin.type.Session;
 import plugin.utils.RankUtils;
 
 @Component
+@ConditionOn(Cfg.OnOfficial.class)
 public class RankCommand extends PluginClientCommand {
     private final SessionRepository sessionRepository;
 

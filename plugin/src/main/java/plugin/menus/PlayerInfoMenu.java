@@ -4,7 +4,7 @@ import plugin.core.Registry;
 import plugin.service.I18n;
 import plugin.service.SessionHandler;
 import plugin.type.Session;
-import plugin.view.SessionView;
+import plugin.utils.SessionUtils;
 
 public class PlayerInfoMenu extends PluginMenu<Session> {
 
@@ -17,7 +17,7 @@ public class PlayerInfoMenu extends PluginMenu<Session> {
 
         Registry.get(SessionHandler.class).each(p -> {
             option(p.player.name, (t, s) -> {
-                caller.player.sendMessage(SessionView.getInfoString(p, p.getData()));
+                caller.player.sendMessage(SessionUtils.getInfoString(p, p.getData()));
             });
             row();
         });

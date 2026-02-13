@@ -6,7 +6,7 @@ import plugin.annotations.Configuration;
 
 @Configuration("config.json")
 @NoArgsConstructor
-public class Config {
+public class Cfg {
 
     public static class OnHub implements Condition {
         @Override
@@ -15,10 +15,20 @@ public class Config {
         }
     }
 
+    public static class OnOfficial implements Condition {
+        @Override
+        public boolean check() {
+            return IS_OFFICIAL;
+        }
+    }
+
     public static final String PLUGIN_VERSION = "0.0.1";
 
     public static final String HUB = System.getenv("IS_HUB");
     public static final boolean IS_HUB = HUB != null && HUB.equals("true");
+
+    public static final String OFFICIAL = System.getenv("IS_OFFICIAL");
+    public static final boolean IS_OFFICIAL = OFFICIAL != null && OFFICIAL.equals("true");
 
     public static final String ENV = System.getenv("ENV");
 

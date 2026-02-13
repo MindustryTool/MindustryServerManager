@@ -15,8 +15,8 @@ import plugin.repository.SessionRepository;
 import plugin.type.Session;
 import plugin.type.SessionData;
 import plugin.utils.ExpUtils;
+import plugin.utils.SessionUtils;
 import plugin.utils.Utils;
-import plugin.view.SessionView;
 import lombok.RequiredArgsConstructor;
 
 @Component
@@ -69,7 +69,7 @@ public class SessionService {
         long exp = ExpUtils.unitHealthToExp(totalKills * unit.health);
 
         Utils.forEachPlayerLocale((locale, players) -> {
-            String message = SessionView.getKillMessage(locale, session.player.name, print, unit, exp);
+            String message = SessionUtils.getKillMessage(locale, session.player.name, print, unit, exp);
             for (var p : players) {
                 p.sendMessage(message);
             }
@@ -88,7 +88,7 @@ public class SessionService {
                 if (level > session.currentLevel) {
                     Tasks.io("Update level", () -> {
                         Utils.forEachPlayerLocale((locale, players) -> {
-                            String message = SessionView.getLevelUpMessage(locale, oldLevel, newLevel);
+                            String message = SessionUtils.getLevelUpMessage(locale, oldLevel, newLevel);
                             players.forEach(p -> p.sendMessage(session.player.name + message));
                         });
                     });
@@ -98,7 +98,7 @@ public class SessionService {
             session.currentLevel = level;
 
             Core.app.post(() -> {
-                session.player.name(SessionView.getPlayerName(session.player, data, level));
+                session.player.name(SessionUtils.getPlayerName(session.player, data, level));
             });
         }
 
@@ -109,7 +109,7 @@ public class SessionService {
 
         if (isAdmin) {
             Utils.forEachPlayerLocale((locale, players) -> {
-                String msg = SessionView.getAdminLoginMessage(locale, session.player.name);
+                String msg = SessionUtils.getAdminLoginMessage(locale, session.player.name);
                 for (var p : players) {
                     p.sendMessage(msg);
                 }
@@ -135,7 +135,7 @@ public class SessionService {
 
         Core.app.post(() -> {
             session.player.admin = isAdmin;
-            session.player.name(SessionView.getPlayerName(session.player, session.getData(), session.currentLevel));
+            session.player.name(SessionUtils.getPlayerName(session.player, session.getData(), session.currentLevel));
         });
     }
 }

@@ -25,7 +25,7 @@ import mindustry.gen.Groups;
 import mindustry.gen.Iconc;
 import mindustry.net.ArcNetProvider;
 import mindustry.net.Net;
-import plugin.Config;
+import plugin.Cfg;
 import plugin.annotations.Component;
 import plugin.annotations.ConditionOn;
 import plugin.annotations.Init;
@@ -40,7 +40,7 @@ import plugin.utils.Utils;
 
 @Component
 @RequiredArgsConstructor
-@ConditionOn(Config.OnHub.class)
+@ConditionOn(Cfg.OnHub.class)
 public class HubService {
 
     private final Seq<ServerCore> serverCores = new Seq<>();

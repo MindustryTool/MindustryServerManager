@@ -1,4 +1,4 @@
-package plugin.view;
+package plugin.utils;
 
 import java.util.Locale;
 import java.util.Map;
@@ -9,17 +9,15 @@ import mindustry.Vars;
 import mindustry.gen.Player;
 import mindustry.type.UnitType;
 import mindustry.ui.dialogs.LanguageDialog;
-import plugin.Config;
+import plugin.Cfg;
 import plugin.service.I18n;
 import plugin.type.Session;
 import plugin.type.SessionData;
-import plugin.utils.ExpUtils;
-import plugin.utils.Utils;
 
-public class SessionView {
+public class SessionUtils {
 
     public static String getPlayerName(Player player, SessionData data, long level) {
-        boolean hasColor = level > Config.COLOR_NAME_LEVEL || player.admin;
+        boolean hasColor = level > Cfg.COLOR_NAME_LEVEL || player.admin;
         String playerName = hasColor ? data.name : Strings.stripColors(data.name);
         Locale locale = Utils.parseLocale(player.locale);
         String language = locale.getDisplayLanguage();
@@ -94,7 +92,7 @@ public class SessionView {
 
         return info.toString();
     }
-    
+
     public static String getLevelUpMessage(Locale locale, int oldLevel, int newLevel) {
         String message = I18n.t(locale, "Level up");
         return " [green]" + message + Strings.format(" @ -> @", oldLevel, newLevel);
@@ -103,9 +101,9 @@ public class SessionView {
     public static String getAdminLoginMessage(Locale locale, String playerName) {
         return I18n.t(locale, "@An admin logged in:[white] ", playerName);
     }
-    
+
     public static String getKillMessage(Locale locale, String playerName, long count, UnitType unit, long exp) {
-         String formatted = Strings.format(" @ @ (+@exp)",
+        String formatted = Strings.format(" @ @ (+@exp)",
                 count,
                 unit.emoji(),
                 exp);

@@ -15,7 +15,7 @@ import mindustry.gen.Building;
 import mindustry.gen.Call;
 import mindustry.gen.Groups;
 import mindustry.gen.Player;
-import plugin.Config;
+import plugin.Cfg;
 import plugin.PluginEvents;
 import plugin.Control;
 import plugin.event.PlayerKillUnitEvent;
@@ -235,7 +235,7 @@ public class EventHandler {
             });
 
             Tasks.io("Welcome Message", () -> {
-                var translated = I18n.t(session.locale, Config.WELCOME_MESSAGE);
+                var translated = I18n.t(session.locale, Cfg.WELCOME_MESSAGE);
                 session.player.sendMessage(translated);
             });
 

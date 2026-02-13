@@ -2,7 +2,7 @@ package plugin.menus;
 
 import arc.util.Log;
 import mindustry.gen.Call;
-import plugin.Config;
+import plugin.Cfg;
 import plugin.commands.ClientCommandHandler;
 import plugin.core.Registry;
 import plugin.service.ApiGateway;
@@ -28,7 +28,7 @@ public class ServerListMenu extends PluginMenu<Integer> {
             List<ServerDto> servers = Registry.get(ApiGateway.class).getServers(request);
 
             this.title = I18n.t(session.locale, "@List of all servers");
-            this.description = I18n.t(session.locale, "@" + Config.CHOOSE_SERVER_MESSAGE);
+            this.description = I18n.t(session.locale, "@" + Cfg.CHOOSE_SERVER_MESSAGE);
 
             var clientCommandHandler = Registry.get(ClientCommandHandler.class);
 

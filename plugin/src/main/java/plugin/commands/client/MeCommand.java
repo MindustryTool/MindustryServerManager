@@ -3,7 +3,7 @@ package plugin.commands.client;
 import plugin.annotations.Component;
 import plugin.commands.PluginClientCommand;
 import plugin.type.Session;
-import plugin.view.SessionView;
+import plugin.utils.SessionUtils;
 
 @Component
 public class MeCommand extends PluginClientCommand {
@@ -15,6 +15,6 @@ public class MeCommand extends PluginClientCommand {
 
     @Override
     public void handle(Session session) {
-        session.player.sendMessage(SessionView.getInfoString(session, session.getData()));
+        session.player.sendMessage(SessionUtils.getInfoString(session, session.getData()));
     }
 }

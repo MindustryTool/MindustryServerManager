@@ -13,21 +13,16 @@ import mindustry.game.EventType.PlayerJoin;
 import mindustry.game.EventType.PlayerLeave;
 import mindustry.gen.Groups;
 import mindustry.gen.Player;
-import mindustry.gen.TimedKillc;
 import plugin.PluginEvents;
-import plugin.Tasks;
 import plugin.annotations.Component;
 import plugin.annotations.Destroy;
 import plugin.annotations.Listener;
 import plugin.annotations.Schedule;
-import plugin.event.PlayerKillUnitEvent;
 import plugin.event.SessionCreatedEvent;
 import plugin.event.SessionRemovedEvent;
 import plugin.repository.SessionRepository;
 import plugin.type.Session;
 import plugin.type.SessionData;
-import plugin.utils.RankUtils;
-import plugin.utils.Utils;
 
 @Component
 @RequiredArgsConstructor
@@ -38,23 +33,8 @@ public class SessionHandler {
     private final SessionService sessionService;
 
     @Listener
-    public void onPlayerKillUnit(PlayerKillUnitEvent event) {
-        get(event.getPlayer()).ifPresent(session -> {
-            if (event.getUnit().type.isHidden() || event.getUnit().type instanceof TimedKillc) {
-                return;
-            }
-
-            sessionService.addKill(session, event.getUnit().type, 1);
-        });
-    }
-
-    @Listener
     public void onPlayerJoin(PlayerJoin event) {
         Core.app.post(() -> put(event.player));
-
-        Tasks.io("Send Leader Board",
-                () -> event.player.sendMessage(RankUtils.getRankString(Utils.parseLocale(event.player.locale),
-                        sessionRepository.leaderBoard(10))));
     }
 
     @Listener

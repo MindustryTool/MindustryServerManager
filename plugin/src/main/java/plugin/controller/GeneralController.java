@@ -21,7 +21,7 @@ import mindustry.gen.Call;
 import mindustry.gen.Groups;
 import mindustry.gen.Player;
 import mindustry.net.Administration.PlayerInfo;
-import plugin.Config;
+import plugin.Cfg;
 import plugin.Control;
 import plugin.PluginState;
 import plugin.commands.ServerCommandHandler;
@@ -62,7 +62,7 @@ public class GeneralController {
 
         app.get("plugin-version", ctx -> {
             ctx.contentType(ContentType.APPLICATION_JSON);
-            ctx.json(Config.PLUGIN_VERSION);
+            ctx.json(Cfg.PLUGIN_VERSION);
         });
 
         app.get("hosting", (ctx) -> {
@@ -288,8 +288,8 @@ public class GeneralController {
 
                 data.put("state", Utils.getState());
                 data.put("session", Registry.get(SessionHandler.class).get());
-                data.put("isHub", Config.IS_HUB);
-                data.put("ip", Config.SERVER_IP);
+                data.put("isHub", Cfg.IS_HUB);
+                data.put("ip", Cfg.SERVER_IP);
                 data.put("units", Groups.unit.size());
                 data.put("enemies", Vars.state.enemies);
                 data.put("tps", Core.graphics.getFramesPerSecond());
