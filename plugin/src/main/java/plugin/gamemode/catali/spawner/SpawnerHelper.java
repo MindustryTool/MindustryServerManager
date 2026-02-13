@@ -17,8 +17,19 @@ public class SpawnerHelper {
             int y = Mathf.random(0, worldHeight - 1);
 
             Tile tile = Vars.world.tile(x, y);
+
             if (tile == null || tile.solid()) {
                 continue;
+            }
+
+            for (int offsetX =0; offsetX < occupiedSize; offsetX++) {
+                for (int offsetY =0; offsetY < occupiedSize; offsetY++) {
+                    var nextTile = Vars.world.tile(x + offsetX, y + offsetY);
+
+                    if (nextTile == null || nextTile.solid()) {
+                        return null;
+                    }
+                }
             }
 
             // if (Groups.unit.intersect(tile.worldx(), tile.worldy(), occupiedSize,
