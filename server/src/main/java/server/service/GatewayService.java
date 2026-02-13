@@ -46,6 +46,7 @@ import server.utils.Utils;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.Sinks;
 import reactor.util.retry.Retry;
 
 @Slf4j
@@ -55,37 +56,61 @@ public class GatewayService {
 
     private final EnvConfig envConfig;
     private final EventBus eventBus;
-    private final ConcurrentHashMap<UUID, Mono<GatewayClient>> cache = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<UUID, ClientHolder> cache = new ConcurrentHashMap<>();
 
     @Getter
     private final Api api = new Api();
 
     public Mono<Boolean> isHosting(UUID serverId) {
         if (cache.containsKey(serverId)) {
-            return cache.get(serverId).flatMap(gateway -> gateway.server().isHosting());
+            return cache.get(serverId).client.server().isHosting();
         }
 
         return Mono.just(false);
     }
 
     public synchronized Mono<GatewayClient> of(UUID serverId) {
-        return cache.computeIfAbsent(serverId,
-                _id -> Mono.<GatewayClient>create(
-                        (emittor) -> new GatewayClient(serverId, emittor::success, emittor::error))
-                        .cache());
+        ClientHolder holder = cache.computeIfAbsent(serverId, id -> {
+
+            Sinks.One<GatewayClient> sink = Sinks.one();
+
+            GatewayClient client = new GatewayClient(
+                    id,
+                    c -> sink.tryEmitValue(c),
+                    error -> {
+                        sink.tryEmitError(error);
+                        cache.remove(id);
+                    });
+
+            return new ClientHolder(sink, client);
+        });
+
+        return holder.sink.asMono();
+    }
+
+    private class ClientHolder {
+        final Sinks.One<GatewayClient> sink;
+        final GatewayClient client;
+
+        ClientHolder(Sinks.One<GatewayClient> sink, GatewayClient client) {
+            this.sink = sink;
+            this.client = client;
+        }
     }
 
     @PostConstruct
     private void init() {
         eventBus.on(event -> {
-            if (event instanceof StopEvent) {
-                var serverId = event.getServerId();
+            if (event instanceof StopEvent stopEvent) {
 
-                var prev = cache.remove(serverId);
-                if (prev != null) {
+                UUID serverId = stopEvent.getServerId();
+
+                ClientHolder holder = cache.remove(serverId);
+                if (holder != null) {
                     eventBus.emit(LogEvent.info(serverId, "Close GatewayClient"));
-                    prev.block(Duration.ofSeconds(1)).cancel();
 
+                    holder.client.cancel();
+                    holder.sink.tryEmitError(new RuntimeException("Gateway stopped"));
                 }
             }
         });
@@ -95,10 +120,10 @@ public class GatewayService {
     private void cancelAll() {
         Log.info("Cancel all GatewayClient");
         cache.values()
-                .forEach(mono -> mono
-                        .doOnError(ApiError.class, error -> Log.err(error.getMessage()))
-                        .onErrorComplete(ApiError.class)
-                        .block(Duration.ofSeconds(5)).cancel());
+                .forEach(holder -> {
+                    holder.client.cancel();
+                    holder.sink.tryEmitError(new RuntimeException("Gateway stopped"));
+                });
     }
 
     public class Api {
