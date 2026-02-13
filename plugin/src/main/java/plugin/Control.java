@@ -49,6 +49,8 @@ public class Control extends mindustry.mod.Plugin {
 
             PluginEvents.run(UnloadServerEvent.class, this::unload);
 
+            Log.info("Plugin loaded");
+
         } catch (Exception e) {
             Log.err("Failed to init plugin", e);
             unload();
