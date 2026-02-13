@@ -41,6 +41,9 @@ public class TipService {
         tips.add((locale) -> "The factory must grow!!!");
         tips.add((locale) -> I18n.t(locale, "@Reach level", " ", Cfg.COLOR_NAME_LEVEL, " ",
                 "@to unlock colored name"));
+        tips.add((locale) -> I18n.t(locale,
+                "@If you found a bugs or have any suggestions, please report them on our Discord server using",
+                "[accent]/discord[white]"));
     }
 
     public void registerTip(Func<Locale, String> tip) {
