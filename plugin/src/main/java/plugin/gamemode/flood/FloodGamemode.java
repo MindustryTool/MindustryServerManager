@@ -210,7 +210,7 @@ public class FloodGamemode {
             return;
         }
 
-        int totalUpdates = 50;
+        int totalUpdates = 20;
         int updatesPerCore = totalUpdates / Math.max(1, cores.size);
         float multiplier = getFloodMultiplier();
 
@@ -235,7 +235,7 @@ public class FloodGamemode {
                 for (var tile : tiles) {
                     if (tile.build != null && tile.build.team != Team.crux) {
                         final var damage = config.floodTiles.get(0).damage * multiplier;
-                        Core.app.post(() -> tile.build.damage(damage));
+                        tile.build.damage(damage);
                     }
 
                     if (tile.build == null) {
@@ -320,7 +320,7 @@ public class FloodGamemode {
                     if (neighborBuild.team != Team.crux) {
                         var currentTier = config.floodTiles.find(f -> f.block == build.block);
                         if (currentTier != null) {
-                            Core.app.post(() -> neighborBuild.damage(currentTier.damage * multiplier));
+                            neighborBuild.damage(currentTier.damage * multiplier);
                         }
                     } else if (!spreaded.get(index(neighbor))) {
                         spreaded.set(index(neighbor), true);
