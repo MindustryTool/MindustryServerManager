@@ -50,7 +50,7 @@ public class UnitSpawner {
                         Unit u = unit.create(team);
                         var spawnX = tile.worldx() + Mathf.random(largestUnit.hitSize);
                         var spawnY = tile.worldy() + Mathf.random(largestUnit.hitSize);
-                        var radius = 30 * Vars.tilesize;
+                        var radius = 50 * Vars.tilesize;
 
                         u.controller(unit.flying //
                                 ? new FlyingRadiusAI(spawnX, spawnY, radius)

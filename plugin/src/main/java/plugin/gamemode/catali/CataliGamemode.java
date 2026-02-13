@@ -93,7 +93,7 @@ public class CataliGamemode {
     private final Team BOSS_TEAM = Team.get(253);
 
     private Unit boss = null;
-    private Instant bossSpawnAt = Instant.now();
+    private Instant bossShouldSpawnAt = Instant.now();
     private Vec2 bossSpawnPos = new Vec2();
     private boolean canSpawnBoss = false;
 
@@ -176,6 +176,17 @@ public class CataliGamemode {
         return Optional.ofNullable(res);
     }
 
+    @Schedule(fixedRate = 1, unit = TimeUnit.SECONDS)
+    private void updateBossEffect() {
+        if (!bossSpawnPos.isZero()) {
+            Call.effect(Fx.launchAccelerator, bossSpawnPos.x, bossSpawnPos.y, 0, Color.white);
+        }
+
+        if (boss != null) {
+            Call.label("[scarlet]Boss", 1.1f, boss.x, boss.y);
+        }
+    }
+
     @Trigger(EventType.Trigger.update)
     public void update() {
         if (!Vars.state.isPlaying()) {
@@ -199,15 +210,17 @@ public class CataliGamemode {
             if (tile != null) {
                 bossSpawnPos.set(tile);
             }
-        } else {
-            Call.effect(Fx.launchAccelerator, bossSpawnPos.x, bossSpawnPos.y, 0, Color.white);
         }
 
-        if (boss == null && Instant.now().isAfter(bossSpawnAt)) {
+        if (!boss.isValid()) {
+            boss = null;
+            bossShouldSpawnAt = Instant.now().plusSeconds(config.bossRespawnSeconds);
+        }
+
+        if (boss == null && Instant.now().isAfter(bossShouldSpawnAt)) {
             var bossType = config.bossUnits.random();
             var bossHpMultiplier = (highestLevel - config.bossStartSpawnLevel + 1) * 0.01f;
 
-            bossSpawnAt = Instant.now().plusSeconds(1000000);
             boss = bossType.create(BOSS_TEAM);
             boss.set(bossSpawnPos);
             boss.maxHealth(bossType.health * bossHpMultiplier);
@@ -344,10 +357,10 @@ public class CataliGamemode {
                 if (boss == null) {
                     if (canSpawnBoss) {
                         bossString = "Boss respawn in: "
-                                + TimeUtils.toSeconds(Duration.between(Instant.now(), bossSpawnAt).abs());
+                                + TimeUtils.toSeconds(Duration.between(Instant.now(), bossShouldSpawnAt).abs());
                     }
                 } else {
-                    bossString = boss.type.emoji() + boss.health + "/" + boss.maxHealth;
+                    bossString = boss.type.emoji() + Math.round(boss.health) + "/" + Math.round(boss.maxHealth);
                 }
 
                 String levelString = String.valueOf(team.level.level) + " [gray]("
@@ -634,7 +647,7 @@ public class CataliGamemode {
         }
 
         if (e.unit == boss) {
-            bossSpawnAt = Instant.now().plusSeconds(config.bossRespawnSeconds);
+            bossShouldSpawnAt = Instant.now().plusSeconds(config.bossRespawnSeconds);
             boss = null;
         }
 
