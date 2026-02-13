@@ -46,7 +46,7 @@ public class ApiGateway {
             .build();
 
     private final Cache<String, Boolean> failedTranslationCache = Caffeine.newBuilder()
-            .expireAfterAccess(Duration.ofMinutes(1))
+            .expireAfterWrite(Duration.ofMinutes(1))
             .build();
 
     public void requestConnection() {
@@ -206,7 +206,7 @@ public class ApiGateway {
                     .error(error -> {
                         if (error instanceof SocketTimeoutException) {
                             future.completeExceptionally(
-                                    new RuntimeException("Timeout in 10s while translating: " + text, error));
+                                    new RuntimeException("Timeout while translating: " + text, error));
                         } else if (error instanceof HttpStatusException e) {
                             future.completeExceptionally(new RuntimeException(
                                     "Error while translating: " + text + "\n" + e.response.getResultAsString(), e));
