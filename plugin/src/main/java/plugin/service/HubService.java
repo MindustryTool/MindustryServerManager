@@ -20,6 +20,7 @@ import mindustry.game.EventType.PlayerJoin;
 import mindustry.game.EventType.TapEvent;
 import mindustry.game.EventType.WorldLoadEvent;
 import mindustry.game.MapObjectives;
+import mindustry.game.MapObjectives.FlagObjective;
 import mindustry.game.MapObjectives.MapObjective;
 import mindustry.game.MapObjectives.TextMarker;
 import mindustry.game.Team;
@@ -291,18 +292,9 @@ public class HubService {
         marker.world = true;
         marker.minimap = false;
         marker.fontSize = 1f;
+        
 
-        MapObjective obj = new MapObjective() {
-            @Override
-            public boolean update() {
-                return false;
-            }
-
-            @Override
-            public String text() {
-                return "";
-            }
-        };
+        MapObjective obj = new FlagObjective();
 
         obj.markers(marker);
         objectives.add(obj);
