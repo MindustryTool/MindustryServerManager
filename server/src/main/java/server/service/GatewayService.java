@@ -83,7 +83,9 @@ public class GatewayService {
 
                 var prev = cache.remove(serverId);
                 if (prev != null) {
+                    eventBus.emit(LogEvent.info(serverId, "Close GatewayClient"));
                     prev.block(Duration.ofSeconds(1)).cancel();
+
                 }
             }
         });
