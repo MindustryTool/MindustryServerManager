@@ -39,6 +39,7 @@ import events.ServerEvents.LogEvent;
 import events.ServerEvents.StartEvent;
 import enums.NodeRemoveReason;
 import events.ServerEvents.StopEvent;
+import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import server.utils.ApiError;
 import server.utils.Utils;
@@ -72,6 +73,20 @@ public class GatewayService {
                 _id -> Mono.<GatewayClient>create(
                         (emittor) -> new GatewayClient(serverId, emittor::success, emittor::error))
                         .cache());
+    }
+
+    @PostConstruct
+    private void init() {
+        eventBus.on(event -> {
+            if (event instanceof StopEvent) {
+                var serverId = event.getServerId();
+
+                var prev = cache.remove(serverId);
+                if (prev != null) {
+                    prev.block(Duration.ofSeconds(1)).cancel();
+                }
+            }
+        });
     }
 
     @PreDestroy
@@ -154,8 +169,13 @@ public class GatewayService {
         }
 
         public void cancel() {
-            eventJob.dispose();
-            heartbeatJob.dispose();
+            if (!eventJob.isDisposed()) {
+                eventJob.dispose();
+            }
+
+            if (heartbeatJob != null && !heartbeatJob.isDisposed()) {
+                heartbeatJob.dispose();
+            }
         }
 
         public class Server {
