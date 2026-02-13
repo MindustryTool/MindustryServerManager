@@ -375,8 +375,8 @@ public class FloodGamemode {
         // Well idk
         cores = Math.max(Math.max(cores, Team.crux.cores().size), 1);
 
-        var elapsedMinutes = (Time.millis() - startedAt) / 1000 / 60;
-        var destroyedCores = (cores - Team.crux.cores().size) + suppressed.size();
+        float elapsedMinutes = (Time.millis() - startedAt) / 1000 / 60;
+        float destroyedCores = (cores - Team.crux.cores().size) + suppressed.size();
 
         return 1f + (destroyedCores / cores) + (0.01f * elapsedMinutes) + (isNight ? 2 : 0);
     }

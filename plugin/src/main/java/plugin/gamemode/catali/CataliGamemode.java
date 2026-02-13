@@ -284,7 +284,13 @@ public class CataliGamemode {
         for (var unit : Groups.unit) {
             var teamData = findTeam(unit.team);
             if (teamData != null) {
-                unit.heal(2 * teamData.upgrades.getHealthMultiplier());
+                if (unit.damaged()) {
+                    var healAmount = (unit.type.health / 100f) * teamData.upgrades.getHealthMultiplier();
+                    unit.heal(healAmount);
+                    teamData.eachMember(player -> {
+                        Call.label(player.con, "[green]+" + healAmount, 1.1f, unit.x, unit.y);
+                    });
+                }
             }
         }
 
