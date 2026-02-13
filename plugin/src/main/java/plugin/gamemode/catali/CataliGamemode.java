@@ -225,6 +225,8 @@ public class CataliGamemode {
             boss.set(bossSpawnPos);
             boss.maxHealth(bossType.health * bossHpMultiplier);
             boss.heal();
+            boss.apply(StatusEffects.boss);
+            boss.apply(StatusEffects.overclock);
 
             Core.app.post(() -> boss.add());
 
