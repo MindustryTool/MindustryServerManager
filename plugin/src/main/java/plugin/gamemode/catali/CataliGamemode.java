@@ -359,7 +359,7 @@ public class CataliGamemode {
                         ? respawnSb.toString()
                         : "@No unit";
 
-                String separator = "=====================\n";
+                String separator = "========================\n";
                 String bossString = "";
 
                 if (boss == null) {
