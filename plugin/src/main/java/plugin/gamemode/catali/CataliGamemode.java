@@ -546,7 +546,7 @@ public class CataliGamemode {
         var unit = event.unit;
         var buff = event.effect;
 
-        unit.apply(buff);
+        unit.apply(buff, Float.MAX_VALUE);
 
         team.level.rareUpgradePoints--;
     }
