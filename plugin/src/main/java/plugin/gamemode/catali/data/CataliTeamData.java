@@ -3,7 +3,6 @@ package plugin.gamemode.catali.data;
 import arc.Core;
 import arc.func.Cons;
 import arc.struct.Seq;
-import arc.util.Log;
 import dto.Pair;
 import lombok.Data;
 import lombok.NoArgsConstructor;
