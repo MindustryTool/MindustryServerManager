@@ -41,7 +41,17 @@ public class CommandUtils {
                 continue;
             }
 
-            if (argIndex >= args.length) {
+            var meta = param.getAnnotation(Param.class);
+
+            if (meta.variadic()) {
+                var values = new String[args.length - argIndex];
+                System.arraycopy(args, argIndex, values, 0, values.length);
+                resolved[i] = values;
+                argIndex = args.length;
+                continue;
+            }
+
+            if (argIndex >= args.length && meta.required()) {
                 throw new RuntimeException("Missing argument: " + param.getName());
             }
 
@@ -75,6 +85,7 @@ public class CommandUtils {
 
         StringBuilder paramText = new StringBuilder("");
         var hasVariadic = false;
+        var hasOptional = false;
 
         for (Parameter methodParam : method.getParameters()) {
             if (methodParam.isAnnotationPresent(Param.class)) {
@@ -85,6 +96,14 @@ public class CommandUtils {
 
                 if (param.variadic()) {
                     hasVariadic = true;
+                }
+
+                if (param.required() && hasOptional) {
+                    throw new IllegalArgumentException("Optional argument must be the last argument");
+                }
+
+                if (param.required() == false) {
+                    hasOptional = true;
                 }
 
                 if (param.required()) {
