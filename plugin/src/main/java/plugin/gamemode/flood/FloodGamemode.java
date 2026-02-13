@@ -158,7 +158,7 @@ public class FloodGamemode {
             }
         }
 
-        if (Duration.between(cycleChangeAt, Instant.now()).compareTo(isNight ? nightDuration : dayDuration) >= 0) {
+        if (Instant.now().isAfter(cycleChangeAt.plus(isNight ? nightDuration : dayDuration))) {
             isNight = !isNight;
             cycleChangeAt = Instant.now();
             Vars.state.rules.lighting = isNight;
