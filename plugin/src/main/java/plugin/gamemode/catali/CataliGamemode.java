@@ -227,7 +227,7 @@ public class CataliGamemode {
             boss.maxHealth(bossType.health * bossHpMultiplier);
             boss.heal();
             boss.apply(StatusEffects.boss);
-            boss.apply(StatusEffects.overclock);
+            boss.apply(StatusEffects.overclock, Float.MAX_VALUE);
 
             Core.app.post(() -> boss.add());
 
