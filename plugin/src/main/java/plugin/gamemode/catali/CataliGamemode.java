@@ -606,10 +606,8 @@ public class CataliGamemode {
                 unit.apply(StatusEffects.invincible, 60 * 30);
                 unit.set(spawnX, spawnY);
 
-                Core.app.post(() -> {
-                    unit.add();
-                    event.player.unit(unit);
-                });
+                unit.add();
+                event.player.unit(unit);
 
                 playerTeam.spawning = false;
             } else {
