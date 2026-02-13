@@ -122,6 +122,10 @@ public class CataliGamemode {
         Log.info("[accent]Cataio gamemode loaded");
     }
 
+    private boolean shouldUpdate() {
+        return Vars.state.isPlaying();
+    }
+
     private void restoreTeam() {
         for (var team : teams) {
             for (var member : team.members) {
@@ -216,39 +220,31 @@ public class CataliGamemode {
 
     @Schedule(fixedRate = 50, unit = TimeUnit.MILLISECONDS)
     public void spawn() {
-        if (!Vars.state.isPlaying()) {
+        if (!shouldUpdate()) {
             return;
         }
 
-        try {
-            blockSpawner.spawn(BLOCK_TEAM);
+        blockSpawner.spawn(BLOCK_TEAM);
 
-            if (findStrongestTeam().map(t -> t.level.level).orElse(0) > config.unitStartSpawnLevel) {
-                unitSpawner.spawn(this, ENEMY_TEAM);
-            }
-        } catch (Exception e) {
-            Log.err("Failed to spawn unit", e);
+        if (findStrongestTeam().map(t -> t.level.level).orElse(0) > config.unitStartSpawnLevel) {
+            unitSpawner.spawn(this, ENEMY_TEAM);
         }
     }
 
     @Schedule(fixedRate = 1, unit = TimeUnit.SECONDS)
     private void updateLogic() {
-        if (!Vars.state.isPlaying()) {
+        if (!shouldUpdate()) {
             return;
         }
 
-        try {
-            updateRespawn();
-            updateTeam();
-            updatePlayer();
-        } catch (Exception e) {
-            Log.err("Failed to update stats hud", e);
-        }
+        updateRespawn();
+        updateTeam();
+        updatePlayer();
     }
 
     @Schedule(fixedRate = 1, unit = TimeUnit.SECONDS)
     private void updateCoreExp() {
-        if (!Vars.state.isPlaying()) {
+        if (!shouldUpdate()) {
             return;
         }
 
@@ -280,110 +276,102 @@ public class CataliGamemode {
 
     @Schedule(fixedRate = 1, unit = TimeUnit.SECONDS)
     private void healUnit() {
-        if (!Vars.state.isPlaying()) {
+        if (!shouldUpdate()) {
             return;
         }
 
-        try {
-            for (var unit : Groups.unit) {
-                var teamData = findTeam(unit.team);
-                if (teamData != null) {
-                    unit.heal(2 * teamData.upgrades.getHealthMultiplier());
-                }
+        for (var unit : Groups.unit) {
+            var teamData = findTeam(unit.team);
+            if (teamData != null) {
+                unit.heal(2 * teamData.upgrades.getHealthMultiplier());
             }
+        }
 
-            if (boss != null) {
-                boss.heal(5);
-            }
-        } catch (Exception e) {
-            Log.err("Failed to heal team unit", e);
+        if (boss != null) {
+            boss.heal(5);
         }
     }
 
     @Schedule(fixedRate = 1, unit = TimeUnit.SECONDS)
     private void updateStatsHud() {
-        if (!Vars.state.isPlaying()) {
+        if (!shouldUpdate()) {
             return;
         }
 
-        try {
-            for (var player : Groups.player) {
-                var team = findTeam(player);
+        for (var player : Groups.player) {
+            var team = findTeam(player);
 
-                String message = I18n.t(player, "@No team");
+            String message = I18n.t(player, "@No team");
 
-                if (team != null) {
-                    StringBuilder sb = new StringBuilder("");
+            if (team != null) {
+                StringBuilder sb = new StringBuilder("");
 
-                    for (int i = 0; i < team.team.data().units.size; i++) {
-                        Unit unit = team.team.data().units.get(i);
-                        sb.append(unit.type.emoji()).append(" ");
-                        if (i % 5 == 4) {
-                            sb.append("\n");
-                        }
+                for (int i = 0; i < team.team.data().units.size; i++) {
+                    Unit unit = team.team.data().units.get(i);
+                    sb.append(unit.type.emoji()).append(" ");
+                    if (i % 5 == 4) {
+                        sb.append("\n");
                     }
-
-                    String units = team.team.data().units.size > 0
-                            ? sb.toString()
-                            : "@No unit";
-
-                    StringBuilder respawnSb = new StringBuilder();
-
-                    for (var entry : team.respawn.sort(v -> v.respawnAt.getEpochSecond())) {
-                        respawnSb.append(entry.type.emoji())
-                                .append(" ")
-                                .append(TimeUtils.toSeconds(Duration.between(Instant.now(), entry.respawnAt)))
-                                .append("\n");
-                    }
-
-                    String respawn = team.getRespawn().size > 0
-                            ? respawnSb.toString()
-                            : "@No unit";
-
-                    String seperator = "=====================\n";
-                    String bossString = "";
-
-                    if (boss == null) {
-                        if (canSpawnBoss) {
-                            bossString = "Boss respawn in: "
-                                    + TimeUtils.toSeconds(Duration.between(Instant.now(), bossSpawnAt).abs());
-                        }
-                    } else {
-                        bossString = boss.type.emoji() + boss.health + "/" + boss.maxHealth;
-                    }
-
-                    String levelString = String.valueOf(team.level.level) + " [gray]("
-                            + String.valueOf((int) team.level.currentExp)
-                            + "/"
-                            + String.valueOf((int) team.level.requiredExp) + ")[white]";
-
-                    message = I18n.t(player, separator, "@Team ID:", String.valueOf(team.team.id),
-                            "\n",
-                            "@Level:",
-                            levelString,
-                            "\n",
-                            "@Member:", String.valueOf(team.members.size), "\n",
-                            "[sky]Hp:",
-                            String.format("%.2f", team.upgrades.getHealthMultiplier()) + "x[white]\n",
-                            "[red]Dmg:",
-                            String.format("%.2f", team.upgrades.getDamageMultiplier()) + "x[white]\n",
-                            "[accent]Exp:",
-                            String.format("%.2f", team.upgrades.getExpMultiplier()) + "x[white]\n",
-                            "[green]Regen:",
-                            String.format("%.2f", team.upgrades.getRegenMultiplier()) + "x[white]\n",
-                            "@Upgrades:", "", String.valueOf(team.level.commonUpgradePoints), "[accent]",
-                            String.valueOf(team.level.rareUpgradePoints), "[white]\n",
-                            "@Unit:", units, "\n",
-                            "@Respawn:", respawn, "\n",
-                            seperator,
-                            bossString//
-                    );
-
-                    Call.infoPopup(player.con, message, 1.1f, Align.right | Align.top, 200, 0, 0, 0);
                 }
+
+                String units = team.team.data().units.size > 0
+                        ? sb.toString()
+                        : "@No unit";
+
+                StringBuilder respawnSb = new StringBuilder();
+
+                for (var entry : team.respawn.sort(v -> v.respawnAt.getEpochSecond())) {
+                    respawnSb.append(entry.type.emoji())
+                            .append(" ")
+                            .append(TimeUtils.toSeconds(Duration.between(Instant.now(), entry.respawnAt)))
+                            .append("\n");
+                }
+
+                String respawn = team.getRespawn().size > 0
+                        ? respawnSb.toString()
+                        : "@No unit";
+
+                String seperator = "=====================\n";
+                String bossString = "";
+
+                if (boss == null) {
+                    if (canSpawnBoss) {
+                        bossString = "Boss respawn in: "
+                                + TimeUtils.toSeconds(Duration.between(Instant.now(), bossSpawnAt).abs());
+                    }
+                } else {
+                    bossString = boss.type.emoji() + boss.health + "/" + boss.maxHealth;
+                }
+
+                String levelString = String.valueOf(team.level.level) + " [gray]("
+                        + String.valueOf((int) team.level.currentExp)
+                        + "/"
+                        + String.valueOf((int) team.level.requiredExp) + ")[white]";
+
+                message = I18n.t(player, separator, "@Team ID:", String.valueOf(team.team.id),
+                        "\n",
+                        "@Level:",
+                        levelString,
+                        "\n",
+                        "@Member:", String.valueOf(team.members.size), "\n",
+                        "[sky]Hp:",
+                        String.format("%.2f", team.upgrades.getHealthMultiplier()) + "x[white]\n",
+                        "[red]Dmg:",
+                        String.format("%.2f", team.upgrades.getDamageMultiplier()) + "x[white]\n",
+                        "[accent]Exp:",
+                        String.format("%.2f", team.upgrades.getExpMultiplier()) + "x[white]\n",
+                        "[green]Regen:",
+                        String.format("%.2f", team.upgrades.getRegenMultiplier()) + "x[white]\n",
+                        "@Upgrades:", "", String.valueOf(team.level.commonUpgradePoints), "[accent]",
+                        String.valueOf(team.level.rareUpgradePoints), "[white]\n",
+                        "@Unit:", units, "\n",
+                        "@Respawn:", respawn, "\n",
+                        seperator,
+                        bossString//
+                );
+
+                Call.infoPopup(player.con, message, 1.1f, Align.right | Align.top, 200, 0, 0, 0);
             }
-        } catch (Exception e) {
-            Log.err("Failed to update stats hud", e);
         }
     }
 
