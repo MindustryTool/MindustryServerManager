@@ -8,34 +8,20 @@ import plugin.service.ApiGateway;
 import plugin.service.I18n;
 import plugin.type.PaginationRequest;
 import plugin.type.Session;
-import plugin.utils.ServerUtils;
 import dto.ServerDto;
 import java.util.List;
 
 public class GlobalServerListMenu extends PluginMenu<Integer> {
 
-    private boolean includeEveryone = false;
+    private final Cons<ServerDto> handle;
 
-    public GlobalServerListMenu() {
-
-    }
-
-    public GlobalServerListMenu setIncludeEveryone(boolean includeEveryone) {
-        this.includeEveryone = includeEveryone;
-        return this;
+    public GlobalServerListMenu(Cons<ServerDto> handle) {
+        this.handle = handle;
     }
 
     @Override
     public void build(Session session, Integer page) {
         try {
-            Cons<ServerDto> handle = (server) -> {
-                if (includeEveryone) {
-                    ServerUtils.redirectAll(server);
-                } else {
-                    ServerUtils.redirect(session.player, server);
-                }
-            };
-
             int size = 8;
             PaginationRequest request = new PaginationRequest().setPage(page).setSize(size);
             List<ServerDto> servers = Registry.get(ApiGateway.class).getServers(request);
@@ -92,19 +78,19 @@ public class GlobalServerListMenu extends PluginMenu<Integer> {
 
             if (page > 0) {
                 option(I18n.t(session.locale, "[yellow]", "@Previous"),
-                        (p, s) -> new GlobalServerListMenu().send(p, s - 1));
+                        (p, s) -> new GlobalServerListMenu(handle).send(p, s - 1));
             } else {
                 option(I18n.t(session.locale, "@First page"), (p, s) -> {
-                    new GlobalServerListMenu().send(p, s);
+                    new GlobalServerListMenu(handle).send(p, s);
                     Call.infoToast(p.player.con, I18n.t(session.locale, "@Please don't click there"), 10f);
                 });
             }
 
             if (servers.size() == size) {
-                option(I18n.t(session.locale, "[green]", "@Next"), (p, s) -> new GlobalServerListMenu().send(p, s + 1));
+                option(I18n.t(session.locale, "[green]", "@Next"), (p, s) -> new GlobalServerListMenu(handle).send(p, s + 1));
             } else {
                 option(I18n.t(session.locale, "@No more"), (p, s) -> {
-                    new GlobalServerListMenu().send(p, s);
+                    new GlobalServerListMenu(handle).send(p, s);
                     Call.infoToast(p.player.con, I18n.t(session.locale, "@Please don't click there"), 10f);
                 });
             }

@@ -152,7 +152,7 @@ public class ClientCommands {
 
     @ClientCommand(name = "redirect", description = "Redirect all player to server")
     public void redirect(Session session) {
-        new GlobalServerListMenu().setIncludeEveryone(true).send(session, 0);
+        new GlobalServerListMenu(server -> ServerUtils.redirectAll(server)).send(session, 0);
     }
 
     @ClientCommand(name = "restart", description = "Restart the server")
