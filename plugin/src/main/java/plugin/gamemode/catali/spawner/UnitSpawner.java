@@ -30,16 +30,16 @@ public class UnitSpawner {
                     break;
                 }
 
+                var tile = SpawnerHelper.getSpawnTile(1);
+
+                if (tile == null) {
+                    return;
+                }
+
                 var largestUnit = entry.units.stream().max((a, b) -> Float.compare(a.hitSize, b.hitSize)).orElse(null);
 
                 if (largestUnit == null) {
                     Log.warn("No unit found in spawn chance entry: @", entry);
-                    return;
-                }
-
-                var tile = SpawnerHelper.getSpawnTile(largestUnit.hitSize);
-
-                if (tile == null) {
                     return;
                 }
 
