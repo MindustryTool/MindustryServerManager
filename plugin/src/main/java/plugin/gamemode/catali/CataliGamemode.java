@@ -280,26 +280,28 @@ public class CataliGamemode {
             return;
         }
 
-        for (var team : teams) {
-            var within = false;
+        Core.app.post(() -> {
+            for (var team : teams) {
+                var within = false;
 
-            for (var core : Team.sharded.cores()) {
-                for (var unit : team.units()) {
-                    if (unit.within(core, Vars.tilesize * 50)) {
-                        within = true;
-                        break;
+                for (var core : Team.sharded.cores()) {
+                    for (var unit : team.units()) {
+                        if (unit.within(core, Vars.tilesize * 50)) {
+                            within = true;
+                            break;
+                        }
                     }
                 }
-            }
 
-            if (team.inCoreRange && within == false) {
-                team.eachMember(player -> player.sendMessage(I18n.t(player, "@Leaved core range")));
-            } else if (!team.inCoreRange && within == true) {
-                team.eachMember(player -> player.sendMessage(I18n.t(player, "@Enter core range, gain +20% exp")));
-            }
+                if (team.inCoreRange && within == false) {
+                    team.eachMember(player -> player.sendMessage(I18n.t(player, "@Leaved core range")));
+                } else if (!team.inCoreRange && within == true) {
+                    team.eachMember(player -> player.sendMessage(I18n.t(player, "@Enter core range, gain +20% exp")));
+                }
 
-            team.inCoreRange = within;
-        }
+                team.inCoreRange = within;
+            }
+        });
     }
 
     @Schedule(fixedRate = 1, unit = TimeUnit.SECONDS)
