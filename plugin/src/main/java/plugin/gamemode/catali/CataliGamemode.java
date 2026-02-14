@@ -128,7 +128,7 @@ public class CataliGamemode {
             unit.controller = (u) -> {
                 var team = findTeam(u.team);
 
-                if (teams == null) {
+                if (team == null) {
                     return originalController.get(u);
                 }
 
