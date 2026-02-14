@@ -188,7 +188,7 @@ public class FloodGamemode {
             if (floodTile == null) {
                 continue;
             }
-            
+
             unit.damage(floodTile.damage);
         }
     }
@@ -210,8 +210,8 @@ public class FloodGamemode {
             return;
         }
 
-        int totalUpdates = 5;
-        int updatesPerCore = totalUpdates / Math.max(1, cores.size);
+        int totalUpdates = 20;
+        int updatesPerCore = Math.max(totalUpdates / Math.max(1, cores.size), 1);
         float multiplier = getFloodMultiplier();
 
         floodQueues.keySet().removeIf(b -> !b.isValid() || b.team != Team.crux);
