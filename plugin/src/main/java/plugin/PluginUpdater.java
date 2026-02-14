@@ -91,7 +91,7 @@ public class PluginUpdater {
         }
 
         PluginEvents.fire(new UnloadServerEvent());
-        Log.info("[cyan]Plugin updated, restarting...");
+        Log.info("[purple]Plugin updated, restarting...");
         System.exit(0);
     }
 
