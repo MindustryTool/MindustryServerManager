@@ -87,7 +87,6 @@ public class CataliGamemode {
 
     private final HashSet<Unit> shouldNotRespawn = new HashSet<>();
     private final HashSet<Building> expRecieved = new HashSet<>();
-    private final HashSet<CataliTeamData> inCoreRange = new HashSet<>();
 
     private final Team SPECTATOR_TEAM = Team.get(255);
     private final Team ENEMY_TEAM = Team.crux;
@@ -282,16 +281,10 @@ public class CataliGamemode {
                 }
             }
 
-            if (!within) {
-                continue;
-            }
-
-            if (inCoreRange.contains(team) && within == false) {
+            if (team.inCoreRange && within == false) {
                 team.eachMember(player -> player.sendMessage(I18n.t(player, "@Leaved core range")));
-                inCoreRange.remove(team);
-            } else if (!inCoreRange.contains(team) && within == true) {
+            } else if (!team.inCoreRange && within == true) {
                 team.eachMember(player -> player.sendMessage(I18n.t(player, "@Enter core range, gain +20% exp")));
-                inCoreRange.add(team);
             }
 
             team.inCoreRange = within;
