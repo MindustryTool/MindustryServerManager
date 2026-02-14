@@ -287,6 +287,7 @@ public class CataliGamemode {
 
             if (inCoreRange.contains(team) && within == false) {
                 team.eachMember(player -> player.sendMessage(I18n.t(player, "@Leaved core range")));
+                inCoreRange.remove(team);
             } else if (!inCoreRange.contains(team) && within == true) {
                 team.eachMember(player -> player.sendMessage(I18n.t(player, "@Enter core range, gain +20% exp")));
                 inCoreRange.add(team);
