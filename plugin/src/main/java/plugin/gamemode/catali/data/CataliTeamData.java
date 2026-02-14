@@ -106,7 +106,7 @@ public class CataliTeamData {
 
     public void eachMember(Cons<Player> cons) {
         Groups.player.each(player -> {
-            if (player.team() == team) {
+            if (player != null && player.team() == team) {
                 cons.get(player);
             }
         });
