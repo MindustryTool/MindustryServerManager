@@ -52,6 +52,10 @@ public class BlockSpawner {
 
                     int dir = Mathf.random(0, 3);
                     tile = tile.nearby(dir);
+
+                    if (tile == null) {
+                        break;
+                    }
                 }
             }
         }
