@@ -48,8 +48,8 @@ public class UnitSpawner {
 
                     Core.app.post(() -> {
                         Unit u = unit.create(team);
-                        var spawnX = tile.worldx() + Mathf.random(largestUnit.hitSize);
-                        var spawnY = tile.worldy() + Mathf.random(largestUnit.hitSize);
+                        var spawnX = tile.worldx() + Mathf.random(largestUnit.hitSize / Vars.tilesize);
+                        var spawnY = tile.worldy() + Mathf.random(largestUnit.hitSize / Vars.tilesize);
                         var radius = 50 * Vars.tilesize;
 
                         u.controller(unit.flying //
