@@ -270,8 +270,11 @@ public class CataliGamemode {
         }
 
         updateRespawn();
-        updateTeam();
-        updatePlayer();
+
+        Core.app.post(() -> {
+            updateTeam();
+            updatePlayer();
+        });
     }
 
     @Schedule(fixedRate = 1, unit = TimeUnit.SECONDS)
