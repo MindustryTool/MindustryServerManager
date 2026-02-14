@@ -8,7 +8,6 @@ import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
-import arc.Core;
 import arc.Events;
 import arc.math.Mathf;
 import arc.struct.Seq;
@@ -30,6 +29,7 @@ import mindustry.world.Block;
 import mindustry.world.Tile;
 import plugin.annotations.Gamemode;
 import plugin.annotations.Listener;
+import plugin.annotations.MainThread;
 import plugin.annotations.Schedule;
 import plugin.annotations.Trigger;
 import plugin.gamemode.flood.FloodConfig.FloodTile;
@@ -84,6 +84,7 @@ public class FloodGamemode {
         applyRules();
     }
 
+    @MainThread
     @Schedule(fixedRate = 30, unit = TimeUnit.SECONDS)
     private void spawnNightUnit() {
         if (!isNight && shouldUpdate()) {
@@ -117,10 +118,8 @@ public class FloodGamemode {
         for (int i = 0; i < suppressed.size(); i++) {
             var core = Team.crux.cores().random();
             var unit = unitType.create(Team.crux);
-            Core.app.post(() -> {
-                unit.set(core.getX(), core.getY());
-                unit.add();
-            });
+            unit.set(core.getX(), core.getY());
+            unit.add();
         }
     }
 
@@ -167,6 +166,7 @@ public class FloodGamemode {
 
     }
 
+    @MainThread
     @Schedule(fixedDelay = 1, unit = TimeUnit.SECONDS)
     private void updateUnitDamgeOnFlood() {
         if (!shouldUpdate()) {
@@ -188,8 +188,8 @@ public class FloodGamemode {
             if (floodTile == null) {
                 continue;
             }
-
-            Core.app.post(() -> unit.damage(floodTile.damage));
+            
+            unit.damage(floodTile.damage);
         }
     }
 
@@ -381,6 +381,7 @@ public class FloodGamemode {
         return 1f + (destroyedCores / cores) + (0.01f * elapsedMinutes) + (isNight ? 2 : 0);
     }
 
+    @MainThread
     @Schedule(fixedRate = 1, unit = TimeUnit.SECONDS)
     private void updateSuppress() {
         if (!shouldUpdate()) {

@@ -2,6 +2,7 @@ package plugin.core;
 
 import plugin.annotations.Component;
 import plugin.annotations.Destroy;
+import plugin.annotations.MainThread;
 import plugin.annotations.Schedule;
 
 import java.lang.reflect.Method;
@@ -11,6 +12,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import arc.util.Log;
+import arc.util.Timer;
 
 @Component
 public class Scheduler {
@@ -31,6 +33,8 @@ public class Scheduler {
 
     public void process(Schedule schedule, Object instance, Method method) {
 
+        var isMainThread = method.isAnnotationPresent(MainThread.class);
+
         Runnable runnable = () -> {
             try {
                 method.invoke(instance);
@@ -40,15 +44,30 @@ public class Scheduler {
         };
 
         if (schedule.fixedRate() > -1) {
-            scheduler.scheduleAtFixedRate(runnable, Math.max(0, schedule.delay()), schedule.fixedRate(),
-                    schedule.unit());
+            if (isMainThread) {
+                Timer.schedule(runnable, schedule.unit().toSeconds(Math.max(0, schedule.delay())),
+                        schedule.unit().toSeconds(schedule.fixedRate()));
+            } else {
+                scheduler.scheduleAtFixedRate(runnable, Math.max(0, schedule.delay()), schedule.fixedRate(),
+                        schedule.unit());
+            }
             Log.info("[gray]Scheduled " + method + " with fixed rate " + schedule.fixedRate() + " " + schedule.unit());
         } else if (schedule.fixedDelay() > -1) {
-            scheduler.scheduleWithFixedDelay(runnable, Math.max(0, schedule.delay()), schedule.fixedDelay(),
-                    schedule.unit());
-            Log.info("[gray]Scheduled " + method + " with fixed delay " + schedule.fixedDelay() + " " + schedule.unit());
+            if (isMainThread) {
+                Timer.schedule(runnable, schedule.unit().toSeconds(Math.max(0, schedule.delay())),
+                        schedule.unit().toSeconds(schedule.fixedRate()));
+            } else {
+                scheduler.scheduleWithFixedDelay(runnable, Math.max(0, schedule.delay()), schedule.fixedDelay(),
+                        schedule.unit());
+            }
+            Log.info(
+                    "[gray]Scheduled " + method + " with fixed delay " + schedule.fixedDelay() + " " + schedule.unit());
         } else if (schedule.delay() > -1) {
-            scheduler.schedule(runnable, schedule.delay(), schedule.unit());
+            if (isMainThread) {
+                Timer.schedule(runnable, schedule.unit().toSeconds(schedule.delay()));
+            } else {
+                scheduler.schedule(runnable, schedule.delay(), schedule.unit());
+            }
             Log.info("[gray]Scheduled " + method + " with delay " + schedule.delay() + " " + schedule.unit());
         } else {
             Log.warn("Invalid scheduler " + schedule);

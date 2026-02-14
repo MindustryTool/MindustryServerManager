@@ -30,6 +30,7 @@ import plugin.PluginEvents;
 import plugin.annotations.Gamemode;
 import plugin.annotations.Init;
 import plugin.annotations.Listener;
+import plugin.annotations.MainThread;
 import plugin.annotations.Schedule;
 import plugin.annotations.Trigger;
 import plugin.event.SessionCreatedEvent;
@@ -263,6 +264,7 @@ public class CataliGamemode {
         }
     }
 
+    @MainThread
     @Schedule(fixedRate = 1, unit = TimeUnit.SECONDS)
     private void updateLogic() {
         if (!shouldUpdate()) {
@@ -270,43 +272,40 @@ public class CataliGamemode {
         }
 
         updateRespawn();
-
-        Core.app.post(() -> {
-            updateTeam();
-            updatePlayer();
-        });
+        updateTeam();
+        updatePlayer();
     }
 
+    @MainThread
     @Schedule(fixedRate = 1, unit = TimeUnit.SECONDS)
     private void updateCoreExp() {
         if (!shouldUpdate()) {
             return;
         }
 
-        Core.app.post(() -> {
-            for (var team : teams) {
-                var within = false;
+        for (var team : teams) {
+            var within = false;
 
-                for (var core : Team.sharded.cores()) {
-                    for (var unit : team.units()) {
-                        if (unit.within(core, Vars.tilesize * 50)) {
-                            within = true;
-                            break;
-                        }
+            for (var core : Team.sharded.cores()) {
+                for (var unit : team.units()) {
+                    if (unit.within(core, Vars.tilesize * 50)) {
+                        within = true;
+                        break;
                     }
                 }
-
-                if (team.inCoreRange && within == false) {
-                    team.eachMember(player -> player.sendMessage(I18n.t(player, "@Leaved core range")));
-                } else if (!team.inCoreRange && within == true) {
-                    team.eachMember(player -> player.sendMessage(I18n.t(player, "@Enter core range, gain +20% exp")));
-                }
-
-                team.inCoreRange = within;
             }
-        });
+
+            if (team.inCoreRange && within == false) {
+                team.eachMember(player -> player.sendMessage(I18n.t(player, "@Leaved core range")));
+            } else if (!team.inCoreRange && within == true) {
+                team.eachMember(player -> player.sendMessage(I18n.t(player, "@Enter core range, gain +20% exp")));
+            }
+
+            team.inCoreRange = within;
+        }
     }
 
+    @MainThread
     @Schedule(fixedRate = 1, unit = TimeUnit.SECONDS)
     private void updateUnit() {
         if (!shouldUpdate()) {
@@ -337,6 +336,7 @@ public class CataliGamemode {
         }
     }
 
+    @MainThread
     @Schedule(fixedRate = 1, unit = TimeUnit.SECONDS)
     private void updateStatsHud() {
         if (!shouldUpdate()) {
