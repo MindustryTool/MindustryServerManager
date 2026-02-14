@@ -315,7 +315,7 @@ public class CataliGamemode {
                     var healAmount = (unit.type.health / 100f) * teamData.upgrades.getHealthMultiplier();
                     unit.heal(healAmount);
                     teamData.eachMember(player -> {
-                        Call.label(player.con, "[green]+" + Math.round(healAmount), 1.1f, unit.x, unit.y);
+                        Call.label(player.con, "[green]+" + Math.round(healAmount) + "hp", 1.1f, unit.x, unit.y);
                     });
                 }
             }
