@@ -94,9 +94,10 @@ public class ClientCommands {
     }
 
     @ClientCommand(name = "js", description = "Execute JavaScript code")
-    public void js(Session session, @Param(name = "code", variadic = true) String code) {
-        String output = Vars.mods.getScripts().runConsole(code);
-        session.player.sendMessage(code);
+    public void js(Session session, @Param(name = "code", variadic = true) String[] code) {
+        String js = String.join(" ", code);
+        String output = Vars.mods.getScripts().runConsole(js);
+        session.player.sendMessage(js);
         session.player.sendMessage("> " + (isJsError(output) ? "[#ff341c]" + output : output));
     }
 

@@ -28,9 +28,9 @@ public class ServerCommands {
     }
 
     @ServerCommand(name = "js", description = "Run arbitrary Javascript")
-    private void js(@Param(name = "script", variadic = true) String script) {
+    private void js(@Param(name = "script", variadic = true) String[] script) {
         try {
-            Log.info("&fi&lw&fb" + Vars.mods.getScripts().runConsole(script));
+            Log.info("&fi&lw&fb" + Vars.mods.getScripts().runConsole(String.join(" ", script)));
         } catch (Exception e) {
             Log.err(e);
         }
@@ -38,11 +38,13 @@ public class ServerCommands {
 
     @ServerCommand(name = "kickWithReason", description = "Kick player")
     private void kickWithReason(@Param(name = "id") String id,
-            @Param(name = "message", variadic = true) String reason) {
+            @Param(name = "message", variadic = true) String[] reasons) {
         if (!Vars.state.isGame()) {
             Log.err("Not hosting. Host a game first.");
             return;
         }
+
+        var reason = String.join(" ", reasons);
 
         Player target = Groups.player.find(p -> p.uuid().equals(id));
 
@@ -72,11 +74,13 @@ public class ServerCommands {
     }
 
     @ServerCommand(name = "say", description = "Send a message to all players")
-    private void say(@Param(name = "message", variadic = true) String message) {
+    private void say(@Param(name = "message", variadic = true) String[] messages) {
         if (!Vars.state.isGame()) {
             Log.err("Not hosting. Host a game first.");
             return;
         }
+
+        var message = String.join(" ", messages);
 
         Call.sendMessage("[white]" + message);
         Log.info("&fi&lcServer: &fr@", "&lw" + message);
@@ -96,8 +100,10 @@ public class ServerCommands {
     }
 
     @ServerCommand(name = "sql", description = "Run SQL script")
-    private void sql(@Param(name = "script", variadic = true) String script) {
-        DB.prepare(script, statement -> {
+    private void sql(@Param(name = "script", variadic = true) String[] code) {
+        var sql = String.join(" ", code);
+        
+        DB.prepare(sql, statement -> {
             boolean hasResultSet = statement.execute();
 
             if (hasResultSet) {
