@@ -51,7 +51,7 @@ public class BlockSpawner {
                         continue;
                     }
 
-                    Core.app.post(() -> tile.setNet(block));
+                    Core.app.post(() -> tile.setNet(block, team, 0));
                 }
             }
         }
