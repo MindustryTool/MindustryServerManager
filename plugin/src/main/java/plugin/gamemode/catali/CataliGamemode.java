@@ -303,12 +303,16 @@ public class CataliGamemode {
     }
 
     @Schedule(fixedRate = 1, unit = TimeUnit.SECONDS)
-    private void healUnit() {
+    private void updateUnit() {
         if (!shouldUpdate()) {
             return;
         }
 
         for (var unit : Groups.unit) {
+            if (unit.team == ENEMY_TEAM) {
+                continue;
+            }
+
             var teamData = findTeam(unit.team);
             if (teamData != null) {
                 if (unit.damaged()) {
@@ -318,11 +322,13 @@ public class CataliGamemode {
                         Call.label(player.con, "[green]+" + Math.round(healAmount) + "hp", 1.1f, unit.x, unit.y);
                     });
                 }
+
+                Call.label(teamData.name(), 1.1f, unit.x, unit.y);
             }
         }
 
         if (boss != null) {
-            boss.heal(5);
+            boss.heal(boss.maxHealth() / 100f);
         }
     }
 
