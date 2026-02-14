@@ -7,6 +7,7 @@ import arc.math.geom.Vec2;
 import arc.struct.Seq;
 import arc.util.Align;
 import arc.util.Log;
+import arc.util.Strings;
 import lombok.RequiredArgsConstructor;
 import lombok.var;
 import mindustry.Vars;
@@ -314,7 +315,7 @@ public class CataliGamemode {
                     var healAmount = (unit.type.health / 100f) * teamData.upgrades.getHealthMultiplier();
                     unit.heal(healAmount);
                     teamData.eachMember(player -> {
-                        Call.label(player.con, "[green]+" + healAmount, 1.1f, unit.x, unit.y);
+                        Call.label(player.con, "[green]+" + Math.round(healAmount), 1.1f, unit.x, unit.y);
                     });
                 }
             }
@@ -866,7 +867,7 @@ public class CataliGamemode {
             boolean levelUp = event.team.level.addExp(total);
 
             event.team.eachMember(player -> {
-                Call.label(player.con, String.format("[green]+%.2fexp", total), 2, //
+                Call.label(player.con, Strings.format("[green]+@exp", Math.round(total)), 2, //
                         event.x + Mathf.random(5),
                         event.y + Mathf.random(5));
             });
