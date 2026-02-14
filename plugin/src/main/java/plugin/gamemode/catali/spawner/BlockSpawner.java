@@ -43,13 +43,8 @@ public class BlockSpawner {
 
                 Tile tile = Vars.world.tile(x, y);
                 for (int i = 0; i < clusterSize; i++) {
-                    for (int blockX = 0; blockX < entry.block.size; blockX++) {
-                        for (int blockY = 0; blockY < entry.block.size; blockY++) {
-                            Tile nextTile = tile.nearby(blockX, blockY);
-                            if (!SpawnerHelper.isTileSafe(nextTile, block.size)) {
-                                continue;
-                            }
-                        }
+                    if (!SpawnerHelper.isTileSafe(tile, block.size)) {
+                        continue;
                     }
 
                     var resultTile = tile;

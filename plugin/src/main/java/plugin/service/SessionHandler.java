@@ -109,6 +109,10 @@ public class SessionHandler {
         return data.containsKey(p.uuid());
     }
 
+    public int size() {
+        return data.size();
+    }
+
     public void each(Cons<Session> item) {
         data.forEach((k, v) -> item.get(v));
     }

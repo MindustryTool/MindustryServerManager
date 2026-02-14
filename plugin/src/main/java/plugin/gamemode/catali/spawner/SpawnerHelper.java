@@ -41,7 +41,21 @@ public class SpawnerHelper {
     }
 
     public static boolean isTileSafe(Tile tile, float occupiedSize) {
-        return tile != null && !tile.solid()
+        if (tile == null || tile.solid()) {
+            return false;
+        }
+
+        for (int offsetX = 0; offsetX < occupiedSize; offsetX++) {
+            for (int offsetY = 0; offsetY < occupiedSize; offsetY++) {
+                var nextTile = Vars.world.tile(tile.x + offsetX, tile.y + offsetY);
+
+                if (nextTile == null || nextTile.solid()) {
+                    return false;
+                }
+            }
+        }
+
+        return true
         // && !Groups.unit.intersect(tile.worldx(), tile.worldy(), occupiedSize,
         // occupiedSize).any()
         ;
