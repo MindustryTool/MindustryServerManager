@@ -250,7 +250,7 @@ public class CataliGamemode {
         }
     }
 
-    @Schedule(fixedRate = 100, unit = TimeUnit.MILLISECONDS)
+    @Trigger(EventType.Trigger.update)
     public void spawn() {
         if (!shouldUpdate()) {
             return;
@@ -433,7 +433,7 @@ public class CataliGamemode {
                             Align.center, 0, 0, 30, 0);
                 }
 
-            } else if (team.level.level == 1 && team.level.currentExp == 0) {
+            } else if (team.level.level == 1 && team.level.currentExp == 0 && team.spawning == false) {
                 Call.infoPopup(player.con, I18n.t(player, "@Destroy block to get", "[accent]exp[white]"), 1,
                         Align.center, 0, 0, 80, 0);
             }
