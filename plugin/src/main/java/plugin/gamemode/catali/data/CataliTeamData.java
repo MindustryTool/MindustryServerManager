@@ -199,7 +199,7 @@ public class CataliTeamData {
         return true;
     }
 
-    public boolean attempToSpawn() {
+    public synchronized boolean attempToSpawn() {
         var first = spawnQueue.firstOpt();
 
         if (first == null) {
