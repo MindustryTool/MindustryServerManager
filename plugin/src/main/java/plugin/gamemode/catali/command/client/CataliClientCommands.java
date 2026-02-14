@@ -7,6 +7,7 @@ import plugin.annotations.Gamemode;
 import plugin.annotations.Param;
 import plugin.gamemode.catali.CataliGamemode;
 import plugin.gamemode.catali.event.ExpGainEvent;
+import plugin.gamemode.catali.menu.AIPickMenu;
 import plugin.gamemode.catali.menu.AbandonMenu;
 import plugin.gamemode.catali.menu.CommonUpgradeMenu;
 import plugin.gamemode.catali.menu.RareUpgradeMenu;
@@ -85,6 +86,18 @@ public class CataliClientCommands {
             if (!showed) {
                 session.player.sendMessage(I18n.t(player, "@You have no upgrade points"));
             }
+        }
+    }
+
+    @ClientCommand(name = "c", description = "Change control type", admin = false)
+    public void control(Session session) {
+        var player = session.player;
+        var team = gamemode.findTeam(player);
+
+        if (team == null) {
+            session.player.sendMessage(I18n.t(player, "@Use", "[accent]/p[white]", "@to start a new team"));
+        } else {
+            new AIPickMenu().send(session, team);
         }
     }
 }
