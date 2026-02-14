@@ -5,6 +5,7 @@ import java.net.InetAddress;
 import arc.util.Log;
 import dto.ServerDto;
 import mindustry.gen.Call;
+import mindustry.gen.Groups;
 import mindustry.gen.Player;
 import plugin.Tasks;
 import plugin.core.Registry;
@@ -12,6 +13,10 @@ import plugin.service.ApiGateway;
 import plugin.service.I18n;
 
 public class ServerUtils {
+
+    public static void redirectAll(ServerDto server) {
+        Groups.player.each(player -> redirect(player, server));
+    }
 
     public static void redirect(Player player, ServerDto server) {
         String id = server.getId().toString();

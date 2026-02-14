@@ -1,5 +1,6 @@
 package plugin.menus;
 
+import arc.func.Cons;
 import arc.util.Log;
 import mindustry.gen.Call;
 import plugin.core.Registry;
@@ -13,12 +14,28 @@ import java.util.List;
 
 public class GlobalServerListMenu extends PluginMenu<Integer> {
 
+    private boolean includeEveryone = false;
+
     public GlobalServerListMenu() {
+
+    }
+
+    public GlobalServerListMenu setIncludeEveryone(boolean includeEveryone) {
+        this.includeEveryone = includeEveryone;
+        return this;
     }
 
     @Override
     public void build(Session session, Integer page) {
         try {
+            Cons<ServerDto> handle = (server) -> {
+                if (includeEveryone) {
+                    ServerUtils.redirectAll(server);
+                } else {
+                    ServerUtils.redirect(session.player, server);
+                }
+            };
+
             int size = 8;
             PaginationRequest request = new PaginationRequest().setPage(page).setSize(size);
             List<ServerDto> servers = Registry.get(ApiGateway.class).getServers(request);
@@ -46,29 +63,29 @@ public class GlobalServerListMenu extends PluginMenu<Integer> {
                 row();
 
                 option(String.format("[#FFD700]%s", server.getName()),
-                        (p, s) -> ServerUtils.redirect(p.player, server));
+                        (p, s) -> handle.get(server));
                 option(I18n.t(session.locale, "[#32CD32]", "@Players: ", server.getPlayers()),
-                        (p, s) -> ServerUtils.redirect(p.player, server));
+                        (p, s) -> handle.get(server));
                 row();
 
                 option(I18n.t(session.locale, "[#87CEEB]", "@Gamemode: ", server.getMode()),
-                        (p, s) -> ServerUtils.redirect(p.player, server));
+                        (p, s) -> handle.get(server));
                 option(I18n.t(session.locale, "[#1E90FF]", "@Map: ",
                         server.getMapName() != null ? server.getMapName()
                                 : I18n.t(session.locale, "[#FF4500]", "@Server offline")),
-                        (p, s) -> ServerUtils.redirect(p.player, server));
+                        (p, s) -> handle.get(server));
                 row();
 
                 if (server.getMods() != null && !server.getMods().isEmpty()) {
                     option(I18n.t(session.locale, "[#DA70D6]", "@Mods: ",
                             String.join(", ", server.getMods())),
-                            (p, s) -> ServerUtils.redirect(p.player, server));
+                            (p, s) -> handle.get(server));
                     row();
                 }
 
                 if (server.getDescription() != null && !server.getDescription().trim().isEmpty()) {
                     option(String.format("[#B0B0B0]%s", server.getDescription()),
-                            (p, s) -> ServerUtils.redirect(p.player, server));
+                            (p, s) -> handle.get(server));
                     row();
                 }
             });
