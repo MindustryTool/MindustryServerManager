@@ -414,7 +414,7 @@ public class CataliGamemode {
                         bossString//
                 );
 
-                Call.infoPopup(player.con, message, 1.1f, Align.right | Align.top, 200, 0, 0, 0);
+                Call.infoPopup(player.con, message, 1.1f, Align.left | Align.top, 200, 0, 0, 0);
             }
         }
     }
