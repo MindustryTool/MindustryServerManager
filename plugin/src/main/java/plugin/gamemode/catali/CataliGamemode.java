@@ -227,14 +227,14 @@ public class CataliGamemode {
             }
         }
 
-        if (!boss.isValid()) {
+        if (boss != null && !boss.isValid()) {
             boss = null;
             bossShouldSpawnAt = Instant.now().plusSeconds(config.bossRespawnSeconds);
         }
 
         if (boss == null && Instant.now().isAfter(bossShouldSpawnAt)) {
             var bossType = config.bossUnits.random();
-            var bossHpMultiplier = (highestLevel - config.bossStartSpawnLevel + 1) * 0.01f;
+            var bossHpMultiplier = (highestLevel - config.bossStartSpawnLevel + 1) * 0.05f;
 
             boss = bossType.create(BOSS_TEAM);
             boss.set(bossSpawnPos);
