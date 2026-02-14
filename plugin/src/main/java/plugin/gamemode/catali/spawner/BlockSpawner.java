@@ -40,10 +40,10 @@ public class BlockSpawner {
                 int x = randomX / 8 * 8;
                 int y = randomY / 8 * 8;
                 int clusterSize = Mathf.random(1, 10);
+                int offX = Mathf.random(-5, 5);
+                int offY = Mathf.random(-5, 5);
 
                 for (int i = 0; i < clusterSize; i++) {
-                    int offX = Mathf.random(-5, 5);
-                    int offY = Mathf.random(-5, 5);
 
                     Tile tile = Vars.world.tile(x + offX, y + offY);
 

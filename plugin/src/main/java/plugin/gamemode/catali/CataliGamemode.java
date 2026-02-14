@@ -32,7 +32,6 @@ import plugin.annotations.Listener;
 import plugin.annotations.Schedule;
 import plugin.annotations.Trigger;
 import plugin.event.SessionCreatedEvent;
-import plugin.gamemode.catali.ai.TeamControlAI;
 import plugin.gamemode.catali.data.CataliTeamData;
 import plugin.gamemode.catali.event.CataliBuffRareUpgrade;
 import plugin.gamemode.catali.event.CataliSpawnRareUpgrade;
@@ -43,6 +42,7 @@ import plugin.gamemode.catali.event.TeamFallenEvent;
 import plugin.gamemode.catali.event.TeamUnitDeadEvent;
 import plugin.gamemode.catali.event.TeamUpgradeChangedEvent;
 import plugin.gamemode.catali.event.TrayUnitCaughtEvent;
+import plugin.gamemode.catali.menu.AIPickMenu;
 import plugin.gamemode.catali.menu.CommonUpgradeMenu;
 import plugin.gamemode.catali.menu.RareUpgradeMenu;
 import plugin.gamemode.catali.spawner.BlockSpawner;
@@ -124,6 +124,16 @@ public class CataliGamemode {
 
         Vars.content.units().forEach(unit -> {
             unit.flying = unit.naval ? true : unit.flying;
+            var originalController = unit.controller;
+            unit.controller = (u) -> {
+                var team = findTeam(u.team);
+
+                if (teams == null) {
+                    return originalController.get(u);
+                }
+
+                return team.unitController();
+            };
         });
     }
 
@@ -594,6 +604,14 @@ public class CataliGamemode {
                 player.sendMessage(message);
             }
         });
+
+        var leader = event.team.leader();
+
+        if (leader == null) {
+            return;
+        }
+
+        sessionHandler.get(leader).ifPresent(session -> new AIPickMenu().send(session, event.team));
     }
 
     @Listener
@@ -614,7 +632,6 @@ public class CataliGamemode {
 
                     unit.apply(StatusEffects.invincible, 60 * 30);
                     unit.set(spawnX, spawnY);
-                    unit.controller(new TeamControlAI(playerTeam));
                     unit.add();
                     event.player.unit(unit);
 

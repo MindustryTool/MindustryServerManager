@@ -13,6 +13,8 @@ import java.time.Instant;
 import java.util.function.Consumer;
 
 import mindustry.Vars;
+import mindustry.ai.types.CommandAI;
+import mindustry.entities.units.AIController;
 import mindustry.game.Team;
 import mindustry.gen.Groups;
 import mindustry.gen.Player;
@@ -52,6 +54,7 @@ public class CataliTeamData {
     public Vec2 shootAt = new Vec2();
     public Tile lastTile = null;
     public Instant lastTap = Instant.now();
+    public boolean useCommandAi = false;
 
     public final int MAX_UNIT_COUNT = 20;
 
@@ -63,6 +66,14 @@ public class CataliTeamData {
         // Cores increase exp recv
 
         members.add(leaderUuid);
+    }
+
+    public AIController unitController() {
+        if (useCommandAi) {
+            return new CommandAI();
+        }
+
+        return new TeamControlAI(this);
     }
 
     public void addRespawnUnit(UnitType type, Duration duration) {
@@ -283,7 +294,6 @@ public class CataliTeamData {
 
         Unit unit = type.create(team);
         unit.set(safeTile.worldx(), safeTile.worldy());
-        unit.controller(new TeamControlAI(this));
 
         upgrades.apply(unit);
 
