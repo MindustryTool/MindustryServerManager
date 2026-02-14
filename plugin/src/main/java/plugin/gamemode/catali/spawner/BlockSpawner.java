@@ -37,21 +37,26 @@ public class BlockSpawner {
                 int randomX = Mathf.random(0, worldWidth - 1);
                 int randomY = Mathf.random(0, worldHeight - 1);
 
-                int x = randomX / 8 * 8;
-                int y = randomY / 8 * 8;
+                int x = randomX / 8 * 8 + Mathf.random(-5, 5);
+                int y = randomY / 8 * 8 + Mathf.random(-5, 5);
                 int clusterSize = Mathf.random(1, 10);
-                int offX = Mathf.random(-5, 5);
-                int offY = Mathf.random(-5, 5);
 
+                Tile tile = Vars.world.tile(x, y);
                 for (int i = 0; i < clusterSize; i++) {
-
-                    Tile tile = Vars.world.tile(x + offX, y + offY);
-
-                    if (!SpawnerHelper.isTileSafe(tile, block.size)) {
-                        continue;
+                    for (int blockX = 0; blockX < entry.block.size; blockX++) {
+                        for (int blockY = 0; blockY < entry.block.size; blockY++) {
+                            Tile nextTile = tile.nearby(blockX, blockY);
+                            if (!SpawnerHelper.isTileSafe(nextTile, block.size)) {
+                                continue;
+                            }
+                        }
                     }
 
-                    Core.app.post(() -> tile.setNet(block, team, 0));
+                    var resultTile = tile;
+                    Core.app.post(() -> resultTile.setNet(block, team, 0));
+
+                    int dir = Mathf.random(0, 3);
+                    tile = tile.nearby(dir);
                 }
             }
         }
