@@ -12,6 +12,7 @@ import arc.Events;
 import arc.math.Mathf;
 import arc.struct.Seq;
 import arc.util.Align;
+import arc.util.Interval;
 import arc.util.Log;
 import arc.util.Time;
 import lombok.RequiredArgsConstructor;
@@ -56,6 +57,8 @@ public class FloodGamemode {
 
     private Duration dayDuration = Duration.ofMinutes(12);
     private Duration nightDuration = Duration.ofMinutes(8);
+
+    private Interval updateInterval = new Interval();
 
     private boolean shouldUpdate() {
         return Vars.state.isPlaying();
@@ -224,10 +227,10 @@ public class FloodGamemode {
 
         if (allEmpty) {
             spreaded.clear();
-            updatedTiles.clear();
 
             for (var core : cores) {
                 if (suppressed.containsKey(core)) {
+                    floodQueues.remove(core);
                     continue;
                 }
 
@@ -264,19 +267,23 @@ public class FloodGamemode {
             }
         }
 
-        for (var entry : updatedTiles.entrySet()) {
-            var block = entry.getKey();
-            var tiles = entry.getValue();
+        if (updateInterval.get(1000)) {
+            var copy = new HashMap<>(updatedTiles);
+            updatedTiles.clear();
+            for (var entry : copy.entrySet()) {
+                var block = entry.getKey();
+                var tiles = entry.getValue();
 
-            int[] primitive = new int[tiles.size];
-            for (int i = 0; i < tiles.size; i++) {
-                primitive[i] = tiles.get(i);
+                int[] primitive = new int[tiles.size];
+                for (int i = 0; i < tiles.size; i++) {
+                    primitive[i] = tiles.get(i);
+                }
+
+                Call.setTileBlocks(block, Team.crux, primitive);
             }
 
-            Call.setTileBlocks(block, Team.crux, primitive);
+            copy.clear();
         }
-
-        updatedTiles.clear();
     }
 
     private void spread(ArrayDeque<Tile> queue, BitSet spreaded, float multiplier, int maxUpdates,
