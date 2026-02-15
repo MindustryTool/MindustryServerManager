@@ -203,9 +203,11 @@ public class FloodGamemode {
             return;
         }
 
-        suppressed.entrySet().removeIf(e -> e.getValue() < Time.millis());
+        suppressed.entrySet().removeIf(e -> e.getValue() < Time.millis() || !e.getKey().isValid());
+        damageReceived.keySet().removeIf(b -> !b.isValid());
 
         var cores = Team.crux.cores();
+
         if (cores.isEmpty()) {
             return;
         }

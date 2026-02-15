@@ -198,8 +198,6 @@ public class DockerNodeManager implements NodeManager {
                 exposedPorts.add(udp);
 
                 List<String> args = List.of(
-                        "-XX:+UseContainerSupport",
-                        "-XX:+UseSerialGC",
                         "-XX:MaxRAMPercentage=75.0",
                         "-XX:+CrashOnOutOfMemoryError",
                         "-XX:MaxRAM=" + request.getMemory() + "m");
