@@ -12,12 +12,12 @@ import plugin.annotations.Configuration;
 @Configuration("flood/config.json")
 public class FloodConfig {
     public Seq<FloodTile> floodTiles = Seq.with(
-            new FloodTile(Blocks.conveyor, 10f, 10),
-            new FloodTile(Blocks.titaniumConveyor, 20f, 20),
-            new FloodTile(Blocks.armoredConveyor, 30f, 35),
-            new FloodTile(Blocks.scrapWall, 40f, 50),
-            new FloodTile(Blocks.copperWall, 50f, 80),
-            new FloodTile(Blocks.titaniumWall, 60f, 100),
+            new FloodTile(Blocks.conveyor, 10f, 20),
+            new FloodTile(Blocks.titaniumConveyor, 20f, 40),
+            new FloodTile(Blocks.armoredConveyor, 30f, 65),
+            new FloodTile(Blocks.scrapWall, 40f, 80),
+            new FloodTile(Blocks.copperWall, 50f, 100),
+            new FloodTile(Blocks.titaniumWall, 60f, 120),
             new FloodTile(Blocks.plastaniumWall, 70f, 150),
             new FloodTile(Blocks.thoriumWall, 80f, 180),
             new FloodTile(Blocks.phaseWall, 90f, 200), //

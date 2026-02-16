@@ -267,7 +267,7 @@ public class FloodGamemode {
             }
         }
 
-        if (updateInterval.get(1000)) {
+        if (updateInterval.get(1000 / 20)) {
             var copy = new HashMap<>(updatedTiles);
             updatedTiles.clear();
             for (var entry : copy.entrySet()) {
