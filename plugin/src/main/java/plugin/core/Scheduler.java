@@ -12,6 +12,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import arc.util.Log;
+import arc.util.Time;
 import arc.util.Timer;
 
 @Component
@@ -44,20 +45,39 @@ public class Scheduler {
         };
 
         if (schedule.fixedRate() > -1) {
+            Runnable task = () -> {
+                long startedAt = Time.millis();
+                runnable.run();
+                long elapsed = Time.millis() - startedAt;
+                if (elapsed > schedule.fixedRate()) {
+                    Log.warn("Task @" + method + " took " + elapsed + "ms, which is longer than the fixed rate "
+                            + schedule.fixedRate() + "ms");
+                }
+            };
+
             if (isMainThread) {
-                Timer.schedule(runnable, schedule.unit().toSeconds(Math.max(0, schedule.delay())),
+                Timer.schedule(task, schedule.unit().toSeconds(Math.max(0, schedule.delay())),
                         schedule.unit().toSeconds(schedule.fixedRate()));
             } else {
-                scheduler.scheduleAtFixedRate(runnable, Math.max(0, schedule.delay()), schedule.fixedRate(),
+                scheduler.scheduleAtFixedRate(task, Math.max(0, schedule.delay()), schedule.fixedRate(),
                         schedule.unit());
             }
             Log.info("[gray]Scheduled " + method + " with fixed rate " + schedule.fixedRate() + " " + schedule.unit());
         } else if (schedule.fixedDelay() > -1) {
+            Runnable task = () -> {
+                long startedAt = Time.millis();
+                runnable.run();
+                long elapsed = Time.millis() - startedAt;
+                if (elapsed > schedule.fixedDelay()) {
+                    Log.warn("Task @" + method + " took " + elapsed + "ms, which is longer than the fixed delay "
+                            + schedule.fixedDelay() + "ms");
+                }
+            };
             if (isMainThread) {
-                Timer.schedule(runnable, schedule.unit().toSeconds(Math.max(0, schedule.delay())),
+                Timer.schedule(task, schedule.unit().toSeconds(Math.max(0, schedule.delay())),
                         schedule.unit().toSeconds(schedule.fixedRate()));
             } else {
-                scheduler.scheduleWithFixedDelay(runnable, Math.max(0, schedule.delay()), schedule.fixedDelay(),
+                scheduler.scheduleWithFixedDelay(task, Math.max(0, schedule.delay()), schedule.fixedDelay(),
                         schedule.unit());
             }
             Log.info(
