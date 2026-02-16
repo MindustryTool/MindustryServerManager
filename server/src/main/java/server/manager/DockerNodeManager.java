@@ -201,7 +201,7 @@ public class DockerNodeManager implements NodeManager {
                         "-XX:MaxRAMPercentage=75.0",
                         "-XX:+CrashOnOutOfMemoryError",
                         "-XX:MaxRAM=" + request.getMemory() + "m","-XX:+HeapDumpOnOutOfMemoryError",
-    "-XX:HeapDumpPath=/app/config");
+    "-XX:HeapDumpPath=/config");
 
                 env.addAll(request.getEnv().entrySet().stream().map(v -> v.getKey() + "=" + v.getValue()).toList());
                 env.add("IS_HUB=" + request.getIsHub());
