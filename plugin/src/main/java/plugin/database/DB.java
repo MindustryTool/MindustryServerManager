@@ -21,10 +21,14 @@ public class DB {
     private static final String JDBC_URL_PREFIX = "jdbc:sqlite:";
     private static final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
-    private static Connection connection;
+    private static boolean isInitialized = false;
     private static String databasePath;
 
     public static void init() {
+        if (isInitialized) {
+            return;
+        }
+
         try {
             Class.forName("org.sqlite.JDBC");
         } catch (ClassNotFoundException e) {
@@ -117,13 +121,14 @@ public class DB {
         return false;
     }
 
-    private static Connection getConnection() throws SQLException {
+    private static Connection getConnection() throws SQLException { 
+        init();
         lock.readLock().lock();
         try {
-            String jdbcUrl = JDBC_URL_PREFIX + DATABASE_DIR + "/" + DATABASE_FILE; 
+            String jdbcUrl = JDBC_URL_PREFIX + DATABASE_DIR + "/" + DATABASE_FILE;
             var config = new SQLiteConfig();
             config.setBusyTimeout(3000);
-            return connection = DriverManager.getConnection(jdbcUrl, config.toProperties());
+            return DriverManager.getConnection(jdbcUrl, config.toProperties());
         } finally {
             lock.readLock().unlock();
         }
@@ -131,17 +136,6 @@ public class DB {
 
     public static void close() {
         lock.writeLock().lock();
-        try {
-            if (connection != null && !connection.isClosed()) {
-                connection.close();
-                Log.info("[red]SQLite database connection closed");
-            }
-        } catch (Exception e) {
-            Log.err("Failed to close database connection: @", e.getMessage());
-        } finally {
-            lock.writeLock().unlock();
-        }
-        connection = null;
 
         Enumeration<Driver> drivers = DriverManager.getDrivers();
         ClassLoader pluginClassLoader = Control.class.getClassLoader();
