@@ -85,7 +85,7 @@ public class Scheduler {
                     @Override
                     public void run() {
                         runnable.run();
-                        Timer.schedule(this, schedule.unit().toSeconds(schedule.fixedRate()));
+                        Timer.schedule(this, schedule.unit().toSeconds(schedule.fixedDelay()));
                     }
                 }, schedule.unit().toSeconds(Math.max(0, schedule.delay())));
             } else {
