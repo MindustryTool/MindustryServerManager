@@ -49,9 +49,10 @@ public class Scheduler {
                 long startedAt = Time.millis();
                 runnable.run();
                 long elapsed = Time.millis() - startedAt;
-                if (elapsed > schedule.fixedRate()) {
+                long expected = schedule.unit().toMillis(schedule.fixedRate());
+                if (elapsed > expected) {
                     Log.warn("Task @" + method + " took " + elapsed + "ms, which is longer than the fixed rate "
-                            + schedule.fixedRate() + "ms");
+                            + expected + "ms");
                 }
             };
 
@@ -68,9 +69,11 @@ public class Scheduler {
                 long startedAt = Time.millis();
                 runnable.run();
                 long elapsed = Time.millis() - startedAt;
-                if (elapsed > schedule.fixedDelay()) {
+                long expected = schedule.unit().toMillis(schedule.fixedDelay());
+
+                if (elapsed > expected) {
                     Log.warn("Task @" + method + " took " + elapsed + "ms, which is longer than the fixed delay "
-                            + schedule.fixedDelay() + "ms");
+                            + expected + "ms");
                 }
             };
             if (isMainThread) {
