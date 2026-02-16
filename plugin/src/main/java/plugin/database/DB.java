@@ -10,6 +10,8 @@ import java.sql.Statement;
 import java.util.Enumeration;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import org.sqlite.SQLiteConfig;
+
 import arc.util.Log;
 import plugin.Control;
 
@@ -118,9 +120,10 @@ public class DB {
     private static Connection getConnection() throws SQLException {
         lock.readLock().lock();
         try {
-            String jdbcUrl = JDBC_URL_PREFIX + DATABASE_DIR + "/" + DATABASE_FILE;
-
-            return connection = DriverManager.getConnection(jdbcUrl);
+            String jdbcUrl = JDBC_URL_PREFIX + DATABASE_DIR + "/" + DATABASE_FILE; 
+            var config = new SQLiteConfig();
+            config.setBusyTimeout(3000);
+            return connection = DriverManager.getConnection(jdbcUrl, config.toProperties());
         } finally {
             lock.readLock().unlock();
         }

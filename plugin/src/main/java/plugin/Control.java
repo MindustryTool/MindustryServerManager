@@ -70,12 +70,12 @@ public class Control extends mindustry.mod.Plugin {
 
     @Override
     public void registerServerCommands(CommandHandler handler) {
-        Core.app.post(() -> Registry.get(ServerCommandHandler.class).registerCommands(handler));
+        Registry.get(ServerCommandHandler.class).registerCommands(handler);
     }
 
     @Override
     public void registerClientCommands(CommandHandler handler) {
-        Core.app.post(() -> Registry.get(ClientCommandHandler.class).registerCommands(handler));
+        Registry.get(ClientCommandHandler.class).registerCommands(handler);
     }
 
     public void unload() {

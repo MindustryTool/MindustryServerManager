@@ -4,14 +4,12 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
-import arc.Core;
 import arc.func.Boolf;
 import arc.func.Cons;
 import arc.util.Log;
 import lombok.RequiredArgsConstructor;
 import mindustry.game.EventType.PlayerJoin;
 import mindustry.game.EventType.PlayerLeave;
-import mindustry.gen.Groups;
 import mindustry.gen.Player;
 import plugin.PluginEvents;
 import plugin.annotations.Component;
@@ -34,7 +32,7 @@ public class SessionHandler {
 
     @Listener
     public void onPlayerJoin(PlayerJoin event) {
-        Core.app.post(() -> put(event.player));
+        put(event.player);
     }
 
     @Listener
@@ -46,12 +44,7 @@ public class SessionHandler {
         return data;
     }
 
-    @Schedule(delay = 10, fixedDelay = 2, unit = TimeUnit.SECONDS)
-    private void create() {
-        Core.app.post(() -> Groups.player.each(this::put));
-    }
-
-    @Schedule(delay = 0, fixedDelay = 1, unit = TimeUnit.SECONDS)
+    @Schedule(fixedDelay = 1, unit = TimeUnit.SECONDS)
     private void update() {
         each(sessionService::update);
     }
@@ -91,7 +84,7 @@ public class SessionHandler {
                 Log.err(e);
             }
 
-            Core.app.post(() -> PluginEvents.fire(new SessionCreatedEvent(session)));
+            PluginEvents.fire(new SessionCreatedEvent(session));
 
             return session;
         });

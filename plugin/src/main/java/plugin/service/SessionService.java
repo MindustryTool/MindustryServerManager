@@ -2,7 +2,6 @@ package plugin.service;
 
 import java.util.function.Function;
 
-import arc.Core;
 import arc.util.Log;
 import mindustry.Vars;
 import mindustry.gen.Groups;
@@ -96,10 +95,7 @@ public class SessionService {
             }
 
             session.currentLevel = level;
-
-            Core.app.post(() -> {
-                session.player.name(SessionUtils.getPlayerName(session.player, data, level));
-            });
+            session.player.name(SessionUtils.getPlayerName(session.player, data, level));
         }
 
         sessionRepository.markDirty(session.player.uuid());
@@ -127,15 +123,11 @@ public class SessionService {
                 Vars.netServer.admins.unAdminPlayer(target.id);
             }
         } else {
-            Core.app.post(() -> {
-                session.player.admin = false;
-                Log.info("Player @ is no longer an admin", session.player.name);
-            });
+            session.player.admin = false;
+            Log.info("Player @ is no longer an admin", session.player.name);
         }
 
-        Core.app.post(() -> {
-            session.player.admin = isAdmin;
-            session.player.name(SessionUtils.getPlayerName(session.player, session.getData(), session.currentLevel));
-        });
+        session.player.admin = isAdmin;
+        session.player.name(SessionUtils.getPlayerName(session.player, session.getData(), session.currentLevel));
     }
 }
