@@ -33,12 +33,16 @@ public class Scheduler {
     }
 
     public void process(Schedule schedule, Object instance, Method method) {
-
         var isMainThread = method.isAnnotationPresent(MainThread.class);
 
         Runnable runnable = () -> {
             try {
+                long startedAt = Time.millis();
                 method.invoke(instance);
+                long elapsed = Time.millis() - startedAt;
+                if (isMainThread && elapsed > 1000) {
+                    Log.warn("Task @" + method + " took " + elapsed + "ms");
+                }
             } catch (Exception e) {
                 Log.err("Failed to invoke @" + method, e);
             }
@@ -77,8 +81,13 @@ public class Scheduler {
                 }
             };
             if (isMainThread) {
-                Timer.schedule(task, schedule.unit().toSeconds(Math.max(0, schedule.delay())),
-                        schedule.unit().toSeconds(schedule.fixedRate()));
+                Timer.schedule(new Timer.Task() {
+                    @Override
+                    public void run() {
+                        runnable.run();
+                        Timer.schedule(this, schedule.unit().toSeconds(schedule.fixedRate()));
+                    }
+                }, schedule.unit().toSeconds(Math.max(0, schedule.delay())));
             } else {
                 scheduler.scheduleWithFixedDelay(task, Math.max(0, schedule.delay()), schedule.fixedDelay(),
                         schedule.unit());
