@@ -116,6 +116,17 @@ public class Control extends mindustry.mod.Plugin {
         }
     }
 
+    @Schedule(delay = 0, fixedDelay = 5, unit = TimeUnit.SECONDS)
+    private void detectOverflow()
+            throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
+        var runnables = Core.app.getClass().getDeclaredField("runnables");
+        runnables.setAccessible(true);
+        TaskQueue runnablesList = (TaskQueue) runnables.get(Core.app);
+        if (runnablesList.size() > 1000) {
+            Log.err("[scarlet]Runnables overflow: @", runnablesList.size());
+        }
+    }
+
     private void registerEventListener() {
         for (Class<?> clazz : EventType.class.getDeclaredClasses()) {
             Events.on(clazz, event -> {
