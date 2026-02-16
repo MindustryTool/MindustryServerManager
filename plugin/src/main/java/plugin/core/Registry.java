@@ -102,7 +102,7 @@ public final class Registry {
     }
 
     @SuppressWarnings("unchecked")
-    public static <T> T get(Class<T> type) {
+    public static synchronized <T> T get(Class<T> type) {
         Object obj = instances.get(type);
 
         if (obj == null) {
