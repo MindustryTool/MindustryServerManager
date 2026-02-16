@@ -49,6 +49,7 @@ public class DB {
             File databaseFile = new File(databaseDir, DATABASE_FILE);
             databasePath = databaseFile.getAbsolutePath();
 
+            isInitialized = true;
             Log.info("SQLite database initialized at: " + databasePath);
 
         } catch (Exception e) {
@@ -121,7 +122,7 @@ public class DB {
         return false;
     }
 
-    private static Connection getConnection() throws SQLException { 
+    private static Connection getConnection() throws SQLException {
         init();
         lock.readLock().lock();
         try {
