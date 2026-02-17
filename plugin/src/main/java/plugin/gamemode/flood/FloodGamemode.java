@@ -202,72 +202,72 @@ public class FloodGamemode {
             return;
         }
 
-        if (floods.length != Vars.world.width() * Vars.world.height()) {
-            return;
-        }
+        if (updateInterval.get(1000 / 10)) {
+            if (floods.length != Vars.world.width() * Vars.world.height()) {
+                return;
+            }
 
-        suppressed.entrySet().removeIf(e -> e.getValue() < Time.millis() || !e.getKey().isValid());
-        damageReceived.keySet().removeIf(b -> !b.isValid());
+            suppressed.entrySet().removeIf(e -> e.getValue() < Time.millis() || !e.getKey().isValid());
+            damageReceived.keySet().removeIf(b -> !b.isValid());
 
-        var cores = Team.crux.cores();
+            var cores = Team.crux.cores();
 
-        if (cores.isEmpty()) {
-            return;
-        }
+            if (cores.isEmpty()) {
+                return;
+            }
 
-        int totalUpdates = 20;
-        int updatesPerCore = Math.max(totalUpdates / Math.max(1, cores.size), 1);
-        float multiplier = getFloodMultiplier();
+            int totalUpdates = 20;
+            int updatesPerCore = Math.max(totalUpdates / Math.max(1, cores.size), 1);
+            float multiplier = getFloodMultiplier();
 
-        floodQueues.keySet().removeIf(b -> !b.isValid() || b.team != Team.crux);
+            floodQueues.keySet().removeIf(b -> !b.isValid() || b.team != Team.crux);
 
-        boolean allEmpty = cores
-                .map(c -> floodQueues.get(c))
-                .allMatch(q -> q == null || q.isEmpty());
+            boolean allEmpty = cores
+                    .map(c -> floodQueues.get(c))
+                    .allMatch(q -> q == null || q.isEmpty());
 
-        if (allEmpty) {
-            spreaded.clear();
+            if (allEmpty) {
+                spreaded.clear();
 
-            for (var core : cores) {
-                if (suppressed.containsKey(core)) {
-                    floodQueues.remove(core);
-                    continue;
-                }
-
-                var queue = floodQueues.computeIfAbsent(core, k -> new ArrayDeque<>());
-                var tiles = around(core);
-
-                for (var tile : tiles) {
-                    if (tile.build != null && tile.build.team != Team.crux) {
-                        final var damage = config.floodTiles.get(0).damage * multiplier;
-                        tile.build.damage(damage);
+                for (var core : cores) {
+                    if (suppressed.containsKey(core)) {
+                        floodQueues.remove(core);
+                        continue;
                     }
 
-                    if (tile.build == null) {
-                        setFlood(tile, config.floodTiles.get(0), multiplier, updatedTiles);
-                    } else {
-                        if (!spreaded.get(index(tile))) {
-                            spreaded.set(index(tile), true);
-                            queue.add(tile);
+                    var queue = floodQueues.computeIfAbsent(core, k -> new ArrayDeque<>());
+                    var tiles = around(core);
+
+                    for (var tile : tiles) {
+                        if (tile.build != null && tile.build.team != Team.crux) {
+                            final var damage = config.floodTiles.get(0).damage * multiplier;
+                            tile.build.damage(damage);
+                        }
+
+                        if (tile.build == null) {
+                            setFlood(tile, config.floodTiles.get(0), multiplier, updatedTiles);
+                        } else {
+                            if (!spreaded.get(index(tile))) {
+                                spreaded.set(index(tile), true);
+                                queue.add(tile);
+                            }
                         }
                     }
                 }
             }
-        }
 
-        for (var core : cores) {
-            if (suppressed.containsKey(core)) {
-                continue;
+            for (var core : cores) {
+                if (suppressed.containsKey(core)) {
+                    continue;
+                }
+
+                var queue = floodQueues.get(core);
+
+                if (queue != null && !queue.isEmpty()) {
+                    spread(queue, spreaded, multiplier, updatesPerCore, updatedTiles);
+                }
             }
 
-            var queue = floodQueues.get(core);
-
-            if (queue != null && !queue.isEmpty()) {
-                spread(queue, spreaded, multiplier, updatesPerCore, updatedTiles);
-            }
-        }
-
-        if (updateInterval.get(1000 / 20)) {
             var copy = new HashMap<>(updatedTiles);
             updatedTiles.clear();
             for (var entry : copy.entrySet()) {
