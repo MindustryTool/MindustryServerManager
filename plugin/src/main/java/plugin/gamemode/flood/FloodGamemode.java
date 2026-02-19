@@ -272,12 +272,15 @@ public class FloodGamemode {
             var tiles = entry.getValue();
 
             int[] primitive = new int[tiles.size];
+
             for (int i = 0; i < tiles.size; i++) {
                 primitive[i] = tiles.get(i);
             }
 
             Call.setTileBlocks(block, Team.crux, primitive);
         }
+
+        updatedTiles.clear();
     }
 
     private void spread(ArrayDeque<Tile> queue, BitSet spreaded, float multiplier, int maxUpdates,
