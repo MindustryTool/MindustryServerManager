@@ -12,7 +12,6 @@ import arc.Events;
 import arc.math.Mathf;
 import arc.struct.Seq;
 import arc.util.Align;
-import arc.util.Interval;
 import arc.util.Log;
 import arc.util.Time;
 import lombok.RequiredArgsConstructor;
@@ -58,8 +57,6 @@ public class FloodGamemode {
     private Duration dayDuration = Duration.ofMinutes(12);
     private Duration nightDuration = Duration.ofMinutes(8);
     private int days = 0;
-
-    private Interval updateInterval = new Interval();
 
     private boolean shouldUpdate() {
         return Vars.state.isPlaying();
@@ -205,83 +202,81 @@ public class FloodGamemode {
             return;
         }
 
-        if (updateInterval.get(1000 / 10)) {
-            if (floods.length != Vars.world.width() * Vars.world.height()) {
-                return;
-            }
+        if (floods.length != Vars.world.width() * Vars.world.height()) {
+            return;
+        }
 
-            suppressed.entrySet().removeIf(e -> e.getValue() < Time.millis() || !e.getKey().isValid());
-            damageReceived.keySet().removeIf(b -> !b.isValid());
+        suppressed.entrySet().removeIf(e -> e.getValue() < Time.millis() || !e.getKey().isValid());
+        damageReceived.keySet().removeIf(b -> !b.isValid());
 
-            var cores = Team.crux.cores();
+        var cores = Team.crux.cores();
 
-            if (cores.isEmpty()) {
-                return;
-            }
+        if (cores.isEmpty()) {
+            return;
+        }
 
-            int totalUpdates = 50;
-            int updatesPerCore = Math.max(totalUpdates / Math.max(1, cores.size), 1);
-            float multiplier = getFloodMultiplier();
+        int totalUpdates = 3;
+        int updatesPerCore = Math.max(totalUpdates / Math.max(1, cores.size), 1);
+        float multiplier = getFloodMultiplier();
 
-            floodQueues.keySet().removeIf(b -> !b.isValid() || b.team != Team.crux);
+        floodQueues.keySet().removeIf(b -> !b.isValid() || b.team != Team.crux);
 
-            boolean allEmpty = cores
-                    .map(c -> floodQueues.get(c))
-                    .allMatch(q -> q == null || q.isEmpty());
+        boolean allEmpty = cores
+                .map(c -> floodQueues.get(c))
+                .allMatch(q -> q == null || q.isEmpty());
 
-            if (allEmpty) {
-                spreaded.clear();
-
-                for (var core : cores) {
-                    if (suppressed.containsKey(core)) {
-                        floodQueues.remove(core);
-                        continue;
-                    }
-
-                    var queue = floodQueues.computeIfAbsent(core, k -> new ArrayDeque<>());
-                    var tiles = around(core);
-
-                    for (var tile : tiles) {
-                        if (tile.build != null && tile.build.team != Team.crux) {
-                            final var damage = config.floodTiles.get(0).damage * multiplier;
-                            tile.build.damage(damage);
-                        }
-
-                        if (tile.build == null) {
-                            setFlood(tile, config.floodTiles.get(0), multiplier, updatedTiles);
-                        } else {
-                            if (!spreaded.get(index(tile))) {
-                                spreaded.set(index(tile), true);
-                                queue.add(tile);
-                            }
-                        }
-                    }
-                }
-            }
+        if (allEmpty) {
+            spreaded.clear();
 
             for (var core : cores) {
                 if (suppressed.containsKey(core)) {
+                    floodQueues.remove(core);
                     continue;
                 }
 
-                var queue = floodQueues.get(core);
+                var queue = floodQueues.computeIfAbsent(core, k -> new ArrayDeque<>());
+                var tiles = around(core);
 
-                if (queue != null && !queue.isEmpty()) {
-                    spread(queue, spreaded, multiplier, updatesPerCore, updatedTiles);
+                for (var tile : tiles) {
+                    if (tile.build != null && tile.build.team != Team.crux) {
+                        final var damage = config.floodTiles.get(0).damage * multiplier;
+                        tile.build.damage(damage);
+                    }
+
+                    if (tile.build == null) {
+                        setFlood(tile, config.floodTiles.get(0), multiplier, updatedTiles);
+                    } else {
+                        if (!spreaded.get(index(tile))) {
+                            spreaded.set(index(tile), true);
+                            queue.add(tile);
+                        }
+                    }
                 }
             }
+        }
 
-            for (var entry : updatedTiles.entrySet()) {
-                var block = entry.getKey();
-                var tiles = entry.getValue();
-
-                int[] primitive = new int[tiles.size];
-                for (int i = 0; i < tiles.size; i++) {
-                    primitive[i] = tiles.get(i);
-                }
-
-                Call.setTileBlocks(block, Team.crux, primitive);
+        for (var core : cores) {
+            if (suppressed.containsKey(core)) {
+                continue;
             }
+
+            var queue = floodQueues.get(core);
+
+            if (queue != null && !queue.isEmpty()) {
+                spread(queue, spreaded, multiplier, updatesPerCore, updatedTiles);
+            }
+        }
+
+        for (var entry : updatedTiles.entrySet()) {
+            var block = entry.getKey();
+            var tiles = entry.getValue();
+
+            int[] primitive = new int[tiles.size];
+            for (int i = 0; i < tiles.size; i++) {
+                primitive[i] = tiles.get(i);
+            }
+
+            Call.setTileBlocks(block, Team.crux, primitive);
         }
     }
 
