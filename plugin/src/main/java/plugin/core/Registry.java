@@ -44,7 +44,15 @@ public final class Registry {
                 Log.info("[sky]Current gamemode: " + currentGamemode);
             }
 
-            for (Class<?> clazz : components) {
+            for (Class<?> clazz : components.stream().sorted(Comparator.comparingInt(c -> {
+                var cons = c.getDeclaredConstructors();
+
+                if (cons.length == 0) {
+                    return 1;
+                }
+
+                return cons[0].getParameterCount();
+            })).toList()) {
                 if (clazz.isAnnotation() || clazz.isInterface()) {
                     continue;
                 }
@@ -78,6 +86,7 @@ public final class Registry {
 
                 getOrCreate(clazz);
             }
+
         } catch (Exception e) {
             throw new RuntimeException("Registry init failed", e);
         }
