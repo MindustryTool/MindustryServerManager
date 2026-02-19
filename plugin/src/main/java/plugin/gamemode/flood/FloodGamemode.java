@@ -219,7 +219,7 @@ public class FloodGamemode {
                 return;
             }
 
-            int totalUpdates = 20;
+            int totalUpdates = 50;
             int updatesPerCore = Math.max(totalUpdates / Math.max(1, cores.size), 1);
             float multiplier = getFloodMultiplier();
 
@@ -271,9 +271,7 @@ public class FloodGamemode {
                 }
             }
 
-            var copy = new HashMap<>(updatedTiles);
-            updatedTiles.clear();
-            for (var entry : copy.entrySet()) {
+            for (var entry : updatedTiles.entrySet()) {
                 var block = entry.getKey();
                 var tiles = entry.getValue();
 
@@ -284,8 +282,6 @@ public class FloodGamemode {
 
                 Call.setTileBlocks(block, Team.crux, primitive);
             }
-
-            copy.clear();
         }
     }
 
