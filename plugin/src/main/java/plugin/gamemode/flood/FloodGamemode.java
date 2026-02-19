@@ -210,7 +210,6 @@ public class FloodGamemode {
         }
 
         suppressed.entrySet().removeIf(e -> e.getValue() < Time.millis() || !e.getKey().isValid());
-        damageReceived.keySet().removeIf(b -> !b.isValid());
 
         var cores = Team.crux.cores();
         var unsuppressedCores = cores.select(c -> !suppressed.containsKey(c));
