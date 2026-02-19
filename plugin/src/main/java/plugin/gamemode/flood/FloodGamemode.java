@@ -21,6 +21,7 @@ import mindustry.content.Blocks;
 import mindustry.content.UnitTypes;
 import mindustry.game.EventType;
 import mindustry.game.Team;
+import mindustry.game.EventType.BlockDestroyEvent;
 import mindustry.gen.Building;
 import mindustry.gen.Call;
 import mindustry.gen.Groups;
@@ -322,6 +323,16 @@ public class FloodGamemode {
 
         floods[index(tile)] = Time.millis() + (long) (floodTile.evolveTime * 1000 / multiplier)
                 + Mathf.random(1000 * 1, 1000 * 5);
+    }
+
+    @Listener
+    private void onBlockDestroyed(BlockDestroyEvent event) {
+        var tile = event.tile;
+        var block = tile.build;
+
+        if (block != null && block.team == Team.crux) {
+            floods[index(tile)] = Time.millis() + config.floodTiles.get(0).evolveTime * 1000;
+        }
     }
 
     private int index(Tile tile) {
