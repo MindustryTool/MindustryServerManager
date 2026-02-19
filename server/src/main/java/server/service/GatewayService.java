@@ -505,7 +505,7 @@ public class GatewayService {
                             disconnectedAt = Instant.now();
                         }
 
-                        if (state != ConnectionState.DISCONNECTED) {
+                        if (state == ConnectionState.CONNECTED) {
                             state = ConnectionState.DISCONNECTED;
 
                             eventBus.emit(new DisconnectEvent(id));
