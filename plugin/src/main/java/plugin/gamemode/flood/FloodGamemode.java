@@ -57,6 +57,7 @@ public class FloodGamemode {
 
     private Duration dayDuration = Duration.ofMinutes(12);
     private Duration nightDuration = Duration.ofMinutes(8);
+    private int days = 0;
 
     private Interval updateInterval = new Interval();
 
@@ -100,16 +101,15 @@ public class FloodGamemode {
             return;
         }
 
-        var elapsedMinutes = (Time.millis() - startedAt) / 1_000L / 60L;
         UnitType unitType = null;
 
-        if (elapsedMinutes < 5) {
+        if (days <= 0) {
             unitType = null;
-        } else if (elapsedMinutes < 10) {
+        } else if (days < 2) {
             unitType = UnitTypes.atrax;
-        } else if (elapsedMinutes < 30) {
+        } else if (days < 4) {
             unitType = UnitTypes.spiroct;
-        } else if (elapsedMinutes < 60) {
+        } else if (days < 5) {
             unitType = UnitTypes.arkyid;
         } else {
             unitType = UnitTypes.toxopid;
@@ -165,6 +165,9 @@ public class FloodGamemode {
             cycleChangeAt = Instant.now();
             Vars.state.rules.lighting = isNight;
             Call.setRules(Vars.state.rules);
+            if (!isNight) {
+                days++;
+            }
         }
 
     }
@@ -342,8 +345,9 @@ public class FloodGamemode {
 
     private void setFlood(Tile tile, FloodTile floodTile, float multiplier, HashMap<Block, Seq<Integer>> updatedTiles) {
         updatedTiles.computeIfAbsent(floodTile.block, k -> new Seq<>()).add(tile.pos());
+
         floods[index(tile)] = Time.millis() + (long) (floodTile.evolveTime * 1000 / multiplier)
-                + Mathf.random(1000 * 10, 1000 * 15);
+                + Mathf.random(1000 * 1, 1000 * 5);
     }
 
     private int index(Tile tile) {
