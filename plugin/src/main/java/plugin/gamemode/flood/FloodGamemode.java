@@ -88,7 +88,7 @@ public class FloodGamemode {
     @MainThread
     @Schedule(fixedRate = 30, unit = TimeUnit.SECONDS)
     private void spawnNightUnit() {
-        if (!isNight && shouldUpdate()) {
+        if (!isNight || shouldUpdate()) {
             return;
         }
 
@@ -137,7 +137,8 @@ public class FloodGamemode {
 
         Call.infoPopup((isNight ? "[scarlet]" : "") + "Flood: " + getFloodMultiplier() * 100 + "%\n" +
                 "Suppressed: " + suppressed.size() + "/" + cores + "\n" +
-                (isNight ? "Day in" : "Night in") + ": " + TimeUtils.toSeconds(time)
+                (isNight ? "Day in" : "Night in") + ": " + TimeUtils.toSeconds(time) + "\n" +
+                "Days: " + days
         //
                 , 1.1f, Align.top | Align.left, 200, 4, 4, 4);
     }
