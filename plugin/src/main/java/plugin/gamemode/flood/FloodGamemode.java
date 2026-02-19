@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
+import arc.Core;
 import arc.Events;
 import arc.math.Mathf;
 import arc.struct.Seq;
@@ -85,7 +86,6 @@ public class FloodGamemode {
         applyRules();
     }
 
-    @MainThread
     @Schedule(fixedRate = 30, unit = TimeUnit.SECONDS)
     private void spawnNightUnit() {
         if (!isNight || !shouldUpdate()) {
@@ -119,7 +119,9 @@ public class FloodGamemode {
             var core = Team.crux.cores().random();
             var unit = unitType.create(Team.crux);
             unit.set(core.getX(), core.getY());
-            unit.add();
+            Core.app.post(() -> {
+                unit.add();
+            });
         }
     }
 
