@@ -122,7 +122,7 @@ public class Control extends mindustry.mod.Plugin {
         var runnables = Core.app.getClass().getDeclaredField("runnables");
         runnables.setAccessible(true);
         TaskQueue taskQueue = (TaskQueue) runnables.get(Core.app);
-        if (taskQueue.size() > 1000) {
+        if (taskQueue.size() > 5000) {
             Log.err("[scarlet]Runnables overflow: @", taskQueue.size());
         }
     }
