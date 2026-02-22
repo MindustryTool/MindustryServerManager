@@ -8,7 +8,6 @@ import mindustry.gen.Groups;
 import mindustry.world.Tile;
 import plugin.annotations.Gamemode;
 import plugin.gamemode.catali.CataliConfig;
-import plugin.utils.Utils;
 
 @RequiredArgsConstructor
 @Gamemode("catali")
@@ -47,8 +46,7 @@ public class BlockSpawner {
                         continue;
                     }
 
-                    var resultTile = tile;
-                    Utils.appPostWithTimeout(() -> resultTile.setNet(block, team, 0), "Spawn catali block");
+                    tile.setNet(block, team, 0);
 
                     int dir = Mathf.random(0, 3);
                     tile = tile.nearby(dir);

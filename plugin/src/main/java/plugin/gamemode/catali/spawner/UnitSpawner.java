@@ -12,7 +12,6 @@ import plugin.gamemode.catali.CataliConfig;
 import plugin.gamemode.catali.CataliGamemode;
 import plugin.gamemode.catali.ai.FlyingRadiusAI;
 import plugin.gamemode.catali.ai.GroundRadiusAI;
-import plugin.utils.Utils;
 
 @Gamemode("catali")
 @RequiredArgsConstructor
@@ -46,18 +45,16 @@ public class UnitSpawner {
                 for (int i = 0; i < entry.units.size(); i++) {
                     var unit = entry.units.get(i);
 
-                    Utils.appPostWithTimeout(() -> {
-                        Unit u = unit.create(team);
-                        var spawnX = tile.worldx() + Mathf.random(largestUnit.hitSize / Vars.tilesize);
-                        var spawnY = tile.worldy() + Mathf.random(largestUnit.hitSize / Vars.tilesize);
-                        var radius = 50 * Vars.tilesize;
+                    Unit u = unit.create(team);
+                    var spawnX = tile.worldx() + Mathf.random(largestUnit.hitSize / Vars.tilesize);
+                    var spawnY = tile.worldy() + Mathf.random(largestUnit.hitSize / Vars.tilesize);
+                    var radius = 50 * Vars.tilesize;
 
-                        u.controller(unit.flying //
-                                ? new FlyingRadiusAI(spawnX, spawnY, radius)
-                                : new GroundRadiusAI(spawnX, spawnY, radius));
-                        u.set(spawnX, spawnY);
-                        u.add();
-                    }, "Spawn catali unit");
+                    u.controller(unit.flying //
+                            ? new FlyingRadiusAI(spawnX, spawnY, radius)
+                            : new GroundRadiusAI(spawnX, spawnY, radius));
+                    u.set(spawnX, spawnY);
+                    u.add();
                 }
             }
         }
