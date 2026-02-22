@@ -74,6 +74,7 @@ public class FloodGamemode {
         startedAt = Time.millis();
         cycleChangeAt = Instant.now();
         isNight = false;
+        days = 0;
 
         suppressed.clear();
         damageReceived.clear();
