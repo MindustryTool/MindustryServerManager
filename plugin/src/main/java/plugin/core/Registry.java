@@ -44,7 +44,7 @@ public final class Registry {
                 Log.info("[sky]Current gamemode: " + currentGamemode);
             }
 
-            for (Class<?> clazz : components.stream().sorted(Comparator.comparingInt(c -> {
+            components.stream().sorted(Comparator.comparingInt(c -> {
                 var cons = c.getDeclaredConstructors();
 
                 if (cons.length == 0) {
@@ -52,13 +52,13 @@ public final class Registry {
                 }
 
                 return cons[0].getParameterCount();
-            })).toList()) {
+            })).forEach(clazz -> {
                 if (clazz.isAnnotation() || clazz.isInterface()) {
-                    continue;
+                    return;
                 }
 
                 if (isLazy(clazz)) {
-                    continue;
+                    return;
                 }
 
                 if (clazz.isAnnotationPresent(ConditionOn.class)) {
@@ -70,7 +70,7 @@ public final class Registry {
                         if (!condition.check()) {
                             Log.info("[gray]Skipping component @ due to condition @", clazz.getName(),
                                     conditionClass.getName());
-                            continue;
+                            return;
                         }
                     } catch (Exception e) {
                         throw new RuntimeException("Failed to check condition for " + clazz.getName(), e);
@@ -80,12 +80,12 @@ public final class Registry {
                 if (clazz.isAnnotationPresent(Gamemode.class)) {
                     Gamemode gamemode = clazz.getAnnotation(Gamemode.class);
                     if (!Objects.equals(currentGamemode, gamemode.value())) {
-                        continue;
+                        return;
                     }
                 }
 
                 getOrCreate(clazz);
-            }
+            });
 
         } catch (Exception e) {
             throw new RuntimeException("Registry init failed", e);
