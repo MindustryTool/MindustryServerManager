@@ -150,8 +150,9 @@ public class Utils {
                 timeoutTask.cancel(true);
             }
         });
+
         try {
-            future.get(Math.max(10 * 1000, timeoutMillis), TimeUnit.MILLISECONDS);
+            future.get(timeoutMillis, TimeUnit.MILLISECONDS);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
             throw new RuntimeException("Time out when executing: " + r.toString() + " in " + timeoutMillis + "ms", e);
         }
@@ -182,7 +183,7 @@ public class Utils {
         });
 
         try {
-            return future.get(Math.max(10 * 1000, timeoutMillis), TimeUnit.MILLISECONDS);
+            return future.get(timeoutMillis, TimeUnit.MILLISECONDS);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
             throw new RuntimeException("Time out when executing: " + fn.toString() + " in " + timeoutMillis + "ms", e);
         }
