@@ -1,6 +1,5 @@
 package plugin.gamemode.catali.spawner;
 
-import arc.Core;
 import arc.math.Mathf;
 import lombok.RequiredArgsConstructor;
 import mindustry.Vars;
@@ -9,6 +8,7 @@ import mindustry.gen.Groups;
 import mindustry.world.Tile;
 import plugin.annotations.Gamemode;
 import plugin.gamemode.catali.CataliConfig;
+import plugin.utils.Utils;
 
 @RequiredArgsConstructor
 @Gamemode("catali")
@@ -48,7 +48,7 @@ public class BlockSpawner {
                     }
 
                     var resultTile = tile;
-                    Core.app.post(() -> resultTile.setNet(block, team, 0));
+                    Utils.appPostWithTimeout(() -> resultTile.setNet(block, team, 0), "Spawn catali block");
 
                     int dir = Mathf.random(0, 3);
                     tile = tile.nearby(dir);

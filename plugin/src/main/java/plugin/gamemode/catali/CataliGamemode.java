@@ -1,6 +1,5 @@
 package plugin.gamemode.catali;
 
-import arc.Core;
 import arc.graphics.Color;
 import arc.math.Mathf;
 import arc.math.geom.Vec2;
@@ -674,9 +673,9 @@ public class CataliGamemode {
 
     public void abandonUnit(Unit unit) {
         shouldNotRespawn.add(unit);
-        Core.app.post(() -> {
+        Utils.appPostWithTimeout(() -> {
             unit.kill();
-        });
+        }, "Abandon catali unit");
     }
 
     public void abandonTeam(CataliTeamData team) {

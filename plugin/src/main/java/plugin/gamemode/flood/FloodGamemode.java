@@ -8,7 +8,6 @@ import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
-import arc.Core;
 import arc.Events;
 import arc.math.Mathf;
 import arc.struct.Seq;
@@ -36,6 +35,7 @@ import plugin.annotations.Schedule;
 import plugin.annotations.Trigger;
 import plugin.gamemode.flood.FloodConfig.FloodTile;
 import plugin.utils.TimeUtils;
+import plugin.utils.Utils;
 
 @Gamemode("flood")
 @RequiredArgsConstructor
@@ -121,9 +121,9 @@ public class FloodGamemode {
             var core = Team.crux.cores().random();
             var unit = unitType.create(Team.crux);
             unit.set(core.getX(), core.getY());
-            Core.app.post(() -> {
+            Utils.appPostWithTimeout(() -> {
                 unit.add();
-            });
+            }, "Spawn night unit");
         }
     }
 

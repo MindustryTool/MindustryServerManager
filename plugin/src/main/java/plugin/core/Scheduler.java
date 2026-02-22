@@ -18,7 +18,7 @@ import arc.util.Timer;
 @Component
 public class Scheduler {
 
-    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(4);
 
     public ScheduledFuture<?> schedule(Runnable command, long delay, TimeUnit unit) {
         return scheduler.schedule(command, delay, unit);

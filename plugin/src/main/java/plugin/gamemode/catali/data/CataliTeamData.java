@@ -1,6 +1,5 @@
 package plugin.gamemode.catali.data;
 
-import arc.Core;
 import arc.func.Cons;
 import arc.math.geom.Vec2;
 import arc.struct.Seq;
@@ -29,6 +28,7 @@ import plugin.gamemode.catali.CataliGamemode;
 import plugin.gamemode.catali.ai.TeamControlAI;
 import plugin.gamemode.catali.event.TeamUpgradeChangedEvent;
 import plugin.gamemode.catali.spawner.SpawnerHelper;
+import plugin.utils.Utils;
 
 @Data
 @NoArgsConstructor
@@ -297,11 +297,11 @@ public class CataliTeamData {
 
         upgrades.apply(unit);
 
-        Core.app.post(() -> {
+        Utils.appPostWithTimeout(() -> {
             unit.add();
             callback.accept(unit);
             spawnQueue.remove(first);
-        });
+        }, "Spawn catali unit");
 
         return true;
     }

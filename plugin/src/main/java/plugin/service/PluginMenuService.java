@@ -4,7 +4,6 @@ import java.time.Instant;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
-import arc.Core;
 import arc.struct.Seq;
 import arc.util.Log;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +18,7 @@ import plugin.annotations.Schedule;
 import plugin.event.SessionRemovedEvent;
 import plugin.menus.PluginMenu;
 import plugin.menus.PluginMenu.HudOption;
+import plugin.utils.Utils;
 
 @Component
 @RequiredArgsConstructor
@@ -52,58 +52,56 @@ public class PluginMenuService {
     }
 
     @Listener
-    public void onMenuOptionChoose(MenuOptionChooseEvent event) {
-        Core.app.post(() -> {
-            var targetMenu = activeMenus.remove(event.player);
+    public synchronized void onMenuOptionChoose(MenuOptionChooseEvent event) {
+        var targetMenu = activeMenus.remove(event.player);
 
-            if (targetMenu == null) {
-                showNext(event.player);
-                return;
-            }
-
-            if (event.option < 0) {
-                showNext(event.player);
-                return;
-            }
-
-            HudOption<Object> selectedOption = null;
-
-            int i = 0;
-
-            if (event.option >= 0) {
-                Seq<HudOption<Object>> flatten = targetMenu.getFlattenedOptions();
-                for (var op : flatten) {
-                    if (i == event.option) {
-                        selectedOption = op;
-                        break;
-                    }
-                    i++;
-                }
-
-                if (selectedOption == null) {
-                    Log.err("Failed to find selected option for menu @ with id @", targetMenu, event.option);
-                }
-            }
-
-            if (selectedOption != null && selectedOption.getCallback() != null) {
-                Call.hideFollowUpMenu(event.player.con, targetMenu.getMenuId());
-
-                var session = sessionHandler.get(event.player).orElse(null);
-
-                if (session == null) {
-                    Log.err("Failed to get session for player @", event.player);
-                    Thread.dumpStack();
-                } else {
-                    selectedOption.getCallback().accept(session, targetMenu.state);
-                }
-            }
-
+        if (targetMenu == null) {
             showNext(event.player);
-        });
+            return;
+        }
+
+        if (event.option < 0) {
+            showNext(event.player);
+            return;
+        }
+
+        HudOption<Object> selectedOption = null;
+
+        int i = 0;
+
+        if (event.option >= 0) {
+            Seq<HudOption<Object>> flatten = targetMenu.getFlattenedOptions();
+            for (var op : flatten) {
+                if (i == event.option) {
+                    selectedOption = op;
+                    break;
+                }
+                i++;
+            }
+
+            if (selectedOption == null) {
+                Log.err("Failed to find selected option for menu @ with id @", targetMenu, event.option);
+            }
+        }
+
+        if (selectedOption != null && selectedOption.getCallback() != null) {
+            Call.hideFollowUpMenu(event.player.con, targetMenu.getMenuId());
+
+            var session = sessionHandler.get(event.player).orElse(null);
+
+            if (session == null) {
+                Log.err("Failed to get session for player @", event.player);
+                Thread.dumpStack();
+            } else {
+                selectedOption.getCallback().accept(session, targetMenu.state);
+            }
+        }
+
+        showNext(event.player);
     }
 
     public void showNext(Player player) {
-        Core.app.post(() -> {
+        Utils.appPostWithTimeout(() -> {
             try {
                 menus.removeAll(m -> !m.valid());
                 var remainingMenus = getPlayerMenus(player);
@@ -143,7 +141,7 @@ public class PluginMenuService {
                 Log.err(e);
                 player.sendMessage("[scarlet]Error: [white]" + e.getMessage());
             }
-        });
+        }, 3000,"Show next menu");
     }
 
     @Destroy

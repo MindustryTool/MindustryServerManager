@@ -132,27 +132,28 @@ public class Utils {
         appPostWithTimeout(r, 500, taskName);
     }
 
-    private static synchronized void appPostWithTimeout(Runnable r, int timeout, String taskName) {
+    public static synchronized void appPostWithTimeout(Runnable r, int timeoutMillis, String taskName) {
         CompletableFuture<Void> future = new CompletableFuture<>();
 
         Core.app.post(() -> {
-            ScheduledFuture<?> timeoutTask = Registry.get(Scheduler.class)
-                    .schedule(() -> future.completeExceptionally(new TimeoutException("Task timeout: " + taskName)),
-                            timeout, TimeUnit.MILLISECONDS);
+            var scheduler = Registry.get(Scheduler.class);
+            ScheduledFuture<?> timeoutTask = scheduler.schedule(
+                    () -> future.completeExceptionally(new TimeoutException("Task timeout: " + taskName)),
+                    timeoutMillis, TimeUnit.MILLISECONDS);
 
             try {
                 r.run();
-                timeoutTask.cancel(true);
                 future.complete(null);
             } catch (Throwable e) {
-                timeoutTask.cancel(true);
                 future.completeExceptionally(e);
+            } finally {
+                timeoutTask.cancel(true);
             }
         });
         try {
-            future.get(Math.max(10 * 1000, timeout), TimeUnit.MILLISECONDS);
+            future.get(Math.max(10 * 1000, timeoutMillis), TimeUnit.MILLISECONDS);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
-            throw new RuntimeException("Time out when executing: " + r.toString() + " in " + timeout + "ms", e);
+            throw new RuntimeException("Time out when executing: " + r.toString() + " in " + timeoutMillis + "ms", e);
         }
     }
 
@@ -160,28 +161,30 @@ public class Utils {
         return appPostWithTimeout(fn, 200, taskName);
     }
 
-    private static synchronized <T> T appPostWithTimeout(Supplier<T> fn, int timeout, String taskName) {
+    private static synchronized <T> T appPostWithTimeout(Supplier<T> fn, int timeoutMillis, String taskName) {
         Log.debug("Start task: " + taskName);
 
         CompletableFuture<T> future = new CompletableFuture<T>();
         Core.app.post(() -> {
-            ScheduledFuture<?> timeoutTask = Registry.get(Scheduler.class).schedule(
-                    () -> future.completeExceptionally(new TimeoutException("Task timeout: " + taskName)), timeout,
+            var scheduler = Registry.get(Scheduler.class);
+            ScheduledFuture<?> timeoutTask = scheduler.schedule(
+                    () -> future.completeExceptionally(new TimeoutException("Task timeout: " + taskName)),
+                    timeoutMillis,
                     TimeUnit.MILLISECONDS);
             try {
                 var result = fn.get();
-                timeoutTask.cancel(true);
                 future.complete(result);
             } catch (Throwable e) {
-                timeoutTask.cancel(true);
                 future.completeExceptionally(e);
+            } finally {
+                timeoutTask.cancel(true);
             }
         });
 
         try {
-            return future.get(Math.max(10 * 1000, timeout), TimeUnit.MILLISECONDS);
+            return future.get(Math.max(10 * 1000, timeoutMillis), TimeUnit.MILLISECONDS);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
-            throw new RuntimeException("Time out when executing: " + fn.toString() + " in " + timeout + "ms", e);
+            throw new RuntimeException("Time out when executing: " + fn.toString() + " in " + timeoutMillis + "ms", e);
         }
     }
 

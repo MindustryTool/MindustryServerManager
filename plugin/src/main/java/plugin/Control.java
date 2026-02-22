@@ -121,9 +121,9 @@ public class Control extends mindustry.mod.Plugin {
             throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
         var runnables = Core.app.getClass().getDeclaredField("runnables");
         runnables.setAccessible(true);
-        TaskQueue runnablesList = (TaskQueue) runnables.get(Core.app);
-        if (runnablesList.size() > 1000) {
-            Log.err("[scarlet]Runnables overflow: @", runnablesList.size());
+        TaskQueue taskQueue = (TaskQueue) runnables.get(Core.app);
+        if (taskQueue.size() > 1000) {
+            Log.err("[scarlet]Runnables overflow: @", taskQueue.size());
         }
     }
 
