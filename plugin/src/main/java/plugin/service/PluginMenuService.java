@@ -51,93 +51,97 @@ public class PluginMenuService {
     }
 
     @Listener
-    public synchronized void onMenuOptionChoose(MenuOptionChooseEvent event) {
-        var targetMenu = activeMenus.remove(event.player);
+    public void onMenuOptionChoose(MenuOptionChooseEvent event) {
+        synchronized (event.player) {
+            var targetMenu = activeMenus.remove(event.player);
 
-        if (targetMenu == null) {
-            showNext(event.player);
-            return;
-        }
+            if (targetMenu == null) {
+                showNext(event.player);
+                return;
+            }
 
-        if (event.option < 0) {
-            showNext(event.player);
-            return;
-        }
+            if (event.option < 0) {
+                showNext(event.player);
+                return;
+            }
 
-        HudOption<Object> selectedOption = null;
+            HudOption<Object> selectedOption = null;
 
-        int i = 0;
+            int i = 0;
 
-        if (event.option >= 0) {
-            Seq<HudOption<Object>> flatten = targetMenu.getFlattenedOptions();
-            for (var op : flatten) {
-                if (i == event.option) {
-                    selectedOption = op;
-                    break;
+            if (event.option >= 0) {
+                Seq<HudOption<Object>> flatten = targetMenu.getFlattenedOptions();
+                for (var op : flatten) {
+                    if (i == event.option) {
+                        selectedOption = op;
+                        break;
+                    }
+                    i++;
                 }
-                i++;
+
+                if (selectedOption == null) {
+                    Log.err("Failed to find selected option for menu @ with id @", targetMenu, event.option);
+                }
             }
 
-            if (selectedOption == null) {
-                Log.err("Failed to find selected option for menu @ with id @", targetMenu, event.option);
+            if (selectedOption != null && selectedOption.getCallback() != null) {
+                Call.hideFollowUpMenu(event.player.con, targetMenu.getMenuId());
+
+                var session = sessionHandler.get(event.player).orElse(null);
+
+                if (session == null) {
+                    Log.err("Failed to get session for player @", event.player);
+                    Thread.dumpStack();
+                } else {
+                    selectedOption.getCallback().accept(session, targetMenu.state);
+                }
             }
+
+            showNext(event.player);
         }
-
-        if (selectedOption != null && selectedOption.getCallback() != null) {
-            Call.hideFollowUpMenu(event.player.con, targetMenu.getMenuId());
-
-            var session = sessionHandler.get(event.player).orElse(null);
-
-            if (session == null) {
-                Log.err("Failed to get session for player @", event.player);
-                Thread.dumpStack();
-            } else {
-                selectedOption.getCallback().accept(session, targetMenu.state);
-            }
-        }
-
-        showNext(event.player);
     }
 
-    public synchronized void showNext(Player player) {
-        try {
-            menus.removeAll(m -> !m.valid());
-            var remainingMenus = getPlayerMenus(player);
-            var hasActiveMenu = activeMenus.containsKey(player);
+    public void showNext(Player player) {
+        synchronized (player) {
+            try {
+                menus.removeAll(m -> !m.valid());
+                var remainingMenus = getPlayerMenus(player);
+                var hasActiveMenu = activeMenus.containsKey(player);
 
-            if (!hasActiveMenu && !remainingMenus.isEmpty()) {
-                var menu = remainingMenus.first();
+                if (!hasActiveMenu && !remainingMenus.isEmpty()) {
+                    var menu = remainingMenus.first();
 
-                menus.remove(menu);
-                activeMenus.put(player, menu);
+                    menus.remove(menu);
+                    activeMenus.put(player, menu);
 
-                Tasks.io("Show Menu: " + menu.getMenuId(), () -> {
-                    try {
-                        menu.build();
-                    } catch (Exception e) {
-                        menu.session.player.sendMessage("[scarlet]Error: [white]" + e.getMessage());
-                        Log.err("Failed to build menu @ for player @ with state @", this, menu.session, menu.state);
-                        Log.err(e);
-                        return;
-                    }
+                    Tasks.io("Show Menu: " + menu.getMenuId(), () -> {
+                        try {
+                            menu.build();
+                        } catch (Exception e) {
+                            menu.session.player.sendMessage("[scarlet]Error: [white]" + e.getMessage());
+                            Log.err("Failed to build menu @ for player @ with state @", this, menu.session, menu.state);
+                            Log.err(e);
+                            return;
+                        }
 
-                    menu.options.removeAll(op -> op.size == 0);
+                        menu.options.removeAll(op -> op.size == 0);
 
-                    String[][] optionTexts = new String[menu.options.size][];
+                        String[][] optionTexts = new String[menu.options.size][];
 
-                    for (int i = 0; i < menu.options.size; i++) {
-                        var op = menu.options.get(i);
+                        for (int i = 0; i < menu.options.size; i++) {
+                            var op = menu.options.get(i);
 
-                        optionTexts[i] = op.map(data -> data.getText()).toArray(String.class);
-                    }
+                            optionTexts[i] = op.map(data -> data.getText()).toArray(String.class);
+                        }
 
-                    Call.menu(menu.session.player.con, menu.getMenuId(), menu.title, menu.description, optionTexts);
-                });
+                        Call.menu(menu.session.player.con, menu.getMenuId(), menu.title, menu.description, optionTexts);
+                    });
+                }
+            } catch (Exception e) {
+                Log.err("Failed to show next menu for player @", player);
+                Log.err(e);
+                player.sendMessage("[scarlet]Error: [white]" + e.getMessage());
             }
-        } catch (Exception e) {
-            Log.err("Failed to show next menu for player @", player);
-            Log.err(e);
-            player.sendMessage("[scarlet]Error: [white]" + e.getMessage());
         }
     }
 
