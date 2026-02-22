@@ -70,11 +70,13 @@ public class Control extends mindustry.mod.Plugin {
 
     @Override
     public void registerServerCommands(CommandHandler handler) {
+        Log.info("[gray]Register server commands");
         Registry.get(ServerCommandHandler.class).registerCommands(handler);
     }
 
     @Override
     public void registerClientCommands(CommandHandler handler) {
+        Log.info("[gray]Register client commands");
         Registry.get(ClientCommandHandler.class).registerCommands(handler);
     }
 

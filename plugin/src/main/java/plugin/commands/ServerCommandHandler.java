@@ -58,7 +58,6 @@ public class ServerCommandHandler {
             throw new IllegalArgumentException("description");
         }
 
-
         Log.info("[gray]Register server command: " + name);
 
         commands.add(new PluginServerCommand(name, description, method, object));
