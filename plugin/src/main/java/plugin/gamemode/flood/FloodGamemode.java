@@ -240,9 +240,10 @@ public class FloodGamemode {
                     } else {
                         if (!spreaded.get(index(tile))) {
                             spreaded.set(index(tile), true);
-                            queue.add(tile);
                         }
                     }
+
+                    queue.add(tile);
                 }
             }
         }
