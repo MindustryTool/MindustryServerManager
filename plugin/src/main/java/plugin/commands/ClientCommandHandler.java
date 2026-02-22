@@ -55,8 +55,12 @@ public class ClientCommandHandler {
 
         description = (admin ? "[scarlet]ADMIN[] - " : "") + description;
 
-        commands.add(
-                new PluginClientCommand(name, description, admin, method, object));
+        var cmd = new PluginClientCommand(name, description, admin, method, object);
+        commands.add(cmd);
+
+        if (handler != null) {
+            cmd.register(handler);
+        }
     }
 
     @Destroy

@@ -59,8 +59,13 @@ public class ServerCommandHandler {
         }
 
         Log.info("[gray]Register server command: " + name);
+        var cmd = new PluginServerCommand(name, description, method, object);
+        commands.add(cmd);
 
-        commands.add(new PluginServerCommand(name, description, method, object));
+        if (handler != null) {
+            cmd.register(handler);
+        }
+
     }
 
     @Destroy
