@@ -28,6 +28,9 @@ public final class Registry {
     private static final FileWatcherManager fileWatcherService = get(FileWatcherManager.class);
     private static final ClientCommandHandler clientCommandHandler = get(ClientCommandHandler.class);
     private static final ServerCommandHandler serverCommandHandler = get(ServerCommandHandler.class);
+    private static final ActionFilterManager actionFilterManager = get(ActionFilterManager.class);
+
+
 
     public static final String GAMEMODE_KEY = "plugin-gamemode";
 
@@ -239,6 +242,7 @@ public final class Registry {
             withAnnotation(method, FileWatcher.class, a -> fileWatcherService.process(a, instance, method));
             withAnnotation(method, ClientCommand.class, a -> clientCommandHandler.addCommand(a, method, instance));
             withAnnotation(method, ServerCommand.class, a -> serverCommandHandler.addCommand(a, method, instance));
+            withAnnotation(method, PlayerActionFilter.class, a -> actionFilterManager.addFilter(a, method, instance));
         }
 
         initialized.add(instance);

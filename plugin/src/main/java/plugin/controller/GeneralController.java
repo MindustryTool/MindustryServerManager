@@ -121,7 +121,7 @@ public class GeneralController {
 
             if (player != null) {
                 Registry.get(SessionHandler.class).getByUuid(uuid).ifPresent(
-                        session -> Registry.get(SessionService.class).setAdmin(session, request.getIsAdmin()));
+                        session -> Registry.get(SessionService.class).setLogin(session, request));
             }
             ctx.result();
 

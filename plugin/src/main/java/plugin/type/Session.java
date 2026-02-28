@@ -3,6 +3,7 @@ package plugin.type;
 import java.time.Instant;
 import java.util.Locale;
 
+import dto.LoginDto;
 import mindustry.gen.Player;
 
 public class Session {
@@ -11,6 +12,7 @@ public class Session {
     public final Long joinedAt = Instant.now().toEpochMilli();
     private final SessionData data;
 
+    public LoginDto login;
     public boolean votedVNW = false;
     public boolean votedGrief = false;
     public int currentLevel = 0;
@@ -19,6 +21,10 @@ public class Session {
         this.player = player;
         this.data = data;
         this.locale = Locale.forLanguageTag(player.locale().replace("_", "-"));
+    }
+
+    public boolean isLoggedIn() {
+        return login != null && login.getLoginLink() != null;
     }
 
     public void reset() {

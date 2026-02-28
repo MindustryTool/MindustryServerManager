@@ -3,6 +3,7 @@ package plugin.service;
 import java.util.function.Function;
 
 import arc.util.Log;
+import dto.LoginDto;
 import mindustry.Vars;
 import mindustry.gen.Groups;
 import mindustry.gen.Player;
@@ -101,9 +102,8 @@ public class SessionService {
         sessionRepository.markDirty(session.player.uuid());
     }
 
-    public void setAdmin(Session session, boolean isAdmin) {
-
-        if (isAdmin) {
+    public void setLogin(Session session, LoginDto login) {
+        if (login.getIsAdmin()) {
             Utils.forEachPlayerLocale((locale, players) -> {
                 String msg = SessionUtils.getAdminLoginMessage(locale, session.player.name);
                 for (var p : players) {
@@ -117,7 +117,7 @@ public class SessionService {
         if (target != null) {
             Player playert = Groups.player.find(p -> p.getInfo() == target);
 
-            if (isAdmin) {
+            if (login.getIsAdmin()) {
                 Vars.netServer.admins.adminPlayer(target.id, playert == null ? target.adminUsid : playert.usid());
             } else {
                 Vars.netServer.admins.unAdminPlayer(target.id);
@@ -127,7 +127,8 @@ public class SessionService {
             Log.info("Player @ is no longer an admin", session.player.name);
         }
 
-        session.player.admin = isAdmin;
+        session.login = login;
+        session.player.admin = login.getIsAdmin();
         session.player.name(SessionUtils.getPlayerName(session.player, session.getData(), session.currentLevel));
     }
 }

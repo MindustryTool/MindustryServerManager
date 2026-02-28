@@ -219,7 +219,7 @@ public class EventHandler {
             Tasks.io("Player Join", () -> {
                 var playerData = apiGateway.login(session.player);
 
-                sessionService.setAdmin(session, playerData.getIsAdmin());
+                sessionService.setLogin(session, playerData);
 
                 var isLoggedIn = playerData.getLoginLink() == null;
 
