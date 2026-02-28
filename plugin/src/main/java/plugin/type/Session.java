@@ -24,7 +24,7 @@ public class Session {
     }
 
     public boolean isLoggedIn() {
-        return login != null && login.getLoginLink() != null;
+        return login != null && login.getLoginLink() == null;
     }
 
     public void reset() {

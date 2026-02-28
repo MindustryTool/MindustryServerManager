@@ -1,6 +1,5 @@
 package plugin.service;
 
-import arc.util.Log;
 import lombok.RequiredArgsConstructor;
 import mindustry.net.Administration.ActionType;
 import mindustry.net.Administration.PlayerAction;
@@ -19,8 +18,6 @@ public class SecurityService {
     Boolean onlyAllowLoggedUserToUseLogic(PlayerAction action, SessionHandler sessionService) {
         if (action.type == ActionType.placeBlock && action.block != null && action.block instanceof LogicBlock) {
             var session = sessionService.get(action.player).orElse(null);
-
-            Log.info("Player @ is trying to use logic block, session: @ is logged in: @", action.player.name, session, session != null && session.isLoggedIn());
 
             if (session != null && session.isLoggedIn()) {
                 return true;
