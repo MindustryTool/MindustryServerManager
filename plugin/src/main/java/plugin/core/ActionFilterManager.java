@@ -33,7 +33,7 @@ public class ActionFilterManager {
 
                 return (Boolean) method.invoke(instance, action);
             } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-                Log.err("Error in action filter method @", method, e);
+                Log.err("Error in action filter method " + method, e);
                 return false;
             }
         });
