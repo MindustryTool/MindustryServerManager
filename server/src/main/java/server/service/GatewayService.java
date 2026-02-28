@@ -449,19 +449,19 @@ public class GatewayService {
         private Disposable createFetchEventJob(Consumer<GatewayClient> onConnect, Consumer<Throwable> onError) {
             return Flux.defer(() -> this.server.getEvents())
                     .doOnNext(event -> {
-                        if (state != ConnectionState.CONNECTED) {
-                            state = ConnectionState.CONNECTED;
-                            disconnectedAt = null;
-                            eventBus.emit(new StartEvent(id));
-                            onConnect.accept(this);
-
-                            if (heartbeatJob != null && !heartbeatJob.isDisposed()) {
-                                heartbeatJob.dispose();
-                            }
-                            heartbeatJob = createHeartbeatJob();
-                        }
-
                         try {
+                            if (state != ConnectionState.CONNECTED) {
+                                state = ConnectionState.CONNECTED;
+                                disconnectedAt = null;
+                                eventBus.emit(new StartEvent(id));
+                                onConnect.accept(this);
+
+                                if (heartbeatJob != null && !heartbeatJob.isDisposed()) {
+                                    heartbeatJob.dispose();
+                                }
+                                heartbeatJob = createHeartbeatJob();
+                            }
+
                             var name = event.get("name").asText(null);
 
                             if (name == null) {
@@ -551,7 +551,8 @@ public class GatewayService {
             return Flux.interval(HEARTBEAT_TIMEOUT_DURATION)
                     .doOnNext(value -> {
                         if (Instant.now().isAfter(lastHeartBeatAt.plus(HEARTBEAT_TIMEOUT_DURATION))) {
-                            Log.warn("Heartbeat timeout for client: " + id);
+                            Log.warn("Heartbeat timeout for client: " + id + " last heartbeat at: "
+                                    + Duration.between(lastHeartBeatAt, Instant.now()).toSeconds() + " seconds");
                             eventBus.emit(LogEvent.error(id, "Heartbeat timeout"));
                         }
                     })
