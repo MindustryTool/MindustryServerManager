@@ -69,7 +69,7 @@ public class GatewayService {
         return Mono.just(false);
     }
 
-    public synchronized Mono<GatewayClient> of(UUID serverId) {
+    public Mono<GatewayClient> of(UUID serverId) {
         ClientHolder holder = cache.computeIfAbsent(serverId, id -> {
 
             Sinks.One<GatewayClient> sink = Sinks.one();
