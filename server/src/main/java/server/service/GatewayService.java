@@ -40,7 +40,6 @@ import events.ServerEvents.StartEvent;
 import enums.NodeRemoveReason;
 import events.ServerEvents.StopEvent;
 import jakarta.annotation.PostConstruct;
-import jakarta.annotation.PreDestroy;
 import server.utils.ApiError;
 import server.utils.Utils;
 import reactor.core.Disposable;
@@ -104,8 +103,8 @@ public class GatewayService {
             if (event instanceof StopEvent stopEvent) {
 
                 UUID serverId = stopEvent.getServerId();
-
                 ClientHolder holder = cache.remove(serverId);
+
                 if (holder != null) {
                     eventBus.emit(LogEvent.info(serverId, "Close GatewayClient"));
 
@@ -114,16 +113,6 @@ public class GatewayService {
                 }
             }
         });
-    }
-
-    @PreDestroy
-    private void cancelAll() {
-        Log.info("Cancel all GatewayClient");
-        cache.values()
-                .forEach(holder -> {
-                    holder.client.cancel();
-                    holder.sink.tryEmitError(new RuntimeException("Gateway stopped"));
-                });
     }
 
     public class Api {
