@@ -151,7 +151,7 @@ public class GatewayService {
     @Accessors(fluent = true)
     public class GatewayClient {
 
-        private static final Duration HEARTBEAT_TIMEOUT_DURATION = Duration.ofSeconds(20);
+        private static final Duration HEARTBEAT_TIMEOUT_DURATION = Duration.ofSeconds(60);
 
         enum ConnectionState {
             CONNECTED, DISCONNECTED, CONNECTING
