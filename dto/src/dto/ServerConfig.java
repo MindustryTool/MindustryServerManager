@@ -18,6 +18,8 @@ public class ServerConfig {
     private String description;
 
     private String mode;
+    
+    private String gamemode;
 
     private int port;
 

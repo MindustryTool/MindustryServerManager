@@ -204,11 +204,18 @@ public class ServerService {
                         return Flux.just(event);
                     }
 
+                    String gamemode = request.getGamemode();
+                    
+                    if (gamemode == null || gamemode.isEmpty()) {
+                        gamemode = request.getMode();
+                    }
+
                     String[] preHostCommand = { //
                             "config name %s".formatted(request.getName()), //
                             request.getDescription().length() == 0 ? ""
                                     : "config desc %s".formatted(request.getDescription()), //
                             "config port 6567", //
+                            "gamemode " + gamemode,
                             "version"
                     };
 
