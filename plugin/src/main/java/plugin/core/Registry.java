@@ -21,15 +21,6 @@ public final class Registry {
     private static final Set<Class<?>> creating = new HashSet<>();
     private static final Set<Object> initialized = new HashSet<>();
 
-    private static final ConfigManager configManager = get(ConfigManager.class);
-    private static final Scheduler scheduler = get(Scheduler.class);
-    private static final PersistenceManager persistenceManager = get(PersistenceManager.class);
-    private static final EventRegistrar eventRegistrar = get(EventRegistrar.class);
-    private static final FileWatcherManager fileWatcherService = get(FileWatcherManager.class);
-    private static final ClientCommandHandler clientCommandHandler = get(ClientCommandHandler.class);
-    private static final ServerCommandHandler serverCommandHandler = get(ServerCommandHandler.class);
-    private static final ActionFilterManager actionFilterManager = get(ActionFilterManager.class);
-
     public static final String GAMEMODE_KEY = "plugin-gamemode";
 
     private static String currentGamemode;
@@ -80,7 +71,7 @@ public final class Registry {
 
                 if (clazz.isAnnotationPresent(Gamemode.class)) {
                     Gamemode gamemode = clazz.getAnnotation(Gamemode.class);
-                    if (!currentGamemode.toLowerCase().equalsIgnoreCase(gamemode.value())) {
+                    if (!currentGamemode.equalsIgnoreCase(gamemode.value())) {
                         return;
                     }
                 }
@@ -156,7 +147,7 @@ public final class Registry {
     private static Object create(Class<?> type) {
         if (type.isAnnotationPresent(Gamemode.class)) {
             Gamemode gamemode = type.getAnnotation(Gamemode.class);
-            if (!Objects.equals(currentGamemode, gamemode.value())) {
+            if (!gamemode.value().equalsIgnoreCase(currentGamemode)) {
                 throw new RuntimeException("Gamemode mismatch!" +
                         "Current: " + currentGamemode +
                         "\nComponent: " + type.getName() +
@@ -215,12 +206,12 @@ public final class Registry {
 
         Class<?> clazz = instance.getClass();
 
-        withAnnotation(clazz, Configuration.class, a -> configManager.process(a, instance));
+        withAnnotation(clazz, Configuration.class, a -> get(ConfigManager.class).process(a, instance));
 
         for (Field field : clazz.getDeclaredFields()) {
             field.setAccessible(true);
 
-            withAnnotation(field, Persistence.class, f -> persistenceManager.load(field, f, instance));
+            withAnnotation(field, Persistence.class, f -> get(PersistenceManager.class).load(field, f, instance));
         }
 
         for (Method method : clazz.getDeclaredMethods()) {
@@ -234,13 +225,16 @@ public final class Registry {
                 }
             });
 
-            withAnnotation(method, Schedule.class, a -> scheduler.process(a, instance, method));
-            withAnnotation(method, Listener.class, a -> eventRegistrar.register(a, instance, method));
-            withAnnotation(method, Trigger.class, a -> eventRegistrar.register(a, instance, method));
-            withAnnotation(method, FileWatcher.class, a -> fileWatcherService.process(a, instance, method));
-            withAnnotation(method, ClientCommand.class, a -> clientCommandHandler.addCommand(a, method, instance));
-            withAnnotation(method, ServerCommand.class, a -> serverCommandHandler.addCommand(a, method, instance));
-            withAnnotation(method, PlayerActionFilter.class, a -> actionFilterManager.addFilter(a, method, instance));
+            withAnnotation(method, Schedule.class, a -> get(Scheduler.class).process(a, instance, method));
+            withAnnotation(method, Listener.class, a -> get(EventRegistrar.class).register(a, instance, method));
+            withAnnotation(method, Trigger.class, a -> get(EventRegistrar.class).register(a, instance, method));
+            withAnnotation(method, FileWatcher.class, a -> get(FileWatcherManager.class).process(a, instance, method));
+            withAnnotation(method, ClientCommand.class,
+                    a -> get(ClientCommandHandler.class).addCommand(a, method, instance));
+            withAnnotation(method, ServerCommand.class,
+                    a -> get(ServerCommandHandler.class).addCommand(a, method, instance));
+            withAnnotation(method, PlayerActionFilter.class,
+                    a -> get(ActionFilterManager.class).addFilter(a, method, instance));
         }
 
         initialized.add(instance);
