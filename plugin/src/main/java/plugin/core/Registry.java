@@ -30,8 +30,6 @@ public final class Registry {
     private static final ServerCommandHandler serverCommandHandler = get(ServerCommandHandler.class);
     private static final ActionFilterManager actionFilterManager = get(ActionFilterManager.class);
 
-
-
     public static final String GAMEMODE_KEY = "plugin-gamemode";
 
     private static String currentGamemode;
@@ -41,7 +39,7 @@ public final class Registry {
             Reflections reflections = new Reflections(packageName, Scanners.TypesAnnotated);
             Set<Class<?>> components = reflections.getTypesAnnotatedWith(Component.class);
 
-            currentGamemode = Core.settings.getString(GAMEMODE_KEY, null);
+            currentGamemode = Core.settings.getString(GAMEMODE_KEY, "");
 
             if (currentGamemode != null) {
                 Log.info("[sky]Current gamemode: " + currentGamemode);
@@ -82,7 +80,7 @@ public final class Registry {
 
                 if (clazz.isAnnotationPresent(Gamemode.class)) {
                     Gamemode gamemode = clazz.getAnnotation(Gamemode.class);
-                    if (!Objects.equals(currentGamemode, gamemode.value())) {
+                    if (!currentGamemode.toLowerCase().equalsIgnoreCase(gamemode.value())) {
                         return;
                     }
                 }
