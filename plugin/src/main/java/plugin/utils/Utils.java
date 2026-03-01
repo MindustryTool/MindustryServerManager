@@ -90,7 +90,7 @@ public class Utils {
                     for (var listener : Core.app.getListeners()) {
                         if (listener.getClass().equals(clazz)) {
                             Reflect.set(clazz, listener, "lastMode", preset);
-                            Log.info("[sky]Set gamemode to: " + preset.name());
+                            Log.info("[sky]Last gamemode: " + preset.name());
                             break;
                         }
                     }
