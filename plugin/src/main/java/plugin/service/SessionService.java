@@ -127,6 +127,8 @@ public class SessionService {
             Log.info("Player @ is no longer an admin", session.player.name);
         }
 
+        Log.info(login);
+
         session.login = login;
         session.player.admin = login.getIsAdmin();
         session.player.name(SessionUtils.getPlayerName(session.player, session.getData(), session.currentLevel));
