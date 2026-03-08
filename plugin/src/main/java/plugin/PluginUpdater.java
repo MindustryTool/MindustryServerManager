@@ -30,7 +30,7 @@ public class PluginUpdater {
         return isScheduled = true;
     }
 
-    @Schedule(delay = 5, fixedDelay = 5, unit = TimeUnit.MINUTES)
+    @Schedule(delay = 5, fixedDelay = 10, unit = TimeUnit.MINUTES)
     public void checkUpdate() {
         var needUpdate = false;
 
