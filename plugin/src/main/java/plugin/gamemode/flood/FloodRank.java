@@ -88,12 +88,12 @@ public class FloodRank {
     }
 
     @Data
-    private class DataWrapper {
+    private static class DataWrapper {
         private HashMap<String, FloodRankData> data = new HashMap<>();
     }
 
     @Data
-    private class FloodRankData {
+    private static class FloodRankData {
         private long clearTimeMilis = Long.MAX_VALUE;
         private List<String> players = new ArrayList<>();
     }

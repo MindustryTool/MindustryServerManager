@@ -89,12 +89,12 @@ public class AttackRank {
     }
 
     @Data
-    private class DataWrapper {
+    private static class DataWrapper {
         private HashMap<String, AttackRankData> data = new HashMap<>();
     }
 
     @Data
-    private class AttackRankData {
+    private static class AttackRankData {
         private long clearTimeMilis = Long.MAX_VALUE;
         private List<String> players = new ArrayList<>();
     }

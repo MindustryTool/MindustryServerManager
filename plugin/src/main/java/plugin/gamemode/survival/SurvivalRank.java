@@ -89,12 +89,12 @@ public class SurvivalRank {
     }
 
     @Data
-    private class DataWrapper {
+    private static class DataWrapper {
         private HashMap<String, SurvivalRankData> data = new HashMap<>();
     }
 
     @Data
-    private class SurvivalRankData {
+    private static class SurvivalRankData {
         private long clearTimeMilis = Long.MAX_VALUE;
         private List<String> players = new ArrayList<>();
     }
