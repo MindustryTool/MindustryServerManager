@@ -401,6 +401,7 @@ public class FloodGamemode {
         }
 
         if (suppressed.size() == cores) {
+            Events.fire(new FloodWonEvent());
             Events.fire(new EventType.GameOverEvent(Team.sharded));
         }
     }

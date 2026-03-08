@@ -24,7 +24,7 @@ public class MapRating {
 
         public MapRatingStat stat() {
             int totalVotes = 0;
-            int totalScore = 0;
+            float totalScore = 0;
 
             for (int i = 0; i < 5; i++) {
                 int count = stars[i];
