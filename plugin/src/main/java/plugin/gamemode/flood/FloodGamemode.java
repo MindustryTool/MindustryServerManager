@@ -175,7 +175,7 @@ public class FloodGamemode {
     }
 
     @MainThread
-    @Schedule(fixedDelay = 1, unit = TimeUnit.SECONDS)
+    @Schedule(fixedDelay = 100, unit = TimeUnit.MILLISECONDS)
     private void updateUnitDamgeOnFlood() {
         if (!shouldUpdate()) {
             return;
@@ -284,19 +284,9 @@ public class FloodGamemode {
                 continue;
             }
 
-            var evolveAt = floods[index(tile)];
-
-            if (evolveAt > 0 && evolveAt < currentTime) {
-                var next = config.nextTier(build);
-                if (next != null) {
-                    setFlood(tile, next, multiplier);
-                    updates++;
-                }
-            }
-
             for (Tile neighbor : around(tile.build)) {
                 var neighborBuild = neighbor.build;
-                var index=  index(neighbor);
+                var index = index(neighbor);
 
                 if (neighborBuild == null) {
                     if (neighbor.block() == Blocks.air || neighbor.block().alwaysReplace) {
@@ -321,6 +311,16 @@ public class FloodGamemode {
                     }
                 }
             }
+
+            var evolveAt = floods[index(tile)];
+
+            if (evolveAt > 0 && evolveAt < currentTime) {
+                var next = config.nextTier(build);
+                if (next != null) {
+                    setFlood(tile, next, multiplier);
+                    updates++;
+                }
+            }
         }
     }
 
@@ -337,7 +337,7 @@ public class FloodGamemode {
         var block = tile.build;
 
         if (block != null && block.team == Team.crux) {
-            floods[index(tile)] = -1l;
+            floods[index(tile)] = 0;
         }
     }
 
