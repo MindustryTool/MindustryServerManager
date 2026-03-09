@@ -220,7 +220,7 @@ public class FloodGamemode {
             return;
         }
 
-        int totalUpdates = 25;
+        int totalUpdates = 20;
         int updatesPerCore = Math.max(totalUpdates / Math.max(1, unsuppressedCores.size), 1);
         float multiplier = getFloodMultiplier();
 
@@ -242,7 +242,7 @@ public class FloodGamemode {
                         setFlood(tile, firstTier, multiplier);
                     } else {
                         if (!spreaded.get(index(tile))) {
-                            spreaded.set(index(tile), true);
+                            spreaded.set(index(tile));
                         }
                     }
 
@@ -296,14 +296,16 @@ public class FloodGamemode {
 
             for (Tile neighbor : around(tile.build)) {
                 var neighborBuild = neighbor.build;
+                var index=  index(neighbor);
 
                 if (neighborBuild == null) {
                     if (neighbor.block() == Blocks.air || neighbor.block().alwaysReplace) {
-                        var time = floods[index(neighbor)];
+                        var time = floods[index];
                         if (time <= 0) {
-                            floods[index(neighbor)] = currentTime + Mathf.random(1000 * 5, 1000 * 10);
+                            floods[index] = currentTime + Mathf.random(1000 * 5, 1000 * 10);
                         } else if (time <= currentTime) {
                             setFlood(neighbor, config.floodTiles.get(0), multiplier);
+                            spreaded.set(index);
                             updates++;
                         }
                     }
@@ -313,8 +315,8 @@ public class FloodGamemode {
                         if (currentTier != null) {
                             neighborBuild.damage(currentTier.damage * multiplier);
                         }
-                    } else if (!spreaded.get(index(neighbor))) {
-                        spreaded.set(index(neighbor), true);
+                    } else if (!spreaded.get(index)) {
+                        spreaded.set(index);
                         queue.add(neighbor);
                     }
                 }
