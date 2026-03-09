@@ -288,7 +288,7 @@ public class FloodGamemode {
                 var neighborBuild = neighbor.build;
                 var index = index(neighbor);
 
-                if (neighborBuild == null) {
+                if (neighborBuild == null || !neighborBuild.isValid()) {
                     if (neighbor.block() == Blocks.air || neighbor.block().alwaysReplace) {
                         var time = floods[index];
                         if (time <= 0) {
