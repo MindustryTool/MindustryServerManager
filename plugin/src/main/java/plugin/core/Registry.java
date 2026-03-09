@@ -71,7 +71,7 @@ public final class Registry {
 
                 if (clazz.isAnnotationPresent(Gamemode.class)) {
                     Gamemode gamemode = clazz.getAnnotation(Gamemode.class);
-                    if (!currentGamemode.equalsIgnoreCase(gamemode.value())) {
+                    if (!Arrays.stream(gamemode.value()).anyMatch(g -> g.equalsIgnoreCase(currentGamemode))) {
                         return;
                     }
                 }
@@ -147,7 +147,7 @@ public final class Registry {
     private static Object create(Class<?> type) {
         if (type.isAnnotationPresent(Gamemode.class)) {
             Gamemode gamemode = type.getAnnotation(Gamemode.class);
-            if (!gamemode.value().equalsIgnoreCase(currentGamemode)) {
+            if (!Arrays.stream(gamemode.value()).anyMatch(g -> g.equalsIgnoreCase(currentGamemode))) {
                 throw new RuntimeException("Gamemode mismatch!" +
                         "Current: " + currentGamemode +
                         "\nComponent: " + type.getName() +

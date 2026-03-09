@@ -20,7 +20,7 @@ import plugin.service.SessionHandler;
 import plugin.utils.JsonUtils;
 import plugin.utils.TimeUtils;
 
-@Gamemode("survival")
+@Gamemode({ "survival", "TowerDefense" })
 @RequiredArgsConstructor
 public class SurvivalRank {
     private final SessionHandler sessionHandler;

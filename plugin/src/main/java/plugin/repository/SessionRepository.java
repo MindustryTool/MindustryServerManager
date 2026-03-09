@@ -136,6 +136,27 @@ public class SessionRepository {
         });
     }
 
+    public int getRank(String uuid) {
+        var sql = """
+                    SELECT 1 + COUNT(*) AS rank
+                    FROM sessions
+                    WHERE totalExp > (
+                        SELECT totalExp FROM sessions WHERE uuid = ?
+                    )
+                """;
+
+        return DB.prepare(sql, ps -> {
+            ps.setString(1, uuid);
+
+            try (var rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+                return -1;
+            }
+        });
+    }
+
     private SessionData read(String uuid) throws SQLException {
         var sql = "SELECT data FROM sessions WHERE uuid = ?";
 

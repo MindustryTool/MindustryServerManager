@@ -20,7 +20,7 @@ import plugin.service.SessionHandler;
 import plugin.utils.JsonUtils;
 import plugin.utils.TimeUtils;
 
-@Gamemode("attack")
+@Gamemode({ "attack", "ziger" })
 @RequiredArgsConstructor
 public class AttackRank {
     private final SessionHandler sessionHandler;
