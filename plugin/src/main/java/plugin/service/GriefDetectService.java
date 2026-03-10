@@ -8,13 +8,16 @@ import lombok.RequiredArgsConstructor;
 import mindustry.game.EventType.BlockBuildBeginEvent;
 import mindustry.game.EventType.BlockBuildEndEvent;
 import mindustry.gen.Player;
+import plugin.Cfg;
 import plugin.annotations.Component;
+import plugin.annotations.ConditionOn;
 import plugin.annotations.Listener;
 import plugin.annotations.Schedule;
 import plugin.menus.GreifLoginMenu;
 import plugin.utils.Utils;
 
 @Component
+@ConditionOn(Cfg.OnOfficial.class)
 @RequiredArgsConstructor
 public class GriefDetectService {
 
