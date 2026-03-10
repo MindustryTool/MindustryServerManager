@@ -3,6 +3,7 @@ package plugin.service;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
+import arc.struct.Seq;
 import lombok.RequiredArgsConstructor;
 import mindustry.game.EventType.BlockBuildBeginEvent;
 import mindustry.game.EventType.BlockBuildEndEvent;
@@ -10,47 +11,58 @@ import mindustry.gen.Player;
 import plugin.annotations.Component;
 import plugin.annotations.Listener;
 import plugin.annotations.Schedule;
-import plugin.repository.SessionRepository;
+import plugin.menus.GreifLoginMenu;
 import plugin.utils.Utils;
 
 @Component
 @RequiredArgsConstructor
 public class GriefDetectService {
 
-    private final SessionRepository sessionRepository;
     private final SessionHandler sessionHandler;
+    private final ApiGateway apiGateway;
 
     private final ConcurrentHashMap<Player, Long> scores = new ConcurrentHashMap<>();
 
     @Schedule(fixedDelay = 1, unit = TimeUnit.SECONDS)
     public void clear() {
         var updated = new ConcurrentHashMap<Player, Long>(scores);
+        var removed = new Seq<Player>();
 
         for (var entry : scores.entrySet()) {
             if (entry.getValue() > 0) {
+                removed.add(entry.getKey());
                 continue;
             }
 
+            updated.put(entry.getKey(), entry.getValue() + 5);
+
             if (entry.getValue() > 100) {
+                var session = sessionHandler.get(entry.getKey()).orElseThrow();
+                var isLoggedIn = session.isLoggedIn();
+
                 Utils.forEachPlayerLocale((locale, players) -> {
                     var message = I18n.t(locale, "[scarlet]", "@Suspect griefer", entry.getKey().name);
                     for (var player : players) {
                         player.sendMessage(message);
                     }
                 });
+
+                if (isLoggedIn) {
+                    continue;
+                }
+
+                var login = apiGateway.login(entry.getKey());
+
+                new GreifLoginMenu().send(session, login.getLoginLink());
             }
 
-            updated.put(entry.getKey(), entry.getValue() + 1);
-
-            sessionHandler.get(entry.getKey()).ifPresent(session -> {
-                if (!session.getData().griefer) {
-                    session.getData().griefer = true;
-                    sessionRepository.markDirty(session.player.uuid());
-                }
-            });
         }
 
         scores.putAll(updated);
+
+        for (var key : removed) {
+            scores.remove(key);
+        }
     }
 
     @Listener
