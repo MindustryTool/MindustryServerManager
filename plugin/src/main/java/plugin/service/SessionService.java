@@ -103,15 +103,6 @@ public class SessionService {
     }
 
     public void setLogin(Session session, LoginDto login) {
-        if (login.getIsAdmin()) {
-            Utils.forEachPlayerLocale((locale, players) -> {
-                String msg = SessionUtils.getAdminLoginMessage(locale, session.player.name);
-                for (var p : players) {
-                    p.sendMessage(msg);
-                }
-            });
-        }
-
         PlayerInfo target = Vars.netServer.admins.getInfoOptional(session.player.uuid());
 
         if (target != null) {
@@ -130,7 +121,6 @@ public class SessionService {
         Log.info(login);
 
         session.login = login;
-        session.player.admin = login.getIsAdmin();
         session.player.name(SessionUtils.getPlayerName(session.player, session.getData(), session.currentLevel));
     }
 }

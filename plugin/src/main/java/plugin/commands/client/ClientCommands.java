@@ -59,9 +59,13 @@ public class ClientCommands {
         this.voteService = voteService;
     }
 
-    @ClientCommand(name = "admin", description = "Open discord channel", admin = false)
+    @ClientCommand(name = "admin", description = "Toogle admin permisison", admin = false)
     public void admin(Session session) {
-        Call.openURI(session.player.con, Cfg.DISCORD_INVITE_URL);
+        if (session.isAdmin()) {
+            session.player.admin = !session.player.admin;
+        } else {
+            session.player.sendMessage(I18n.t(session,"@You are not an admin"));
+        }
     }
 
     @ClientCommand(name = "discord", description = "Open discord channel", admin = false)

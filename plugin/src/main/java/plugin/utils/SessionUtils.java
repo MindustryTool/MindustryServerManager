@@ -98,10 +98,6 @@ public class SessionUtils {
         return " [green]" + message + Strings.format(" @ -> @", oldLevel, newLevel);
     }
 
-    public static String getAdminLoginMessage(Locale locale, String playerName) {
-        return I18n.t(locale, "@An admin logged in:[white] ", playerName);
-    }
-
     public static String getKillMessage(Locale locale, String playerName, long count, UnitType unit, long exp) {
         String formatted = Strings.format(" @ @ (+@exp)",
                 count,

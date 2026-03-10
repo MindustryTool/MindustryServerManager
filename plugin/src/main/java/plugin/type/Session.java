@@ -23,6 +23,10 @@ public class Session {
         this.locale = Locale.forLanguageTag(player.locale().replace("_", "-"));
     }
 
+    public boolean isAdmin() {
+        return login != null && login.getIsAdmin();
+    }
+
     public boolean isLoggedIn() {
         return login != null && login.getLoginLink() == null;
     }
