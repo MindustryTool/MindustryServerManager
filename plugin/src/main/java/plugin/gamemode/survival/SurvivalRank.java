@@ -42,7 +42,7 @@ public class SurvivalRank {
         }
 
         return "Map: " + map.name() + "\nBest time: "
-                + TimeUtils.toString(Duration.ofMillis(history.clearTimeMilis))
+                + TimeUtils.toString(Duration.ofMillis(history.surviveTimeMs))
                 + "\nPlayers: " + String.join(", ", history.players);
     }
 
@@ -69,17 +69,17 @@ public class SurvivalRank {
         sessionHandler.get().values().stream().map(v -> v.player.name()).forEach(v -> players.add(v));
 
         wrapper.data.compute(mapName, (k, v) -> {
-            long clearTimeMilis = Duration.between(mapStartedAt, Instant.now()).toMillis();
+            long surviveTimeMs = Duration.between(mapStartedAt, Instant.now()).toMillis();
 
             if (v == null) {
                 v = new SurvivalRankData();
             }
 
-            if (v.clearTimeMilis > clearTimeMilis) {
-                v.clearTimeMilis = clearTimeMilis;
+            if (v.surviveTimeMs < surviveTimeMs) {
+                v.surviveTimeMs = surviveTimeMs;
                 v.players = players;
 
-                Call.sendMessage("New best time: " + TimeUtils.toString(Duration.ofMillis(clearTimeMilis)));
+                Call.sendMessage("New best time: " + TimeUtils.toString(Duration.ofMillis(surviveTimeMs)));
             }
 
             return v;
@@ -95,7 +95,7 @@ public class SurvivalRank {
 
     @Data
     private static class SurvivalRankData {
-        private long clearTimeMilis = Long.MAX_VALUE;
+        private long surviveTimeMs = Long.MAX_VALUE;
         private List<String> players = new ArrayList<>();
     }
 }
