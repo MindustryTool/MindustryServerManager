@@ -14,6 +14,7 @@ import plugin.annotations.ConditionOn;
 import plugin.annotations.Listener;
 import plugin.annotations.Schedule;
 import plugin.menus.GreifLoginMenu;
+import plugin.type.Session;
 import plugin.utils.Utils;
 
 @Component
@@ -40,7 +41,7 @@ public class GriefDetectService {
             updated.put(entry.getKey(), entry.getValue() + 5);
 
             if (entry.getValue() > 100) {
-                var session = sessionHandler.get(entry.getKey()).orElseThrow();
+                Session session = sessionHandler.get(entry.getKey()).orElseThrow();
                 var isLoggedIn = session.isLoggedIn();
 
                 Utils.forEachPlayerLocale((locale, players) -> {
