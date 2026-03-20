@@ -3,7 +3,7 @@ package plugin.service;
 import lombok.RequiredArgsConstructor;
 import mindustry.net.Administration.ActionType;
 import mindustry.net.Administration.PlayerAction;
-import mindustry.world.blocks.logic.LogicBlock;
+import mindustry.world.blocks.logic.LogicDisplay;
 import plugin.Cfg;
 import plugin.annotations.PlayerActionFilter;
 import plugin.annotations.Component;
@@ -16,7 +16,7 @@ public class SecurityService {
 
     @PlayerActionFilter
     Boolean onlyAllowLoggedUserToUseLogic(PlayerAction action, SessionHandler sessionService) {
-        if (action.type == ActionType.placeBlock && action.block != null && action.block instanceof LogicBlock) {
+        if (action.type == ActionType.placeBlock && action.block != null && action.block instanceof LogicDisplay) {
             var session = sessionService.get(action.player).orElse(null);
 
             if (session != null && session.isLoggedIn()) {

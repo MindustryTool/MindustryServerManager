@@ -41,7 +41,7 @@ public class GriefDetectService {
             updated.put(entry.getKey(), entry.getValue() + 5);
 
             if (entry.getValue() > 100) {
-                Session session = sessionHandler.get(entry.getKey()).orElseThrow();
+                Session session = sessionHandler.get(entry.getKey()).get();
                 var isLoggedIn = session.isLoggedIn();
 
                 Utils.forEachPlayerLocale((locale, players) -> {

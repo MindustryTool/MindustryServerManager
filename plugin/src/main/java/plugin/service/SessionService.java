@@ -77,7 +77,6 @@ public class SessionService {
     }
 
     public void update(Session session) {
-        var data = session.getData();
         int level = getLevel.apply(session);
 
         if (level != session.currentLevel) {
@@ -96,7 +95,7 @@ public class SessionService {
             }
 
             session.currentLevel = level;
-            session.player.name(SessionUtils.getPlayerName(session.player, data, level));
+            session.player.name(SessionUtils.getPlayerName(session));
         }
 
         sessionRepository.markDirty(session.player.uuid());
@@ -122,6 +121,6 @@ public class SessionService {
 
         session.login = login;
         session.player.admin = false;
-        session.player.name(SessionUtils.getPlayerName(session.player, session.getData(), session.currentLevel));
+        session.player.name(SessionUtils.getPlayerName(session));
     }
 }
