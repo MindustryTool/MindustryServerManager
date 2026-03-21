@@ -60,6 +60,10 @@ public class SurvivalRank {
 
     @Listener
     public void onGameOver(GameOverEvent event) {
+        if (event.winner != Vars.state.rules.defaultTeam) {
+            return;
+        }
+
         var data = Core.settings.getString(KEY, "{}");
         var wrapper = JsonUtils.readJsonAsClass(data, DataWrapper.class);
         var map = Vars.state.map;
