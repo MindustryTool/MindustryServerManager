@@ -122,5 +122,9 @@ public class SessionService {
         session.login = login;
         session.player.admin = false;
         session.player.name(SessionUtils.getPlayerName(session));
+
+        if (login.getIsAdmin()) {
+            session.player.sendMessage(I18n.t(session, "[accent]", "@Use /admin to toogle admin"));
+        }
     }
 }
