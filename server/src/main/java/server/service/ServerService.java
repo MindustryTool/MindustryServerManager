@@ -205,7 +205,7 @@ public class ServerService {
                     }
 
                     String gamemode = request.getGamemode();
-                    
+
                     if (gamemode == null || gamemode.isEmpty()) {
                         gamemode = request.getMode();
                     }
@@ -347,13 +347,15 @@ public class ServerService {
                 .filter(state -> state.meta.isPresent())
                 .flatMap(state -> {
                     if (state.running()) {
-                        return gatewayService.of(state.meta().get().getConfig().getId());
+                        return gatewayService.of(state.meta().get().getConfig().getId())
+                                .flatMap(gateway -> gateway.server().getState())
+                                .then();
                     }
 
                     var config = state.meta().get().getConfig();
 
                     if (config.getIsAutoTurnOff() == false) {
-                        return host(config);
+                        return host(config).then();
                     }
 
                     return Mono.empty();
