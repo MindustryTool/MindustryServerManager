@@ -137,16 +137,16 @@ public class HttpServer {
 
     private synchronized void onClientConnect(SseClient client) {
         if (eventListener != null && !eventListener.terminated()) {
-            Log.info("Client already connected");
+            Log.info("[scarlet]Client already connected");
             client.close();
         }
 
         client.onClose(() -> {
-            Log.info("Client disconnected");
+            Log.info("[sky]Client disconnected");
             eventListener = null;
         });
 
-        Log.info("Client connected");
+        Log.info("[green]Client connected");
 
         client.keepAlive();
 
@@ -159,7 +159,7 @@ public class HttpServer {
         }
 
         if (eventListener != null) {
-            Log.info("Closing existing event listener, terminated: " + eventListener.terminated());
+            Log.info("[scarlet]Closing existing event listener, terminated: " + eventListener.terminated());
 
             if (!eventListener.terminated()) {
                 eventListener.close();
