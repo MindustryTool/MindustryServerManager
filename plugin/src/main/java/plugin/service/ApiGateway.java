@@ -52,7 +52,7 @@ public class ApiGateway {
     public void requestConnection() {
         Log.info("[green]Requesting connection to server manager");
         
-        HttpUtils.send(HttpUtils.get(GATEWAY_URL, "servers", SERVER_ID, "request-connection"), 5000, Void.class);
+        // HttpUtils.send(HttpUtils.get(GATEWAY_URL, "servers", SERVER_ID, "request-connection"), 5000, Void.class);
     }
 
     public int getTotalPlayer() {
