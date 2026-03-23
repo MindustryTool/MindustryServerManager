@@ -211,10 +211,7 @@ public class Utils {
                                 .setMeta(ModMetaDto.from(mod.meta)))
                         .list();
 
-        ArrayList<Player> players = new ArrayList<Player>();
-        Groups.player.forEach(players::add);
-
-        List<PlayerDto> p = Registry.get(plugin.service.SessionHandler.class).get()
+        List<PlayerDto> players = Registry.get(plugin.service.SessionHandler.class).get()
                 .values()
                 .stream()
                 .map(session -> PlayerDto.from(session.player).setJoinedAt(session.joinedAt))
@@ -226,7 +223,7 @@ public class Utils {
                 .select(value -> Time.millis() - value < 0).size;
 
         return new ServerStateDto()//
-                .setPlayers(p)//
+                .setPlayers(players)//
                 .setMods(mods)//
                 .setKicks(kicks)//
                 .setMapName(mapName)

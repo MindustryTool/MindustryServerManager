@@ -37,7 +37,6 @@ import dto.LoginDto;
 import dto.PlayerDto;
 import dto.ServerCommandDto;
 import dto.StartServerDto;
-import dto.ServerStateDto;
 import plugin.utils.Utils;
 import io.javalin.Javalin;
 import io.javalin.http.ContentType;
@@ -46,9 +45,8 @@ public class GeneralController {
 
     public static void init(Javalin app) {
         app.get("state", ctx -> {
-            ServerStateDto state = Utils.appPostWithTimeout(Utils::getState, "Get state");
             ctx.contentType(ContentType.APPLICATION_JSON);
-            ctx.json(state);
+            ctx.json(Utils.getState());
         });
 
         app.get("image", ctx -> {
