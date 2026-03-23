@@ -54,6 +54,7 @@ public class Control extends mindustry.mod.Plugin {
         } catch (Exception e) {
             Log.err("Failed to init plugin", e);
             unload();
+            System.exit(0);
         }
     }
 
