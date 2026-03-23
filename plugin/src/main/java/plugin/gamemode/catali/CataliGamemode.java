@@ -335,7 +335,6 @@ public class CataliGamemode {
         }
     }
 
-    @MainThread
     @Schedule(fixedRate = 1, unit = TimeUnit.SECONDS)
     private void updateStatsHud() {
         if (!shouldUpdate()) {
