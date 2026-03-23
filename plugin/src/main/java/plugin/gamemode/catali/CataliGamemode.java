@@ -273,10 +273,10 @@ public class CataliGamemode {
         updateRespawn();
         updateTeam();
         updatePlayer();
+        updateCoreExp();
+        updateUnit();
     }
 
-    @MainThread
-    @Schedule(fixedRate = 1, unit = TimeUnit.SECONDS)
     private void updateCoreExp() {
         if (!shouldUpdate()) {
             return;
@@ -304,8 +304,6 @@ public class CataliGamemode {
         }
     }
 
-    @MainThread
-    @Schedule(fixedRate = 1, unit = TimeUnit.SECONDS)
     private void updateUnit() {
         if (!shouldUpdate()) {
             return;
