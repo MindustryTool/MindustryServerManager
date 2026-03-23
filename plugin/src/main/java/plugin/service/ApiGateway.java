@@ -50,6 +50,8 @@ public class ApiGateway {
             .build();
 
     public void requestConnection() {
+        Log.info("[green]Requesting connection to server manager");
+        
         HttpUtils.get(HttpUtils.get(GATEWAY_URL, "servers", SERVER_ID, "request-connection"));
     }
 
