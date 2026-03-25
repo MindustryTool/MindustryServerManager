@@ -14,6 +14,7 @@ import mindustry.game.EventType.PlayEvent;
 import mindustry.game.EventType.PlayerJoin;
 import mindustry.gen.Call;
 import plugin.annotations.Gamemode;
+import plugin.annotations.Init;
 import plugin.annotations.Listener;
 import plugin.service.SessionHandler;
 import plugin.utils.JsonUtils;
@@ -24,9 +25,20 @@ import plugin.utils.TimeUtils;
 public class FloodRank {
     private final SessionHandler sessionHandler;
 
-    private final String KEY = "flood-rank";
-
     private Instant mapStartedAt = Instant.now();
+
+    private final String KEY = "flood-rank";
+    private final String version = "1";
+
+    @Init
+    private void init() {
+        String VERSION_KEY = "rank-version";
+        String currentVersion = Core.settings.getString(VERSION_KEY, "0");
+        if (!currentVersion.equals(version)) {
+            Core.settings.remove(KEY);
+            Core.settings.put(VERSION_KEY, version);
+        }
+    }
 
     private String buildRankString() {
         var map = Vars.state.map;
