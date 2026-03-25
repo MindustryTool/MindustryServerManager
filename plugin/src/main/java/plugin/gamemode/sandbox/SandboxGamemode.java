@@ -78,6 +78,7 @@ public class SandboxGamemode {
                 Blocks.coreShard);
 
         blocks.stream()
+                .filter(b -> b != null)
                 .forEach(b -> {
                     b.buildVisibility = BuildVisibility.shown;
                     b.configurable = true;
