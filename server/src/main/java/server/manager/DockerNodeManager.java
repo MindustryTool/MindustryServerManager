@@ -42,8 +42,6 @@ import dto.ServerStateDto;
 import events.ServerEvents;
 import events.ServerEvents.LogEvent;
 import enums.NodeRemoveReason;
-import events.ServerEvents.StartEvent;
-import events.ServerEvents.StopEvent;
 import server.utils.ApiError;
 import server.utils.FileUtils;
 import server.utils.Utils;
@@ -471,15 +469,10 @@ public class DockerNodeManager implements NodeManager {
 
                         optional.ifPresentOrElse(metadata -> {
                             var serverId = metadata.getConfig().getId();
-                            var stopEvents = List.of("stop", "die", "kill", "destroy");
 
                             if (status.equalsIgnoreCase("start")) {
 
                                 attachLogCallback(containerId, serverId);
-
-                                eventBus.emit(new StartEvent(serverId));
-                            } else if (stopEvents.stream().anyMatch(stop -> status.equalsIgnoreCase(stop))) {
-                                eventBus.emit(new StopEvent(serverId, "DOCKER-" + status.toUpperCase()));
                             }
                         }, () -> {
                             var serverIdString = container.getLabels().get(Const.serverIdLabel);
@@ -487,8 +480,7 @@ public class DockerNodeManager implements NodeManager {
                                 return;
                             }
 
-                            UUID serverId = UUID.fromString(serverIdString);
-                            eventBus.emit(new StopEvent(serverId, "DOCKER-" + status.toUpperCase()));
+                            Log.info("Server %s %s %s".formatted(serverIdString, event.getStatus(), action));
                         });
 
                         String name = optional
