@@ -154,7 +154,7 @@ public class EventHandler {
                         return;
                     }
 
-                    String translatedChat = "[sky][" + LanguageDialog.getDisplayName(locale) + "][] "
+                    String translatedChat = "[sky][" + LanguageDialog.getDisplayName(locale) + "][white] "
                             + player.name + "[white]: "
                             + result.getTranslatedText();
 

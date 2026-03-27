@@ -285,7 +285,7 @@ public class HubService {
                 "[#BBDEFB]Map: [white]" + newLine(server.getMapName()) + "[white]\n" +
                 "[#90CAF9]Mode: [white]" + server.getModeIcon() + " " + server.getMode() + "[white]\n" +
                 "[#405AF9]Version: [white]" + server.getGameVersion() + "[white]\n" +
-                (mods.isEmpty() ? "" : "[#4FC3F7]Mods:[] " + mods) + "[white]\n\n" +
+                (mods.isEmpty() ? "" : "[#4FC3F7]Mods:[white] " + mods) + "[white]\n\n" +
                 (server.getStatus().isOnline() ? "[accent]" : "[sky]") + "@Tap to join server"
                 + "\n";
 
