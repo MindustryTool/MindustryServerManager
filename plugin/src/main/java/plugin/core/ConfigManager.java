@@ -57,7 +57,7 @@ public class ConfigManager {
                 Object value = field.get(newData);
                 field.set(instance, value);
             }
-            Log.info("[gray]Loaded configuration for @ from @", instance.getClass().getSimpleName(), file.name());
+            Log.debug("[gray]Loaded configuration for @ from @", instance.getClass().getSimpleName(), file.name());
         } catch (Exception e) {
             Log.err("Failed to load configuration for @", instance.getClass().getName());
             Log.err(e);

@@ -20,7 +20,7 @@ public class EventRegistrar {
                     Log.err(e);
                 }
             });
-            Log.info("[gray]Registered trigger @ in @", trigger.value(), method.getName());
+            Log.debug("[gray]Registered trigger @ in @", trigger.value(), method.getName());
         } else {
             Log.err("@Trigger method @ in @ must have 0 parameters", method.getName(), instance.getClass().getName());
         }
@@ -41,7 +41,7 @@ public class EventRegistrar {
                     Log.err(e);
                 }
             });
-            Log.info("[gray]Registered listener @ in @", method.getName(), clazz.getName());
+            Log.debug("[gray]Registered listener @ in @", method.getName(), clazz.getName());
         } else if (paramCount == 0) {
             Class<?> eventType = listener.value();
 
@@ -60,7 +60,7 @@ public class EventRegistrar {
                     Log.err(e);
                 }
             });
-            Log.info("[gray]Registered listener @ in @", method.getName(), clazz.getName());
+            Log.debug("[gray]Registered listener @ in @", method.getName(), clazz.getName());
         } else {
             Log.err("@Listener method @ in @ must have exactly 0 or 1 parameter", method.getName(), clazz.getName());
         }

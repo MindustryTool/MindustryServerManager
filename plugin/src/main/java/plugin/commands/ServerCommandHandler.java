@@ -58,7 +58,7 @@ public class ServerCommandHandler {
             throw new IllegalArgumentException("description");
         }
 
-        Log.info("[gray]Register server command: " + name);
+        Log.debug("[gray]Register server command: " + name);
         var cmd = new PluginServerCommand(name, description, method, object);
         commands.add(cmd);
 

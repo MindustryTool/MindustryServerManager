@@ -58,7 +58,7 @@ public class Scheduler {
             scheduler.scheduleAtFixedRate(wrapped, Math.max(0, schedule.delay()), schedule.fixedRate(),
                     schedule.unit());
         }
-        Log.info("[gray]Scheduled " + method + " with fixed rate " + schedule.fixedRate() + " " + schedule.unit());
+        Log.debug("[gray]Scheduled " + method + " with fixed rate " + schedule.fixedRate() + " " + schedule.unit());
     }
 
     private void scheduleFixedDelay(Schedule schedule, Method method, Runnable task, boolean isMainThread) {
@@ -77,7 +77,7 @@ public class Scheduler {
             scheduler.scheduleWithFixedDelay(wrapped, Math.max(0, schedule.delay()), schedule.fixedDelay(),
                     schedule.unit());
         }
-        Log.info("[gray]Scheduled " + method + " with fixed delay " + schedule.fixedDelay() + " " + schedule.unit());
+        Log.debug("[gray]Scheduled " + method + " with fixed delay " + schedule.fixedDelay() + " " + schedule.unit());
     }
 
     private void scheduleOneTime(Schedule schedule, Method method, Runnable task, boolean isMainThread) {
@@ -86,7 +86,7 @@ public class Scheduler {
         } else {
             scheduler.schedule(task, schedule.delay(), schedule.unit());
         }
-        Log.info("[gray]Scheduled " + method + " with delay " + schedule.delay() + " " + schedule.unit());
+        Log.debug("[gray]Scheduled " + method + " with delay " + schedule.delay() + " " + schedule.unit());
     }
 
     private Runnable createWrapper(Runnable task, Method method, long expected, String type) {

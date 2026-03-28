@@ -60,7 +60,7 @@ public final class Registry {
                         Condition condition = conditionClass.getDeclaredConstructor().newInstance();
 
                         if (!condition.check()) {
-                            Log.info("[gray]Skipping component @ due to condition @", clazz.getName(),
+                            Log.debug("[gray]Skipping component @ due to condition @", clazz.getName(),
                                     conditionClass.getName());
                             return;
                         }
@@ -168,7 +168,7 @@ public final class Registry {
 
             Object instance = constructor.newInstance(args);
 
-            Log.info("[gray]Registered component: @", type.getName());
+            Log.debug("[gray]Registered component: @", type.getName());
 
             initialize(instance);
 

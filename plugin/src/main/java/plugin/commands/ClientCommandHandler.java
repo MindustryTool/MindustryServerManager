@@ -51,7 +51,7 @@ public class ClientCommandHandler {
             throw new IllegalArgumentException("description");
         }
 
-        Log.info("[gray]Register client command: " + name);
+        Log.debug("[gray]Register client command: " + name);
 
         description = (admin ? "[scarlet]ADMIN[] - " : "") + description;
 
