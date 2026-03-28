@@ -404,6 +404,10 @@ public class ServerService {
 
         return gatewayService.of(serverId)//
                 .flatMap(client -> client.server().getState())//
+                .onErrorResume(error -> {
+                    Log.err(error.getMessage());
+                    return Mono.empty();
+                })
                 .defaultIfEmpty(new ServerStateDto().setServerId(serverId).setStatus(ServerStatus.NOT_RESPONSE))
                 .flatMap(state -> {
                     if (state.getStatus().equals(ServerStatus.NOT_RESPONSE)) {
