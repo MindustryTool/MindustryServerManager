@@ -143,8 +143,6 @@ public class EventHandler {
 
         httpServer.fire(new ServerEvents.ChatEvent(Control.SERVER_ID, chat));
 
-        Log.info(chat);
-
         Tasks.io("Chat Event", () -> {
             try {
                 Utils.forEachPlayerLocale((locale, ps) -> {
