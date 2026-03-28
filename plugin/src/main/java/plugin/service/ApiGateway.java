@@ -230,7 +230,7 @@ public class ApiGateway {
 
                             translationCache.put(cacheKey, translated);
                             future.complete(translated);
-                        } catch (Throwable e) {
+                        } catch (Exception e) {
                             future.completeExceptionally(e);
                         }
                     });

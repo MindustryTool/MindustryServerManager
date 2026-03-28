@@ -127,7 +127,7 @@ public class HubService {
                             map = serverData.getMapName() == null ? "" : serverData.getMapName();
                             players = totalPlayers;
                         }
-                    } catch (Throwable e) {
+                    } catch (Exception e) {
                         e.printStackTrace();
                     }
                 }
@@ -153,7 +153,7 @@ public class HubService {
                 buffer.clear();
             });
 
-        } catch (Throwable e) {
+        } catch (Exception e) {
             Log.err(e);
         }
     }
@@ -233,7 +233,7 @@ public class HubService {
                 }
             }
 
-        } catch (Throwable e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }

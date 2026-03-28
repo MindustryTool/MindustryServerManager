@@ -124,7 +124,7 @@ public class EventHandler {
                 }
             }
 
-        } catch (Throwable e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -168,7 +168,7 @@ public class EventHandler {
                         httpServer.fire(new ServerEvents.ChatEvent(Control.SERVER_ID, translatedChat));
                     }
                 });
-            } catch (Throwable e) {
+            } catch (Exception e) {
                 Log.err("Failed to send chat event", e);
             }
         });
@@ -179,7 +179,7 @@ public class EventHandler {
         try {
             var request = PlayerDto.from(event.session.player).setJoinedAt(event.session.joinedAt);
             httpServer.fire(new ServerEvents.PlayerLeaveEvent(Control.SERVER_ID, request));
-        } catch (Throwable e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
 
@@ -193,7 +193,7 @@ public class EventHandler {
             httpServer.fire(new ServerEvents.ChatEvent(Control.SERVER_ID, chat));
 
             Log.info(chat);
-        } catch (Throwable e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -241,7 +241,7 @@ public class EventHandler {
 
             new WelcomeMenu().send(session, null);
 
-        } catch (Throwable e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }

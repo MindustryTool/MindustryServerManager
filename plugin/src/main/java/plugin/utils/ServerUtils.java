@@ -57,7 +57,7 @@ public class ServerUtils {
                 Log.info("Redirecting " + player.name + " to " + host + ":" + port);
 
                 Call.connect(player.con, InetAddress.getByName(host.trim()).getHostAddress(), port);
-            } catch (Throwable e) {
+            } catch (Exception e) {
                 player.sendMessage(I18n.t(Utils.parseLocale(player.locale()),
                         "@Error: ", "@Can not load server"));
                 e.printStackTrace();

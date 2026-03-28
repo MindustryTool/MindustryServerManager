@@ -89,7 +89,7 @@ public class ClientCommands {
             String errorName = output.substring(0, output.indexOf(' ') - 1);
             Class.forName("org.mozilla.javascript." + errorName);
             return true;
-        } catch (Throwable e) {
+        } catch (Exception e) {
             return false;
         }
     }

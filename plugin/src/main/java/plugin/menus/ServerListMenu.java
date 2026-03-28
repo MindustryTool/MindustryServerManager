@@ -85,7 +85,7 @@ public class ServerListMenu extends PluginMenu<Integer> {
 
             row();
             text(I18n.t(session.locale, "[scarlet]", "@Close"));
-        } catch (Throwable e) {
+        } catch (Exception e) {
             Log.err("Failed to build server list menu", e);
         }
     }

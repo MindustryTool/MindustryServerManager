@@ -144,7 +144,7 @@ public class Utils {
             try {
                 r.run();
                 future.complete(null);
-            } catch (Throwable e) {
+            } catch (Exception e) {
                 future.completeExceptionally(e);
             } finally {
                 timeoutTask.cancel(true);
@@ -175,7 +175,7 @@ public class Utils {
             try {
                 var result = fn.get();
                 future.complete(result);
-            } catch (Throwable e) {
+            } catch (Exception e) {
                 future.completeExceptionally(e);
             } finally {
                 timeoutTask.cancel(true);
@@ -193,7 +193,7 @@ public class Utils {
         try (BufferedReader reader = new BufferedReader(
                 new InputStreamReader(inputStream, "UTF-8"))) {
             return reader.lines().collect(Collectors.joining("\n"));
-        } catch (Throwable error) {
+        } catch (Exception error) {
             throw new RuntimeException(error);
         }
     }
