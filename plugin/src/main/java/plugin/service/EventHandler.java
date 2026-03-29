@@ -6,6 +6,7 @@ import mindustry.Vars;
 import mindustry.core.GameState.State;
 import mindustry.game.EventType.GameOverEvent;
 import mindustry.game.EventType.PlayerBanEvent;
+import mindustry.game.EventType.PlayerChatEvent;
 import mindustry.game.EventType.PlayerConnect;
 import mindustry.game.EventType.PlayerLeave;
 import mindustry.game.EventType.UnitBulletDestroyEvent;
@@ -26,9 +27,9 @@ import dto.PlayerDto;
 import plugin.utils.Utils;
 import plugin.Tasks;
 import plugin.annotations.Component;
-import plugin.annotations.Init;
 import plugin.annotations.Listener;
 import plugin.core.Registry;
+import mindustry.ui.dialogs.LanguageDialog;
 import java.time.Instant;
 
 import events.ServerEvents;
@@ -44,40 +45,6 @@ public class EventHandler {
         this.httpServer = httpServer;
         this.apiGateway = apiGateway;
         this.sessionService = sessionService;
-    }
-
-    @Init
-    private void init() {
-        Vars.netServer.admins.addChatFilter((player, message) -> {
-            String chat = Strings.format("[@] => @", player.plainName(), message);
-
-            httpServer.fire(new ServerEvents.ChatEvent(Control.SERVER_ID, chat));
-
-            Tasks.io("Chat Event", () -> {
-                try {
-                    Utils.forEachPlayerLocale((locale, players) -> {
-                        var result = apiGateway.translateRaw(locale, Strings.stripColors(message));
-
-                        for (var p : players) {
-                            if (p.id == player.id) {
-                                continue;
-                            }
-
-                            if (result.getDetectedLanguage().getLanguage().equalsIgnoreCase(locale.getLanguage())) {
-                                p.sendMessage(message, player);
-                            } else {
-                                p.sendMessage(message + " [gray](" + result.getTranslatedText() + ")", player);
-                            }
-
-                        }
-                    });
-                } catch (Exception e) {
-                    Log.err("Failed to send chat event", e);
-                }
-            });
-
-            return null;
-        });
     }
 
     @Listener
@@ -160,6 +127,49 @@ public class EventHandler {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    @Listener
+    private void onPlayerChat(PlayerChatEvent event) {
+        Player player = event.player;
+        String message = event.message;
+
+        String chat = Strings.format("[@] => @", player.plainName(), message);
+
+        // Filter all commands
+        if (message.startsWith("/")) {
+            return;
+        }
+
+        httpServer.fire(new ServerEvents.ChatEvent(Control.SERVER_ID, chat));
+
+        Tasks.io("Chat Event", () -> {
+            try {
+                Utils.forEachPlayerLocale((locale, ps) -> {
+                    var result = apiGateway.translateRaw(locale, Strings.stripColors(message));
+
+                    if (result.getDetectedLanguage().getLanguage().equalsIgnoreCase(locale.getLanguage())) {
+                        return;
+                    }
+
+                    String translatedChat = "[sky][" + LanguageDialog.getDisplayName(locale) + "][white] "
+                            + player.name + "[white]: "
+                            + result.getTranslatedText();
+
+                    for (var p : ps) {
+                        if (p.id == player.id) {
+                            continue;
+                        }
+
+                        p.sendMessage(translatedChat + "\n");
+
+                        httpServer.fire(new ServerEvents.ChatEvent(Control.SERVER_ID, translatedChat));
+                    }
+                });
+            } catch (Exception e) {
+                Log.err("Failed to send chat event", e);
+            }
+        });
     }
 
     @Listener
