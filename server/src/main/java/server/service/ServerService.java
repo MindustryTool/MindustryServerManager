@@ -341,7 +341,7 @@ public class ServerService {
     }
 
     @PostConstruct
-    @Scheduled(fixedDelay = 5, timeUnit = TimeUnit.SECONDS)
+    @Scheduled(fixedDelay = 30, timeUnit = TimeUnit.SECONDS)
     private void autoConnectAndHostCron() {
         nodeManager.list()
                 .filter(state -> state.meta.isPresent())
