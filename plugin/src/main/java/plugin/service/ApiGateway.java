@@ -166,7 +166,7 @@ public class ApiGateway {
 
             translationCache.put(cacheKey, result);
 
-            Log.debug("Translate: [@] to [@], result [@]", text, targetLanguage, result);
+            Log.debug("Translate: <@> to <@>, result <@>", text, targetLanguage, result);
 
             return result;
         } catch (Exception e) {
@@ -238,7 +238,7 @@ public class ApiGateway {
 
                             translationCache.put(cacheKey, translated);
 
-                            Log.debug("Translate: [@] to [@], result [@]", text, targetLanguage, translated);
+                            Log.debug("Translate: <@> to <@>, result <@>", text, targetLanguage, translated);
 
                             future.complete(translated);
                         } catch (Exception e) {
