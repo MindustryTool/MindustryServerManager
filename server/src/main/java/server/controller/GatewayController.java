@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-import dto.ServerStateDto;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 import server.service.GatewayService;
@@ -24,8 +23,8 @@ public class GatewayController {
     private final GatewayService gatewayService;
 
     @GetMapping("servers/{id}/request-connection")
-    public Mono<ServerStateDto> getServers(@PathVariable("id") UUID id) {
-        return gatewayService.of(id).flatMap(gateway -> gateway.server().getState());
+    public Mono<Void> getServers(@PathVariable("id") UUID id) {
+        return gatewayService.of(id).flatMap(gateway -> gateway.server().isHosting().then());
     }
 
     @PostMapping("servers/{id}/login")
