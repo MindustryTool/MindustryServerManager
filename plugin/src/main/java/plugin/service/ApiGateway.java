@@ -23,7 +23,6 @@ import plugin.utils.JsonUtils;
 import plugin.utils.Utils;
 import plugin.Control;
 import plugin.type.PaginationRequest;
-import plugin.type.TranslationDto;
 import dto.LoginDto;
 import dto.LoginRequestDto;
 import dto.ServerDto;
@@ -51,8 +50,9 @@ public class ApiGateway {
 
     public void requestConnection() {
         Log.info("[green]Requesting connection to server manager");
-        
-        // HttpUtils.send(HttpUtils.get(GATEWAY_URL, "servers", SERVER_ID, "request-connection"), 5000, Void.class);
+
+        // HttpUtils.send(HttpUtils.get(GATEWAY_URL, "servers", SERVER_ID,
+        // "request-connection"), 5000, Void.class);
     }
 
     public int getTotalPlayer() {
@@ -107,7 +107,7 @@ public class ApiGateway {
         });
     }
 
-    public TranslationDto translateRaw(Locale targetLanguage, String text) {
+    public String translateRaw(Locale targetLanguage, String text) {
         var languageCode = targetLanguage.getLanguage();
 
         if (languageCode == null || languageCode.isEmpty()) {
@@ -116,17 +116,16 @@ public class ApiGateway {
 
         HashMap<String, Object> body = new HashMap<>();
 
-        body.put("q", text);
-        body.put("source", "auto");
+        body.put("content", text);
         body.put("target", languageCode);
 
         try {
 
             var result = HttpUtils
                     .send(HttpUtils
-                            .post("https://api.mindustry-tool.com/api/v4/libre")
+                            .post("https://api.mindustry-tool.com/api/v4/translations/translate")
                             .header("Content-Type", "application/json")//
-                            .content(JsonUtils.toJsonString(body)), 3000, TranslationDto.class);
+                            .content(JsonUtils.toJsonString(body)), 3000, String.class);
 
             return result;
         } catch (Exception e) {
@@ -157,9 +156,9 @@ public class ApiGateway {
         try {
             var result = translateRaw(targetLanguage, text);
 
-            translationCache.put(cacheKey, result.getTranslatedText());
+            translationCache.put(cacheKey, result);
 
-            return result.getTranslatedText();
+            return result;
         } catch (Exception e) {
             Log.warn(
                     "[" + targetLanguage.getLanguage() + "] Failed to translate text: " + text + " to " + targetLanguage
@@ -204,11 +203,10 @@ public class ApiGateway {
 
             HashMap<String, Object> body = new HashMap<>();
 
-            body.put("q", text);
-            body.put("source", "auto");
+            body.put("content", text);
             body.put("target", languageCode);
 
-            Http.post("https://api.mindustry-tool.com/api/v4/libre", JsonUtils.toJsonString(body))
+            Http.post("https://api.mindustry-tool.com/api/v4/translations/translate", JsonUtils.toJsonString(body))
                     .header("Content-Type", "application/json")//
                     .error(error -> {
                         if (error instanceof SocketTimeoutException) {
@@ -225,8 +223,7 @@ public class ApiGateway {
                     })
                     .submit(res -> {
                         try {
-                            var translated = JsonUtils.readJsonAsClass(res.getResultAsString(), TranslationDto.class)
-                                    .getTranslatedText();
+                            String translated = res.getResultAsString();
 
                             translationCache.put(cacheKey, translated);
                             future.complete(translated);

@@ -60,19 +60,15 @@ public class EventHandler {
             Tasks.io("Chat Event", () -> {
                 try {
                     Utils.forEachPlayerLocale((locale, players) -> {
-                        var result = apiGateway.translateRaw(locale, Strings.stripColors(message));
+                        String strippedMessage = Strings.stripColors(message);
+                        var result = apiGateway.translateRaw(locale, strippedMessage);
 
                         for (var p : players) {
                             if (p.id == player.id) {
                                 continue;
                             }
 
-                            if (result.getDetectedLanguage().getLanguage().equalsIgnoreCase(locale.getLanguage())) {
-                                p.sendMessage(coloredMessage, player);
-                            } else {
-                                p.sendMessage(coloredMessage + " [gray](" + result.getTranslatedText() + ")", player);
-                            }
-
+                            p.sendMessage(coloredMessage + " [gray](" + result + ")", player);
                         }
                     });
                 } catch (Exception e) {
