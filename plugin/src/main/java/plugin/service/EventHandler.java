@@ -52,6 +52,8 @@ public class EventHandler {
             String chat = Strings.format("[@] => @", player.plainName(), message);
             String coloredMessage = Strings.format("[@] => @", player.name(), message);
 
+            player.sendMessage(coloredMessage);
+
             httpServer.fire(new ServerEvents.ChatEvent(Control.SERVER_ID, chat));
 
             Tasks.io("Chat Event", () -> {
@@ -61,8 +63,10 @@ public class EventHandler {
 
                         for (var p : players) {
                             if (p.id == player.id) {
-                                p.sendMessage(coloredMessage, player);
-                            } else if (result.getDetectedLanguage().getLanguage().equalsIgnoreCase(locale.getLanguage())) {
+                                continue;
+                            }
+
+                            if (result.getDetectedLanguage().getLanguage().equalsIgnoreCase(locale.getLanguage())) {
                                 p.sendMessage(coloredMessage, player);
                             } else {
                                 p.sendMessage(coloredMessage + " [gray](" + result.getTranslatedText() + ")", player);
