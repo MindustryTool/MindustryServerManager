@@ -53,6 +53,7 @@ public class EventHandler {
             String coloredMessage = Strings.format("[@]:[white] @", player.name(), message);
 
             player.sendMessage(coloredMessage);
+            Log.info(coloredMessage);
 
             httpServer.fire(new ServerEvents.ChatEvent(Control.SERVER_ID, chat));
 
