@@ -125,7 +125,7 @@ public class ApiGateway {
                     .send(HttpUtils
                             .post("https://api.mindustry-tool.com/api/v4/translations/translate")
                             .header("Content-Type", "application/json")//
-                            .content(JsonUtils.toJsonString(body)), 3000, String.class);
+                            .content(JsonUtils.toJsonString(body)), 10000, String.class);
 
             return result;
         } catch (Exception e) {
@@ -208,6 +208,7 @@ public class ApiGateway {
 
             Http.post("https://api.mindustry-tool.com/api/v4/translations/translate", JsonUtils.toJsonString(body))
                     .header("Content-Type", "application/json")//
+                    .timeout(10000)
                     .error(error -> {
                         if (error instanceof SocketTimeoutException) {
                             future.completeExceptionally(
@@ -234,7 +235,7 @@ public class ApiGateway {
         }
 
         try {
-            CompletableFuture.allOf(result.toArray(new CompletableFuture[texts.size])).get(5, TimeUnit.SECONDS);
+            CompletableFuture.allOf(result.toArray(new CompletableFuture[texts.size])).get(10, TimeUnit.SECONDS);
 
             return Seq.with(result).map(r -> r.getNow("This should never happen"));
         } catch (Exception e) {
