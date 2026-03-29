@@ -49,8 +49,8 @@ public class EventHandler {
     @Init
     private void init() {
         Vars.netServer.admins.addChatFilter((player, message) -> {
-            String chat = Strings.format("[@] => @", player.plainName(), message);
-            String coloredMessage = Strings.format("[@] => @", player.name(), message);
+            String chat = Strings.format("[@]: @", player.plainName(), message);
+            String coloredMessage = Strings.format("[@]: @", player.name(), message);
 
             player.sendMessage(coloredMessage);
 
