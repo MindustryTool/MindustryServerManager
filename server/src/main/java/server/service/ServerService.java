@@ -348,7 +348,7 @@ public class ServerService {
                 .flatMap(state -> {
                     if (state.running()) {
                         return gatewayService.of(state.meta().get().getConfig().getId())
-                                .flatMap(gateway -> gateway.server().getState())
+                                .flatMap(gateway -> gateway.server().isHosting())
                                 .then();
                     }
 
