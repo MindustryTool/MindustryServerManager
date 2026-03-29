@@ -108,6 +108,10 @@ public class ApiGateway {
     }
 
     public String translateRaw(Locale targetLanguage, String text) {
+        if (text == null || text.isEmpty()) {
+            throw new IllegalArgumentException("Text is empty");
+        }
+
         var languageCode = targetLanguage.getLanguage();
 
         if (languageCode == null || languageCode.isEmpty()) {
@@ -135,6 +139,10 @@ public class ApiGateway {
     }
 
     public String translate(String text, Locale targetLanguage) {
+        if (text == null || text.isEmpty()) {
+            throw new IllegalArgumentException("Text is empty");
+        }
+
         var languageCode = targetLanguage.getLanguage();
 
         if (languageCode == null || languageCode.isEmpty()) {
@@ -179,7 +187,7 @@ public class ApiGateway {
 
         List<CompletableFuture<String>> result = new ArrayList<>();
 
-        for (var text : texts) {
+        for (var text : texts.select(t -> !t.isEmpty())) {
             var future = new CompletableFuture<String>();
 
             result.add(future);
