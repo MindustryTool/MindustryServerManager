@@ -144,7 +144,7 @@ public class HttpServer {
             eventListener = null;
         });
 
-        Log.info("[green]Client connected");
+        Log.info("[green]Connected to server manager");
 
         client.keepAlive();
 

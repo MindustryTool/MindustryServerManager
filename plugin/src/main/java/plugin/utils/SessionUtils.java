@@ -40,7 +40,19 @@ public class SessionUtils {
         int level = ExpUtils.levelFromTotalExp(exp);
         long excess = ExpUtils.excessExp(exp);
 
-        info.append("Player: ").append(player.name)
+        if (session.isAdmin()) {
+            info.append(Iconc.admin);
+        }
+
+        info.append("Player: ").append(player.name);
+
+        if (session.isLoggedIn()) {
+            info.append("(")
+                    .append(session.login.getName())
+                    .append(")");
+        }
+
+        info
                 .append("\n")
                 .append(LanguageDialog.getDisplayName(locale))
                 .append("[white]\n")
