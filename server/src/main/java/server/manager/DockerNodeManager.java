@@ -455,6 +455,10 @@ public class DockerNodeManager implements NodeManager {
                             return;
                         }
 
+                        if (containerId == null) {
+                            return;
+                        }
+
                         var containers = dockerClient.listContainersCmd()
                                 .withIdFilter(List.of(containerId))
                                 .exec();

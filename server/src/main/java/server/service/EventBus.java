@@ -8,12 +8,11 @@ import org.springframework.stereotype.Service;
 
 import arc.util.Log;
 import events.BaseEvent;
-import events.ServerEvents.LogEvent;
 
 @Service
 public class EventBus {
 
-    private final List<Consumer<BaseEvent>> consumers = new ArrayList<>(List.of(this::eventLogger));
+    private final List<Consumer<BaseEvent>> consumers = new ArrayList<>();
 
     public Runnable on(Consumer<BaseEvent> consumer) {
         consumers.add(consumer);
@@ -31,13 +30,5 @@ public class EventBus {
         }
 
         return event;
-    }
-
-    private void eventLogger(BaseEvent event) {
-        if (event instanceof LogEvent) {
-            return;
-        }
-
-        Log.info("[" + event.getServerId() + "] Event: " + event.getClass().getSimpleName());
     }
 }

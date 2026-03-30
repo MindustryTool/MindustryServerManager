@@ -41,7 +41,7 @@ public class RequestFilter implements WebFilter {
                     } else if (status.value() >= 400) {
                         log.warn(message);
                     } else {
-                        log.info(message);
+                        log.debug(message);
                     }
                 });
     }
