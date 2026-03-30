@@ -264,6 +264,7 @@ public class HubService {
         for (int i = 0; i < markers.size; i++) {
             markerArray[i] = markers.get(i);
         }
+        Log.info(markers);
         flagObjective.markers(markerArray);
         objectives.add(flagObjective);
 
