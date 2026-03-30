@@ -347,9 +347,7 @@ public class ServerService {
                 .filter(state -> state.meta.isPresent())
                 .flatMap(state -> {
                     if (state.running()) {
-                        return gatewayService.of(state.meta().get().getConfig().getId())
-                                .flatMap(gateway -> gateway.server().isHosting())
-                                .then();
+                        return gatewayService.of(state.meta().get().getConfig().getId()).then();
                     }
 
                     var config = state.meta().get().getConfig();

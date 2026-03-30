@@ -51,8 +51,11 @@ public class ApiGateway {
     public void requestConnection() {
         Log.info("[green]Requesting connection to server manager");
 
-        // HttpUtils.send(HttpUtils.get(GATEWAY_URL, "servers", SERVER_ID,
-        // "request-connection"), 5000, Void.class);
+        try {
+            HttpUtils.send(HttpUtils.get(GATEWAY_URL, "servers", SERVER_ID, "request-connection"), 15000, Void.class);
+        } catch (Exception e) {
+            Log.err("Failed to request connection to server manager", e);
+        }
     }
 
     public int getTotalPlayer() {

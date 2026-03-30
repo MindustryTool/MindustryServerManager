@@ -2,7 +2,6 @@ package server.controller;
 
 import java.util.UUID;
 
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -22,8 +21,8 @@ public class GatewayController {
 
     private final GatewayService gatewayService;
 
-    @GetMapping("servers/{id}/request-connection")
-    public Mono<Void> getServers(@PathVariable("id") UUID id) {
+    @PostMapping("servers/{id}/request-connection")
+    public Mono<Void> requestConnection(@PathVariable("id") UUID id) {
         return gatewayService.of(id).flatMap(gateway -> gateway.server().isHosting().then());
     }
 

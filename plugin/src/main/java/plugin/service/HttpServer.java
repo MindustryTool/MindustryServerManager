@@ -110,10 +110,6 @@ public class HttpServer {
 
         app.start(9999);
         Log.info("Http server started on port 9999");
-
-        if (!isConnected()) {
-            apiGateway.requestConnection();
-        }
     }
 
     @Schedule(delay = 5, fixedDelay = 1, unit = TimeUnit.SECONDS)
