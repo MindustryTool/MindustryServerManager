@@ -291,15 +291,13 @@ public class HubService {
         var description = server.getDescription();
 
         String message = (server.getIsOfficial() ? "[gold]" + Iconc.star + "[white] " : "") + newLine(name)
-                + "[white]\n" +
-                newLine(description) + "[white]\n\n" +
+                + "[white]\n" + newLine(description) + "[white]\n\n" +
                 "[#E3F2FD]Players: [white]" + server.getPlayers() + "\n" +
                 "[#BBDEFB]Map: [white]" + newLine(server.getMapName()) + "[white]\n" +
                 "[#90CAF9]Mode: [white]" + server.getModeIcon() + " " + server.getMode() + "[white]\n" +
                 "[#405AF9]Version: [white]" + server.getGameVersion() + "[white]\n" +
                 (mods.isEmpty() ? "" : "[#4FC3F7]Mods:[white] " + mods) + "[white]\n\n" +
-                (server.getStatus().isOnline() ? "[accent]" : "[sky]") + "@Tap to join server"
-                + "\n";
+                (server.getStatus().isOnline() ? "[accent]" : "[sky]") + "@Tap to join server";
 
         return new TextMarker(message, x, y);
     }
