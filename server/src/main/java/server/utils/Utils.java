@@ -22,6 +22,7 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClientRequestException;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -266,7 +267,13 @@ public class Utils {
                 })
                 .timeout(timeout)
                 .onErrorMap(TimeoutException.class,
-                        error -> new ApiError(HttpStatus.BAD_REQUEST, "Timeout error: " + message));
+                        error -> new ApiError(HttpStatus.BAD_REQUEST, "Timeout error: " + message))
+                .onErrorMap(WebClientResponseException.class, error -> {
+                    if (error.getStatusCode().is5xxServerError()) {
+                        Log.err(error);
+                    }
+                    return new ApiError(HttpStatus.valueOf(error.getStatusCode().value()), message, error);
+                });
     }
 
     public static <T> Flux<T> wrapError(Flux<T> publisher, Duration timeout, String message) {
@@ -280,7 +287,13 @@ public class Utils {
                 })
                 .timeout(timeout)
                 .onErrorMap(TimeoutException.class,
-                        error -> new ApiError(HttpStatus.BAD_REQUEST, "Timeout error: " + message));
+                        error -> new ApiError(HttpStatus.BAD_REQUEST, "Timeout error: " + message))
+                .onErrorMap(WebClientResponseException.class, error -> {
+                    if (error.getStatusCode().is5xxServerError()) {
+                        Log.err(error);
+                    }
+                    return new ApiError(HttpStatus.valueOf(error.getStatusCode().value()), message, error);
+                });
     }
 
     public static boolean handleStatus(HttpStatusCode status) {
