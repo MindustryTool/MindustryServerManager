@@ -251,7 +251,6 @@ public class HubService {
 
         MapObjectives objectives = new MapObjectives();
         FlagObjective flagObjective = new FlagObjective();
-        objectives.add(flagObjective);
 
         Seq<TextMarker> markers = new Seq<>();
 
@@ -261,8 +260,12 @@ public class HubService {
                 markers.add(marker);
             }
         }
-
-        flagObjective.markers(markers.toArray());
+        TextMarker[] markerArray = new TextMarker[markers.size];
+        for (int i = 0; i < markers.size; i++) {
+            markerArray[i] = markers.get(i);
+        }
+        flagObjective.markers(markerArray);
+        objectives.add(flagObjective);
 
         if (objectives.any()) {
             Call.setObjectives(objectives);
