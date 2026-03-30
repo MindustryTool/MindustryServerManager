@@ -21,7 +21,6 @@ import mindustry.game.EventType.TapEvent;
 import mindustry.game.EventType.WorldLoadEvent;
 import mindustry.game.MapObjectives;
 import mindustry.game.MapObjectives.FlagObjective;
-import mindustry.game.MapObjectives.MapObjective;
 import mindustry.game.MapObjectives.TextMarker;
 import mindustry.game.Team;
 import mindustry.gen.Call;
@@ -251,21 +250,30 @@ public class HubService {
         }
 
         MapObjectives objectives = new MapObjectives();
+        FlagObjective flagObjective = new FlagObjective();
+        objectives.add(flagObjective);
+
+        Seq<TextMarker> markers = new Seq<>();
 
         for (var core : serverCores) {
-            addServerMarker(objectives, core);
+            var marker = createServerMarker(core);
+            if (marker != null) {
+                markers.add(marker);
+            }
         }
+
+        flagObjective.markers(markers.toArray());
 
         if (objectives.any()) {
             Call.setObjectives(objectives);
         }
     }
 
-    private void addServerMarker(MapObjectives objectives, ServerCore core) {
+    private TextMarker createServerMarker(ServerCore core) {
         ServerDto server = core.getServer();
 
         if (server == null) {
-            return;
+            return null;
         }
 
         float x = core.getX();
@@ -289,16 +297,7 @@ public class HubService {
                 (server.getStatus().isOnline() ? "[accent]" : "[sky]") + "@Tap to join server"
                 + "\n";
 
-        TextMarker marker = new TextMarker(message, x, y);
-        marker.autoscale = false;
-        marker.world = true;
-        marker.minimap = false;
-        marker.fontSize = 1f;
-
-        MapObjective obj = new FlagObjective();
-
-        obj.markers(marker);
-        objectives.add(obj);
+        return new TextMarker(message, x, y);
     }
 
     public String newLine(String text) {
