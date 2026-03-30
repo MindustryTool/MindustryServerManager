@@ -26,7 +26,7 @@ public class Tasks {
                 Log.err("Failed to execute io task: " + name, e);
             } finally {
                 var elapsed = Time.millis() - startedAt;
-                if (elapsed > 3000) {
+                if (elapsed > 11000) {
                     Log.warn("IO task " + name + " took " + elapsed + "ms");
                 }
             }
