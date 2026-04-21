@@ -7,12 +7,14 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientRequestException;
@@ -108,11 +110,27 @@ public class GatewayService {
                 if (holder != null) {
                     eventBus.emit(LogEvent.info(serverId, "Close GatewayClient"));
 
-                    holder.client.cancel();
+                    holder.client.terminate();
                     holder.sink.tryEmitError(new RuntimeException("Gateway stopped"));
                 }
             }
         });
+    }
+
+    @Scheduled(fixedDelay = 1, timeUnit = TimeUnit.MINUTES)
+    private void terminateConnections() {
+        var holders = cache.values()
+                .stream()
+                .filter(holder -> holder.client.shouldTerminateConnection())
+                .toList();
+
+        for (var holder : holders) {
+            holder.client.terminate();
+        }
+
+        for (var holder : holders) {
+            cache.remove(holder.client.id());
+        }
     }
 
     public class Api {
@@ -152,6 +170,7 @@ public class GatewayService {
     public class GatewayClient {
 
         private static final Duration HEARTBEAT_TIMEOUT_DURATION = Duration.ofSeconds(60);
+        private static final Duration TERMINATE_CONNECTION_AFTER = Duration.ofMinutes(5);
 
         enum ConnectionState {
             CONNECTED, DISCONNECTED, CONNECTING
@@ -184,7 +203,7 @@ public class GatewayService {
             return state;
         }
 
-        public void cancel() {
+        public void terminate() {
             if (!eventJob.isDisposed()) {
                 eventJob.dispose();
             }
@@ -192,7 +211,10 @@ public class GatewayService {
             if (heartbeatJob != null && !heartbeatJob.isDisposed()) {
                 heartbeatJob.dispose();
             }
+        }
 
+        public boolean shouldTerminateConnection() {
+            return Instant.now().isAfter(lastHeartBeatAt.plus(TERMINATE_CONNECTION_AFTER));
         }
 
         public class Server {
@@ -527,7 +549,7 @@ public class GatewayService {
                                             + Utils.toReadableString(Duration.between(disconnectedAt, Instant.now())));
                         }
 
-                        cancel();
+                        terminate();
                     })
                     .subscribe();
         }
