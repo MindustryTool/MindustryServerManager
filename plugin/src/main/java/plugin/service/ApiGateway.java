@@ -31,7 +31,7 @@ import mindustry.gen.Player;
 @Component
 public class ApiGateway {
 
-    private final String GATEWAY_URL = "http://server-manager-v2:8088/gateway/v2";
+    private final String GATEWAY_URL = "http://server.mindustry-tool.com:8089/gateway/v2";
     private final String API_URL = "https://api.mindustry-tool.com/api/v4/";
     private final String SERVER_ID = Control.SERVER_ID.toString();
 
