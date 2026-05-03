@@ -94,13 +94,7 @@ public class DockerNodeManager implements NodeManager {
                         .withShowAll(true)//
                         .withLabelFilter(Map.of(Const.serverIdLabel, request.getId().toString()))//
                         .exec();
-
-                if (containers.size() == 1) {
-                    emitter.next(LogEvent.info(serverId, "Container exists, skip creating"));
-                    emitter.complete();
-                    return;
-                }
-
+                        
                 for (var container : containers) {
                     emitter.next(LogEvent.info(serverId, "Removing container " + container.getNames()[0]));
                     removeContainer(container.getId());
@@ -249,6 +243,7 @@ public class DockerNodeManager implements NodeManager {
                                         "max-file", "5"//
                 )))
                                 .withCapDrop(Capability.ALL)
+                                .withPidsLimit(64L)
                                 .withSecurityOpts(List.of("no-new-privileges"))
                                 .withReadonlyRootfs(true)
                                 .withRuntime("io.containerd.kata.v2")
