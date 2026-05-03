@@ -52,7 +52,7 @@ public class ApiGateway {
         Log.info("[green]Requesting connection to server manager");
 
         try {
-            HttpUtils.send(HttpUtils.post(GATEWAY_URL, "servers", SERVER_ID, "request-connection"), 5000, Void.class);
+            HttpUtils.send(HttpUtils.post(GATEWAY_URL, "servers", SERVER_ID, "request-connection"), 60_000, Void.class);
         } catch (Exception e) {
             Log.err("Failed to request connection to server manager", e);
         }

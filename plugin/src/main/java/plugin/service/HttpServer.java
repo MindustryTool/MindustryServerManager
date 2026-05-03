@@ -112,7 +112,7 @@ public class HttpServer {
         Log.info("Http server started on port 9999");
     }
 
-    @Schedule(delay = 5, fixedDelay = 1, unit = TimeUnit.SECONDS)
+    @Schedule(delay = 5, fixedDelay = 10, unit = TimeUnit.SECONDS)
     private void keepAlive() {
         if (!isConnected()) {
             apiGateway.requestConnection();
