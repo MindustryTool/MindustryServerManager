@@ -55,7 +55,6 @@ import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.async.ResultCallback;
 import com.github.dockerjava.api.exception.NotFoundException;
 import com.github.dockerjava.api.model.Bind;
-import com.github.dockerjava.api.model.Capability;
 import com.github.dockerjava.api.model.Container;
 import com.github.dockerjava.api.model.Event;
 import com.github.dockerjava.api.model.ExposedPort;
@@ -94,7 +93,7 @@ public class DockerNodeManager implements NodeManager {
                         .withShowAll(true)//
                         .withLabelFilter(Map.of(Const.serverIdLabel, request.getId().toString()))//
                         .exec();
-                        
+
                 for (var container : containers) {
                     emitter.next(LogEvent.info(serverId, "Removing container " + container.getNames()[0]));
                     removeContainer(container.getId());
@@ -242,10 +241,7 @@ public class DockerNodeManager implements NodeManager {
                                         "max-size", "100m",
                                         "max-file", "5"//
                 )))
-                                .withCapDrop(Capability.ALL)
                                 .withPidsLimit(64L)
-                                .withSecurityOpts(List.of("no-new-privileges"))
-                                .withReadonlyRootfs(true)
                                 .withRuntime("io.containerd.kata.v2")
                                 .withBinds(bind));
 
