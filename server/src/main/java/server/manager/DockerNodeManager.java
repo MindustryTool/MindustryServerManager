@@ -55,6 +55,7 @@ import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.async.ResultCallback;
 import com.github.dockerjava.api.exception.NotFoundException;
 import com.github.dockerjava.api.model.Bind;
+import com.github.dockerjava.api.model.Capability;
 import com.github.dockerjava.api.model.Container;
 import com.github.dockerjava.api.model.Event;
 import com.github.dockerjava.api.model.ExposedPort;
@@ -205,11 +206,24 @@ public class DockerNodeManager implements NodeManager {
                         "-XX:-ShrinkHeapInSteps",
                         "-XX:MaxRAMPercentage=60");
 
-                env.addAll(request.getEnv().entrySet().stream().map(v -> v.getKey() + "=" + v.getValue()).toList());
+                List<String> blacklist = List.of(
+                        "JAVA_TOOL_OPTIONS",
+                        "IS_HUB",
+                        "IS_OFFICIAL",
+                        "SERVER_ID",
+                        "PATH",
+                        "HOME");
+
+                for (var key : blacklist) {
+                    env.remove(key);
+                    env.remove(key.toLowerCase());
+                }
+
                 env.add("IS_HUB=" + request.getIsHub());
                 env.add("IS_OFFICIAL=" + request.getIsOfficial());
                 env.add("SERVER_ID=" + serverId);
                 env.add("JAVA_TOOL_OPTIONS=" + String.join(" ", args));
+                env.addAll(request.getEnv().entrySet().stream().map(v -> v.getKey() + "=" + v.getValue()).toList());
 
                 if (Const.IS_DEVELOPMENT) {
                     env.add("ENV=DEV");
@@ -230,11 +244,14 @@ public class DockerNodeManager implements NodeManager {
                                 .withRestartPolicy(request.getIsAutoTurnOff()//
                                         ? RestartPolicy.noRestart()
                                         : RestartPolicy.unlessStoppedRestart())
-                                .withAutoRemove(request.getIsAutoTurnOff())
                                 .withLogConfig(new LogConfig(LogConfig.LoggingType.JSON_FILE, Map.of(
                                         "max-size", "100m",
                                         "max-file", "5"//
                 )))
+                                .withCapDrop(Capability.ALL)
+                                .withSecurityOpts(List.of("no-new-privileges"))
+                                .withReadonlyRootfs(true)
+                                .withRuntime("io.containerd.kata.v2")
                                 .withBinds(bind));
 
                 var result = command.exec();

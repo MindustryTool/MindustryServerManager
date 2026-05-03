@@ -1,5 +1,7 @@
 package server.utils;
 
+import java.nio.file.Path;
+
 import org.springframework.http.HttpStatus;
 import arc.files.Fi;
 import arc.util.ArcRuntimeException;
@@ -22,7 +24,7 @@ public class FileUtils {
         String relative = path.replace(baseFile.absolutePath(), "");
         Fi newFile = baseFile.child(relative);
 
-        if (!newFile.absolutePath().contains(baseFile.absolutePath())) {
+        if (!Path.of(newFile.absolutePath()).normalize().startsWith(Path.of(baseFile.absolutePath()).normalize())) {
             throw new ApiError(HttpStatus.FORBIDDEN,
                     "Path is not in server folder: " + relative + ":" + newFile.absolutePath());
         }
