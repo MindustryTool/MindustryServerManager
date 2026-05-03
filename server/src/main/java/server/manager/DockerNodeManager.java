@@ -229,7 +229,6 @@ public class DockerNodeManager implements NodeManager {
                         .withEnv(env)
                         .withHostConfig(HostConfig.newHostConfig()//
                                 .withPortBindings(portBindings)//
-                                .withNetworkMode("mindustry-server")//
                                 // in bytes
                                 .withCpuPeriod(100000l)
                                 .withCpuQuota((long) ((request.getCpu() * 100000l)))
@@ -242,6 +241,7 @@ public class DockerNodeManager implements NodeManager {
                                         "max-file", "5"//
                 )))
                                 .withPidsLimit(64L)
+                                .withDns("8.8.8.8", "1.1.1.1")
                                 .withRuntime("io.containerd.kata.v2")
                                 .withBinds(bind));
 
