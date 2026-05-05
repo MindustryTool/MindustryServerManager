@@ -48,16 +48,6 @@ public class ApiGateway {
             .expireAfterWrite(Duration.ofMinutes(1))
             .build();
 
-    public void requestConnection() {
-        Log.info("[green]Requesting connection to server manager");
-
-        try {
-            HttpUtils.send(HttpUtils.post(GATEWAY_URL, "servers", SERVER_ID, "request-connection"), 60_000, Void.class);
-        } catch (Exception e) {
-            Log.err("Failed to request connection to server manager", e);
-        }
-    }
-
     public int getTotalPlayer() {
         try {
             return HttpUtils.send(HttpUtils.get(GATEWAY_URL, "total-player"), Integer.class);

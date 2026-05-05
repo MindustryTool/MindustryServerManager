@@ -3,13 +3,9 @@ package server.service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
-
-import org.springframework.stereotype.Service;
-
 import arc.util.Log;
 import events.BaseEvent;
 
-@Service
 public class EventBus {
 
     private final List<Consumer<BaseEvent>> consumers = new ArrayList<>();

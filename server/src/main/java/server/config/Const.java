@@ -1,15 +1,8 @@
 package server.config;
 
 import java.io.File;
-
-import org.modelmapper.ModelMapper;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.http.client.reactive.ReactorClientHttpConnector;
-import org.springframework.http.codec.ServerCodecConfigurer;
-import org.springframework.scheduling.annotation.EnableScheduling;
-import org.springframework.web.reactive.config.WebFluxConfigurer;
-import org.springframework.web.reactive.function.client.WebClient;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonFactoryBuilder;
@@ -19,13 +12,9 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import org.modelmapper.ModelMapper;
 
-import jakarta.annotation.PostConstruct;
-import reactor.netty.http.client.HttpClient;
-
-@Configuration
-@EnableScheduling
-public class Const implements WebFluxConfigurer {
+public class Const {
 
     public static final String ENV = System.getenv("ENV");
 
@@ -44,42 +33,34 @@ public class Const implements WebFluxConfigurer {
     public static final String MANAGER_VERSION = "0.0.1";
     public static final Long MAX_FILE_SIZE = 5000000l;
 
-    @PostConstruct
-    public void init() {
+    public static final ExecutorService executorService = Executors.newCachedThreadPool();
+
+    static {
         volumeFolder.mkdirs();
     }
 
-    @Override
-    public void configureHttpMessageCodecs(ServerCodecConfigurer configurer) {
-        configurer.defaultCodecs().maxInMemorySize(16 * 1024 * 1024);
+    private static final ModelMapper modelMapper = new ModelMapper();
+    private static final ObjectMapper objectMapper = createObjectMapper();
+
+    public static ModelMapper modelMapper() {
+        return modelMapper;
     }
 
-    @Bean
-    ModelMapper modelMapper() {
-        return new ModelMapper();
+    public static ObjectMapper getObjectMapper() {
+        return objectMapper;
     }
 
-    @Bean
-    public ObjectMapper getObjectMapper() {
+    private static ObjectMapper createObjectMapper() {
         JavaTimeModule module = new JavaTimeModule();
 
         return new ObjectMapper(new JsonFactoryBuilder()
-                .streamReadConstraints(StreamReadConstraints.builder().maxStringLength(Integer.MAX_VALUE).build())//
-                .configure(StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION, false).build())//
-                .configure(DeserializationFeature.FAIL_ON_UNRESOLVED_OBJECT_IDS, false)//
-                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)//
-                .configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true)//
-                .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, true)//
-                .setSerializationInclusion(JsonInclude.Include.NON_NULL)//
+                .streamReadConstraints(StreamReadConstraints.builder().maxStringLength(Integer.MAX_VALUE).build())
+                .configure(StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION, false).build())
+                .configure(DeserializationFeature.FAIL_ON_UNRESOLVED_OBJECT_IDS, false)
+                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+                .configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true)
+                .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, true)
+                .setSerializationInclusion(JsonInclude.Include.NON_NULL)
                 .registerModule(module);
     }
-
-    @Bean
-    WebClient webClient(WebClient.Builder builder) {
-        HttpClient httpClient = HttpClient.create()//
-                .followRedirect(true);
-
-        return builder.clientConnector(new ReactorClientHttpConnector(httpClient)).build();
-    }
-
 }

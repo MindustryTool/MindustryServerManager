@@ -1,6 +1,7 @@
 package plugin;
 
 import lombok.NoArgsConstructor;
+import mindustry.Vars;
 import plugin.annotations.Condition;
 import plugin.annotations.Configuration;
 
@@ -54,4 +55,8 @@ public class Cfg {
 
     public static final int COLOR_NAME_LEVEL = 10;
     public static final int GRIEF_REPORT_COOLDOWN = 60;
+
+    public static String webSocketAuthToken() {
+        return Vars.dataDirectory.child("WEBSOCKET.txt").readString();
+    }
 }

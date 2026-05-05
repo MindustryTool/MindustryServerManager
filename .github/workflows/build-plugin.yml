@@ -7,6 +7,9 @@ on:
       - 'dto/**'
       - 'build.gradle'
       - 'settings.gradle'
+    branches:
+      - 'main'
+
 
 
 jobs:
