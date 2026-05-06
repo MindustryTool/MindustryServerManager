@@ -125,7 +125,9 @@ public class HttpServer {
             buffer.clear();
 
             for (Object event : copy) {
-                webSocket.sendText(JsonUtils.toJsonString(event));
+                WsMessage<Object> message = WsMessage.create("event")
+                        .withPayload(event);
+                webSocket.sendText(JsonUtils.toJsonString(message));
             }
         }
 
@@ -213,6 +215,11 @@ public class HttpServer {
     }
 
     public void fire(Object event) {
+        fire(WsMessage.create("event")
+                .withPayload(event));
+    }
+
+    public void fire(WsMessage<?> event) {
         if (isConnected()) {
             webSocket.sendText(JsonUtils.toJsonString(event));
             lastSendEventAt = Instant.now();
@@ -244,8 +251,10 @@ public class HttpServer {
         try {
             ServerStateDto state = Utils.getState();
             ServerStateEvent event = new ServerStateEvent(Control.SERVER_ID, Arrays.asList(state));
+            WsMessage<?> message = WsMessage.create("event")
+                    .withPayload(event);
 
-            fire(event);
+            fire(message);
         } catch (Exception error) {
             Log.err("Failed to send state update", error);
         }
