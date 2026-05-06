@@ -64,7 +64,6 @@ public class ApiGateway {
         CompletableFuture<JsonNode> future = new CompletableFuture<>();
         pendingRequests.put(request.getId(), future);
 
-        future.orTimeout(10, TimeUnit.SECONDS);
         future.whenComplete((_res, _err) -> pendingRequests.remove(request.getId()));
 
         try {
