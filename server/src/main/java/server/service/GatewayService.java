@@ -56,7 +56,7 @@ public class GatewayService {
         this.eventBus = eventBus;
         this.envConfig = envConfig;
 
-        scheduler.scheduleAtFixedRate(() -> {
+        scheduler.scheduleWithFixedDelay(() -> {
             clients.values().removeIf(client -> {
                 if (client.shouldTerminate()) {
                     client.terminate();

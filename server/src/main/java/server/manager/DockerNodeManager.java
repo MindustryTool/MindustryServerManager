@@ -61,10 +61,6 @@ public class DockerNodeManager implements NodeManager {
 
     private static final Fi SERVER_FOLDER = new Fi(Const.volumeFolderPath).child("servers");
 
-    static {
-        SERVER_FOLDER.mkdirs();
-    }
-
     public DockerNodeManager(DockerClient dockerClient, EnvConfig envConfig, EventBus eventBus) {
         this.dockerClient = dockerClient;
         this.envConfig = envConfig;
@@ -515,6 +511,8 @@ public class DockerNodeManager implements NodeManager {
     }
 
     private void init() {
+        SERVER_FOLDER.mkdirs();
+
         final Set<String> ignoredEvents = Set.of("exec_create", "exec_start", "exec_die", "exec_detach");
 
         Const.executorService.execute(() -> {

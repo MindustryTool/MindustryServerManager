@@ -19,10 +19,6 @@ public class WsHandler {
     public void configure(WsConfig ws) {
         String securityKey = envConfig.serverConfig().securityKey();
 
-        if (securityKey == null) {
-            throw ApiError.forbidden("Security token is not set");
-        }
-
         ws.onConnect(handler -> {
             UUID serverId = parseServerJwt(handler.header("Authorization"), securityKey);
             gatewayService.of(serverId).setSocketContext(handler);
@@ -41,6 +37,10 @@ public class WsHandler {
     }
 
     public UUID parseServerJwt(String jwtToken, String securityKey) {
+        if (securityKey == null) {
+            throw ApiError.forbidden("Security token is not set");
+        }
+
         var claims = JWT.require(Algorithm.HMAC256(securityKey))
                 .withIssuer("MindustryTool")
                 .build()
@@ -51,6 +51,10 @@ public class WsHandler {
     }
 
     public String generateServerJwt(UUID serverId, String securityKey) {
+        if (securityKey == null) {
+            throw ApiError.forbidden("Security token is not set");
+        }
+
         return JWT.create()
                 .withSubject(serverId.toString())
                 .withIssuer("MindustryTool")

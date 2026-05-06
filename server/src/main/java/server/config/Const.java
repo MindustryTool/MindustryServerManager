@@ -24,7 +24,7 @@ public class Const {
     public static int DEFAULT_MINDUSTRY_SERVER_PORT = 6567;
     public static int MAXIMUM_MINDUSTRY_SERVER_PORT = 20000;
 
-    public static String volumeFolderPath = Const.IS_DEVELOPMENT ? "./data" : System.getenv("SERVER_MANAGER_DATA");
+    public static String volumeFolderPath = getVolumeFolderPath();
     public static String serverLabelName = "com.mindustry-tool.server.v2";
     public static String serverIdLabel = "com.mindustry-tool.server.id.v2";
     public static String API_URL = "https://api.mindustry-tool.com/api/v4/";
@@ -35,15 +35,21 @@ public class Const {
 
     public static final ExecutorService executorService = Executors.newCachedThreadPool();
 
-    static {
-        volumeFolder.mkdirs();
-    }
-
     private static final ModelMapper modelMapper = new ModelMapper();
     private static final ObjectMapper objectMapper = createObjectMapper();
 
     public static ModelMapper modelMapper() {
         return modelMapper;
+    }
+
+    public static String getVolumeFolderPath() {
+        String path = IS_DEVELOPMENT ? "./data" : System.getenv("SERVER_MANAGER_DATA");
+
+        if (path == null) {
+            path = "./data";
+        }
+
+        return path;
     }
 
     public static ObjectMapper getObjectMapper() {

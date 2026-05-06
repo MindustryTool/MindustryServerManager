@@ -1,5 +1,11 @@
 .git
+.github
+.idea
+.vscode
+*.iml
+**/.gradle
+**/build
+**/out
+**/target
 node_modules
-build
-.gradle
 *.log
