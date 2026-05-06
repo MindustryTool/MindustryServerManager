@@ -294,6 +294,10 @@ public class ServerMain {
             wsHandler.configure(ws);
         });
 
+        app.wsException(Exception.class, (e, ctx) -> {
+            Log.err("Error on WebSocket", e);
+        });
+
         Log.info("Server Manager started on port 8088");
     }
 }
