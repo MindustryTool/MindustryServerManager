@@ -20,6 +20,7 @@ import java.util.stream.Collectors;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.neovisionaries.ws.client.WebSocket;
 import com.neovisionaries.ws.client.WebSocketAdapter;
+import com.neovisionaries.ws.client.WebSocketException;
 import com.neovisionaries.ws.client.WebSocketFactory;
 import com.neovisionaries.ws.client.WebSocketFrame;
 import arc.Core;
@@ -136,6 +137,11 @@ public class HttpServer {
         @Override
         public void onDisconnected(WebSocket websocket, WebSocketFrame serverCloseFrame,
                 WebSocketFrame clientCloseFrame, boolean closedByServer) throws Exception {
+            reconnect();
+        }
+
+        @Override
+        public void onConnectError(WebSocket websocket, WebSocketException exception) throws Exception {
             reconnect();
         }
     }
