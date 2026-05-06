@@ -137,6 +137,11 @@ public class HttpServer {
         @Override
         public void onDisconnected(WebSocket websocket, WebSocketFrame serverCloseFrame,
                 WebSocketFrame clientCloseFrame, boolean closedByServer) throws Exception {
+            if (closedByServer) {
+                Log.info("[red]Server manager disconnected: " + serverCloseFrame);
+            } else {
+                Log.info("[red]Client disconnected: " + clientCloseFrame);
+            }
             reconnect();
         }
 
