@@ -181,10 +181,8 @@ public class GatewayService {
             if (handler != null) {
                 Object result = handler.getFn()
                         .apply(Utils.readJsonAsClass(json.get("payload"), handler.getClazz()));
-                if (result != null) {
-                    WsMessage<?> response = wsMessage.response(result);
-                    context.send(response);
-                }
+                WsMessage<?> response = wsMessage.response(result);
+                context.send(response);
             }
         }
 

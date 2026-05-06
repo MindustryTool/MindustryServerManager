@@ -189,10 +189,8 @@ public class HttpServer {
         if (handler != null) {
             Object result = handler.getFn()
                     .apply(JsonUtils.readJsonAsClass(json.get("payload"), handler.getClazz()));
-            if (result != null) {
-                WsMessage<?> response = wsMessage.response(result);
-                ws.sendText(JsonUtils.toJsonString(response));
-            }
+            WsMessage<?> response = wsMessage.response(result);
+            ws.sendText(JsonUtils.toJsonString(response));
         }
     }
 

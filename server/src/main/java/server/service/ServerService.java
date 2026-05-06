@@ -162,7 +162,6 @@ public class ServerService {
 
             try {
                 gatewayClient.server().sendCommand(preHostCommand).get(5, TimeUnit.SECONDS);
-                Log.info("Config done");
 
                 Log.info("Host server");
                 gatewayClient.server().host(request).get(15, TimeUnit.SECONDS);
