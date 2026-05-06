@@ -1,5 +1,6 @@
 package server.manager;
 
+import java.io.Closeable;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.Instant;
@@ -582,6 +583,11 @@ public class DockerNodeManager implements NodeManager {
         logCallbacks.computeIfAbsent(serverId, k -> {
             var callback = new ResultCallback.Adapter<Frame>() {
                 @Override
+                public void onStart(Closeable closeable) {
+                    Log.info("Log callback attached for server %s", serverId);
+                }
+
+                @Override
                 public void onNext(Frame frame) {
                     var message = new String(frame.getPayload());
                     if (!message.isBlank()) {
@@ -592,6 +598,7 @@ public class DockerNodeManager implements NodeManager {
                 @Override
                 public void onComplete() {
                     logCallbacks.remove(serverId);
+                    Log.info("Log callback removed for server %s", serverId);
                 }
             };
 
