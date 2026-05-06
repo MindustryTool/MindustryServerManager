@@ -6,6 +6,7 @@ import java.util.UUID;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 
+import arc.util.Log;
 import io.javalin.websocket.WsConfig;
 import lombok.RequiredArgsConstructor;
 import server.EnvConfig;
@@ -20,18 +21,31 @@ public class WsHandler {
         String securityKey = envConfig.serverConfig().securityKey();
 
         ws.onConnect(handler -> {
-            UUID serverId = parseServerJwt(handler.header("Authorization"), securityKey);
-            gatewayService.of(serverId).setSocketContext(handler);
+            try {
+                UUID serverId = parseServerJwt(handler.header("Authorization"), securityKey);
+                gatewayService.of(serverId).setSocketContext(handler);
+            } catch (Exception e) {
+                Log.err("Error on connect", e);
+                handler.closeSession();
+            }
         });
 
         ws.onMessage(handler -> {
-            UUID serverId = parseServerJwt(handler.header("Authorization"), securityKey);
-            gatewayService.of(serverId).onMessage(handler);
+            try {
+                UUID serverId = parseServerJwt(handler.header("Authorization"), securityKey);
+                gatewayService.of(serverId).onMessage(handler);
+            } catch (Exception e) {
+                Log.err("Error on message", e);
+            }
         });
 
         ws.onClose(handler -> {
-            UUID serverId = parseServerJwt(handler.header("Authorization"), securityKey);
-            gatewayService.of(serverId).setSocketContext(null);
+            try {
+                UUID serverId = parseServerJwt(handler.header("Authorization"), securityKey);
+                gatewayService.of(serverId).setSocketContext(null);
+            } catch (Exception e) {
+                Log.err("Error on close", e);
+            }
         });
 
     }
