@@ -36,12 +36,10 @@ import events.ServerEvents;
 @Component
 public class EventHandler {
 
-    private final HttpServer httpServer;
     private final ApiGateway apiGateway;
     private final SessionService sessionService;
 
-    public EventHandler(HttpServer httpServer, ApiGateway apiGateway, SessionService sessionService) {
-        this.httpServer = httpServer;
+    public EventHandler(ApiGateway apiGateway, SessionService sessionService) {
         this.apiGateway = apiGateway;
         this.sessionService = sessionService;
     }
@@ -55,7 +53,7 @@ public class EventHandler {
             player.sendMessage(coloredMessage);
             Log.info(coloredMessage);
 
-            httpServer.fire(new ServerEvents.ChatEvent(Control.SERVER_ID, chat));
+            apiGateway.fire(new ServerEvents.ChatEvent(Control.SERVER_ID, chat));
 
             Tasks.io("Chat Event", () -> {
                 try {
@@ -84,8 +82,8 @@ public class EventHandler {
     private void onPlayerBan(PlayerBanEvent event) {
         String message = Strings.format("[scarlet]Player @ has been banned", event.player.name);
 
-        httpServer.fire(ServerEvents.LogEvent.info(Control.SERVER_ID, message));
-        httpServer.fire(new ServerEvents.ChatEvent(Control.SERVER_ID, message));
+        apiGateway.fire(ServerEvents.LogEvent.info(Control.SERVER_ID, message));
+        apiGateway.fire(new ServerEvents.ChatEvent(Control.SERVER_ID, message));
     }
 
     @Listener
@@ -93,8 +91,8 @@ public class EventHandler {
         if (event.player.con != null && event.player.con.kicked) {
             String message = Strings.format("[scarlet]Player @ has been kicked", event.player.name);
 
-            httpServer.fire(ServerEvents.LogEvent.info(Control.SERVER_ID, message));
-            httpServer.fire(new ServerEvents.ChatEvent(Control.SERVER_ID, message));
+            apiGateway.fire(ServerEvents.LogEvent.info(Control.SERVER_ID, message));
+            apiGateway.fire(new ServerEvents.ChatEvent(Control.SERVER_ID, message));
         }
     }
 
@@ -166,7 +164,7 @@ public class EventHandler {
     private void onRemovedEvent(SessionRemovedEvent event) {
         try {
             var request = PlayerDto.from(event.session.player).setJoinedAt(event.session.joinedAt);
-            httpServer.fire(new ServerEvents.PlayerLeaveEvent(Control.SERVER_ID, request));
+            apiGateway.fire(new ServerEvents.PlayerLeaveEvent(Control.SERVER_ID, request));
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -178,7 +176,7 @@ public class EventHandler {
             String chat = Strings.format("@ leaved the server, current players: @", playerName,
                     Math.max(Groups.player.size() - 1, 0));
 
-            httpServer.fire(new ServerEvents.ChatEvent(Control.SERVER_ID, chat));
+            apiGateway.fire(new ServerEvents.ChatEvent(Control.SERVER_ID, chat));
 
             Log.info(chat);
         } catch (Exception e) {
@@ -196,13 +194,13 @@ public class EventHandler {
 
             var session = event.session;
 
-            httpServer.fire(new ServerEvents.PlayerJoinEvent(Control.SERVER_ID,
+            apiGateway.fire(new ServerEvents.PlayerJoinEvent(Control.SERVER_ID,
                     PlayerDto.from(session.player).setJoinedAt(Instant.now().toEpochMilli())));
 
             String playerName = session.player != null ? session.player.plainName() : "Unknown";
             String chat = Strings.format("@ joined the server, current players: @", playerName, Groups.player.size());
 
-            httpServer.fire(new ServerEvents.ChatEvent(Control.SERVER_ID, chat));
+            apiGateway.fire(new ServerEvents.ChatEvent(Control.SERVER_ID, chat));
 
             Tasks.io("Player Join", () -> {
                 var playerData = apiGateway.login(session.player);
