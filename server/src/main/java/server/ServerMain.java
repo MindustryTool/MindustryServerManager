@@ -7,6 +7,7 @@ import com.github.dockerjava.httpclient5.ApacheDockerHttpClient;
 import io.javalin.Javalin;
 import io.javalin.http.ContentType;
 import io.javalin.http.UploadedFile;
+import io.javalin.json.JavalinJackson;
 import server.manager.DockerNodeManager;
 import server.manager.NodeManager;
 import server.service.*;
@@ -22,6 +23,7 @@ import server.types.request.SendCommandBody;
 import events.BaseEvent;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import java.time.Duration;
@@ -47,17 +49,23 @@ public class ServerMain {
                 .connectionTimeout(Duration.ofSeconds(30))
                 .responseTimeout(Duration.ofSeconds(45))
                 .build();
+
         DockerClient dockerClient = DockerClientImpl.getInstance(dockerConfig, dockerHttpClient);
 
         NodeManager nodeManager = new DockerNodeManager(dockerClient, envConfig, eventBus);
         ApiService apiService = new ApiService();
         GatewayService gatewayService = new GatewayService(eventBus, envConfig);
         WsHandler wsHandler = new WsHandler(envConfig, gatewayService);
-        ServerService serverService = new ServerService(gatewayService, nodeManager, eventBus, apiService, wsHandler, envConfig);
+        ServerService serverService = new ServerService(gatewayService, nodeManager, eventBus, apiService, wsHandler,
+                envConfig);
 
         Javalin app = Javalin.create(config -> {
             config.showJavalinBanner = false;
             config.router.contextPath = "/";
+            config.jsonMapper(new JavalinJackson().updateMapper(mapper -> {
+                mapper
+                        .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+            }));
         }).start(8088);
 
         app.exception(ApiError.class, (e, ctx) -> {
