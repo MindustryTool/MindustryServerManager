@@ -68,7 +68,7 @@ public class ApiGateway {
 
         try {
             Log.info(request);
-            httpServer.fire(request);
+            httpServer.send(request);
         } catch (Exception e) {
             pendingRequests.remove(request.getId());
             future.completeExceptionally(e);

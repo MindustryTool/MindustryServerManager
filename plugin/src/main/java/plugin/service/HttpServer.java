@@ -53,6 +53,7 @@ import dto.ServerCommandDto;
 import dto.ServerStateDto;
 import dto.StartServerDto;
 import dto.WsMessage;
+import events.BaseEvent;
 import events.ServerEvents.ServerStateEvent;
 import plugin.utils.JsonUtils;
 import plugin.utils.Utils;
@@ -214,12 +215,12 @@ public class HttpServer {
         return webSocket != null && webSocket.isOpen();
     }
 
-    public void fire(Object event) {
-        fire(WsMessage.create("event")
+    public void fire(BaseEvent event) {
+        send(WsMessage.create("event")
                 .withPayload(event));
     }
 
-    public void fire(WsMessage<?> event) {
+    public void send(WsMessage<?> event) {
         if (isConnected()) {
             webSocket.sendText(JsonUtils.toJsonString(event));
             lastSendEventAt = Instant.now();
@@ -251,10 +252,8 @@ public class HttpServer {
         try {
             ServerStateDto state = Utils.getState();
             ServerStateEvent event = new ServerStateEvent(Control.SERVER_ID, Arrays.asList(state));
-            WsMessage<?> message = WsMessage.create("event")
-                    .withPayload(event);
-
-            fire(message);
+    
+            fire(event);
         } catch (Exception error) {
             Log.err("Failed to send state update", error);
         }
