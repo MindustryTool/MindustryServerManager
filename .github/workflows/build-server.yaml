@@ -8,6 +8,7 @@ on:
       - 'dto/**'
       - 'build.gradle'
       - 'settings.gradle'
+      - 'Dockerfile'
 
 jobs:
   build:
