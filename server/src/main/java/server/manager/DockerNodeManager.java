@@ -254,9 +254,13 @@ public class DockerNodeManager implements NodeManager {
     }
 
     private synchronized void removeContainer(String id) {
-        dockerClient.removeContainerCmd(id)
-                .withForce(true)
-                .exec();
+        try {
+            dockerClient.removeContainerCmd(id)
+                    .withForce(true)
+                    .exec();
+        } catch (Exception e) {
+            Log.err("Failed to remove container " + id, e);
+        }
     }
 
     private Optional<ServerMetadata> readMetadataFromContainer(Container container) {
@@ -588,7 +592,7 @@ public class DockerNodeManager implements NodeManager {
             var callback = new ResultCallback.Adapter<Frame>() {
                 @Override
                 public void onStart(Closeable closeable) {
-                    Log.info("Log callback attached for server %s", serverId);
+                    Log.info("Log callback attached for server @", serverId);
                 }
 
                 @Override
@@ -602,7 +606,7 @@ public class DockerNodeManager implements NodeManager {
                 @Override
                 public void onComplete() {
                     logCallbacks.remove(serverId);
-                    Log.info("Log callback removed for server %s", serverId);
+                    Log.info("Log callback removed for server @", serverId);
                 }
             };
 
