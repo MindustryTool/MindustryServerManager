@@ -53,6 +53,14 @@ tasks.register('fatJar', Jar) {
     archiveFileName.set('application.jar')
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 
+    exclude(
+            'META-INF/*.SF',
+            'META-INF/*.DSA',
+            'META-INF/*.RSA',
+            'META-INF/*.EC',
+            'META-INF/INDEX.LIST'
+    )
+
     manifest {
         attributes('Main-Class': application.mainClass.get())
     }
