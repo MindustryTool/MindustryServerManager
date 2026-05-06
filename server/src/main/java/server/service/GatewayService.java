@@ -69,11 +69,6 @@ public class GatewayService {
         }, 15, 15, TimeUnit.SECONDS);
     }
 
-    public boolean isHosting(UUID serverId) {
-        GatewayClient client = clients.get(serverId);
-        return client != null && client.server().isHosting().getNow(false);
-    }
-
     public GatewayClient of(UUID serverId) {
         return clients.computeIfAbsent(serverId, _ignore -> new GatewayClient(serverId));
     }

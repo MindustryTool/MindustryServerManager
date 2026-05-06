@@ -7,9 +7,11 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
 import arc.files.Fi;
@@ -135,28 +137,17 @@ public class ServerService {
 
             Log.info("Connecting to gateway...");
             GatewayClient gatewayClient = gatewayService.of(serverId);
-            var serverGateway = gatewayClient.server();
+
+            try {
+                gatewayClient.server().isHosting().get(10, TimeUnit.SECONDS);
+            } catch (InterruptedException | ExecutionException | TimeoutException e) {
+                throw new RuntimeException("Can not connect to gateway", e);
+            }
 
             Log.info("Waiting for server to start");
 
-            boolean isHosting = false;
-            for (int i = 0; i < 1200; i++) {
-                try {
-                    isHosting = serverGateway.isHosting().get(100, TimeUnit.MILLISECONDS);
-                    if (isHosting) {
-                        break;
-                    }
-                } catch (Exception e) {
-                    Log.err("Server not hosting, try again", e);
-                }
-            }
-
-            if (isHosting) {
-                Log.info("Server is hosting, do nothing");
-                return;
-            }
-
             String gamemode = request.getGamemode();
+
             if (gamemode == null || gamemode.isEmpty()) {
                 gamemode = request.getMode();
             }
@@ -170,15 +161,15 @@ public class ServerService {
             };
 
             try {
-                serverGateway.sendCommand(preHostCommand).get(5, TimeUnit.SECONDS);
+                gatewayClient.server().sendCommand(preHostCommand).get(5, TimeUnit.SECONDS);
                 Log.info("Config done");
 
                 Log.info("Host server");
-                serverGateway.host(request).get(15, TimeUnit.SECONDS);
+                gatewayClient.server().host(request).get(15, TimeUnit.SECONDS);
 
                 Log.info("Wait for server status");
                 for (int i = 0; i < 600; i++) {
-                    if (serverGateway.isHosting().get(100, TimeUnit.MILLISECONDS)) {
+                    if (gatewayClient.server().isHosting().get(100, TimeUnit.MILLISECONDS)) {
                         Log.info("Server hosting");
                         return;
                     }

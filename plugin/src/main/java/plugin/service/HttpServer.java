@@ -142,6 +142,7 @@ public class HttpServer {
 
         @Override
         public void onConnectError(WebSocket websocket, WebSocketException exception) throws Exception {
+            Log.err("Error connecting to server manager", exception);
             reconnect();
         }
     }
