@@ -246,10 +246,9 @@ public class DockerNodeManager implements NodeManager {
 
     @Override
     public void remove(UUID id, NodeRemoveReason reason) {
-
         var optional = findContainerByServerId(id);
         if (optional.isEmpty()) {
-            throw new ApiError(404, "Server not found");
+            return;
         }
 
         var container = optional.get();
