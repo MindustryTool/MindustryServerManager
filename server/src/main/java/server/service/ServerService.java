@@ -123,6 +123,7 @@ public class ServerService {
             nodeManager.deleteFile(serverId, "mods/loader.jar");
 
             Fi websocketFile = nodeManager.getFile(serverId, "WEBSOCKET.txt");
+
             if (!websocketFile.exists()) {
                 Log.info("Generate websocket file");
                 String jwt = wsHandler.generateServerJwt(serverId, envConfig.serverConfig().securityKey());
@@ -145,7 +146,8 @@ public class ServerService {
                     if (isHosting) {
                         break;
                     }
-                } catch (Exception ignored) {
+                } catch (Exception e) {
+                    Log.err("Server not hosting, try again", e);
                 }
             }
 
@@ -185,9 +187,6 @@ public class ServerService {
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
-
-        } catch (Exception e) {
-            Log.err(e);
         } finally {
             hostListeners.remove(serverId);
         }

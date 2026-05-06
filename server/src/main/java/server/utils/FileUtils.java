@@ -88,7 +88,7 @@ public class FileUtils {
 
     public static boolean deleteFile(Fi file) {
         if (!file.exists()) {
-            throw new ApiError(404, "File not exists: " + file.path());
+            return false;
         }
 
         if (file.isDirectory()) {
