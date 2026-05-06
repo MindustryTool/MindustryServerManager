@@ -180,6 +180,8 @@ public class GatewayService {
             if (context != null) {
                 context.closeSession();
             }
+
+            Log.info("[red]Client terminated: " + id);
         }
 
         @SuppressWarnings("unchecked")
