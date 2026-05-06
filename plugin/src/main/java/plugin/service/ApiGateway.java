@@ -646,7 +646,7 @@ public class ApiGateway {
                     .send(HttpUtils
                             .post("https://api.mindustry-tool.com/api/v4/translations/translate")
                             .header("Content-Type", "application/json")//
-                            .content(JsonUtils.toJsonString(body)), 2000, String.class);
+                            .content(JsonUtils.toJsonString(body)), 20000, String.class);
 
             return result;
         } catch (Exception e) {
