@@ -93,7 +93,6 @@ public class GatewayService {
 
         private volatile Instant lastHeartBeatAt = Instant.now();
         private CompletableFuture<Void> connectedFuture = new CompletableFuture<>();
-        private ConnectionState state = ConnectionState.CONNECTING;
 
         private final Map<UUID, CompletableFuture<JsonNode>> pendingRequests = new ConcurrentHashMap<>();
 
@@ -134,18 +133,16 @@ public class GatewayService {
             this.context = context;
 
             if (context == null) {
-                state = ConnectionState.DISCONNECTED;
                 eventBus.emit(new DisconnectEvent(id));
                 connectedFuture.completeExceptionally(
                         new RuntimeException("Disconnected"));
                 connectedFuture = new CompletableFuture<>();
-                Log.info("[red]Client disconnected: " + id);
+                Log.err("Client disconnected: " + id);
                 return;
             } else {
-                state = ConnectionState.CONNECTED;
                 eventBus.emit(new StartEvent(id));
                 connectedFuture.complete(null);
-                Log.info("[green]Client connected: " + id);
+                Log.info("Client connected: " + id);
             }
         }
 
@@ -154,9 +151,7 @@ public class GatewayService {
         }
 
         public void checkHeartbeat() {
-            if (state == ConnectionState.CONNECTED
-                    && Instant.now().isAfter(lastHeartBeatAt.plus(HEARTBEAT_TIMEOUT_DURATION))) {
-                state = ConnectionState.DISCONNECTED;
+            if (Instant.now().isAfter(lastHeartBeatAt.plus(HEARTBEAT_TIMEOUT_DURATION))) {
                 eventBus.emit(new DisconnectEvent(id));
                 eventBus.emit(LogEvent.error(id, "Heartbeat timeout"));
             }
@@ -262,9 +257,9 @@ public class GatewayService {
 
         public class Server {
             private <R> CompletableFuture<R> sendRequest(String type, Object payload, Class<R> clazz) {
-                if (state != ConnectionState.CONNECTED || context == null) {
+                if (context == null) {
                     try {
-                        connectedFuture.get(10, TimeUnit.SECONDS);
+                        connectedFuture.get(1, TimeUnit.MINUTES);
                     } catch (InterruptedException | ExecutionException | TimeoutException e) {
                         return CompletableFuture.failedFuture(new RuntimeException("Server gateway not connected", e));
                     }
@@ -275,7 +270,7 @@ public class GatewayService {
                 CompletableFuture<JsonNode> future = new CompletableFuture<>();
                 pendingRequests.put(request.getId(), future);
 
-                future.orTimeout(10, TimeUnit.SECONDS);
+                future.orTimeout(1, TimeUnit.MINUTES);
                 future.whenComplete((_res, _err) -> pendingRequests.remove(request.getId()));
 
                 try {

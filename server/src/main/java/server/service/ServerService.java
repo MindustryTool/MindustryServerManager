@@ -132,7 +132,7 @@ public class ServerService {
                 nodeManager.writeFile(serverId, "WEBSOCKET.txt", jwt.getBytes());
             }
 
-            Log.info("Server not hosting, create server");
+            Log.info("Server not exists, create server");
             nodeManager.create(request);
 
             Log.info("Connecting to gateway...");
