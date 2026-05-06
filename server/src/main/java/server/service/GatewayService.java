@@ -28,6 +28,7 @@ import arc.util.Log;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import dto.LoginDto;
+import dto.LoginRequestDto;
 import dto.PlayerInfoDto;
 import dto.ServerCommandDto;
 import dto.ServerConfig;
@@ -107,7 +108,7 @@ public class GatewayService {
             this.id = id;
 
             this.registerMessageHandler("get-total-player", Void.class, (_res) -> 0L);
-            this.registerMessageHandler("login", JsonNode.class, body -> backend.login(id, body));
+            this.registerMessageHandler("login", LoginRequestDto.class, body -> backend.login(id, body));
             this.registerMessageHandler("host", UUID.class, serverId -> backend.host(serverId));
             this.registerMessageHandler("event", JsonNode.class, event -> {
                 var name = event.get("name").asText(null);
@@ -239,10 +240,10 @@ public class GatewayService {
                 }
             }
 
-            public JsonNode login(UUID id, JsonNode payload) {
+            public LoginDto login(UUID id, LoginRequestDto payload) {
                 try {
                     HttpRequest request = createRequest("servers", id, "login")
-                            .method("POST", HttpRequest.BodyPublishers.ofString(payload.toString()))
+                            .method("POST", HttpRequest.BodyPublishers.ofString(Utils.toJsonString(payload)))
                             .build();
 
                     var result = httpClient.send(request, BodyHandlers.ofString());
@@ -251,7 +252,7 @@ public class GatewayService {
                         throw new ApiError(result.statusCode(), "Failed to login server: " + result.body());
                     }
 
-                    return Utils.readString(result.body());
+                    return Utils.readJsonAsClass(result.body(), LoginDto.class);
                 } catch (Exception e) {
                     if (e instanceof ApiError apiError) {
                         throw apiError;
