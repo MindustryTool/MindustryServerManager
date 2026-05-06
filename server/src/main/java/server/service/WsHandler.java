@@ -48,6 +48,10 @@ public class WsHandler {
             }
         });
 
+        ws.onError(handler -> {
+            Log.err("WebSocket error", handler.error());
+        });
+
     }
 
     public UUID parseServerJwt(String jwtToken, String securityKey) {
