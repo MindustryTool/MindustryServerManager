@@ -34,6 +34,8 @@ import dto.ServerConfig;
 import dto.ServerStateDto;
 import dto.WsMessage;
 import dto.MessageHandler;
+import events.BaseEvent;
+import events.ServerEvents;
 import events.ServerEvents.DisconnectEvent;
 import events.ServerEvents.LogEvent;
 import events.ServerEvents.StartEvent;
@@ -107,6 +109,25 @@ public class GatewayService {
             this.registerMessageHandler("get-total-player", Void.class, (_res) -> 0L);
             this.registerMessageHandler("login", JsonNode.class, body -> backend.login(id, body));
             this.registerMessageHandler("host", UUID.class, serverId -> backend.host(serverId));
+            this.registerMessageHandler("event", JsonNode.class, event -> {
+                var name = event.get("name").asText(null);
+
+                if (name == null) {
+                    Log.warn("Invalid event: " + event.asText());
+                    return null;
+                }
+
+                var eventType = ServerEvents.getEventMap().get(name);
+                if (eventType == null) {
+                    Log.warn("Invalid event name: " + name + " in " + ServerEvents.getEventMap().keySet());
+                    return null;
+                }
+
+                BaseEvent data = (BaseEvent) Utils.readJsonAsClass(event, eventType);
+                eventBus.emit(data);
+
+                return null;
+            });
         }
 
         public void setSocketContext(WsContext context) {
