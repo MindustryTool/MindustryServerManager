@@ -114,6 +114,8 @@ public class GatewayService {
             if (context == null) {
                 state = ConnectionState.DISCONNECTED;
                 eventBus.emit(new DisconnectEvent(id));
+                connectedFuture.completeExceptionally(
+                        new RuntimeException("Disconnected"));
                 connectedFuture = new CompletableFuture<>();
                 Log.info("[red]Client disconnected: " + id);
                 return;
