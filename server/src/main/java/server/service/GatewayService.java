@@ -288,7 +288,6 @@ public class GatewayService {
                 future.whenComplete((_res, _err) -> pendingRequests.remove(request.getId()));
 
                 try {
-                    Log.info("Request: @", request);
                     context.send(request);
                 } catch (Exception e) {
                     pendingRequests.remove(request.getId());
