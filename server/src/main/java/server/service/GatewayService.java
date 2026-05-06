@@ -167,8 +167,6 @@ public class GatewayService {
 
             lastHeartBeatAt = Instant.now();
 
-            Log.info(json);
-
             if (wsMessage.getResponseOf() != null) {
                 CompletableFuture<JsonNode> future = pendingRequests.remove(wsMessage.getResponseOf());
                 if (future == null) {

@@ -220,8 +220,6 @@ public class ApiGateway {
         JsonNode json = JsonUtils.readJson(message);
         WsMessage<?> wsMessage = JsonUtils.readJsonAsClass(message, WsMessage.class);
 
-        Log.info(json);
-
         if (wsMessage.getResponseOf() != null) {
             CompletableFuture<JsonNode> future = pendingRequests.remove(wsMessage.getResponseOf());
             if (future == null) {
