@@ -550,7 +550,6 @@ public class DockerNodeManager implements NodeManager {
                     }
 
                     if (containerId == null) {
-                        Log.warn("Docker event with null container id: @", event);
                         return;
                     }
 
