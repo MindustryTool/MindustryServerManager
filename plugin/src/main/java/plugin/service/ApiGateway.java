@@ -6,9 +6,15 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 
@@ -21,19 +27,21 @@ import plugin.annotations.Destroy;
 import plugin.utils.HttpUtils;
 import plugin.utils.JsonUtils;
 import plugin.utils.Utils;
-import plugin.Control;
 import plugin.type.PaginationRequest;
 import dto.LoginDto;
 import dto.LoginRequestDto;
 import dto.ServerDto;
+import dto.WsMessage;
+import lombok.RequiredArgsConstructor;
 import mindustry.gen.Player;
 
 @Component
+@RequiredArgsConstructor
 public class ApiGateway {
 
-    private final String GATEWAY_URL = "http://server.mindustry-tool.com:8089/gateway/v2";
     private final String API_URL = "https://api.mindustry-tool.com/api/v4/";
-    private final String SERVER_ID = Control.SERVER_ID.toString();
+
+    private final HttpServer httpServer;
 
     private Cache<PaginationRequest, List<ServerDto>> serverQueryCache = Caffeine.newBuilder()
             .expireAfterWrite(Duration.ofSeconds(15))
@@ -48,13 +56,29 @@ public class ApiGateway {
             .expireAfterWrite(Duration.ofMinutes(1))
             .build();
 
-    public int getTotalPlayer() {
+    private final Map<UUID, CompletableFuture<JsonNode>> pendingRequests = new ConcurrentHashMap<>();
+
+    public <R> CompletableFuture<R> sendRequest(String type, Object payload, Class<R> clazz) {
+        WsMessage<?> request = WsMessage.create(type).withPayload(payload);
+
+        CompletableFuture<JsonNode> future = new CompletableFuture<>();
+        pendingRequests.put(request.getId(), future);
+
+        future.orTimeout(10, TimeUnit.SECONDS);
+        future.whenComplete((_res, _err) -> pendingRequests.remove(request.getId()));
+
         try {
-            return HttpUtils.send(HttpUtils.get(GATEWAY_URL, "total-player"), Integer.class);
+            httpServer.fire(request);
         } catch (Exception e) {
-            e.printStackTrace();
-            return 0;
+            pendingRequests.remove(request.getId());
+            future.completeExceptionally(e);
         }
+
+        return future.thenApply(r -> JsonUtils.readJsonAsClass(r, clazz));
+    }
+
+    public CompletableFuture<Void> sendRequest(String type, Object payload) {
+        return sendRequest(type, payload, Void.class);
     }
 
     public LoginDto login(Player player) {
@@ -63,12 +87,11 @@ public class ApiGateway {
                 .setName(player.name())
                 .setIp(player.ip());
 
-        return HttpUtils
-                .send(HttpUtils
-                        .post(GATEWAY_URL, "servers", SERVER_ID, "login")
-                        .header("Content-Type", "application/json")//
-                        .content(JsonUtils.toJsonString(body)), 5000, LoginDto.class);
-
+        try {
+            return sendRequest("login", body, LoginDto.class).get(5, TimeUnit.SECONDS);
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            throw new RuntimeException("Login failed", e);
+        }
     }
 
     public String host(String targetServerId) {
@@ -77,8 +100,9 @@ public class ApiGateway {
         synchronized (lock) {
             Log.info("[sky]Hosting server: " + targetServerId);
             try {
-                return HttpUtils.send(HttpUtils.post(GATEWAY_URL, "servers", targetServerId, "host"), 90000,
-                        String.class);
+                return sendRequest("host", targetServerId, String.class).get(90, TimeUnit.SECONDS);
+            } catch (InterruptedException | ExecutionException | TimeoutException e) {
+                throw new RuntimeException("Host failed", e);
             } finally {
                 Utils.releaseHostingLock(targetServerId);
                 Log.info("[sky]Finish hosting server: " + targetServerId);

@@ -197,7 +197,7 @@ public class HttpServer {
     }
 
     @SuppressWarnings("unchecked")
-    public <Req, Res> void registerMessageHandler(String type, Class<Req> clazz, Function<Req, Res> handler) {
+    private <Req, Res> void registerMessageHandler(String type, Class<Req> clazz, Function<Req, Res> handler) {
         MessageHandler<Object, Object> mh = new MessageHandler<Object, Object>((Class<Object>) clazz,
                 (Function<Object, Object>) handler);
         messageHandlers.put(type, mh);
@@ -220,6 +220,7 @@ public class HttpServer {
             buffer.add(event);
             if (buffer.size() > 1000) {
                 buffer.remove(0);
+                Log.warn("Buffer overflow, dropped event: @", event);
             }
         }
     }
@@ -251,7 +252,7 @@ public class HttpServer {
     }
 
     @Destroy
-    public void destroy() {
+    private void destroy() {
         buffer.clear();
 
         if (webSocket != null) {
