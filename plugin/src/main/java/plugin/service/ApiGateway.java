@@ -67,6 +67,7 @@ public class ApiGateway {
         future.whenComplete((_res, _err) -> pendingRequests.remove(request.getId()));
 
         try {
+            Log.info(request);
             httpServer.fire(request);
         } catch (Exception e) {
             pendingRequests.remove(request.getId());
