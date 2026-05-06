@@ -236,17 +236,27 @@ public class ApiGateway {
                 Log.warn("No future found for responseOf: @", wsMessage.getResponseOf());
                 return;
             }
-            future.complete(json.get("payload"));
+            JsonNode payload = json.get("payload");
+            if (wsMessage.isError()) {
+                future.completeExceptionally(new RuntimeException(payload.toString()));
+            } else {
+                future.complete(payload);
+            }
             return;
         }
 
         MessageHandler<Object, Object> handler = messageHandlers.get(wsMessage.getType());
 
         if (handler != null) {
-            Object result = handler.getFn()
-                    .apply(JsonUtils.readJsonAsClass(json.get("payload"), handler.getClazz()));
-            WsMessage<?> response = wsMessage.response(result);
-            ws.sendText(JsonUtils.toJsonString(response));
+            try {
+                Object result = handler.getFn()
+                        .apply(JsonUtils.readJsonAsClass(json.get("payload"), handler.getClazz()));
+                WsMessage<?> response = wsMessage.response(result);
+                ws.sendText(JsonUtils.toJsonString(response));
+            } catch (Exception e) {
+                WsMessage<?> error = wsMessage.error(e.getMessage());
+                ws.sendText(JsonUtils.toJsonString(error));
+            }
         }
     }
 

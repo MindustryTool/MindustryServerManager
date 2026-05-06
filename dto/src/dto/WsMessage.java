@@ -12,6 +12,7 @@ public class WsMessage<T> {
     private String type;
     private T payload;
     private UUID responseOf;
+    private boolean isError = false;
 
     public static <TT> WsMessage<TT> create(String type) {
         WsMessage<TT> message = new WsMessage<>();
@@ -27,6 +28,16 @@ public class WsMessage<T> {
         response.setResponseOf(id);
         response.setPayload(payload);
         return response;
+    }
+
+    public WsMessage<?> error(Object payload) {
+        WsMessage<Object> error = new WsMessage<>();
+        error.setId(UUID.randomUUID());
+        error.setType(type);
+        error.setResponseOf(id);
+        error.setPayload(payload);
+        error.setError(true);
+        return error;
     }
 
     public WsMessage<T> withPayload(T payload) {

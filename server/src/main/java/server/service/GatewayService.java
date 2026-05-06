@@ -172,17 +172,27 @@ public class GatewayService {
                     Log.warn("No future found for responseOf: @", wsMessage.getResponseOf());
                     return;
                 }
-                future.complete(json.get("payload"));
+                JsonNode payload = json.get("payload");
+                if (wsMessage.isError()) {
+                    future.completeExceptionally(new RuntimeException(payload.toString()));
+                } else {
+                    future.complete(payload);
+                }
                 return;
             }
 
             MessageHandler<Object, Object> handler = messageHandlers.get(wsMessage.getType());
 
             if (handler != null) {
-                Object result = handler.getFn()
-                        .apply(Utils.readJsonAsClass(json.get("payload"), handler.getClazz()));
-                WsMessage<?> response = wsMessage.response(result);
-                context.send(response);
+                try {
+                    Object result = handler.getFn()
+                            .apply(Utils.readJsonAsClass(json.get("payload"), handler.getClazz()));
+                    WsMessage<?> response = wsMessage.response(result);
+                    context.send(response);
+                } catch (Exception e) {
+                    WsMessage<?> error = wsMessage.error(e.getMessage());
+                    context.send(error);
+                }
             }
         }
 
@@ -267,7 +277,8 @@ public class GatewayService {
                     try {
                         connectedFuture.get(1, TimeUnit.MINUTES);
                     } catch (InterruptedException | ExecutionException | TimeoutException e) {
-                        return CompletableFuture.failedFuture(new RuntimeException("Server gateway not connected: " + id, e));
+                        return CompletableFuture
+                                .failedFuture(new RuntimeException("Server gateway not connected: " + id, e));
                     }
                 }
 
