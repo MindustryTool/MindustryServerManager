@@ -11,7 +11,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -134,7 +133,8 @@ public class DockerNodeManager implements NodeManager {
                 var isSameId = config.getId().equals(request.getId());
 
                 if (isSamePort && !isSameId) {
-                    eventBus.emit(LogEvent.error(serverId, "Port exists at container " + server.getNames()[0] + " port: " + config.getPort()));
+                    eventBus.emit(LogEvent.error(serverId,
+                            "Port exists at container " + server.getNames()[0] + " port: " + config.getPort()));
                     return;
                 }
             }
@@ -245,22 +245,21 @@ public class DockerNodeManager implements NodeManager {
     }
 
     @Override
-    public CompletableFuture<Void> remove(UUID id, NodeRemoveReason reason) {
-        return CompletableFuture.runAsync(() -> {
-            var optional = findContainerByServerId(id);
-            if (optional.isEmpty()) {
-                throw new ApiError(404, "Server not found");
-            }
+    public void remove(UUID id, NodeRemoveReason reason) {
 
-            var container = optional.get();
-            if (container.getState().equalsIgnoreCase("running")) {
-                dockerClient.stopContainerCmd(container.getId()).exec();
-            }
+        var optional = findContainerByServerId(id);
+        if (optional.isEmpty()) {
+            throw new ApiError(404, "Server not found");
+        }
 
-            removeContainer(container.getId());
-            eventBus.emit(
-                    ServerEvents.LogEvent.error(id, "Removed: " + container.getNames()[0] + " for reason: " + reason));
-        });
+        var container = optional.get();
+        if (container.getState().equalsIgnoreCase("running")) {
+            dockerClient.stopContainerCmd(container.getId()).exec();
+        }
+
+        removeContainer(container.getId());
+        eventBus.emit(
+                ServerEvents.LogEvent.error(id, "Removed: " + container.getNames()[0] + " for reason: " + reason));
     }
 
     private synchronized void removeContainer(String id) {

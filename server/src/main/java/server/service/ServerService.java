@@ -107,13 +107,17 @@ public class ServerService {
         }
     }
 
-    public CompletableFuture<Void> remove(UUID serverId, NodeRemoveReason reason) {
+    public void remove(UUID serverId, NodeRemoveReason reason) {
         eventBus.emit(new ServerEvents.StopEvent(serverId, reason));
-        return nodeManager.remove(serverId, reason);
+        nodeManager.remove(serverId, reason);
     }
 
-    public CompletableFuture<Boolean> pause(UUID serverId) {
-        return gatewayService.of(serverId).server().pause();
+    public boolean pause(UUID serverId) {
+        try {
+            return gatewayService.of(serverId).server().pause().get(10, TimeUnit.SECONDS);
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            throw new RuntimeException("Can not pause server", e);
+        }
     }
 
     public void host(ServerConfig request) {

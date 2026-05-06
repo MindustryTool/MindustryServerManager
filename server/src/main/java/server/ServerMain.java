@@ -235,13 +235,13 @@ public class ServerMain {
 
         app.delete("/api/v2/servers/{id}/remove", ctx -> {
             UUID id = UUID.fromString(ctx.pathParam("id"));
-            serverService.remove(id, NodeRemoveReason.USER_REQUEST).get();
+            serverService.remove(id, NodeRemoveReason.USER_REQUEST);
             ctx.status(204);
         });
 
         app.post("/api/v2/servers/{id}/pause", ctx -> {
             UUID id = UUID.fromString(ctx.pathParam("id"));
-            ctx.json(serverService.pause(id).get());
+            ctx.json(serverService.pause(id));
         });
 
         app.get("/api/v2/servers/{id}/image", ctx -> {

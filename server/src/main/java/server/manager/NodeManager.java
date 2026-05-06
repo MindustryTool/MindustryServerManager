@@ -2,7 +2,6 @@ package server.manager;
 
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 import arc.files.Fi;
@@ -23,7 +22,7 @@ public interface NodeManager {
 
     List<ServerState> list();
 
-    CompletableFuture<Void> remove(UUID id, NodeRemoveReason reason);
+    void remove(UUID id, NodeRemoveReason reason);
 
     List<ServerMisMatch> getMismatch(
             UUID id, 
