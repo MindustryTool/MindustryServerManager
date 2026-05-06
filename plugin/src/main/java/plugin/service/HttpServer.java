@@ -167,10 +167,6 @@ public class HttpServer {
             JsonNode json = JsonUtils.readJson(message);
             WsMessage<?> wsMessage = JsonUtils.readJsonAsClass(message, WsMessage.class);
 
-            if (wsMessage.getType().equals("heartbeat")) {
-                return;
-            }
-
             Log.info(json);
 
             if (wsMessage.getResponseOf() != null) {
@@ -252,7 +248,7 @@ public class HttpServer {
         try {
             ServerStateDto state = Utils.getState();
             ServerStateEvent event = new ServerStateEvent(Control.SERVER_ID, Arrays.asList(state));
-    
+
             fire(event);
         } catch (Exception error) {
             Log.err("Failed to send state update", error);
