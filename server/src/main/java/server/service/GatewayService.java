@@ -84,10 +84,6 @@ public class GatewayService {
 
         private final HashMap<String, MessageHandler<Object, Object>> messageHandlers = new HashMap<>();
 
-        enum ConnectionState {
-            CONNECTED, DISCONNECTED, CONNECTING
-        }
-
         @Getter
         private final UUID id;
         private WsContext context;
@@ -140,12 +136,12 @@ public class GatewayService {
                 connectedFuture.completeExceptionally(
                         new RuntimeException("Disconnected"));
                 connectedFuture = new CompletableFuture<>();
-                Log.err("Client disconnected: " + id);
+                Log.err("Gateway client disconnected: " + id);
                 return;
             } else {
                 eventBus.emit(new StartEvent(id));
                 connectedFuture.complete(null);
-                Log.info("Client connected: " + id);
+                Log.info("Gateway client connected: " + id);
             }
         }
 

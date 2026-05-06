@@ -136,7 +136,12 @@ public class ServerMain {
             Consumer<BaseEvent> listener = event -> client.sendEvent(Utils.toJsonString(event));
             serverService.addEventListener(listener);
             client.keepAlive();
-            client.onClose(() -> serverService.removeEventListener(listener));
+            client.onClose(() -> {
+                serverService.removeEventListener(listener);
+                Log.info("Backend event stream disconnected");
+            });
+
+            Log.info("Backend event stream connected");
         });
 
         app.get("/api/v2/servers/{id}/files", ctx -> {
