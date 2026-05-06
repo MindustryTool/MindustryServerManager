@@ -253,6 +253,9 @@ public class GatewayService {
 
                     return Utils.readString(result.body());
                 } catch (Exception e) {
+                    if (e instanceof ApiError apiError) {
+                        throw apiError;
+                    }
                     throw new ApiError(500, "Internal server error", e);
                 }
             }
@@ -272,6 +275,9 @@ public class GatewayService {
 
                     return result.body();
                 } catch (Exception e) {
+                    if (e instanceof ApiError apiError) {
+                        throw apiError;
+                    }
                     throw new ApiError(500, "Internal server error", e);
                 }
             }
