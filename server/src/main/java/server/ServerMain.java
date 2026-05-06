@@ -248,6 +248,15 @@ public class ServerMain {
         app.get("/api/v2/mods", ctx -> ctx.json(serverService.getManagerMods()));
         app.get("/api/v2/maps", ctx -> ctx.json(serverService.getManagerMaps()));
 
+        app.get("/api/v2/servers/{id}/mods", ctx -> {
+            UUID id = UUID.fromString(ctx.pathParam("id"));
+            ctx.json(serverService.getMods(id));
+        });
+        app.get("/api/v2/servers/{id}/maps", ctx -> {
+            UUID id = UUID.fromString(ctx.pathParam("id"));
+            ctx.json(serverService.getMaps(id));
+        });
+
         app.get("/api/v2/servers/{id}/kicks", ctx -> {
             UUID id = UUID.fromString(ctx.pathParam("id"));
             ctx.future(() -> gatewayService.of(id).server().getKickedIps());
