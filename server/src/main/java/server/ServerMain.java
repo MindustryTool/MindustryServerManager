@@ -198,7 +198,8 @@ public class ServerMain {
         app.post("/api/v2/servers/{id}/commands", ctx -> {
             UUID id = UUID.fromString(ctx.pathParam("id"));
             SendCommandBody body = ctx.bodyAsClass(SendCommandBody.class);
-            ctx.json(gatewayService.of(id).server().sendCommand(body.getCommand()).get(10, TimeUnit.SECONDS));
+            gatewayService.of(id).server().sendCommand(body.getCommand()).get(10, TimeUnit.SECONDS);
+            ctx.result();
         });
 
         app.post("/api/v2/servers/{id}/host", ctx -> {
@@ -300,12 +301,14 @@ public class ServerMain {
             Boolean banned = ctx.queryParamAsClass("banned", Boolean.class).getOrDefault(null);
             String filter = ctx.queryParam("filter");
 
-            ctx.json(gatewayService.of(id).server().getPlayersInfo(page, size, banned, filter).get(10, TimeUnit.SECONDS));
+            ctx.json(gatewayService.of(id).server().getPlayersInfo(page, size, banned, filter).get(10,
+                    TimeUnit.SECONDS));
         });
 
         app.post("/api/v2/servers/{id}/chat", ctx -> {
             UUID id = UUID.fromString(ctx.pathParam("id"));
-            ctx.json(gatewayService.of(id).server().sendChat(ctx.bodyAsClass(JsonNode.class)));
+            gatewayService.of(id).server().sendChat(ctx.bodyAsClass(JsonNode.class));
+            ctx.result();
         });
 
         app.post("/api/v2/servers/{id}/mismatch", ctx -> {
