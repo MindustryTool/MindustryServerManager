@@ -134,7 +134,13 @@ public class HttpServer {
 
         @Override
         public void onTextMessage(WebSocket ws, String message) {
-            executor.execute(() -> handleMessage(ws, message));
+            executor.execute(() -> {
+                try {
+                    handleMessage(ws, message);
+                } catch (Exception e) {
+                    Log.err("Error processing message", e);
+                }
+            });
         }
 
         @Override
@@ -163,35 +169,30 @@ public class HttpServer {
     }
 
     private void handleMessage(WebSocket ws, String message) {
-        try {
-            JsonNode json = JsonUtils.readJson(message);
-            WsMessage<?> wsMessage = JsonUtils.readJsonAsClass(message, WsMessage.class);
+        JsonNode json = JsonUtils.readJson(message);
+        WsMessage<?> wsMessage = JsonUtils.readJsonAsClass(message, WsMessage.class);
 
-            Log.info(json);
+        Log.info(json);
 
-            if (wsMessage.getResponseOf() != null) {
-                CompletableFuture<JsonNode> future = pendingRequests.remove(wsMessage.getResponseOf());
-                if (future == null) {
-                    Log.warn("No future found for responseOf: @", wsMessage.getResponseOf());
-                    return;
-                }
-                future.complete(json.get("payload"));
+        if (wsMessage.getResponseOf() != null) {
+            CompletableFuture<JsonNode> future = pendingRequests.remove(wsMessage.getResponseOf());
+            if (future == null) {
+                Log.warn("No future found for responseOf: @", wsMessage.getResponseOf());
                 return;
             }
+            future.complete(json.get("payload"));
+            return;
+        }
 
-            MessageHandler<Object, Object> handler = messageHandlers.get(wsMessage.getType());
+        MessageHandler<Object, Object> handler = messageHandlers.get(wsMessage.getType());
 
-            if (handler != null) {
-                Object result = handler.getFn()
-                        .apply(JsonUtils.readJsonAsClass(json.get("payload"), handler.getClazz()));
-                if (result != null) {
-                    WsMessage<?> response = wsMessage.response(result);
-                    ws.sendText(JsonUtils.toJsonString(response));
-                }
+        if (handler != null) {
+            Object result = handler.getFn()
+                    .apply(JsonUtils.readJsonAsClass(json.get("payload"), handler.getClazz()));
+            if (result != null) {
+                WsMessage<?> response = wsMessage.response(result);
+                ws.sendText(JsonUtils.toJsonString(response));
             }
-
-        } catch (Exception e) {
-            Log.err("Error processing message", e);
         }
     }
 
