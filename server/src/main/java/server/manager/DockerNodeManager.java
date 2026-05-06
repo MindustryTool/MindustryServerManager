@@ -13,6 +13,9 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import arc.files.Fi;
@@ -61,11 +64,13 @@ public class DockerNodeManager implements NodeManager {
     private final Map<UUID, ResultCallback.Adapter<Frame>> logCallbacks = new ConcurrentHashMap<>();
 
     private static final Fi SERVER_FOLDER = new Fi(Const.volumeFolderPath).child("servers");
+    private static final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
     public DockerNodeManager(DockerClient dockerClient, EnvConfig envConfig, EventBus eventBus) {
         this.dockerClient = dockerClient;
         this.envConfig = envConfig;
         this.eventBus = eventBus;
+
         init();
     }
 
@@ -78,7 +83,7 @@ public class DockerNodeManager implements NodeManager {
                     .withLabelFilter(Map.of(Const.serverIdLabel, request.getId().toString()))
                     .exec();
 
-            if (containers.size() == 1){
+            if (containers.size() == 1) {
                 Log.info("Container exists, skip creation");
                 return;
             }
@@ -527,9 +532,8 @@ public class DockerNodeManager implements NodeManager {
 
         final Set<String> ignoredEvents = Set.of("exec_create", "exec_start", "exec_die", "exec_detach");
 
-        Log.info("Listen to docker event");
-
         Const.executorService.execute(() -> {
+            Log.info("Listen to docker event");
             dockerClient.eventsCmd().exec(new ResultCallback.Adapter<Event>() {
                 @Override
                 public void onNext(Event event) {
@@ -589,6 +593,20 @@ public class DockerNodeManager implements NodeManager {
                 }
             });
         });
+
+        scheduler.scheduleWithFixedDelay(() -> {
+            var containers = dockerClient.listContainersCmd()
+                    .exec();
+
+            for (var container : containers) {
+                var optional = readMetadataFromContainer(container);
+                if (optional.isPresent()) {
+                    var serverId = optional.get().getConfig().getId();
+                    attachLogCallback(container.getId(), serverId);
+                }
+            }
+
+        }, 1, 1, TimeUnit.MINUTES);
     }
 
     private synchronized void attachLogCallback(String containerId, UUID serverId) {
