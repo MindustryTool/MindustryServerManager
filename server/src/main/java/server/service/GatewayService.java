@@ -166,6 +166,7 @@ public class GatewayService {
 
         public void onMessage(WsMessageContext context) {
             JsonNode json = context.messageAsClass(JsonNode.class);
+            JsonNode payload = json.get("payload");
             WsMessage<?> wsMessage = context.messageAsClass(WsMessage.class);
 
             lastHeartBeatAt = Instant.now();
@@ -176,7 +177,6 @@ public class GatewayService {
                     Log.warn("No future found for responseOf: @", wsMessage.getResponseOf());
                     return;
                 }
-                JsonNode payload = json.get("payload");
                 if (wsMessage.isError()) {
                     future.completeExceptionally(new RuntimeException(payload.toString()));
                 } else {
@@ -189,8 +189,8 @@ public class GatewayService {
 
             if (handler != null) {
                 try {
-                    Object result = handler.getFn()
-                            .apply(Utils.readJsonAsClass(json.get("payload"), handler.getClazz()));
+                    Object param = Utils.readJsonAsClass(payload, handler.getClazz());
+                    Object result = handler.getFn().apply(param);
                     WsMessage<?> response = wsMessage.response(result);
                     context.send(response);
                 } catch (Exception e) {
@@ -242,6 +242,7 @@ public class GatewayService {
 
             public LoginDto login(UUID id, LoginRequestDto payload) {
                 try {
+                    Log.info("Login request: " + payload);
                     HttpRequest request = createRequest("servers", id, "login")
                             .method("POST", HttpRequest.BodyPublishers.ofString(Utils.toJsonString(payload)))
                             .build();

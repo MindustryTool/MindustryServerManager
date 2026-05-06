@@ -220,6 +220,7 @@ public class ApiGateway {
 
     private void handleMessage(WebSocket ws, String message) {
         JsonNode json = JsonUtils.readJson(message);
+        JsonNode payload = json.get("payload");
         WsMessage<?> wsMessage = JsonUtils.readJsonAsClass(message, WsMessage.class);
 
         if (wsMessage.getResponseOf() != null) {
@@ -228,7 +229,6 @@ public class ApiGateway {
                 Log.warn("No future found for responseOf: @", wsMessage.getResponseOf());
                 return;
             }
-            JsonNode payload = json.get("payload");
             if (wsMessage.isError()) {
                 future.completeExceptionally(new RuntimeException(payload.toString()));
             } else {
@@ -241,8 +241,8 @@ public class ApiGateway {
 
         if (handler != null) {
             try {
-                Object result = handler.getFn()
-                        .apply(JsonUtils.readJsonAsClass(json.get("payload"), handler.getClazz()));
+                Object param = JsonUtils.readJsonAsClass(payload, handler.getClazz());
+                Object result = handler.getFn().apply(param);
                 WsMessage<?> response = wsMessage.response(result);
                 ws.sendText(JsonUtils.toJsonString(response));
             } catch (Exception e) {
