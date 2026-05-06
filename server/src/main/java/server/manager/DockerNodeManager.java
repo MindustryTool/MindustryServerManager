@@ -78,6 +78,11 @@ public class DockerNodeManager implements NodeManager {
                     .withLabelFilter(Map.of(Const.serverIdLabel, request.getId().toString()))
                     .exec();
 
+            if (containers.size() == 1){
+                Log.info("Container exists, skip creation");
+                return;
+            }
+
             for (var container : containers) {
                 Log.info("Removing container " + container.getNames()[0]);
                 removeContainer(container.getId());
