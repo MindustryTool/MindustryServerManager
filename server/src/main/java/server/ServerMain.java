@@ -53,7 +53,7 @@ public class ServerMain {
         DockerClient dockerClient = DockerClientImpl.getInstance(dockerConfig, dockerHttpClient);
 
         NodeManager nodeManager = new DockerNodeManager(dockerClient, envConfig, eventBus);
-        ApiService apiService = new ApiService();
+        ApiService apiService = new ApiService(envConfig);
         GatewayService gatewayService = new GatewayService(eventBus, envConfig, nodeManager);
         WsHandler wsHandler = new WsHandler(envConfig, gatewayService);
         ServerService serverService = new ServerService(gatewayService, nodeManager, eventBus, apiService, wsHandler,
@@ -66,7 +66,7 @@ public class ServerMain {
                 mapper
                         .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
             }));
-        }).start(8088);
+        });
 
         app.exception(ApiError.class, (e, ctx) -> {
             ctx.status(e.status);
@@ -303,6 +303,9 @@ public class ServerMain {
             Log.err("Error on WebSocket", e);
         });
 
+        app.start(8088);
         Log.info("Server Manager started on port 8088");
+
+        apiService.requestBackendConnection();
     }
 }
