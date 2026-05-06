@@ -610,7 +610,7 @@ public class DockerNodeManager implements NodeManager {
                 }
             }
 
-        }, 1, 1, TimeUnit.MINUTES);
+        }, 0, 1, TimeUnit.MINUTES);
     }
 
     private synchronized void attachLogCallback(String containerId, UUID serverId) {

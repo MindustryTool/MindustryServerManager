@@ -30,6 +30,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.io.IOException;
 import java.net.URLDecoder;
@@ -190,13 +191,14 @@ public class ServerMain {
 
         app.get("/api/v2/servers/{id}/commands", ctx -> {
             UUID id = UUID.fromString(ctx.pathParam("id"));
-            ctx.future(() -> gatewayService.of(id).server().getCommands());
+            var commands = gatewayService.of(id).server().getCommands().get(10, TimeUnit.SECONDS);
+            ctx.json(commands);
         });
 
         app.post("/api/v2/servers/{id}/commands", ctx -> {
             UUID id = UUID.fromString(ctx.pathParam("id"));
             SendCommandBody body = ctx.bodyAsClass(SendCommandBody.class);
-            ctx.future(() -> gatewayService.of(id).server().sendCommand(body.getCommand()));
+            ctx.json(gatewayService.of(id).server().sendCommand(body.getCommand()).get(10, TimeUnit.SECONDS));
         });
 
         app.post("/api/v2/servers/{id}/host", ctx -> {
@@ -281,12 +283,12 @@ public class ServerMain {
 
         app.get("/api/v2/servers/{id}/kicks", ctx -> {
             UUID id = UUID.fromString(ctx.pathParam("id"));
-            ctx.future(() -> gatewayService.of(id).server().getKickedIps());
+            ctx.json(gatewayService.of(id).server().getKickedIps().get(10, TimeUnit.SECONDS));
         });
 
         app.get("/api/v2/servers/{id}/json", ctx -> {
             UUID id = UUID.fromString(ctx.pathParam("id"));
-            ctx.future(() -> gatewayService.of(id).server().getJson());
+            ctx.json(gatewayService.of(id).server().getJson().get(10, TimeUnit.SECONDS));
         });
 
         app.get("/api/v2/servers/{id}/player-infos", ctx -> {
@@ -298,12 +300,12 @@ public class ServerMain {
             Boolean banned = ctx.queryParamAsClass("banned", Boolean.class).getOrDefault(null);
             String filter = ctx.queryParam("filter");
 
-            ctx.future(() -> gatewayService.of(id).server().getPlayersInfo(page, size, banned, filter));
+            ctx.json(gatewayService.of(id).server().getPlayersInfo(page, size, banned, filter).get(10, TimeUnit.SECONDS));
         });
 
         app.post("/api/v2/servers/{id}/chat", ctx -> {
             UUID id = UUID.fromString(ctx.pathParam("id"));
-            ctx.future(() -> gatewayService.of(id).server().sendChat(ctx.bodyAsClass(JsonNode.class)));
+            ctx.json(gatewayService.of(id).server().sendChat(ctx.bodyAsClass(JsonNode.class)));
         });
 
         app.post("/api/v2/servers/{id}/mismatch", ctx -> {
