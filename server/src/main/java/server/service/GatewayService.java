@@ -37,6 +37,7 @@ import dto.MessageHandler;
 import events.ServerEvents.DisconnectEvent;
 import events.ServerEvents.LogEvent;
 import events.ServerEvents.StartEvent;
+import io.javalin.websocket.WsCloseStatus;
 import io.javalin.websocket.WsContext;
 import io.javalin.websocket.WsMessageContext;
 import server.EnvConfig;
@@ -145,10 +146,7 @@ public class GatewayService {
                 JsonNode json = context.messageAsClass(JsonNode.class);
                 WsMessage<?> wsMessage = context.messageAsClass(WsMessage.class);
 
-                if (wsMessage.getType().equals("heartbeat")) {
-                    lastHeartBeatAt = Instant.now();
-                    return;
-                }
+                lastHeartBeatAt = Instant.now();
 
                 Log.info(json);
 
@@ -180,7 +178,7 @@ public class GatewayService {
 
         public void terminate() {
             if (context != null) {
-                context.closeSession();
+                context.closeSession(WsCloseStatus.NORMAL_CLOSURE, "Closed due to inactivity");
             }
 
             Log.info("[red]Client terminated: " + id);
