@@ -10,6 +10,7 @@ import arc.util.Log;
 import io.javalin.websocket.WsConfig;
 import lombok.RequiredArgsConstructor;
 import server.EnvConfig;
+import server.config.Const;
 import server.utils.ApiError;
 
 @RequiredArgsConstructor
@@ -31,12 +32,14 @@ public class WsHandler {
         });
 
         ws.onMessage(handler -> {
-            try {
-                UUID serverId = parseServerJwt(handler.header("Authorization"), securityKey);
-                gatewayService.of(serverId).onMessage(handler);
-            } catch (Exception e) {
-                Log.err("Error on message", e);
-            }
+            Const.executorService.execute(() -> {
+                try {
+                    UUID serverId = parseServerJwt(handler.header("Authorization"), securityKey);
+                    gatewayService.of(serverId).onMessage(handler);
+                } catch (Exception e) {
+                    Log.err("Error on message", e);
+                }
+            });
         });
 
         ws.onClose(handler -> {
@@ -51,7 +54,6 @@ public class WsHandler {
         ws.onError(handler -> {
             Log.err("WebSocket error", handler.error());
         });
-
     }
 
     public UUID parseServerJwt(String jwtToken, String securityKey) {
