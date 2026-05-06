@@ -126,6 +126,8 @@ public class GatewayService {
                 BaseEvent data = (BaseEvent) Utils.readJsonAsClass(event, eventType);
                 eventBus.emit(data);
 
+                Log.info("Client event: " + data);
+
                 return null;
             });
         }
