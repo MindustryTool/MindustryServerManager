@@ -240,14 +240,13 @@ public class GatewayService {
                 }
             }
 
-            public LoginDto login(UUID id, LoginRequestDto payload) {
+            public LoginDto login(UUID id, LoginRequestDto body) {
                 try {
-                    Log.info("Login request: " + payload);
                     HttpRequest request = createRequest("servers", id, "login")
-                            .method("POST", HttpRequest.BodyPublishers.ofString(Utils.toJsonString(payload)))
+                            .POST(HttpRequest.BodyPublishers.ofString(Utils.toJsonString(body)))
                             .build();
 
-                    var result = httpClient.send(request, BodyHandlers.ofString());
+                    HttpResponse<String> result = httpClient.send(request, BodyHandlers.ofString());
 
                     if (result.statusCode() >= 400) {
                         throw new ApiError(result.statusCode(), "Failed to login server: " + result.body());
@@ -265,7 +264,7 @@ public class GatewayService {
             public String host(UUID id) {
                 try {
                     HttpRequest request = createRequest("servers", id, "host-server")
-                            .method("POST", HttpRequest.BodyPublishers.noBody())
+                            .POST(HttpRequest.BodyPublishers.noBody())
                             .timeout(Duration.ofMinutes(2))
                             .build();
 
