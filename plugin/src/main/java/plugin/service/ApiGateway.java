@@ -96,6 +96,8 @@ public class ApiGateway {
     private Instant lastSendEventAt = Instant.now();
     private WebSocket webSocket;
 
+    private static boolean disableTranslation = true;
+
     private Cache<PaginationRequest, List<ServerDto>> serverQueryCache = Caffeine.newBuilder()
             .expireAfterWrite(Duration.ofSeconds(15))
             .maximumSize(10)
@@ -623,6 +625,10 @@ public class ApiGateway {
     }
 
     public String translateRaw(Locale targetLanguage, String text) {
+        if (disableTranslation) {
+            return text;
+        }
+
         if (text == null || text.isEmpty()) {
             throw new IllegalArgumentException("Text is empty");
         }
@@ -654,6 +660,10 @@ public class ApiGateway {
     }
 
     public String translate(String text, Locale targetLanguage) {
+        if (disableTranslation) {
+            return text;
+        }
+
         if (text == null || text.isEmpty()) {
             throw new IllegalArgumentException("Text is empty");
         }
@@ -692,6 +702,10 @@ public class ApiGateway {
     }
 
     public Seq<String> translate(Seq<String> texts, Locale targetLanguage) {
+        if (disableTranslation) {
+            return texts;
+        }
+
         var languageCode = targetLanguage.getLanguage();
 
         if (languageCode == null || languageCode.isEmpty()) {
