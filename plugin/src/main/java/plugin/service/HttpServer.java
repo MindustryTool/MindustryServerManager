@@ -67,7 +67,7 @@ import mindustry.net.Administration.PlayerInfo;
 @Component
 @RequiredArgsConstructor
 public class HttpServer {
-    private static final String GATEWAY_URL = "http://server.mindustry-tool.com:8089/gateway/v2";
+    private static final String GATEWAY_URL = "http://server.mindustry-tool.com:8089/gateway";
     private static final Executor executor = Executors.newCachedThreadPool();
 
     private final Scheduler scheduler;
