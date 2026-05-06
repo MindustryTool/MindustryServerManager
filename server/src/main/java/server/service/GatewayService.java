@@ -2,6 +2,7 @@ package server.service;
 
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Duration;
 import java.time.Instant;
@@ -158,37 +159,32 @@ public class GatewayService {
         }
 
         public void onMessage(WsMessageContext context) {
-            try {
-                JsonNode json = context.messageAsClass(JsonNode.class);
-                WsMessage<?> wsMessage = context.messageAsClass(WsMessage.class);
+            JsonNode json = context.messageAsClass(JsonNode.class);
+            WsMessage<?> wsMessage = context.messageAsClass(WsMessage.class);
 
-                lastHeartBeatAt = Instant.now();
+            lastHeartBeatAt = Instant.now();
 
-                Log.info(json);
+            Log.info(json);
 
-                if (wsMessage.getResponseOf() != null) {
-                    CompletableFuture<JsonNode> future = pendingRequests.remove(wsMessage.getResponseOf());
-                    if (future == null) {
-                        Log.warn("No future found for responseOf: @", wsMessage.getResponseOf());
-                        return;
-                    }
-                    future.complete(json.get("payload"));
+            if (wsMessage.getResponseOf() != null) {
+                CompletableFuture<JsonNode> future = pendingRequests.remove(wsMessage.getResponseOf());
+                if (future == null) {
+                    Log.warn("No future found for responseOf: @", wsMessage.getResponseOf());
                     return;
                 }
+                future.complete(json.get("payload"));
+                return;
+            }
 
-                MessageHandler<Object, Object> handler = messageHandlers.get(wsMessage.getType());
+            MessageHandler<Object, Object> handler = messageHandlers.get(wsMessage.getType());
 
-                if (handler != null) {
-                    Object result = handler.getFn()
-                            .apply(Utils.readJsonAsClass(json.get("payload"), handler.getClazz()));
-                    if (result != null) {
-                        WsMessage<?> response = wsMessage.response(result);
-                        context.send(response);
-                    }
+            if (handler != null) {
+                Object result = handler.getFn()
+                        .apply(Utils.readJsonAsClass(json.get("payload"), handler.getClazz()));
+                if (result != null) {
+                    WsMessage<?> response = wsMessage.response(result);
+                    context.send(response);
                 }
-
-            } catch (Exception e) {
-                Log.err("Error processing message", e);
             }
         }
 
@@ -235,7 +231,13 @@ public class GatewayService {
                             .method("POST", HttpRequest.BodyPublishers.ofString(payload.toString()))
                             .build();
 
-                    return Utils.readString(httpClient.send(request, BodyHandlers.ofString()).body());
+                    var result = httpClient.send(request, BodyHandlers.ofString());
+
+                    if (result.statusCode() >= 400) {
+                        throw new ApiError(result.statusCode(), "Failed to login server");
+                    }
+
+                    return Utils.readString(result.body());
                 } catch (Exception e) {
                     throw new ApiError(500, "Internal server error", e);
                 }
@@ -248,7 +250,13 @@ public class GatewayService {
                             .timeout(Duration.ofMinutes(2))
                             .build();
 
-                    return httpClient.send(request, BodyHandlers.ofString()).body();
+                    HttpResponse<String> result = httpClient.send(request, BodyHandlers.ofString());
+
+                    if (result.statusCode() >= 400) {
+                        throw new ApiError(result.statusCode(), "Failed to host server");
+                    }
+
+                    return result.body();
                 } catch (Exception e) {
                     throw new ApiError(500, "Internal server error", e);
                 }
