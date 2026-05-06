@@ -1,6 +1,8 @@
 name: Build server and push to GitHub Container Registry
 on:
   push:
+    branches:
+      - 'main'
     paths:
       - 'server/**'
       - 'dto/**'

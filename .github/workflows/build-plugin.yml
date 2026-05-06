@@ -2,11 +2,14 @@ name: Build plugin jar
 
 on: 
   push:
+    branches:
+      - 'main'
     paths:
       - 'plugin/**'
       - 'dto/**'
       - 'build.gradle'
       - 'settings.gradle'
+
 
 
 jobs:

@@ -1,176 +1,89 @@
 package server.service;
 
-import java.net.URI;
-import java.net.UnknownHostException;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
+import java.util.concurrent.TimeoutException;
+import java.util.function.Function;
 
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.reactive.function.client.WebClientRequestException;
+import org.apache.hc.core5.net.URIBuilder;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import arc.util.Log;
+import arc.util.serialization.Base64Coder;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import lombok.experimental.Accessors;
-import lombok.extern.slf4j.Slf4j;
-import server.EnvConfig;
-import server.config.Const;
 import dto.LoginDto;
-import dto.PlayerDto;
 import dto.PlayerInfoDto;
 import dto.ServerCommandDto;
 import dto.ServerConfig;
 import dto.ServerStateDto;
-import events.BaseEvent;
-import events.ServerEvents;
+import dto.WsMessage;
+import dto.MessageHandler;
 import events.ServerEvents.DisconnectEvent;
 import events.ServerEvents.LogEvent;
 import events.ServerEvents.StartEvent;
-import enums.NodeRemoveReason;
-import events.ServerEvents.StopEvent;
-import jakarta.annotation.PostConstruct;
+import io.javalin.websocket.WsContext;
+import io.javalin.websocket.WsMessageContext;
+import server.EnvConfig;
+import server.config.Const;
 import server.utils.ApiError;
 import server.utils.Utils;
-import reactor.core.Disposable;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-import reactor.core.publisher.Sinks;
-import reactor.util.retry.Retry;
+import com.fasterxml.jackson.core.type.TypeReference;
 
-@Slf4j
-@Service
-@RequiredArgsConstructor
 public class GatewayService {
 
-    private final EnvConfig envConfig;
     private final EventBus eventBus;
-    private final ConcurrentHashMap<UUID, ClientHolder> cache = new ConcurrentHashMap<>();
+    private final EnvConfig envConfig;
+    private final ConcurrentHashMap<UUID, GatewayClient> clients = new ConcurrentHashMap<>();
+    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
-    @Getter
-    private final Api api = new Api();
+    public GatewayService(EventBus eventBus, EnvConfig envConfig) {
+        this.eventBus = eventBus;
+        this.envConfig = envConfig;
 
-    public Mono<Boolean> isHosting(UUID serverId) {
-        if (cache.containsKey(serverId)) {
-            return cache.get(serverId).client.server().isHosting();
-        }
-
-        return Mono.just(false);
-    }
-
-    public Mono<GatewayClient> of(UUID serverId) {
-        ClientHolder holder = cache.computeIfAbsent(serverId, id -> {
-
-            Sinks.One<GatewayClient> sink = Sinks.one();
-
-            GatewayClient client = new GatewayClient(
-                    id,
-                    c -> sink.tryEmitValue(c),
-                    error -> {
-                        sink.tryEmitError(error);
-                        cache.remove(id);
-                    });
-
-            return new ClientHolder(sink, client);
-        });
-
-        return holder.sink.asMono();
-    }
-
-    private class ClientHolder {
-        final Sinks.One<GatewayClient> sink;
-        final GatewayClient client;
-
-        ClientHolder(Sinks.One<GatewayClient> sink, GatewayClient client) {
-            this.sink = sink;
-            this.client = client;
-        }
-    }
-
-    @PostConstruct
-    private void init() {
-        eventBus.on(event -> {
-            if (event instanceof StopEvent stopEvent) {
-
-                UUID serverId = stopEvent.getServerId();
-                ClientHolder holder = cache.remove(serverId);
-
-                if (holder != null) {
-                    eventBus.emit(LogEvent.info(serverId, "Close GatewayClient"));
-
-                    holder.client.terminate();
-                    holder.sink.tryEmitError(new RuntimeException("Gateway stopped"));
+        scheduler.scheduleWithFixedDelay(() -> {
+            clients.values().removeIf(client -> {
+                if (client.shouldTerminate()) {
+                    client.terminate();
+                    return true;
                 }
-            }
-        });
+                return false;
+            });
+
+            clients.values().forEach(GatewayClient::checkHeartbeat);
+        }, 15, 15, TimeUnit.SECONDS);
     }
 
-    @Scheduled(fixedDelay = 1, timeUnit = TimeUnit.MINUTES)
-    private void terminateConnections() {
-        var holders = cache.values()
-                .stream()
-                .filter(holder -> holder.client.shouldTerminateConnection())
-                .toList();
-
-        for (var holder : holders) {
-            holder.client.terminate();
-        }
-
-        for (var holder : holders) {
-            cache.remove(holder.client.id());
-        }
+    public boolean isHosting(UUID serverId) {
+        GatewayClient client = clients.get(serverId);
+        return client != null && client.server().isHosting().getNow(false);
     }
 
-    public class Api {
-        private WebClient webClient(UUID id) {
-            return WebClient.builder()
-                    .codecs(configurer -> configurer
-                            .defaultCodecs()
-                            .maxInMemorySize(16 * 1024 * 1024))
-                    .baseUrl(URI.create(Const.API_URL).toString())
-                    .defaultHeaders(headers -> {
-                        headers.set("X-SERVER-ID", id.toString());
-                        headers.set("X-MANAGER-AUTH", envConfig.serverConfig().accessToken());
-                    })
-                    .defaultStatusHandler(Utils::handleStatus, Utils::createError)
-                    .build();
-        }
-
-        public Mono<JsonNode> login(UUID serverId, JsonNode body) {
-            return Utils.wrapError(webClient(serverId).method(HttpMethod.POST)
-                    .uri("/servers/" + serverId + "/login")
-                    .bodyValue(body)
-                    .retrieve()
-                    .bodyToMono(JsonNode.class), Duration.ofSeconds(2), "Login");
-        }
-
-        public Mono<String> host(UUID serverId) {
-            Log.info("Host server: " + serverId);
-            return Utils.wrapError(webClient(serverId).method(HttpMethod.POST)
-                    .uri("/servers/" + serverId + "/host-server")
-                    .retrieve()
-                    .bodyToMono(String.class), Duration.ofSeconds(60), "Host server");
-        }
+    public GatewayClient of(UUID serverId) {
+        return clients.computeIfAbsent(serverId, _ignore -> new GatewayClient(serverId));
     }
 
-    @RequiredArgsConstructor
     @Accessors(fluent = true)
     public class GatewayClient {
-
         private static final Duration HEARTBEAT_TIMEOUT_DURATION = Duration.ofSeconds(60);
         private static final Duration TERMINATE_CONNECTION_AFTER = Duration.ofMinutes(5);
+
+        private final HashMap<String, MessageHandler<Object, Object>> messageHandlers = new HashMap<>();
 
         enum ConnectionState {
             CONNECTED, DISCONNECTED, CONNECTING
@@ -178,392 +91,271 @@ public class GatewayService {
 
         @Getter
         private final UUID id;
+        private WsContext context;
+
+        private volatile Instant lastHeartBeatAt = Instant.now();
+        private CompletableFuture<Void> connectedFuture = new CompletableFuture<>();
+        private ConnectionState state = ConnectionState.CONNECTING;
+
+        private final Map<UUID, CompletableFuture<JsonNode>> pendingRequests = new ConcurrentHashMap<>();
 
         @Getter
-        private final Server server;
+        private final Backend backend = new Backend();
+        @Getter
+        private final Server server = new Server();
+        public final Instant createdAt = Instant.now();
 
-        private Instant disconnectedAt = null;
-        private ConnectionState state = ConnectionState.CONNECTING;
-        private volatile Instant lastHeartBeatAt = Instant.now();
-
-        private final Instant createdAt = Instant.now();
-        private final Disposable eventJob;
-
-        private Disposable heartbeatJob;
-
-        public GatewayClient(UUID id, Consumer<GatewayClient> onConnect, Consumer<Throwable> onError) {
+        public GatewayClient(UUID id) {
             this.id = id;
-            this.server = new Server();
-            this.eventJob = createFetchEventJob(onConnect, onError);
 
-            Log.info("Create GatewayClient for server: " + id);
+            this.registerMessageHandler("get-total-player", Void.class, (_res) -> 0L);
+            this.registerMessageHandler("login", JsonNode.class, body -> backend.login(id, body));
+            this.registerMessageHandler("host", UUID.class, serverId -> backend.host(serverId));
         }
 
-        public ConnectionState state() {
-            return state;
-        }
+        public void setSocketContext(WsContext context) {
+            this.context = context;
 
-        public void terminate() {
-            if (!eventJob.isDisposed()) {
-                eventJob.dispose();
+            if (context == null) {
+                state = ConnectionState.DISCONNECTED;
+                eventBus.emit(new DisconnectEvent(id));
+                connectedFuture = new CompletableFuture<>();
+                return;
+            } else {
+                state = ConnectionState.CONNECTED;
+                eventBus.emit(new StartEvent(id));
+                connectedFuture.complete(null);
             }
-
-            if (heartbeatJob != null && !heartbeatJob.isDisposed()) {
-                heartbeatJob.dispose();
-            }
         }
 
-        public boolean shouldTerminateConnection() {
+        public boolean shouldTerminate() {
             return Instant.now().isAfter(lastHeartBeatAt.plus(TERMINATE_CONNECTION_AFTER));
         }
 
-        public class Server {
-            private final WebClient webClient = WebClient.builder()
-                    .codecs(configurer -> configurer
-                            .defaultCodecs()
-                            .maxInMemorySize(16 * 1024 * 1024))
-                    .baseUrl(URI.create(
-                            Const.IS_DEVELOPMENT//
-                                    ? "http://localhost:9999/" //
-                                    : "http://" + id.toString() + ":9999/")
-                            .toString())
-                    .defaultHeaders(headers -> {
-                        headers.set("X-SERVER-ID", id.toString());
-                        headers.set("X-CREATED-AT", createdAt.toString());
-                    })
-                    .defaultStatusHandler(Utils::handleStatus, Utils::createError)
+        public void checkHeartbeat() {
+            if (state == ConnectionState.CONNECTED
+                    && Instant.now().isAfter(lastHeartBeatAt.plus(HEARTBEAT_TIMEOUT_DURATION))) {
+                state = ConnectionState.DISCONNECTED;
+                eventBus.emit(new DisconnectEvent(id));
+                eventBus.emit(LogEvent.error(id, "Heartbeat timeout"));
+            }
+        }
+
+        public void onMessage(WsMessageContext context) {
+            try {
+                JsonNode json = context.messageAsClass(JsonNode.class);
+                WsMessage<?> wsMessage = context.messageAsClass(WsMessage.class);
+
+                if (wsMessage.getType().equals("heartbeat")) {
+                    lastHeartBeatAt = Instant.now();
+                    return;
+                }
+
+                Log.info(json);
+
+                if (wsMessage.getResponseOf() != null) {
+                    CompletableFuture<JsonNode> future = pendingRequests.remove(wsMessage.getResponseOf());
+                    if (future == null) {
+                        Log.warn("No future found for responseOf: @", wsMessage.getResponseOf());
+                        return;
+                    }
+                    future.complete(json.get("payload"));
+                    return;
+                }
+
+                MessageHandler<Object, Object> handler = messageHandlers.get(wsMessage.getType());
+
+                if (handler != null) {
+                    Object result = handler.getFn()
+                            .apply(Utils.readJsonAsClass(json.get("payload"), handler.getClazz()));
+                    if (result != null) {
+                        WsMessage<?> response = wsMessage.response(result);
+                        context.send(response);
+                    }
+                }
+
+            } catch (Exception e) {
+                Log.err("Error processing message", e);
+            }
+        }
+
+        public void terminate() {
+            if (context != null) {
+                context.closeSession();
+            }
+        }
+
+        @SuppressWarnings("unchecked")
+        public <Req, Res> void registerMessageHandler(String type, Class<Req> clazz, Function<Req, Res> handler) {
+            MessageHandler<Object, Object> mh = new MessageHandler<Object, Object>((Class<Object>) clazz,
+                    (Function<Object, Object>) handler);
+            messageHandlers.put(type, mh);
+        }
+
+        public class Backend {
+            private final HttpClient httpClient = HttpClient.newBuilder()
+                    .connectTimeout(Duration.ofSeconds(10))
                     .build();
 
-            public Mono<JsonNode> getJson() {
-                return Utils.wrapError(webClient.method(HttpMethod.GET)//
-                        .uri("json")//
-                        .retrieve()//
-                        .bodyToMono(JsonNode.class), Duration.ofSeconds(5), "Get json");
+            private HttpRequest.Builder createRequest(Object... segments) {
+                try {
+                    String[] str = new String[segments.length];
+
+                    for (int i = 0; i < segments.length; i++) {
+                        str[i] = segments[i].toString();
+                    }
+
+                    return HttpRequest.newBuilder()
+                            .uri(new URIBuilder(Const.API_URL + "/" + String.join("/", str)).build())
+                            .header("X-SERVER-ID", id.toString())
+                            .header("X-MANAGER-AUTH", envConfig.serverConfig().accessToken());
+                } catch (Exception e) {
+                    throw new ApiError(500, "Internal server error", e);
+                }
             }
 
-            public Mono<String> getPluginVersion() {
-                return Utils.wrapError(webClient.method(HttpMethod.GET)//
-                        .uri("plugin-version")//
-                        .retrieve()//
-                        .bodyToMono(String.class), Duration.ofSeconds(5), "Get plugin version");
+            public JsonNode login(UUID id, JsonNode payload) {
+                try {
+                    HttpRequest request = createRequest("servers", id, "login")
+                            .method("POST", HttpRequest.BodyPublishers.ofString(payload.toString()))
+                            .build();
+
+                    return Utils.readString(httpClient.send(request, BodyHandlers.ofString()).body());
+                } catch (Exception e) {
+                    throw new ApiError(500, "Internal server error", e);
+                }
             }
 
-            public Mono<Void> updatePlayer(String uuid, LoginDto request) {
-                return Utils.wrapError(webClient.method(HttpMethod.PUT)//
-                        .uri("players/" + uuid)//
-                        .bodyValue(request)//
-                        .retrieve()//
-                        .bodyToMono(String.class), Duration.ofSeconds(5), "Set player")
-                        .then();
-            }
+            public String host(UUID id) {
+                try {
+                    HttpRequest request = createRequest("servers", id, "host-server")
+                            .timeout(Duration.ofMinutes(2))
+                            .build();
 
-            public Mono<Boolean> pause() {
-                return Utils.wrapError(webClient.method(HttpMethod.POST)
-                        .uri("pause")
-                        .retrieve()
-                        .bodyToMono(Boolean.class), Duration.ofSeconds(5), "Pause");
-            }
-
-            public Flux<PlayerDto> getPlayers() {
-                return Utils.wrapError(
-                        webClient.method(HttpMethod.GET)
-                                .uri("players")
-                                .retrieve()
-                                .bodyToFlux(PlayerDto.class),
-                        Duration.ofSeconds(5), "Get players");
-            }
-
-            public Mono<ServerStateDto> getState() {
-                return Utils.wrapError(
-                        webClient.method(HttpMethod.GET)
-                                .uri("state")
-                                .retrieve()
-                                .bodyToMono(ServerStateDto.class),
-                        Duration.ofSeconds(2),
-                        "Get state");
-            }
-
-            public Mono<byte[]> getImage() {
-                return Utils.wrapError(
-                        webClient.method(HttpMethod.GET)
-                                .uri("image")
-                                .accept(MediaType.IMAGE_PNG)
-                                .retrieve()
-                                .bodyToMono(byte[].class),
-                        Duration.ofSeconds(5),
-                        "Get image");
-            }
-
-            public Mono<Void> sendCommand(String... command) {
-                return Utils.wrapError(
-                        webClient.method(HttpMethod.POST)
-                                .uri("commands")
-                                .bodyValue(command)
-                                .retrieve()
-                                .bodyToMono(Void.class),
-                        Duration.ofSeconds(2),
-                        "Send command");
-            }
-
-            public Mono<Void> say(String message) {
-                return Utils.wrapError(
-                        webClient.method(HttpMethod.POST)
-                                .uri("say")
-                                .bodyValue(message)
-                                .retrieve()
-                                .bodyToMono(Void.class),
-                        Duration.ofSeconds(2),
-                        "Say message");
-            }
-
-            public Mono<Void> host(ServerConfig request) {
-                return Utils.wrapError(
-                        webClient.method(HttpMethod.POST)
-                                .uri("host")
-                                .bodyValue(request)
-                                .retrieve()
-                                .bodyToMono(Void.class),
-                        Duration.ofSeconds(15),
-                        "Host server");
-            }
-
-            public Mono<Void> sendChat(JsonNode request) {
-                return Utils.wrapError(
-                        webClient.method(HttpMethod.POST)
-                                .uri("chat")
-                                .bodyValue(request)
-                                .retrieve()
-                                .bodyToMono(Void.class),
-                        Duration.ofSeconds(1), "Send chat");
-            }
-
-            public Mono<Boolean> isHosting() {
-                return Utils.wrapError(webClient.method(HttpMethod.GET)
-                        .uri("hosting")
-                        .retrieve()
-                        .bodyToMono(Boolean.class), Duration.ofMillis(100), "Check hosting");
-            }
-
-            public Flux<ServerCommandDto> getCommands() {
-                return Utils.wrapError(webClient.method(HttpMethod.GET)
-                        .uri("commands")
-                        .retrieve()
-                        .bodyToFlux(ServerCommandDto.class), Duration.ofSeconds(10), "Get commands");
-            }
-
-            public Flux<PlayerInfoDto> getPlayers(int page, int size, Boolean banned, String filter) {
-                return Utils.wrapError(
-                        webClient.method(HttpMethod.GET)
-                                .uri(builder -> builder.path("players-info")
-                                        .queryParam("page", page)
-                                        .queryParam("size", size)
-                                        .queryParam("banned", banned)
-                                        .queryParam("filter", filter)
-                                        .build())
-                                .retrieve()
-                                .bodyToFlux(PlayerInfoDto.class),
-                        Duration.ofSeconds(10),
-                        "Get player infos");
-            }
-
-            public Mono<Map<String, Long>> getKickedIps() {
-                return Utils.wrapError(
-                        webClient.method(HttpMethod.GET)
-                                .uri("kicked-ips")
-                                .retrieve()
-                                .bodyToMono(new ParameterizedTypeReference<Map<String, Long>>() {
-                                }),
-                        Duration.ofSeconds(10),
-                        "Get kicked IPs");
-            }
-
-            public Mono<JsonNode> getRoutes() {
-                return Utils.wrapError(
-                        webClient.method(HttpMethod.GET)
-                                .uri("routes")
-                                .retrieve()
-                                .bodyToMono(JsonNode.class),
-                        Duration.ofSeconds(10),
-                        "Get routes");
-            }
-
-            public Mono<JsonNode> getWorkflowNodes() {
-                return Utils.wrapError(
-                        webClient.method(HttpMethod.GET)
-                                .uri("workflow/nodes")
-                                .retrieve()
-                                .bodyToMono(JsonNode.class),
-                        Duration.ofSeconds(10),
-                        "Get workflow nodes");
-            }
-
-            public Flux<JsonNode> getWorkflowEvents() {
-                return Utils.wrapError(
-                        webClient.method(HttpMethod.GET)
-                                .uri("workflow/events")
-                                .accept(MediaType.TEXT_EVENT_STREAM)
-                                .retrieve()
-                                .bodyToFlux(JsonNode.class),
-                        Duration.ofSeconds(10),
-                        "Get workflow events").log();
-            }
-
-            public Mono<JsonNode> emitWorkflowNode(String nodeId) {
-                return Utils.wrapError(webClient.method(HttpMethod.GET)
-                        .uri("workflow/emit/" + nodeId)
-                        .retrieve()
-                        .bodyToMono(JsonNode.class), Duration.ofSeconds(10), "Emit workflow node");
-            }
-
-            public Mono<Long> getWorkflowVersion() {
-                return Utils.wrapError(webClient.method(HttpMethod.GET)
-                        .uri("/workflow/version")
-                        .retrieve()
-                        .bodyToMono(Long.class), Duration.ofSeconds(10), " Get workflow version");
-            }
-
-            public Mono<JsonNode> getWorkflow() {
-                return Utils.wrapError(webClient.method(HttpMethod.GET)
-                        .uri("/workflow")
-                        .retrieve()
-                        .bodyToMono(JsonNode.class), Duration.ofSeconds(10), "Get workflow");
-            }
-
-            public Mono<Void> saveWorkflow(JsonNode payload) {
-                return Utils.wrapError(webClient.method(HttpMethod.POST)
-                        .uri("/workflow")
-                        .bodyValue(payload)
-                        .retrieve()
-                        .bodyToMono(Void.class), Duration.ofSeconds(10), "Save workflow");
-            }
-
-            public Mono<JsonNode> loadWorkflow(JsonNode payload) {
-                return Utils.wrapError(webClient.method(HttpMethod.POST)
-                        .uri("/workflow/load")
-                        .bodyValue(payload)
-                        .retrieve()
-                        .bodyToMono(JsonNode.class), Duration.ofSeconds(10), "Load workflow");
-            }
-
-            public Flux<JsonNode> getEvents() {
-                return webClient.get()
-                        .uri("events")
-                        .accept(MediaType.TEXT_EVENT_STREAM)
-                        .retrieve()
-                        .bodyToFlux(JsonNode.class)
-                        .concatWith(Mono.error(
-                                new ApiError(HttpStatus.REQUEST_TIMEOUT,
-                                        "SSE stream completed, This should not happend")));
+                    return httpClient.send(request, BodyHandlers.ofString()).body();
+                } catch (Exception e) {
+                    throw new ApiError(500, "Internal server error", e);
+                }
             }
         }
 
-        private Disposable createFetchEventJob(Consumer<GatewayClient> onConnect, Consumer<Throwable> onError) {
-            return Flux.defer(() -> this.server.getEvents())
-                    .doOnNext(event -> {
-                        try {
-                            if (state != ConnectionState.CONNECTED) {
-                                state = ConnectionState.CONNECTED;
-                                disconnectedAt = null;
-                                eventBus.emit(new StartEvent(id));
-                                onConnect.accept(this);
+        public class Server {
+            private <R> CompletableFuture<R> sendRequest(String type, Object payload, Class<R> clazz) {
+                if (state != ConnectionState.CONNECTED || context == null) {
+                    try {
+                        connectedFuture.get(10, TimeUnit.SECONDS);
+                    } catch (InterruptedException | ExecutionException | TimeoutException e) {
+                        return CompletableFuture.failedFuture(e);
+                    }
+                }
 
-                                if (heartbeatJob != null && !heartbeatJob.isDisposed()) {
-                                    heartbeatJob.dispose();
-                                }
-                                heartbeatJob = createHeartbeatJob();
-                            }
+                WsMessage<?> request = WsMessage.create(type).withPayload(payload);
 
-                            var name = event.get("name").asText(null);
+                CompletableFuture<JsonNode> future = new CompletableFuture<>();
+                pendingRequests.put(request.getId(), future);
 
-                            if (name == null) {
-                                Log.warn("Invalid event: " + event.asText());
-                            }
+                future.orTimeout(10, TimeUnit.SECONDS);
+                future.whenComplete((_res, _err) -> pendingRequests.remove(request.getId()));
 
-                            lastHeartBeatAt = Instant.now();
+                try {
+                    context.send(request);
+                } catch (Exception e) {
+                    pendingRequests.remove(request.getId());
+                    future.completeExceptionally(e);
+                }
 
-                            if (name.equals("heartbeat")) {
-                                return;
-                            }
+                return future.thenApply(r -> Utils.readJsonAsClass(r, clazz));
+            }
 
-                            var eventType = ServerEvents.getEventMap().get(name);
+            private CompletableFuture<Void> sendRequest(String type, Object payload) {
+                return sendRequest(type, payload, Void.class);
+            }
 
-                            if (eventType == null) {
-                                Log.warn("Invalid event name: " + name + " in " + ServerEvents.getEventMap().keySet());
-                            }
+            public CompletableFuture<JsonNode> getJson() {
+                return sendRequest("get-json", null, JsonNode.class);
+            }
 
-                            BaseEvent data = (BaseEvent) Utils.readJsonAsClass(event, eventType);
-                            eventBus.emit(data);
+            public CompletableFuture<String> getPluginVersion() {
+                return sendRequest("get-plugin-version", null, String.class);
+            }
 
-                        } catch (Exception e) {
-                            Log.err("[@] Error while fetch event: @", id, e.getMessage());
-                        }
-                    })
-                    .onErrorMap(WebClientRequestException.class, error -> {
-                        if (error.getCause() instanceof UnknownHostException) {
-                            Log.err("[@] Unknown host: @", id, error.getMessage());
-                            return new ApiError(HttpStatus.NOT_FOUND, "Server not found: " + error.getMessage());
-                        }
+            public CompletableFuture<Void> updatePlayer(String uuid, LoginDto request) {
+                return sendRequest("update-player", request);
+            }
 
-                        if (Utils.isConnectionException(error.getCause())) {
-                            Log.err("[@] Connection error: @", id, error.getMessage());
-                            return new ApiError(HttpStatus.NOT_FOUND, "Can not connect: " + error.getMessage());
-                        }
+            public CompletableFuture<Boolean> pause() {
+                return sendRequest("pause", null, Boolean.class);
+            }
 
-                        return error;
-                    })
-                    .doOnError(error -> {
-                        if (disconnectedAt == null) {
-                            disconnectedAt = Instant.now();
-                        }
+            public CompletableFuture<ServerStateDto> getState() {
+                return sendRequest("get-state", null, ServerStateDto.class);
+            }
 
-                        if (state == ConnectionState.CONNECTED) {
-                            state = ConnectionState.DISCONNECTED;
+            public CompletableFuture<byte[]> getImage() {
+                return sendRequest("get-image", null, String.class).thenApply(res -> Base64Coder.decode(res));
+            }
 
-                            eventBus.emit(new DisconnectEvent(id));
-                        }
-                    })
-                    .onErrorComplete(error -> {
-                        if (error instanceof ApiError apiError && apiError.status.is5xxServerError()) {
-                            Log.err("[@] 5xx error: @", id, apiError.status);
-                            return true;
-                        }
+            public CompletableFuture<Void> sendCommand(String... command) {
+                return sendRequest("send-command", command);
+            }
 
-                        return false;
-                    })
-                    .retryWhen(Retry.fixedDelay(60, Duration.ofSeconds(1)))
-                    .onErrorMap(error -> new ApiError(HttpStatus.BAD_REQUEST, "Events timeout: " + error.getMessage()))
-                    .doOnError(err -> {
-                        eventBus.emit(LogEvent.error(id, "Fetch event timeout: " + err.getMessage()));
-                    })
-                    .doOnError((error) -> onError.accept(error))
-                    .onErrorComplete(ApiError.class)
-                    .doFinally(signal -> {
-                        eventBus.emit(new StopEvent(id, NodeRemoveReason.FETCH_EVENT_TIMEOUT));
+            public CompletableFuture<Void> say(String message) {
+                return sendRequest("say", message);
+            }
 
-                        Log.info("Close GatewayClient: " + id + " with signal: " + signal);
-                        Log.info("Running for: " + Utils.toReadableString(Duration.between(createdAt, Instant.now())));
+            public CompletableFuture<Void> host(ServerConfig request) {
+                return sendRequest("host", request);
+            }
 
-                        if (disconnectedAt != null) {
-                            Log.info(
-                                    "Disconnected for: "
-                                            + Utils.toReadableString(Duration.between(disconnectedAt, Instant.now())));
-                        }
+            public CompletableFuture<Void> sendChat(JsonNode request) {
+                return sendRequest("chat", request);
+            }
 
-                        terminate();
-                    })
-                    .subscribe();
-        }
+            public CompletableFuture<Boolean> isHosting() {
+                return sendRequest("is-hosting", null, Boolean.class);
+            }
 
-        private Disposable createHeartbeatJob() {
-            return Flux.interval(HEARTBEAT_TIMEOUT_DURATION)
-                    .doOnNext(value -> {
-                        if (Instant.now().isAfter(lastHeartBeatAt.plus(HEARTBEAT_TIMEOUT_DURATION))) {
-                            Log.warn("Heartbeat timeout for client: " + id + " last heartbeat at: "
-                                    + Duration.between(lastHeartBeatAt, Instant.now()).toSeconds() + " seconds");
-                            eventBus.emit(LogEvent.error(id, "Heartbeat timeout"));
-                        }
-                    })
-                    .subscribe();
+            public CompletableFuture<List<ServerCommandDto>> getCommands() {
+                return sendRequest("get-commands", null, JsonNode.class).thenApply(n -> {
+                    try {
+                        return Utils.getObjectMapper().readerForListOf(ServerCommandDto.class).readValue(n);
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+            }
+
+            public CompletableFuture<List<PlayerInfoDto>> getPlayersInfo(int page, int size,
+                    Boolean banned, String filter//
+            ) {
+                ObjectNode payload = Utils.getObjectMapper().createObjectNode();
+                payload.put("page", page);
+                payload.put("size", size);
+                if (banned == null) {
+                    payload.putNull("banned");
+                } else {
+                    payload.put("banned", banned);
+                }
+                if (filter == null) {
+                    payload.putNull("filter");
+                } else {
+                    payload.put("filter", filter);
+                }
+
+                return sendRequest("get-players-info", payload, JsonNode.class).thenApply(n -> {
+                    try {
+                        return Utils.getObjectMapper().readerForListOf(PlayerInfoDto.class).readValue(n);
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+            }
+
+            public CompletableFuture<Map<String, Long>> getKickedIps() {
+                return sendRequest("get-kicked-ips", null)
+                        .thenApply(n -> Utils.getObjectMapper().convertValue(n, new TypeReference<>() {
+                        }));
+            }
         }
     }
 }

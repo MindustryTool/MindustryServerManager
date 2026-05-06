@@ -1,8 +1,6 @@
 package server.utils;
 
 import java.nio.file.Path;
-
-import org.springframework.http.HttpStatus;
 import arc.files.Fi;
 import arc.util.ArcRuntimeException;
 import arc.util.Log;
@@ -17,7 +15,7 @@ public class FileUtils {
 
     public static Fi getFile(String basePath, String path) {
         if (path.contains("..") || path.contains("./")) {
-            throw new ApiError(HttpStatus.BAD_REQUEST, "Invalid file path");
+            throw new ApiError(400, "Invalid file path");
         }
 
         Fi baseFile = new Fi(basePath);
@@ -25,7 +23,7 @@ public class FileUtils {
         Fi newFile = baseFile.child(relative);
 
         if (!Path.of(newFile.absolutePath()).normalize().startsWith(Path.of(baseFile.absolutePath()).normalize())) {
-            throw new ApiError(HttpStatus.FORBIDDEN,
+            throw new ApiError(403,
                     "Path is not in server folder: " + relative + ":" + newFile.absolutePath());
         }
 
@@ -36,15 +34,15 @@ public class FileUtils {
         var file = new Fi(path);
 
         if (file.length() > Const.MAX_FILE_SIZE) {
-            throw new ApiError(HttpStatus.BAD_REQUEST, "File size exceeds max limit");
+            throw new ApiError(400, "File size exceeds max limit");
         }
 
         if (file.isDirectory()) {
             return file.seq()
-                    .map(child -> new ServerFileDto()//
-                            .path(toRelativeToServer(child.absolutePath()))//
-                            .size(child.length())//
-                            .directory(child.isDirectory()))//
+                    .map(child -> new ServerFileDto()
+                            .path(toRelativeToServer(child.absolutePath()))
+                            .size(child.length())
+                            .directory(child.isDirectory()))
                     .list();
         }
 
@@ -60,7 +58,7 @@ public class FileUtils {
         }
 
         if (file.isDirectory()) {
-            throw new ApiError(HttpStatus.BAD_REQUEST, "Path is a directory: " + path);
+            throw new ApiError(400, "Path is a directory: " + path);
         }
 
         if (file.exists()) {
@@ -77,22 +75,20 @@ public class FileUtils {
         }
 
         try {
-
             file.writeBytes(data);
         } catch (ArcRuntimeException e) {
-            throw new ApiError(HttpStatus.INTERNAL_SERVER_ERROR, "Error writing file: " + file.absolutePath());
+            throw new ApiError(500, "Error writing file: " + file.absolutePath());
         }
     }
 
     public static boolean deleteFile(String path) {
         var file = new Fi(path);
-
         return deleteFile(file);
     }
 
     public static boolean deleteFile(Fi file) {
         if (!file.exists()) {
-            throw new ApiError(HttpStatus.NOT_FOUND, "File not exists: " + file.path());
+            throw new ApiError(404, "File not exists: " + file.path());
         }
 
         if (file.isDirectory()) {
@@ -105,13 +101,10 @@ public class FileUtils {
 
     public static String toRelativeToServer(String path) {
         String config = "config";
-
         int index = path.indexOf(config);
-
         if (index == -1) {
             return path;
         }
-
         return path.substring(index + config.length());
     }
 }

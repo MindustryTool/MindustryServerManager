@@ -67,6 +67,14 @@ public class JsonUtils {
         }
     }
 
+    public static <T> T readJsonAsClass(JsonNode data, Class<T> clazz) {
+        try {
+            return objectMapper.treeToValue(data, clazz);
+        } catch (Exception e) {
+            throw new RuntimeException("Can not parse to json: " + e.getMessage(), e);
+        }
+    }
+
     public static ObjectNode createObjectNode() {
         return objectMapper.createObjectNode();
     }
