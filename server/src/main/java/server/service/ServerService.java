@@ -199,6 +199,19 @@ public class ServerService {
     }
 
     public Object getFiles(UUID serverId, String path) {
+        if (path != null && path.endsWith(".msav.png") && !isFileExists(serverId, path)) {
+            Fi mapFile = nodeManager.getFile(serverId, path.replace(".msav.png", ".msav"));
+            apiService.getMapPreview(mapFile.readBytes()).whenComplete((res, err) -> {
+                if (res != null) {
+                    nodeManager.writeFile(serverId, path, res);
+                }
+
+                if (err != null) {
+                    Log.err("Fail to generate map preview for file " + path, err);
+                }
+            });
+        }
+
         return nodeManager.getFiles(serverId, path);
     }
 
