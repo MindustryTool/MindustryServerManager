@@ -159,7 +159,11 @@ public class ApiGateway {
 
     private synchronized void connect() {
         try {
-            Log.info("[yellow]Connecting to server manager");
+            if (webSocket != null && webSocket.isOpen()){
+                return;
+            }
+
+            Log.info("Connecting to server manager");
             webSocket = new WebSocketFactory()
                     .createSocket(GATEWAY_URL)
                     .addHeader("Authorization", Cfg.webSocketAuthToken())

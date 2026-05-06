@@ -122,8 +122,6 @@ public class GatewayService {
                 BaseEvent data = (BaseEvent) Utils.readJsonAsClass(event, eventType);
                 eventBus.emit(data);
 
-                Log.info("Client event: " + data);
-
                 return null;
             });
         }
@@ -153,7 +151,7 @@ public class GatewayService {
             if (Instant.now().isAfter(lastHeartBeatAt.plus(HEARTBEAT_TIMEOUT_DURATION))) {
                 eventBus.emit(new DisconnectEvent(id));
                 eventBus.emit(LogEvent.error(id, "Heartbeat timeout"));
-                Log.info("Client heartbeat timeout: " + id);
+                Log.err("Client heartbeat timeout: " + id);
             }
         }
 
