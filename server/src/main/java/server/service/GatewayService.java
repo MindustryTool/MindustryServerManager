@@ -34,6 +34,7 @@ import dto.ServerCommandDto;
 import dto.ServerConfig;
 import dto.ServerStateDto;
 import dto.WsMessage;
+import enums.NodeRemoveReason;
 import dto.MessageHandler;
 import events.BaseEvent;
 import events.ServerEvents;
@@ -45,6 +46,7 @@ import io.javalin.websocket.WsContext;
 import io.javalin.websocket.WsMessageContext;
 import server.EnvConfig;
 import server.config.Const;
+import server.manager.NodeManager;
 import server.utils.ApiError;
 import server.utils.Utils;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -53,12 +55,14 @@ public class GatewayService {
 
     private final EventBus eventBus;
     private final EnvConfig envConfig;
+    private final NodeManager nodeManager;
     private final ConcurrentHashMap<UUID, GatewayClient> clients = new ConcurrentHashMap<>();
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
-    public GatewayService(EventBus eventBus, EnvConfig envConfig) {
+    public GatewayService(EventBus eventBus, EnvConfig envConfig, NodeManager nodeManager) {
         this.eventBus = eventBus;
         this.envConfig = envConfig;
+        this.nodeManager = nodeManager;
 
         scheduler.scheduleWithFixedDelay(() -> {
             clients.values().removeIf(client -> {
@@ -195,6 +199,8 @@ public class GatewayService {
             if (context != null) {
                 context.closeSession(WsCloseStatus.NORMAL_CLOSURE, "Closed due to inactivity");
             }
+
+            nodeManager.remove(id, NodeRemoveReason.NOT_RESPONSE);
 
             Log.info("[red]Client terminated: " + id);
         }

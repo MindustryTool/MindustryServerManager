@@ -309,9 +309,10 @@ public class ServerService {
         ServerStateDto state = state(serverId);
         if (state.getStatus().equals(ServerStatus.NOT_RESPONSE)) {
             Log.err("Server [@] not response", serverId);
+
             if (flag.contains(ServerFlag.NOT_RESPONSE)) {
                 eventBus.emit(LogEvent.info(serverId, "[red][Orchestrator] Kill server for not response"));
-                remove(serverId, NodeRemoveReason.FETCH_EVENT_TIMEOUT);
+                remove(serverId, NodeRemoveReason.NOT_RESPONSE);
             } else {
                 eventBus.emit(LogEvent.info(serverId, "[red][Orchestrator] Server not response, flag to kill"));
                 flag.add(ServerFlag.NOT_RESPONSE);
