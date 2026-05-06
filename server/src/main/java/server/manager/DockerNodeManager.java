@@ -641,4 +641,16 @@ public class DockerNodeManager implements NodeManager {
             return callback;
         });
     }
+
+    @Override
+    public boolean isRunning(UUID serverId) {
+        return dockerClient.listContainersCmd()
+                .exec()
+                .stream()
+                .filter(container -> container.getState().equalsIgnoreCase("running"))
+                .map(container -> readMetadataFromContainer(container))
+                .filter(meta -> meta.isPresent())
+                .map(meta -> meta.get())
+                .anyMatch(meta -> meta.getConfig().getId().equals(serverId));
+    }
 }

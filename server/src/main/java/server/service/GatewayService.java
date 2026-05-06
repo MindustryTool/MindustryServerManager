@@ -40,6 +40,7 @@ import events.ServerEvents;
 import events.ServerEvents.DisconnectEvent;
 import events.ServerEvents.LogEvent;
 import events.ServerEvents.StartEvent;
+import events.ServerEvents.StopEvent;
 import io.javalin.websocket.WsCloseStatus;
 import io.javalin.websocket.WsContext;
 import io.javalin.websocket.WsMessageContext;
@@ -133,7 +134,11 @@ public class GatewayService {
             this.context = context;
 
             if (context == null) {
-                eventBus.emit(new DisconnectEvent(id));
+                if (nodeManager.isRunning(id)) {
+                    eventBus.emit(new DisconnectEvent(id));
+                } else {
+                    eventBus.emit(new StopEvent(id, NodeRemoveReason.UNKNOWN));
+                }
                 connectedFuture.completeExceptionally(
                         new RuntimeException("Disconnected"));
                 connectedFuture = new CompletableFuture<>();
@@ -325,7 +330,6 @@ public class GatewayService {
             }
 
             public CompletableFuture<byte[]> getImage() {
-
                 return sendRequest("generate-map-image", null)
                         .thenApply(res -> nodeManager.getFile(id, "map-preview-image.png").readBytes());
             }

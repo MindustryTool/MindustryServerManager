@@ -52,4 +52,6 @@ public interface NodeManager {
     boolean createFolder(UUID serverId, String path);
 
     boolean deleteFile(UUID serverId, String path);
+
+    boolean isRunning(UUID serverId);
 }
