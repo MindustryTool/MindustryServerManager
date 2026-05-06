@@ -518,8 +518,9 @@ public class DockerNodeManager implements NodeManager {
 
         final Set<String> ignoredEvents = Set.of("exec_create", "exec_start", "exec_die", "exec_detach");
 
-        Const.executorService.execute(() -> {
+        Log.info("Listen to docker event");
 
+        Const.executorService.execute(() -> {
             dockerClient.eventsCmd().exec(new ResultCallback.Adapter<Event>() {
                 @Override
                 public void onNext(Event event) {
@@ -528,6 +529,7 @@ public class DockerNodeManager implements NodeManager {
                     String status = event.getStatus();
 
                     if (status == null) {
+                        Log.warn("Docker event with null status: @", event);
                         return;
                     }
 
@@ -536,6 +538,7 @@ public class DockerNodeManager implements NodeManager {
                     }
 
                     if (containerId == null) {
+                        Log.warn("Docker event with null container id: @", event);
                         return;
                     }
 
@@ -544,6 +547,7 @@ public class DockerNodeManager implements NodeManager {
                             .exec();
 
                     if (containers.size() != 1) {
+                        Log.warn("Docker event with multiple containers: @", event);
                         return;
                     }
 
