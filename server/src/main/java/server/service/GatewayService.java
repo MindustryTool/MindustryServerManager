@@ -249,6 +249,7 @@ public class GatewayService {
             public String host(UUID id) {
                 try {
                     HttpRequest request = createRequest("servers", id, "host-server")
+                            .method("POST", HttpRequest.BodyPublishers.noBody())
                             .timeout(Duration.ofMinutes(2))
                             .build();
 
