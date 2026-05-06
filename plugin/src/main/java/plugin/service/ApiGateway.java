@@ -91,7 +91,6 @@ public class ApiGateway {
     private final Scheduler scheduler;
 
     private final Duration HEARTBEAT_DURATION = Duration.ofSeconds(10);
-    private final List<Object> buffer = new ArrayList<>();
     private final HashMap<String, MessageHandler<Object, Object>> messageHandlers = new HashMap<>();
     private final WsHandler wsHandler = new WsHandler();
 
@@ -178,14 +177,7 @@ public class ApiGateway {
         public void onConnected(WebSocket websocket, Map<String, List<String>> headers) throws Exception {
             Log.info("[green]Connected to server manager");
 
-            List<Object> copy = new ArrayList<>(buffer);
-            buffer.clear();
-
-            for (Object event : copy) {
-                WsMessage<Object> message = WsMessage.create("event")
-                        .withPayload(event);
-                webSocket.sendText(JsonUtils.toJsonString(message));
-            }
+            sendStateUpdate();
         }
 
         @Override
@@ -281,11 +273,7 @@ public class ApiGateway {
             webSocket.sendText(JsonUtils.toJsonString(event));
             lastSendEventAt = Instant.now();
         } else {
-            buffer.add(event);
-            if (buffer.size() > 1000) {
-                buffer.remove(0);
-                Log.warn("Buffer overflow, dropped event: @", event);
-            }
+           Log.warn("Not connected, dropped event: @", event);
         }
     }
 
@@ -812,8 +800,6 @@ public class ApiGateway {
     public void destroy() {
         serverQueryCache.invalidateAll();
         serverQueryCache = null;
-
-        buffer.clear();
 
         if (webSocket != null) {
             webSocket.disconnect();
