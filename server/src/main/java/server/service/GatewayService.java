@@ -115,11 +115,13 @@ public class GatewayService {
                 state = ConnectionState.DISCONNECTED;
                 eventBus.emit(new DisconnectEvent(id));
                 connectedFuture = new CompletableFuture<>();
+                Log.info("[red]Client disconnected: " + id);
                 return;
             } else {
                 state = ConnectionState.CONNECTED;
                 eventBus.emit(new StartEvent(id));
                 connectedFuture.complete(null);
+                Log.info("[green]Client connected: " + id);
             }
         }
 
