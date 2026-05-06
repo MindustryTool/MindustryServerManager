@@ -55,13 +55,13 @@ public class WsHandler {
             throw ApiError.forbidden("Security token is not set");
         }
 
-        var claims = JWT.require(Algorithm.HMAC256(securityKey))
+        var idString = JWT.require(Algorithm.HMAC256(securityKey))
                 .withIssuer("MindustryTool")
                 .build()
                 .verify(jwtToken)
-                .getClaims();
+                .getSubject();
 
-        return UUID.fromString(claims.get("id").asString());
+        return UUID.fromString(idString);
     }
 
     public String generateServerJwt(UUID serverId, String securityKey) {
