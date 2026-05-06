@@ -530,14 +530,13 @@ public class DockerNodeManager implements NodeManager {
                 public void onNext(Event event) {
                     String containerId = event.getId();
                     String action = event.getAction();
-                    String status = event.getStatus();
 
-                    if (status == null) {
-                        Log.warn("Docker event with null status: @", event);
+                    if (action == null) {
+                        Log.warn("Docker event with null action: @", event);
                         return;
                     }
 
-                    if (ignoredEvents.stream().anyMatch(ignored -> status.toLowerCase().startsWith(ignored))) {
+                    if (ignoredEvents.stream().anyMatch(ignored -> action.toLowerCase().startsWith(ignored))) {
                         return;
                     }
 
@@ -562,7 +561,7 @@ public class DockerNodeManager implements NodeManager {
                     optional.ifPresentOrElse(metadata -> {
                         var serverId = metadata.getConfig().getId();
 
-                        if (status.equalsIgnoreCase("start")) {
+                        if (action.equalsIgnoreCase("start")) {
                             attachLogCallback(containerId, serverId);
                         }
                     }, () -> {
