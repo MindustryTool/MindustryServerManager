@@ -84,29 +84,29 @@ public class DockerNodeManager implements NodeManager {
                     .exec();
 
             if (containers.size() == 1) {
-                Log.info("Container exists, skip creation");
+                eventBus.emit(LogEvent.info(serverId, "Container exists, skip creation"));
                 return;
             }
 
             for (var container : containers) {
-                Log.info("Removing container " + container.getNames()[0]);
+                eventBus.emit(LogEvent.info(serverId, "Removing container " + container.getNames()[0]));
                 removeContainer(container.getId());
-                Log.info("Container removed");
+                eventBus.emit(LogEvent.info(serverId, "Container removed"));
             }
 
-            Log.info("Pulling image: " + request.getImage());
+            eventBus.emit(LogEvent.info(serverId, "Pulling image: " + request.getImage()));
             try {
                 dockerClient.pullImageCmd(request.getImage())
                         .exec(new ResultCallback.Adapter<PullResponseItem>())
                         .awaitCompletion();
             } catch (NotFoundException ex) {
-                Log.err("Image not found: " + request.getImage());
+                eventBus.emit(LogEvent.error(serverId, "Image not found: " + request.getImage()));
                 return;
             } catch (Exception ex) {
-                Log.err("Error: " + ex.getMessage());
+                eventBus.emit(LogEvent.error(serverId, "Error: " + ex.getMessage()));
             }
 
-            Log.info("Image pulled");
+            eventBus.emit(LogEvent.info(serverId, "Image pulled"));
 
             String serverIdString = request.getId().toString();
             var serverPath = Paths.get(Const.volumeFolderPath, "servers", serverIdString, "config")
@@ -114,9 +114,9 @@ public class DockerNodeManager implements NodeManager {
 
             try {
                 Files.createDirectories(serverPath);
-                Log.info("Server folder created: " + serverPath);
+                eventBus.emit(LogEvent.info(serverId, "Server folder created: " + serverPath));
             } catch (Exception e) {
-                Log.err("Error: " + e.getMessage());
+                eventBus.emit(LogEvent.error(serverId, "Error: " + e.getMessage()));
             }
 
             var servers = dockerClient.listContainersCmd()
@@ -134,7 +134,7 @@ public class DockerNodeManager implements NodeManager {
                 var isSameId = config.getId().equals(request.getId());
 
                 if (isSamePort && !isSameId) {
-                    Log.err("Port exists at container " + server.getNames()[0] + " port: " + config.getPort());
+                    eventBus.emit(LogEvent.error(serverId, "Port exists at container " + server.getNames()[0] + " port: " + config.getPort()));
                     return;
                 }
             }
@@ -149,7 +149,7 @@ public class DockerNodeManager implements NodeManager {
             portBindings.bind(tcp, Ports.Binding.bindPort(request.getPort()));
             portBindings.bind(udp, Ports.Binding.bindPort(request.getPort()));
 
-            Log.info("Creating new container on port " + request.getPort());
+            eventBus.emit(LogEvent.info(serverId, "Creating new container on port " + request.getPort()));
 
             var image = request.getImage() == null || request.getImage().isEmpty()
                     ? envConfig.docker().mindustryServerImage()
@@ -222,9 +222,9 @@ public class DockerNodeManager implements NodeManager {
             dockerClient.startContainerCmd(containerId).exec();
             attachLogCallback(containerId, serverId);
 
-            Log.info("Container " + containerId + " started");
+            eventBus.emit(LogEvent.info(serverId, "Container " + containerId + " started"));
         } catch (Exception e) {
-            Log.err("Error: " + e.getMessage());
+            eventBus.emit(LogEvent.error(serverId, "Error: " + e.getMessage()));
         }
     }
 
