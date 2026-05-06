@@ -248,7 +248,7 @@ public class GatewayService {
                     var result = httpClient.send(request, BodyHandlers.ofString());
 
                     if (result.statusCode() >= 400) {
-                        throw new ApiError(result.statusCode(), "Failed to login server");
+                        throw new ApiError(result.statusCode(), "Failed to login server: " + result.body());
                     }
 
                     return Utils.readString(result.body());
@@ -270,7 +270,7 @@ public class GatewayService {
                     HttpResponse<String> result = httpClient.send(request, BodyHandlers.ofString());
 
                     if (result.statusCode() >= 400) {
-                        throw new ApiError(result.statusCode(), "Failed to host server");
+                        throw new ApiError(result.statusCode(), "Failed to host server: " + result.body());
                     }
 
                     return result.body();
