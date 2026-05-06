@@ -1,5 +1,6 @@
 package server.manager;
 
+import java.io.Closeable;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -25,13 +26,12 @@ public interface NodeManager {
     void remove(UUID id, NodeRemoveReason reason);
 
     List<ServerMisMatch> getMismatch(
-            UUID id, 
-            ServerConfig config, 
+            UUID id,
+            ServerConfig config,
             ServerStateDto state,
-            List<ModDto> mods
-    );
+            List<ModDto> mods);
 
-    void getNodeUsage(UUID serverId, Consumer<NodeUsage> onUsage, Consumer<Throwable> onError);
+    Closeable getNodeUsage(UUID serverId, Consumer<NodeUsage> onUsage, Consumer<Throwable> onError);
 
     List<ManagerMapDto> getManagerMaps();
 

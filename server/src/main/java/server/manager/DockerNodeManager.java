@@ -323,17 +323,17 @@ public class DockerNodeManager implements NodeManager {
     }
 
     @Override
-    public void getNodeUsage(UUID serverId, Consumer<NodeUsage> onUsage, Consumer<Throwable> onError) {
+    public Closeable getNodeUsage(UUID serverId, Consumer<NodeUsage> onUsage, Consumer<Throwable> onError) {
         var optional = findContainerByServerId(serverId);
 
         if (optional.isEmpty()) {
             onError.accept(new IllegalArgumentException("Server not found"));
-            return;
+            return null;
         }
 
         var containerId = optional.get().getId();
 
-        dockerClient.statsCmd(containerId).exec(new ResultCallback.Adapter<Statistics>() {
+        var result = dockerClient.statsCmd(containerId).exec(new ResultCallback.Adapter<Statistics>() {
             Statistics lastStats = null;
 
             @Override
@@ -350,6 +350,14 @@ public class DockerNodeManager implements NodeManager {
                 onError.accept(throwable);
             }
         });
+
+        try {
+            result.awaitCompletion();
+        } catch (InterruptedException e) {
+            Log.err("Failed to get node usage", e);
+        }
+
+        return result;
     }
 
     private double calculateCpuPercent(Statistics lastStats, Statistics currentStats) {
@@ -530,65 +538,64 @@ public class DockerNodeManager implements NodeManager {
 
         final Set<String> ignoredEvents = Set.of("exec_create", "exec_start", "exec_die", "exec_detach");
 
-        Const.executorService.execute(() -> {
-            Log.info("Listen to docker event");
-            dockerClient.eventsCmd().exec(new ResultCallback.Adapter<Event>() {
-                @Override
-                public void onNext(Event event) {
-                    String containerId = event.getId();
-                    String action = event.getAction();
+        Log.info("Listen to docker event");
 
-                    if (action == null) {
-                        Log.warn("Docker event with null action: @", event);
-                        return;
-                    }
+        dockerClient.eventsCmd().exec(new ResultCallback.Adapter<Event>() {
+            @Override
+            public void onNext(Event event) {
+                String containerId = event.getId();
+                String action = event.getAction();
 
-                    if (ignoredEvents.stream().anyMatch(ignored -> action.toLowerCase().startsWith(ignored))) {
-                        return;
-                    }
-
-                    if (containerId == null) {
-                        return;
-                    }
-
-                    var containers = dockerClient.listContainersCmd()
-                            .withIdFilter(List.of(containerId))
-                            .exec();
-
-                    if (containers.size() != 1) {
-                        Log.warn("Docker event with multiple containers: @", event);
-                        return;
-                    }
-
-                    var container = containers.get(0);
-
-                    var optional = readMetadataFromContainer(container);
-
-                    optional.ifPresentOrElse(metadata -> {
-                        var serverId = metadata.getConfig().getId();
-
-                        if (action.equalsIgnoreCase("start")) {
-                            attachLogCallback(containerId, serverId);
-                        }
-                    }, () -> {
-                        var serverIdString = container.getLabels().get(Const.serverIdLabel);
-                        if (serverIdString == null) {
-                            return;
-                        }
-
-                        Log.info("Server %s %s %s".formatted(serverIdString, event.getStatus(), action));
-                    });
-
-                    String name = optional
-                            .map(meta -> meta.getConfig().getName())
-                            .or(() -> Optional.ofNullable(event.getFrom()))
-                            .orElse(event.getId());
-
-                    String message = "Server %s %s %s".formatted(name, event.getStatus(), action);
-
-                    Log.info(message);
+                if (action == null) {
+                    Log.warn("Docker event with null action: @", event);
+                    return;
                 }
-            });
+
+                if (ignoredEvents.stream().anyMatch(ignored -> action.toLowerCase().startsWith(ignored))) {
+                    return;
+                }
+
+                if (containerId == null) {
+                    return;
+                }
+
+                var containers = dockerClient.listContainersCmd()
+                        .withIdFilter(List.of(containerId))
+                        .exec();
+
+                if (containers.size() != 1) {
+                    Log.warn("Docker event with multiple containers: @", event);
+                    return;
+                }
+
+                var container = containers.get(0);
+
+                var optional = readMetadataFromContainer(container);
+
+                optional.ifPresentOrElse(metadata -> {
+                    var serverId = metadata.getConfig().getId();
+
+                    if (action.equalsIgnoreCase("start")) {
+                        attachLogCallback(containerId, serverId);
+                    }
+                }, () -> {
+                    var serverIdString = container.getLabels().get(Const.serverIdLabel);
+                    if (serverIdString == null) {
+                        return;
+                    }
+
+                    Log.info("Server %s %s %s".formatted(serverIdString, event.getStatus(), action));
+                });
+
+                String name = optional
+                        .map(meta -> meta.getConfig().getName())
+                        .or(() -> Optional.ofNullable(event.getFrom()))
+                        .orElse(event.getId());
+
+                String message = "Server %s %s %s".formatted(name, event.getStatus(), action);
+
+                Log.info(message);
+            }
         });
 
         scheduler.scheduleWithFixedDelay(() -> {

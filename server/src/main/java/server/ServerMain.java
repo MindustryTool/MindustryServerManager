@@ -31,6 +31,7 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
+import java.io.IOException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 
@@ -224,11 +225,28 @@ public class ServerMain {
 
         app.sse("/api/v2/servers/{id}/usage", client -> {
             UUID id = UUID.fromString(client.ctx().pathParam("id"));
-            serverService.getUsage(id, usage -> {
+
+            var closeable = serverService.getUsage(id, usage -> {
                 client.sendEvent(Utils.toJsonString(usage));
             }, err -> {
                 client.sendEvent("error", err.getMessage());
                 client.close();
+            });
+
+            if (client.terminated()) {
+                try {
+                    closeable.close();
+                } catch (IOException e1) {
+                    Log.err("Error closing usage stream", e1);
+                }
+            }
+
+            client.onClose(() -> {
+                try {
+                    closeable.close();
+                } catch (Exception e) {
+                    Log.err("Error closing usage stream", e);
+                }
             });
         });
 

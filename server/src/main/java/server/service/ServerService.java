@@ -1,5 +1,6 @@
 package server.service;
 
+import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.LinkedList;
@@ -242,8 +243,8 @@ public class ServerService {
         return nodeManager.deleteFile(serverId, path);
     }
 
-    public void getUsage(UUID serverId, Consumer<NodeUsage> onUsage, Consumer<Throwable> onError) {
-        nodeManager.getNodeUsage(serverId, onUsage, onError);
+    public Closeable getUsage(UUID serverId, Consumer<NodeUsage> onUsage, Consumer<Throwable> onError) {
+        return nodeManager.getNodeUsage(serverId, onUsage, onError);
     }
 
     public ServerStateDto state(UUID serverId) {
