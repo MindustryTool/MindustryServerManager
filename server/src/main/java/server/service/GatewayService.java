@@ -245,7 +245,7 @@ public class GatewayService {
                     try {
                         connectedFuture.get(10, TimeUnit.SECONDS);
                     } catch (InterruptedException | ExecutionException | TimeoutException e) {
-                        return CompletableFuture.failedFuture(e);
+                        return CompletableFuture.failedFuture(new RuntimeException("Server gateway not connected", e));
                     }
                 }
 
