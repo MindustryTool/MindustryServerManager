@@ -71,6 +71,7 @@ public class ServerService {
 
     private void init() {
         eventBus.on(event -> {
+            Log.info("Event: @", event);
             synchronized (buffer) {
                 if (eventListeners.isEmpty()) {
                     buffer.add(event);
