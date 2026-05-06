@@ -244,6 +244,7 @@ public class GatewayService {
                 try {
                     HttpRequest request = createRequest("servers", id, "login")
                             .POST(HttpRequest.BodyPublishers.ofString(Utils.toJsonString(body)))
+                            .header("Content-Type", "application/json")
                             .build();
 
                     HttpResponse<String> result = httpClient.send(request, BodyHandlers.ofString());
@@ -265,6 +266,7 @@ public class GatewayService {
                 try {
                     HttpRequest request = createRequest("servers", id, "host-server")
                             .POST(HttpRequest.BodyPublishers.noBody())
+                            .header("Content-Type", "application/json")
                             .timeout(Duration.ofMinutes(2))
                             .build();
 
