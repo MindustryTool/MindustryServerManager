@@ -63,7 +63,6 @@ import arc.util.CommandHandler.Command;
 import arc.util.CommandHandler.ResponseType;
 import arc.util.Strings;
 import arc.util.Time;
-import arc.util.serialization.Base64Coder;
 import plugin.annotations.Init;
 import plugin.annotations.Schedule;
 import plugin.commands.ServerCommandHandler;
@@ -121,7 +120,7 @@ public class ApiGateway {
         this.registerMessageHandler("update-player", LoginDto.class, this::updatePlayer);
         this.registerMessageHandler("paused", Void.class, (request) -> tooglePause());
         this.registerMessageHandler("get-state", Void.class, (request) -> Utils.getState());
-        this.registerMessageHandler("get-image", Void.class, (request) -> getMapImageString());
+        this.registerMessageHandler("generate-map-image", Void.class, (request) -> generateMapImage());
         this.registerMessageHandler("send-command", String[].class, (request) -> sendCommand(request));
         this.registerMessageHandler("say", String.class, (request) -> say(request));
         this.registerMessageHandler("host", StartServerDto.class, (request) -> host(request));
@@ -565,8 +564,9 @@ public class ApiGateway {
         return result;
     }
 
-    private String getMapImageString() {
-        return new String(Base64Coder.encode(Utils.mapPreview()));
+    private Void generateMapImage() {
+        Utils.generateMapPreview();
+        return null;
     }
 
     private Void sendChat(String message) {

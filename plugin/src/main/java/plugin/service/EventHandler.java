@@ -139,7 +139,7 @@ public class EventHandler {
         }
 
         Tasks.cpu("update map preview", () -> {
-            Utils.mapPreview();
+            Utils.generateMapPreview();
         });
     }
 

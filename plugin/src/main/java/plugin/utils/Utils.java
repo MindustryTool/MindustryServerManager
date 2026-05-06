@@ -263,7 +263,7 @@ public class Utils {
     private static final String MAP_PREVIEW_FILE_NAME = "map-preview.msav";
     private static final String MAP_PREVIEW_IMAGE_FILE_NAME = "map-preview-image.png";
 
-    public static byte[] mapPreview() {
+    public static void generateMapPreview() {
         Fi tempFile = Vars.dataDirectory.child(MAP_PREVIEW_FILE_NAME);
         Fi tempImageFile = Vars.dataDirectory.child(MAP_PREVIEW_IMAGE_FILE_NAME);
 
@@ -276,7 +276,7 @@ public class Utils {
         }
 
         if (!Vars.state.isGame()) {
-            return new byte[0];
+            return;
         }
 
         if (lastImagePreviewAt.plusSeconds(5).isBefore(Instant.now())) {
@@ -288,7 +288,7 @@ public class Utils {
             }, 200, "Generate map preview");
 
             if (bytes.length == 0) {
-                return new byte[0];
+                return;
             }
 
             HashMap<String, String> body = new HashMap<>();
@@ -311,14 +311,6 @@ public class Utils {
                         tempImageFile.write(res.getResultAsStream(), false);
                     });
         }
-
-        byte[] imageBytes = tempImageFile.readBytes();
-
-        if (imageBytes.length == 0) {
-            return new byte[0];
-        }
-
-        return imageBytes;
     }
 
     public static Locale parseLocale(String locale) {

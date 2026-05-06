@@ -25,7 +25,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import arc.util.Log;
-import arc.util.serialization.Base64Coder;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import dto.LoginDto;
@@ -326,7 +325,9 @@ public class GatewayService {
             }
 
             public CompletableFuture<byte[]> getImage() {
-                return sendRequest("get-image", null, String.class).thenApply(res -> Base64Coder.decode(res));
+
+                return sendRequest("generate-map-image", null)
+                        .thenApply(res -> nodeManager.getFile(id, "map-preview-image.png").readBytes());
             }
 
             public CompletableFuture<Void> sendCommand(String... command) {
