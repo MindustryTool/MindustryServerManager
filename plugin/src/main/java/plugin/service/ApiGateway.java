@@ -158,7 +158,7 @@ public class ApiGateway {
 
     private synchronized void connect() {
         try {
-            if (webSocket != null && webSocket.isOpen()){
+            if (webSocket != null && webSocket.isOpen()) {
                 return;
             }
 
@@ -246,6 +246,7 @@ public class ApiGateway {
                 WsMessage<?> response = wsMessage.response(result);
                 ws.sendText(JsonUtils.toJsonString(response));
             } catch (Exception e) {
+                Log.err("Error handling message: " + wsMessage, e);
                 WsMessage<?> error = wsMessage.error(e.getMessage());
                 ws.sendText(JsonUtils.toJsonString(error));
             }
@@ -273,7 +274,7 @@ public class ApiGateway {
             webSocket.sendText(JsonUtils.toJsonString(event));
             lastSendEventAt = Instant.now();
         } else {
-           Log.warn("Not connected, dropped event: @", event);
+            Log.warn("Not connected, dropped event: @", event);
         }
     }
 

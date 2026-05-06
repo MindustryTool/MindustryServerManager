@@ -193,6 +193,7 @@ public class GatewayService {
                     WsMessage<?> response = wsMessage.response(result);
                     context.send(response);
                 } catch (Exception e) {
+                    Log.err("Error handling message: " + wsMessage, e);
                     WsMessage<?> error = wsMessage.error(e.getMessage());
                     context.send(error);
                 }
