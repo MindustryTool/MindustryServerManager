@@ -159,225 +159,6 @@ public class ApiGateway {
         return sendRequest(type, payload, Void.class);
     }
 
-    public LoginDto login(Player player) {
-        var body = new LoginRequestDto()
-                .setUuid(player.uuid())
-                .setName(player.name())
-                .setIp(player.ip());
-
-        try {
-            return sendRequest("login", body, LoginDto.class).get(5, TimeUnit.SECONDS);
-        } catch (InterruptedException | ExecutionException | TimeoutException e) {
-            throw new RuntimeException("Login failed", e);
-        }
-    }
-
-    public String host(String targetServerId) {
-        Object lock = Utils.getHostingLock(targetServerId);
-
-        synchronized (lock) {
-            Log.info("[sky]Hosting server: " + targetServerId);
-            try {
-                return sendRequest("host", targetServerId, String.class).get(90, TimeUnit.SECONDS);
-            } catch (InterruptedException | ExecutionException | TimeoutException e) {
-                throw new RuntimeException("Host failed", e);
-            } finally {
-                Utils.releaseHostingLock(targetServerId);
-                Log.info("[sky]Finish hosting server: " + targetServerId);
-            }
-        }
-
-    }
-
-    public synchronized List<ServerDto> getServers(PaginationRequest request) {
-        return serverQueryCache.get(request, _ignore -> {
-            try {
-                String query = String.format("servers?page=%s&size=%s", request.getPage(), request.getSize());
-
-                return HttpUtils.sendList(HttpUtils.get(API_URL, query), 2000, ServerDto.class);
-            } catch (Exception e) {
-                e.printStackTrace();
-                return new ArrayList<>();
-            }
-        });
-    }
-
-    public String translateRaw(Locale targetLanguage, String text) {
-        if (text == null || text.isEmpty()) {
-            throw new IllegalArgumentException("Text is empty");
-        }
-
-        var languageCode = targetLanguage.getLanguage();
-
-        if (languageCode == null || languageCode.isEmpty()) {
-            languageCode = "en";
-        }
-
-        HashMap<String, Object> body = new HashMap<>();
-
-        body.put("content", text);
-        body.put("target", languageCode);
-
-        try {
-
-            var result = HttpUtils
-                    .send(HttpUtils
-                            .post("https://api.mindustry-tool.com/api/v4/translations/translate")
-                            .header("Content-Type", "application/json")//
-                            .content(JsonUtils.toJsonString(body)), 10000, String.class);
-
-            return result;
-        } catch (Exception e) {
-            throw new RuntimeException(
-                    "Fail to translate: " + text + " to " + targetLanguage + ", error: " + e.getMessage());
-        }
-    }
-
-    public String translate(String text, Locale targetLanguage) {
-        if (text == null || text.isEmpty()) {
-            throw new IllegalArgumentException("Text is empty");
-        }
-
-        var languageCode = targetLanguage.getLanguage();
-
-        if (languageCode == null || languageCode.isEmpty()) {
-            languageCode = "en";
-        }
-
-        var cacheKey = String.format("%s:%s", text, languageCode);
-
-        if (failedTranslationCache.getIfPresent(cacheKey) != null) {
-            return text;
-        }
-
-        var cached = translationCache.getIfPresent(cacheKey);
-
-        if (cached != null) {
-            return cached;
-        }
-
-        try {
-            var result = translateRaw(targetLanguage, text);
-
-            translationCache.put(cacheKey, result);
-
-            Log.debug("Translate: <@> to <@>, result <@>", text, targetLanguage, result);
-
-            return result;
-        } catch (Exception e) {
-            Log.err("Failed to translate text [" + text + "] to [" + targetLanguage + "]", e);
-            failedTranslationCache.put(cacheKey, true);
-            return text;
-        }
-    }
-
-    public Seq<String> translate(Seq<String> texts, Locale targetLanguage) {
-        var languageCode = targetLanguage.getLanguage();
-
-        if (languageCode == null || languageCode.isEmpty()) {
-            languageCode = "en";
-        }
-
-        List<CompletableFuture<String>> result = new ArrayList<>();
-
-        for (var text : texts.select(t -> !t.isEmpty())) {
-            var future = new CompletableFuture<String>();
-
-            result.add(future);
-
-            var cacheKey = String.format("%s:%s", text, languageCode);
-
-            var cached = translationCache.getIfPresent(cacheKey);
-
-            if (cached != null) {
-                future.complete(cached);
-                continue;
-            }
-
-            if (failedTranslationCache.getIfPresent(cacheKey) != null) {
-                future.complete(text);
-                continue;
-            }
-
-            if (targetLanguage.equals(Locale.ENGLISH)) {
-                future.complete(text);
-                continue;
-            }
-
-            HashMap<String, Object> body = new HashMap<>();
-
-            body.put("content", text);
-            body.put("target", languageCode);
-
-            Http.post("https://api.mindustry-tool.com/api/v4/translations/translate", JsonUtils.toJsonString(body))
-                    .header("Content-Type", "application/json")//
-                    .timeout(10000)
-                    .error(error -> {
-                        if (error instanceof SocketTimeoutException) {
-                            future.completeExceptionally(
-                                    new RuntimeException("Timeout while translating: " + text, error));
-                        } else if (error instanceof HttpStatusException e) {
-                            future.completeExceptionally(new RuntimeException(
-                                    "Error while translating: " + text + "\n" + e.response.getResultAsString(), e));
-                        } else {
-                            future.completeExceptionally(
-                                    new RuntimeException("Error while translating: " + text, error));
-                        }
-                        failedTranslationCache.put(cacheKey, true);
-                    })
-                    .submit(res -> {
-                        try {
-                            String translated = res.getResultAsString();
-
-                            translationCache.put(cacheKey, translated);
-
-                            Log.debug("Translate: <@> to <@>, result <@>", text, targetLanguage, translated);
-
-                            future.complete(translated);
-                        } catch (Exception e) {
-                            future.completeExceptionally(e);
-                        }
-                    });
-        }
-
-        try {
-            CompletableFuture.allOf(result.toArray(new CompletableFuture[texts.size])).get(10, TimeUnit.SECONDS);
-
-            return Seq.with(result).map(r -> r.getNow("This should never happen"));
-        } catch (Exception e) {
-
-            Log.err("Failed to translate text [" + texts + "] to [" + targetLanguage + "]", e);
-
-            return texts;
-        }
-    }
-
-    @Listener(SessionCreatedEvent.class)
-    private void onSessionCreated() {
-        sendStateUpdate();
-    }
-
-    @Listener(SessionRemovedEvent.class)
-    private void onSessionRemoved() {
-        sendStateUpdate();
-    }
-
-    @Listener(StateChangeEvent.class)
-    private void onStateChange() {
-        sendStateUpdate();
-    }
-
-    private void sendStateUpdate() {
-        try {
-            ServerStateDto state = Utils.getState();
-            ServerStateEvent event = new ServerStateEvent(Control.SERVER_ID, Arrays.asList(state));
-
-            fire(event);
-        } catch (Exception error) {
-            Log.err("Failed to send state update", error);
-        }
-    }
-
     private synchronized void connect() {
         try {
             Log.info("[yellow]Connecting to server manager");
@@ -796,6 +577,225 @@ public class ApiGateway {
 
     private Boolean isHosting() {
         return Vars.state.isGame() && Control.state == PluginState.LOADED;
+    }
+
+    public LoginDto login(Player player) {
+        var body = new LoginRequestDto()
+                .setUuid(player.uuid())
+                .setName(player.name())
+                .setIp(player.ip());
+
+        try {
+            return sendRequest("login", body, LoginDto.class).get(5, TimeUnit.SECONDS);
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            throw new RuntimeException("Login failed", e);
+        }
+    }
+
+    public String host(String targetServerId) {
+        Object lock = Utils.getHostingLock(targetServerId);
+
+        synchronized (lock) {
+            Log.info("[sky]Hosting server: " + targetServerId);
+            try {
+                return sendRequest("host", targetServerId, String.class).get(90, TimeUnit.SECONDS);
+            } catch (InterruptedException | ExecutionException | TimeoutException e) {
+                throw new RuntimeException("Host failed", e);
+            } finally {
+                Utils.releaseHostingLock(targetServerId);
+                Log.info("[sky]Finish hosting server: " + targetServerId);
+            }
+        }
+
+    }
+
+    public synchronized List<ServerDto> getServers(PaginationRequest request) {
+        return serverQueryCache.get(request, _ignore -> {
+            try {
+                String query = String.format("servers?page=%s&size=%s", request.getPage(), request.getSize());
+
+                return HttpUtils.sendList(HttpUtils.get(API_URL, query), 2000, ServerDto.class);
+            } catch (Exception e) {
+                e.printStackTrace();
+                return new ArrayList<>();
+            }
+        });
+    }
+
+    public String translateRaw(Locale targetLanguage, String text) {
+        if (text == null || text.isEmpty()) {
+            throw new IllegalArgumentException("Text is empty");
+        }
+
+        var languageCode = targetLanguage.getLanguage();
+
+        if (languageCode == null || languageCode.isEmpty()) {
+            languageCode = "en";
+        }
+
+        HashMap<String, Object> body = new HashMap<>();
+
+        body.put("content", text);
+        body.put("target", languageCode);
+
+        try {
+
+            var result = HttpUtils
+                    .send(HttpUtils
+                            .post("https://api.mindustry-tool.com/api/v4/translations/translate")
+                            .header("Content-Type", "application/json")//
+                            .content(JsonUtils.toJsonString(body)), 10000, String.class);
+
+            return result;
+        } catch (Exception e) {
+            throw new RuntimeException(
+                    "Fail to translate: " + text + " to " + targetLanguage + ", error: " + e.getMessage());
+        }
+    }
+
+    public String translate(String text, Locale targetLanguage) {
+        if (text == null || text.isEmpty()) {
+            throw new IllegalArgumentException("Text is empty");
+        }
+
+        var languageCode = targetLanguage.getLanguage();
+
+        if (languageCode == null || languageCode.isEmpty()) {
+            languageCode = "en";
+        }
+
+        var cacheKey = String.format("%s:%s", text, languageCode);
+
+        if (failedTranslationCache.getIfPresent(cacheKey) != null) {
+            return text;
+        }
+
+        var cached = translationCache.getIfPresent(cacheKey);
+
+        if (cached != null) {
+            return cached;
+        }
+
+        try {
+            var result = translateRaw(targetLanguage, text);
+
+            translationCache.put(cacheKey, result);
+
+            Log.debug("Translate: <@> to <@>, result <@>", text, targetLanguage, result);
+
+            return result;
+        } catch (Exception e) {
+            Log.err("Failed to translate text [" + text + "] to [" + targetLanguage + "]", e);
+            failedTranslationCache.put(cacheKey, true);
+            return text;
+        }
+    }
+
+    public Seq<String> translate(Seq<String> texts, Locale targetLanguage) {
+        var languageCode = targetLanguage.getLanguage();
+
+        if (languageCode == null || languageCode.isEmpty()) {
+            languageCode = "en";
+        }
+
+        List<CompletableFuture<String>> result = new ArrayList<>();
+
+        for (var text : texts.select(t -> !t.isEmpty())) {
+            var future = new CompletableFuture<String>();
+
+            result.add(future);
+
+            var cacheKey = String.format("%s:%s", text, languageCode);
+
+            var cached = translationCache.getIfPresent(cacheKey);
+
+            if (cached != null) {
+                future.complete(cached);
+                continue;
+            }
+
+            if (failedTranslationCache.getIfPresent(cacheKey) != null) {
+                future.complete(text);
+                continue;
+            }
+
+            if (targetLanguage.equals(Locale.ENGLISH)) {
+                future.complete(text);
+                continue;
+            }
+
+            HashMap<String, Object> body = new HashMap<>();
+
+            body.put("content", text);
+            body.put("target", languageCode);
+
+            Http.post("https://api.mindustry-tool.com/api/v4/translations/translate", JsonUtils.toJsonString(body))
+                    .header("Content-Type", "application/json")//
+                    .timeout(10000)
+                    .error(error -> {
+                        if (error instanceof SocketTimeoutException) {
+                            future.completeExceptionally(
+                                    new RuntimeException("Timeout while translating: " + text, error));
+                        } else if (error instanceof HttpStatusException e) {
+                            future.completeExceptionally(new RuntimeException(
+                                    "Error while translating: " + text + "\n" + e.response.getResultAsString(), e));
+                        } else {
+                            future.completeExceptionally(
+                                    new RuntimeException("Error while translating: " + text, error));
+                        }
+                        failedTranslationCache.put(cacheKey, true);
+                    })
+                    .submit(res -> {
+                        try {
+                            String translated = res.getResultAsString();
+
+                            translationCache.put(cacheKey, translated);
+
+                            Log.debug("Translate: <@> to <@>, result <@>", text, targetLanguage, translated);
+
+                            future.complete(translated);
+                        } catch (Exception e) {
+                            future.completeExceptionally(e);
+                        }
+                    });
+        }
+
+        try {
+            CompletableFuture.allOf(result.toArray(new CompletableFuture[texts.size])).get(10, TimeUnit.SECONDS);
+
+            return Seq.with(result).map(r -> r.getNow("This should never happen"));
+        } catch (Exception e) {
+
+            Log.err("Failed to translate text [" + texts + "] to [" + targetLanguage + "]", e);
+
+            return texts;
+        }
+    }
+
+    @Listener(SessionCreatedEvent.class)
+    private void onSessionCreated() {
+        sendStateUpdate();
+    }
+
+    @Listener(SessionRemovedEvent.class)
+    private void onSessionRemoved() {
+        sendStateUpdate();
+    }
+
+    @Listener(StateChangeEvent.class)
+    private void onStateChange() {
+        sendStateUpdate();
+    }
+
+    private void sendStateUpdate() {
+        try {
+            ServerStateDto state = Utils.getState();
+            ServerStateEvent event = new ServerStateEvent(Control.SERVER_ID, Arrays.asList(state));
+
+            fire(event);
+        } catch (Exception error) {
+            Log.err("Failed to send state update", error);
+        }
     }
 
     @Destroy
