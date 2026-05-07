@@ -181,7 +181,6 @@ public class EventHandler {
                 var isLoggedIn = playerData.getLoginLink() == null;
 
                 if (isLoggedIn) {
-                    Log.info(playerData);
                     session.player.sendMessage(I18n.t(session.locale,
                             "@Logged in as ", playerData.getName()));
                 } else {
