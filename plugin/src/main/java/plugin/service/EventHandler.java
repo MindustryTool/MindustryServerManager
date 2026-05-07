@@ -8,16 +8,12 @@ import mindustry.game.EventType.GameOverEvent;
 import mindustry.game.EventType.PlayerBanEvent;
 import mindustry.game.EventType.PlayerConnect;
 import mindustry.game.EventType.PlayerLeave;
-import mindustry.game.EventType.UnitBulletDestroyEvent;
 import mindustry.game.EventType.WorldLoadEndEvent;
-import mindustry.gen.Building;
 import mindustry.gen.Call;
 import mindustry.gen.Groups;
 import mindustry.gen.Player;
 import plugin.Cfg;
-import plugin.PluginEvents;
 import plugin.Control;
-import plugin.event.PlayerKillUnitEvent;
 import plugin.event.SessionCreatedEvent;
 import plugin.event.SessionRemovedEvent;
 import plugin.menus.RateMapMenu;
@@ -93,31 +89,6 @@ public class EventHandler {
 
             apiGateway.fire(ServerEvents.LogEvent.info(Control.SERVER_ID, message));
             apiGateway.fire(new ServerEvents.ChatEvent(Control.SERVER_ID, message));
-        }
-    }
-
-    @Listener
-    private void onUnitBulletDestroy(UnitBulletDestroyEvent event) {
-        var unit = event.unit;
-        var bullet = event.bullet;
-
-        if (unit == null || bullet == null) {
-            return;
-        }
-
-        if (unit.isPlayer()) {
-            return;
-        }
-
-        if (bullet.owner() == null) {
-            return;
-        }
-
-        if (bullet.owner() instanceof Building building) {
-            Registry.get(SnapshotHandler.class).getBuiltBy(building)
-                    .ifPresent(buildBy -> PluginEvents.fire(new PlayerKillUnitEvent(buildBy, unit)));
-        } else if (bullet.owner() instanceof Player player) {
-            PluginEvents.fire(new PlayerKillUnitEvent(player, unit));
         }
     }
 

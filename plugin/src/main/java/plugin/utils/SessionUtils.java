@@ -1,11 +1,8 @@
 package plugin.utils;
 
 import java.util.Locale;
-import java.util.Map;
 
-import arc.util.Log;
 import arc.util.Strings;
-import mindustry.Vars;
 import mindustry.gen.Iconc;
 import mindustry.gen.Player;
 import mindustry.type.UnitType;
@@ -81,28 +78,6 @@ public class SessionUtils {
                 .append(ExpUtils.playTimeToExp(data.playTime + session.sessionPlayTime()))
                 .append("exp)")
                 .append("[white]\n");
-
-        for (Map.Entry<Short, Long> entry : data.kills.entrySet()) {
-            UnitType unit = Vars.content.unit(entry.getKey());
-
-            if (unit == null) {
-                continue;
-            }
-
-            if (entry.getValue() == 0) {
-                continue;
-            }
-
-            try {
-                info.append("[white]").append(unit.emoji()).append(": ").append(entry.getValue())
-                        .append(" (")
-                        .append(ExpUtils.unitHealthToExp(unit.health * entry.getValue()))
-                        .append("exp)")
-                        .append("\n");
-            } catch (Exception e) {
-                Log.err("Error while appending kill info for unit @: @", unit.localizedName, e);
-            }
-        }
 
         return info.toString();
     }

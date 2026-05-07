@@ -1,6 +1,5 @@
 package plugin.utils;
 
-import mindustry.Vars;
 import mindustry.content.UnitTypes;
 import plugin.type.Session;
 import plugin.type.SessionData;
@@ -12,18 +11,10 @@ public class ExpUtils {
     }
 
     public static long getTotalExp(SessionData data, long sessionPlayTime) {
-        long exp = unitHealthToExp(data.kills.entrySet().stream().mapToDouble(entry -> {
-            var unit = Vars.content.unit(entry.getKey());
-
-            return unit.health * entry.getValue();
-        }).sum());
+        long exp = 0;
 
         exp += playTimeToExp(data.playTime + sessionPlayTime);
         return exp;
-    }
-
-    public static long unitHealthToExp(double health) {
-        return (long) (health / UnitTypes.flare.health / 8);
     }
 
     // Killing 1 flare = 5 seconds of play time

@@ -8,7 +8,6 @@ import mindustry.Vars;
 import mindustry.gen.Groups;
 import mindustry.gen.Player;
 import mindustry.net.Administration.PlayerInfo;
-import mindustry.type.UnitType;
 import plugin.Tasks;
 import plugin.annotations.Component;
 import plugin.repository.SessionRepository;
@@ -36,45 +35,6 @@ public class SessionService {
 
         return level;
     };
-
-    public void addKill(Session session, UnitType unit, int amount) {
-        if (amount <= 0)
-            return;
-
-        SessionData data = session.getData();
-        long totalKills;
-
-        synchronized (data) {
-            totalKills = data.kills.getOrDefault(unit.id, 0L) + amount;
-            data.kills.put(unit.id, totalKills);
-        }
-
-        sessionRepository.markDirty(session.player.uuid());
-
-        checkKillMilestone(session, unit, totalKills);
-    }
-
-    private void checkKillMilestone(Session session, UnitType unit, long totalKills) {
-        long base = 1;
-        while (totalKills >= base * 10) {
-            base *= 10;
-        }
-
-        long print = (totalKills / base) * base;
-
-        if (totalKills != print || totalKills < 10) {
-            return;
-        }
-
-        long exp = ExpUtils.unitHealthToExp(totalKills * unit.health);
-
-        Utils.forEachPlayerLocale((locale, players) -> {
-            String message = SessionUtils.getKillMessage(locale, session.player.name, print, unit, exp);
-            for (var p : players) {
-                p.sendMessage(message);
-            }
-        });
-    }
 
     public void update(Session session) {
         int level = getLevel.apply(session);
