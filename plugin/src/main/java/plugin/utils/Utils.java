@@ -135,6 +135,10 @@ public class Utils {
     public static synchronized void appPostWithTimeout(Runnable r, int timeoutMillis, String taskName) {
         CompletableFuture<Void> future = new CompletableFuture<>();
 
+        if (Thread.currentThread() == Core.app.getMainThread()) {
+            r.run();
+        }
+
         Core.app.post(() -> {
             var scheduler = Registry.get(Scheduler.class);
             ScheduledFuture<?> timeoutTask = scheduler.schedule(
@@ -164,6 +168,10 @@ public class Utils {
 
     private static synchronized <T> T appPostWithTimeout(Supplier<T> fn, int timeoutMillis, String taskName) {
         Log.debug("Start task: " + taskName);
+
+        if (Thread.currentThread() == Core.app.getMainThread()) {
+            return fn.get();
+        }
 
         CompletableFuture<T> future = new CompletableFuture<T>();
         Core.app.post(() -> {
