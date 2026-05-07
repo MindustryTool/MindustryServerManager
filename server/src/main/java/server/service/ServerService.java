@@ -117,22 +117,22 @@ public class ServerService {
     public void host(ServerConfig request) {
         UUID serverId = request.getId();
 
-        Log.info("Delete old loader.jar");
+        eventBus.emit(LogEvent.info(serverId, "Delete old loader.jar"));
         nodeManager.deleteFile(serverId, "mindustry-tool-plugins");
         nodeManager.deleteFile(serverId, "mods/loader.jar");
 
         Fi websocketFile = nodeManager.getFile(serverId, "WEBSOCKET.txt");
 
         if (!websocketFile.exists()) {
-            Log.info("Generate websocket file");
+            eventBus.emit(LogEvent.info(serverId, "Generate websocket file"));
             String jwt = wsHandler.generateServerJwt(serverId, envConfig.serverConfig().securityKey());
             nodeManager.writeFile(serverId, "WEBSOCKET.txt", jwt.getBytes());
         }
 
-        Log.info("Server not exists, create server");
+        eventBus.emit(LogEvent.info(serverId, "Server not exists, create server"));
         nodeManager.create(request);
 
-        Log.info("Connecting to gateway...");
+        eventBus.emit(LogEvent.info(serverId, "Connecting to gateway"));
         GatewayClient gatewayClient = gatewayService.of(serverId);
 
         try {
@@ -141,7 +141,7 @@ public class ServerService {
             throw new RuntimeException("Can not connect to gateway", e);
         }
 
-        Log.info("Waiting for server to start");
+        eventBus.emit(LogEvent.info(serverId, "Waiting for server to start"));
 
         String gamemode = request.getGamemode();
 
@@ -160,13 +160,13 @@ public class ServerService {
         try {
             gatewayClient.server().sendCommand(preHostCommand).get(5, TimeUnit.SECONDS);
 
-            Log.info("Host server");
+            eventBus.emit(LogEvent.info(serverId, "Host server"));
             gatewayClient.server().host(request).get(15, TimeUnit.SECONDS);
 
-            Log.info("Wait for server status");
+            eventBus.emit(LogEvent.info(serverId, "Wait for server status"));
             for (int i = 0; i < 600; i++) {
                 if (gatewayClient.server().isHosting().get(100, TimeUnit.MILLISECONDS)) {
-                    Log.info("Server hosting");
+                    eventBus.emit(LogEvent.info(serverId, "Server hosting"));
                     return;
                 }
             }
