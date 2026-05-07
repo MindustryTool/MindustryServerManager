@@ -276,7 +276,7 @@ public class Utils {
 
             appPostWithTimeout(() -> {
                 SaveIO.save(tempFile);
-            }, 1000, "Generate map preview");
+            }, 5000, "Generate map preview");
 
             var bytes = tempFile.readBytes();
 
