@@ -246,18 +246,15 @@ public class DockerNodeManager implements NodeManager {
 
     @Override
     public void remove(UUID id, NodeRemoveReason reason) {
-        var optional = findContainerByServerId(id);
-        if (optional.isEmpty()) {
-            return;
-        }
+        findContainerByServerId(id).ifPresent(container -> {
+            eventBus.emit(LogEvent.error(id, "Removed: " + container.getNames()[0] + " for reason: " + reason));
 
-        var container = optional.get();
-        if (container.getState().equalsIgnoreCase("running")) {
-            dockerClient.stopContainerCmd(container.getId()).exec();
-        }
+            if (container.getState().equalsIgnoreCase("running")) {
+                dockerClient.stopContainerCmd(container.getId()).exec();
+            }
 
-        removeContainer(container.getId());
-        eventBus.emit(LogEvent.error(id, "Removed: " + container.getNames()[0] + " for reason: " + reason));
+            removeContainer(container.getId());
+        });
     }
 
     private synchronized void removeContainer(String id) {
