@@ -626,7 +626,7 @@ public class ApiGateway {
             try {
                 String query = String.format("servers?page=%s&size=%s", request.getPage(), request.getSize());
 
-                return HttpUtils.sendList(HttpUtils.get(API_URL, query), 2000, ServerDto.class);
+                return HttpUtils.sendList(HttpUtils.get(API_URL, query), 5000, ServerDto.class);
             } catch (Exception e) {
                 e.printStackTrace();
                 return new ArrayList<>();
