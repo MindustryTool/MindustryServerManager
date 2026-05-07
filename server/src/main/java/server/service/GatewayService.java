@@ -162,6 +162,7 @@ public class GatewayService {
             }
 
             nodeManager.remove(id, NodeRemoveReason.NOT_CONNECTED);
+            eventBus.emit(new StopEvent(id, NodeRemoveReason.NOT_CONNECTED));
 
             Log.info("[red]Client terminated: " + id);
         }
