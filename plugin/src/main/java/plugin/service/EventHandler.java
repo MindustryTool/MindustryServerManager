@@ -109,7 +109,7 @@ public class EventHandler {
             Call.sendMessage(MapRating.getDisplayString(currentMap));
         }
 
-        Tasks.cpu("update map preview", () -> {
+        Tasks.io("update map preview", () -> {
             Utils.generateMapPreview();
         });
     }
