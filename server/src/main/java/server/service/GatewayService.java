@@ -168,7 +168,6 @@ public class GatewayService {
 
         public void checkHeartbeat() {
             if (Instant.now().isAfter(lastHeartBeatAt.plus(HEARTBEAT_TIMEOUT_DURATION))) {
-                eventBus.emit(new DisconnectEvent(id));
                 eventBus.emit(LogEvent.error(id, "Heartbeat timeout"));
                 Log.err("Client heartbeat timeout: " + id);
             }
