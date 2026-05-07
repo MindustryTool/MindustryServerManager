@@ -13,7 +13,6 @@ import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
@@ -47,7 +46,6 @@ import mindustry.maps.MapException;
 import plugin.Control;
 import plugin.PluginState;
 import plugin.core.Registry;
-import plugin.core.Scheduler;
 
 public class Utils {
 
@@ -136,22 +134,15 @@ public class Utils {
         CompletableFuture<Void> future = new CompletableFuture<>();
 
         if (Thread.currentThread() == Core.app.getMainThread()) {
-            r.run();
+            throw new RuntimeException("Can not post to main thread: " + taskName);
         }
 
         Core.app.post(() -> {
-            var scheduler = Registry.get(Scheduler.class);
-            ScheduledFuture<?> timeoutTask = scheduler.schedule(
-                    () -> future.completeExceptionally(new TimeoutException("Task timeout: " + taskName)),
-                    timeoutMillis, TimeUnit.MILLISECONDS);
-
             try {
                 r.run();
                 future.complete(null);
             } catch (Exception e) {
                 future.completeExceptionally(e);
-            } finally {
-                timeoutTask.cancel(true);
             }
         });
 
@@ -170,23 +161,16 @@ public class Utils {
         Log.debug("Start task: " + taskName);
 
         if (Thread.currentThread() == Core.app.getMainThread()) {
-            return fn.get();
+            throw new RuntimeException("Can not post to main thread: " + taskName);
         }
 
         CompletableFuture<T> future = new CompletableFuture<T>();
         Core.app.post(() -> {
-            var scheduler = Registry.get(Scheduler.class);
-            ScheduledFuture<?> timeoutTask = scheduler.schedule(
-                    () -> future.completeExceptionally(new TimeoutException("Task timeout: " + taskName)),
-                    timeoutMillis,
-                    TimeUnit.MILLISECONDS);
             try {
                 var result = fn.get();
                 future.complete(result);
             } catch (Exception e) {
                 future.completeExceptionally(e);
-            } finally {
-                timeoutTask.cancel(true);
             }
         });
 
@@ -292,7 +276,7 @@ public class Utils {
 
             appPostWithTimeout(() -> {
                 SaveIO.save(tempFile);
-            }, 500, "Generate map preview");
+            }, 1000, "Generate map preview");
 
             var bytes = tempFile.readBytes();
 
