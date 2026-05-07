@@ -249,6 +249,22 @@ public class HubService {
             return;
         }
 
+        // TODO: Temp solution
+        boolean useWorldLabel = true;
+
+        if (useWorldLabel) {
+            for (var core : serverCores) {
+                ServerDto server = core.getServer();
+                if (server == null) {
+                    continue;
+                }
+
+                String message = createServerString(server);
+                Call.label(message, 5000, core.getX(), core.getY());
+            }
+            return;
+        }
+
         MapObjectives objectives = new MapObjectives();
         FlagObjective flagObjective = new FlagObjective();
 
@@ -261,7 +277,7 @@ public class HubService {
             }
         }
 
-        if (markers.isEmpty()){
+        if (markers.isEmpty()) {
             return;
         }
 
@@ -288,6 +304,12 @@ public class HubService {
         float x = core.getX();
         float y = core.getY();
 
+        String message = createServerString(server);
+
+        return new TextMarker(message, x, y);
+    }
+
+    private String createServerString(ServerDto server) {
         var mods = new ArrayList<>(server.getMods());
 
         mods.removeIf(m -> m.contains("Controller") || m.contains("PluginLoader"));
@@ -306,7 +328,7 @@ public class HubService {
                 (server.getStatus().isOnline() ? "[accent]" : "[sky]") + "@Tap to join server"
                 + "\n";
 
-        return new TextMarker(message, x, y);
+        return message;
     }
 
     public String newLine(String text) {
