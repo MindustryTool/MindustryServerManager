@@ -822,7 +822,6 @@ public class ApiGateway {
     public void destroy() {
         isDestroyed = true;
         serverQueryCache.invalidateAll();
-        serverQueryCache = null;
 
         if (webSocket != null) {
             webSocket.disconnect();
