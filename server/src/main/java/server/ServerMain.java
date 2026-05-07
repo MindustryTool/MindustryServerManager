@@ -148,7 +148,12 @@ public class ServerMain {
         app.get("/api/v2/servers/{id}/files", ctx -> {
             UUID id = UUID.fromString(ctx.pathParam("id"));
             String path = URLDecoder.decode(ctx.queryParam("path"), StandardCharsets.UTF_8);
-            ctx.json(serverService.getFiles(id, path));
+            Object result = serverService.getFiles(id, path);
+            if (result instanceof byte[] bytes) {
+                ctx.result(bytes);
+            } else {
+                ctx.json(result);
+            }
         });
 
         app.get("/api/v2/servers/{id}/files/exists", ctx -> {
