@@ -24,7 +24,7 @@ public class ServerCommands {
         Core.settings.put(Registry.GAMEMODE_KEY, gamemode);
         Core.settings.forceSave();
 
-        Log.info("[purple]Set gamemode to: " + gamemode);
+        Log.info("[sky]Set gamemode to: " + gamemode);
     }
 
     @ServerCommand(name = "js", description = "Run arbitrary Javascript")
