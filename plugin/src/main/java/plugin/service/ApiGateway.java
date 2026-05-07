@@ -626,7 +626,7 @@ public class ApiGateway {
             try {
                 String query = String.format("servers?page=%s&size=%s", request.getPage(), request.getSize());
 
-                return HttpUtils.sendList(HttpUtils.get(API_URL, query), 5000, ServerDto.class);
+                return HttpUtils.sendList(HttpUtils.get(API_URL, query), Duration.ofSeconds(5), ServerDto.class);
             } catch (Exception e) {
                 e.printStackTrace();
                 return new ArrayList<>();
@@ -656,7 +656,7 @@ public class ApiGateway {
                     .send(HttpUtils
                             .post("https://api.mindustry-tool.com/api/v4/translations/translate")
                             .header("Content-Type", "application/json")//
-                            .content(JsonUtils.toJsonString(body)), 20000, String.class);
+                            .content(JsonUtils.toJsonString(body)), Duration.ofSeconds(20), String.class);
 
             return result;
         } catch (Exception e) {
@@ -820,7 +820,7 @@ public class ApiGateway {
 
     @Destroy
     public void destroy() {
-        isDestroyed = false;
+        isDestroyed = true;
         serverQueryCache.invalidateAll();
         serverQueryCache = null;
 

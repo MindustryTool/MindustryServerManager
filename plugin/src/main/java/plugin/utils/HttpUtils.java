@@ -1,6 +1,7 @@
 package plugin.utils;
 
 import java.net.SocketTimeoutException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -29,12 +30,12 @@ public class HttpUtils {
     }
 
     public static <T> T send(HttpRequest req, Class<T> clazz) {
-        return send(req, 10000, clazz);
+        return send(req, Duration.ofSeconds(10), clazz);
     }
 
     @SuppressWarnings("unchecked")
-    public static <T> T send(HttpRequest req, int timeoutMilis, Class<T> clazz) {
-        byte[] response = send(req, timeoutMilis);
+    public static <T> T send(HttpRequest req, Duration timeout, Class<T> clazz) {
+        byte[] response = send(req, timeout);
 
         if (clazz.equals(Void.class)) {
             return null;
@@ -51,20 +52,20 @@ public class HttpUtils {
         return JsonUtils.readJsonAsClass(new String(response), clazz);
     }
 
-    public static <T> List<T> sendList(HttpRequest req, int timeoutMilis, Class<T> clazz) {
-        byte[] response = send(req, timeoutMilis);
+    public static <T> List<T> sendList(HttpRequest req, Duration timeout, Class<T> clazz) {
+        byte[] response = send(req, timeout);
         return JsonUtils.readJsonAsArrayClass(new String(response), clazz);
     }
 
-    public static byte[] send(HttpRequest req, int timeoutMilis) {
+    public static byte[] send(HttpRequest req, Duration timeout) {
         CompletableFuture<byte[]> res = new CompletableFuture<>();
         req
-                .timeout(timeoutMilis)
+                .timeout((int) timeout.toMillis())
                 .redirects(true)
                 .error(error -> {
                     if (error instanceof SocketTimeoutException) {
                         res.completeExceptionally(
-                                new RuntimeException(req.url + " timeout in " + timeoutMilis + "ms", error));
+                                new RuntimeException(req.url + " timeout in " + timeout.toMillis() + "ms", error));
                     } else if (error instanceof HttpStatusException e) {
                         res.completeExceptionally(
                                 new RuntimeException(req.url + " " + e.response.getResultAsString(), e));
@@ -76,9 +77,9 @@ public class HttpUtils {
                     res.complete(response.getResult());
                 });
         try {
-            return res.get(timeoutMilis, TimeUnit.MILLISECONDS);
+            return res.get(timeout.toMillis(), TimeUnit.MILLISECONDS);
         } catch (Exception e) {
-            throw new IllegalStateException(req.method + " " + req.url + " timeout in " + timeoutMilis + "ms", e);
+            throw new IllegalStateException(req.method + " " + req.url + " timeout in " + timeout.toMillis() + "ms", e);
         }
     }
 }

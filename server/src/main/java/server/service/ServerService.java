@@ -129,7 +129,6 @@ public class ServerService {
             nodeManager.writeFile(serverId, "WEBSOCKET.txt", jwt.getBytes());
         }
 
-        eventBus.emit(LogEvent.info(serverId, "Server not exists, create server"));
         nodeManager.create(request);
 
         eventBus.emit(LogEvent.info(serverId, "Connecting to gateway"));
