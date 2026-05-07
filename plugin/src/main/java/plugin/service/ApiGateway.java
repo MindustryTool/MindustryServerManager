@@ -113,7 +113,7 @@ public class ApiGateway {
 
     private final Map<UUID, CompletableFuture<JsonNode>> pendingRequests = new ConcurrentHashMap<>();
 
-    private boolean isDestroyed = true;
+    private boolean isDestroyed = false;
 
     @Init
     public void init() {
