@@ -311,20 +311,6 @@ public class ServerService {
         var flag = serverFlags.computeIfAbsent(serverId, (_ignore) -> EnumSet.noneOf(ServerFlag.class));
 
         ServerStateDto state = state(serverId);
-        if (state.getStatus().equals(ServerStatus.NOT_RESPONSE)) {
-            Log.err("Server [@] not response", serverId);
-
-            if (flag.contains(ServerFlag.NOT_RESPONSE)) {
-                eventBus.emit(LogEvent.info(serverId, "[red][Orchestrator] Kill server for not response"));
-                remove(serverId, NodeRemoveReason.NOT_RESPONSE);
-            } else {
-                eventBus.emit(LogEvent.info(serverId, "[red][Orchestrator] Server not response, flag to kill"));
-                flag.add(ServerFlag.NOT_RESPONSE);
-            }
-            return;
-        }
-
-        flag.remove(ServerFlag.NOT_RESPONSE);
 
         if (!config.getIsAutoTurnOff()) {
             return;
