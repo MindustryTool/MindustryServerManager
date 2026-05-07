@@ -113,6 +113,8 @@ public class ApiGateway {
 
     private final Map<UUID, CompletableFuture<JsonNode>> pendingRequests = new ConcurrentHashMap<>();
 
+    private boolean isDestroyed = true;
+
     @Init
     public void init() {
         connect();
@@ -199,6 +201,10 @@ public class ApiGateway {
         @Override
         public void onDisconnected(WebSocket websocket, WebSocketFrame serverCloseFrame,
                 WebSocketFrame clientCloseFrame, boolean closedByServer) throws Exception {
+            if (isDestroyed) {
+                return;
+            }
+
             if (closedByServer) {
                 Log.info("[red]Server manager disconnected: " + serverCloseFrame);
             } else {
@@ -209,6 +215,9 @@ public class ApiGateway {
 
         @Override
         public void onConnectError(WebSocket websocket, WebSocketException exception) throws Exception {
+            if (isDestroyed) {
+                return;
+            }
             Log.err("Error connecting to server manager", exception);
             reconnect();
         }
@@ -811,6 +820,7 @@ public class ApiGateway {
 
     @Destroy
     public void destroy() {
+        isDestroyed = false;
         serverQueryCache.invalidateAll();
         serverQueryCache = null;
 
