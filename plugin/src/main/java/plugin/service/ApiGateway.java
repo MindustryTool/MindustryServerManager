@@ -166,7 +166,7 @@ public class ApiGateway {
                 return;
             }
 
-            Log.info("Connecting to server manager");
+            Log.info("[sky]Connecting to server manager");
             webSocket = new WebSocketFactory()
                     .createSocket(GATEWAY_URL)
                     .addHeader("Authorization", Cfg.webSocketAuthToken())
