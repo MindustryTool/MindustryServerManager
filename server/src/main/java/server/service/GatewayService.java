@@ -156,6 +156,16 @@ public class GatewayService {
             return Instant.now().isAfter(lastHeartBeatAt.plus(TERMINATE_CONNECTION_AFTER));
         }
 
+        public void terminate() {
+            if (context != null) {
+                context.closeSession(WsCloseStatus.NORMAL_CLOSURE, "Closed due to inactivity");
+            }
+
+            nodeManager.remove(id, NodeRemoveReason.NOT_RESPONSE);
+
+            Log.info("[red]Client terminated: " + id);
+        }
+
         public void checkHeartbeat() {
             if (Instant.now().isAfter(lastHeartBeatAt.plus(HEARTBEAT_TIMEOUT_DURATION))) {
                 eventBus.emit(new DisconnectEvent(id));
@@ -199,16 +209,6 @@ public class GatewayService {
                     context.send(error);
                 }
             }
-        }
-
-        public void terminate() {
-            if (context != null) {
-                context.closeSession(WsCloseStatus.NORMAL_CLOSURE, "Closed due to inactivity");
-            }
-
-            nodeManager.remove(id, NodeRemoveReason.NOT_RESPONSE);
-
-            Log.info("[red]Client terminated: " + id);
         }
 
         @SuppressWarnings("unchecked")

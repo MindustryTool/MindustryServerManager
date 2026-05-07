@@ -32,7 +32,6 @@ import dto.ModDto;
 import dto.ServerConfig;
 import dto.ServerMetadata;
 import dto.ServerStateDto;
-import events.ServerEvents;
 import events.ServerEvents.LogEvent;
 import enums.NodeRemoveReason;
 import server.utils.ApiError;
@@ -258,8 +257,7 @@ public class DockerNodeManager implements NodeManager {
         }
 
         removeContainer(container.getId());
-        eventBus.emit(
-                ServerEvents.LogEvent.error(id, "Removed: " + container.getNames()[0] + " for reason: " + reason));
+        eventBus.emit(LogEvent.error(id, "Removed: " + container.getNames()[0] + " for reason: " + reason));
     }
 
     private synchronized void removeContainer(String id) {

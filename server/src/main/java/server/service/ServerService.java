@@ -24,8 +24,8 @@ import dto.ServerConfig;
 import dto.ServerStateDto;
 import dto.ServerStatus;
 import events.BaseEvent;
-import events.ServerEvents;
 import events.ServerEvents.LogEvent;
+import events.ServerEvents.StopEvent;
 import enums.NodeRemoveReason;
 import lombok.extern.slf4j.Slf4j;
 import server.types.data.NodeUsage;
@@ -102,7 +102,7 @@ public class ServerService {
     }
 
     public void remove(UUID serverId, NodeRemoveReason reason) {
-        eventBus.emit(new ServerEvents.StopEvent(serverId, reason));
+        eventBus.emit(new StopEvent(serverId, reason));
         nodeManager.remove(serverId, reason);
     }
 
