@@ -168,6 +168,7 @@ public class ApiGateway {
             webSocket = new WebSocketFactory()
                     .createSocket(GATEWAY_URL)
                     .addHeader("Authorization", Cfg.webSocketAuthToken())
+                    .addHeader("X-SERVER-ID", Cfg.serverId())
                     .addListener(wsHandler)
                     .connectAsynchronously();
         } catch (Exception e) {

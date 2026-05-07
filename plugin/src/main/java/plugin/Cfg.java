@@ -59,4 +59,8 @@ public class Cfg {
     public static String webSocketAuthToken() {
         return Vars.dataDirectory.child("WEBSOCKET.txt").readString();
     }
+
+    public static String serverId() {
+        return System.getenv("SERVER_ID");
+    }
 }

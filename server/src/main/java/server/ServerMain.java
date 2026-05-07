@@ -57,7 +57,7 @@ public class ServerMain {
         NodeManager nodeManager = new DockerNodeManager(dockerClient, envConfig, eventBus);
         ApiService apiService = new ApiService(envConfig);
         GatewayService gatewayService = new GatewayService(eventBus, envConfig, nodeManager);
-        WsHandler wsHandler = new WsHandler(envConfig, gatewayService);
+        WsHandler wsHandler = new WsHandler(envConfig, gatewayService, nodeManager);
         ServerService serverService = new ServerService(gatewayService, nodeManager, eventBus, apiService, wsHandler,
                 envConfig);
 
