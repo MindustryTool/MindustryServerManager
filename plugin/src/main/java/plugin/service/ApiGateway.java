@@ -216,7 +216,7 @@ public class ApiGateway {
 
     @Schedule(delay = 5, fixedDelay = 10, unit = TimeUnit.SECONDS)
     private void keepAlive() {
-        if (Duration.between(lastSendEventAt, Instant.now()).compareTo(HEARTBEAT_DURATION) > 0 && isConnected()) {
+        if (lastSendEventAt.plus(HEARTBEAT_DURATION).isBefore(Instant.now()) && isConnected()) {
             sendStateUpdate();
         }
     }

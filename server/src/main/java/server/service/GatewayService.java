@@ -85,7 +85,7 @@ public class GatewayService {
     @Accessors(fluent = true)
     public class GatewayClient {
         private static final Duration HEARTBEAT_TIMEOUT_DURATION = Duration.ofSeconds(60);
-        private static final Duration TERMINATE_CONNECTION_AFTER = Duration.ofMinutes(2);
+        private static final Duration TERMINATE_CONNECTION_AFTER = Duration.ofMinutes(5);
 
         private final HashMap<String, MessageHandler<Object, Object>> messageHandlers = new HashMap<>();
 
@@ -161,7 +161,7 @@ public class GatewayService {
                 context.closeSession(WsCloseStatus.NORMAL_CLOSURE, "Closed due to inactivity");
             }
 
-            nodeManager.remove(id, NodeRemoveReason.NOT_RESPONSE);
+            nodeManager.remove(id, NodeRemoveReason.NOT_CONNECTED);
 
             Log.info("[red]Client terminated: " + id);
         }

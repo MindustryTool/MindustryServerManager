@@ -325,8 +325,10 @@ public class ServerService {
         }
 
         flag.remove(ServerFlag.NOT_RESPONSE);
-        if (!config.getIsAutoTurnOff())
+
+        if (!config.getIsAutoTurnOff()) {
             return;
+        }
 
         boolean shouldKill = state.getPlayers().isEmpty();
         if (shouldKill && shouldAutoTurnOff) {
