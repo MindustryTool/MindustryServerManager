@@ -47,7 +47,9 @@ import dto.WsMessage;
 import events.BaseEvent;
 import events.ServerEvents.ServerStateEvent;
 import lombok.RequiredArgsConstructor;
+import mindustry.game.EventType.PlayEvent;
 import mindustry.game.EventType.StateChangeEvent;
+import mindustry.game.EventType.WorldLoadEndEvent;
 import mindustry.gen.Player;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -183,8 +185,6 @@ public class ApiGateway {
         @Override
         public void onConnected(WebSocket websocket, Map<String, List<String>> headers) throws Exception {
             Log.info("[green]Connected to server manager");
-
-            sendStateUpdate();
         }
 
         @Override
@@ -804,6 +804,16 @@ public class ApiGateway {
 
     @Listener(StateChangeEvent.class)
     private void onStateChange() {
+        sendStateUpdate();
+    }
+
+    @Listener(WorldLoadEndEvent.class)
+    private void onWorldLoadEnd() {
+        sendStateUpdate();
+    }
+
+    @Listener(PlayEvent.class)
+    private void onPlay() {
         sendStateUpdate();
     }
 
