@@ -82,6 +82,17 @@ public class GatewayService {
         return clients.computeIfAbsent(serverId, _ignore -> new GatewayClient(serverId));
     }
 
+    public boolean terminate(UUID serverId) {
+        var client = clients.remove(serverId);
+
+        if (client == null) {
+            return false;
+        }
+
+        client.terminate();
+        return true;
+    }
+
     @Accessors(fluent = true)
     public class GatewayClient {
         private static final Duration HEARTBEAT_TIMEOUT_DURATION = Duration.ofSeconds(30);
@@ -158,7 +169,7 @@ public class GatewayService {
 
         public void terminate() {
             if (context != null) {
-                context.closeSession(WsCloseStatus.NORMAL_CLOSURE, "Closed due to inactivity");
+                context.closeSession(WsCloseStatus.NORMAL_CLOSURE, "Terminate by server");
             }
 
             nodeManager.remove(id, NodeRemoveReason.NOT_CONNECTED);

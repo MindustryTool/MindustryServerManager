@@ -103,6 +103,7 @@ public class ServerService {
 
     public void remove(UUID serverId, NodeRemoveReason reason) {
         eventBus.emit(new StopEvent(serverId, reason));
+        gatewayService.terminate(serverId);
         nodeManager.remove(serverId, reason);
     }
 
