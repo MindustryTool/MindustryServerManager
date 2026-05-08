@@ -569,7 +569,8 @@ public class DockerNodeManager implements NodeManager {
 
                     if (action.equalsIgnoreCase("start")) {
                         attachLogCallback(containerId, serverId);
-                    } else if (action.equalsIgnoreCase("die")) {
+                    } else if (action.equalsIgnoreCase("die") || action.equalsIgnoreCase("stop")
+                            || action.equalsIgnoreCase("kill")) {
                         eventBus.emit(new StopEvent(serverId, NodeRemoveReason.NOT_CONNECTED));
                     }
                 }, () -> {
