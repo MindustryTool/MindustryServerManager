@@ -50,6 +50,7 @@ dependencies{
 jar{
     duplicatesStrategy(DuplicatesStrategy.EXCLUDE)
     archiveFileName = "${project.archivesBaseName}.jar"
+    dependsOn(':dto:jar')
     
     from{
         configurations.runtimeClasspath.collect{it.isDirectory() ? it : zipTree(it)}

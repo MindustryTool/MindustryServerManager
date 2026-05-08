@@ -61,6 +61,11 @@ public class HostService {
         });
     }
 
+    @Schedule(delay = 1, fixedDelay = 1, unit = TimeUnit.MINUTES)
+    private void autoSave() {
+        SaveIO.save(SAVE_FILE);
+    }
+
     @Schedule(delay = 20, fixedDelay = 30, unit = TimeUnit.SECONDS)
     private void autoHost() {
         try {
