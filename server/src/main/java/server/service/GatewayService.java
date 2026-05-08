@@ -82,6 +82,15 @@ public class GatewayService {
         return clients.computeIfAbsent(serverId, _ignore -> new GatewayClient(serverId));
     }
 
+    public boolean isHosting(UUID serverId) {
+        try {
+            return clients.containsKey(serverId) && of(serverId).server().isHosting().get(10, TimeUnit.SECONDS);
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            Log.err("Error checking if server is hosting: " + serverId, e);
+            return false;
+        }
+    }
+
     public boolean terminate(UUID serverId, NodeRemoveReason reason) {
         var client = clients.get(serverId);
 

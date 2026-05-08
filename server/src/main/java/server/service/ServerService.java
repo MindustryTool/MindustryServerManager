@@ -115,6 +115,10 @@ public class ServerService {
     public void host(ServerConfig request) {
         UUID serverId = request.getId();
 
+        if (gatewayService.isHosting(serverId)) {
+            return;
+        }
+
         eventBus.emit(LogEvent.info(serverId, "Delete old loader.jar"));
         nodeManager.deleteFile(serverId, "mindustry-tool-plugins");
         nodeManager.deleteFile(serverId, "mods/loader.jar");
