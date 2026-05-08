@@ -10,8 +10,6 @@ import mindustry.Vars;
 import mindustry.core.GameState.State;
 import mindustry.game.EventType;
 import mindustry.gen.Groups;
-import plugin.service.ApiGateway;
-import plugin.utils.Utils;
 import plugin.annotations.Schedule;
 import plugin.commands.ClientCommandHandler;
 import plugin.commands.ServerCommandHandler;
@@ -94,18 +92,6 @@ public class Control extends mindustry.mod.Plugin {
         PluginEvents.unregister();
 
         Log.info("Server controller unloaded");
-    }
-
-    @Schedule(delay = 20, fixedDelay = 30, unit = TimeUnit.SECONDS)
-    private void autoHost() {
-        try {
-            if (!Vars.state.isGame() && !Utils.isHosting(SERVER_ID.toString())) {
-                Log.info("[sky]Server not hosting, auto host");
-                Registry.get(ApiGateway.class).host(SERVER_ID.toString());
-            }
-        } catch (Exception e) {
-            Log.err("Failed to host server", e);
-        }
     }
 
     @Schedule(delay = 30, fixedDelay = 2, unit = TimeUnit.SECONDS)

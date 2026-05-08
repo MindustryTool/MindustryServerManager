@@ -11,7 +11,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -25,7 +24,6 @@ import arc.Core;
 import arc.files.Fi;
 import arc.graphics.Pixmap;
 import arc.util.Log;
-import arc.util.Reflect;
 import arc.util.Strings;
 import arc.util.Time;
 import arc.util.Http.HttpStatusException;
@@ -36,95 +34,15 @@ import dto.ServerStateDto;
 import dto.ServerStatus;
 import mindustry.Vars;
 import mindustry.core.Version;
-import mindustry.game.Gamemode;
 import mindustry.gen.Groups;
 import mindustry.gen.Player;
 import mindustry.io.MapIO;
 import mindustry.io.SaveIO;
-import mindustry.maps.Map;
-import mindustry.maps.MapException;
 import plugin.Control;
-import plugin.PluginState;
 import plugin.core.Registry;
 
 public class Utils {
-
-    private static final ConcurrentHashMap<String, Object> hostingLock = new ConcurrentHashMap<>();
     private static Instant lastImagePreviewAt = Instant.now();
-
-    public static final Object getHostingLock(String serverId) {
-        return hostingLock.computeIfAbsent(serverId, k -> new Object());
-    }
-
-    public static void releaseHostingLock(String serverId) {
-        hostingLock.remove(serverId);
-    }
-
-    public static boolean isHosting(String serverId) {
-        return hostingLock.containsKey(serverId);
-    }
-
-    public synchronized static void host(String mapName, String mode) {
-        if (Control.state == PluginState.UNLOADED) {
-            Log.warn("Server unloaded, can not host");
-            return;
-        }
-
-        if (Vars.state.isGame()) {
-            Log.warn("Already hosting. Type 'stop' to stop hosting first.");
-            return;
-        }
-
-        try {
-            Gamemode preset = Gamemode.survival;
-
-            if (mode != null) {
-                try {
-                    preset = Gamemode.valueOf(mode.toLowerCase());
-                    Core.settings.put("lastServerMode", preset.name());
-
-                    Class<?> clazz = Class.forName("mindustry.server.ServerControl");
-
-                    for (var listener : Core.app.getListeners()) {
-                        if (listener.getClass().equals(clazz)) {
-                            Reflect.set(clazz, listener, "lastMode", preset);
-                            Log.info("[sky]Last gamemode: " + preset.name());
-                            break;
-                        }
-                    }
-                } catch (Exception event) {
-                    Log.err("No gamemode '@' found.", mode);
-                    return;
-                }
-            }
-
-            Map result;
-
-            if (mapName != null) {
-                result = Vars.maps.all().find(map -> map.plainName().replace('_', ' ')
-                        .equalsIgnoreCase(Strings.stripColors(mapName).replace('_', ' ')));
-
-                if (result == null) {
-                    Log.err("No map with name '@' found.", mapName);
-                    return;
-                }
-            } else {
-                result = Vars.maps.getShuffleMode().next(preset, Vars.state.map);
-                Log.info("[sky]Randomized next map to be @.", result.plainName());
-            }
-
-            Log.info("[sky]Hosting map @ with mode @.", result.plainName(), preset.name());
-
-            Vars.logic.reset();
-            Vars.world.loadMap(result, result.applyRules(preset));
-            Vars.state.rules = result.applyRules(preset);
-            Vars.logic.play();
-            Vars.netServer.openServer();
-
-        } catch (MapException event) {
-            Log.err("@: @", event.map.plainName(), event.getMessage());
-        }
-    }
 
     public static void appPostWithTimeout(Runnable r, String taskName) {
         appPostWithTimeout(r, 500, taskName);

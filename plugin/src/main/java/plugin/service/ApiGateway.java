@@ -90,6 +90,7 @@ public class ApiGateway {
     private static final Executor executor = Executors.newCachedThreadPool();
 
     private final Scheduler scheduler;
+    private final HostService hostService;
 
     private final Duration HEARTBEAT_DURATION = Duration.ofSeconds(10);
     private final HashMap<String, MessageHandler<Object, Object>> messageHandlers = new HashMap<>();
@@ -458,7 +459,7 @@ public class ApiGateway {
         return null;
     }
 
-    private static synchronized Void host(StartServerDto request) {
+    private synchronized Void host(StartServerDto request) {
         if (Vars.state.isGame()) {
             Log.warn("API: Already hosting. Type 'stop' to stop hosting first.");
             return null;
@@ -470,6 +471,7 @@ public class ApiGateway {
 
         if (commands != null && !commands.trim().isEmpty()) {
             String[] commandsArray = commands.split("\n");
+
             for (String command : commandsArray) {
                 Log.info("[sky]Host command: " + command);
                 Registry.get(ServerCommandHandler.class).execute(command, (_ignore) -> {
@@ -478,7 +480,8 @@ public class ApiGateway {
             return null;
         }
 
-        Utils.host(mapName, gameMode);
+        hostService.host(mapName, gameMode);
+
         return null;
     }
 
@@ -604,21 +607,14 @@ public class ApiGateway {
         }
     }
 
-    public String host(String targetServerId) {
-        Object lock = Utils.getHostingLock(targetServerId);
-
-        synchronized (lock) {
-            Log.info("[sky]Hosting server: " + targetServerId);
+    public String hostRemoteServer(String targetServerId) {
+        return hostService.hostLock(targetServerId, () -> {
             try {
                 return sendRequest("host", targetServerId, String.class).get(90, TimeUnit.SECONDS);
             } catch (InterruptedException | ExecutionException | TimeoutException e) {
                 throw new RuntimeException("Host failed", e);
-            } finally {
-                Utils.releaseHostingLock(targetServerId);
-                Log.info("[sky]Finish hosting server: " + targetServerId);
             }
-        }
-
+        });
     }
 
     public synchronized List<ServerDto> getServers(PaginationRequest request) {

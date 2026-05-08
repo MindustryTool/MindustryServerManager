@@ -31,8 +31,8 @@ import dto.LoginDto;
 import dto.LoginRequestDto;
 import dto.PlayerInfoDto;
 import dto.ServerCommandDto;
-import dto.ServerConfig;
 import dto.ServerStateDto;
+import dto.StartServerDto;
 import dto.WsMessage;
 import enums.NodeRemoveReason;
 import dto.MessageHandler;
@@ -387,7 +387,7 @@ public class GatewayService {
                 return sendRequest("say", message);
             }
 
-            public CompletableFuture<Void> host(ServerConfig request) {
+            public CompletableFuture<Void> host(StartServerDto request) {
                 return sendRequest("host", request);
             }
 

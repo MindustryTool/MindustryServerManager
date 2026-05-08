@@ -29,7 +29,7 @@ public class ServerUtils {
                         ", ", "[white]", "@this can take up to 1 minutes, please wait"));
                 Log.info(String.format("Send host command to server %s %S", name, id));
 
-                var data = Registry.get(ApiGateway.class).host(id);
+                var data = Registry.get(ApiGateway.class).hostRemoteServer(id);
 
                 player.sendMessage(I18n.t(Utils.parseLocale(player.locale()), "[green]", "@Redirecting"));
 

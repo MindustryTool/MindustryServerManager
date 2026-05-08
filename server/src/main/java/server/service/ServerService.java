@@ -23,6 +23,7 @@ import dto.PlayerDto;
 import dto.ServerConfig;
 import dto.ServerStateDto;
 import dto.ServerStatus;
+import dto.StartServerDto;
 import events.BaseEvent;
 import events.ServerEvents.LogEvent;
 import enums.NodeRemoveReason;
@@ -162,9 +163,15 @@ public class ServerService {
             gatewayClient.server().sendCommand(preHostCommand).get(5, TimeUnit.SECONDS);
 
             eventBus.emit(LogEvent.info(serverId, "Host server"));
-            gatewayClient.server().host(request).get(15, TimeUnit.SECONDS);
+
+            gatewayClient.server()
+                    .host(new StartServerDto()
+                            .setHostCommand(request.getHostCommand())
+                            .setMode(request.getMode()))
+                    .get(15, TimeUnit.SECONDS);
 
             eventBus.emit(LogEvent.info(serverId, "Wait for server status"));
+
             for (int i = 0; i < 600; i++) {
                 if (gatewayClient.server().isHosting().get(100, TimeUnit.MILLISECONDS)) {
                     eventBus.emit(LogEvent.info(serverId, "Server hosting"));

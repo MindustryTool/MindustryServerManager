@@ -8,7 +8,6 @@ import arc.util.Align;
 import arc.util.Log;
 import arc.util.Strings;
 import lombok.RequiredArgsConstructor;
-import lombok.var;
 import mindustry.Vars;
 import mindustry.content.Fx;
 import mindustry.content.StatusEffects;

@@ -49,6 +49,11 @@ tasks.named('jar') {
     enabled = false
 }
 
+configurations.runtimeClasspath {
+    exclude group: project.group
+}
+
+
 tasks.register('fatJar', Jar) {
     archiveFileName.set('application.jar')
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
@@ -68,8 +73,14 @@ tasks.register('fatJar', Jar) {
     from(sourceSets.main.output)
     dependsOn(configurations.runtimeClasspath)
     from {
-        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+        configurations.runtimeClasspath
+            .filter { it.exists() }
+            .collect { it.isDirectory() ? it : zipTree(it) }
     }
+}
+
+tasks.named('fatJar') {
+    dependsOn(':dto:jar')
 }
 
 tasks.named('build') {

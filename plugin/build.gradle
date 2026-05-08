@@ -1,5 +1,5 @@
 java {
-    targetCompatibility = 8
+    targetCompatibility = JavaVersion.VERSION_1_8
     sourceCompatibility = JavaVersion.VERSION_17
 }
 
@@ -47,15 +47,22 @@ dependencies{
 
 }
 
-jar{
-    duplicatesStrategy(DuplicatesStrategy.EXCLUDE)
+tasks.named('jar') {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
     archiveFileName = "${project.archivesBaseName}.jar"
-    
-    from{
-        configurations.runtimeClasspath.collect{it.isDirectory() ? it : zipTree(it)}
+
+    dependsOn configurations.runtimeClasspath
+
+    from {
+        configurations.runtimeClasspath
+            .filter { it.exists() }
+            .collect { it.isDirectory() ? it : zipTree(it) }
     }
-    
-    from(project.projectDir){
+
+    from(sourceSets.main.output)
+
+    from(project.projectDir) {
         include "plugin.json"
     }
 }
