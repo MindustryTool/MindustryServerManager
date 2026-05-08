@@ -66,12 +66,12 @@ public class GatewayService {
         this.nodeManager = nodeManager;
 
         scheduler.scheduleWithFixedDelay(() -> {
-            clients.values().removeIf(client -> {
+            clients.values().removeIf(client -> client.shouldBeRemoved());
+
+            clients.values().forEach(client -> {
                 if (client.shouldTerminate()) {
-                    client.terminate();
-                    return true;
+                    client.terminate(NodeRemoveReason.NOT_CONNECTED);
                 }
-                return false;
             });
 
             clients.values().forEach(GatewayClient::checkHeartbeat);
@@ -82,14 +82,14 @@ public class GatewayService {
         return clients.computeIfAbsent(serverId, _ignore -> new GatewayClient(serverId));
     }
 
-    public boolean terminate(UUID serverId) {
-        var client = clients.remove(serverId);
+    public boolean terminate(UUID serverId, NodeRemoveReason reason) {
+        var client = clients.get(serverId);
 
         if (client == null) {
             return false;
         }
 
-        client.terminate();
+        client.terminate(reason);
         return true;
     }
 
@@ -114,6 +114,8 @@ public class GatewayService {
         @Getter
         private final Server server = new Server();
         public final Instant createdAt = Instant.now();
+
+        private Instant terminatedAt = null;
 
         public GatewayClient(UUID id) {
             this.id = id;
@@ -157,23 +159,36 @@ public class GatewayService {
                 Log.err("Gateway client disconnected: " + id);
                 return;
             } else {
+                if (isTerminated()) {
+                    throw new RuntimeException("Client terminated");
+                }
+
                 eventBus.emit(new StartEvent(id));
                 connectedFuture.complete(null);
                 Log.info("Gateway client connected: " + id);
             }
         }
 
-        public boolean shouldTerminate() {
-            return Instant.now().isAfter(lastHeartBeatAt.plus(TERMINATE_CONNECTION_AFTER));
+        public boolean isTerminated() {
+            return terminatedAt != null;
         }
 
-        public void terminate() {
+        public boolean shouldBeRemoved() {
+            return isTerminated() && Instant.now().isAfter(terminatedAt.plus(Duration.ofMinutes(1)));
+        }
+
+        public boolean shouldTerminate() {
+            return !isTerminated() && Instant.now().isAfter(lastHeartBeatAt.plus(TERMINATE_CONNECTION_AFTER));
+        }
+
+        public void terminate(NodeRemoveReason reason) {
             if (context != null) {
                 context.closeSession(WsCloseStatus.NORMAL_CLOSURE, "Terminate by server");
             }
 
-            nodeManager.remove(id, NodeRemoveReason.NOT_CONNECTED);
-            eventBus.emit(new StopEvent(id, NodeRemoveReason.NOT_CONNECTED));
+            nodeManager.remove(id, reason);
+            eventBus.emit(new StopEvent(id, reason));
+            terminatedAt = Instant.now();
 
             Log.info("[red]Client terminated: " + id);
         }
