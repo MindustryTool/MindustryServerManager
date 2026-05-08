@@ -241,8 +241,9 @@ public class ServerMain {
                 client.close();
             });
 
+            client.keepAlive();
+
             if (closeable == null) {
-                client.close();
                 return;
             }
 
