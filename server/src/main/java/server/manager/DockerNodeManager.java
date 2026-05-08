@@ -83,7 +83,16 @@ public class DockerNodeManager implements NodeManager {
                     .exec();
 
             if (containers.size() == 1) {
+                var container = containers.get(0);
+
                 eventBus.emit(LogEvent.info(serverId, "Container exists, skip creation"));
+
+                if (!container.getStatus().equalsIgnoreCase("running")) {
+                    dockerClient.startContainerCmd(container.getId()).exec();
+                    eventBus.emit(LogEvent.info(serverId, "Container started"));
+                } else {
+                    eventBus.emit(LogEvent.info(serverId, "Container already running"));
+                }
                 return;
             }
 
