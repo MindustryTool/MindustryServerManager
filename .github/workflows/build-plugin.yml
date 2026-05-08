@@ -32,7 +32,7 @@ jobs:
            uses: gradle/actions/setup-gradle@v4
 
          - name: Build plugin jar
-           run: ./gradlew :plugin:jar --stacktrace
+           run: ./gradlew :plugin:build --stacktrace
 
          #  - name: Run tests
          #    run: ./gradlew test --stacktrace

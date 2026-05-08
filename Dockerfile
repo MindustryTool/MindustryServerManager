@@ -11,7 +11,7 @@ RUN gradle :server:dependencies --no-daemon
 
 COPY --chown=gradle:gradle . /home/gradle/src
 
-RUN gradle :server:fatJar --no-daemon
+RUN gradle :server:build --no-daemon
 
 FROM eclipse-temurin:17-jre-alpine
 
