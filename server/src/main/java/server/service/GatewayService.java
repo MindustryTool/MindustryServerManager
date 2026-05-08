@@ -66,12 +66,13 @@ public class GatewayService {
         this.nodeManager = nodeManager;
 
         scheduler.scheduleWithFixedDelay(() -> {
-            clients.values().removeIf(client -> client.shouldBeRemoved());
-
-            clients.values().forEach(client -> {
+            clients.values().removeIf(client -> {
                 if (client.shouldTerminate()) {
                     client.terminate(NodeRemoveReason.NOT_CONNECTED);
+                    return true;
                 }
+
+                return false;
             });
 
             clients.values().forEach(GatewayClient::checkHeartbeat);
@@ -84,7 +85,9 @@ public class GatewayService {
 
     public boolean isHosting(UUID serverId) {
         try {
-            return clients.containsKey(serverId) && of(serverId).server().isHosting().get(10, TimeUnit.SECONDS);
+            return clients.containsKey(serverId)
+                    && nodeManager.isRunning(serverId)
+                    && of(serverId).server().isHosting().get(10, TimeUnit.SECONDS);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
             Log.err("Error checking if server is hosting: " + serverId, e);
             return false;
@@ -180,10 +183,6 @@ public class GatewayService {
 
         public boolean isTerminated() {
             return terminatedAt != null;
-        }
-
-        public boolean shouldBeRemoved() {
-            return isTerminated() && Instant.now().isAfter(terminatedAt.plus(Duration.ofMinutes(1)));
         }
 
         public boolean shouldTerminate() {
