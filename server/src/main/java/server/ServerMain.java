@@ -241,6 +241,11 @@ public class ServerMain {
                 client.close();
             });
 
+            if (closeable == null) {
+                client.close();
+                return;
+            }
+
             if (client.terminated()) {
                 try {
                     closeable.close();
