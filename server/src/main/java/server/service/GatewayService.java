@@ -203,7 +203,7 @@ public class GatewayService {
         }
 
         public void checkHeartbeat() {
-            if (Instant.now().isAfter(lastHeartBeatAt.plus(HEARTBEAT_TIMEOUT_DURATION))) {
+            if (Instant.now().isAfter(lastHeartBeatAt.plus(HEARTBEAT_TIMEOUT_DURATION)) && nodeManager.isRunning(id)) {
                 eventBus.emit(LogEvent.error(id, "Heartbeat timeout"));
                 Log.err("Client heartbeat timeout: " + id);
             }
