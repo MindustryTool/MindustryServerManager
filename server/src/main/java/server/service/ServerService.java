@@ -145,7 +145,7 @@ public class ServerService {
         try {
             gatewayClient.server().isHosting().get(10, TimeUnit.SECONDS);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
-            throw new RuntimeException("Can not connect to gateway", e);
+            throw new ApiError(502, "Can not connect to gateway", e);
         }
 
         eventBus.emit(LogEvent.info(serverId, "Waiting for server to start"));
