@@ -82,6 +82,13 @@ public class ServerService {
 
         scheduler.scheduleAtFixedRate(this::autoConnectAndHostCron, 30, 30, TimeUnit.SECONDS);
         scheduler.scheduleAtFixedRate(this::autoTurnOffCron, 5, 5, TimeUnit.MINUTES);
+        scheduler.scheduleAtFixedRate(this::requestBackendConnection, 30, 30, TimeUnit.SECONDS);
+    }
+
+    private void requestBackendConnection() {
+        if (eventListeners.size() == 0) {
+            apiService.requestBackendConnection();
+        }
     }
 
     public void addEventListener(Consumer<BaseEvent> listener) {

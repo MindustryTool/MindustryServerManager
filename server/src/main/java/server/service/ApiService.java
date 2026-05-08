@@ -28,7 +28,7 @@ public class ApiService {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(BASE_URL + "/managers/request-connection"))
                 .timeout(Duration.ofSeconds(5))
-                .header("Authorization", "smat " + envConfig.serverConfig().accessToken())
+                .header("X-MANAGER-AUTH", envConfig.serverConfig().accessToken())
                 .build();
 
         try {
