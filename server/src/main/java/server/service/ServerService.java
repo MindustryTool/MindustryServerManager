@@ -183,8 +183,12 @@ public class ServerService {
                     return;
                 }
             }
-            throw new ApiError(502, "Can not host server");
+            throw new ApiError(500, "Can not host server: " + serverId);
         } catch (Exception e) {
+            if (e instanceof ApiError apiError) {
+                throw apiError;
+            }
+
             throw new RuntimeException(e);
         }
 
