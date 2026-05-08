@@ -38,8 +38,8 @@ public class HostService {
         Object lock = hostingLock.computeIfAbsent(serverId, k -> new Object());
 
         synchronized (lock) {
-            Log.info("[sky]Hosting server: " + serverId);
             try {
+                Log.info("[sky]Hosting server: " + serverId);
                 return fn.get();
             } catch (Exception e) {
                 throw new RuntimeException("Host failed", e);

@@ -1,5 +1,6 @@
 plugins {
     id 'application'
+    id 'com.gradleup.shadow' version '8.3.10'
 }
 
 application {
@@ -49,8 +50,7 @@ tasks.named('jar') {
     enabled = false
 }
 
-
-tasks.register('fatJar', Jar) {
+tasks.named('shadowJar') {
     archiveFileName.set('application.jar')
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 
@@ -66,19 +66,9 @@ tasks.register('fatJar', Jar) {
         attributes('Main-Class': application.mainClass.get())
     }
 
-    from(sourceSets.main.output)
-    dependsOn(configurations.runtimeClasspath)
-    from {
-        configurations.runtimeClasspath
-            .filter { it.exists() }
-            .collect { it.isDirectory() ? it : zipTree(it) }
-    }
-}
-
-tasks.named('fatJar') {
     dependsOn(':dto:jar')
 }
 
 tasks.named('build') {
-    dependsOn(tasks.named('fatJar'))
+    dependsOn(tasks.named('shadowJar'))
 }

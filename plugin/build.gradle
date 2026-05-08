@@ -47,22 +47,15 @@ dependencies{
 
 }
 
-tasks.named('jar') {
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-
+jar{
+    duplicatesStrategy(DuplicatesStrategy.EXCLUDE)
     archiveFileName = "${project.archivesBaseName}.jar"
-
-    dependsOn configurations.runtimeClasspath
-
-    from {
-        configurations.runtimeClasspath
-            .filter { it.exists() }
-            .collect { it.isDirectory() ? it : zipTree(it) }
+    
+    from{
+        configurations.runtimeClasspath.collect{it.isDirectory() ? it : zipTree(it)}
     }
-
-    from(sourceSets.main.output)
-
-    from(project.projectDir) {
+    
+    from(project.projectDir){
         include "plugin.json"
     }
 }
