@@ -49,10 +49,6 @@ tasks.named('jar') {
     enabled = false
 }
 
-configurations.runtimeClasspath {
-    exclude group: project.group
-}
-
 
 tasks.register('fatJar', Jar) {
     archiveFileName.set('application.jar')
