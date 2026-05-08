@@ -95,7 +95,7 @@ public class GatewayService {
     }
 
     public boolean terminate(UUID serverId, NodeRemoveReason reason) {
-        var client = clients.get(serverId);
+        var client = clients.remove(serverId);
 
         if (client == null) {
             return false;
