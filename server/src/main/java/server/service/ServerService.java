@@ -27,7 +27,6 @@ import dto.StartServerDto;
 import events.BaseEvent;
 import events.ServerEvents.LogEvent;
 import enums.NodeRemoveReason;
-import lombok.extern.slf4j.Slf4j;
 import server.types.data.NodeUsage;
 import server.types.data.ServerMisMatch;
 import dto.LoginDto;
@@ -39,7 +38,6 @@ import server.service.GatewayService.GatewayClient;
 import server.utils.ApiError;
 import server.utils.Utils;
 
-@Slf4j
 public class ServerService {
     private final GatewayService gatewayService;
     private final NodeManager nodeManager;
