@@ -669,9 +669,7 @@ public class CataliGamemode {
 
     public void abandonUnit(Unit unit) {
         shouldNotRespawn.add(unit);
-        Utils.appPostWithTimeout(() -> {
-            unit.kill();
-        }, "Abandon catali unit");
+        unit.kill();
     }
 
     public void abandonTeam(CataliTeamData team) {
