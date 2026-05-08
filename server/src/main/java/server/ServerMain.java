@@ -234,26 +234,14 @@ public class ServerMain {
         app.sse("/api/v2/servers/{id}/usage", client -> {
             UUID id = UUID.fromString(client.ctx().pathParam("id"));
 
+            client.keepAlive();
+
             var closeable = serverService.getUsage(id, usage -> {
                 client.sendEvent(Utils.toJsonString(usage));
             }, err -> {
                 client.sendEvent("error", err.getMessage());
                 client.close();
             });
-
-            client.keepAlive();
-
-            if (closeable == null) {
-                return;
-            }
-
-            if (client.terminated()) {
-                try {
-                    closeable.close();
-                } catch (IOException e1) {
-                    Log.err("Error closing usage stream", e1);
-                }
-            }
 
             client.onClose(() -> {
                 try {
@@ -262,6 +250,14 @@ public class ServerMain {
                     Log.err("Error closing usage stream", e);
                 }
             });
+
+            if (client.terminated()) {
+                try {
+                    closeable.close();
+                } catch (IOException e1) {
+                    Log.err("Error closing usage stream", e1);
+                }
+            }
         });
 
         app.delete("/api/v2/servers/{id}/remove", ctx -> {

@@ -278,6 +278,7 @@ public class DockerNodeManager implements NodeManager {
             if (metadata == null || metadata.getConfig() == null) {
                 throw new IllegalArgumentException("Invalid config: " + label);
             }
+
             return Optional.of(metadata);
         } catch (Exception e) {
             removeContainer(container.getId());
@@ -300,8 +301,9 @@ public class DockerNodeManager implements NodeManager {
     @Override
     public List<ServerMisMatch> getMismatch(UUID id, ServerConfig config, ServerStateDto state, List<ModDto> mods) {
         var optional = findContainerByServerId(id);
+
         if (optional.isEmpty()) {
-            throw new IllegalArgumentException("Server not found");
+            throw new ApiError(404, "Server not found");
         }
 
         var container = optional.get();
@@ -324,8 +326,7 @@ public class DockerNodeManager implements NodeManager {
         var optional = findContainerByServerId(serverId);
 
         if (optional.isEmpty()) {
-            onError.accept(new IllegalArgumentException("Server not found"));
-            return null;
+            throw new ApiError(404, "Server not found");
         }
 
         var containerId = optional.get().getId();
@@ -347,12 +348,6 @@ public class DockerNodeManager implements NodeManager {
                 onError.accept(throwable);
             }
         });
-
-        try {
-            result.awaitCompletion();
-        } catch (InterruptedException e) {
-            Log.err("Failed to get node usage", e);
-        }
 
         return result;
     }
