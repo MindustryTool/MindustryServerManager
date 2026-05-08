@@ -67,6 +67,16 @@ public class EventHandler {
                     });
                 } catch (Exception e) {
                     Log.err("Failed to send chat event", e);
+                    Utils.forEachPlayerLocale((locale, players) -> {
+                        for (var p : players) {
+                            if (p.id == player.id) {
+                                continue;
+                            }
+
+                            p.sendMessage(coloredMessage, player);
+                        }
+                    });
+
                 }
             });
 
