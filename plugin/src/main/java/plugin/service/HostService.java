@@ -117,7 +117,7 @@ public class HostService {
             Map result = null;
 
             if (mapName == null) {
-                if (shouldLoadSave) {
+                if (shouldLoadSave && SAVE_FILE.exists()) {
                     try {
                         result = MapIO.createMap(SAVE_FILE, true);
                         Log.info("[sky]Loaded saved map @.", result.name());
