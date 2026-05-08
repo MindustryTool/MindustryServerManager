@@ -56,6 +56,7 @@ public class HostService {
             @Override
             public void exit() {
                 SaveIO.save(SAVE_FILE);
+                Log.info("[sky]Save map to: " + SAVE_FILE);
             }
         });
     }
