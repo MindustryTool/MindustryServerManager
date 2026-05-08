@@ -190,13 +190,18 @@ public class GatewayService {
         }
 
         public void terminate(NodeRemoveReason reason) {
+            terminatedAt = Instant.now();
+
+            if (!nodeManager.isRunning(id)) {
+                return;
+            }
+
             if (context != null) {
                 context.closeSession(WsCloseStatus.NORMAL_CLOSURE, "Terminate by server");
             }
 
             nodeManager.remove(id, reason);
             eventBus.emit(new StopEvent(id, reason));
-            terminatedAt = Instant.now();
 
             Log.info("[red]Client terminated: " + id);
         }
