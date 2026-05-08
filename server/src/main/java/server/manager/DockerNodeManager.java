@@ -33,6 +33,7 @@ import dto.ServerConfig;
 import dto.ServerMetadata;
 import dto.ServerStateDto;
 import events.ServerEvents.LogEvent;
+import events.ServerEvents.StopEvent;
 import enums.NodeRemoveReason;
 import server.utils.ApiError;
 import server.utils.FileUtils;
@@ -573,6 +574,8 @@ public class DockerNodeManager implements NodeManager {
 
                     if (action.equalsIgnoreCase("start")) {
                         attachLogCallback(containerId, serverId);
+                    } else if (action.equalsIgnoreCase("die")) {
+                        eventBus.emit(new StopEvent(serverId, NodeRemoveReason.NOT_CONNECTED));
                     }
                 }, () -> {
                     var serverIdString = container.getLabels().get(Const.serverIdLabel);
