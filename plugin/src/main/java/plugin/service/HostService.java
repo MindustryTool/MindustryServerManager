@@ -21,6 +21,7 @@ import plugin.Control;
 import plugin.PluginState;
 import plugin.annotations.Component;
 import plugin.annotations.Init;
+import plugin.annotations.MainThread;
 import plugin.annotations.Schedule;
 import plugin.core.Registry;
 
@@ -55,15 +56,20 @@ public class HostService {
         Core.app.addListener(new ApplicationListener() {
             @Override
             public void exit() {
-                SaveIO.save(SAVE_FILE);
-                Log.info("[sky]Save map to: " + SAVE_FILE);
+                if (Vars.state.isPlaying()) {
+                    SaveIO.save(SAVE_FILE);
+                    Log.info("[sky]Save map to: " + SAVE_FILE);
+                }
             }
         });
     }
 
+    @MainThread
     @Schedule(delay = 1, fixedDelay = 1, unit = TimeUnit.MINUTES)
     private void autoSave() {
-        SaveIO.save(SAVE_FILE);
+        if (Vars.state.isPlaying()) {
+            SaveIO.save(SAVE_FILE);
+        }
     }
 
     @Schedule(delay = 20, fixedDelay = 30, unit = TimeUnit.SECONDS)
