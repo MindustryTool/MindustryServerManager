@@ -176,21 +176,22 @@ public class ServerService {
                     .get(15, TimeUnit.SECONDS);
 
             eventBus.emit(LogEvent.info(serverId, "Wait for server status"));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
 
-            for (int i = 0; i < 600; i++) {
-                if (gatewayClient.server().isHosting().get(100, TimeUnit.MILLISECONDS)) {
+        for (int i = 0; i < 60; i++) {
+            try {
+                if (gatewayClient.server().isHosting().get(1000, TimeUnit.MILLISECONDS)) {
                     eventBus.emit(LogEvent.info(serverId, "Server hosting"));
                     return;
                 }
+            } catch (InterruptedException | ExecutionException | TimeoutException e) {
+                Log.err("Can not check server status", e);
             }
-            throw new ApiError(500, "Can not host server: " + serverId);
-        } catch (Exception e) {
-            if (e instanceof ApiError apiError) {
-                throw apiError;
-            }
-
-            throw new RuntimeException(e);
         }
+
+        throw new ApiError(500, "Can not host server: " + serverId);
 
     }
 
@@ -272,7 +273,7 @@ public class ServerService {
                     .get(2, TimeUnit.SECONDS);
         } catch (Exception e) {
             Log.err(e.getMessage());
-            return new ServerStateDto().setServerId(serverId).setStatus(ServerStatus.PAUSED);
+            return new ServerStateDto().setServerId(serverId).setStatus(ServerStatus.DISCONNECT);
         }
     }
 
