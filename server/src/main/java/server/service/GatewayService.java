@@ -38,7 +38,6 @@ import enums.NodeRemoveReason;
 import dto.MessageHandler;
 import events.BaseEvent;
 import events.ServerEvents;
-import events.ServerEvents.DisconnectEvent;
 import events.ServerEvents.LogEvent;
 import events.ServerEvents.StartEvent;
 import events.ServerEvents.StopEvent;
@@ -161,7 +160,7 @@ public class GatewayService {
 
             if (context == null) {
                 if (nodeManager.isRunning(id)) {
-                    eventBus.emit(new DisconnectEvent(id));
+                    eventBus.emit(new StopEvent(id, NodeRemoveReason.NOT_CONNECTED));
                 } else {
                     eventBus.emit(new StopEvent(id, NodeRemoveReason.UNKNOWN));
                 }
