@@ -195,7 +195,6 @@ public class GatewayService {
             }
 
             terminatedAt = Instant.now();
-            eventBus.emit(new StopEvent(id, reason));
 
             if (!nodeManager.isRunning(id)) {
                 return;
@@ -206,6 +205,7 @@ public class GatewayService {
             }
 
             nodeManager.remove(id, reason);
+            eventBus.emit(new StopEvent(id, reason));
 
             Log.info("[red]Client terminated: " + id);
         }
