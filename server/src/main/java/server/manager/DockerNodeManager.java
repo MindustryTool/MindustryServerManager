@@ -76,166 +76,163 @@ public class DockerNodeManager implements NodeManager {
     @Override
     public void create(ServerConfig request) {
         UUID serverId = request.getId();
+        var containers = dockerClient.listContainersCmd()
+                .withShowAll(true)
+                .withLabelFilter(Map.of(Const.serverIdLabel, request.getId().toString()))
+                .exec();
+
+        if (containers.size() == 1) {
+            var container = containers.get(0);
+
+            eventBus.emit(LogEvent.info(serverId, "Container exists, skip creation"));
+
+            if (!container.getStatus().equalsIgnoreCase("running")) {
+                dockerClient.startContainerCmd(container.getId()).exec();
+                eventBus.emit(LogEvent.info(serverId, "Container started"));
+            } else {
+                eventBus.emit(LogEvent.info(serverId, "Container already running"));
+            }
+            return;
+        }
+
+        for (var container : containers) {
+            eventBus.emit(LogEvent.info(serverId, "Removing container " + container.getNames()[0]));
+            removeContainer(container.getId());
+            eventBus.emit(LogEvent.info(serverId, "Container removed"));
+        }
+
+        eventBus.emit(LogEvent.info(serverId, "Pulling image: " + request.getImage()));
         try {
-            var containers = dockerClient.listContainersCmd()
-                    .withShowAll(true)
-                    .withLabelFilter(Map.of(Const.serverIdLabel, request.getId().toString()))
-                    .exec();
+            dockerClient.pullImageCmd(request.getImage())
+                    .exec(new ResultCallback.Adapter<PullResponseItem>())
+                    .awaitCompletion();
+        } catch (NotFoundException ex) {
+            eventBus.emit(LogEvent.error(serverId, "Image not found: " + request.getImage()));
+            return;
+        } catch (Exception ex) {
+            eventBus.emit(LogEvent.error(serverId, "Error: " + ex.getMessage()));
+        }
 
-            if (containers.size() == 1) {
-                var container = containers.get(0);
+        eventBus.emit(LogEvent.info(serverId, "Image pulled"));
 
-                eventBus.emit(LogEvent.info(serverId, "Container exists, skip creation"));
+        String serverIdString = request.getId().toString();
+        var serverPath = Paths.get(Const.volumeFolderPath, "servers", serverIdString, "config")
+                .toAbsolutePath();
 
-                if (!container.getStatus().equalsIgnoreCase("running")) {
-                    dockerClient.startContainerCmd(container.getId()).exec();
-                    eventBus.emit(LogEvent.info(serverId, "Container started"));
-                } else {
-                    eventBus.emit(LogEvent.info(serverId, "Container already running"));
-                }
-                return;
-            }
-
-            for (var container : containers) {
-                eventBus.emit(LogEvent.info(serverId, "Removing container " + container.getNames()[0]));
-                removeContainer(container.getId());
-                eventBus.emit(LogEvent.info(serverId, "Container removed"));
-            }
-
-            eventBus.emit(LogEvent.info(serverId, "Pulling image: " + request.getImage()));
-            try {
-                dockerClient.pullImageCmd(request.getImage())
-                        .exec(new ResultCallback.Adapter<PullResponseItem>())
-                        .awaitCompletion();
-            } catch (NotFoundException ex) {
-                eventBus.emit(LogEvent.error(serverId, "Image not found: " + request.getImage()));
-                return;
-            } catch (Exception ex) {
-                eventBus.emit(LogEvent.error(serverId, "Error: " + ex.getMessage()));
-            }
-
-            eventBus.emit(LogEvent.info(serverId, "Image pulled"));
-
-            String serverIdString = request.getId().toString();
-            var serverPath = Paths.get(Const.volumeFolderPath, "servers", serverIdString, "config")
-                    .toAbsolutePath();
-
-            try {
-                Files.createDirectories(serverPath);
-                eventBus.emit(LogEvent.info(serverId, "Server folder created: " + serverPath));
-            } catch (Exception e) {
-                eventBus.emit(LogEvent.error(serverId, "Error: " + e.getMessage()));
-            }
-
-            var servers = dockerClient.listContainersCmd()
-                    .withShowAll(true)
-                    .withLabelFilter(List.of(Const.serverLabelName))
-                    .exec();
-
-            for (var server : servers) {
-                var optional = readMetadataFromContainer(server);
-                if (optional.isEmpty())
-                    continue;
-
-                var config = optional.get().getConfig();
-                var isSamePort = config.getPort() == request.getPort();
-                var isSameId = config.getId().equals(request.getId());
-
-                if (isSamePort && !isSameId) {
-                    eventBus.emit(LogEvent.error(serverId,
-                            "Port exists at container " + server.getNames()[0] + " port: " + config.getPort()));
-                    return;
-                }
-            }
-
-            Volume volume = new Volume("/config");
-            Bind bind = new Bind(serverPath.toString(), volume);
-
-            ExposedPort tcp = ExposedPort.tcp(Const.DEFAULT_MINDUSTRY_SERVER_PORT);
-            ExposedPort udp = ExposedPort.udp(Const.DEFAULT_MINDUSTRY_SERVER_PORT);
-
-            Ports portBindings = new Ports();
-            portBindings.bind(tcp, Ports.Binding.bindPort(request.getPort()));
-            portBindings.bind(udp, Ports.Binding.bindPort(request.getPort()));
-
-            eventBus.emit(LogEvent.info(serverId, "Creating new container on port " + request.getPort()));
-
-            var image = request.getImage() == null || request.getImage().isEmpty()
-                    ? envConfig.docker().mindustryServerImage()
-                    : request.getImage();
-
-            var serverImage = dockerClient.inspectImageCmd(image).exec();
-
-            var currentMetadata = new ServerMetadata()
-                    .setConfig(request)
-                    .setServerImageHash(serverImage.getId());
-
-            var command = dockerClient.createContainerCmd(image)
-                    .withName(request.getId().toString())
-                    .withLabels(Map.of(
-                            Const.serverLabelName, Utils.toJsonString(currentMetadata),
-                            Const.serverIdLabel, request.getId().toString()));
-
-            var env = new ArrayList<String>();
-            var exposedPorts = new ArrayList<ExposedPort>();
-            exposedPorts.add(tcp);
-            exposedPorts.add(udp);
-
-            List<String> args = List.of(
-                    "-XX:+CrashOnOutOfMemoryError",
-                    "-XX:MaxRAM=" + request.getMemory() + "m", "-XX:+HeapDumpOnOutOfMemoryError",
-                    "-XX:HeapDumpPath=/config",
-                    "-XX:MinHeapFreeRatio=5",
-                    "-XX:MaxHeapFreeRatio=20",
-                    "-XX:MaxDirectMemorySize=128m",
-                    "-XX:-ShrinkHeapInSteps",
-                    "-XX:MaxRAMPercentage=60");
-
-            env.add("IS_HUB=" + request.getIsHub());
-            env.add("IS_OFFICIAL=" + request.getIsOfficial());
-            env.add("SERVER_ID=" + serverId);
-            env.add("JAVA_TOOL_OPTIONS=" + String.join(" ", args));
-            env.addAll(request.getEnv().entrySet().stream()
-                    .map(v -> (v.getKey() + "=" + v.getValue()).replaceAll("JAVA_TOOL_OPTIONS", "")).toList());
-
-            if (Const.IS_DEVELOPMENT) {
-                env.add("ENV=DEV");
-                ExposedPort localTcp = ExposedPort.tcp(9999);
-                portBindings.bind(localTcp, Ports.Binding.bindPort(9999));
-                exposedPorts.add(localTcp);
-            }
-
-            command.withExposedPorts(exposedPorts)
-                    .withEnv(env)
-                    .withHostConfig(HostConfig.newHostConfig()
-                            .withPortBindings(portBindings)
-                            .withNetworkMode("mindustry-server")
-                            .withCpuPeriod(100000L)
-                            .withCpuQuota((long) (request.getCpu() * 100000L))
-                            .withMemory(request.getMemory() * 1024 * 1024L)
-                            .withRestartPolicy(request.getIsAutoTurnOff()
-                                    ? RestartPolicy.noRestart()
-                                    : RestartPolicy.unlessStoppedRestart())
-                            .withLogConfig(new LogConfig(LogConfig.LoggingType.JSON_FILE, Map.of(
-                                    "max-size", "100m",
-                                    "max-file", "5")))
-                            .withPidsLimit(64L)
-                            .withDns("8.8.8.8", "1.1.1.1")
-                            .withExtraHosts("server.mindustry-tool.com:15.235.147.240",
-                                    "api.mindustry-tool.com:15.235.147.240")
-                            .withRuntime("io.containerd.kata.v2")
-                            .withBinds(bind));
-
-            var result = command.exec();
-            var containerId = result.getId();
-
-            dockerClient.startContainerCmd(containerId).exec();
-            attachLogCallback(containerId, serverId);
-
-            eventBus.emit(LogEvent.info(serverId, "Container " + containerId + " started"));
+        try {
+            Files.createDirectories(serverPath);
+            eventBus.emit(LogEvent.info(serverId, "Server folder created: " + serverPath));
         } catch (Exception e) {
             eventBus.emit(LogEvent.error(serverId, "Error: " + e.getMessage()));
         }
+
+        var servers = dockerClient.listContainersCmd()
+                .withShowAll(true)
+                .withLabelFilter(List.of(Const.serverLabelName))
+                .exec();
+
+        for (var server : servers) {
+            var optional = readMetadataFromContainer(server);
+            if (optional.isEmpty())
+                continue;
+
+            var config = optional.get().getConfig();
+            var isSamePort = config.getPort() == request.getPort();
+            var isSameId = config.getId().equals(request.getId());
+
+            if (isSamePort && !isSameId) {
+                eventBus.emit(LogEvent.error(serverId,
+                        "Port exists at container " + server.getNames()[0] + " port: " + config.getPort()));
+                return;
+            }
+        }
+
+        Volume volume = new Volume("/config");
+        Bind bind = new Bind(serverPath.toString(), volume);
+
+        ExposedPort tcp = ExposedPort.tcp(Const.DEFAULT_MINDUSTRY_SERVER_PORT);
+        ExposedPort udp = ExposedPort.udp(Const.DEFAULT_MINDUSTRY_SERVER_PORT);
+
+        Ports portBindings = new Ports();
+        portBindings.bind(tcp, Ports.Binding.bindPort(request.getPort()));
+        portBindings.bind(udp, Ports.Binding.bindPort(request.getPort()));
+
+        eventBus.emit(LogEvent.info(serverId, "Creating new container on port " + request.getPort()));
+
+        var image = request.getImage() == null || request.getImage().isEmpty()
+                ? envConfig.docker().mindustryServerImage()
+                : request.getImage();
+
+        var serverImage = dockerClient.inspectImageCmd(image).exec();
+
+        var currentMetadata = new ServerMetadata()
+                .setConfig(request)
+                .setServerImageHash(serverImage.getId());
+
+        var command = dockerClient.createContainerCmd(image)
+                .withName(request.getId().toString())
+                .withLabels(Map.of(
+                        Const.serverLabelName, Utils.toJsonString(currentMetadata),
+                        Const.serverIdLabel, request.getId().toString()));
+
+        var env = new ArrayList<String>();
+        var exposedPorts = new ArrayList<ExposedPort>();
+        exposedPorts.add(tcp);
+        exposedPorts.add(udp);
+
+        List<String> args = List.of(
+                "-XX:+CrashOnOutOfMemoryError",
+                "-XX:MaxRAM=" + request.getMemory() + "m", "-XX:+HeapDumpOnOutOfMemoryError",
+                "-XX:HeapDumpPath=/config",
+                "-XX:MinHeapFreeRatio=5",
+                "-XX:MaxHeapFreeRatio=20",
+                "-XX:MaxDirectMemorySize=128m",
+                "-XX:-ShrinkHeapInSteps",
+                "-XX:MaxRAMPercentage=60");
+
+        env.add("IS_HUB=" + request.getIsHub());
+        env.add("IS_OFFICIAL=" + request.getIsOfficial());
+        env.add("SERVER_ID=" + serverId);
+        env.add("JAVA_TOOL_OPTIONS=" + String.join(" ", args));
+        env.addAll(request.getEnv().entrySet().stream()
+                .map(v -> (v.getKey() + "=" + v.getValue()).replaceAll("JAVA_TOOL_OPTIONS", "")).toList());
+
+        if (Const.IS_DEVELOPMENT) {
+            env.add("ENV=DEV");
+            ExposedPort localTcp = ExposedPort.tcp(9999);
+            portBindings.bind(localTcp, Ports.Binding.bindPort(9999));
+            exposedPorts.add(localTcp);
+        }
+
+        command.withExposedPorts(exposedPorts)
+                .withEnv(env)
+                .withHostConfig(HostConfig.newHostConfig()
+                        .withPortBindings(portBindings)
+                        .withNetworkMode("mindustry-server")
+                        .withCpuPeriod(100000L)
+                        .withCpuQuota((long) (request.getCpu() * 100000L))
+                        .withMemory(request.getMemory() * 1024 * 1024L)
+                        .withRestartPolicy(request.getIsAutoTurnOff()
+                                ? RestartPolicy.noRestart()
+                                : RestartPolicy.unlessStoppedRestart())
+                        .withLogConfig(new LogConfig(LogConfig.LoggingType.JSON_FILE, Map.of(
+                                "max-size", "100m",
+                                "max-file", "5")))
+                        .withPidsLimit(64L)
+                        .withDns("8.8.8.8", "1.1.1.1")
+                        .withExtraHosts("server.mindustry-tool.com:15.235.147.240",
+                                "api.mindustry-tool.com:15.235.147.240")
+                        .withRuntime("io.containerd.kata.v2")
+                        .withBinds(bind));
+
+        var result = command.exec();
+        var containerId = result.getId();
+
+        dockerClient.startContainerCmd(containerId).exec();
+        attachLogCallback(containerId, serverId);
+
+        eventBus.emit(LogEvent.info(serverId, "Container " + containerId + " started"));
+
     }
 
     @Override
