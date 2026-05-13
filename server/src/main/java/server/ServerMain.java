@@ -218,7 +218,7 @@ public class ServerMain {
             ctx.json(serverService.getPlayers(id));
         });
 
-        app.post("/api/v2/servers/{id}/players/{uuid}", ctx -> {
+        app.put("/api/v2/servers/{id}/players/{uuid}", ctx -> {
             UUID id = UUID.fromString(ctx.pathParam("id"));
             String uuid = ctx.pathParam("uuid");
             LoginDto payload = ctx.bodyAsClass(LoginDto.class);

@@ -3,6 +3,7 @@ package plugin.service;
 import lombok.RequiredArgsConstructor;
 import mindustry.net.Administration.ActionType;
 import mindustry.net.Administration.PlayerAction;
+import mindustry.world.blocks.logic.CanvasBlock;
 import mindustry.world.blocks.logic.LogicDisplay;
 import plugin.Cfg;
 import plugin.annotations.PlayerActionFilter;
@@ -16,14 +17,15 @@ public class SecurityService {
 
     @PlayerActionFilter
     Boolean onlyAllowLoggedUserToUseLogic(PlayerAction action, SessionHandler sessionService) {
-        if (action.type == ActionType.placeBlock && action.block != null && action.block instanceof LogicDisplay) {
+        if (action.type == ActionType.placeBlock && action.block != null
+                && (action.block instanceof LogicDisplay || action.block instanceof CanvasBlock)) {
             var session = sessionService.get(action.player).orElse(null);
 
             if (session != null && session.isLoggedIn()) {
                 return true;
             }
 
-            action.player.sendMessage(I18n.t(action.player, "@Login first to use logic block, use /login to login"));
+            action.player.sendMessage(I18n.t(action.player, "@Login first to use display/canvas block, use /login to login"));
 
             return false;
         }
