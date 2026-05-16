@@ -65,16 +65,20 @@ public class GatewayService {
         this.nodeManager = nodeManager;
 
         scheduler.scheduleWithFixedDelay(() -> {
-            clients.values().removeIf(client -> {
-                if (client.shouldTerminate()) {
-                    client.terminate(NodeRemoveReason.NOT_CONNECTED);
-                    return true;
-                }
+            try {
+                clients.values().removeIf(client -> {
+                    if (client.shouldTerminate()) {
+                        client.terminate(NodeRemoveReason.NOT_CONNECTED);
+                        return true;
+                    }
 
-                return false;
-            });
+                    return false;
+                });
 
-            clients.values().forEach(GatewayClient::checkHeartbeat);
+                clients.values().forEach(GatewayClient::checkHeartbeat);
+            } catch (Exception e) {
+                Log.err("Error checking heartbeat", e);
+            }
         }, 15, 15, TimeUnit.SECONDS);
     }
 
@@ -113,10 +117,9 @@ public class GatewayService {
 
         @Getter
         private final UUID id;
-        private WsContext context;
+        private CompletableFuture<WsContext> context = new CompletableFuture<>();
 
         private volatile Instant lastHeartBeatAt = Instant.now();
-        private CompletableFuture<Void> connectedFuture = new CompletableFuture<>();
 
         private final Map<UUID, CompletableFuture<JsonNode>> pendingRequests = new ConcurrentHashMap<>();
 
@@ -156,17 +159,15 @@ public class GatewayService {
         }
 
         public void setSocketContext(WsContext context) {
-            this.context = context;
-
             if (context == null) {
                 if (nodeManager.isRunning(id)) {
                     eventBus.emit(new StopEvent(id, NodeRemoveReason.NOT_CONNECTED));
                 } else {
                     eventBus.emit(new StopEvent(id, NodeRemoveReason.UNKNOWN));
                 }
-                connectedFuture.completeExceptionally(
-                        new RuntimeException("Disconnected"));
-                connectedFuture = new CompletableFuture<>();
+                this.context.completeExceptionally(new RuntimeException("Disconnected"));
+                this.context = new CompletableFuture<WsContext>();
+
                 Log.err("Gateway client disconnected: " + id);
                 return;
             } else {
@@ -174,8 +175,13 @@ public class GatewayService {
                     throw new RuntimeException("Client terminated");
                 }
 
+                if (this.context.isDone()) {
+                    throw new RuntimeException("Context already set");
+                }
+
+                lastHeartBeatAt = Instant.now();
                 eventBus.emit(new StartEvent(id));
-                connectedFuture.complete(null);
+                this.context.complete(context);
                 Log.info("Gateway client connected: " + id);
             }
         }
@@ -199,8 +205,10 @@ public class GatewayService {
                 return;
             }
 
-            if (context != null) {
-                context.closeSession(WsCloseStatus.NORMAL_CLOSURE, "Terminate by server");
+            WsContext socket = context.getNow(null);
+
+            if (socket != null) {
+                socket.closeSession(WsCloseStatus.NORMAL_CLOSURE, "Terminate by server");
             }
 
             nodeManager.remove(id, reason);
@@ -330,15 +338,6 @@ public class GatewayService {
 
         public class Server {
             private <R> CompletableFuture<R> sendRequest(String type, Object payload, Class<R> clazz) {
-                if (context == null) {
-                    try {
-                        connectedFuture.get(1, TimeUnit.MINUTES);
-                    } catch (InterruptedException | ExecutionException | TimeoutException e) {
-                        return CompletableFuture
-                                .failedFuture(new ApiError(502, "Server gateway not connected: " + id, e));
-                    }
-                }
-
                 WsMessage<?> request = WsMessage.create(type).withPayload(payload);
 
                 CompletableFuture<JsonNode> future = new CompletableFuture<>();
@@ -347,12 +346,25 @@ public class GatewayService {
                 future.orTimeout(1, TimeUnit.MINUTES);
                 future.whenComplete((_res, _err) -> pendingRequests.remove(request.getId()));
 
-                try {
-                    context.send(request);
-                } catch (Exception e) {
-                    pendingRequests.remove(request.getId());
-                    future.completeExceptionally(e);
-                }
+                context
+                        .orTimeout(1, TimeUnit.MINUTES)
+                        .thenCompose(socket -> {
+                            try {
+                                socket.send(request);
+                                return CompletableFuture.completedFuture(null);
+                            } catch (Exception e) {
+                                return CompletableFuture.failedFuture(e);
+                            }
+                        })
+                        .whenComplete((res, err) -> {
+                            if (err != null) {
+                                pendingRequests.remove(request.getId());
+                                Throwable exception = err instanceof TimeoutException
+                                        ? new ApiError(503, "Gateway timeout", err)
+                                        : err;
+                                future.completeExceptionally(exception);
+                            }
+                        });
 
                 return future.thenApply(r -> Utils.readJsonAsClass(r, clazz));
             }
