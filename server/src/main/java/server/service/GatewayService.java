@@ -24,6 +24,7 @@ import org.apache.hc.core5.net.URIBuilder;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import arc.files.Fi;
 import arc.util.Log;
 import lombok.Getter;
 import lombok.experimental.Accessors;
@@ -200,10 +201,6 @@ public class GatewayService {
             }
 
             terminatedAt = Instant.now();
-
-            if (!nodeManager.isRunning(id)) {
-                return;
-            }
 
             WsContext socket = context.getNow(null);
 
@@ -395,7 +392,15 @@ public class GatewayService {
 
             public CompletableFuture<byte[]> getImage() {
                 return sendRequest("generate-map-image", null)
-                        .thenApply(res -> nodeManager.getFile(id, "map-preview-image.png").readBytes());
+                        .thenApply(res -> {
+                            Fi file = nodeManager.getFile(id, "map-preview-image.png");
+
+                            if (!file.exists()) {
+                                return new byte[0];
+                            }
+
+                            return file.readBytes();
+                        });
             }
 
             public CompletableFuture<Void> sendCommand(String... command) {

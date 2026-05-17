@@ -242,23 +242,16 @@ public class DockerNodeManager implements NodeManager {
                 .withLabelFilter(List.of(Const.serverLabelName))
                 .exec();
 
-        List<ServerState> states = new ArrayList<>();
-        for (var container : containers) {
-            states.add(new ServerState()
-                    .running(container.getState().equalsIgnoreCase("running"))
-                    .meta(readMetadataFromContainer(container)));
-        }
-        return states;
+        return containers.stream().map(container -> new ServerState()
+                .running(container.getState().equalsIgnoreCase("running"))
+                .meta(readMetadataFromContainer(container)))
+                .toList();
     }
 
     @Override
     public void remove(UUID id, NodeRemoveReason reason) {
         findContainerByServerId(id).ifPresent(container -> {
             eventBus.emit(LogEvent.error(id, "Removed: " + container.getNames()[0] + " for reason: " + reason));
-
-            if (container.getState().equalsIgnoreCase("running")) {
-                dockerClient.stopContainerCmd(container.getId()).exec();
-            }
 
             removeContainer(container.getId());
         });
@@ -652,6 +645,7 @@ public class DockerNodeManager implements NodeManager {
     @Override
     public boolean isRunning(UUID serverId) {
         return dockerClient.listContainersCmd()
+                .withLabelFilter(Map.of(Const.serverIdLabel, serverId.toString()))
                 .exec()
                 .stream()
                 .filter(container -> container.getState().equalsIgnoreCase("running"))

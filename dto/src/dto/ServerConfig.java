@@ -29,13 +29,13 @@ public class ServerConfig {
 
     private String hostCommand;
 
-    private Boolean isHub;
+    private Boolean isHub = false;
 
-    private Boolean isAutoTurnOff;
+    private Boolean isAutoTurnOff = true;
 
-    private Boolean isDefault;
+    private Boolean isDefault = false;
 
-    private Boolean isOfficial;
+    private Boolean isOfficial = false;
 
     private float cpu;
 

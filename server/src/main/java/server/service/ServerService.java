@@ -80,9 +80,8 @@ public class ServerService {
             }
         });
 
-        scheduler.scheduleAtFixedRate(this::autoConnectAndHostCron, 30, 30, TimeUnit.SECONDS);
-        scheduler.scheduleAtFixedRate(this::autoTurnOffCron, 5, 5, TimeUnit.MINUTES);
-        scheduler.scheduleAtFixedRate(this::requestBackendConnection, 30, 30, TimeUnit.SECONDS);
+        scheduler.scheduleWithFixedDelay(this::autoTurnOffCron, 5, 5, TimeUnit.MINUTES);
+        scheduler.scheduleWithFixedDelay(this::requestBackendConnection, 30, 30, TimeUnit.SECONDS);
     }
 
     private void requestBackendConnection() {
@@ -282,7 +281,7 @@ public class ServerService {
             return gatewayService.of(serverId)
                     .server()
                     .getImage()
-                    .get(5, TimeUnit.SECONDS);
+                    .get(60, TimeUnit.SECONDS);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -299,19 +298,6 @@ public class ServerService {
                 .join();
     }
 
-    private void autoConnectAndHostCron() {
-        nodeManager.list().forEach(state -> {
-            if (state.meta().isEmpty())
-                return;
-            var config = state.meta().get().getConfig();
-            if (state.running()) {
-                gatewayService.of(config.getId());
-            } else if (!config.getIsAutoTurnOff()) {
-                host(config);
-            }
-        });
-    }
-
     private void autoTurnOffCron() {
         List<ServerConfig> servers = nodeManager.list().stream()
                 .filter(s -> s.meta().isPresent() && s.running())
@@ -321,20 +307,27 @@ public class ServerService {
         var serversId = servers.stream().map(ServerConfig::getId).toList();
         serverFlags.entrySet().removeIf(entry -> entry.getValue().isEmpty() || !serversId.contains(entry.getKey()));
 
-        servers.forEach(config -> checkRunningServer(config, true));
+        servers.forEach(config -> {
+            try {
+                checkRunningServer(config, true);
+            } catch (Exception e) {
+                Log.err("Fail to check running server " + config.getId(), e);
+            }
+        });
     }
 
     private void checkRunningServer(ServerConfig config, boolean shouldAutoTurnOff) {
         var serverId = config.getId();
         var flag = serverFlags.computeIfAbsent(serverId, (_ignore) -> EnumSet.noneOf(ServerFlag.class));
 
-        ServerStateDto state = state(serverId);
-
         if (!config.getIsAutoTurnOff()) {
             return;
         }
 
+        ServerStateDto state = state(serverId);
+
         boolean shouldKill = state.getPlayers().isEmpty();
+
         if (shouldKill && shouldAutoTurnOff) {
             if (flag.contains(ServerFlag.KILL)) {
                 flag.remove(ServerFlag.KILL);
