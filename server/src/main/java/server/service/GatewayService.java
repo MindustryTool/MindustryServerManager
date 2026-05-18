@@ -111,6 +111,10 @@ public class GatewayService {
 
     @Accessors(fluent = true)
     public class GatewayClient {
+        private static enum ClientState {
+            CONNECTING, CONNECTED, DISCONNECTED
+        }
+
         private static final Duration HEARTBEAT_TIMEOUT_DURATION = Duration.ofSeconds(30);
         private static final Duration TERMINATE_CONNECTION_AFTER = Duration.ofMinutes(2);
 
@@ -130,6 +134,7 @@ public class GatewayService {
         private final Server server = new Server();
         public final Instant createdAt = Instant.now();
 
+        private volatile ClientState state = ClientState.CONNECTING;
         private volatile Instant terminatedAt = null;
 
         public GatewayClient(UUID id) {
@@ -159,7 +164,7 @@ public class GatewayService {
             });
         }
 
-        public void setSocketContext(WsContext context) {
+        public synchronized void setSocketContext(WsContext context) {
             if (context == null) {
                 if (nodeManager.isRunning(id)) {
                     eventBus.emit(new StopEvent(id, NodeRemoveReason.NOT_CONNECTED));
@@ -168,6 +173,7 @@ public class GatewayService {
                 }
                 this.context.completeExceptionally(new RuntimeException("Disconnected"));
                 this.context = new CompletableFuture<WsContext>();
+                state = ClientState.DISCONNECTED;
 
                 Log.err("Gateway client disconnected: " + id);
                 return;
@@ -180,6 +186,7 @@ public class GatewayService {
                     throw new RuntimeException("Context already set");
                 }
 
+                state = ClientState.CONNECTED;
                 lastHeartBeatAt = Instant.now();
                 eventBus.emit(new StartEvent(id));
                 this.context.complete(context);
@@ -209,9 +216,11 @@ public class GatewayService {
             }
 
             nodeManager.remove(id, reason);
-            eventBus.emit(new StopEvent(id, reason));
 
-            Log.info("[red]Client terminated: " + id);
+            if (state != ClientState.CONNECTING) {
+                eventBus.emit(new StopEvent(id, reason));
+                Log.info("[red]Client terminated: " + id);
+            }
         }
 
         public void checkHeartbeat() {
