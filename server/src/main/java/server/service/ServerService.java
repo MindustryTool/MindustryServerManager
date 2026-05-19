@@ -142,7 +142,7 @@ public class ServerService {
         GatewayClient gatewayClient = gatewayService.of(serverId);
 
         try {
-            gatewayClient.server().isHosting().get(10, TimeUnit.SECONDS);
+            gatewayClient.server().isHosting().get(120, TimeUnit.SECONDS);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
             throw new ApiError(502, "Can not connect to gateway", e);
         }
