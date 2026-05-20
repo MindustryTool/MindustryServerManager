@@ -203,10 +203,6 @@ public class GatewayService {
         }
 
         public void terminate(NodeRemoveReason reason) {
-            if (isTerminated()) {
-                return;
-            }
-
             terminatedAt = Instant.now();
 
             WsContext socket = context.getNow(null);
