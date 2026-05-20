@@ -278,6 +278,10 @@ public class ServerService {
 
     public byte[] getImage(UUID serverId) {
         try {
+            if (!nodeManager.isRunning(serverId)){
+                return new byte[0];
+            }
+
             return gatewayService.of(serverId)
                     .server()
                     .getImage()
