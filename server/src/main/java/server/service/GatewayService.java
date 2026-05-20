@@ -178,12 +178,8 @@ public class GatewayService {
                 Log.err("Gateway client disconnected: " + id);
                 return;
             } else {
-                if (isTerminated()) {
-                    throw new RuntimeException("Client terminated");
-                }
-
                 if (this.context.isDone()) {
-                    throw new RuntimeException("Context already set");
+                    this.context = CompletableFuture.completedFuture(context);
                 }
 
                 state = ClientState.CONNECTED;
