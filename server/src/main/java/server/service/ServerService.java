@@ -278,7 +278,7 @@ public class ServerService {
 
     public byte[] getImage(UUID serverId) {
         try {
-            if (!nodeManager.isRunning(serverId)){
+            if (!nodeManager.isRunning(serverId)) {
                 return new byte[0];
             }
 

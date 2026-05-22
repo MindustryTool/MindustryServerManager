@@ -205,6 +205,8 @@ public class GatewayService {
 
             if (socket != null) {
                 socket.closeSession(WsCloseStatus.NORMAL_CLOSURE, "Terminate by server");
+            } else {
+                context.completeExceptionally(ApiError.badRequest("Server terminate"));
             }
 
             nodeManager.remove(id, reason);
@@ -236,7 +238,7 @@ public class GatewayService {
                     return;
                 }
                 if (wsMessage.isError()) {
-                    future.completeExceptionally(new RuntimeException(payload.toString()));
+                    future.completeExceptionally(new RuntimeException(String.valueOf(payload)));
                 } else {
                     future.complete(payload);
                 }
