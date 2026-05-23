@@ -260,7 +260,15 @@ public class ApiGateway {
                 ws.sendText(JsonUtils.toJsonString(response));
             } catch (Exception e) {
                 Log.err("Error handling message: " + wsMessage, e);
-                WsMessage<?> error = wsMessage.error(e.getMessage());
+                StringBuilder sb = new StringBuilder();
+                sb.append("Exception: ").append(e.getMessage());
+                for (StackTraceElement element : e.getStackTrace()) {
+                    sb.append("\n").append(element);
+                    if (sb.length() > 1024) {
+                        break;
+                    }
+                }
+                WsMessage<?> error = wsMessage.error(sb.toString());
                 ws.sendText(JsonUtils.toJsonString(error));
             }
         }
