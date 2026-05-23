@@ -91,10 +91,12 @@ public class GatewayService {
         try {
             return clients.containsKey(serverId)
                     && nodeManager.isRunning(serverId)
-                    && of(serverId).server().isHosting().get(10, TimeUnit.SECONDS);
-        } catch (InterruptedException | ExecutionException | TimeoutException e) {
-            Log.err("Error checking if server is hosting: " + serverId, e);
+                    && of(serverId).server().isHosting().get(5, TimeUnit.SECONDS);
+        } catch (TimeoutException e) {
+            Log.err("Timeout when checking if server is hosting after 5 seconds: " + serverId);
             return false;
+        } catch (InterruptedException | ExecutionException e) {
+            throw ApiError.internal(e);
         }
     }
 

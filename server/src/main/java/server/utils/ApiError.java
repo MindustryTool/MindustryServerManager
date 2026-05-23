@@ -53,6 +53,10 @@ public class ApiError extends RuntimeException {
         return new ApiError(500, "Internal Server Error");
     }
 
+    public static ApiError internal(Throwable message) {
+        return new ApiError(500, message.getMessage(), message);
+    }
+
     public static ApiError notFound(Object id, String contentType) {
         return new ApiError(404, String.format("Data not found (%s:%s)", contentType, id.toString()));
     }

@@ -190,7 +190,7 @@ public class ServerService {
             }
         }
 
-        throw new ApiError(500, "Can not host server: " + serverId);
+        throw new ApiError(503, "Can not host server: " + serverId);
 
     }
 

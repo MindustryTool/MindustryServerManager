@@ -17,7 +17,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -31,7 +30,6 @@ import plugin.Control;
 import plugin.annotations.Component;
 import plugin.annotations.Destroy;
 import plugin.annotations.Listener;
-import plugin.core.Scheduler;
 import plugin.event.SessionCreatedEvent;
 import plugin.event.SessionRemovedEvent;
 import plugin.utils.HttpUtils;
@@ -59,6 +57,8 @@ import com.neovisionaries.ws.client.WebSocketAdapter;
 import com.neovisionaries.ws.client.WebSocketException;
 import com.neovisionaries.ws.client.WebSocketFactory;
 import com.neovisionaries.ws.client.WebSocketFrame;
+import com.neovisionaries.ws.client.WebSocketState;
+
 import arc.Core;
 import arc.struct.ObjectMap;
 import arc.util.CommandHandler.Command;
@@ -89,7 +89,6 @@ public class ApiGateway {
     private static final String GATEWAY_URL = "http://server.mindustry-tool.com:8089/gateway";
     private static final Executor executor = Executors.newCachedThreadPool();
 
-    private final Scheduler scheduler;
     private final HostService hostService;
 
     private final Duration HEARTBEAT_DURATION = Duration.ofSeconds(10);
@@ -178,7 +177,6 @@ public class ApiGateway {
                     .connectAsynchronously();
         } catch (Exception e) {
             Log.err("Error connecting to server manager", e);
-            reconnect();
         }
     }
 
@@ -211,7 +209,6 @@ public class ApiGateway {
             } else {
                 Log.info("[red]Client disconnected: " + clientCloseFrame);
             }
-            reconnect();
         }
 
         @Override
@@ -220,7 +217,6 @@ public class ApiGateway {
                 return;
             }
             Log.err("Error connecting to server manager", exception);
-            reconnect();
         }
     }
 
@@ -281,9 +277,15 @@ public class ApiGateway {
         messageHandlers.put(type, mh);
     }
 
-    private synchronized void reconnect() {
-        Log.info("[yellow]Reconnecting to server manager in 10 seconds");
-        scheduler.schedule(this::connect, 10, TimeUnit.SECONDS);
+    @Schedule(delay = 10, fixedDelay = 10, unit = TimeUnit.SECONDS)
+    private void autoReconnect() {
+        if (isDestroyed) {
+            return;
+        }
+
+        if (webSocket == null || webSocket.getState() == WebSocketState.CLOSED) {
+            connect();
+        }
     }
 
     private boolean isConnected() {
