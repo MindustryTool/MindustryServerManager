@@ -1,6 +1,8 @@
 package server.service;
 
 import java.io.Closeable;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.LinkedList;
@@ -33,6 +35,7 @@ import dto.LoginDto;
 import dto.ManagerMapDto;
 import dto.ManagerModDto;
 import server.EnvConfig;
+import server.config.Const;
 import server.manager.NodeManager;
 import server.service.GatewayService.GatewayClient;
 import server.utils.ApiError;
@@ -82,6 +85,32 @@ public class ServerService {
 
         scheduler.scheduleWithFixedDelay(this::autoTurnOffCron, 5, 5, TimeUnit.MINUTES);
         scheduler.scheduleWithFixedDelay(this::requestBackendConnection, 30, 30, TimeUnit.SECONDS);
+        scheduler.schedule(this::autoTurnOffCron, 5, TimeUnit.MINUTES);
+    }
+
+    private void removeOldServer() {
+        int removeAfterDays = 30;
+
+        for (Fi file : Const.serverFolder.list()) {
+            if (file.isDirectory()) {
+                String serverId = file.name();
+                try {
+                    Instant lastModifiedTime = gatewayService
+                            .of(UUID.fromString(serverId))
+                            .server()
+                            .getLastModifiedTime();
+
+                    Instant canBeDeletedAt = lastModifiedTime.plus(Duration.ofDays(removeAfterDays));
+
+                    if (canBeDeletedAt.isBefore(Instant.now())) {
+                        remove(UUID.fromString(serverId), NodeRemoveReason.OLD);
+                        file.deleteDirectory();
+                    }
+                } catch (Exception e) {
+                    Log.err("Can not remove server " + serverId, e);
+                }
+            }
+        }
     }
 
     private void requestBackendConnection() {

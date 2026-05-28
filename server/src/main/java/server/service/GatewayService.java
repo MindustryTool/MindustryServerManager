@@ -1,11 +1,16 @@
 package server.service;
 
+import java.io.File;
+import java.io.IOException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
+import java.nio.file.Files;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -406,6 +411,20 @@ public class GatewayService {
 
                             return file.readBytes();
                         });
+            }
+
+            public Instant getLastModifiedTime() {
+                File file = nodeManager.getFile(id, "map-preview-image.png").file();
+
+                if (!file.exists()) {
+                    return LocalDateTime.of(2026, 1, 1, 0, 0).toInstant(ZoneOffset.UTC);
+                }
+
+                try {
+                    return Files.getLastModifiedTime(file.toPath()).toInstant();
+                } catch (IOException e) {
+                    throw new RuntimeException("Can not get last modified time of map preview-image.png", e);
+                }
             }
 
             public CompletableFuture<Void> sendCommand(String... command) {

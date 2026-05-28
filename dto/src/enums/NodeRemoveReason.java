@@ -5,5 +5,6 @@ public enum NodeRemoveReason {
     USER_REQUEST,
     NOT_RESPONSE,
     NOT_CONNECTED,
+    OLD,
     UNKNOWN,
 }

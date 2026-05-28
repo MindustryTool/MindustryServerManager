@@ -12,6 +12,9 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+
+import arc.files.Fi;
+
 import org.modelmapper.ModelMapper;
 
 public class Const {
@@ -21,14 +24,15 @@ public class Const {
     public static final boolean IS_DEVELOPMENT = ENV != null && ENV.equals("DEV");
     public static final boolean IS_PRODUCTION = !IS_DEVELOPMENT;
 
-    public static int DEFAULT_MINDUSTRY_SERVER_PORT = 6567;
-    public static int MAXIMUM_MINDUSTRY_SERVER_PORT = 20000;
+    public static final int DEFAULT_MINDUSTRY_SERVER_PORT = 6567;
+    public static final int MAXIMUM_MINDUSTRY_SERVER_PORT = 20000;
 
-    public static String volumeFolderPath = getVolumeFolderPath();
-    public static String serverLabelName = "com.mindustry-tool.server.v2";
-    public static String serverIdLabel = "com.mindustry-tool.server.id.v2";
-    public static String API_URL = "https://api.mindustry-tool.com/api/v4/";
-    public static File volumeFolder = new File(volumeFolderPath);
+    public static final String volumeFolderPath = getVolumeFolderPath();
+    public static final String serverLabelName = "com.mindustry-tool.server.v2";
+    public static final String serverIdLabel = "com.mindustry-tool.server.id.v2";
+    public static final String API_URL = "https://api.mindustry-tool.com/api/v4/";
+    public static final File volumeFolder = new File(volumeFolderPath);
+    public static final Fi serverFolder = new Fi(volumeFolderPath).child("servers");
 
     public static final String MANAGER_VERSION = "0.0.1";
     public static final Long MAX_FILE_SIZE = 5000000l;
