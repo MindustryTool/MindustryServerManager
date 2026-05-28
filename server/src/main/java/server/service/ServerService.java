@@ -85,7 +85,7 @@ public class ServerService {
 
         scheduler.scheduleWithFixedDelay(this::autoTurnOffCron, 5, 5, TimeUnit.MINUTES);
         scheduler.scheduleWithFixedDelay(this::requestBackendConnection, 30, 30, TimeUnit.SECONDS);
-        scheduler.schedule(this::autoTurnOffCron, 5, TimeUnit.MINUTES);
+        scheduler.scheduleWithFixedDelay(this::removeOldServer, 0,24, TimeUnit.HOURS);
     }
 
     private void removeOldServer() {
@@ -105,6 +105,7 @@ public class ServerService {
                     if (canBeDeletedAt.isBefore(Instant.now())) {
                         remove(UUID.fromString(serverId), NodeRemoveReason.OLD);
                         file.deleteDirectory();
+                        Log.info("Remove old server " + serverId);
                     }
                 } catch (Exception e) {
                     Log.err("Can not remove server " + serverId, e);
