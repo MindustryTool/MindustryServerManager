@@ -6,6 +6,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
+import arc.Core;
 import arc.struct.Seq;
 import arc.util.Log;
 import lombok.AllArgsConstructor;
@@ -30,6 +31,12 @@ public class SessionRepository {
     @Init
     public void init() {
         createTableIfNotExists();
+
+        if (!Core.settings.has("EXP_RECALCULATED")) {
+            recalculateAllTotalExp();
+            Core.settings.put("EXP_RECALCULATED", true);
+            Core.settings.forceSave();
+        }
     }
 
     @Listener
@@ -211,6 +218,45 @@ public class SessionRepository {
 
         } catch (Exception e) {
             Log.err("Failed to create sessions table: @", e);
+        }
+    }
+
+    public void recalculateAllTotalExp() {
+        try {
+            DB.statement(statement -> {
+                try (var rs = statement.executeQuery(
+                        "SELECT uuid, data FROM sessions")) {
+
+                    var updateSql = "UPDATE sessions SET totalExp = ? WHERE uuid = ?";
+
+                    while (rs.next()) {
+                        var uuid = rs.getString("uuid");
+                        var json = rs.getString("data");
+
+                        if (json == null || json.isBlank()) {
+                            continue;
+                        }
+
+                        var data = JsonUtils.readJsonAsClass(
+                                json,
+                                SessionData.class);
+
+                        long totalExp = ExpUtils.getTotalExp(data, 0);
+
+                        DB.prepare(updateSql, ps -> {
+                            ps.setLong(1, totalExp);
+                            ps.setString(2, uuid);
+                            ps.executeUpdate();
+                        });
+                    }
+
+                    return;
+                }
+            });
+
+            Log.info("Finished recalculating totalExp for all sessions");
+        } catch (Exception e) {
+            Log.err("Failed to recalculate totalExp", e);
         }
     }
 }

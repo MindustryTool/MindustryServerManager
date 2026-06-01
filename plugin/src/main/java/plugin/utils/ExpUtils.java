@@ -1,6 +1,5 @@
 package plugin.utils;
 
-import mindustry.content.UnitTypes;
 import plugin.type.Session;
 import plugin.type.SessionData;
 
@@ -19,7 +18,7 @@ public class ExpUtils {
 
     // Killing 1 flare = 5 seconds of play time
     public static long playTimeToExp(long playTime) {
-        return (long) (playTime / UnitTypes.flare.health / 5 / 8);
+        return (long) (playTime / 1000);
     }
 
     public static int levelFromTotalExp(long totalExp) {
