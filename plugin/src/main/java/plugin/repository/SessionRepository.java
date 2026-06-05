@@ -233,7 +233,7 @@ public class SessionRepository {
                         var uuid = rs.getString("uuid");
                         var json = rs.getString("data");
 
-                        if (json == null || json.isBlank()) {
+                        if (json == null || json.isEmpty()) {
                             continue;
                         }
 
