@@ -223,36 +223,33 @@ public class SessionRepository {
 
     public void recalculateAllTotalExp() {
         try {
-            DB.statement(statement -> {
-                try (var rs = statement.executeQuery(
-                        "SELECT uuid, data FROM sessions")) {
-
-                    var updateSql = "UPDATE sessions SET totalExp = ? WHERE uuid = ?";
-
-                    while (rs.next()) {
-                        var uuid = rs.getString("uuid");
-                        var json = rs.getString("data");
-
-                        if (json == null || json.isEmpty()) {
-                            continue;
-                        }
-
-                        var data = JsonUtils.readJsonAsClass(
-                                json,
-                                SessionData.class);
-
-                        long totalExp = ExpUtils.getTotalExp(data, 0);
-
-                        DB.prepare(updateSql, ps -> {
-                            ps.setLong(1, totalExp);
-                            ps.setString(2, uuid);
-                            ps.executeUpdate();
-                        });
-                    }
-
-                    return;
-                }
+            var rs = DB.statement(statement -> {
+                var result = statement.executeQuery("SELECT uuid, data FROM sessions");
+                return result;
             });
+
+            var updateSql = "UPDATE sessions SET totalExp = ? WHERE uuid = ?";
+
+            while (rs.next()) {
+                var uuid = rs.getString("uuid");
+                var json = rs.getString("data");
+
+                if (json == null || json.isEmpty()) {
+                    continue;
+                }
+
+                var data = JsonUtils.readJsonAsClass(
+                        json,
+                        SessionData.class);
+
+                long totalExp = ExpUtils.getTotalExp(data, 0);
+
+                DB.prepare(updateSql, ps -> {
+                    ps.setLong(1, totalExp);
+                    ps.setString(2, uuid);
+                    ps.executeUpdate();
+                });
+            }
 
             Log.info("Finished recalculating totalExp for all sessions");
         } catch (Exception e) {
