@@ -209,7 +209,7 @@ public class ServerService {
             throw new RuntimeException(e);
         }
 
-        for (int i = 0; i < 60; i++) {
+        for (int i = 0; i < 120; i++) {
             try {
                 if (gatewayClient.server().isHosting().get(1000, TimeUnit.MILLISECONDS)) {
                     eventBus.emit(LogEvent.info(serverId, "Server hosting"));
@@ -220,8 +220,9 @@ public class ServerService {
             }
         }
 
-        throw new ApiError(503, "Can not host server: " + serverId);
+        Log.err("Server waiting for hosting status timeout");
 
+        throw new ApiError(503, "Can not host server: " + serverId);
     }
 
     public List<ServerMisMatch> getMismatch(UUID serverId, ServerConfig config) {
