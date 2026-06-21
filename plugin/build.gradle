@@ -47,15 +47,26 @@ dependencies{
 
 }
 
-jar{
+jar {
+    dependsOn(':dto:jar')
     duplicatesStrategy(DuplicatesStrategy.EXCLUDE)
     archiveFileName = "${project.archivesBaseName}.jar"
-    dependsOn(':dto:jar')
     
-    from{
+
+    from {
         configurations.runtimeClasspath.collect{it.isDirectory() ? it : zipTree(it)}
     }
     
+    exclude 'org/sqlite/native/Windows/**'
+    exclude 'org/sqlite/native/Mac/**'
+    exclude 'org/sqlite/native/FreeBSD/**'
+    exclude 'org/sqlite/native/Linux-Android/**'
+
+    exclude 'org/sqlite/native/Linux/**'
+
+    exclude 'org/sqlite/native/Linux-Musl/aarch64/**'
+    exclude 'org/sqlite/native/Linux-Musl/x86/**'
+
     from(project.projectDir){
         include "plugin.json"
     }
