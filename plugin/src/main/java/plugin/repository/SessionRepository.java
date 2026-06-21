@@ -32,10 +32,14 @@ public class SessionRepository {
     public void init() {
         createTableIfNotExists();
 
-        if (!Core.settings.has("EXP_RECALCULATED")) {
-            recalculateAllTotalExp();
-            Core.settings.put("EXP_RECALCULATED", true);
-            Core.settings.forceSave();
+        if (!Core.settings.has("EXP_RECALCULATED_2")) {
+            try {
+                recalculateAllTotalExp();
+                Core.settings.put("EXP_RECALCULATED_2", true);
+                Core.settings.forceSave();
+            } catch (Exception e) {
+                Log.err("Failed to recalculate total exp: @", e.getMessage());
+            }
         }
     }
 
@@ -221,39 +225,36 @@ public class SessionRepository {
         }
     }
 
-    public void recalculateAllTotalExp() {
-        try {
-            var rs = DB.statement(statement -> {
-                var result = statement.executeQuery("SELECT uuid, data FROM sessions");
-                return result;
-            });
+    public void recalculateAllTotalExp() throws SQLException {
+        var rs = DB.statement(statement -> {
+            var result = statement.executeQuery("SELECT uuid, data FROM sessions");
+            return result;
+        });
 
-            var updateSql = "UPDATE sessions SET totalExp = ? WHERE uuid = ?";
+        var updateSql = "UPDATE sessions SET totalExp = ? WHERE uuid = ?";
 
-            while (rs.next()) {
-                var uuid = rs.getString("uuid");
-                var json = rs.getString("data");
+        while (rs.next()) {
+            var uuid = rs.getString("uuid");
+            var json = rs.getString("data");
 
-                if (json == null || json.isEmpty()) {
-                    continue;
-                }
-
-                var data = JsonUtils.readJsonAsClass(
-                        json,
-                        SessionData.class);
-
-                long totalExp = ExpUtils.getTotalExp(data, 0);
-
-                DB.prepare(updateSql, ps -> {
-                    ps.setLong(1, totalExp);
-                    ps.setString(2, uuid);
-                    ps.executeUpdate();
-                });
+            if (json == null || json.isEmpty()) {
+                continue;
             }
 
-            Log.info("Finished recalculating totalExp for all sessions");
-        } catch (Exception e) {
-            Log.err("Failed to recalculate totalExp", e);
+            var data = JsonUtils.readJsonAsClass(
+                    json,
+                    SessionData.class);
+
+            long totalExp = ExpUtils.getTotalExp(data, 0);
+
+            DB.prepare(updateSql, ps -> {
+                ps.setLong(1, totalExp);
+                ps.setString(2, uuid);
+                ps.executeUpdate();
+            });
         }
+
+        Log.info("Finished recalculating totalExp for all sessions");
+
     }
 }
