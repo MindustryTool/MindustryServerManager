@@ -13,7 +13,6 @@ import arc.util.Strings;
 import lombok.RequiredArgsConstructor;
 import mindustry.Vars;
 import mindustry.game.Gamemode;
-import mindustry.io.MapIO;
 import mindustry.io.SaveIO;
 import mindustry.maps.Map;
 import mindustry.maps.MapException;
@@ -85,8 +84,6 @@ public class HostService {
     }
 
     public synchronized void host(String mapName, String mode) {
-        boolean shouldLoadSave = true;
-
         if (Control.state == PluginState.UNLOADED) {
             Log.warn("Server unloaded, can not host");
             return;
@@ -103,13 +100,6 @@ public class HostService {
             if (mode != null) {
                 try {
                     preset = Gamemode.valueOf(mode.toLowerCase());
-                    String lastServerMode = Core.settings.getString("lastServerMode", "");
-
-                    if (!lastServerMode.equals(preset.name())) {
-                        shouldLoadSave = false;
-                    }
-
-                    Core.settings.put("lastServerMode", preset.name());
 
                     Class<?> clazz = Class.forName("mindustry.server.ServerControl");
 
@@ -129,15 +119,6 @@ public class HostService {
             Map result = null;
 
             if (mapName == null) {
-                if (shouldLoadSave && SAVE_FILE.exists()) {
-                    try {
-                        result = MapIO.createMap(SAVE_FILE, true);
-                        Log.info("[sky]Loaded saved map @.", result.name());
-                    } catch (Exception e) {
-                        Log.err(e);
-                    }
-                }
-
                 if (result == null) {
                     result = Vars.maps.getShuffleMode().next(preset, Vars.state.map);
                     Log.info("[sky]Randomized next map to be @.", result.plainName());
