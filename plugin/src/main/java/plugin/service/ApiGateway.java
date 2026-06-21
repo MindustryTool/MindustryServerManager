@@ -641,6 +641,10 @@ public class ApiGateway {
     }
 
     public String translateRaw(Locale targetLanguage, String text) {
+        if (disableTranslation) {
+            return text;
+        }
+        
         if (text == null || text.isEmpty()) {
             throw new IllegalArgumentException("Text is empty");
         }
