@@ -204,6 +204,10 @@ public class ApiGateway {
                 return;
             }
 
+            var err = new RuntimeException("WebSocket disconnected");
+            pendingRequests.forEach((id, future) -> future.completeExceptionally(err));
+            pendingRequests.clear();
+
             if (closedByServer) {
                 Log.info("[red]Server manager disconnected: " + serverCloseFrame);
             } else {

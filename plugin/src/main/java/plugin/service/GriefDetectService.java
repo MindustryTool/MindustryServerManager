@@ -7,6 +7,7 @@ import arc.struct.Seq;
 import lombok.RequiredArgsConstructor;
 import mindustry.game.EventType.BlockBuildBeginEvent;
 import mindustry.game.EventType.BlockBuildEndEvent;
+import mindustry.game.EventType.PlayerLeave;
 import mindustry.gen.Player;
 import plugin.Cfg;
 import plugin.annotations.Component;
@@ -41,7 +42,12 @@ public class GriefDetectService {
             updated.put(entry.getKey(), entry.getValue() + 5);
 
             if (entry.getValue() > 100) {
-                Session session = sessionHandler.get(entry.getKey()).get();
+                var sessionOpt = sessionHandler.get(entry.getKey());
+                if (sessionOpt.isEmpty()) {
+                    removed.add(entry.getKey());
+                    continue;
+                }
+                Session session = sessionOpt.get();
                 var isLoggedIn = session.isLoggedIn();
 
                 Utils.forEachPlayerLocale((locale, players) -> {
@@ -67,6 +73,11 @@ public class GriefDetectService {
         for (var key : removed) {
             scores.remove(key);
         }
+    }
+
+    @Listener
+    public void onPlayerLeave(PlayerLeave event) {
+        scores.remove(event.player);
     }
 
     @Listener
