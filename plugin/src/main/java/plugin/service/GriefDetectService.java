@@ -43,7 +43,7 @@ public class GriefDetectService {
 
             if (entry.getValue() > 100) {
                 var sessionOpt = sessionHandler.get(entry.getKey());
-                if (sessionOpt.isEmpty()) {
+                if (!sessionOpt.isPresent()) {
                     removed.add(entry.getKey());
                     continue;
                 }
