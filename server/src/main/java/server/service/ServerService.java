@@ -15,7 +15,11 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
+
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.LoadingCache;
 
 import arc.files.Fi;
 import arc.util.Log;
@@ -54,6 +58,10 @@ public class ServerService {
     private final List<Consumer<BaseEvent>> eventListeners = new LinkedList<>();
     private final ArrayList<BaseEvent> buffer = new ArrayList<>();
 
+    private final LoadingCache<String, ReentrantLock> locks = Caffeine.newBuilder()
+            .expireAfterAccess(Duration.ofMinutes(10))
+            .build(key -> new ReentrantLock());
+
     private enum ServerFlag {
         KILL, NOT_RESPONSE, RESTART
     }
@@ -85,7 +93,7 @@ public class ServerService {
 
         scheduler.scheduleWithFixedDelay(this::autoTurnOffCron, 5, 5, TimeUnit.MINUTES);
         scheduler.scheduleWithFixedDelay(this::requestBackendConnection, 30, 30, TimeUnit.SECONDS);
-        scheduler.scheduleWithFixedDelay(this::removeOldServer, 0,24, TimeUnit.HOURS);
+        scheduler.scheduleWithFixedDelay(this::removeOldServer, 0, 24, TimeUnit.HOURS);
     }
 
     private void removeOldServer() {
@@ -148,81 +156,89 @@ public class ServerService {
     }
 
     public void host(ServerConfig request) {
-        UUID serverId = request.getId();
-
-        if (gatewayService.isHosting(serverId)) {
-            return;
-        }
-
-        eventBus.emit(LogEvent.info(serverId, "Delete old loader.jar"));
-        nodeManager.deleteFile(serverId, "mindustry-tool-plugins");
-        nodeManager.deleteFile(serverId, "mods/loader.jar");
-
-        Fi websocketFile = nodeManager.getFile(serverId, "WEBSOCKET.txt");
-
-        if (!websocketFile.exists()) {
-            eventBus.emit(LogEvent.info(serverId, "Generate websocket file"));
-            String jwt = wsHandler.generateServerJwt(serverId, envConfig.serverConfig().securityKey());
-            nodeManager.writeFile(serverId, "WEBSOCKET.txt", jwt.getBytes());
-        }
-
-        nodeManager.create(request);
-
-        eventBus.emit(LogEvent.info(serverId, "Connecting to gateway"));
-        GatewayClient gatewayClient = gatewayService.of(serverId);
+        ReentrantLock lock = locks.get(request.getId().toString());
+        
+        lock.lock();
 
         try {
-            gatewayClient.server().isHosting().get(120, TimeUnit.SECONDS);
-        } catch (InterruptedException | ExecutionException | TimeoutException e) {
-            throw new ApiError(502, "Can not connect to gateway", e);
-        }
+            UUID serverId = request.getId();
 
-        eventBus.emit(LogEvent.info(serverId, "Waiting for server to start"));
-
-        String gamemode = request.getGamemode();
-
-        if (gamemode == null || gamemode.isEmpty()) {
-            gamemode = request.getMode();
-        }
-
-        String[] preHostCommand = {
-                "config name %s".formatted(request.getName()),
-                request.getDescription().isEmpty() ? "" : "config desc %s".formatted(request.getDescription()),
-                "config port 6567",
-                "gamemode " + gamemode,
-                "version"
-        };
-
-        try {
-            gatewayClient.server().sendCommand(preHostCommand).get(5, TimeUnit.SECONDS);
-
-            eventBus.emit(LogEvent.info(serverId, "Host server"));
-
-            gatewayClient.server()
-                    .host(new StartServerDto()
-                            .setHostCommand(request.getHostCommand())
-                            .setMode(request.getMode()))
-                    .get(15, TimeUnit.SECONDS);
-
-            eventBus.emit(LogEvent.info(serverId, "Wait for server status"));
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-
-        for (int i = 0; i < 120; i++) {
-            try {
-                if (gatewayClient.server().isHosting().get(1000, TimeUnit.MILLISECONDS)) {
-                    eventBus.emit(LogEvent.info(serverId, "Server hosting"));
-                    return;
-                }
-            } catch (InterruptedException | ExecutionException | TimeoutException e) {
-                Log.err("Can not check server status", e);
+            if (gatewayService.isHosting(serverId)) {
+                return;
             }
+
+            eventBus.emit(LogEvent.info(serverId, "Delete old loader.jar"));
+            nodeManager.deleteFile(serverId, "mindustry-tool-plugins");
+            nodeManager.deleteFile(serverId, "mods/loader.jar");
+
+            Fi websocketFile = nodeManager.getFile(serverId, "WEBSOCKET.txt");
+
+            if (!websocketFile.exists()) {
+                eventBus.emit(LogEvent.info(serverId, "Generate websocket file"));
+                String jwt = wsHandler.generateServerJwt(serverId, envConfig.serverConfig().securityKey());
+                nodeManager.writeFile(serverId, "WEBSOCKET.txt", jwt.getBytes());
+            }
+
+            nodeManager.create(request);
+
+            eventBus.emit(LogEvent.info(serverId, "Connecting to gateway"));
+            GatewayClient gatewayClient = gatewayService.of(serverId);
+
+            try {
+                gatewayClient.server().isHosting().get(120, TimeUnit.SECONDS);
+            } catch (InterruptedException | ExecutionException | TimeoutException e) {
+                throw new ApiError(502, "Can not connect to gateway", e);
+            }
+
+            eventBus.emit(LogEvent.info(serverId, "Waiting for server to start"));
+
+            String gamemode = request.getGamemode();
+
+            if (gamemode == null || gamemode.isEmpty()) {
+                gamemode = request.getMode();
+            }
+
+            String[] preHostCommand = {
+                    "config name %s".formatted(request.getName()),
+                    request.getDescription().isEmpty() ? "" : "config desc %s".formatted(request.getDescription()),
+                    "config port 6567",
+                    "gamemode " + gamemode,
+                    "version"
+            };
+
+            try {
+                gatewayClient.server().sendCommand(preHostCommand).get(5, TimeUnit.SECONDS);
+
+                eventBus.emit(LogEvent.info(serverId, "Host server"));
+
+                gatewayClient.server()
+                        .host(new StartServerDto()
+                                .setHostCommand(request.getHostCommand())
+                                .setMode(request.getMode()))
+                        .get(15, TimeUnit.SECONDS);
+
+                eventBus.emit(LogEvent.info(serverId, "Wait for server status"));
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+
+            for (int i = 0; i < 120; i++) {
+                try {
+                    if (gatewayClient.server().isHosting().get(1000, TimeUnit.MILLISECONDS)) {
+                        eventBus.emit(LogEvent.info(serverId, "Server hosting"));
+                        return;
+                    }
+                } catch (InterruptedException | ExecutionException | TimeoutException e) {
+                    Log.err("Can not check server status", e);
+                }
+            }
+
+            Log.err("Server waiting for hosting status timeout");
+
+            throw new ApiError(503, "Can not host server: " + serverId);
+        } finally {
+            lock.unlock();
         }
-
-        Log.err("Server waiting for hosting status timeout");
-
-        throw new ApiError(503, "Can not host server: " + serverId);
     }
 
     public List<ServerMisMatch> getMismatch(UUID serverId, ServerConfig config) {
