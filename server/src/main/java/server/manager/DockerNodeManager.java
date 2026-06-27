@@ -33,7 +33,6 @@ import dto.ServerConfig;
 import dto.ServerMetadata;
 import dto.ServerStateDto;
 import events.ServerEvents.LogEvent;
-import events.ServerEvents.StopEvent;
 import enums.NodeRemoveReason;
 import server.utils.ApiError;
 import server.utils.FileUtils;
@@ -64,6 +63,8 @@ public class DockerNodeManager implements NodeManager {
 
     private static final Fi SERVER_FOLDER = new Fi(Const.volumeFolderPath).child("servers");
     private static final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+
+    private Optional<Consumer<UUID>> onKilled;
 
     public DockerNodeManager(DockerClient dockerClient, EnvConfig envConfig, EventBus eventBus) {
         this.dockerClient = dockerClient;
@@ -247,21 +248,23 @@ public class DockerNodeManager implements NodeManager {
     }
 
     @Override
-    public void remove(UUID id, NodeRemoveReason reason) {
-        findContainerByServerId(id).ifPresent(container -> {
+    public boolean remove(UUID id, NodeRemoveReason reason) {
+        return findContainerByServerId(id).map(container -> {
             eventBus.emit(LogEvent.error(id, "Removed: " + container.getNames()[0] + " for reason: " + reason));
 
-            removeContainer(container.getId());
-        });
+            return removeContainer(container.getId());
+        }).orElse(false);
     }
 
-    private synchronized void removeContainer(String id) {
+    private synchronized boolean removeContainer(String id) {
         try {
             dockerClient.removeContainerCmd(id)
                     .withForce(true)
                     .exec();
+            return true;
         } catch (Exception e) {
             Log.err("Failed to remove container " + id, e);
+            return false;
         }
     }
 
@@ -568,7 +571,7 @@ public class DockerNodeManager implements NodeManager {
                         attachLogCallback(containerId, serverId);
                     } else if (action.equalsIgnoreCase("die") || action.equalsIgnoreCase("stop")
                             || action.equalsIgnoreCase("kill")) {
-                        eventBus.emit(new StopEvent(serverId, NodeRemoveReason.NOT_CONNECTED));
+                        onKilled.ifPresent(consumer -> consumer.accept(serverId));
                     }
                 }, () -> {
                     var serverIdString = container.getLabels().get(Const.serverIdLabel);
@@ -651,5 +654,10 @@ public class DockerNodeManager implements NodeManager {
                 .filter(meta -> meta.isPresent())
                 .map(meta -> meta.get())
                 .anyMatch(meta -> meta.getConfig().getId().equals(serverId));
+    }
+
+    @Override
+    public void onKilled(Consumer<UUID> onKilled) {
+        this.onKilled = Optional.ofNullable(onKilled);
     }
 }

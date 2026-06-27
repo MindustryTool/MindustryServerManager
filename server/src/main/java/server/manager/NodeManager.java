@@ -19,11 +19,11 @@ import enums.NodeRemoveReason;
 
 public interface NodeManager {
 
-    void create(ServerConfig config);
-
     List<ServerState> list();
 
-    void remove(UUID id, NodeRemoveReason reason);
+    void create(ServerConfig config);
+
+    boolean remove(UUID id, NodeRemoveReason reason);
 
     List<ServerMisMatch> getMismatch(
             UUID id,
@@ -54,4 +54,6 @@ public interface NodeManager {
     boolean deleteFile(UUID serverId, String path);
 
     boolean isRunning(UUID serverId);
+
+    void onKilled(Consumer<UUID> onKilled);
 }

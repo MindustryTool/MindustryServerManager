@@ -70,6 +70,8 @@ public class GatewayService {
         this.envConfig = envConfig;
         this.nodeManager = nodeManager;
 
+        nodeManager.onKilled(serverId -> this.terminate(serverId, NodeRemoveReason.PROCESS_KILLED));
+
         scheduler.scheduleWithFixedDelay(() -> {
             try {
                 clients.values().removeIf(client -> {
@@ -174,9 +176,7 @@ public class GatewayService {
         public synchronized void setSocketContext(WsContext context) {
             if (context == null) {
                 if (nodeManager.isRunning(id)) {
-                    eventBus.emit(new StopEvent(id, NodeRemoveReason.NOT_CONNECTED));
-                } else {
-                    eventBus.emit(new StopEvent(id, NodeRemoveReason.UNKNOWN));
+                    eventBus.emit(new StopEvent(id, NodeRemoveReason.SOCKET_DISCONNECT));
                 }
                 this.context.completeExceptionally(new RuntimeException("Disconnected"));
                 this.context = new CompletableFuture<WsContext>();
@@ -216,9 +216,9 @@ public class GatewayService {
                 context.completeExceptionally(ApiError.badRequest("Server terminate"));
             }
 
-            nodeManager.remove(id, reason);
+            boolean removed = nodeManager.remove(id, reason);
 
-            if (state != ClientState.CONNECTING) {
+            if (state != ClientState.CONNECTING && (removed || reason == NodeRemoveReason.PROCESS_KILLED)) {
                 eventBus.emit(new StopEvent(id, reason));
                 Log.info("[red]Client terminated: " + id);
             }

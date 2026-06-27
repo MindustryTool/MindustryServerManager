@@ -83,8 +83,9 @@ public class ServerService {
             synchronized (buffer) {
                 if (eventListeners.isEmpty()) {
                     buffer.add(event);
-                    if (buffer.size() > 1000)
+                    if (buffer.size() > 1000){
                         buffer.remove(0);
+                    }
                 } else {
                     eventListeners.forEach(listener -> listener.accept(event));
                 }
