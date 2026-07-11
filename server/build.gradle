@@ -29,8 +29,7 @@ dependencies {
     implementation project(":dto")
 
     
-    implementation "com.github.Anuken.Arc:arc-core:$mindustryVersion"
-    implementation "com.github.Anuken.Mindustry:core:$mindustryVersion"
+    implementation "Anuken:Mindustry:$mindustryVersion"
 
     compileOnly 'org.projectlombok:lombok:1.18.30'
 
