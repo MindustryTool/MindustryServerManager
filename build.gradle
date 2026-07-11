@@ -37,8 +37,3 @@ allprojects {
 subprojects {
     apply plugin: 'java'
 }
-
-java {
-    targetCompatibility = JavaVersion.VERSION_17
-    sourceCompatibility = JavaVersion.VERSION_17
-}
