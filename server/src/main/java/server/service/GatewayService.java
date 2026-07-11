@@ -111,7 +111,7 @@ public class GatewayService {
         var client = clients.remove(serverId);
 
         if (client == null) {
-            return false;
+            return nodeManager.remove(serverId, reason);
         }
 
         client.terminate(reason);
