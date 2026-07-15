@@ -4,6 +4,7 @@ import java.util.function.Consumer;
 
 import arc.struct.ObjectMap;
 import arc.struct.Seq;
+import arc.util.Log;
 import lombok.RequiredArgsConstructor;
 import mindustry.Vars;
 import mindustry.content.Blocks;
@@ -25,7 +26,6 @@ import mindustry.world.consumers.ConsumeLiquid;
 import mindustry.world.consumers.ConsumeLiquidFilter;
 import mindustry.world.consumers.ConsumeLiquids;
 import plugin.annotations.Gamemode;
-import plugin.annotations.Init;
 import plugin.annotations.Listener;
 import plugin.annotations.Trigger;
 
@@ -41,15 +41,13 @@ public class ZigerGamemode {
     private Seq<Item> allItems;
     private Seq<Liquid> allLiquids;
 
-    @Init
-    private void init() {
-        allItems = Vars.content.items();
-        allLiquids = Vars.content.liquids();
-    }
-
     @Listener
     private void onWorldLoad(WorldLoadEvent event) {
+        Log.info("[accent]ZigerGamemode: onWorldLoad fired");
         clearCache();
+        allItems = Vars.content.items();
+        allLiquids = Vars.content.liquids();
+        Log.info("[accent]ZigerGamemode: items=@, liquids=@", allItems.size, allLiquids.size);
         scanWorld();
     }
 
@@ -74,18 +72,23 @@ public class ZigerGamemode {
 
     @Trigger(EventType.Trigger.update)
     private void tick() {
+        Log.info("[accent]ZigerGamemode: tick start, fillableBuildings size=@", fillableBuildings.size);
         for (var entry : fillableBuildings) {
             FillableBuilding fb = entry.value;
+            Log.info("[accent]ZigerGamemode: filling building @ (@)", fb.building.pos(), fb.building.block);
             fb.info.fill(fb.building);
         }
     }
 
     private void scanWorld() {
+        Log.info("[accent]ZigerGamemode: scanWorld, total builds=@", Groups.build.size());
         Groups.build.each(this::registerBuilding);
+        Log.info("[accent]ZigerGamemode: scanWorld done, fillableBuildings size=@", fillableBuildings.size);
     }
 
     private void registerBuilding(Building build) {
         if (build == null || !build.isValid()) {
+            Log.info("[accent]ZigerGamemode: registerBuilding skipped (null/invalid)");
             return;
         }
 
@@ -98,9 +101,12 @@ public class ZigerGamemode {
         FillInfo info = cacheBlock(build.block);
 
         if (info == null) {
+            Log.info("[accent]ZigerGamemode: registerBuilding no FillInfo for block @", build.block);
             return;
         }
 
+        Log.info("[accent]ZigerGamemode: registered building @ (@) with @ handlers",
+            pos, build.block, info.handlers.size);
         fillableBuildings.put(pos, new FillableBuilding(build, info));
     }
 
@@ -108,10 +114,12 @@ public class ZigerGamemode {
         FillInfo cached = blockCache.get(block);
 
         if (cached != null) {
+            Log.info("[accent]ZigerGamemode: cacheBlock hit for @", block);
             return cached;
         }
 
         FillInfo info = createFillInfo(block);
+        Log.info("[accent]ZigerGamemode: cacheBlock block=@, info=@", block, info);
 
         if (info != null) {
             blockCache.put(block, info);
@@ -122,16 +130,21 @@ public class ZigerGamemode {
 
     private FillInfo createFillInfo(Block block) {
         Seq<Consumer<Building>> handlers = new Seq<>();
+        Log.info("[accent]ZigerGamemode: createFillInfo block=@, consumers count=@", block, block.consumers.length);
 
         for (Consume consumer : block.consumers) {
             Consumer<Building> handler = createHandler(consumer, block);
 
             if (handler != null) {
                 handlers.add(handler);
+                Log.info("[accent]ZigerGamemode: handler created for consumer @ on @", consumer, block);
+            } else {
+                Log.info("[accent]ZigerGamemode: no handler for consumer @ on @", consumer, block);
             }
         }
 
         if (handlers.size == 0) {
+            Log.info("[accent]ZigerGamemode: no handlers for block @, returning null", block);
             return null;
         }
 
@@ -140,13 +153,16 @@ public class ZigerGamemode {
 
     private Consumer<Building> createHandler(Consume consumer, Block block) {
         if (consumer instanceof ConsumeItems) {
+            Log.info("[accent]ZigerGamemode: createHandler ConsumeItems for @", block);
             ConsumeItems ci = (ConsumeItems) consumer;
 
             if (ci.items == null || ci.items.length == 0) {
+                Log.info("[accent]ZigerGamemode: ConsumeItems items empty for @", block);
                 return null;
             }
 
             if (block == Blocks.thoriumReactor) {
+                Log.info("[accent]ZigerGamemode: thoriumReactor special handler for @", block);
                 return building -> {
                     if (building.items.get(Items.thorium) < config.thoriumMin) {
                         building.items.add(Items.thorium, config.thoriumTarget - building.items.get(Items.thorium));
@@ -166,6 +182,7 @@ public class ZigerGamemode {
                 }
             };
         } else if (consumer instanceof ConsumeLiquid) {
+            Log.info("[accent]ZigerGamemode: createHandler ConsumeLiquid for @", block);
             ConsumeLiquid cl = (ConsumeLiquid) consumer;
 
             return building -> {
@@ -178,9 +195,11 @@ public class ZigerGamemode {
                 }
             };
         } else if (consumer instanceof ConsumeLiquids) {
+            Log.info("[accent]ZigerGamemode: createHandler ConsumeLiquids for @", block);
             ConsumeLiquids cl = (ConsumeLiquids) consumer;
 
             if (cl.liquids == null || cl.liquids.length == 0) {
+                Log.info("[accent]ZigerGamemode: ConsumeLiquids liquids empty for @", block);
                 return null;
             }
 
@@ -196,6 +215,7 @@ public class ZigerGamemode {
                 }
             };
         } else if (consumer instanceof ConsumeItemFilter) {
+            Log.info("[accent]ZigerGamemode: createHandler ConsumeItemFilter for @", block);
             ConsumeItemFilter cif = (ConsumeItemFilter) consumer;
 
             return building -> {
@@ -212,6 +232,7 @@ public class ZigerGamemode {
                 }
             };
         } else if (consumer instanceof ConsumeLiquidFilter) {
+            Log.info("[accent]ZigerGamemode: createHandler ConsumeLiquidFilter for @", block);
             ConsumeLiquidFilter clf = (ConsumeLiquidFilter) consumer;
 
             return building -> {
@@ -229,6 +250,7 @@ public class ZigerGamemode {
             };
         }
 
+        Log.info("[accent]ZigerGamemode: createHandler unhandled consumer @ for @", consumer.getClass().getName(), block);
         return null;
     }
 

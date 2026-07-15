@@ -55,14 +55,13 @@ public class EventHandler {
                 try {
                     Utils.forEachPlayerLocale((locale, players) -> {
                         String strippedMessage = Strings.stripColors(message);
-                        var result = apiGateway.translateRaw(locale, strippedMessage);
-
+                        
                         for (var p : players) {
                             if (p.id == player.id) {
                                 continue;
                             }
 
-                            p.sendMessage(coloredMessage + " [gray](" + result + ")", player);
+                            p.sendMessage(coloredMessage + " [gray](" + strippedMessage + ")", player);
                         }
                     });
                 } catch (Exception e) {

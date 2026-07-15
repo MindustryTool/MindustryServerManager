@@ -3,10 +3,8 @@ package plugin.service;
 import java.util.Locale;
 
 import arc.struct.Seq;
-import arc.util.Log;
 import arc.util.Strings;
 import mindustry.gen.Player;
-import plugin.core.Registry;
 import plugin.type.Session;
 import plugin.utils.Utils;
 
@@ -32,14 +30,7 @@ public class I18n {
             }
         }
 
-        Seq<String> translated = null;
-
-        try {
-            translated = Registry.get(ApiGateway.class).translate(needTranslate, locale);
-        } catch (Exception e) {
-            translated = Registry.get(ApiGateway.class).translate(needTranslate, Locale.ENGLISH);
-            Log.err(e.getMessage());
-        }
+        Seq<String> translated = needTranslate;
 
         StringBuilder sb = new StringBuilder();
 
