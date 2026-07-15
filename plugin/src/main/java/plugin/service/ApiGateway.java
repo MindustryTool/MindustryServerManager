@@ -654,6 +654,7 @@ public class ApiGateway {
     @Listener(PlayEvent.class)
     private void onPlay() {
         sendStateUpdate();
+        generateMapImage();
     }
 
     private void sendStateUpdate() {
