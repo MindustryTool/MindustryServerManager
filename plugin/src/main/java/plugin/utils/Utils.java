@@ -49,12 +49,13 @@ public class Utils {
     }
 
     public static synchronized void appPostWithTimeout(Runnable r, int timeoutMillis, String taskName) {
-        CompletableFuture<Void> future = new CompletableFuture<>();
 
         if (Thread.currentThread() == Core.app.getMainThread()) {
-            throw new RuntimeException("Can not post to main thread: " + taskName);
+            r.run();
+            return;
         }
 
+        CompletableFuture<Void> future = new CompletableFuture<>();
         Core.app.post(() -> {
             try {
                 r.run();
@@ -79,7 +80,7 @@ public class Utils {
         Log.debug("Start task: " + taskName);
 
         if (Thread.currentThread() == Core.app.getMainThread()) {
-            throw new RuntimeException("Can not post to main thread: " + taskName);
+            return fn.get();
         }
 
         CompletableFuture<T> future = new CompletableFuture<T>();
