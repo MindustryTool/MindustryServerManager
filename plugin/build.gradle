@@ -3,12 +3,6 @@ java {
     sourceCompatibility = JavaVersion.VERSION_17
 }
 
-
-tasks.withType(JavaCompile){
-    options.annotationProcessorPath = configurations.annotationProcessor
-    options.compilerArgs.addAll(['--release', '8'])
-}
-
 sourceSets {
     main {
         java {
