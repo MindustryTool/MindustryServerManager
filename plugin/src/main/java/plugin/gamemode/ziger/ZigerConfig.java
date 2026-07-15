@@ -8,4 +8,5 @@ public class ZigerConfig {
     public int targetLiquids = 8000;
     public int thoriumMin = 10;
     public int thoriumTarget = 30;
+    public int missingThreshold = 100;
 }
