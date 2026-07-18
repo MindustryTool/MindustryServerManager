@@ -268,7 +268,7 @@ public class ApiGateway {
         messageHandlers.put(type, mh);
     }
 
-    @Schedule(delay = 10, fixedDelay = 10, unit = TimeUnit.SECONDS)
+    @Schedule(delay = 5, fixedDelay = 5, unit = TimeUnit.SECONDS)
     private void autoReconnect() {
         if (isDestroyed) {
             return;
