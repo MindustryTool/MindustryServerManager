@@ -92,7 +92,7 @@ public class ServerService {
             }
         });
 
-        scheduler.scheduleWithFixedDelay(this::autoTurnOffCron, 5, 5, TimeUnit.MINUTES);
+        scheduler.scheduleWithFixedDelay(this::autoTurnOffCron, 5, 10, TimeUnit.MINUTES);
         scheduler.scheduleWithFixedDelay(this::requestBackendConnection, 30, 30, TimeUnit.SECONDS);
         scheduler.scheduleWithFixedDelay(this::removeOldServer, 0, 24, TimeUnit.HOURS);
     }
