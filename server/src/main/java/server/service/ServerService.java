@@ -318,8 +318,8 @@ public class ServerService {
                     .server()
                     .getState()
                     .get(2, TimeUnit.SECONDS);
-        } catch (Exception e) {
-            Log.err(e);
+        } 
+        catch (Exception e) {
             return new ServerStateDto().setServerId(serverId).setStatus(ServerStatus.DISCONNECT);
         }
     }

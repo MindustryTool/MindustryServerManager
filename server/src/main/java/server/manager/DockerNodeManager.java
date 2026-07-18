@@ -214,7 +214,7 @@ public class DockerNodeManager implements NodeManager {
                         .withCpuPeriod(100000L)
                         .withCpuQuota((long) (request.getCpu() * 100000L))
                         .withMemory(request.getMemory() * 1024 * 1024L)
-                        .withRestartPolicy(RestartPolicy.unlessStoppedRestart())
+                        .withRestartPolicy(RestartPolicy.onFailureRestart(100))
                         .withLogConfig(new LogConfig(LogConfig.LoggingType.JSON_FILE, Map.of(
                                 "max-size", "100m",
                                 "max-file", "5")))
