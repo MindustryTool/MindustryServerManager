@@ -208,9 +208,13 @@ public class ServerMain {
         });
 
         app.post("/api/v2/servers/{id}/host", ctx -> {
-            ServerConfig request = ctx.bodyAsClass(ServerConfig.class);
-            serverService.host(request);
-            ctx.result();
+            try {
+                ServerConfig request = ctx.bodyAsClass(ServerConfig.class);
+                serverService.host(request);
+                ctx.result();
+            } catch (Exception e) {
+                throw ApiError.internal(e);
+            }
         });
 
         app.get("/api/v2/servers/{id}/players", ctx -> {

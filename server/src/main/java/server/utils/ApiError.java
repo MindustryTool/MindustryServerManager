@@ -54,7 +54,12 @@ public class ApiError extends RuntimeException {
     }
 
     public static ApiError internal(Throwable message) {
-        return new ApiError(500, message.getMessage(), message);
+        StringBuilder sb = new StringBuilder();
+        sb.append("Internal Server Error");
+        for (StackTraceElement element : message.getStackTrace()) {
+            sb.append("\n").append(element);
+        }
+        return new ApiError(500, sb.toString(), message);
     }
 
     public static ApiError notFound(Object id, String contentType) {
