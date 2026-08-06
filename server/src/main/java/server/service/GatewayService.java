@@ -124,8 +124,8 @@ public class GatewayService {
             CONNECTING, CONNECTED, DISCONNECTED
         }
 
-        private static final Duration HEARTBEAT_TIMEOUT_DURATION = Duration.ofSeconds(30);
-        private static final Duration TERMINATE_CONNECTION_AFTER = Duration.ofMinutes(2);
+        private static final Duration HEARTBEAT_TIMEOUT_DURATION = Duration.ofSeconds(45);
+        private static final Duration TERMINATE_CONNECTION_AFTER = Duration.ofMinutes(3);
 
         private final HashMap<String, MessageHandler<Object, Object>> messageHandlers = new HashMap<>();
 
