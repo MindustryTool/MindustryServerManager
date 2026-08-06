@@ -5,7 +5,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
@@ -40,6 +39,7 @@ import mindustry.io.MapIO;
 import mindustry.io.SaveIO;
 import plugin.Control;
 import plugin.core.Registry;
+import plugin.service.SessionHandler;
 
 public class Utils {
     private static Instant lastImagePreviewAt = Instant.now();
@@ -114,25 +114,31 @@ public class Utils {
         mindustry.maps.Map map = Vars.state.map;
         String mapName = map != null ? map.name() : "";
 
-        List<ModDto> mods = Vars.mods == null //
-                ? Arrays.asList()
-                : Vars.mods.list()
-                        .map(mod -> new ModDto()//
-                                .setFilename(mod.file.absolutePath())//
-                                .setName(mod.meta.name)
-                                .setMeta(ModMetaDto.from(mod.meta)))
-                        .list();
+        List<ModDto> mods = new ArrayList<>();
 
-        List<PlayerDto> players = Registry.get(plugin.service.SessionHandler.class).get()
+        if (Vars.mods == null) {
+            Vars.mods.list()
+                    .each(mod -> mods.add(new ModDto()//
+                            .setFilename(mod.file.absolutePath())//
+                            .setName(mod.meta.name)
+                            .setMeta(ModMetaDto.from(mod.meta))));
+        }
+
+        List<PlayerDto> players = Registry.get(SessionHandler.class).get()
                 .values()
                 .stream()
                 .map(session -> PlayerDto.from(session.player).setJoinedAt(session.joinedAt))
                 .collect(Collectors.toList());
 
-        int kicks = Vars.netServer.admins.kickedIPs
-                .values()
-                .toSeq()
-                .select(value -> Time.millis() - value < 0).size;
+        int kicks = 0;
+        try {
+            kicks = Vars.netServer.admins.kickedIPs
+                    .values()
+                    .toSeq()
+                    .select(value -> Time.millis() - value < 0).size;
+        } catch (Exception e) {
+            Log.err(e);
+        }
 
         return new ServerStateDto()//
                 .setPlayers(players)//
