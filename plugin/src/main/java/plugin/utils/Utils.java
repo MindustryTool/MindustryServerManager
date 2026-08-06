@@ -110,18 +110,18 @@ public class Utils {
     }
 
     public static ServerStateDto getState() {
-
         mindustry.maps.Map map = Vars.state.map;
         String mapName = map != null ? map.name() : "";
 
         List<ModDto> mods = new ArrayList<>();
 
-        if (Vars.mods == null) {
-            Vars.mods.list()
-                    .each(mod -> mods.add(new ModDto()//
-                            .setFilename(mod.file.absolutePath())//
-                            .setName(mod.meta.name)
-                            .setMeta(ModMetaDto.from(mod.meta))));
+        if (Vars.mods != null) {
+            for (var mod : Vars.mods.list()) {
+                mods.add(new ModDto()//
+                        .setFilename(mod.file.absolutePath())//
+                        .setName(mod.meta.name)
+                        .setMeta(ModMetaDto.from(mod.meta)));
+            }
         }
 
         List<PlayerDto> players = Registry.get(SessionHandler.class).get()
@@ -135,7 +135,7 @@ public class Utils {
             kicks = Vars.netServer.admins.kickedIPs
                     .values()
                     .toSeq()
-                    .select(value -> Time.millis() - value < 0).size;
+                    .count(value -> Time.millis() - value < 0);
         } catch (Exception e) {
             Log.err(e);
         }
