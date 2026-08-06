@@ -110,45 +110,43 @@ public class Utils {
     }
 
     public static ServerStateDto getState() {
-        return appPostWithTimeout(() -> {
 
-            mindustry.maps.Map map = Vars.state.map;
-            String mapName = map != null ? map.name() : "";
+        mindustry.maps.Map map = Vars.state.map;
+        String mapName = map != null ? map.name() : "";
 
-            List<ModDto> mods = Vars.mods == null //
-                    ? Arrays.asList()
-                    : Vars.mods.list()
-                            .map(mod -> new ModDto()//
-                                    .setFilename(mod.file.absolutePath())//
-                                    .setName(mod.meta.name)
-                                    .setMeta(ModMetaDto.from(mod.meta)))
-                            .list();
+        List<ModDto> mods = Vars.mods == null //
+                ? Arrays.asList()
+                : Vars.mods.list()
+                        .map(mod -> new ModDto()//
+                                .setFilename(mod.file.absolutePath())//
+                                .setName(mod.meta.name)
+                                .setMeta(ModMetaDto.from(mod.meta)))
+                        .list();
 
-            List<PlayerDto> players = Registry.get(plugin.service.SessionHandler.class).get()
-                    .values()
-                    .stream()
-                    .map(session -> PlayerDto.from(session.player).setJoinedAt(session.joinedAt))
-                    .collect(Collectors.toList());
+        List<PlayerDto> players = Registry.get(plugin.service.SessionHandler.class).get()
+                .values()
+                .stream()
+                .map(session -> PlayerDto.from(session.player).setJoinedAt(session.joinedAt))
+                .collect(Collectors.toList());
 
-            int kicks = Vars.netServer.admins.kickedIPs
-                    .values()
-                    .toSeq()
-                    .select(value -> Time.millis() - value < 0).size;
+        int kicks = Vars.netServer.admins.kickedIPs
+                .values()
+                .toSeq()
+                .select(value -> Time.millis() - value < 0).size;
 
-            return new ServerStateDto()//
-                    .setPlayers(players)//
-                    .setMods(mods)//
-                    .setKicks(kicks)//
-                    .setMapName(mapName)
-                    .setVersion(Version.combined())
-                    .setStartedAt(Core.settings.getLong("startedAt", System.currentTimeMillis()))
-                    .setServerId(Control.SERVER_ID)
-                    .setStatus(Vars.state.isGame() //
-                            ? Vars.state.isPaused()//
-                                    ? ServerStatus.PAUSED
-                                    : ServerStatus.ONLINE
-                            : ServerStatus.STOP);
-        }, "Get state");
+        return new ServerStateDto()//
+                .setPlayers(players)//
+                .setMods(mods)//
+                .setKicks(kicks)//
+                .setMapName(mapName)
+                .setVersion(Version.combined())
+                .setStartedAt(Core.settings.getLong("startedAt", System.currentTimeMillis()))
+                .setServerId(Control.SERVER_ID)
+                .setStatus(Vars.state.isGame() //
+                        ? Vars.state.isPaused()//
+                                ? ServerStatus.PAUSED
+                                : ServerStatus.ONLINE
+                        : ServerStatus.STOP);
     }
 
     public static byte[] mapPreview2() {
