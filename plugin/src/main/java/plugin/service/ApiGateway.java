@@ -94,7 +94,6 @@ public class ApiGateway {
     private Instant lastSendEventAt = Instant.now();
     private WebSocket webSocket;
 
-
     private Cache<PaginationRequest, List<ServerDto>> serverQueryCache = Caffeine.newBuilder()
             .expireAfterWrite(Duration.ofSeconds(15))
             .maximumSize(10)
@@ -461,29 +460,34 @@ public class ApiGateway {
     }
 
     private synchronized Void host(StartServerDto request) {
-        if (Vars.state.isGame()) {
-            Log.warn("API: Already hosting. Type 'stop' to stop hosting first.");
-            return null;
-        }
-
         String mapName = request.getMapName();
         String gameMode = request.getMode();
         String commands = request.getHostCommand();
 
-        if (commands != null && !commands.trim().isEmpty()) {
-            String[] commandsArray = commands.split("\n");
-
-            for (String command : commandsArray) {
-                Log.info("[sky]Host command: " + command);
-                Registry.get(ServerCommandHandler.class).execute(command, (_ignore) -> {
-                });
+        try {
+            if (Vars.state.isGame()) {
+                Log.warn("API: Already hosting. Type 'stop' to stop hosting first.");
+                return null;
             }
+
+            if (commands != null && !commands.trim().isEmpty()) {
+                String[] commandsArray = commands.split("\n");
+
+                for (String command : commandsArray) {
+                    Log.info("[sky]Host command: " + command);
+                    Registry.get(ServerCommandHandler.class).execute(command, (_ignore) -> {
+                    });
+                }
+                return null;
+            }
+
+            hostService.host(mapName, gameMode);
+
             return null;
+        } catch (Exception e) {
+            Log.err("Failed to host server with map: " + mapName + " and mode: " + gameMode + " commands: " + commands, e);
+            throw new RuntimeException("Fail to host server", e);
         }
-
-        hostService.host(mapName, gameMode);
-
-        return null;
     }
 
     private List<ServerCommandDto> getCommands() {
