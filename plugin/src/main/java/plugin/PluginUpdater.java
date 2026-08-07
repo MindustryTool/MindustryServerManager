@@ -13,6 +13,7 @@ import mindustry.Vars;
 import mindustry.gen.Call;
 import mindustry.gen.Groups;
 import plugin.annotations.Component;
+import plugin.annotations.Init;
 import plugin.annotations.Schedule;
 import plugin.event.UnloadServerEvent;
 
@@ -28,6 +29,16 @@ public class PluginUpdater {
 
     public boolean scheduleRestart() {
         return isScheduled = true;
+    }
+
+    @Init
+    public void init() {
+        for (PluginData pluginData : plugins) {
+            String currentUpdatedAt = readCurrentUpdatedAt(pluginData);
+            if (currentUpdatedAt != null){
+                Log.info("Plugin version: " + currentUpdatedAt);
+            }
+        }
     }
 
     @Schedule(delay = 10, fixedDelay = 5, unit = TimeUnit.MINUTES)
