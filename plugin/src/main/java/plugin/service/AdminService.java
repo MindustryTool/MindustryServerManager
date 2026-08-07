@@ -9,14 +9,18 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 
 import arc.Events;
 import arc.math.Mathf;
+import events.ServerEvents;
 import lombok.RequiredArgsConstructor;
 import mindustry.Vars;
 import mindustry.game.Team;
 import mindustry.game.EventType.ConnectionEvent;
+import mindustry.game.EventType.PlayerBanEvent;
+import mindustry.game.EventType.PlayerIpBanEvent;
 import mindustry.gen.Groups;
 import mindustry.net.Packets.Connect;
 import mindustry.net.Packets.KickReason;
 import plugin.Cfg;
+import plugin.Control;
 import plugin.annotations.Component;
 import plugin.annotations.Destroy;
 import plugin.annotations.Init;
@@ -38,6 +42,7 @@ public class AdminService {
     private Session reporter = null;
     private ScheduledFuture<?> voteTimeout;
 
+    private final ApiGateway apiGateway;
     private final SessionHandler sessionHandler;
     private final Scheduler scheduler;
 
@@ -54,6 +59,18 @@ public class AdminService {
                         "Discord: " + Cfg.DISCORD_INVITE_URL);
             }
         });
+    }
+
+    @Listener
+    public void onIpBanEvent(PlayerIpBanEvent event) {
+        ServerEvents.PlayerBanEvent banEvent = new ServerEvents.PlayerBanEvent(Control.SERVER_ID, event.ip, null);
+        apiGateway.fire(banEvent);
+    }
+
+    @Listener 
+    public void onBanEvent(PlayerBanEvent event) {
+        ServerEvents.PlayerBanEvent banEvent = new ServerEvents.PlayerBanEvent(Control.SERVER_ID, event.player.ip(), event.uuid);
+        apiGateway.fire(banEvent);
     }
 
     @Listener

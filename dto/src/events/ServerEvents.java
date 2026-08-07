@@ -157,4 +157,19 @@ public class ServerEvents {
             this.player = player;
         }
     }
+
+    @Accessors(chain = true)
+    @Data
+    @EqualsAndHashCode(callSuper = false)
+    @NoArgsConstructor
+    public static class PlayerBanEvent extends BaseEvent {
+        private String ip;
+        private String uuid;
+
+        public PlayerBanEvent(UUID serverId, String ip, String uuid) {
+            super(serverId, "player-ban");
+            this.ip = ip;
+            this.uuid = uuid;
+        }
+    }
 }
