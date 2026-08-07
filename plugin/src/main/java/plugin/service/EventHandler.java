@@ -54,14 +54,14 @@ public class EventHandler {
             Tasks.io("Chat Event", () -> {
                 try {
                     Utils.forEachPlayerLocale((locale, players) -> {
-                        String strippedMessage = Strings.stripColors(message);
-                        
+                        // String strippedMessage = Strings.stripColors(message);
+
                         for (var p : players) {
                             if (p.id == player.id) {
                                 continue;
                             }
 
-                            p.sendMessage(coloredMessage + " [gray](" + strippedMessage + ")", player);
+                            p.sendMessage(coloredMessage, player);
                         }
                     });
                 } catch (Exception e) {
