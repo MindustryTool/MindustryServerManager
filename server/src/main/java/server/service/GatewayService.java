@@ -207,6 +207,7 @@ public class GatewayService {
 
         public void terminate(NodeRemoveReason reason) {
             terminatedAt = Instant.now();
+            try {
 
             WsContext socket = context.getNow(null);
 
@@ -221,6 +222,10 @@ public class GatewayService {
             if (state != ClientState.CONNECTING && (removed || reason == NodeRemoveReason.PROCESS_KILLED)) {
                 eventBus.emit(new StopEvent(id, reason));
                 Log.info("[red]Client terminated: " + id);
+            }
+            } catch (Exception e) {
+                Log.err("Error terminating client: " + id, e);
+                nodeManager.remove(id, reason);
             }
         }
 
@@ -245,6 +250,7 @@ public class GatewayService {
                     return;
                 }
                 if (wsMessage.isError()) {
+                    Log.err("Error message: " + wsMessage);
                     future.completeExceptionally(new RuntimeException(String.valueOf(payload)));
                 } else {
                     future.complete(payload);
