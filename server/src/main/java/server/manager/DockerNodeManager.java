@@ -304,7 +304,7 @@ public class DockerNodeManager implements NodeManager {
         var optional = findContainerByServerId(id);
 
         if (optional.isEmpty()) {
-            throw new ApiError(404, "Server not found");
+            return new ArrayList<>();
         }
 
         var container = optional.get();
