@@ -133,6 +133,7 @@ public class Utils {
         int kicks = 0;
         try {
             kicks = Vars.netServer.admins.kickedIPs
+                    .copy()
                     .values()
                     .toSeq()
                     .count(value -> Time.millis() - value < 0);
