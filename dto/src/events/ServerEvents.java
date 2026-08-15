@@ -165,13 +165,13 @@ public class ServerEvents {
     public static class PlayerBanEvent extends BaseEvent {
         private String ip;
         private String uuid;
-        private String name;
+        private String playerName;
 
         public PlayerBanEvent(UUID serverId, String ip, String uuid, String name) {
             super(serverId, "player-ban");
             this.ip = ip;
             this.uuid = uuid;
-            this.name = name;
+            this.playerName = name;
         }
     }
 
@@ -182,14 +182,14 @@ public class ServerEvents {
     public static class PlayerKickEvent extends BaseEvent {
         private String ip;
         private String uuid;
-        private String name;
+        private String playerName;
         private String reason;
 
         public PlayerKickEvent(UUID serverId, String ip, String uuid, String name, String reason) {
             super(serverId, "player-kick");
             this.ip = ip;
             this.uuid = uuid;
-            this.name = name;
+            this.playerName = name;
             this.reason = reason;
         }
     }
