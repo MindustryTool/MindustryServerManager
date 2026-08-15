@@ -17,7 +17,7 @@ import mindustry.gen.Call;
 import plugin.annotations.Gamemode;
 import plugin.annotations.Init;
 import plugin.annotations.Listener;
-import plugin.service.SessionHandler;
+import plugin.session.SessionHandler;
 import plugin.utils.JsonUtils;
 import plugin.utils.TimeUtils;
 

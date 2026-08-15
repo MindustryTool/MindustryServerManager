@@ -3,8 +3,8 @@ package plugin.gamemode.catali;
 import lombok.RequiredArgsConstructor;
 import plugin.annotations.Gamemode;
 import plugin.annotations.Init;
-import plugin.service.I18n;
-import plugin.service.TipService;
+import plugin.utils.I18n;
+import plugin.tip.TipService;
 
 @Gamemode("catali")
 @RequiredArgsConstructor

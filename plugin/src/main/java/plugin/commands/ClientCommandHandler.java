@@ -12,8 +12,8 @@ import mindustry.gen.Player;
 import plugin.annotations.ClientCommand;
 import plugin.annotations.Component;
 import plugin.annotations.Destroy;
-import plugin.service.I18n;
-import plugin.service.SessionHandler;
+import plugin.utils.I18n;
+import plugin.session.SessionHandler;
 import plugin.utils.CommandUtils;
 import plugin.utils.Utils;
 

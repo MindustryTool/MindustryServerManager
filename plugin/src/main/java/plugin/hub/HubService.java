@@ -1,0 +1,360 @@
+package plugin.hub;
+
+import plugin.session.SessionHandler;
+
+import plugin.gateway.ApiGateway;
+
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
+
+import arc.Core;
+import arc.graphics.Color;
+import arc.net.Server;
+import arc.struct.Seq;
+import arc.util.Log;
+import arc.util.Strings;
+import dto.ServerDto;
+import lombok.RequiredArgsConstructor;
+import mindustry.Vars;
+import mindustry.content.Fx;
+import mindustry.core.Version;
+import mindustry.game.EventType.PlayerJoin;
+import mindustry.game.EventType.TapEvent;
+import mindustry.game.EventType.WorldLoadEvent;
+import mindustry.game.MapObjectives;
+import mindustry.game.MapObjectives.FlagObjective;
+import mindustry.game.MapObjectives.TextMarker;
+import mindustry.game.Team;
+import mindustry.gen.Call;
+import mindustry.gen.Groups;
+import mindustry.gen.Iconc;
+import mindustry.net.ArcNetProvider;
+import mindustry.net.Net;
+import plugin.Cfg;
+import plugin.annotations.Component;
+import plugin.annotations.ConditionOn;
+import plugin.annotations.Init;
+import plugin.annotations.Listener;
+import plugin.annotations.Schedule;
+import plugin.Control;
+import plugin.Tasks;
+
+@Component
+@RequiredArgsConstructor
+@ConditionOn(Cfg.OnHub.class)
+public class HubService {
+
+    private final Seq<ServerCore> serverCores = new Seq<>();
+    private Seq<ServerDto> servers = new Seq<>();
+
+    private final SessionHandler sessionHandler;
+    private final ApiGateway apiGateway;
+
+    @Init
+    public void init() {
+        for (var block : Vars.content.blocks()) {
+            Vars.state.rules.bannedBlocks.add(block);
+        }
+
+        for (var unit : Vars.content.units()) {
+            Vars.state.rules.bannedUnits.add(unit);
+        }
+
+        setupCustomServerDiscovery();
+        loadCores();
+        refreshServerList();
+    }
+
+    @Listener(WorldLoadEvent.class)
+    private void loadCores() {
+        Tasks.io("Refresh server list", () -> {
+            serverCores.clear();
+
+            float centerX = Vars.world.unitWidth() / 2;
+            float centerY = Vars.world.unitHeight() / 2;
+
+            var cores = Team.sharded.cores().sort((a, b) -> Float.compare(
+                    (a.getX() - centerX) * (a.getX() - centerX) + (a.getY() - centerY) * (a.getY() - centerY)
+                            - a.hitSize(),
+                    (b.getX() - centerX) * (b.getX() - centerX) + (b.getY() - centerY) * (b.getY() - centerY)
+                            - b.hitSize()));
+
+            for (var core : cores) {
+                serverCores.add(new ServerCore(null, core.getX(), core.getY(), core.hitSize()));
+            }
+        });
+    }
+
+    @Listener
+    private void onPlayerJoin(PlayerJoin event) {
+        refreshServerList();
+        renderServerLabels();
+    }
+
+    private void setupCustomServerDiscovery() {
+        try {
+            var providerField = Net.class.getDeclaredField("provider");
+            providerField.setAccessible(true);
+            var provider = (ArcNetProvider) providerField.get(Vars.net);
+            var serverField = ArcNetProvider.class.getDeclaredField("server");
+            serverField.setAccessible(true);
+            var server = (Server) serverField.get(provider);
+
+            server.setDiscoveryHandler((address, handler) -> {
+                String name = mindustry.net.Administration.Config.serverName.string();
+                String description = mindustry.net.Administration.Config.desc.string();
+                String map = Vars.state.map.name();
+
+                ByteBuffer buffer = ByteBuffer.allocate(500);
+
+                int players = Groups.player.size();
+
+                var servers = Seq.with(apiGateway.getServers(new PaginationRequest().setPage(0).setSize(20)));
+
+                if (servers.size > 0) {
+                    try {
+                        var serverData = servers
+                                .select(s -> s.getPlayers() > 0)
+                                .random();
+
+                        var totalPlayers = servers.sum(s -> (int) s.getPlayers());
+
+                        if (serverData != null) {
+                            name = serverData.getName() + " [lime][HUB]";
+                            description = serverData.getDescription();
+                            map = serverData.getMapName() == null ? "" : serverData.getMapName();
+                            players = totalPlayers;
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+
+                writeString(buffer, name, 100);
+                writeString(buffer, map, 64);
+
+                buffer.putInt(Core.settings.getInt("totalPlayers", players));
+                buffer.putInt(Vars.state.wave);
+                buffer.putInt(Version.build);
+                writeString(buffer, Version.type);
+
+                buffer.put((byte) Vars.state.rules.mode().ordinal());
+                buffer.putInt(Vars.netServer.admins.getPlayerLimit());
+
+                writeString(buffer, description, 100);
+                if (Vars.state.rules.modeName != null) {
+                    writeString(buffer, Vars.state.rules.modeName, 50);
+                }
+                buffer.position(0);
+                handler.respond(buffer);
+
+                buffer.clear();
+            });
+
+        } catch (Exception e) {
+            Log.err(e);
+        }
+    }
+
+    private void writeString(ByteBuffer buffer, String string) {
+        writeString(buffer, string, 32);
+    }
+
+    private void writeString(ByteBuffer buffer, String string, int maxlen) {
+        byte[] bytes = string.getBytes(Vars.charset);
+        if (bytes.length > maxlen) {
+            bytes = Arrays.copyOfRange(bytes, 0, maxlen);
+        }
+
+        buffer.put((byte) bytes.length);
+        buffer.put(bytes);
+    }
+
+    @Listener
+    private void onTap(TapEvent event) {
+        if (event.tile == null) {
+            return;
+        }
+
+        var map = Vars.state.map;
+
+        if (map == null) {
+            return;
+        }
+
+        var tapX = event.tile.worldx();
+        var tapY = event.tile.worldy();
+
+        Call.effectReliable(Fx.coreBuildShockwave, tapX, tapY, 0, Color.white);
+
+        for (var core : serverCores) {
+            var tapSize = core.getSize();
+
+            if (tapX >= core.getX() - tapSize //
+                    && tapX <= core.getX() + tapSize //
+                    && tapY >= core.getY() - tapSize
+                    && tapY <= core.getY() + tapSize//
+            ) {
+                if (core.getServer() == null) {
+                    continue;
+                }
+
+                sessionHandler.get(event.player)
+                        .ifPresent(session -> new ServerRedirectMenu().send(session, core.getServer()));
+                break;
+            }
+        }
+    }
+
+    @Schedule(fixedDelay = 5, unit = TimeUnit.SECONDS)
+    private void refreshServerList() {
+        if (Groups.player.size() <= 0) {
+            return;
+        }
+
+        try {
+            var request = new PaginationRequest()
+                    .setPage(0)
+                    .setSize(serverCores.size + 5);
+
+            servers = Seq.with(apiGateway.getServers(request))
+                    .select(server -> !server.getId().equals(Control.SERVER_ID));
+
+            for (int i = 0; i < serverCores.size; i++) {
+                var core = serverCores.get(i);
+
+                if (i < servers.size) {
+                    var data = servers.get(i);
+                    core.setServer(data);
+                } else {
+                    core.setServer(null);
+                }
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Schedule(delay = 5, fixedDelay = 5, unit = TimeUnit.SECONDS)
+    private void renderServerLabels() {
+        if (Groups.player.size() <= 0) {
+            return;
+        }
+
+        var map = Vars.state.map;
+
+        if (map == null) {
+            return;
+        }
+
+        // TODO: Temp solution
+        boolean useWorldLabel = true;
+
+        if (useWorldLabel) {
+            for (var core : serverCores) {
+                ServerDto server = core.getServer();
+                if (server == null) {
+                    continue;
+                }
+
+                String message = createServerString(server);
+                Call.label(message, 5000, core.getX(), core.getY());
+            }
+            return;
+        }
+
+        MapObjectives objectives = new MapObjectives();
+        FlagObjective flagObjective = new FlagObjective();
+
+        Seq<TextMarker> markers = new Seq<>();
+
+        for (var core : serverCores) {
+            var marker = createServerMarker(core);
+            if (marker != null) {
+                markers.add(marker);
+            }
+        }
+
+        if (markers.isEmpty()) {
+            return;
+        }
+
+        TextMarker[] markerArray = new TextMarker[markers.size];
+        for (int i = 0; i < markers.size; i++) {
+            markerArray[i] = markers.get(i);
+        }
+
+        flagObjective.markers(markerArray);
+        objectives.add(flagObjective);
+
+        if (objectives.any()) {
+            Call.setObjectives(objectives);
+        }
+    }
+
+    private TextMarker createServerMarker(ServerCore core) {
+        ServerDto server = core.getServer();
+
+        if (server == null) {
+            return null;
+        }
+
+        float x = core.getX();
+        float y = core.getY();
+
+        String message = createServerString(server);
+
+        return new TextMarker(message, x, y);
+    }
+
+    private String createServerString(ServerDto server) {
+        var mods = new ArrayList<>(server.getMods());
+
+        mods.removeIf(m -> m.contains("Controller") || m.contains("PluginLoader"));
+
+        var name = server.getName();
+        var description = server.getDescription();
+
+        String message = (server.getIsOfficial() ? "[gold]" + Iconc.star + "[white] " : "") + newLine(name)
+                + "[white]\n" +
+                newLine(description) + "[white]\n\n" +
+                "[#E3F2FD]Players: [white]" + server.getPlayers() + "\n" +
+                "[#BBDEFB]Map: [white]" + newLine(server.getMapName()) + "[white]\n" +
+                "[#90CAF9]Mode: [white]" + server.getModeIcon() + " " + server.getMode() + "[white]\n" +
+                "[#405AF9]Version: [white]" + server.getGameVersion() + "[white]\n" +
+                (mods.isEmpty() ? "" : "[#4FC3F7]Mods:[white] " + mods) + "[white]\n\n" +
+                (server.getStatus().isOnline() ? "[accent]" : "[sky]") + "@Tap to join server"
+                + "\n";
+
+        return message;
+    }
+
+    public String newLine(String text) {
+        if (text == null) {
+            return "";
+        }
+
+        String[] word = text.split(" ");
+
+        StringBuilder sb = new StringBuilder();
+
+        int currentLength = 0;
+
+        for (int i = 0; i < word.length; i++) {
+            sb.append(word[i]);
+
+            if (currentLength > 20) {
+                sb.append("\n");
+                currentLength = 0;
+            } else {
+                sb.append(" ");
+                currentLength += Strings.stripColors(word[i]).length();
+            }
+        }
+
+        return sb.toString();
+    }
+}

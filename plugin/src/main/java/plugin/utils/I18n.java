@@ -1,0 +1,57 @@
+package plugin.utils;
+
+import java.util.Locale;
+
+import arc.struct.Seq;
+import arc.util.Strings;
+import mindustry.gen.Player;
+import plugin.session.Session;
+
+public class I18n {
+    public static String t(Session sesion, Object... texts) {
+        return t(sesion.locale, texts);
+    }
+
+    public static String t(Player player, Object... texts) {
+        return t(Utils.parseLocale(player.locale), texts);
+    }
+
+    public static String t(Locale locale, Object... texts) {
+        boolean[] needTranslateIndexes = new boolean[texts.length];
+
+        Seq<String> needTranslate = new Seq<>();
+
+        for (int i = 0; i < texts.length; i++) {
+            String str = String.valueOf(texts[i]).trim();
+            if (str.startsWith("@")) {
+                needTranslateIndexes[i] = true;
+                needTranslate.add(str.substring(1));
+            }
+        }
+
+        Seq<String> translated = needTranslate;
+
+        StringBuilder sb = new StringBuilder();
+
+        for (int i = 0; i < texts.length; i++) {
+            var next = texts[i].toString();
+
+            if (needTranslateIndexes[i]) {
+                next = translated.remove(0);
+            }
+
+            boolean prevHasSpace = sb.length() > 1 && sb.charAt(sb.length() - 1) == ' ';
+            boolean nextHasSpace = next.startsWith(" ");
+            boolean prevIsColor = Strings.stripColors(sb.toString()).trim().isEmpty();
+            boolean prevIsNewline = sb.length() > 1 && sb.charAt(sb.length() - 1) == '\n';
+
+            if (!prevHasSpace && !nextHasSpace && !prevIsColor &&!prevIsNewline) {
+                sb.append(' ');
+            }
+
+            sb.append(next);
+        }
+
+        return sb.toString();
+    }
+}

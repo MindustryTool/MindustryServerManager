@@ -8,8 +8,7 @@ import arc.util.Log;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import plugin.core.Registry;
-import plugin.service.PluginMenuService;
-import plugin.type.Session;
+import plugin.session.Session;
 
 public abstract class PluginMenu<T> {
 

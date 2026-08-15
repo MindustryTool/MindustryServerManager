@@ -5,8 +5,8 @@ import mindustry.gen.Player;
 import plugin.annotations.Gamemode;
 import plugin.gamemode.catali.CataliGamemode;
 import plugin.menus.PluginMenu;
-import plugin.service.I18n;
-import plugin.type.Session;
+import plugin.utils.I18n;
+import plugin.session.Session;
 
 @Gamemode("catali")
 @RequiredArgsConstructor

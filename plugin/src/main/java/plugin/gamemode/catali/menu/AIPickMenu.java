@@ -4,8 +4,8 @@ import lombok.RequiredArgsConstructor;
 import plugin.annotations.Gamemode;
 import plugin.gamemode.catali.data.CataliTeamData;
 import plugin.menus.PluginMenu;
-import plugin.service.I18n;
-import plugin.type.Session;
+import plugin.utils.I18n;
+import plugin.session.Session;
 
 @RequiredArgsConstructor
 @Gamemode("catali")

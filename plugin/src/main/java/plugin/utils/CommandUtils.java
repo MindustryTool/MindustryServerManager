@@ -7,7 +7,7 @@ import mindustry.gen.Player;
 import plugin.annotations.Param;
 import plugin.commands.ParamException;
 import plugin.core.Registry;
-import plugin.type.Session;
+import plugin.session.Session;
 
 public class CommandUtils {
     public static Object[] mapParams(Method method, String[] args, Session session) throws ParamException {

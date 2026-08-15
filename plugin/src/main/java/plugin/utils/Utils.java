@@ -39,7 +39,7 @@ import mindustry.io.MapIO;
 import mindustry.io.SaveIO;
 import plugin.Control;
 import plugin.core.Registry;
-import plugin.service.SessionHandler;
+import plugin.session.SessionHandler;
 
 public class Utils {
     private static Instant lastImagePreviewAt = Instant.now();

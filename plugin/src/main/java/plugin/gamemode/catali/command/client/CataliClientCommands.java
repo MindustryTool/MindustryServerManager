@@ -11,8 +11,8 @@ import plugin.gamemode.catali.menu.AIPickMenu;
 import plugin.gamemode.catali.menu.AbandonMenu;
 import plugin.gamemode.catali.menu.CommonUpgradeMenu;
 import plugin.gamemode.catali.menu.RareUpgradeMenu;
-import plugin.service.I18n;
-import plugin.type.Session;
+import plugin.utils.I18n;
+import plugin.session.Session;
 
 @Gamemode("catali")
 public class CataliClientCommands {

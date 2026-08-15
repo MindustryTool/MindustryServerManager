@@ -6,8 +6,8 @@ import plugin.core.Registry;
 import plugin.gamemode.catali.data.CataliTeamData;
 import plugin.gamemode.catali.event.CataliSpawnRareUpgrade;
 import plugin.menus.PluginMenu;
-import plugin.service.I18n;
-import plugin.type.Session;
+import plugin.utils.I18n;
+import plugin.session.Session;
 
 @Gamemode("catali")
 public class RareUpgradeMenu extends PluginMenu<CataliTeamData> {

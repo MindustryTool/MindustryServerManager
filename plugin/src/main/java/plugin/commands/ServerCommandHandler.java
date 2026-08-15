@@ -14,7 +14,6 @@ import lombok.RequiredArgsConstructor;
 import plugin.annotations.Component;
 import plugin.annotations.Destroy;
 import plugin.annotations.ServerCommand;
-import plugin.type.PrevCommand;
 import plugin.utils.CommandUtils;
 
 @Component
