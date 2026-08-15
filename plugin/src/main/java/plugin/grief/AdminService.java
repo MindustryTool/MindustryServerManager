@@ -85,7 +85,7 @@ public class AdminService {
             if (reporter != null) {
                 lastGriefReportTimes.invalidate(reporter);
             }
-            reported.player.kick(KickReason.kick, 60 * 1000 * 60);
+            reported.player.kick(KickReason.kick, 1000 * 60);
             reset();
         }
     }

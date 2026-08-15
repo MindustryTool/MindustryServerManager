@@ -2,6 +2,8 @@ package plugin;
 
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import arc.Core;
 import arc.Events;
@@ -17,6 +19,7 @@ import plugin.core.Registry;
 import plugin.database.DB;
 import plugin.event.PluginUnloadEvent;
 import plugin.event.UnloadServerEvent;
+import plugin.event.KickEvent;
 
 public class Control extends mindustry.mod.Plugin {
 
@@ -24,11 +27,25 @@ public class Control extends mindustry.mod.Plugin {
     public static final UUID SERVER_ID = UUID.fromString(System.getenv("SERVER_ID"));
 
     private static String[] tags = { "", "", "[yellow]", "[red]", "" };
+    private static Pattern kickPattern = Pattern.compile(
+            "Kicking connection\\s+(\\S+)\\s*/\\s*(\\S+)\\s*;\\s*Reason:\\s*(.*)"
+    //
+    );
 
     @Override
     public void init() {
         Log.useColors = false;
         Log.logger = (level1, text) -> {
+            Matcher matcher = kickPattern.matcher(text);
+
+            if (matcher.find()) {
+                String address = matcher.group(1);
+                String uuid = matcher.group(2);
+                String reason = matcher.group(3);
+
+                PluginEvents.fire(new KickEvent(address, uuid, reason));
+            }
+
             String result = Log.format(tags[level1.ordinal()] + text + "&fr");
             System.out.println(result);
         };

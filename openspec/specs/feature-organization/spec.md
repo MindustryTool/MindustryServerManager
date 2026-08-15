@@ -1,5 +1,8 @@
-## ADDED Requirements
+# feature-organization Specification
 
+## Purpose
+TBD - created by archiving change feature-based-refactor. Update Purpose after archive.
+## Requirements
 ### Requirement: Feature-oriented package structure
 
 The plugin SHALL organize `plugin/src/main/java/plugin/**` by business feature so that each feature owns its feature-specific classes, and only genuinely shared infrastructure remains centralized.
@@ -88,3 +91,4 @@ The refactor SHALL NOT change feature logic, fix bugs, remove dead code, or intr
 - **WHEN** the refactor is applied
 - **THEN** `RankService` and `PlayerMetadata` are relocated with the rest of their feature, not deleted
 - **AND** any noted defects are recorded in the change documentation rather than fixed
+
