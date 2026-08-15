@@ -22,12 +22,15 @@ import plugin.annotations.Init;
 import plugin.annotations.Listener;
 import plugin.type.Session;
 import plugin.utils.TimeUtils;
+import plugin.utils.Utils;
 
 @Component
 public class TileLogger {
 
     private static final int MAX_ENTRIES_PER_TILE = 100;
     private static final int MAX_INSPECT_ENTRIES = 5;
+    private static final int ENTRY_PAD_LENGTH = 28;
+    private static final String SEPARATOR = "[gray]" + "─".repeat(36) + "[]";
 
     private final ConcurrentHashMap<Integer, Deque<TileLogEntry>> logsByPos = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<Integer, Player> pendingBreaks = new ConcurrentHashMap<>();
@@ -95,16 +98,22 @@ public class TileLogger {
 
     @Listener
     public void onTap(TapEvent event) {
-        if (!inspectAdmins.contains(event.player.uuid())) {
+        var player = event.player;
+
+        if (!inspectAdmins.contains(player.uuid())) {
             return;
         }
 
         var entries = logsByPos.get(event.tile.pos());
 
         if (entries == null || entries.isEmpty()) {
-            event.player.sendMessage(I18n.t(event.player, "[gray]", "@No records for this tile"));
+            player.sendMessage(I18n.t(player, "[gray]", "@No records for this tile"));
             return;
         }
+
+        player.sendMessage(SEPARATOR);
+        player.sendMessage(I18n.t(player, "[accent]", "@Tile log",
+                "[white](" + event.tile.x + ", " + event.tile.y + ")"));
 
         var now = Instant.now().toEpochMilli();
         int shown = 0;
@@ -122,14 +131,16 @@ public class TileLogger {
                     : "[gray]unit[]";
             var ago = TimeUtils.toString(Duration.ofMillis(now - entry.time()));
 
-            event.player.sendMessage(action + " [accent]" + entry.block() + "[] by " + by +
-                    " [gray](" + entry.x() + ", " + entry.y() + ") " + ago + " ago[]");
+            player.sendMessage(Utils.padRight(action + " [accent]" + entry.block() + "[]", ENTRY_PAD_LENGTH)
+                    + "by " + by + " [gray]" + ago + " ago[]");
         }
 
         if (entries.size() > shown) {
-            event.player.sendMessage(
-                    I18n.t(event.player, "[gray]", "@and", entries.size() - shown, "@more entries[]"));
+            player.sendMessage(
+                    I18n.t(player, "[gray]", "@and", entries.size() - shown, "@more entries[]"));
         }
+
+        player.sendMessage(SEPARATOR);
     }
 
     private void append(int pos, TileLogEntry entry) {
