@@ -21,8 +21,8 @@ import mindustry.Vars;
 import mindustry.game.Team;
 import mindustry.game.EventType.ConnectionEvent;
 import mindustry.game.EventType.PlayerBanEvent;
-import mindustry.game.EventType.PlayerIpBanEvent;
 import mindustry.gen.Groups;
+import mindustry.net.Administration.PlayerInfo;
 import mindustry.net.Packets.Connect;
 import mindustry.net.Packets.KickReason;
 import plugin.Cfg;
@@ -32,6 +32,7 @@ import plugin.annotations.Destroy;
 import plugin.annotations.Init;
 import plugin.annotations.Listener;
 import plugin.core.Scheduler;
+import plugin.event.KickEvent;
 import plugin.session.SessionRemovedEvent;
 import plugin.session.Session;
 import plugin.utils.Utils;
@@ -67,16 +68,17 @@ public class AdminService {
         });
     }
 
-    @Listener
-    public void onIpBanEvent(PlayerIpBanEvent event) {
-        ServerEvents.PlayerBanEvent banEvent = new ServerEvents.PlayerBanEvent(Control.SERVER_ID, event.ip, null);
+    @Listener 
+    public void onBanEvent(PlayerBanEvent event) {
+        ServerEvents.PlayerBanEvent banEvent = new ServerEvents.PlayerBanEvent(Control.SERVER_ID, event.player.ip(), event.uuid, event.player.name);
         apiGateway.fire(banEvent);
     }
 
-    @Listener 
-    public void onBanEvent(PlayerBanEvent event) {
-        ServerEvents.PlayerBanEvent banEvent = new ServerEvents.PlayerBanEvent(Control.SERVER_ID, event.player.ip(), event.uuid);
-        apiGateway.fire(banEvent);
+    @Listener void onKickEvent(KickEvent event) {
+        PlayerInfo playerInfo= Vars.netServer.admins.getInfo(event.uuid);
+        String name = playerInfo == null ? "Player with ip: " + event.address : playerInfo.lastName;
+        ServerEvents.PlayerKickEvent kickEvent = new ServerEvents.PlayerKickEvent(Control.SERVER_ID, event.address, event.uuid, name, event.reason);
+        apiGateway.fire(kickEvent);
     }
 
     @Listener

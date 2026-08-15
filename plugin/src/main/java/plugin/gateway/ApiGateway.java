@@ -131,7 +131,7 @@ public class ApiGateway {
         this.registerMessageHandler("get-kicked-ips", Void.class, (request) -> getKicks());
     }
 
-    @Schedule(delay = 20, fixedDelay = 30, unit = TimeUnit.SECONDS)
+    @Schedule(delay = 20, fixedDelay = 120, unit = TimeUnit.SECONDS)
     private void autoHost() {
         try {
             if (!Vars.state.isGame() && !hostService.isHosting(Control.SERVER_ID.toString())) {
