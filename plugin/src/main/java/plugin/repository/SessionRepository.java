@@ -2,6 +2,7 @@ package plugin.repository;
 
 import java.sql.SQLException;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -41,12 +42,24 @@ public class SessionRepository {
                 Log.err("Failed to recalculate total exp: @", e.getMessage());
             }
         }
+
+        if (!Core.settings.has("EXP_RECALCULATED_3")) {
+            try {
+                recalculateAllTotalExp();
+                Core.settings.put("EXP_RECALCULATED_3", true);
+                Core.settings.forceSave();
+            } catch (Exception e) {
+                Log.err("Failed to recalculate total exp (v3): @", e.getMessage());
+            }
+        }
     }
 
     @Listener
     public void onSessionRemoved(SessionRemovedEvent event) {
-        write(event.getSession().player.uuid(), event.getSession().getData());
-        cache.remove(event.getSession().player.uuid());
+        String uuid = event.getSession().player.uuid();
+        write(uuid, event.getSession().getData());
+        cache.remove(uuid);
+        dirty.remove(uuid);
     }
 
     @Destroy
@@ -107,11 +120,14 @@ public class SessionRepository {
         }
 
         for (var uuid : dirty.toArray(new String[0])) {
+            if (!dirty.remove(uuid)) {
+                continue;
+            }
+
             var data = cache.get(uuid);
             if (data != null) {
                 write(uuid, data);
             }
-            dirty.remove(uuid);
         }
     }
 
@@ -119,10 +135,11 @@ public class SessionRepository {
     public static class RankData {
         public String uuid;
         public SessionData data;
+        public long totalExp;
     }
 
     public Seq<RankData> leaderBoard(int size) {
-        var sql = "SELECT uuid, data FROM sessions ORDER BY totalExp DESC LIMIT ?";
+        var sql = "SELECT uuid, data, totalExp FROM sessions ORDER BY totalExp DESC, uuid ASC LIMIT ?";
 
         return DB.prepare(sql, statement -> {
             statement.setInt(1, size);
@@ -133,13 +150,14 @@ public class SessionRepository {
                 while (rs.next()) {
                     var uuid = rs.getString(1);
                     var json = rs.getString(2);
+                    var totalExp = rs.getLong(3);
 
                     if (json == null || json.isEmpty()) {
                         throw new IllegalArgumentException("No session data found for uuid: " + uuid);
                     }
                     var data = JsonUtils.readJsonAsClass(json, SessionData.class);
 
-                    players.add(new RankData(uuid, data));
+                    players.add(new RankData(uuid, data, totalExp));
                 }
 
                 return players;
@@ -149,11 +167,12 @@ public class SessionRepository {
 
     public int getRank(String uuid) {
         var sql = """
-                    SELECT 1 + COUNT(*) AS rank
-                    FROM sessions
-                    WHERE totalExp > (
-                        SELECT totalExp FROM sessions WHERE uuid = ?
-                    )
+                    SELECT CASE WHEN p.uuid IS NULL THEN -1 ELSE
+                        1 + (SELECT COUNT(*) FROM sessions s
+                             WHERE s.totalExp > p.totalExp
+                                OR (s.totalExp = p.totalExp AND s.uuid < p.uuid))
+                    END
+                    FROM (SELECT uuid, totalExp FROM sessions WHERE uuid = ?) p
                 """;
 
         return DB.prepare(sql, ps -> {
@@ -191,16 +210,25 @@ public class SessionRepository {
 
     private void write(String uuid, SessionData pdata) {
         try {
+            String json;
+            long totalExp;
+
+            synchronized (pdata) {
+                var now = Instant.now().toEpochMilli();
+                var playTime = Math.max(0, now - pdata.lastSaved);
+                pdata.playTime += playTime;
+                pdata.lastSaved = now;
+
+                json = JsonUtils.toJsonString(pdata);
+                totalExp = ExpUtils.getTotalExp(pdata, 0);
+            }
+
             var sql = "INSERT INTO sessions(uuid, data, totalExp) VALUES(?, ?, ?) ON CONFLICT(uuid) DO UPDATE SET data = excluded.data, totalExp = excluded.totalExp";
 
             DB.prepare(sql, statement -> {
-                var now = Instant.now().toEpochMilli();
-                var playTime = now - pdata.lastSaved;
-                pdata.playTime += playTime;
-                pdata.lastSaved = now;
                 statement.setString(1, uuid);
-                statement.setString(2, JsonUtils.toJsonString(pdata));
-                statement.setLong(3, ExpUtils.getTotalExp(pdata, playTime));
+                statement.setString(2, json);
+                statement.setLong(3, totalExp);
                 statement.executeUpdate();
             });
         } catch (Exception e) {
@@ -226,25 +254,27 @@ public class SessionRepository {
     }
 
     public void recalculateAllTotalExp() throws SQLException {
-        var rs = DB.statement(statement -> {
-            var result = statement.executeQuery("SELECT uuid, data FROM sessions");
-            return result;
+        var rows = DB.statement(statement -> {
+            var list = new ArrayList<String[]>();
+            try (var rs = statement.executeQuery("SELECT uuid, data FROM sessions")) {
+                while (rs.next()) {
+                    list.add(new String[] { rs.getString("uuid"), rs.getString("data") });
+                }
+            }
+            return list;
         });
 
         var updateSql = "UPDATE sessions SET totalExp = ? WHERE uuid = ?";
 
-        while (rs.next()) {
-            var uuid = rs.getString("uuid");
-            var json = rs.getString("data");
+        for (var row : rows) {
+            var uuid = row[0];
+            var json = row[1];
 
             if (json == null || json.isEmpty()) {
                 continue;
             }
 
-            var data = JsonUtils.readJsonAsClass(
-                    json,
-                    SessionData.class);
-
+            var data = JsonUtils.readJsonAsClass(json, SessionData.class);
             long totalExp = ExpUtils.getTotalExp(data, 0);
 
             DB.prepare(updateSql, ps -> {
@@ -255,6 +285,5 @@ public class SessionRepository {
         }
 
         Log.info("Finished recalculating totalExp for all sessions");
-
     }
 }

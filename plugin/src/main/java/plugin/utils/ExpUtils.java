@@ -16,7 +16,7 @@ public class ExpUtils {
         return exp;
     }
 
-    // Killing 1 flare = 5 seconds of play time
+    // 1 EXP per second of play time
     public static long playTimeToExp(long playTime) {
         return (long) (playTime / 1000);
     }

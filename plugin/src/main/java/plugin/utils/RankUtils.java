@@ -36,7 +36,7 @@ public class RankUtils {
                     rank = pos + "th";
             }
 
-            long totalExp = ExpUtils.getTotalExp(data, 0);
+            long totalExp = players.get(i).totalExp;
             String levelStr = String.valueOf(ExpUtils.levelFromTotalExp(totalExp));
 
             sb.append(Utils.padRight(rank, 10))
