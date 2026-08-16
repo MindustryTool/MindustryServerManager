@@ -75,7 +75,7 @@ public class AdminService {
     }
 
     @Listener void onKickEvent(KickEvent event) {
-        PlayerInfo playerInfo= Vars.netServer.admins.getInfo(event.uuid);
+        PlayerInfo playerInfo= Vars.netServer.admins.getInfoOptional(event.uuid);
         String name = playerInfo == null ? "Player with ip: " + event.address : playerInfo.lastName;
         ServerEvents.PlayerKickEvent kickEvent = new ServerEvents.PlayerKickEvent(Control.SERVER_ID, event.address, event.uuid, name, event.reason);
         apiGateway.fire(kickEvent);
