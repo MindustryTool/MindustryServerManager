@@ -68,16 +68,19 @@ public class AdminService {
         });
     }
 
-    @Listener 
+    @Listener
     public void onBanEvent(PlayerBanEvent event) {
-        ServerEvents.PlayerBanEvent banEvent = new ServerEvents.PlayerBanEvent(Control.SERVER_ID, event.player.ip(), event.uuid, event.player.name);
+        ServerEvents.PlayerBanEvent banEvent = new ServerEvents.PlayerBanEvent(Control.SERVER_ID, event.player.ip(),
+                event.uuid, event.player.name);
         apiGateway.fire(banEvent);
     }
 
-    @Listener void onKickEvent(KickEvent event) {
-        PlayerInfo playerInfo= Vars.netServer.admins.getInfoOptional(event.uuid);
+    @Listener
+    public void onKickEvent(KickEvent event) {
+        PlayerInfo playerInfo = Vars.netServer.admins.findByIP(event.address);
         String name = playerInfo == null ? "Player with ip: " + event.address : playerInfo.lastName;
-        ServerEvents.PlayerKickEvent kickEvent = new ServerEvents.PlayerKickEvent(Control.SERVER_ID, event.address, event.uuid, name, event.reason);
+        ServerEvents.PlayerKickEvent kickEvent = new ServerEvents.PlayerKickEvent(Control.SERVER_ID, event.address,
+                event.uuid, name, event.reason);
         apiGateway.fire(kickEvent);
     }
 
