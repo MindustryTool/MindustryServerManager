@@ -16,8 +16,6 @@ import plugin.annotations.Component;
 import plugin.annotations.Init;
 import plugin.annotations.Schedule;
 import plugin.event.UnloadServerEvent;
-import plugin.utils.Tr;
-import plugin.utils.Utils;
 
 @Component
 public class PluginUpdater {
@@ -64,20 +62,6 @@ public class PluginUpdater {
             needUpdate = true;
 
             writeUpdatedAt(pluginData, updatedAt);
-
-            Utils.forEachPlayerLocale((locale, players) -> {
-                String msg = Tr.t(locale, "update.updated", "owner", pluginData.getOwner(), "repo",
-                        pluginData.getRepo(), "tag", pluginData.getTag(), "version", updatedAt);
-                for (var p : players) {
-                    p.sendMessage(msg);
-                }
-            });
-            Utils.forEachPlayerLocale((locale, players) -> {
-                String msg = Tr.t(locale, "update.restart_scheduled");
-                for (var p : players) {
-                    p.sendMessage(msg);
-                }
-            });
         }
 
         if (!needUpdate && !isScheduled) {

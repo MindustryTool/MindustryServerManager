@@ -86,10 +86,6 @@ public class ClientCommandHandler {
         }
 
         public void handle(String[] args, Player player) {
-            if (admin && !player.admin) {
-                player.sendMessage(Tr.t(Utils.parseLocale(player.locale()), "commands.admin_only"));
-                return;
-            }
 
             var session = sessionService.get(player).orElse(null);
 
@@ -97,6 +93,11 @@ public class ClientCommandHandler {
                 Log.info("[scarlet]Failed to get session for player.");
                 player.sendMessage(Tr.t(Utils.parseLocale(player.locale()), "commands.no_session"));
                 Thread.dumpStack();
+                return;
+            }
+      
+            if (admin && !player.admin && !session.isAdmin()) {
+                player.sendMessage(Tr.t(Utils.parseLocale(player.locale()), "commands.admin_only"));
                 return;
             }
 

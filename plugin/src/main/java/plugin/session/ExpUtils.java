@@ -6,11 +6,6 @@ public class ExpUtils {
         return levelFromTotalExp((long) session.getData().exp);
     }
 
-    // 1 EXP per second of play time
-    public static long playTimeToExp(long playTime) {
-        return (long) (playTime / 1000);
-    }
-
     public static int levelFromTotalExp(long totalExp) {
         if (totalExp <= 0)
             return 1;

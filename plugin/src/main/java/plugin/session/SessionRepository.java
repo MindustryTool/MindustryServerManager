@@ -2,12 +2,10 @@ package plugin.session;
 
 import java.sql.SQLException;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
-import arc.Core;
 import arc.struct.Seq;
 import arc.util.Log;
 import lombok.AllArgsConstructor;
@@ -29,36 +27,6 @@ public class SessionRepository {
     @Init
     public void init() {
         createTableIfNotExists();
-
-        if (!Core.settings.has("EXP_RECALCULATED_2")) {
-            try {
-                recalculateAllTotalExp();
-                Core.settings.put("EXP_RECALCULATED_2", true);
-                Core.settings.forceSave();
-            } catch (Exception e) {
-                Log.err("Failed to recalculate total exp: @", e.getMessage());
-            }
-        }
-
-        if (!Core.settings.has("EXP_RECALCULATED_3")) {
-            try {
-                recalculateAllTotalExp();
-                Core.settings.put("EXP_RECALCULATED_3", true);
-                Core.settings.forceSave();
-            } catch (Exception e) {
-                Log.err("Failed to recalculate total exp (v3): @", e.getMessage());
-            }
-        }
-
-        if (!Core.settings.has("EXP_RECALCULATED_4")) {
-            try {
-                migrateExpToStoredCounter();
-                Core.settings.put("EXP_RECALCULATED_4", true);
-                Core.settings.forceSave();
-            } catch (Exception e) {
-                Log.err("Failed to migrate exp to stored counter: @", e.getMessage());
-            }
-        }
     }
 
     @Listener
@@ -266,77 +234,5 @@ public class SessionRepository {
         } catch (Exception e) {
             Log.err("Failed to create sessions table: @", e);
         }
-    }
-
-    public void recalculateAllTotalExp() throws SQLException {
-        var rows = DB.statement(statement -> {
-            var list = new ArrayList<String[]>();
-            try (var rs = statement.executeQuery("SELECT uuid, data FROM sessions")) {
-                while (rs.next()) {
-                    list.add(new String[] { rs.getString("uuid"), rs.getString("data") });
-                }
-            }
-            return list;
-        });
-
-        var updateSql = "UPDATE sessions SET totalExp = ? WHERE uuid = ?";
-
-        for (var row : rows) {
-            var uuid = row[0];
-            var json = row[1];
-
-            if (json == null || json.isEmpty()) {
-                continue;
-            }
-
-            var data = JsonUtils.readJsonAsClass(json, SessionData.class);
-            long totalExp = (long) data.exp;
-
-            DB.prepare(updateSql, ps -> {
-                ps.setLong(1, totalExp);
-                ps.setString(2, uuid);
-                ps.executeUpdate();
-            });
-        }
-
-        Log.info("Finished recalculating totalExp for all sessions");
-    }
-
-    public void migrateExpToStoredCounter() throws SQLException {
-        var rows = DB.statement(statement -> {
-            var list = new ArrayList<String[]>();
-            try (var rs = statement.executeQuery("SELECT uuid, data FROM sessions")) {
-                while (rs.next()) {
-                    list.add(new String[] { rs.getString("uuid"), rs.getString("data") });
-                }
-            }
-            return list;
-        });
-
-        var updateSql = "UPDATE sessions SET data = ?, totalExp = ? WHERE uuid = ?";
-
-        for (var row : rows) {
-            var uuid = row[0];
-            var json = row[1];
-
-            if (json == null || json.isEmpty()) {
-                continue;
-            }
-
-            var data = JsonUtils.readJsonAsClass(json, SessionData.class);
-            data.exp = ExpUtils.playTimeToExp(data.playTime);
-
-            var updatedJson = JsonUtils.toJsonString(data);
-            long totalExp = (long) data.exp;
-
-            DB.prepare(updateSql, ps -> {
-                ps.setString(1, updatedJson);
-                ps.setLong(2, totalExp);
-                ps.setString(3, uuid);
-                ps.executeUpdate();
-            });
-        }
-
-        Log.info("Finished migrating exp to stored counter for all sessions");
     }
 }

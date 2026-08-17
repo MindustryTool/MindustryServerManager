@@ -53,20 +53,10 @@ public final class Registry {
                     return;
                 }
 
-                if (clazz.isAnnotationPresent(ConditionOn.class)) {
-                    ConditionOn annotation = clazz.getAnnotation(ConditionOn.class);
-                    Class<? extends Condition> conditionClass = annotation.value();
-                    try {
-                        Condition condition = conditionClass.getDeclaredConstructor().newInstance();
-
-                        if (!condition.check()) {
-                            Log.debug("[gray]Skipping component @ due to condition @", clazz.getName(),
-                                    conditionClass.getName());
-                            return;
-                        }
-                    } catch (Exception e) {
-                        throw new RuntimeException("Failed to check condition for " + clazz.getName(), e);
-                    }
+                if (!ConditionUtils.passes(clazz)) {
+                    Log.debug("[gray]Skipping component @ due to condition @", clazz.getName(),
+                            clazz.getAnnotation(ConditionOn.class).value().getName());
+                    return;
                 }
 
                 if (clazz.isAnnotationPresent(Gamemode.class)) {
@@ -225,16 +215,37 @@ public final class Registry {
                 }
             });
 
-            withAnnotation(method, Schedule.class, a -> get(Scheduler.class).process(a, instance, method));
-            withAnnotation(method, Listener.class, a -> get(EventRegistrar.class).register(a, instance, method));
-            withAnnotation(method, Trigger.class, a -> get(EventRegistrar.class).register(a, instance, method));
+            withAnnotation(method, Schedule.class, a -> {
+                if (ConditionUtils.passes(method)) {
+                    get(Scheduler.class).process(a, instance, method);
+                }
+            });
+            withAnnotation(method, Listener.class, a -> {
+                if (ConditionUtils.passes(method)) {
+                    get(EventRegistrar.class).register(a, instance, method);
+                }
+            });
+            withAnnotation(method, Trigger.class, a -> {
+                if (ConditionUtils.passes(method)) {
+                    get(EventRegistrar.class).register(a, instance, method);
+                }
+            });
             withAnnotation(method, FileWatcher.class, a -> get(FileWatcherManager.class).process(a, instance, method));
-            withAnnotation(method, ClientCommand.class,
-                    a -> get(ClientCommandHandler.class).addCommand(a, method, instance));
-            withAnnotation(method, ServerCommand.class,
-                    a -> get(ServerCommandHandler.class).addCommand(a, method, instance));
-            withAnnotation(method, PlayerActionFilter.class,
-                    a -> get(ActionFilterManager.class).addFilter(a, method, instance));
+            withAnnotation(method, ClientCommand.class, a -> {
+                if (ConditionUtils.passes(method)) {
+                    get(ClientCommandHandler.class).addCommand(a, method, instance);
+                }
+            });
+            withAnnotation(method, ServerCommand.class, a -> {
+                if (ConditionUtils.passes(method)) {
+                    get(ServerCommandHandler.class).addCommand(a, method, instance);
+                }
+            });
+            withAnnotation(method, PlayerActionFilter.class, a -> {
+                if (ConditionUtils.passes(method)) {
+                    get(ActionFilterManager.class).addFilter(a, method, instance);
+                }
+            });
         }
 
         initialized.add(instance);

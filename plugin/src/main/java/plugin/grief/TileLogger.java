@@ -36,20 +36,20 @@ public class TileLogger {
 
     private final ConcurrentHashMap<Integer, Deque<TileLogEntry>> logsByPos = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<Integer, Player> pendingBreaks = new ConcurrentHashMap<>();
-    private final Set<String> inspectAdmins = ConcurrentHashMap.newKeySet();
+    private final Set<String> inspectings = ConcurrentHashMap.newKeySet();
 
     @Init
     public void init() {
         logsByPos.clear();
         pendingBreaks.clear();
-        inspectAdmins.clear();
+        inspectings.clear();
     }
 
     @Destroy
     public void destroy() {
         logsByPos.clear();
         pendingBreaks.clear();
-        inspectAdmins.clear();
+        inspectings.clear();
     }
 
     @Listener
@@ -84,14 +84,14 @@ public class TileLogger {
         pendingBreaks.clear();
     }
 
-    @ClientCommand(name = "tilelog", description = "Toggle tile log inspection on tap", admin = true)
+    @ClientCommand(name = "tilelog", description = "Toggle tile log inspection on tap")
     public void toggleInspect(Session session) {
         var uuid = session.player.uuid();
 
-        if (inspectAdmins.add(uuid)) {
+        if (inspectings.add(uuid)) {
             session.player.sendMessage(Tr.t(session, "grief.tilelog_enabled"));
         } else {
-            inspectAdmins.remove(uuid);
+            inspectings.remove(uuid);
             session.player.sendMessage(Tr.t(session, "grief.tilelog_disabled"));
         }
     }
@@ -100,7 +100,7 @@ public class TileLogger {
     public void onTap(TapEvent event) {
         var player = event.player;
 
-        if (!inspectAdmins.contains(player.uuid())) {
+        if (!inspectings.contains(player.uuid())) {
             return;
         }
 
@@ -156,7 +156,8 @@ public class TileLogger {
         return Vars.state.map == null ? "unknown" : Vars.state.map.name();
     }
 
-    public record TileLogEntry(String uuid, String name, String block, int x, int y, String map, String action, long time) {
+    public record TileLogEntry(String uuid, String name, String block, int x, int y, String map, String action,
+            long time) {
 
         public static TileLogEntry place(Player player, Tile tile, String map) {
             return of(player, tile, map, "place");

@@ -15,7 +15,7 @@ public class SessionCommands {
 
     private final ApiGateway apiGateway;
 
-    @ClientCommand(name = "admin", description = "Toogle admin permisison", admin = false)
+    @ClientCommand(name = "admin", description = "Toogle admin permisison", admin = true)
     public void admin(Session session) {
         if (session.isAdmin()) {
             session.player.admin = !session.player.admin;
