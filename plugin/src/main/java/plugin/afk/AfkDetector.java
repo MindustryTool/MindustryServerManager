@@ -9,7 +9,9 @@ import mindustry.game.EventType.PlayerChatEvent;
 import mindustry.game.EventType.TapEvent;
 import mindustry.gen.Call;
 import mindustry.net.Administration.PlayerAction;
+import plugin.Cfg.OnOfficial;
 import plugin.annotations.Component;
+import plugin.annotations.ConditionOn;
 import plugin.annotations.Listener;
 import plugin.annotations.PlayerActionFilter;
 import plugin.annotations.Schedule;
@@ -18,6 +20,7 @@ import plugin.session.Session.AfkState;
 import plugin.utils.Tr;
 
 @Component
+@ConditionOn(OnOfficial.class)
 @RequiredArgsConstructor
 public class AfkDetector {
 

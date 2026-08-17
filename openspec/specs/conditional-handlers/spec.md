@@ -1,10 +1,10 @@
-# conditional-handlers Specification
+# conditional-handlers
 
 ## Purpose
+
 Allows `@ConditionOn` to gate individual method-level handler registrations so commands, listeners, triggers, schedules, and action filters can be enabled or disabled based on runtime conditions.
 
 ## Requirements
-## ADDED Requirements
 
 ### Requirement: ConditionOn applicable to methods
 

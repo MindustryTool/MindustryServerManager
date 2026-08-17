@@ -4,12 +4,15 @@ import java.time.LocalDate;
 import java.util.Optional;
 
 import lombok.RequiredArgsConstructor;
+import plugin.Cfg.OnOfficial;
 import plugin.PluginEvents;
 import plugin.annotations.Component;
+import plugin.annotations.ConditionOn;
 import plugin.annotations.Listener;
 import plugin.utils.Tr;
 
 @Component
+@ConditionOn(OnOfficial.class)
 @RequiredArgsConstructor
 public class DailyService {
     private static final long DAILY_BONUS_EXP = 3600;
