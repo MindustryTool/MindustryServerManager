@@ -19,6 +19,11 @@ public class SessionCommands {
     public void admin(Session session) {
         if (session.isAdmin()) {
             session.player.admin = !session.player.admin;
+            if (session.player.admin) {
+                session.player.sendMessage(I18n.t(session, "[green]Admin on"));
+            } else {
+                session.player.sendMessage(I18n.t(session, "[red]Admin off"));
+            }
         } else {
             session.player.sendMessage(I18n.t(session, "@You are not an admin"));
         }

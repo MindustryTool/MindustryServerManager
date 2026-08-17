@@ -1,7 +1,5 @@
 package plugin.session;
 
-import plugin.utils.Utils;
-
 import java.util.Locale;
 
 import arc.util.Strings;
@@ -9,25 +7,9 @@ import mindustry.gen.Iconc;
 import mindustry.gen.Player;
 import mindustry.type.UnitType;
 import mindustry.ui.dialogs.LanguageDialog;
-import plugin.Cfg;
 import plugin.utils.I18n;
 
 public class SessionUtils {
-
-    public static String getPlayerName(Session session) {
-        boolean hasColor = session.currentLevel > Cfg.COLOR_NAME_LEVEL || session.player.admin;
-        String playerName = hasColor ? session.getData().name : Strings.stripColors(session.getData().name);
-        Locale locale = Utils.parseLocale(session.player.locale);
-        String language = locale.getDisplayLanguage();
-
-        if (language.isEmpty()) {
-            language = session.player.locale;
-        }
-
-        return (session.isLoggedIn() ? Iconc.ok : "") + "[white]|" + language + "| " + "[white]<" + "[accent]"
-                + session.currentLevel + "[white]> " + playerName;
-    }
-
     public static String getInfoString(Session session, SessionData data) {
         Player player = session.player;
         Locale locale = session.locale;

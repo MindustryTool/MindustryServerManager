@@ -1,5 +1,6 @@
 package plugin.session;
 
+import java.util.Locale;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -8,14 +9,17 @@ import java.util.function.Function;
 import arc.func.Boolf;
 import arc.func.Cons;
 import arc.util.Log;
+import arc.util.Strings;
 import dto.LoginDto;
 import lombok.RequiredArgsConstructor;
 import mindustry.Vars;
 import mindustry.game.EventType.PlayerJoin;
 import mindustry.game.EventType.PlayerLeave;
 import mindustry.gen.Groups;
+import mindustry.gen.Iconc;
 import mindustry.gen.Player;
 import mindustry.net.Administration.PlayerInfo;
+import plugin.Cfg;
 import plugin.PluginEvents;
 import plugin.Tasks;
 import plugin.annotations.Component;
@@ -35,14 +39,26 @@ public class SessionService {
     public Function<Session, Integer> getLevel = session -> {
         SessionData data = session.getData();
 
-        // Using existing logic for compatibility: calculating exp based on session play
-        // time
         long currentSessionTime = session.sessionPlayTime();
         long calculatedExp = ExpUtils.getTotalExp(data, currentSessionTime);
 
         int level = ExpUtils.levelFromTotalExp(calculatedExp);
 
         return level;
+    };
+
+    public Function<Session, String> getPlayerName = (Session session) -> {
+        boolean hasColor = session.currentLevel > Cfg.COLOR_NAME_LEVEL || session.player.admin;
+        String playerName = hasColor ? session.getData().name : Strings.stripColors(session.getData().name);
+        Locale locale = Utils.parseLocale(session.player.locale);
+        String language = locale.getCountry().toUpperCase();
+
+        if (language.isEmpty()) {
+            language = session.player.locale;
+        }
+
+        return (session.isLoggedIn() ? Iconc.ok : "") + "[white]|" + language + "| " + "[white]<" + "[accent]"
+                + session.currentLevel + "[white]> " + playerName;
     };
 
     @Listener
@@ -74,7 +90,6 @@ public class SessionService {
 
     public void update(Session session) {
         int level = getLevel.apply(session);
-        
 
         if (level != session.currentLevel) {
             if (session.currentLevel != 0) {
@@ -92,7 +107,7 @@ public class SessionService {
             }
 
             session.currentLevel = level;
-            session.player.name(SessionUtils.getPlayerName(session));
+            session.player.name(getPlayerName.apply(session));
         }
 
         sessionRepository.markDirty(session.player.uuid());
@@ -195,7 +210,7 @@ public class SessionService {
 
         session.login = login;
         session.player.admin = false;
-        session.player.name(SessionUtils.getPlayerName(session));
+        session.player.name(getPlayerName.apply(session));
 
         if (login.getIsAdmin()) {
             session.player.sendMessage(I18n.t(session, "[accent]", "@Use /admin to toogle admin"));
