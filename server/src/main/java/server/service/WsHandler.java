@@ -6,8 +6,6 @@ import java.util.UUID;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
-import com.auth0.jwt.exceptions.TokenExpiredException;
-
 import arc.files.Fi;
 import arc.util.Log;
 import dto.ServerConfigDto;
@@ -80,7 +78,7 @@ public class WsHandler {
                     .getSubject();
 
             return UUID.fromString(idString);
-        } catch (TokenExpiredException e) {
+        } catch (Exception e) {
             ServerConfigDto serverConfig;
             try {
                 Fi serverConfigFile = nodeManager.getFile(serverId, "server.json");

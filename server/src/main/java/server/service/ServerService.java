@@ -170,8 +170,6 @@ public class ServerService {
                 return;
             }
 
-            eventBus.emit(LogEvent.info(serverId, "Delete old loader.jar"));
-
             var unusedFiles = List.of("mindustry-tool-plugins", "mods/loader.jar", "WEBSOCKET.txt");
 
             for (String file : unusedFiles) {
