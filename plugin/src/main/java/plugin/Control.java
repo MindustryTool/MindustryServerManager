@@ -39,6 +39,8 @@ public class Control extends mindustry.mod.Plugin {
 
     @Override
     public void init() {
+        Instant start = Instant.now();
+
         Log.useColors = false;
         Log.logger = (level1, text) -> {
             Matcher matcher = kickPattern.matcher(text);
