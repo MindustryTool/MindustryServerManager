@@ -29,7 +29,6 @@ import dto.PlayerDto;
 import plugin.utils.Utils;
 import plugin.Tasks;
 import plugin.annotations.Component;
-import plugin.annotations.Init;
 import plugin.annotations.Listener;
 import plugin.core.Registry;
 import java.time.Instant;
@@ -45,49 +44,6 @@ public class EventHandler {
     public EventHandler(ApiGateway apiGateway, SessionService sessionService) {
         this.apiGateway = apiGateway;
         this.sessionService = sessionService;
-    }
-
-    @Init
-    private void init() {
-        Vars.netServer.admins.addChatFilter((player, message) -> {
-            String chat = Strings.format("[@]: @", player.plainName(), message);
-            String coloredMessage = Strings.format("[@]:[#ffffff] @", player.name(), message);
-
-            player.sendMessage(coloredMessage);
-            Log.info(coloredMessage);
-
-            apiGateway.fire(new ServerEvents.ChatEvent(Control.SERVER_ID, chat));
-
-            Tasks.io("Chat Event", () -> {
-                try {
-                    Utils.forEachPlayerLocale((locale, players) -> {
-                        // String strippedMessage = Strings.stripColors(message);
-
-                        for (var p : players) {
-                            if (p.id == player.id) {
-                                continue;
-                            }
-
-                            p.sendMessage(coloredMessage, player);
-                        }
-                    });
-                } catch (Exception e) {
-                    Log.err("Failed to send chat event", e);
-                    Utils.forEachPlayerLocale((locale, players) -> {
-                        for (var p : players) {
-                            if (p.id == player.id) {
-                                continue;
-                            }
-
-                            p.sendMessage(coloredMessage, player);
-                        }
-                    });
-
-                }
-            });
-
-            return null;
-        });
     }
 
     @Listener
