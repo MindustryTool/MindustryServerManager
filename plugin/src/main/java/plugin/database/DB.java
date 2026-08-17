@@ -23,13 +23,13 @@ public class DB {
     private static final String DATABASE_FILE = "mindustry_tool.db";
     private static final String JDBC_URL_PREFIX = "jdbc:sqlite:";
 
-    private static boolean isInitialized = false;
+    private static volatile boolean isInitialized = false;
     private static String databasePath;
     private static Connection connection;
-    private static final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private static ExecutorService executor;
 
-    public static void init() {
-        if (isInitialized) {
+    public static synchronized void init() {
+        if (isInitialized && connection != null) {
             return;
         }
 
@@ -57,12 +57,23 @@ public class DB {
             config.setBusyTimeout(3000);
             connection = DriverManager.getConnection(jdbcUrl, config.toProperties());
 
+            if (executor == null || executor.isShutdown()) {
+                executor = Executors.newSingleThreadExecutor();
+            }
+
             isInitialized = true;
             Log.info("SQLite database initialized at: " + databasePath);
 
         } catch (Exception e) {
             throw new RuntimeException("Failed to initialize SQLite database", e);
         }
+    }
+
+    public static synchronized Connection getConnection() {
+        if (!isInitialized || connection == null) {
+            init();
+        }
+        return connection;
     }
 
     @FunctionalInterface

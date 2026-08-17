@@ -60,7 +60,6 @@ public class Control extends mindustry.mod.Plugin {
         Core.settings.put("startedAt", System.currentTimeMillis());
 
         try {
-            DB.init();
             Registry.init(getClass().getPackage().getName());
             Registry.get(this.getClass());
 
