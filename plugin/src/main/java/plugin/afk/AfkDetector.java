@@ -5,10 +5,13 @@ import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
 import lombok.RequiredArgsConstructor;
+import mindustry.game.EventType.PlayerChatEvent;
 import mindustry.game.EventType.TapEvent;
 import mindustry.gen.Call;
+import mindustry.net.Administration.PlayerAction;
 import plugin.annotations.Component;
 import plugin.annotations.Listener;
+import plugin.annotations.PlayerActionFilter;
 import plugin.annotations.Schedule;
 import plugin.session.SessionService;
 import plugin.session.Session.AfkState;
@@ -21,11 +24,23 @@ public class AfkDetector {
 
     private final SessionService sessionService;
 
+    @PlayerActionFilter
+    Boolean onlyAllowLoggedUserToUseLogic(PlayerAction action) {
+        sessionService.get(action.player).ifPresent(session -> session.lastActionTime = Instant.now());
+
+        return true;
+    }
+
+    @Listener
+    public void playerChatEvent(PlayerChatEvent event) {
+        sessionService.get(event.player).ifPresent(session -> session.lastActionTime = Instant.now());
+    }
+
     @Listener
     public void onTap(TapEvent event) {
         sessionService.get(event.player)
                 .ifPresent(session -> {
-                    session.lastClickTime = Instant.now();
+                    session.lastActionTime = Instant.now();
                     session.lastClickX = event.tile.getX();
                     session.lastClickY = event.tile.getY();
                 });
@@ -37,7 +52,7 @@ public class AfkDetector {
             boolean hasMoved = session.lastX != session.player.x() || session.lastY != session.player.y();
             session.lastX = session.player.x();
             session.lastY = session.player.y();
-            boolean hasClicked = Duration.between(session.lastClickTime, Instant.now()).toSeconds() < 30;
+            boolean hasClicked = Duration.between(session.lastActionTime, Instant.now()).toSeconds() < 30;
             boolean isNotDoingAnything = !hasMoved && !hasClicked;
 
             if (isNotDoingAnything) {

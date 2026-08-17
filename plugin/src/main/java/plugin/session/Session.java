@@ -31,7 +31,7 @@ public class Session {
     public double lastClickX = 0;
     public double lastClickY = 0;
     public Instant lastPotentialAfkTime = Instant.now();
-    public Instant lastClickTime = Instant.now();
+    public Instant lastActionTime = Instant.now();
 
     public Session(Player player, SessionData data) {
         this.player = player;

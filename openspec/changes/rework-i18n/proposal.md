@@ -12,6 +12,8 @@ The current `I18n.t(...)` does not actually translate anything: strings prefixed
 - The catalog loader **warns** (does not crash) on invalid key format or unresolved keys.
 - Config-driven messages (`Cfg.WELCOME_MESSAGE`, `Cfg.CHOOSE_SERVER_MESSAGE`) keep their config value as the fallback, with a per-locale catalog key able to override it.
 - Migrate all existing `I18n.t(...)` call sites to the new API in this change.
+- Add unit tests for the translation core (validation, fallback, interpolation, config fallback) so the migration can be verified automatically.
+- Enable those tests in the GitHub Actions plugin build workflow so CI runs them on every push.
 
 ## Capabilities
 
@@ -28,4 +30,6 @@ The current `I18n.t(...)` does not actually translate anything: strings prefixed
 - New `plugin/src/main/resources/i18n/en.json` (+ initial `vi.json` or others) containing all migrated messages under module namespaces.
 - `plugin/src/main/java/plugin/**` — all ~129 `I18n.t(...)` call sites across menus, services, commands, and the event handler.
 - `plugin/src/main/java/plugin/Cfg.java` — config-message handling for `WELCOME_MESSAGE` / `CHOOSE_SERVER_MESSAGE` (config default + catalog override).
-- `plugin/build.gradle` — no change expected (resources dir is picked up automatically).
+- `plugin/build.gradle` — enable JUnit test dependencies (currently commented out).
+- `plugin/src/test/java/**` — new unit tests for the translation core.
+- `.github/workflows/build-plugin.yml` — enable the "Run tests" step (currently commented out).
