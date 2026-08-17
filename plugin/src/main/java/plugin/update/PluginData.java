@@ -33,6 +33,7 @@ public class PluginData {
     }
 
     public PluginVersion getPluginVersion() {
+        int timeout = 30000;
         try {
             CompletableFuture<PluginVersion> result = new CompletableFuture<>();
 
@@ -42,7 +43,7 @@ public class PluginData {
                         result.completeExceptionally(error);
                         Log.err(error);
                     })
-                    .timeout(5000)
+                    .timeout(timeout)
                     .submit(res -> {
                         String version = res.getResultAsString();
                         PluginVersion pluginVersion = JsonUtils.readJsonAsClass(version, PluginVersion.class);
@@ -50,11 +51,11 @@ public class PluginData {
                         result.complete(pluginVersion);
                     });
 
-            var data = result.get(5000, TimeUnit.MILLISECONDS);
+            var data = result.get(timeout, TimeUnit.MILLISECONDS);
 
             return data;
         } catch (Exception e) {
-            throw new RuntimeException("Error while getting plugin version " + this.id + ", " + e.getMessage(), e);
+            throw new RuntimeException("Error while getting plugin version " + this.id, e);
         }
     }
 
