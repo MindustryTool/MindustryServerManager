@@ -220,7 +220,7 @@ public class ServerService {
 
                 eventBus.emit(LogEvent.info(serverId, "Wait for server status"));
             } catch (Exception e) {
-                throw new RuntimeException(e);
+                throw new ApiError(500,"Fail to send host command", e);
             }
 
             for (int i = 0; i < 120; i++) {
@@ -234,9 +234,9 @@ public class ServerService {
                 }
             }
 
-            Log.err("Server waiting for hosting status timeout");
+            Log.err("Server waiting for hosting status timeout, serverId " + serverId);
 
-            throw new ApiError(503, "Can not host server: " + serverId);
+            throw new ApiError(503, "Server waiting for hosting status timeout, make sure host command is valid, current host command: " + request.getHostCommand());
         } finally {
             lock.unlock();
         }
