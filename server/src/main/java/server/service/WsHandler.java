@@ -8,7 +8,9 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.TokenExpiredException;
 
+import arc.files.Fi;
 import arc.util.Log;
+import dto.ServerConfigDto;
 import io.javalin.websocket.WsConfig;
 import io.javalin.websocket.WsContext;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +18,7 @@ import server.EnvConfig;
 import server.config.Const;
 import server.manager.NodeManager;
 import server.utils.ApiError;
+import server.utils.Utils;
 
 @RequiredArgsConstructor
 public class WsHandler {
@@ -78,7 +81,24 @@ public class WsHandler {
 
             return UUID.fromString(idString);
         } catch (TokenExpiredException e) {
-            nodeManager.writeFile(serverId, "WEBSOCKET.txt", generateServerJwt(serverId, securityKey).getBytes());
+            ServerConfigDto serverConfig;
+            try {
+                Fi serverConfigFile = nodeManager.getFile(serverId, "server.json");
+                if (serverConfigFile.exists()) {
+                    serverConfig = Utils.objectMapper.readValue(serverConfigFile.readBytes(), ServerConfigDto.class);
+                } else {
+                    serverConfig = new ServerConfigDto();
+                }
+            } catch (Exception ex) {
+                Log.warn("Failed to read server.json for @, creating fresh", serverId);
+                serverConfig = new ServerConfigDto();
+            }
+            serverConfig.setJwt(generateServerJwt(serverId, securityKey));
+            try {
+                nodeManager.writeFile(serverId, "server.json", Utils.objectMapper.writeValueAsBytes(serverConfig));
+            } catch (Exception ex) {
+                Log.err("Failed to write server.json for " + serverId, ex);
+            }
 
             throw new RuntimeException("Token expired");
         }

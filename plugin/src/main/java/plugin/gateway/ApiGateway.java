@@ -77,6 +77,7 @@ import plugin.core.Registry;
 import dto.CommandParamDto;
 import dto.PlayerInfoDto;
 import dto.ServerCommandDto;
+import dto.ServerConfigDto;
 import dto.StartServerDto;
 import mindustry.Vars;
 import mindustry.core.GameState.State;
@@ -138,7 +139,12 @@ public class ApiGateway {
 
             if (lastIsGame == false && isGame == false && !hostService.isHosting(Control.SERVER_ID.toString())) {
                 Log.info("[sky]Server not hosting, auto host");
-                hostRemoteServer(Control.SERVER_ID.toString());
+                ServerConfigDto serverConfig = Cfg.serverConfig();
+                if (serverConfig != null && serverConfig.getStartServer() != null) {
+                    host(serverConfig.getStartServer());
+                } else {
+                    hostRemoteServer(Control.SERVER_ID.toString());
+                }
             }
 
             lastIsGame = isGame;

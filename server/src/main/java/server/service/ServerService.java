@@ -23,11 +23,13 @@ import com.github.benmanes.caffeine.cache.LoadingCache;
 
 import arc.files.Fi;
 import arc.util.Log;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import dto.MapDto;
 import dto.ModDto;
 import dto.PlayerDto;
 import dto.ServerConfig;
 import dto.ServerStateDto;
+import dto.ServerConfigDto;
 import dto.ServerStatus;
 import dto.StartServerDto;
 import events.BaseEvent;
@@ -172,12 +174,17 @@ public class ServerService {
             nodeManager.deleteFile(serverId, "mindustry-tool-plugins");
             nodeManager.deleteFile(serverId, "mods/loader.jar");
 
-            Fi websocketFile = nodeManager.getFile(serverId, "WEBSOCKET.txt");
-
-            if (!websocketFile.exists()) {
-                eventBus.emit(LogEvent.info(serverId, "Generate websocket file"));
-                String jwt = wsHandler.generateServerJwt(serverId, envConfig.serverConfig().securityKey());
-                nodeManager.writeFile(serverId, "WEBSOCKET.txt", jwt.getBytes());
+            eventBus.emit(LogEvent.info(serverId, "Generate server config file"));
+            String jwt = wsHandler.generateServerJwt(serverId, envConfig.serverConfig().securityKey());
+            ServerConfigDto serverConfig = new ServerConfigDto()
+                    .setJwt(jwt)
+                    .setStartServer(new StartServerDto()
+                            .setHostCommand(request.getHostCommand())
+                            .setMode(request.getMode()));
+            try {
+                nodeManager.writeFile(serverId, "server.json", Utils.objectMapper.writeValueAsBytes(serverConfig));
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException("Failed to serialize server config", e);
             }
 
             nodeManager.create(request);
