@@ -1,4 +1,10 @@
-## ADDED Requirements
+# translation-catalog
+
+## Purpose
+
+TBD - created by syncing change rework-i18n. Update Purpose after implementation.
+
+## Requirements
 
 ### Requirement: Per-locale JSON catalogs
 

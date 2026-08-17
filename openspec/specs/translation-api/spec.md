@@ -1,4 +1,10 @@
-## ADDED Requirements
+# translation-api
+
+## Purpose
+
+TBD - created by syncing change rework-i18n. Update Purpose after implementation.
+
+## Requirements
 
 ### Requirement: Tr public API
 
