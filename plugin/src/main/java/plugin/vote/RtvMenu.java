@@ -41,8 +41,8 @@ public class RtvMenu extends PluginMenu<Integer> {
 
         int currentPage = Math.max(1, Math.min(page, totalPages));
 
-        this.title = Tr.t(session.locale, "rtv.available_maps");
-        this.description = Tr.t(session.locale, "rtv.page_description",
+        this.title = Tr.t(session, "rtv.available_maps");
+        this.description = Tr.t(session, "rtv.page_description",
                 "current", currentPage, "total", totalPages);
 
         int start = (currentPage - 1) * MAPS_PER_PAGE;
@@ -54,7 +54,7 @@ public class RtvMenu extends PluginMenu<Integer> {
             String ratingColor = MapRating.avgScoreColor(stats.avgScore);
 
             String voted = voteHandler.isVoted(session.player, map.file.nameWithoutExtension())
-                    ? Tr.t(session.locale, "rtv.voted_badge")
+                    ? Tr.t(session, "rtv.voted_badge")
                     : "";
             String text = String.format("%s%s%.2f [gold]%c []%s (%s)", voted, ratingColor, stats.avgScore, Iconc.star,
                     map.name(), String.valueOf(stats.totalVotes));
@@ -70,19 +70,19 @@ public class RtvMenu extends PluginMenu<Integer> {
 
         if (hasPrev || hasNext) {
             if (hasPrev) {
-                option(Tr.t(session.locale, "rtv.previous"), (p, s) -> {
+                option(Tr.t(session, "rtv.previous"), (p, s) -> {
                     new RtvMenu().send(p, currentPage - 1);
                 });
             }
 
             if (hasNext) {
-                option(Tr.t(session.locale, "rtv.next"), (p, s) -> {
+                option(Tr.t(session, "rtv.next"), (p, s) -> {
                     new RtvMenu().send(p, currentPage + 1);
                 });
             }
             row();
         }
 
-        text(Tr.t(session.locale, "rtv.close"));
+        text(Tr.t(session, "rtv.close"));
     }
 }

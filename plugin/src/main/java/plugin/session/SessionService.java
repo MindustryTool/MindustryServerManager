@@ -51,9 +51,9 @@ public class SessionService {
             language = session.player.locale;
         }
 
-        return "[white]|"
-                + (session.isLoggedIn() ? Iconc.ok : "")
-                + language + "| " + "<" + "[accent]" + session.currentLevel + "[white]> "
+        return "[white]"
+                + (session.isLoggedIn() ? Iconc.ok : "") + "["
+                + language + "] " + "<" + "[accent]" + session.currentLevel + "[white]> "
                 + playerName;
     };
 

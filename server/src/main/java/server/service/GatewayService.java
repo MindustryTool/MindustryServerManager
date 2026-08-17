@@ -209,23 +209,27 @@ public class GatewayService {
             terminatedAt = Instant.now();
             try {
 
-            WsContext socket = context.getNow(null);
+                WsContext socket = context.getNow(null);
 
-            if (socket != null) {
-                socket.closeSession(WsCloseStatus.NORMAL_CLOSURE, "Terminate by server");
-            } else {
-                context.completeExceptionally(ApiError.badRequest("Server terminate"));
-            }
+                if (socket != null) {
+                    socket.closeSession(WsCloseStatus.NORMAL_CLOSURE, "Terminate by server");
+                } else {
+                    context.completeExceptionally(ApiError.badRequest("Server terminate"));
+                }
 
-            boolean removed = nodeManager.remove(id, reason);
+                boolean removed = nodeManager.remove(id, reason);
 
-            if (state != ClientState.CONNECTING && (removed || reason == NodeRemoveReason.PROCESS_KILLED)) {
-                eventBus.emit(new StopEvent(id, reason));
-                Log.info("[red]Client terminated: " + id);
-            }
+                if (state != ClientState.CONNECTING && (removed || reason == NodeRemoveReason.PROCESS_KILLED)) {
+                    eventBus.emit(new StopEvent(id, reason));
+                    Log.info("[red]Client terminated: " + id);
+                }
             } catch (Exception e) {
                 Log.err("Error terminating client: " + id, e);
-                nodeManager.remove(id, reason);
+                try {
+                    nodeManager.remove(id, reason);
+                } catch (Exception e2) {
+                    Log.err("Error removing node: " + id, e2);
+                }
             }
         }
 
