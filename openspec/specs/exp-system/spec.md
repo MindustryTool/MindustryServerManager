@@ -1,4 +1,10 @@
-## ADDED Requirements
+# exp-system
+
+## Purpose
+
+TBD - created by syncing change rework-exp-system. Update Purpose after implementation.
+
+## Requirements
 
 ### Requirement: Stored exp counter
 

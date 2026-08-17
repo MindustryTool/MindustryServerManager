@@ -1,4 +1,10 @@
-## ADDED Requirements
+# daily-login-bonus
+
+## Purpose
+
+TBD - created by syncing change rework-exp-system. Update Purpose after implementation.
+
+## Requirements
 
 ### Requirement: Daily login tracking table
 
