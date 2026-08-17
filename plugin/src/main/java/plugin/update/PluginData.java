@@ -54,7 +54,7 @@ public class PluginData {
 
             return data;
         } catch (Exception e) {
-            throw new RuntimeException("Error while getting plugin version " + this.id + ", " + e.getMessage());
+            throw new RuntimeException("Error while getting plugin version " + this.id + ", " + e.getMessage(), e);
         }
     }
 
