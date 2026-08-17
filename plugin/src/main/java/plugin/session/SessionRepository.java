@@ -235,7 +235,7 @@ public class SessionRepository {
                 pdata.lastSaved = now;
 
                 json = JsonUtils.toJsonString(pdata);
-                totalExp = pdata.exp;
+                totalExp = (long) pdata.exp;
             }
 
             var sql = "INSERT INTO sessions(uuid, data, totalExp) VALUES(?, ?, ?) ON CONFLICT(uuid) DO UPDATE SET data = excluded.data, totalExp = excluded.totalExp";
@@ -290,7 +290,7 @@ public class SessionRepository {
             }
 
             var data = JsonUtils.readJsonAsClass(json, SessionData.class);
-            long totalExp = data.exp;
+            long totalExp = (long) data.exp;
 
             DB.prepare(updateSql, ps -> {
                 ps.setLong(1, totalExp);
@@ -327,7 +327,7 @@ public class SessionRepository {
             data.exp = ExpUtils.playTimeToExp(data.playTime);
 
             var updatedJson = JsonUtils.toJsonString(data);
-            long totalExp = data.exp;
+            long totalExp = (long) data.exp;
 
             DB.prepare(updateSql, ps -> {
                 ps.setString(1, updatedJson);

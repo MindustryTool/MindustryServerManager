@@ -38,7 +38,7 @@ public class SessionService {
     public Function<Session, Integer> getLevel = session -> {
         SessionData data = session.getData();
 
-        return ExpUtils.levelFromTotalExp(data.exp);
+        return ExpUtils.levelFromTotalExp((long) data.exp);
     };
 
     public Function<Session, String> getPlayerName = (Session session) -> {
@@ -96,13 +96,25 @@ public class SessionService {
         });
     }
 
+    @Schedule(fixedRate = 1, unit = TimeUnit.MINUTES)
+    public void reduceExpGainBonusWhenAfk() {
+        each(session -> {
+            if (session.isAfk()) {
+                session.expGainBonus -= 0.01f;
+                if (session.expGainBonus < 0) {
+                    session.expGainBonus = 0;
+                }
+            }
+        });
+    }
+
     @Listener
     public void onExpGain(ExpGainEvent event) {
         Session session = event.session;
         SessionData data = session.getData();
 
         synchronized (data) {
-            data.exp += event.amount;
+            data.exp += event.amount + session.expGainBonus * event.amount;
         }
 
         sessionRepository.markDirty(session);

@@ -15,7 +15,7 @@ public class SessionUtils {
         Locale locale = session.locale;
 
         StringBuilder info = new StringBuilder();
-        long exp = data.exp;
+        long exp = (long) data.exp;
         int level = ExpUtils.levelFromTotalExp(exp);
         long excess = ExpUtils.excessExp(exp);
 

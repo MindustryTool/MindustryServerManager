@@ -15,7 +15,9 @@ public class Session {
     public LoginDto login;
     public boolean votedVNW = false;
     public boolean votedGrief = false;
+    
     public int currentLevel = 0;
+    public float expGainBonus = 0;
 
     public static enum AfkState {
         ACTIVE,

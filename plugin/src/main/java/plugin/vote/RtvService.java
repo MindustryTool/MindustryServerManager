@@ -199,7 +199,7 @@ public class RtvService {
             }
 
             Vars.maps.setNextMapOverride(map);
-            Events.fire(new EventType.GameOverEvent(Team.crux));
+            Events.fire(new EventType.GameOverEvent(Team.neoplastic));
             reset();
         }
     }

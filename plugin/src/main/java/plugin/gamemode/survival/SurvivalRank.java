@@ -76,6 +76,19 @@ public class SurvivalRank {
             return;
         }
 
+        sessionService.each(session -> {
+            long playerPlayedDuration = Duration.between(Instant.ofEpochMilli(session.joinedAt), Instant.now()).abs().toSeconds();
+            long mapDuration = Duration.between(mapStartedAt, Instant.now()).abs().toSeconds();
+            float playerParticipation = (float) playerPlayedDuration / mapDuration;
+
+            if (playerPlayedDuration > mapDuration) {
+                playerParticipation = 1;
+            }
+
+            session.expGainBonus = playerParticipation;
+            session.player.sendMessage("Exp gain bonus for winning: +" + playerParticipation * 100 + "%");
+        });
+
         var data = Core.settings.getString(KEY, "{}");
         var wrapper = JsonUtils.readJsonAsClass(data, DataWrapper.class);
         var map = Vars.state.map;
