@@ -629,12 +629,12 @@ public class DockerNodeManager implements NodeManager {
                     if (!message.isBlank()) {
                         eventBus.emit(LogEvent.info(serverId, message));
                     }
-                    lastLogTimeCache.put(containerId, Instant.now());
                 }
 
                 @Override
                 public void onComplete() {
                     logCallbacks.remove(serverId);
+                    lastLogTimeCache.put(containerId, Instant.now());
                     Log.info("Log callback removed for server @", serverId);
                 }
             };

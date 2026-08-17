@@ -28,7 +28,7 @@ public class Control extends mindustry.mod.Plugin {
 
     public static final Instant start = Instant.now();
     public static final UUID SERVER_ID = UUID.fromString(System.getenv("SERVER_ID"));
-    
+
     public static PluginState state = PluginState.LOADING;
 
     private static String[] tags = { "", "", "[yellow]", "[red]", "" };
@@ -102,7 +102,11 @@ public class Control extends mindustry.mod.Plugin {
         Registry.get(ClientCommandHandler.class).registerCommands(handler);
     }
 
-    public void unload() {
+    public synchronized void unload() {
+        if (state == PluginState.UNLOADED) {
+            return;
+        }
+
         state = PluginState.UNLOADED;
 
         Log.info("Unload");
@@ -114,7 +118,8 @@ public class Control extends mindustry.mod.Plugin {
         DB.close();
         PluginEvents.unregister();
 
-        Log.info("Server controller unloaded after running for " + TimeUtils.toString(Duration.between(start, Instant.now())));
+        Log.info("Server controller unloaded after running for "
+                + TimeUtils.toString(Duration.between(start, Instant.now())));
     }
 
     @Schedule(delay = 30, fixedDelay = 2, unit = TimeUnit.SECONDS)
