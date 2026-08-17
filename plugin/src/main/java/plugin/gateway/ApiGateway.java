@@ -4,8 +4,6 @@ import plugin.vote.VoteService;
 
 import plugin.session.SessionService;
 
-import plugin.session.SessionHandler;
-
 import plugin.host.HostService;
 
 import java.time.Duration;
@@ -329,7 +327,7 @@ public class ApiGateway {
             HashMap<String, Object> data = new HashMap<>();
 
             data.put("state", Utils.getState());
-            data.put("session", Registry.get(SessionHandler.class).get());
+            data.put("session", Registry.get(SessionService.class).get());
             data.put("isHub", Cfg.IS_HUB);
             data.put("ip", Cfg.SERVER_IP);
             data.put("units", Groups.unit.size());
@@ -424,7 +422,7 @@ public class ApiGateway {
         }
 
         if (player != null) {
-            Registry.get(SessionHandler.class).getByUuid(uuid).ifPresent(
+            Registry.get(SessionService.class).getByUuid(uuid).ifPresent(
                     session -> Registry.get(SessionService.class).setLogin(session, request));
         }
 

@@ -1,6 +1,6 @@
 package plugin.trail;
 
-import plugin.session.SessionHandler;
+import plugin.session.SessionService;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
@@ -25,7 +25,7 @@ import plugin.session.ExpUtils;
 public class TrailService {
 
     public final ConcurrentHashMap<String, Trail> trails = new ConcurrentHashMap<>();
-    private final SessionHandler sessionHandler;
+    private final SessionService sessionService;
 
     @Init
     public void init() {
@@ -39,7 +39,7 @@ public class TrailService {
 
     @Schedule(fixedRate = 500)
     private void render() {
-        sessionHandler.each(session -> {
+        sessionService.each(session -> {
             var userTrail = session.getData().trail;
             if (userTrail != null) {
                 var trail = trails.get(userTrail);

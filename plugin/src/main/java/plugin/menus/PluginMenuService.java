@@ -1,6 +1,6 @@
 package plugin.menus;
 
-import plugin.session.SessionHandler;
+import plugin.session.SessionService;
 
 import java.time.Instant;
 import java.util.concurrent.ConcurrentHashMap;
@@ -26,7 +26,7 @@ public class PluginMenuService {
     private final Seq<PluginMenu<?>> menus = new Seq<>();
     private final ConcurrentHashMap<Player, PluginMenu<?>> activeMenus = new ConcurrentHashMap<>();
 
-    private final SessionHandler sessionHandler;
+    private final SessionService sessionService;
 
     @Schedule(fixedDelay = 1, unit = TimeUnit.SECONDS)
     public void cleanStaleMenus() {
@@ -88,7 +88,7 @@ public class PluginMenuService {
             if (selectedOption != null && selectedOption.getCallback() != null) {
                 Call.hideFollowUpMenu(event.player.con, targetMenu.getMenuId());
 
-                var session = sessionHandler.get(event.player).orElse(null);
+                var session = sessionService.get(event.player).orElse(null);
 
                 if (session == null) {
                     Log.err("Failed to get session for player @", event.player);

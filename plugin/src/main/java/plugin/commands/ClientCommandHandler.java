@@ -13,7 +13,7 @@ import plugin.annotations.ClientCommand;
 import plugin.annotations.Component;
 import plugin.annotations.Destroy;
 import plugin.utils.I18n;
-import plugin.session.SessionHandler;
+import plugin.session.SessionService;
 import plugin.utils.CommandUtils;
 import plugin.utils.Utils;
 
@@ -21,7 +21,7 @@ import plugin.utils.Utils;
 @RequiredArgsConstructor
 public class ClientCommandHandler {
 
-    private final SessionHandler sessionHandler;
+    private final SessionService sessionService;
 
     @Getter
     private final List<PluginClientCommand> commands = new ArrayList<>();
@@ -92,7 +92,7 @@ public class ClientCommandHandler {
                 return;
             }
 
-            var session = sessionHandler.get(player).orElse(null);
+            var session = sessionService.get(player).orElse(null);
 
             if (session == null) {
                 Log.info("[scarlet]Failed to get session for player.");

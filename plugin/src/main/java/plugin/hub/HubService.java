@@ -1,6 +1,6 @@
 package plugin.hub;
 
-import plugin.session.SessionHandler;
+import plugin.session.SessionService;
 
 import plugin.gateway.ApiGateway;
 
@@ -49,7 +49,7 @@ public class HubService {
     private final Seq<ServerCore> serverCores = new Seq<>();
     private Seq<ServerDto> servers = new Seq<>();
 
-    private final SessionHandler sessionHandler;
+    private final SessionService sessionService;
     private final ApiGateway apiGateway;
 
     @Init
@@ -201,7 +201,7 @@ public class HubService {
                     continue;
                 }
 
-                sessionHandler.get(event.player)
+                sessionService.get(event.player)
                         .ifPresent(session -> new ServerRedirectMenu().send(session, core.getServer()));
                 break;
             }

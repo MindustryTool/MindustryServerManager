@@ -16,7 +16,7 @@ public class PlayerInfoMenu extends PluginMenu<Session> {
     public void build(Session session, Session caller) {
         this.title = I18n.t(session.locale, "@Servers");
 
-        Registry.get(SessionHandler.class).each(p -> {
+        Registry.get(SessionService.class).each(p -> {
             option(p.player.name, (t, s) -> {
                 caller.player.sendMessage(SessionUtils.getInfoString(p, p.getData()));
             });

@@ -49,7 +49,6 @@ import plugin.gamemode.catali.spawner.BlockSpawner;
 import plugin.gamemode.catali.spawner.SpawnerHelper;
 import plugin.gamemode.catali.spawner.UnitSpawner;
 import plugin.utils.I18n;
-import plugin.session.SessionHandler;
 import plugin.session.SessionService;
 import plugin.utils.TimeUtils;
 import plugin.utils.Utils;
@@ -71,7 +70,6 @@ public class CataliGamemode {
     private final UnitSpawner unitSpawner;
     private final BlockSpawner blockSpawner;
     private final CataliConfig config;
-    private final SessionHandler sessionHandler;
     private final SessionService sessionService;
 
     public static final Seq<UnitType> coreUnits = Seq.with(
@@ -618,7 +616,7 @@ public class CataliGamemode {
             return;
         }
 
-        sessionHandler.get(leader).ifPresent(session -> new AIPickMenu().send(session, event.team));
+        sessionService.get(leader).ifPresent(session -> new AIPickMenu().send(session, event.team));
     }
 
     @Listener
@@ -885,7 +883,7 @@ public class CataliGamemode {
             return;
         }
 
-        var session = sessionHandler.get(leaderPlayer).orElse(null);
+        var session = sessionService.get(leaderPlayer).orElse(null);
 
         if (session == null) {
             Log.info("No session for leader player @", leaderPlayer.name);

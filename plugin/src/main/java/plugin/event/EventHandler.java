@@ -2,8 +2,6 @@ package plugin.event;
 
 import plugin.session.SessionService;
 
-import plugin.session.SessionHandler;
-
 import plugin.maprating.MapRating;
 
 import plugin.utils.I18n;
@@ -116,7 +114,7 @@ public class EventHandler {
         var rateMap = Vars.state.map;
 
         if (rateMap != null) {
-            Registry.get(SessionHandler.class).each(session -> new RateMapMenu().send(session, rateMap));
+            Registry.get(SessionService.class).each(session -> new RateMapMenu().send(session, rateMap));
         }
     }
 

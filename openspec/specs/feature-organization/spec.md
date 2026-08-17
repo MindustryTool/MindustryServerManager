@@ -11,7 +11,7 @@ The feature packages SHALL be: `session`, `vote`, `grief`, `host`, `maprating`, 
 
 Each feature package SHALL contain the feature's own classes regardless of their previous technical-layer origin:
 
-- `session` SHALL contain `Session`, `SessionData`, `SessionHandler`, `SessionService`, `SessionRepository`, `SessionUtils`, `ExpUtils`, `RankUtils`, `RankService`, `SessionCreatedEvent`, `SessionRemovedEvent`, `OfficialCommands`, `PlayerInfoMenu`, and the client commands `admin`, `login`, `me`, `pinfo`.
+- `session` SHALL contain `Session`, `SessionData`, `SessionService` (the merged session component owning the container, lifecycle, and business logic), `SessionRepository`, `SessionUtils`, `ExpUtils`, `RankUtils`, `RankService`, `SessionCreatedEvent`, `SessionRemovedEvent`, `OfficialCommands`, `PlayerInfoMenu`, and the client commands `admin`, `login`, `me`, `pinfo`. There SHALL be no `SessionHandler` class in the `session` package.
 - `vote` SHALL contain `VoteService`, `VoteNewWaveService`, `RtvMenu`, and the client commands `rtv`, `vnw`.
 - `grief` SHALL contain `AdminService`, `GriefDetectService`, `TileLogger`, `GriefMenu`, `GreifLoginMenu`, and the client command `grief`.
 - `host` SHALL contain `HostService` and `MapWatcher`.
@@ -44,13 +44,18 @@ The shared infrastructure SHALL remain centralized and SHALL NOT contain feature
 - **THEN** those packages contain only the shared framework classes enumerated above
 - **AND** no feature-specific logic (e.g. voting, session, grief, hub) resides there
 
+#### Scenario: Session feature consolidated
+- **WHEN** inspecting the `plugin.session` package
+- **THEN** it contains `SessionService` as the single session component and no `SessionHandler` class
+- **AND** all container and lifecycle methods previously on `SessionHandler` are accessible via `SessionService`
+
 #### Scenario: Gamemode packages unchanged
 - **WHEN** inspecting `plugin.gamemode` and its subpackages
 - **THEN** no classes are moved, renamed, or modified
 
 ### Requirement: Behavioral preservation
 
-The refactor SHALL NOT change runtime behavior. Command names, descriptions, admin flags, parameters, event names, persistence keys, schedules, DI wiring, and logging SHALL remain identical.
+The refactor SHALL NOT change runtime behavior. Command names, descriptions, admin flags, parameters, event names, persistence keys, schedules, and logging SHALL remain identical. DI wiring SHALL remain identical except that the two session components (`SessionHandler` and `SessionService`) SHALL consolidate into the single `SessionService` component, and all consumers SHALL reference `SessionService` for the former handler responsibilities.
 
 The bootstrap SHALL remain valid: `plugin.json` SHALL still point to main class `plugin.Control`, and `Control` SHALL remain at the `plugin` package root. `Registry.init("plugin")` SHALL continue to discover and register all annotated classes in the (moved) package tree.
 
@@ -62,7 +67,8 @@ The bootstrap SHALL remain valid: `plugin.json` SHALL still point to main class 
 #### Scenario: Event and annotation scanning preserved
 - **WHEN** the plugin initializes
 - **THEN** `@Listener`, `@Schedule`, `@Init`, `@PlayerActionFilter`, `@Configuration`, `@Persistence`, and `@FileWatcher` classes are discovered and registered identically
-- **AND** `SessionCreatedEvent`/`SessionRemovedEvent` subscribers are unaffected by the move to `plugin.session`
+- **AND** `SessionCreatedEvent`/`SessionRemovedEvent` subscribers are unaffected by the session consolidation
+- **AND** the session component's join/leave listeners and the per-second `@Schedule` update run exactly as before
 
 #### Scenario: Plugin boots with unchanged main class
 - **WHEN** the plugin is loaded by Mindustry
@@ -71,12 +77,16 @@ The bootstrap SHALL remain valid: `plugin.json` SHALL still point to main class 
 
 ### Requirement: No stale references to old packages
 
-The refactored source SHALL contain no imports, reflection strings, or package declarations referencing the former package names `plugin.service`, `plugin.menus`, `plugin.commands.client`, `plugin.commands.server`, `plugin.type`, `plugin.event`, or `plugin.utils` (except for the retained shared classes that legitimately keep those packages).
+The refactored source SHALL contain no imports, reflection strings, or package declarations referencing the former package names `plugin.service`, `plugin.menus`, `plugin.commands.client`, `plugin.commands.server`, `plugin.type`, `plugin.event`, or `plugin.utils` (except for the retained shared classes that legitimately keep those packages). The source SHALL also contain no references to the removed `plugin.session.SessionHandler` type.
 
 #### Scenario: Grep of source tree
 - **WHEN** the source is searched for `plugin.service.`, `plugin.menus.`, `plugin.commands.client.`, `plugin.commands.server.`, `plugin.type.`, `plugin.event.`, and `plugin.utils.` (as package references)
 - **THEN** only the retained shared classes (`plugin.menus.PluginMenu`, `plugin.menus.PluginMenuService`, `plugin.event.PluginUnloadEvent`, `plugin.event.UnloadServerEvent`, `plugin.commands.ClientCommandHandler`, `plugin.commands.ServerCommandHandler`, `plugin.commands.ParamException`, `plugin.utils.Utils`, `plugin.utils.JsonUtils`, `plugin.utils.HttpUtils`, `plugin.utils.TimeUtils`, `plugin.utils.TextWidth`, `plugin.utils.CommandUtils`) reference their former packages
 - **AND** no other references exist
+
+#### Scenario: SessionHandler fully removed
+- **WHEN** the source is searched for `SessionHandler`
+- **THEN** no matches exist in `plugin/src/main/java/**`
 
 ### Requirement: Scope discipline
 

@@ -1,6 +1,6 @@
 package plugin.vote;
 
-import plugin.session.SessionHandler;
+import plugin.session.SessionService;
 
 import plugin.utils.I18n;
 
@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 public class VoteNewWaveService {
 
     private final Scheduler scheduler;
-    private final SessionHandler sessionHandler;
+    private final SessionService sessionService;
 
     private int waveVoted = -1;
     private ScheduledFuture<?> voteTimeout;
@@ -69,7 +69,7 @@ public class VoteNewWaveService {
             waveVoted = waves;
 
             voteTimeout = scheduler.schedule(() -> {
-                sessionHandler.each(s -> s.votedVNW = false);
+                sessionService.each(s -> s.votedVNW = false);
                 Utils.forEachPlayerLocale((locale, players) -> {
                     String msg = I18n.t(locale, "[scarlet]", "@Vote failed, not enough votes.");
                     for (var p : players) {
@@ -84,7 +84,7 @@ public class VoteNewWaveService {
 
         session.votedVNW = true;
 
-        int voted = sessionHandler.count(s -> s.votedVNW);
+        int voted = sessionService.count(s -> s.votedVNW);
         int required = Mathf.ceil(0.6f * Groups.player.size());
 
         if (voted < required && !session.player.admin) {
@@ -104,7 +104,7 @@ public class VoteNewWaveService {
         if (voteCountDown != null)
             voteCountDown.cancel(true);
 
-        sessionHandler.each(s -> s.votedVNW = false);
+        sessionService.each(s -> s.votedVNW = false);
 
         Utils.forEachPlayerLocale((locale, players) -> {
             String msg = I18n.t(locale, "[green]", "@Vote passed. Sending new wave.");

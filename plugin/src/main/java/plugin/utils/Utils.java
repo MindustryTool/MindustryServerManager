@@ -39,7 +39,7 @@ import mindustry.io.MapIO;
 import mindustry.io.SaveIO;
 import plugin.Control;
 import plugin.core.Registry;
-import plugin.session.SessionHandler;
+import plugin.session.SessionService;
 
 public class Utils {
     private static Instant lastImagePreviewAt = Instant.now();
@@ -124,7 +124,7 @@ public class Utils {
             }
         }
 
-        List<PlayerDto> players = Registry.get(SessionHandler.class).get()
+        List<PlayerDto> players = Registry.get(SessionService.class).get()
                 .values()
                 .stream()
                 .map(session -> PlayerDto.from(session.player).setJoinedAt(session.joinedAt))

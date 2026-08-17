@@ -4,7 +4,7 @@ import plugin.menus.PluginMenu;
 
 import plugin.core.Registry;
 import plugin.utils.I18n;
-import plugin.session.SessionHandler;
+import plugin.session.SessionService;
 import plugin.session.Session;
 
 public class GriefMenu extends PluginMenu<Session> {
@@ -17,7 +17,7 @@ public class GriefMenu extends PluginMenu<Session> {
         this.title = I18n.t(session.locale, "@Grief Report");
 
         if (target == null) {
-            Registry.get(SessionHandler.class).each(t -> t != session, t -> {
+            Registry.get(SessionService.class).each(t -> t != session, t -> {
                 option(t.player.name, (_p, s) -> new GriefMenu().send(session, t));
                 row();
             });

@@ -17,7 +17,7 @@ import mindustry.gen.Call;
 import plugin.annotations.Gamemode;
 import plugin.annotations.Init;
 import plugin.annotations.Listener;
-import plugin.session.SessionHandler;
+import plugin.session.SessionService;
 import plugin.utils.JsonUtils;
 import plugin.utils.TimeUtils;
 
@@ -26,7 +26,7 @@ import plugin.utils.TimeUtils;
 public class SurvivalRank {
     private Instant mapStartedAt = Instant.now();
 
-    private final SessionHandler sessionHandler;
+    private final SessionService sessionService;
 
     private final String KEY = "survival-rank";
     private final String version = "1";
@@ -82,7 +82,7 @@ public class SurvivalRank {
         var mapName = map.file.nameWithoutExtension();
         var players = new ArrayList<String>();
 
-        sessionHandler.get().values().stream().map(v -> v.player.name()).forEach(v -> players.add(v));
+        sessionService.get().values().stream().map(v -> v.player.name()).forEach(v -> players.add(v));
 
         wrapper.data.compute(mapName, (k, v) -> {
             long surviveTimeMs = Duration.between(mapStartedAt, Instant.now()).toMillis();

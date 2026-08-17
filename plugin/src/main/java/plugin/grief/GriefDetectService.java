@@ -1,6 +1,6 @@
 package plugin.grief;
 
-import plugin.session.SessionHandler;
+import plugin.session.SessionService;
 
 import plugin.utils.I18n;
 
@@ -28,7 +28,7 @@ import plugin.utils.Utils;
 @RequiredArgsConstructor
 public class GriefDetectService {
 
-    private final SessionHandler sessionHandler;
+    private final SessionService sessionService;
     private final ApiGateway apiGateway;
 
     private final ConcurrentHashMap<Player, Long> scores = new ConcurrentHashMap<>();
@@ -47,7 +47,7 @@ public class GriefDetectService {
             updated.put(entry.getKey(), entry.getValue() + 5);
 
             if (entry.getValue() > 100) {
-                var sessionOpt = sessionHandler.get(entry.getKey());
+                var sessionOpt = sessionService.get(entry.getKey());
                 if (!sessionOpt.isPresent()) {
                     removed.add(entry.getKey());
                     continue;

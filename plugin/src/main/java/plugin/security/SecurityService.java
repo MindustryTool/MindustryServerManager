@@ -1,6 +1,6 @@
 package plugin.security;
 
-import plugin.session.SessionHandler;
+import plugin.session.SessionService;
 
 import plugin.utils.I18n;
 
@@ -20,7 +20,7 @@ import plugin.annotations.ConditionOn;
 public class SecurityService {
 
     @PlayerActionFilter
-    Boolean onlyAllowLoggedUserToUseLogic(PlayerAction action, SessionHandler sessionService) {
+    Boolean onlyAllowLoggedUserToUseLogic(PlayerAction action, SessionService sessionService) {
         if (action.type == ActionType.placeBlock && action.block != null
                 && (action.block instanceof LogicDisplay || action.block instanceof CanvasBlock)) {
             var session = sessionService.get(action.player).orElse(null);

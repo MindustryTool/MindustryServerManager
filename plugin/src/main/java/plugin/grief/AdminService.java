@@ -1,6 +1,6 @@
 package plugin.grief;
 
-import plugin.session.SessionHandler;
+import plugin.session.SessionService;
 
 import plugin.utils.I18n;
 
@@ -50,7 +50,7 @@ public class AdminService {
     private ScheduledFuture<?> voteTimeout;
 
     private final ApiGateway apiGateway;
-    private final SessionHandler sessionHandler;
+    private final SessionService sessionService;
     private final Scheduler scheduler;
 
     @Init
@@ -120,7 +120,7 @@ public class AdminService {
 
         session.votedGrief = true;
 
-        int voted = sessionHandler.count(s -> s.votedGrief);
+        int voted = sessionService.count(s -> s.votedGrief);
         int required = Mathf.ceil(0.6f * Groups.player.size());
 
         if (voted >= required) {
@@ -213,6 +213,6 @@ public class AdminService {
             voteTimeout.cancel(true);
         }
 
-        sessionHandler.each(s -> s.votedGrief = false);
+        sessionService.each(s -> s.votedGrief = false);
     }
 }
