@@ -261,7 +261,7 @@ public class HubService {
                 }
 
                 String message = createServerString(server);
-                Call.label(message, 5, core.getX(), core.getY());
+                Call.label(message, 5.1f, core.getX(), core.getY());
             }
             return;
         }

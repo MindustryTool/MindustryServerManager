@@ -42,7 +42,7 @@ public class AfkDetector {
     @Schedule(fixedDelay = 1, unit = TimeUnit.SECONDS)
     public void updateAfkLabel() {
         sessionService.each(session -> session.isAfk, session -> {
-            Call.label("Afk", 1, session.player.x(), session.player.y());
+            Call.label("Afk", 1.1f, session.player.x(), session.player.y());
         });
     }
 }

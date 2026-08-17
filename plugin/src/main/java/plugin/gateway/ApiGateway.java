@@ -108,6 +108,7 @@ public class ApiGateway {
     private final Map<UUID, CompletableFuture<JsonNode>> pendingRequests = new ConcurrentHashMap<>();
 
     private boolean isDestroyed = false;
+    private boolean lastIsGame = true;
 
     @Init
     public void init() {
@@ -129,13 +130,17 @@ public class ApiGateway {
         this.registerMessageHandler("get-kicked-ips", Void.class, (request) -> getKicks());
     }
 
-    @Schedule(delay = 20, fixedDelay = 120, unit = TimeUnit.SECONDS)
+    @Schedule(delay = 10, fixedDelay = 60, unit = TimeUnit.SECONDS)
     private void autoHost() {
         try {
-            if (!Vars.state.isGame() && !hostService.isHosting(Control.SERVER_ID.toString())) {
+            boolean isGame = Vars.state.isGame();
+
+            if (lastIsGame == false && isGame == false && !hostService.isHosting(Control.SERVER_ID.toString())) {
                 Log.info("[sky]Server not hosting, auto host");
                 hostRemoteServer(Control.SERVER_ID.toString());
             }
+
+            lastIsGame = isGame;
         } catch (Exception e) {
             Log.err("Failed to host server", e);
         }
