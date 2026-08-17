@@ -15,7 +15,7 @@ public class SessionUtils {
         Locale locale = session.locale;
 
         StringBuilder info = new StringBuilder();
-        long exp = ExpUtils.getTotalExp(data, session.sessionPlayTime());
+        long exp = data.exp;
         int level = ExpUtils.levelFromTotalExp(exp);
         long excess = ExpUtils.excessExp(exp);
 
@@ -57,7 +57,7 @@ public class SessionUtils {
                 .append(seconds % 60)
                 .append("s")
                 .append(" (")
-                .append(ExpUtils.playTimeToExp(data.playTime + session.sessionPlayTime()))
+                .append(exp)
                 .append("exp)")
                 .append("[white]\n");
 

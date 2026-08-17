@@ -3,14 +3,7 @@ package plugin.session;
 public class ExpUtils {
 
     public static long getLevel(Session session) {
-        return levelFromTotalExp(getTotalExp(session.getData(), session.sessionPlayTime()));
-    }
-
-    public static long getTotalExp(SessionData data, long sessionPlayTime) {
-        long exp = 0;
-
-        exp += playTimeToExp(data.playTime + sessionPlayTime);
-        return exp;
+        return levelFromTotalExp(session.getData().exp);
     }
 
     // 1 EXP per second of play time

@@ -38,12 +38,7 @@ public class SessionService {
     public Function<Session, Integer> getLevel = session -> {
         SessionData data = session.getData();
 
-        long currentSessionTime = session.sessionPlayTime();
-        long calculatedExp = ExpUtils.getTotalExp(data, currentSessionTime);
-
-        int level = ExpUtils.levelFromTotalExp(calculatedExp);
-
-        return level;
+        return ExpUtils.levelFromTotalExp(data.exp);
     };
 
     public Function<Session, String> getPlayerName = (Session session) -> {
@@ -77,8 +72,8 @@ public class SessionService {
     }
 
     @Schedule(fixedDelay = 1, unit = TimeUnit.SECONDS)
-    private void update() {
-        each(this::update);
+    private void tick() {
+        each(s -> PluginEvents.fire(new ExpGainEvent(s, 1)));
     }
 
     @Destroy
@@ -101,7 +96,20 @@ public class SessionService {
         });
     }
 
-    public void update(Session session) {
+    @Listener
+    public void onExpGain(ExpGainEvent event) {
+        Session session = event.session;
+        SessionData data = session.getData();
+
+        synchronized (data) {
+            data.exp += event.amount;
+        }
+
+        sessionRepository.markDirty(session);
+        updateLevel(session);
+    }
+
+    public void updateLevel(Session session) {
         int level = getLevel.apply(session);
 
         if (level != session.currentLevel) {
@@ -116,8 +124,8 @@ public class SessionService {
 
             session.currentLevel = level;
             session.player.name(getPlayerName.apply(session));
-            sessionRepository.markDirty(session);
         }
+        sessionRepository.markDirty(session);
     }
 
     public Optional<Session> getByUuid(String uuid) {
@@ -141,7 +149,7 @@ public class SessionService {
                     sessionData.lastSaved = session.joinedAt;
                 }
 
-                update(session);
+                updateLevel(session);
 
             } catch (Exception e) {
                 Log.err(e);
