@@ -184,6 +184,10 @@ public class SessionService {
         return size;
     }
 
+    public int countActive() {
+        return count(s -> !s.isAfk());
+    }
+
     public Session find(Boolf<Session> pred) {
         for (Session p : data.values()) {
             if (pred.get(p))

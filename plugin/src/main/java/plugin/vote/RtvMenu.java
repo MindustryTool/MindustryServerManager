@@ -15,7 +15,7 @@ public class RtvMenu extends PluginMenu<Integer> {
 
     @Override
     public void build(Session session, Integer page) {
-        var voteHandler = Registry.get(VoteService.class);
+        var voteHandler = Registry.get(RtvService.class);
         Seq<Map> maps = new Seq<>(voteHandler.getMaps());
 
         maps.sort((a, b) -> {

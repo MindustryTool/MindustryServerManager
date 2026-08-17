@@ -12,24 +12,25 @@ import lombok.RequiredArgsConstructor;
 import mindustry.Vars;
 import mindustry.game.EventType;
 import mindustry.game.Team;
-import mindustry.gen.Groups;
 import mindustry.gen.Player;
 import mindustry.maps.Map;
 import plugin.annotations.Component;
 import plugin.annotations.Destroy;
 import plugin.annotations.Listener;
 import plugin.core.Scheduler;
+import plugin.session.SessionService;
 import plugin.session.SessionRemovedEvent;
 import plugin.utils.Utils;
 
 @Component
 @RequiredArgsConstructor
-public class VoteService {
+public class RtvService {
     public final ConcurrentHashMap<String, Seq<String>> votes = new ConcurrentHashMap<>();
     public double ratio = 0.6;
     public Map lastMap = null;
 
     private final Scheduler scheduler;
+    private final SessionService sessionService;
     private ScheduledFuture<?> voteTimeout;
     private ScheduledFuture<?> voteCountDown;
 
@@ -150,7 +151,8 @@ public class VoteService {
     }
 
     public int getRequire() {
-        return (int) Math.min(Math.floor(ratio * Groups.player.size()) + 1, Groups.player.size());
+        int active = sessionService.countActive();
+        return Math.max(1, (int) Math.min(Math.floor(ratio * active) + 1, active));
     }
 
     public int getVoteCount(String mapId) {
@@ -159,7 +161,11 @@ public class VoteService {
         if (vote == null) {
             return 0;
         }
-        return vote.size;
+
+        return (int) vote.count(uuid -> {
+            var session = sessionService.getByUuid(uuid);
+            return session.isEmpty() || !session.get().isAfk();
+        });
     }
 
     private void removeVote(Player player) {

@@ -120,8 +120,8 @@ public class AdminService {
 
         session.votedGrief = true;
 
-        int voted = sessionService.count(s -> s.votedGrief);
-        int required = Mathf.ceil(0.6f * Groups.player.size());
+        int voted = sessionService.count(s -> s.votedGrief && !s.isAfk());
+        int required = Math.max(1, Mathf.ceil(0.6f * sessionService.countActive()));
 
         if (voted >= required) {
             reported.player.kick(KickReason.kick);

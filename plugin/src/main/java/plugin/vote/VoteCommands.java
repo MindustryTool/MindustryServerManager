@@ -11,7 +11,7 @@ import plugin.utils.I18n;
 @RequiredArgsConstructor
 public class VoteCommands {
 
-    private final VoteService voteService;
+    private final RtvService voteService;
     private final VoteNewWaveService voteNewWaveService;
 
     @ClientCommand(name = "rtv", description = "Vote to change map", admin = false)

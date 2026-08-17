@@ -1,6 +1,6 @@
 package plugin.gateway;
 
-import plugin.vote.VoteService;
+import plugin.vote.RtvService;
 
 import plugin.session.SessionService;
 
@@ -390,7 +390,7 @@ public class ApiGateway {
                         return info;
                     }).list());
             data.put("mods", Vars.mods.list().map(mod -> mod.meta.toString()).list());
-            data.put("votes", Registry.get(VoteService.class).votes);
+            data.put("votes", Registry.get(RtvService.class).votes);
 
             HashMap<String, Object> settings = new HashMap<String, Object>();
 

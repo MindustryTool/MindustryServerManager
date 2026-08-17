@@ -84,8 +84,8 @@ public class VoteNewWaveService {
 
         session.votedVNW = true;
 
-        int voted = sessionService.count(s -> s.votedVNW);
-        int required = Mathf.ceil(0.6f * Groups.player.size());
+        int voted = sessionService.count(s -> s.votedVNW && !s.isAfk());
+        int required = Math.max(1, Mathf.ceil(0.6f * sessionService.countActive()));
 
         if (voted < required && !session.player.admin) {
             Utils.forEachPlayerLocale((locale, players) -> {

@@ -68,3 +68,15 @@ On `@Destroy`, `SessionService` SHALL persist all sessions through `SessionRepos
 - **WHEN** `update(session)` runs and the computed level differs from `session.currentLevel`
 - **THEN** `session.currentLevel` and the player name are updated
 - **AND** a level-up message is broadcast to all players on level increase
+
+### Requirement: Active player count helper
+
+`SessionService` SHALL provide a `countActive()` method that returns the number of sessions where `session.isAfk()` is false.
+
+#### Scenario: Counts non-AFK sessions
+- **WHEN** `SessionService.countActive()` is called
+- **THEN** it returns the count of all sessions whose `afkState` is not `AFK`
+
+#### Scenario: Excludes AFK sessions
+- **WHEN** `SessionService.countActive()` is called while some sessions are AFK
+- **THEN** the returned count excludes those AFK sessions
