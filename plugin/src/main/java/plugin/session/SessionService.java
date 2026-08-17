@@ -159,6 +159,7 @@ public class SessionService {
                 synchronized (sessionData) {
                     sessionData.name = p.name;
                     sessionData.lastSaved = session.joinedAt;
+                    sessionData.locale = p.locale;
                 }
 
                 updateLevel(session);
