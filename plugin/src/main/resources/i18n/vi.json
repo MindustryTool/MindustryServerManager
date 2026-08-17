@@ -59,6 +59,7 @@
     "timeout": "[orange]RTV hết thời gian trong {time} giây.",
     "passed": "[red]RTV: [green]Bỏ phiếu thành công! Đang đổi bản đồ...",
     "map_not_exists": "Bản đồ có id: {id} không tồn tại",
+    "map_not_found": "Không tìm thấy bản đồ",
     "removed_vote": "[red]RTV: {player} [accent]đã gỡ phiếu bầu cho [yellow]{map}",
     "want_change": "[red]RTV: [accent] {player} [white] muốn đổi bản đồ sang [yellow]{map}",
     "current_votes": "[red]RTV: [white]Số phiếu hiện tại cho [yellow]{map}[white]: [green]{count}/{required}",
@@ -82,7 +83,10 @@
     "rank": "Hạng",
     "exp": "Kinh nghiệm",
     "daily_bonus": "Thưởng đăng nhập hằng ngày {bonus}",
-    "use_admin": "[accent]Dùng /admin để bật/tắt admin"
+    "use_admin": "[accent]Dùng /admin để bật/tắt admin",
+    "player": "Người chơi: {name}",
+    "level": "[sky]Cấp: {level} ({excess}/{cap})[white]",
+    "play_time": "[accent]Thời gian chơi: {hours}h {minutes}m {seconds}s ({exp}exp)[white]"
   },
   "grief": {
     "no_report": "Không có người chơi nào đang bị báo cáo.",
@@ -105,13 +109,19 @@
     "cancel": "Hủy",
     "login_prompt": "Đăng nhập để chứng minh bạn không phải kẻ phá game",
     "login": "Đăng nhập",
-    "suspect": "[scarlet]Nghi phạm phá game {name}"
+    "suspect": "[scarlet]Nghi phạm phá game {name}",
+    "banned": "[scarlet]Bạn đã bị cấm khỏi máy chủ\nNếu bạn nghĩ đây là một sai lầm, hãy liên hệ với quản trị viên máy chủ\nDiscord: {discord}"
   },
   "maprating": {
     "rate_title": "Đánh giá bản đồ vừa chơi",
     "voted": "{player} [accent]đã đánh giá {star}[accent]{icon} [] trên bản đồ {map}",
     "map_not_loaded": "Bản đồ chưa được tải",
-    "no_more_maps": "Không còn bản đồ nào"
+    "no_more_maps": "Không còn bản đồ nào",
+    "author": "[gray]Tác giả: {author}",
+    "rated": "[gray]Đã đánh giá: {count} lần",
+    "average_rating": "Đánh giá trung bình: ",
+    "error": "Lỗi",
+    "id": "Id"
   },
   "trail": {
     "previous": "Trước",
@@ -137,7 +147,20 @@
     "bugs": "Nếu bạn phát hiện lỗi hoặc có góp ý nào, hãy báo cáo trên máy chủ Discord của chúng tôi bằng [accent]/discord[white]"
   },
   "admin": {
-    "kicked_by_server": "[scarlet]{player} đã bị máy chủ đá ra."
+    "kicked_by_server": "[scarlet]{player} đã bị máy chủ đá ra.",
+    "restart_scheduled": "[cyan]Máy chủ đã được lên lịch khởi động lại."
+  },
+  "afk": {
+    "label": "Afk"
+  },
+  "rank": {
+    "no_record": "Không có kỷ lục cho bản đồ này",
+    "title": "Bản đồ: {map}\nThời gian tốt nhất: {time}\nNgười chơi: {players}",
+    "new_best_time": "Thời gian tốt nhất mới: {time}",
+    "win_bonus": "Thưởng kinh nghiệm khi thắng: +{percent}%"
+  },
+  "gateway": {
+    "server_label": "[scarlet][Máy chủ][white] "
   },
   "security": {
     "login_logic": "Đăng nhập trước để sử dụng khối hiển thị/canvas, dùng /login để đăng nhập"
@@ -150,15 +173,43 @@
   },
   "event": {
     "logged_in": "Đã đăng nhập với tên {name}",
-    "not_logged_in": "Bạn chưa đăng nhập, hãy đăng nhập qua MindustryTool bằng [accent]/login[white]"
+    "not_logged_in": "Bạn chưa đăng nhập, hãy đăng nhập qua MindustryTool bằng [accent]/login[white]",
+    "invalid_name": "Tên không hợp lệ"
+  },
+  "flood": {
+    "suppressed": "*Bị kìm nén*",
+    "flood": "{color}Lũ lụt: {percent}%",
+    "suppressed_count": "Bị kìm nén: {count}/{total}",
+    "day_in": "{color}Ngày còn: {time}",
+    "night_in": "{color}Đêm còn: {time}",
+    "days": "Ngày: {days}"
+  },
+  "menu": {
+    "error": "[scarlet]Lỗi: [white]{message}"
+  },
+  "update": {
+    "updated": "[#B388FF]Plugin {owner}/{repo}/{tag} đã cập nhật, phiên bản: {version}",
+    "restart_scheduled": "[scarlet]Máy chủ được lên lịch khởi động lại"
   },
   "welcome": {
-    "message": "{text}"
+    "message": "{text}",
+    "rules": "Luật lệ",
+    "website": "Trang web",
+    "discord": "Discord",
+    "close": "Đóng"
   },
   "catali": {
     "leaved_core_range": "Đã rời khỏi phạm vi lõi",
     "enter_core_range": "Vào phạm vi lõi, nhận +20% kinh nghiệm",
     "no_team": "Không có đội",
+    "boss_label": "[scarlet]Boss",
+    "boss_respawn_in": "Boss hồi sinh sau: {time}",
+    "hp_label": "[sky]Máu:",
+    "dmg_label": "[red]Sát thương:",
+    "exp_label": "[accent]Kinh nghiệm:",
+    "regen_label": "[green]Hồi phục:",
+    "heal": "[green]+{amount} máu",
+    "exp_gain": "[green]+{amount} kinh nghiệm",
     "no_unit": "Không có đơn vị",
     "team_id": "ID đội:",
     "level": "Cấp:",

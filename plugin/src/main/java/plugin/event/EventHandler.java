@@ -17,7 +17,6 @@ import mindustry.game.EventType.PlayerBanEvent;
 import mindustry.game.EventType.PlayerConnect;
 import mindustry.game.EventType.PlayerLeave;
 import mindustry.game.EventType.WorldLoadEndEvent;
-import mindustry.gen.Call;
 import mindustry.gen.Groups;
 import mindustry.gen.Player;
 import plugin.Cfg;
@@ -123,7 +122,12 @@ public class EventHandler {
         var currentMap = Vars.state.map;
 
         if (currentMap != null) {
-            Call.sendMessage(MapRating.getDisplayString(currentMap));
+            Utils.forEachPlayerLocale((locale, players) -> {
+                String msg = MapRating.getDisplayString(locale, currentMap);
+                for (var p : players) {
+                    p.sendMessage(msg);
+                }
+            });
         }
 
         Tasks.io("update map preview", () -> {
@@ -139,7 +143,7 @@ public class EventHandler {
             for (int i = 0; i < player.name().length(); i++) {
                 char ch = player.name().charAt(i);
                 if (ch <= '\u001f') {
-                    player.kick("Invalid name");
+                    player.kick(Tr.t(player, "event.invalid_name"));
                 }
             }
 

@@ -36,6 +36,8 @@ import plugin.annotations.Schedule;
 import plugin.annotations.Trigger;
 import plugin.gamemode.flood.FloodConfig.FloodTile;
 import plugin.utils.TimeUtils;
+import plugin.utils.Tr;
+import plugin.utils.Utils;
 
 @Gamemode("flood")
 @RequiredArgsConstructor
@@ -133,18 +135,27 @@ public class FloodGamemode {
             return;
         }
 
-        for (var core : suppressed.keySet()) {
-            Call.label("[scarlet]" + Iconc.warning + " *Suppressed*", 1.1f, core.getX(), core.getY());
-        }
-
         Duration time = Duration.between(Instant.now(), cycleChangeAt.plus(isNight ? nightDuration : dayDuration));
 
-        Call.infoPopup((isNight ? "[scarlet]" : "") + "Flood: " + getFloodMultiplier() * 100 + "%\n" +
-                "Suppressed: " + suppressed.size() + "/" + cores + "\n" +
-                (isNight ? "Day in" : "Night in") + ": " + TimeUtils.toSeconds(time) + "\n" +
-                "Days: " + days
-        //
-                , 1.1f, Align.top | Align.left, 200, 4, 4, 4);
+        Utils.forEachPlayerLocale((locale, players) -> {
+            String label = Tr.t(locale, "flood.suppressed");
+            for (var core : suppressed.keySet()) {
+                for (var p : players) {
+                    Call.label(p.con, "[scarlet]" + Iconc.warning + " " + label, 1.1f, core.getX(), core.getY());
+                }
+            }
+
+            String color = isNight ? "[scarlet]" : "";
+            String popup = Tr.t(locale, "flood.flood", "color", color, "percent", getFloodMultiplier() * 100) + "\n" +
+                    Tr.t(locale, "flood.suppressed_count", "count", suppressed.size(), "total", cores) + "\n" +
+                    Tr.t(locale, isNight ? "flood.night_in" : "flood.day_in", "color", color,
+                            "time", TimeUtils.toSeconds(time)) + "\n" +
+                    Tr.t(locale, "flood.days", "days", days);
+
+            for (var p : players) {
+                Call.infoPopup(p.con, popup, 1.1f, Align.top | Align.left, 200, 4, 4, 4);
+            }
+        });
     }
 
     @Trigger(EventType.Trigger.update)

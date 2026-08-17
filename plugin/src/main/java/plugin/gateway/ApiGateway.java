@@ -36,6 +36,7 @@ import plugin.session.SessionCreatedEvent;
 import plugin.session.SessionRemovedEvent;
 import plugin.utils.HttpUtils;
 import plugin.utils.JsonUtils;
+import plugin.utils.Tr;
 import plugin.utils.Utils;
 import plugin.hub.PaginationRequest;
 import dto.LoginDto;
@@ -538,7 +539,12 @@ public class ApiGateway {
         if (!Vars.state.isGame()) {
             Log.err("Not hosting. Host a game first.");
         } else {
-            Call.sendMessage("[scarlet][Server][white] " + message);
+            Utils.forEachPlayerLocale((locale, players) -> {
+                String prefix = Tr.t(locale, "gateway.server_label");
+                for (var p : players) {
+                    p.sendMessage(prefix + message);
+                }
+            });
         }
 
         return null;

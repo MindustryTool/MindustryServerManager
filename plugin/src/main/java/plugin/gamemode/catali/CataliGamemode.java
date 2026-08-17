@@ -6,7 +6,6 @@ import arc.math.geom.Vec2;
 import arc.struct.Seq;
 import arc.util.Align;
 import arc.util.Log;
-import arc.util.Strings;
 import lombok.RequiredArgsConstructor;
 import mindustry.Vars;
 import mindustry.content.Fx;
@@ -196,7 +195,11 @@ public class CataliGamemode {
         }
 
         if (boss != null) {
-            Call.label("[scarlet]Boss", 1.1f, boss.x, boss.y);
+            Utils.forEachPlayerLocale((locale, players) -> {
+                for (var p : players) {
+                    Call.label(p.con, Tr.t(locale, "catali.boss_label"), 1.1f, boss.x, boss.y);
+                }
+            });
         }
     }
 
@@ -317,7 +320,8 @@ public class CataliGamemode {
                     var healAmount = (unit.type.health / 100f) * teamData.upgrades.getHealthMultiplier();
                     unit.heal(healAmount);
                     teamData.eachMember(player -> {
-                        Call.label(player.con, "[green]+" + Math.round(healAmount) + "hp", 1.1f, unit.x, unit.y);
+                        Call.label(player.con, Tr.t(player, "catali.heal", "amount", Math.round(healAmount)), 1.1f,
+                                unit.x, unit.y);
                     });
                 }
 
@@ -374,8 +378,8 @@ public class CataliGamemode {
 
                 if (boss == null) {
                     if (canSpawnBoss) {
-                        bossString = "Boss respawn in: "
-                                + TimeUtils.toSeconds(Duration.between(Instant.now(), bossShouldSpawnAt).abs());
+                        bossString = Tr.t(player, "catali.boss_respawn_in", "time",
+                                TimeUtils.toSeconds(Duration.between(Instant.now(), bossShouldSpawnAt).abs()));
                     }
                 } else {
                     bossString = boss.type.emoji() + Math.round(boss.health) + "/" + Math.round(boss.maxHealth);
@@ -390,13 +394,13 @@ public class CataliGamemode {
                         .append(Tr.t(player, "catali.team_id")).append(" ").append(team.team.id).append("\n")
                         .append(Tr.t(player, "catali.level")).append(" ").append(levelString).append("\n")
                         .append(Tr.t(player, "catali.member")).append(" ").append(team.members.size).append("\n")
-                        .append("[sky]Hp:")
+                        .append(Tr.t(player, "catali.hp_label"))
                         .append(String.format("%.2f", team.upgrades.getHealthMultiplier())).append("x[white]\n")
-                        .append("[red]Dmg:")
+                        .append(Tr.t(player, "catali.dmg_label"))
                         .append(String.format("%.2f", team.upgrades.getDamageMultiplier())).append("x[white]\n")
-                        .append("[accent]Exp:")
+                        .append(Tr.t(player, "catali.exp_label"))
                         .append(String.format("%.2f", team.upgrades.getExpMultiplier())).append("x[white]\n")
-                        .append("[green]Regen:")
+                        .append(Tr.t(player, "catali.regen_label"))
                         .append(String.format("%.2f", team.upgrades.getRegenMultiplier())).append("x[white]\n")
                         .append(Tr.t(player, "catali.upgrades")).append(" ")
                         .append(team.level.commonUpgradePoints).append("[accent]")
@@ -864,7 +868,7 @@ Call.infoPopup(event.player.con, Tr.t(event.player, "catali.tile_not_safe"),
         float total = event.amount * event.team.upgrades.getExpMultiplier() * coreExpBonus;
 
         event.team.eachMember(player -> {
-            Call.label(player.con, Strings.format("[green]+@exp", Math.round(total)), 2, //
+            Call.label(player.con, Tr.t(player, "catali.exp_gain", "amount", Math.round(total)), 2, //
                     event.x + Mathf.random(5),
                     event.y + Mathf.random(5));
         });

@@ -59,6 +59,7 @@
     "timeout": "[orange]RTV timeout in {time} seconds.",
     "passed": "[red]RTV: [green]Vote passed! Changing map...",
     "map_not_exists": "Map with id: {id} not exists",
+    "map_not_found": "Map not found.",
     "removed_vote": "[red]RTV: {player} [accent]removed their vote for [yellow]{map}",
     "want_change": "[red]RTV: [accent] {player} [white] Want to change map to [yellow]{map}",
     "current_votes": "[red]RTV: [white]Current Vote for [yellow]{map}[white]: [green]{count}/{required}",
@@ -82,7 +83,10 @@
     "rank": "Rank",
     "exp": "Exp",
     "daily_bonus": "Daily login bonus {bonus}",
-    "use_admin": "[accent]Use /admin to toogle admin"
+    "use_admin": "[accent]Use /admin to toogle admin",
+    "player": "Player: {name}",
+    "level": "[sky]Level: {level} ({excess}/{cap})[white]",
+    "play_time": "[accent]Play Time: {hours}h {minutes}m {seconds}s ({exp}exp)[white]"
   },
   "grief": {
     "no_report": "No player is being reported.",
@@ -105,13 +109,19 @@
     "cancel": "Cancel",
     "login_prompt": "Login to prove that youre not a griefer",
     "login": "Login",
-    "suspect": "[scarlet]Suspect griefer {name}"
+    "suspect": "[scarlet]Suspect griefer {name}",
+    "banned": "[scarlet]You has been banned from the server\nIf you think this is a mistake, please contact the server administrator\nDiscord: {discord}"
   },
   "maprating": {
     "rate_title": "Rate last map",
     "voted": "{player} [accent]voted {star}[accent]{icon} [] on map {map}",
     "map_not_loaded": "Map is not loaded",
-    "no_more_maps": "No more maps"
+    "no_more_maps": "No more maps",
+    "author": "[gray]Author: {author}",
+    "rated": "[gray]Rated: {count} times",
+    "average_rating": "Average rating: ",
+    "error": "Error",
+    "id": "Id"
   },
   "trail": {
     "previous": "Previous",
@@ -137,10 +147,23 @@
     "bugs": "If you found a bugs or have any suggestions, please report them on our Discord server using [accent]/discord[white]"
   },
   "admin": {
-    "kicked_by_server": "[scarlet]{player} has been kicked by the server."
+    "kicked_by_server": "[scarlet]{player} has been kicked by the server.",
+    "restart_scheduled": "[cyan]Server scheduled for a restart."
+  },
+  "afk": {
+    "label": "Afk"
+  },
+  "rank": {
+    "no_record": "No record for this map",
+    "title": "Map: {map}\nBest time: {time}\nPlayers: {players}",
+    "new_best_time": "New best time: {time}",
+    "win_bonus": "Exp gain bonus for winning: +{percent}%"
   },
   "security": {
     "login_logic": "Login first to use display/canvas block, use /login to login"
+  },
+  "gateway": {
+    "server_label": "[scarlet][Server][white] "
   },
   "commands": {
     "admin_only": "[scarlet]You must be admin to use this command.",
@@ -150,15 +173,43 @@
   },
   "event": {
     "logged_in": "Logged in as {name}",
-    "not_logged_in": "You are not logged in, consider log in via MindustryTool using [accent]/login[white]"
+    "not_logged_in": "You are not logged in, consider log in via MindustryTool using [accent]/login[white]",
+    "invalid_name": "Invalid name"
+  },
+  "flood": {
+    "suppressed": "*Suppressed*",
+    "flood": "{color}Flood: {percent}%",
+    "suppressed_count": "Suppressed: {count}/{total}",
+    "day_in": "{color}Day in: {time}",
+    "night_in": "{color}Night in: {time}",
+    "days": "Days: {days}"
+  },
+  "menu": {
+    "error": "[scarlet]Error: [white]{message}"
+  },
+  "update": {
+    "updated": "[#B388FF]Plugin {owner}/{repo}/{tag} updated, version: {version}",
+    "restart_scheduled": "[scarlet]Server scheduled for a restart"
   },
   "welcome": {
-    "message": "{text}"
+    "message": "{text}",
+    "rules": "Rules",
+    "website": "Website",
+    "discord": "Discord",
+    "close": "Close"
   },
   "catali": {
     "leaved_core_range": "Leaved core range",
     "enter_core_range": "Enter core range, gain +20% exp",
     "no_team": "No team",
+    "boss_label": "[scarlet]Boss",
+    "boss_respawn_in": "Boss respawn in: {time}",
+    "hp_label": "[sky]Hp:",
+    "dmg_label": "[red]Dmg:",
+    "exp_label": "[accent]Exp:",
+    "regen_label": "[green]Regen:",
+    "heal": "[green]+{amount}hp",
+    "exp_gain": "[green]+{amount}exp",
     "no_unit": "No unit",
     "team_id": "Team ID:",
     "level": "Level:",

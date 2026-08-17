@@ -20,7 +20,7 @@ public class MapRatingCommands {
             return;
         }
 
-        session.player.sendMessage(MapRating.getDisplayString(Vars.state.map));
+        session.player.sendMessage(MapRating.getDisplayString(session.locale, Vars.state.map));
 
     }
 
@@ -44,7 +44,7 @@ public class MapRatingCommands {
             end = maxSize;
         }
 
-        StringBuilder sb = new StringBuilder("Id\n");
+        StringBuilder sb = new StringBuilder(Tr.t(session, "maprating.id")).append("\n");
         for (int i = start; i < end; i++) {
             Map map = Vars.maps.customMaps().get(i);
             sb.append(i)

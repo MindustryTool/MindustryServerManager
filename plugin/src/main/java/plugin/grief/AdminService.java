@@ -61,9 +61,7 @@ public class AdminService {
             if (Vars.netServer.admins.isIPBanned(connect.addressTCP)
                     || Vars.netServer.admins.isSubnetBanned(connect.addressTCP)) {
 
-                con.kick("[scarlet]You has been banned from the server\n" +
-                        "If you think this is a mistake, please contact the server administrator\n" +
-                        "Discord: " + Cfg.DISCORD_INVITE_URL);
+                con.kick(Tr.t(java.util.Locale.ENGLISH, "grief.banned", "discord", Cfg.DISCORD_INVITE_URL));
             }
         });
     }

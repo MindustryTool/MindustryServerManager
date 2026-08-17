@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import mindustry.gen.Iconc;
 import mindustry.maps.Map;
 import plugin.utils.JsonUtils;
+import plugin.utils.Tr;
 
 public class MapRating {
     private static final String RATING_PERSIT_KEY = "server.map-rating";
@@ -102,7 +103,7 @@ public class MapRating {
         return String.format(avgScoreColor(score) + "%.2f" + "[gold]" + Iconc.star, score);
     }
 
-    public static String getDisplayString(Map map) {
+    public static String getDisplayString(java.util.Locale locale, Map map) {
         try {
             String mapId = map.file.nameWithoutExtension();
             MapRatingData data = load();
@@ -116,8 +117,7 @@ public class MapRating {
             StringBuilder sb = new StringBuilder(map.name()).append("\n");
 
             if (map.author() != null) {
-                sb.append("[gray]Author: ")
-                        .append(map.author())
+                sb.append(Tr.t(locale, "maprating.author", "author", map.author()))
                         .append("\n");
             }
 
@@ -144,10 +144,9 @@ public class MapRating {
 
             float avg = totalVotes == 0 ? 0f : (float) totalScore / totalVotes;
 
-            sb.append("[gray]Rated: ")
-                    .append(totalVotes)
-                    .append(" times\n")
-                    .append("Average rating: ");
+            sb.append(Tr.t(locale, "maprating.rated", "count", totalVotes))
+                    .append("\n")
+                    .append(Tr.t(locale, "maprating.average_rating"));
 
             sb.append(avgScoreColor(avg));
             sb.append(String.format("%.2f", avg))
@@ -159,7 +158,7 @@ public class MapRating {
 
         } catch (Exception e) {
             Log.err("Failed to get map rating", e);
-            return "Error";
+            return Tr.t(java.util.Locale.ENGLISH, "maprating.error");
         }
     }
 

@@ -59,6 +59,7 @@
     "timeout": "[orange]RTV истекает через {time} секунд.",
     "passed": "[red]RTV: [green]Голосование прошло! Меняем карту...",
     "map_not_exists": "Карта с id: {id} не существует",
+    "map_not_found": "Карта не найдена.",
     "removed_vote": "[red]RTV: {player} [accent]снял свой голос за [yellow]{map}",
     "want_change": "[red]RTV: [accent] {player} [white] хочет сменить карту на [yellow]{map}",
     "current_votes": "[red]RTV: [white]Текущие голоса за [yellow]{map}[white]: [green]{count}/{required}",
@@ -82,7 +83,10 @@
     "rank": "Ранг",
     "exp": "Опыт",
     "daily_bonus": "Ежедневный бонус за вход {bonus}",
-    "use_admin": "[accent]Используйте /admin чтобы переключить админа"
+    "use_admin": "[accent]Используйте /admin чтобы переключить админа",
+    "player": "Игрок: {name}",
+    "level": "[sky]Уровень: {level} ({excess}/{cap})[white]",
+    "play_time": "[accent]Время игры: {hours}ч {minutes}м {seconds}с ({exp}опыт)[white]"
   },
   "grief": {
     "no_report": "Никто не находится в процессе репорта.",
@@ -105,13 +109,19 @@
     "cancel": "Отмена",
     "login_prompt": "Войдите, чтобы доказать, что вы не грифер",
     "login": "Войти",
-    "suspect": "[scarlet]Подозреваемый грифер {name}"
+    "suspect": "[scarlet]Подозреваемый грифер {name}",
+    "banned": "[scarlet]Вы были забанены на сервере\nЕсли вы думаете, что это ошибка, пожалуйста, свяжитесь с администратором сервера\nDiscord: {discord}"
   },
   "maprating": {
     "rate_title": "Оцените последнюю карту",
     "voted": "{player} [accent]оценил {star}[accent]{icon} [] на карте {map}",
     "map_not_loaded": "Карта не загружена",
-    "no_more_maps": "Больше нет карт"
+    "no_more_maps": "Больше нет карт",
+    "author": "[gray]Автор: {author}",
+    "rated": "[gray]Оценено: {count} раз",
+    "average_rating": "Средняя оценка: ",
+    "error": "Ошибка",
+    "id": "Id"
   },
   "trail": {
     "previous": "Назад",
@@ -137,7 +147,20 @@
     "bugs": "Если вы нашли ошибку или у вас есть предложения, сообщите о них на нашем Discord сервере через [accent]/discord[white]"
   },
   "admin": {
-    "kicked_by_server": "[scarlet]{player} был кикнут сервером."
+    "kicked_by_server": "[scarlet]{player} был кикнут сервером.",
+    "restart_scheduled": "[cyan]Сервер запланирован на перезапуск."
+  },
+  "afk": {
+    "label": "Afk"
+  },
+  "rank": {
+    "no_record": "Нет рекорда для этой карты",
+    "title": "Карта: {map}\nЛучшее время: {time}\nИгроки: {players}",
+    "new_best_time": "Новое лучшее время: {time}",
+    "win_bonus": "Бонус опыта за победу: +{percent}%"
+  },
+  "gateway": {
+    "server_label": "[scarlet][Сервер][white] "
   },
   "security": {
     "login_logic": "Сначала войдите, чтобы использовать блок дисплея/холста, используйте /login для входа"
@@ -150,15 +173,43 @@
   },
   "event": {
     "logged_in": "Вы вошли как {name}",
-    "not_logged_in": "Вы не вошли в систему, войдите через MindustryTool с помощью [accent]/login[white]"
+    "not_logged_in": "Вы не вошли в систему, войдите через MindustryTool с помощью [accent]/login[white]",
+    "invalid_name": "Неверное имя"
+  },
+  "flood": {
+    "suppressed": "*Подавлено*",
+    "flood": "{color}Наводнение: {percent}%",
+    "suppressed_count": "Подавлено: {count}/{total}",
+    "day_in": "{color}День через: {time}",
+    "night_in": "{color}Ночь через: {time}",
+    "days": "Дни: {days}"
+  },
+  "menu": {
+    "error": "[scarlet]Ошибка: [white]{message}"
+  },
+  "update": {
+    "updated": "[#B388FF]Плагин {owner}/{repo}/{tag} обновлён, версия: {version}",
+    "restart_scheduled": "[scarlet]Сервер запланирован на перезапуск"
   },
   "welcome": {
-    "message": "{text}"
+    "message": "{text}",
+    "rules": "Правила",
+    "website": "Сайт",
+    "discord": "Discord",
+    "close": "Закрыть"
   },
   "catali": {
     "leaved_core_range": "Вы вышли из зоны ядра",
     "enter_core_range": "Вы вошли в зону ядра, получите +20% опыта",
     "no_team": "Нет команды",
+    "boss_label": "[scarlet]Босс",
+    "boss_respawn_in": "Босс возродится через: {time}",
+    "hp_label": "[sky]Здоровье:",
+    "dmg_label": "[red]Урон:",
+    "exp_label": "[accent]Опыт:",
+    "regen_label": "[green]Регенерация:",
+    "heal": "[green]+{amount} здоровья",
+    "exp_gain": "[green]+{amount} опыта",
     "no_unit": "Нет юнита",
     "team_id": "ID команды:",
     "level": "Уровень:",

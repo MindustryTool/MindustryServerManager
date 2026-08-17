@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 
 import arc.Core;
 import lombok.Data;
@@ -12,13 +13,14 @@ import lombok.RequiredArgsConstructor;
 import mindustry.Vars;
 import mindustry.game.EventType.PlayEvent;
 import mindustry.game.EventType.PlayerJoin;
-import mindustry.gen.Call;
 import plugin.annotations.Gamemode;
 import plugin.annotations.Init;
 import plugin.annotations.Listener;
 import plugin.session.SessionService;
 import plugin.utils.JsonUtils;
 import plugin.utils.TimeUtils;
+import plugin.utils.Tr;
+import plugin.utils.Utils;
 
 @Gamemode("flood")
 @RequiredArgsConstructor
@@ -40,7 +42,7 @@ public class FloodRank {
         }
     }
 
-    private String buildRankString() {
+    private String buildRankString(Locale locale) {
         var map = Vars.state.map;
         var mapName = map.file.nameWithoutExtension();
 
@@ -49,24 +51,29 @@ public class FloodRank {
         var history = wrapper.data.get(mapName);
 
         if (history == null) {
-            return "No record for this map";
+            return Tr.t(locale, "rank.no_record");
         }
 
-        return "Map: " + map.name() + "\nBest time: "
-                + TimeUtils.toString(Duration.ofMillis(history.clearTimeMilis))
-                + "\nPlayers: " + String.join(", ", history.players);
+        return Tr.t(locale, "rank.title", "map", map.name(),
+                "time", TimeUtils.toString(Duration.ofMillis(history.clearTimeMilis)),
+                "players", String.join(", ", history.players));
     }
 
     @Listener
     public void onPlayEvent(PlayEvent event) {
         mapStartedAt = Instant.now();
 
-        Call.sendMessage(buildRankString());
+        Utils.forEachPlayerLocale((locale, players) -> {
+            String msg = buildRankString(locale);
+            for (var p : players) {
+                p.sendMessage(msg);
+            }
+        });
     }
 
     @Listener
     public void onPlayerJoin(PlayerJoin event) {
-        event.player.sendMessage(buildRankString());
+        event.player.sendMessage(buildRankString(Utils.parseLocale(event.player.locale())));
     }
 
     @Listener
@@ -90,7 +97,13 @@ public class FloodRank {
                 v.clearTimeMilis = clearTimeMilis;
                 v.players = players;
 
-                Call.sendMessage("New best time: " + TimeUtils.toString(Duration.ofMillis(clearTimeMilis)));
+                Utils.forEachPlayerLocale((locale, ps) -> {
+                    String msg = Tr.t(locale, "rank.new_best_time", "time",
+                            TimeUtils.toString(Duration.ofMillis(clearTimeMilis)));
+                    for (var p : ps) {
+                        p.sendMessage(msg);
+                    }
+                });
             }
 
             return v;
@@ -109,7 +122,8 @@ public class FloodRank {
             }
 
             session.expGainBonus = playerParticipation;
-            session.player.sendMessage("Exp gain bonus for winning: +" + playerParticipation * 100 + "%");
+            session.player.sendMessage(Tr.t(session, "rank.win_bonus", "percent",
+                    String.valueOf(playerParticipation * 100)));
         });
     }
 

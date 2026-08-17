@@ -22,7 +22,7 @@ public class SessionUtils {
             info.append(Iconc.admin);
         }
 
-        info.append("Player: ").append(player.name);
+        info.append(Tr.t(session, "session.player", "name", player.name));
 
         if (session.isLoggedIn()) {
             info.append("(")
@@ -34,13 +34,8 @@ public class SessionUtils {
                 .append("\n")
                 .append(LanguageDialog.getDisplayName(locale))
                 .append("[white]\n")
-                .append("[sky]Level: ")
-                .append(level)
-                .append(" (")
-                .append(excess)
-                .append("/")
-                .append(ExpUtils.expCapOfLevel(level))
-                .append(")")
+                .append(Tr.t(session, "session.level", "level", level, "excess", excess, "cap",
+                        ExpUtils.expCapOfLevel(level)))
                 .append("[white]\n");
 
         // in millis
@@ -48,16 +43,8 @@ public class SessionUtils {
         long minutes = seconds / 60;
         long hours = minutes / 60;
 
-        info.append("[accent]Play Time: ")
-                .append(hours)
-                .append("h ")
-                .append(minutes % 60)
-                .append("m ")
-                .append(seconds % 60)
-                .append("s")
-                .append(" (")
-                .append(exp)
-                .append("exp)")
+        info.append(Tr.t(session, "session.play_time", "hours", hours, "minutes", minutes % 60, "seconds", seconds % 60,
+                "exp", exp))
                 .append("[white]\n");
 
         return info.toString();

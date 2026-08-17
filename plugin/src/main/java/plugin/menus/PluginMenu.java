@@ -9,6 +9,7 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import plugin.core.Registry;
 import plugin.session.Session;
+import plugin.utils.Tr;
 
 public abstract class PluginMenu<T> {
 
@@ -81,7 +82,7 @@ public abstract class PluginMenu<T> {
             handler.add(copy);
             handler.showNext(session.player);
         } catch (Exception e) {
-            session.player.sendMessage("[scarlet]Error: [white]" + e.getMessage());
+            session.player.sendMessage(Tr.t(session, "menu.error", "message", e.getMessage()));
             Log.err(e);
         }
     }

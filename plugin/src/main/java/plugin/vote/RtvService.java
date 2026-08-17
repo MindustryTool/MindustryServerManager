@@ -74,7 +74,7 @@ public class RtvService {
             var map = getMaps().find(m -> m.file.nameWithoutExtension().equals(mapId));
 
             if (map == null) {
-                player.sendMessage("Map not found.");
+                player.sendMessage(Tr.t(player, "rtv.map_not_found"));
                 return;
             }
 

@@ -59,6 +59,7 @@
     "timeout": "[orange]RTV 将在 {time} 秒后超时。",
     "passed": "[red]RTV：[green]投票通过！正在更换地图...",
     "map_not_exists": "id 为 {id} 的地图不存在",
+    "map_not_found": "未找到地图。",
     "removed_vote": "[red]RTV：{player} [accent]撤回了对 [yellow]{map}[yellow] 的投票",
     "want_change": "[red]RTV：[accent] {player} [white] 想要将地图更换为 [yellow]{map}",
     "current_votes": "[red]RTV：[white]当前 [yellow]{map}[white] 的票数：[green]{count}/{required}",
@@ -82,7 +83,10 @@
     "rank": "排名",
     "exp": "经验",
     "daily_bonus": "每日登录奖励 {bonus}",
-    "use_admin": "[accent]使用 /admin 切换管理员模式"
+    "use_admin": "[accent]使用 /admin 切换管理员模式",
+    "player": "玩家：{name}",
+    "level": "[sky]等级：{level} ({excess}/{cap})[white]",
+    "play_time": "[accent]游戏时长：{hours}小时 {minutes}分钟 {seconds}秒 ({exp}经验)[white]"
   },
   "grief": {
     "no_report": "当前没有玩家被举报。",
@@ -105,13 +109,19 @@
     "cancel": "取消",
     "login_prompt": "请登录以证明你不是恶意破坏者",
     "login": "登录",
-    "suspect": "[scarlet]恶意破坏嫌疑人 {name}"
+    "suspect": "[scarlet]恶意破坏嫌疑人 {name}",
+    "banned": "[scarlet]你已被服务器封禁\n如果你认为这是一个错误，请联系服务器管理员\nDiscord：{discord}"
   },
   "maprating": {
     "rate_title": "评价上一张地图",
     "voted": "{player} [accent]在地图 {map} 上给出了 {star}[accent]{icon} [] 的评价",
     "map_not_loaded": "地图未加载",
-    "no_more_maps": "没有更多地图了"
+    "no_more_maps": "没有更多地图了",
+    "author": "[gray]作者：{author}",
+    "rated": "[gray]已评价：{count} 次",
+    "average_rating": "平均评分：",
+    "error": "错误",
+    "id": "Id"
   },
   "trail": {
     "previous": "上一页",
@@ -137,7 +147,20 @@
     "bugs": "如果你发现了 Bug 或有任何建议，请通过 [accent]/discord[white] 在我们的 Discord 服务器上报告"
   },
   "admin": {
-    "kicked_by_server": "[scarlet]{player} 已被服务器踢出。"
+    "kicked_by_server": "[scarlet]{player} 已被服务器踢出。",
+    "restart_scheduled": "[cyan]服务器已计划重启。"
+  },
+  "afk": {
+    "label": "挂机"
+  },
+  "rank": {
+    "no_record": "此地图没有记录",
+    "title": "地图：{map}\n最佳时间：{time}\n玩家：{players}",
+    "new_best_time": "新的最佳时间：{time}",
+    "win_bonus": "获胜经验加成：+{percent}%"
+  },
+  "gateway": {
+    "server_label": "[scarlet][服务器][white] "
   },
   "security": {
     "login_logic": "请先登录再使用显示器/画布方块，使用 /login 登录"
@@ -150,15 +173,43 @@
   },
   "event": {
     "logged_in": "以 {name} 的身份登录",
-    "not_logged_in": "你尚未登录，请通过 MindustryTool 使用 [accent]/login[white] 登录"
+    "not_logged_in": "你尚未登录，请通过 MindustryTool 使用 [accent]/login[white] 登录",
+    "invalid_name": "名称无效"
+  },
+  "flood": {
+    "suppressed": "*已压制*",
+    "flood": "{color}洪水：{percent}%",
+    "suppressed_count": "已压制：{count}/{total}",
+    "day_in": "{color}距离白天还有：{time}",
+    "night_in": "{color}距离夜晚还有：{time}",
+    "days": "天数：{days}"
+  },
+  "menu": {
+    "error": "[scarlet]错误：[white]{message}"
+  },
+  "update": {
+    "updated": "[#B388FF]插件 {owner}/{repo}/{tag} 已更新，版本：{version}",
+    "restart_scheduled": "[scarlet]服务器已计划重启"
   },
   "welcome": {
-    "message": "{text}"
+    "message": "{text}",
+    "rules": "规则",
+    "website": "网站",
+    "discord": "Discord",
+    "close": "关闭"
   },
   "catali": {
     "leaved_core_range": "已离开核心范围",
     "enter_core_range": "进入核心范围，获得 +20% 经验",
     "no_team": "没有队伍",
+    "boss_label": "[scarlet]Boss",
+    "boss_respawn_in": "Boss 将在 {time} 后重生",
+    "hp_label": "[sky]生命值：",
+    "dmg_label": "[red]伤害：",
+    "exp_label": "[accent]经验：",
+    "regen_label": "[green]回复：",
+    "heal": "[green]+{amount} 生命值",
+    "exp_gain": "[green]+{amount} 经验",
     "no_unit": "没有单位",
     "team_id": "队伍 ID：",
     "level": "等级：",

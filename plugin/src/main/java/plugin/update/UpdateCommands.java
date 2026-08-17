@@ -1,10 +1,11 @@
 package plugin.update;
 
 import lombok.RequiredArgsConstructor;
-import mindustry.gen.Call;
 import plugin.annotations.ClientCommand;
 import plugin.annotations.Component;
 import plugin.session.Session;
+import plugin.utils.Tr;
+import plugin.utils.Utils;
 
 @Component
 @RequiredArgsConstructor
@@ -14,7 +15,12 @@ public class UpdateCommands {
 
     @ClientCommand(name = "restart", description = "Restart the server")
     public void restart(Session session) {
-        Call.sendMessage("[cyan]Server scheduled for a restart.");
+        Utils.forEachPlayerLocale((locale, players) -> {
+            String msg = Tr.t(locale, "admin.restart_scheduled");
+            for (var p : players) {
+                p.sendMessage(msg);
+            }
+        });
         updater.scheduleRestart();
     }
 }

@@ -15,6 +15,7 @@ import plugin.annotations.PlayerActionFilter;
 import plugin.annotations.Schedule;
 import plugin.session.SessionService;
 import plugin.session.Session.AfkState;
+import plugin.utils.Tr;
 
 @Component
 @RequiredArgsConstructor
@@ -77,7 +78,7 @@ public class AfkDetector {
     @Schedule(fixedDelay = 1, unit = TimeUnit.SECONDS)
     public void updateAfkLabel() {
         sessionService.each(session -> session.afkState == AfkState.AFK, session -> {
-            Call.label("Afk", 1.1f, session.player.x(), session.player.y());
+            Call.label(session.player.con, Tr.t(session, "afk.label"), 1.1f, session.player.x(), session.player.y());
         });
     }
 }

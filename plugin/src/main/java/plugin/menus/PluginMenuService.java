@@ -19,6 +19,7 @@ import plugin.annotations.Listener;
 import plugin.annotations.Schedule;
 import plugin.session.SessionRemovedEvent;
 import plugin.menus.PluginMenu.HudOption;
+import plugin.utils.Tr;
 
 @Component
 @RequiredArgsConstructor
@@ -119,7 +120,7 @@ public class PluginMenuService {
                         try {
                             menu.build();
                         } catch (Exception e) {
-                            menu.session.player.sendMessage("[scarlet]Error: [white]" + e.getMessage());
+                            menu.session.player.sendMessage(Tr.t(menu.session, "menu.error", "message", e.getMessage()));
                             Log.err("Failed to build menu @ for player @ with state @", this, menu.session, menu.state);
                             Log.err(e);
                             return;
@@ -141,7 +142,7 @@ public class PluginMenuService {
             } catch (Exception e) {
                 Log.err("Failed to show next menu for player @", player);
                 Log.err(e);
-                player.sendMessage("[scarlet]Error: [white]" + e.getMessage());
+                player.sendMessage(Tr.t(player, "menu.error", "message", e.getMessage()));
             }
         }
     }

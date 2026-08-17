@@ -68,7 +68,12 @@ public class ServerCommands {
 
     @ServerCommand(name = "restart", description = "Restart the server")
     private void restart(PluginUpdater updater) {
-        Call.sendMessage("[cyan]Server scheduled for a restart.");
+        Utils.forEachPlayerLocale((locale, players) -> {
+            String msg = Tr.t(locale, "admin.restart_scheduled");
+            for (var p : players) {
+                p.sendMessage(msg);
+            }
+        });
         updater.scheduleRestart();
     }
 
