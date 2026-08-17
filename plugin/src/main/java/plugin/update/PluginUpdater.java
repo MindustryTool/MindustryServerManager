@@ -41,8 +41,6 @@ public class PluginUpdater {
                 Log.info("Plugin version: " + currentUpdatedAt);
             }
         }
-
-        checkUpdate();
     }
 
     @Schedule(delay = 1, fixedDelay = 5, unit = TimeUnit.MINUTES)
@@ -126,5 +124,6 @@ public class PluginUpdater {
 
     private void writeUpdatedAt(PluginData plugin, String updatedAt) {
         Core.settings.put(plugin.getId() + "-version", updatedAt);
+        Core.settings.forceSave();
     }
 }
