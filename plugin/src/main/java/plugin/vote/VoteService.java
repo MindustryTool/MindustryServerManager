@@ -8,6 +8,7 @@ import java.util.concurrent.TimeUnit;
 
 import arc.Events;
 import arc.struct.Seq;
+import lombok.RequiredArgsConstructor;
 import mindustry.Vars;
 import mindustry.game.EventType;
 import mindustry.game.Team;
@@ -22,6 +23,7 @@ import plugin.session.SessionRemovedEvent;
 import plugin.utils.Utils;
 
 @Component
+@RequiredArgsConstructor
 public class VoteService {
     public final ConcurrentHashMap<String, Seq<String>> votes = new ConcurrentHashMap<>();
     public double ratio = 0.6;
@@ -30,10 +32,6 @@ public class VoteService {
     private final Scheduler scheduler;
     private ScheduledFuture<?> voteTimeout;
     private ScheduledFuture<?> voteCountDown;
-
-    public VoteService(Scheduler scheduler) {
-        this.scheduler = scheduler;
-    }
 
     @Listener
     public void onSessionRemovedEvent(SessionRemovedEvent event) {

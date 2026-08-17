@@ -37,6 +37,10 @@ public class Session {
         this.locale = Locale.forLanguageTag(player.locale().replace("_", "-"));
     }
 
+    public boolean isAfk() {
+        return afkState == AfkState.AFK;
+    }
+
     public boolean isAdmin() {
         return login != null && login.getIsAdmin();
     }
