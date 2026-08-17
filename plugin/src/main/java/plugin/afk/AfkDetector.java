@@ -17,6 +17,8 @@ import plugin.session.Session.AfkState;
 @RequiredArgsConstructor
 public class AfkDetector {
 
+    private static final Duration AFK_TIMEOUT = Duration.ofMinutes(1);
+
     private final SessionService sessionService;
 
     @Listener
@@ -35,7 +37,7 @@ public class AfkDetector {
             boolean hasMoved = session.lastX != session.player.x() || session.lastY != session.player.y();
             session.lastX = session.player.x();
             session.lastY = session.player.y();
-            boolean hasClicked = Duration.between(session.lastClickTime, Instant.now()).abs().toSeconds() < 5;
+            boolean hasClicked = Duration.between(session.lastClickTime, Instant.now()).abs().toMillis() < AFK_TIMEOUT.toMillis();
             boolean isNotDoingAnything = !hasMoved && !hasClicked;
 
             if (isNotDoingAnything) {

@@ -51,7 +51,7 @@ public class SessionService {
         boolean hasColor = session.currentLevel > Cfg.COLOR_NAME_LEVEL || session.player.admin;
         String playerName = hasColor ? session.getData().name : Strings.stripColors(session.getData().name);
         Locale locale = Utils.parseLocale(session.player.locale);
-        String language = locale.getCountry().toUpperCase();
+        String language = locale.getLanguage().toUpperCase();
 
         if (language.isEmpty()) {
             language = session.player.locale;

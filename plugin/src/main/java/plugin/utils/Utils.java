@@ -234,13 +234,11 @@ public class Utils {
     }
 
     public static Locale parseLocale(String locale) {
-        if (locale == null) {
+        if (locale == null || locale.isBlank()) {
             return Locale.ENGLISH;
         }
 
-        String[] parts = locale.replace("_", "-").split("-");
-
-        return parts.length > 0 ? Locale.forLanguageTag(parts[0]) : Locale.ENGLISH;
+        return Locale.forLanguageTag(locale.replace('_', '-'));
     }
 
     public static void forEachPlayerLocale(BiConsumer<Locale, List<Player>> cons) {
