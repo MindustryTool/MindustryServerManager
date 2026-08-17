@@ -21,7 +21,6 @@ import mindustry.gen.Player;
 import mindustry.net.Administration.PlayerInfo;
 import plugin.Cfg;
 import plugin.PluginEvents;
-import plugin.Tasks;
 import plugin.annotations.Component;
 import plugin.annotations.Destroy;
 import plugin.annotations.Listener;
@@ -57,8 +56,10 @@ public class SessionService {
             language = session.player.locale;
         }
 
-        return (session.isLoggedIn() ? Iconc.ok : "") + "[white]|" + language + "| " + "[white]<" + "[accent]"
-                + session.currentLevel + "[white]> " + playerName;
+        return "[white]|"
+                + (session.isLoggedIn() ? Iconc.ok : "")
+                + language + "| " + "<" + "[accent]" + session.currentLevel + "[white]> "
+                + playerName;
     };
 
     @Listener
@@ -88,6 +89,18 @@ public class SessionService {
         data.clear();
     }
 
+    @Listener
+    public void onLevelUp(LevelUpEvent event) {
+        Session session = event.session;
+        int lastLevel = event.lastLevel;
+        int newLevel = event.newLevel;
+
+        Utils.forEachPlayerLocale((locale, players) -> {
+            String message = SessionUtils.getLevelUpMessage(locale, lastLevel, newLevel);
+            players.forEach(p -> p.sendMessage(session.player.name + message));
+        });
+    }
+
     public void update(Session session) {
         int level = getLevel.apply(session);
 
@@ -97,20 +110,14 @@ public class SessionService {
                 int newLevel = level;
 
                 if (level > session.currentLevel) {
-                    Tasks.io("Update level", () -> {
-                        Utils.forEachPlayerLocale((locale, players) -> {
-                            String message = SessionUtils.getLevelUpMessage(locale, oldLevel, newLevel);
-                            players.forEach(p -> p.sendMessage(session.player.name + message));
-                        });
-                    });
+                    PluginEvents.fire(new LevelUpEvent(session, oldLevel, newLevel));
                 }
             }
 
             session.currentLevel = level;
             session.player.name(getPlayerName.apply(session));
+            sessionRepository.markDirty(session);
         }
-
-        sessionRepository.markDirty(session.player.uuid());
     }
 
     public Optional<Session> getByUuid(String uuid) {

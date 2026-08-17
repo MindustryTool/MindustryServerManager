@@ -105,6 +105,14 @@ public class SessionRepository {
         }
     }
 
+    public void markDirty(Player player) {
+        markDirty(player.uuid());
+    }
+
+    public void markDirty(Session session) {
+        markDirty(session.player);
+    }
+
     public void remove(String uuid) {
         cache.remove(uuid);
         dirty.remove(uuid);
