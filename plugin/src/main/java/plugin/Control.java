@@ -1,5 +1,7 @@
 package plugin;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
@@ -19,12 +21,15 @@ import plugin.core.Registry;
 import plugin.database.DB;
 import plugin.event.PluginUnloadEvent;
 import plugin.event.UnloadServerEvent;
+import plugin.utils.TimeUtils;
 import plugin.event.KickEvent;
 
 public class Control extends mindustry.mod.Plugin {
 
-    public static PluginState state = PluginState.LOADING;
+    public static final Instant start = Instant.now();
     public static final UUID SERVER_ID = UUID.fromString(System.getenv("SERVER_ID"));
+    
+    public static PluginState state = PluginState.LOADING;
 
     private static String[] tags = { "", "", "[yellow]", "[red]", "" };
     private static Pattern kickPattern = Pattern.compile(
@@ -64,7 +69,7 @@ public class Control extends mindustry.mod.Plugin {
 
             PluginEvents.run(UnloadServerEvent.class, this::unload);
 
-            Log.info("Plugin loaded");
+            Log.info("Plugin loaded in " + TimeUtils.toString(Duration.between(start, Instant.now())));
 
         } catch (Exception e) {
             Log.err("Failed to init plugin", e);
@@ -108,7 +113,7 @@ public class Control extends mindustry.mod.Plugin {
         DB.close();
         PluginEvents.unregister();
 
-        Log.info("Server controller unloaded");
+        Log.info("Server controller unloaded after running for " + TimeUtils.toString(Duration.between(start, Instant.now())));
     }
 
     @Schedule(delay = 30, fixedDelay = 2, unit = TimeUnit.SECONDS)
