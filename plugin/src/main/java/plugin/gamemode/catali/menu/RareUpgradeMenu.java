@@ -6,7 +6,7 @@ import plugin.core.Registry;
 import plugin.gamemode.catali.data.CataliTeamData;
 import plugin.gamemode.catali.event.CataliSpawnRareUpgrade;
 import plugin.menus.PluginMenu;
-import plugin.utils.I18n;
+import plugin.utils.Tr;
 import plugin.session.Session;
 
 @Gamemode("catali")
@@ -19,30 +19,30 @@ public class RareUpgradeMenu extends PluginMenu<CataliTeamData> {
 
     @Override
     public void build(Session session, CataliTeamData team) {
-        title = I18n.t(session, "@Rare Upgrades");
-        description = I18n.t(session, "@Select a rare upgrade type.");
+        title = Tr.t(session, "catali.rare_upgrades");
+        description = Tr.t(session, "catali.select_rare_upgrade_type");
 
         if (team.canHaveMoreUnit()) {
-            option(I18n.t(session, "@Spawn Unit"), (s, st) -> {
+            option(Tr.t(session, "catali.spawn_unit"), (s, st) -> {
                 PluginEvents.fire(new CataliSpawnRareUpgrade(team));
             });
         }
 
         row();
 
-        option(I18n.t(session, "@Evolve Unit"), (s, st) -> {
+        option(Tr.t(session, "catali.evolve_unit"), (s, st) -> {
             Registry.createNew(RareUpgradeTierSelectUnitMenu.class).send(s, team);
         });
 
         row();
 
-        option(I18n.t(session, "@Apply Buff"), (s, st) -> {
+        option(Tr.t(session, "catali.apply_buff"), (s, st) -> {
             Registry.createNew(RareUpgradeBuffSelectUnitMenu.class).send(s, team);
         });
 
         row();
 
-        option(I18n.t(session, "@Close"), (s, st) -> {
+        option(Tr.t(session, "catali.close"), (s, st) -> {
         });
     }
 }

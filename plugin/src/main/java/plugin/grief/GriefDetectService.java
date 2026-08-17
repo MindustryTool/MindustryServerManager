@@ -2,7 +2,7 @@ package plugin.grief;
 
 import plugin.session.SessionService;
 
-import plugin.utils.I18n;
+import plugin.utils.Tr;
 
 import plugin.gateway.ApiGateway;
 
@@ -56,7 +56,7 @@ public class GriefDetectService {
                 var isLoggedIn = session.isLoggedIn();
 
                 Utils.forEachPlayerLocale((locale, players) -> {
-                    var message = I18n.t(locale, "[scarlet]", "@Suspect griefer", entry.getKey().name);
+                    var message = Tr.t(locale, "grief.suspect", "name", entry.getKey().name);
                     for (var player : players) {
                         player.sendMessage(message);
                     }

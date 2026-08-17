@@ -6,7 +6,7 @@ import plugin.core.Registry;
 import plugin.gamemode.catali.data.CataliCommonUpgrade;
 import plugin.gamemode.catali.data.CataliTeamData;
 import plugin.menus.PluginMenu;
-import plugin.utils.I18n;
+import plugin.utils.Tr;
 import plugin.session.Session;
 
 @Gamemode("catali")
@@ -19,8 +19,8 @@ public class CommonUpgradeQuantityMenu extends PluginMenu<Pair<CataliTeamData, C
 
         var level = team.level;
 
-        title = I18n.t(session, "@Upgrade Quantity");
-        description = I18n.t(session, "@Select how many points to spend.");
+        title = Tr.t(session, "catali.upgrade_quantity");
+        description = Tr.t(session, "catali.select_points_to_spend");
 
         option("1", (s, st) -> {
             team.consumeUpgrade(upgrade, 1);
@@ -49,7 +49,7 @@ public class CommonUpgradeQuantityMenu extends PluginMenu<Pair<CataliTeamData, C
 
         row();
 
-        option(I18n.t(session, "@All Points"), (s, st) -> {
+        option(Tr.t(session, "catali.all_points"), (s, st) -> {
             team.consumeUpgrade(upgrade, level.commonUpgradePoints);
             if (level.commonUpgradePoints > 0) {
                 Registry.createNew(CommonUpgradeMenu.class).send(s, team);
@@ -58,10 +58,10 @@ public class CommonUpgradeQuantityMenu extends PluginMenu<Pair<CataliTeamData, C
 
         row();
 
-        option(I18n.t(session, "@Back"), (s, st) -> {
+        option(Tr.t(session, "catali.back"), (s, st) -> {
             Registry.createNew(CommonUpgradeMenu.class).send(s, team);
         });
-        option(I18n.t(session, "@Close"), (s, st) -> {
+        option(Tr.t(session, "catali.close"), (s, st) -> {
         });
     }
 }

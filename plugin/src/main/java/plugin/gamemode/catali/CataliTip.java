@@ -3,7 +3,7 @@ package plugin.gamemode.catali;
 import lombok.RequiredArgsConstructor;
 import plugin.annotations.Gamemode;
 import plugin.annotations.Init;
-import plugin.utils.I18n;
+import plugin.utils.Tr;
 import plugin.tip.TipService;
 
 @Gamemode("catali")
@@ -14,9 +14,9 @@ public class CataliTip {
 
     @Init
     private void init() {
-        tipService.registerTip((locale) -> I18n.t(locale, "@Use", "[accent]/u[white]", "@to upgrade your unit"));
+        tipService.registerTip((locale) -> Tr.t(locale, "catali.tip_upgrade"));
         tipService.registerTip(
-                (locale) -> I18n.t(locale, "@Use", "[accent]/a[white]", "@to abanto unit or disband team"));
-        tipService.registerTip((locale) -> I18n.t(locale, "@Boss providea lot of exp, take your chances to kill it"));
+                (locale) -> Tr.t(locale, "catali.tip_abandon"));
+        tipService.registerTip((locale) -> Tr.t(locale, "catali.tip_boss"));
     }
 }

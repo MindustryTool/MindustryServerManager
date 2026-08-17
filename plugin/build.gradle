@@ -30,13 +30,19 @@ dependencies{
 
     annotationProcessor 'org.projectlombok:lombok:1.18.30'
 
-    // testImplementation 'org.junit.jupiter:junit-jupiter:5.10.0'
-    
-    // // testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.0'
+
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    testImplementation "Anuken:Mindustry:$mindustryVersion"
 
     // testImplementation 'org.projectlombok:lombok:1.18.10'
     // testImplementation files('lib/MindustryToolPluginLoader.jar')
 
+}
+
+test {
+    useJUnitPlatform()
 }
 
 jar {

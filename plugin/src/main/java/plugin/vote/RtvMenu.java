@@ -6,7 +6,7 @@ import arc.struct.Seq;
 import mindustry.gen.Iconc;
 import mindustry.maps.Map;
 import plugin.core.Registry;
-import plugin.utils.I18n;
+import plugin.utils.Tr;
 import plugin.maprating.MapRating;
 import plugin.session.Session;
 
@@ -41,9 +41,9 @@ public class RtvMenu extends PluginMenu<Integer> {
 
         int currentPage = Math.max(1, Math.min(page, totalPages));
 
-        this.title = I18n.t(session.locale, "@Available Maps");
-        this.description = I18n.t(session.locale,
-                "@Page ", currentPage, " / ", totalPages, "\n", "@Click a map to vote for it.");
+        this.title = Tr.t(session.locale, "rtv.available_maps");
+        this.description = Tr.t(session.locale, "rtv.page_description",
+                "current", currentPage, "total", totalPages);
 
         int start = (currentPage - 1) * MAPS_PER_PAGE;
         int end = Math.min(start + MAPS_PER_PAGE, maps.size);
@@ -54,7 +54,7 @@ public class RtvMenu extends PluginMenu<Integer> {
             String ratingColor = MapRating.avgScoreColor(stats.avgScore);
 
             String voted = voteHandler.isVoted(session.player, map.file.nameWithoutExtension())
-                    ? I18n.t(session.locale, "[accent]", "@Voted")
+                    ? Tr.t(session.locale, "rtv.voted_badge")
                     : "";
             String text = String.format("%s%s%.2f [gold]%c []%s (%s)", voted, ratingColor, stats.avgScore, Iconc.star,
                     map.name(), String.valueOf(stats.totalVotes));
@@ -70,19 +70,19 @@ public class RtvMenu extends PluginMenu<Integer> {
 
         if (hasPrev || hasNext) {
             if (hasPrev) {
-                option(I18n.t(session.locale, "<<", "@Previous"), (p, s) -> {
+                option(Tr.t(session.locale, "rtv.previous"), (p, s) -> {
                     new RtvMenu().send(p, currentPage - 1);
                 });
             }
 
             if (hasNext) {
-                option(I18n.t(session.locale, "@Next", ">>"), (p, s) -> {
+                option(Tr.t(session.locale, "rtv.next"), (p, s) -> {
                     new RtvMenu().send(p, currentPage + 1);
                 });
             }
             row();
         }
 
-        text(I18n.t(session.locale, "[scarlet]", "@Close"));
+        text(Tr.t(session.locale, "rtv.close"));
     }
 }

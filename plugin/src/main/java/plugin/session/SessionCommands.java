@@ -7,7 +7,7 @@ import mindustry.gen.Call;
 import plugin.annotations.ClientCommand;
 import plugin.annotations.Component;
 import plugin.gateway.ApiGateway;
-import plugin.utils.I18n;
+import plugin.utils.Tr;
 
 @Component
 @RequiredArgsConstructor
@@ -20,12 +20,12 @@ public class SessionCommands {
         if (session.isAdmin()) {
             session.player.admin = !session.player.admin;
             if (session.player.admin) {
-                session.player.sendMessage(I18n.t(session, "[green]Admin on"));
+                session.player.sendMessage(Tr.t(session, "session.admin_on"));
             } else {
-                session.player.sendMessage(I18n.t(session, "[red]Admin off"));
+                session.player.sendMessage(Tr.t(session, "session.admin_off"));
             }
         } else {
-            session.player.sendMessage(I18n.t(session, "@You are not an admin"));
+            session.player.sendMessage(Tr.t(session, "session.not_admin"));
         }
     }
 
@@ -39,8 +39,7 @@ public class SessionCommands {
             if (loginLink != null && !loginLink.isEmpty()) {
                 Call.openURI(session.player.con, loginLink);
             } else {
-                session.player.sendMessage(I18n.t(session.locale,
-                        "@Already logged in"));
+                session.player.sendMessage(Tr.t(session.locale, "session.already_logged_in"));
             }
         } catch (Exception e) {
             Log.err("Failed to login", e);

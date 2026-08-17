@@ -1,6 +1,6 @@
 package plugin.vote;
 
-import plugin.utils.I18n;
+import plugin.utils.Tr;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
@@ -103,7 +103,7 @@ public class RtvService {
     private void startTimeout() {
         voteTimeout = scheduler.schedule(() -> {
             Utils.forEachPlayerLocale((locale, players) -> {
-                String msg = I18n.t(locale, "[scarlet]", "@RTV failed, not enough votes.");
+                String msg = Tr.t(locale, "rtv.failed");
                 for (var p : players) {
                     p.sendMessage(msg);
                 }
@@ -121,8 +121,7 @@ public class RtvService {
 
         voteCountDown = scheduler.schedule(() -> {
             Utils.forEachPlayerLocale((locale, players) -> {
-                String msg = I18n.t(locale, "[orange]", "@RTV timeout in", " ", time, " ",
-                        "@seconds.");
+                String msg = Tr.t(locale, "rtv.timeout", "time", time);
                 for (var p : players) {
                     p.sendMessage(msg);
                 }
@@ -181,7 +180,7 @@ public class RtvService {
     public void check(String mapId) {
         if (getVoteCount(mapId) >= getRequire()) {
             Utils.forEachPlayerLocale((locale, players) -> {
-                String msg = I18n.t(locale, "[red]RTV: ", "[green]", "@Vote passed! Changing map...");
+                String msg = Tr.t(locale, "rtv.passed");
                 for (var p : players) {
                     p.sendMessage(msg);
                 }
@@ -190,7 +189,7 @@ public class RtvService {
 
             if (map == null) {
                 Utils.forEachPlayerLocale((locale, players) -> {
-                    String msg = I18n.t(locale, "@Map with id: ", mapId, " ", "@not exists");
+                    String msg = Tr.t(locale, "rtv.map_not_exists", "id", mapId);
                     for (var p : players) {
                         p.sendMessage(msg);
                     }
@@ -215,8 +214,7 @@ public class RtvService {
 
         if (isVoted(player, mapId)) {
             Utils.forEachPlayerLocale((locale, players) -> {
-                String msg = I18n.t(locale, "[red]RTV: ", player.name, " ", "[accent]",
-                        "@removed their vote for ", "[yellow]", map.name());
+                String msg = Tr.t(locale, "rtv.removed_vote", "player", player.name, "map", map.name());
                 for (var p : players) {
                     p.sendMessage(msg);
                 }
@@ -230,12 +228,10 @@ public class RtvService {
         vote(player, mapId);
 
         Utils.forEachPlayerLocale((locale, players) -> {
-            String msg1 = I18n.t(locale, "[red]RTV: ", "[accent] ", player.name(), " ", "[white] ",
-                    "@Want to change map to ", "[yellow]", map.name());
-            String msg2 = I18n.t(locale, "[red]RTV: ", "[white]", "@Current Vote for ", "[yellow]",
-                    map.name() + "[white]: ", "[green]", getVoteCount(mapId), "/", getRequire());
-            String msg3 = I18n.t(locale, "[red]RTV: ", "[white]", "@Use ", "[yellow] ", "/rtv yes",
-                    " ", "@to add your vote to this map !");
+            String msg1 = Tr.t(locale, "rtv.want_change", "player", player.name(), "map", map.name());
+            String msg2 = Tr.t(locale, "rtv.current_votes",
+                    "map", map.name(), "count", getVoteCount(mapId), "required", getRequire());
+            String msg3 = Tr.t(locale, "rtv.use_command");
             for (var p : players) {
                 p.sendMessage(msg1);
                 p.sendMessage(msg2);

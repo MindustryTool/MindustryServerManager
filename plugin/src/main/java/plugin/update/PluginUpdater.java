@@ -41,9 +41,11 @@ public class PluginUpdater {
                 Log.info("Plugin version: " + currentUpdatedAt);
             }
         }
+
+        checkUpdate();
     }
 
-    @Schedule(delay = 10, fixedDelay = 5, unit = TimeUnit.MINUTES)
+    @Schedule(delay = 1, fixedDelay = 5, unit = TimeUnit.MINUTES)
     public void checkUpdate() {
         var needUpdate = false;
 

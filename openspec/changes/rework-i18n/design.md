@@ -1,17 +1,17 @@
 ## Context
 
-`plugin.utils.I18n.t(...)` is a passthrough: `@`-prefixed args have the marker stripped and are returned verbatim. There is no catalog, locale lookup, fallback, or interpolation, and the ~129 call sites mix color codes, literal text, and values into one varargs list. This change introduces a real JSON-backed translation system and migrates every call site.
+`plugin.utils.I18n.t(...)` is a passthrough: `@`-prefixed args have the marker stripped and are returned verbatim. There is no catalog, locale lookup, fallback, or interpolation, and the ~180 call sites mix color codes, literal text, and values into one varargs list. This change introduces a real JSON-backed translation system and migrates every call site.
 
 ## Goals / Non-Goals
 
 **Goals:**
 - JSON catalogs (nested objects, module-based namespaces) under `plugin/src/main/resources/i18n/`, one file per base language.
-- Keys restricted to `[a-z0-9.]` (dotted paths into nested JSON).
+- Keys restricted to `[a-z0-9_.]` (dotted paths into nested JSON).
 - Named `{placeholder}` interpolation in catalog values; Mindustry color codes live inside catalog values.
 - Fallback chain: requested locale → base language → `en` → raw key.
 - Load-time warnings (never a crash) for malformed keys/values.
 - Config-driven messages keep `Cfg` as fallback with per-locale catalog override.
-- A new `Tr` class replaces `I18n`; all ~129 call sites migrated in this change; old `I18n` deleted.
+- A new `Tr` class replaces `I18n`; all ~180 call sites migrated in this change; old `I18n` deleted.
 
 **Non-Goals:**
 - No pluralization/grammar rules (ICU/MessageFormat). Keep interpolation simple.
@@ -25,7 +25,9 @@
 Introduce `plugin.utils.Tr` with the overloads:
 - `t(Locale locale, String key, Object... args)` — args are alternating `name, value` pairs for named placeholders.
 - `t(Session session, String key, Object... args)` and `t(Player player, String key, Object... args)` — resolve locale via existing `Utils.parseLocale` / `session.locale`.
-- `t(Locale locale, String key, Object fallbackText, Object... args)` — used by config messages: if the key is absent in every catalog level, the interpolated `fallbackText` is returned.
+- `tWithFallback(Locale locale, String key, Object fallbackText, Object... args)` — used by config messages: if the key is absent in every catalog level, the interpolated `fallbackText` is returned.
+
+> The config-fallback overload is named `tWithFallback` (not `t`): a `t(Locale, String, Object, Object...)` overload is ambiguous with `t(Locale, String, Object...)` at call sites passing 3+ args, since Java cannot pick a most-specific variable-arity method when the arities differ.
 
 `plugin.utils.I18n` and its `@`-marker logic are removed; all references are migrated.
 
@@ -58,11 +60,11 @@ Key `vote.timeout` resolves to the nested value. At init, every `i18n/<lang>.jso
 **Alternative considered:** flat dotted keys (`"vote.failed": "..."`) and per-namespace files — rejected by user decision (nested objects).
 
 ### 3. Key format and validation
-A key is a dotted path where every segment matches `[a-z0-9]+` (so the whole key matches `[a-z0-9.]+`). At load, the loader walks each catalog:
+A key is a dotted path where every segment matches `[a-z0-9_]+` (so the whole key matches `[a-z0-9_.]+`). At load, the loader walks each catalog:
 - warns (via `Log.warn`) on any non-object/non-string value or segment that violates the format;
 - ignores the offending entry but continues loading.
 
-**Rationale:** The `[a-z0-9.]` constraint makes keys predictable and safe to use as map lookups and in logs (user decision: warn only, never crash).
+**Rationale:** The `[a-z0-9_.]` constraint makes keys predictable and safe to use as map lookups and in logs (user decision: warn only, never crash).
 
 ### 4. Locale resolution and fallback
 Given a `Locale`, lookup order is:
@@ -92,12 +94,12 @@ Tr.t(locale, "vote.timeout", "time", time, "unit", "s");
 Tr.t(session.locale, "welcome.message", Cfg.WELCOME_MESSAGE);
 Tr.t(session.locale, "hub.choose_server", Cfg.CHOOSE_SERVER_MESSAGE);
 ```
-The `fallbackText` overload returns the config value (interpolated) only when the key is missing in all catalog levels. Adding the key to a catalog file overrides the config for that locale (user decision: config default, catalog override).
+The `tWithFallback` overload returns the config value (interpolated) only when the key is missing in all catalog levels. Adding the key to a catalog file overrides the config for that locale (user decision: config default, catalog override).
 
 **Rationale:** Keeps config usable for servers that want their own text while allowing locale-specific defaults.
 
 ### 7. Migration strategy
-Every `I18n.t(...)` call site is converted to a `Tr.t(...)` call with a semantic module key, and the English text (with colors) is added to `en.json` under the matching namespace. Messages with interpolation use named placeholders. The old `I18n` class is deleted only after all references are gone. Migration is grouped by module in the task list.
+Every `I18n.t(...)` call site is converted to a `Tr.t(...)` call with a semantic module key, and the English text (with colors) is added to `en.json` under the matching namespace. Messages with interpolation use named placeholders. The old `I18n` class is deleted only after all references are gone. Migration is grouped by module in the task list, including the `gamemode/catali` module under a `catali.*` namespace.
 
 **Rationale:** Full migration in one change (user decision) keeps a single consistent state and lets the compiler catch every stale `I18n` reference.
 
@@ -110,22 +112,22 @@ The catalog parsing, validation, fallback, and interpolation live in an arc/Mind
 ## Testing strategy
 
 - Enable the commented-out JUnit 5 dependencies in `plugin/build.gradle` and a `test` source set.
-- Unit tests cover: key-format validation (invalid segments skipped), dotted-key resolution, fallback chain (`en-US` → `en`, unknown → `en` → raw key), `{placeholder}` interpolation with color preservation, and the config `fallbackText` behavior (absent key → fallback, present key → catalog wins).
+- Unit tests cover: key-format validation (invalid segments skipped), dotted-key resolution, fallback chain (`en-US` → `en`, unknown → `en` → raw key), `{placeholder}` interpolation with color preservation, and the config `tWithFallback` behavior (absent key → fallback, present key → catalog wins).
 - A catalog-loading test parses an `en.json` fixture through `TrCatalog` and asserts nested values resolve by dotted key.
 - CI: update `.github/workflows/build-plugin.yml` to uncomment/enable the `./gradlew :plugin:test` step and upload the test report (runs on every push to `main` touching the plugin).
 
 ## Risks / Trade-offs
 
-- **Large mechanical diff (~129 sites + en.json)** → grouped by module; compile errors after deleting `I18n` enumerate every missed site.
+- **Large mechanical diff (~180 sites + en.json)** → grouped by module; compile errors after deleting `I18n` enumerate every missed site.
 - **Colors in catalog values** → translations must be authored with Mindustry color codes; the loader validates only structure, not color syntax. Mitigated by keeping `en.json` values verbatim copies of current strings.
-- **Config fallback text with placeholders** → `fallbackText` is interpolated with the same args, so config text supports `{token}` too.
+- **Config fallback text with placeholders** → `tWithFallback` fallback text is interpolated with the same args, so config text supports `{token}` too.
 - **Trail messages** (`TrailMenu` uses `req.getMessage()` at runtime) → these are dynamic strings, not fixed keys; they are sent as-is (treated as already-localized literal text), while surrounding UI strings use keys. Flagged in tasks.
 - **Interpolation collision** → a value literally containing `{...}` would be treated as a placeholder. Accepted; values are authored by us and placeholders are known.
 
 ## Migration Plan
 
 1. Add `Tr` + catalog loader + `en.json` scaffolding, load catalogs at init.
-2. Migrate call sites module-by-module (hub, vote, session, grief, tip, maprating, trail, admin, security, welcome, event handler, command handlers).
+2. Migrate call sites module-by-module (hub, vote, session, grief, tip, maprating, trail, admin, security, welcome, catali gamemode, event handler, command handlers).
 3. Delete `I18n`; resolve any remaining compile errors.
 4. Add `vi.json` (or another) as a proof that per-locale files work.
 5. Build and spot-check a few locales.

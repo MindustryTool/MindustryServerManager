@@ -16,7 +16,7 @@ At init the plugin SHALL flatten each catalog into an in-memory map of dotted ke
 
 ### Requirement: Key format validation
 
-Translation keys SHALL match `[a-z0-9.]+`, where each dotted segment matches `[a-z0-9]+`. During catalog load, the plugin SHALL validate every entry and SHALL log a warning (never a crash) for any segment or value that violates the format or is not a string, skipping the offending entry and continuing.
+Translation keys SHALL match `[a-z0-9_.]+`, where each dotted segment matches `[a-z0-9_]+`. During catalog load, the plugin SHALL validate every entry and SHALL log a warning (never a crash) for any segment or value that violates the format or is not a string, skipping the offending entry and continuing.
 
 #### Scenario: Invalid key is warned
 - **WHEN** a catalog contains a key segment with uppercase letters, spaces, or symbols (e.g. `Vote.Failed`)

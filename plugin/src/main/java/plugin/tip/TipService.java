@@ -1,6 +1,6 @@
 package plugin.tip;
 
-import plugin.utils.I18n;
+import plugin.utils.Tr;
 
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
@@ -22,30 +22,24 @@ public class TipService {
 
     @Init
     private void init() {
-        tips.add((locale) -> I18n.t(locale, "@Powered by", " MindustryTool"));
-        tips.add((locale) -> I18n.t(locale, "@Use", " [accent]/discord[sky] ",
-                "@to join our Discord server"));
-        tips.add((locale) -> I18n.t(locale, "@Use", " [accent]/vnw[sky] ", "@to skip a wave"));
-        tips.add((locale) -> I18n.t(locale, "@Use", " [accent]/rtv[sky] ", "@to change map"));
-        tips.add((locale) -> I18n.t(locale, "@Use", " [accent]/me[sky] ", "@to see your stats"));
-        tips.add((locale) -> I18n.t(locale, "@Use", " [accent]/grief[sky] ", "@to report a player"));
-        tips.add((locale) -> I18n.t(locale, "@Use", " [accent]/website[sky] ",
-                "@to visit our website for schematics and maps"));
-        tips.add((locale) -> I18n.t(locale, "@Remember to respect other players"));
-        tips.add((locale) -> I18n.t(locale, "@Remember to download and update", " MindustryTool"));
-        tips.add((locale) -> I18n.t(locale, "@If you find this helpful please give us a star: ",
-                Cfg.GITHUB_URL));
-        tips.add((locale) -> I18n.t(locale, "@Be respectful — toxic behavior may lead to punishment"));
-        tips.add((locale) -> I18n.t(locale, "@Report griefers instead of arguing in chat"));
-        tips.add((locale) -> I18n.t(locale, "@Admins are here to help — ask nicely"));
+        tips.add((locale) -> Tr.t(locale, "tip.powered_by"));
+        tips.add((locale) -> Tr.t(locale, "tip.discord"));
+        tips.add((locale) -> Tr.t(locale, "tip.vnw"));
+        tips.add((locale) -> Tr.t(locale, "tip.rtv"));
+        tips.add((locale) -> Tr.t(locale, "tip.me"));
+        tips.add((locale) -> Tr.t(locale, "tip.grief"));
+        tips.add((locale) -> Tr.t(locale, "tip.website"));
+        tips.add((locale) -> Tr.t(locale, "tip.respect"));
+        tips.add((locale) -> Tr.t(locale, "tip.update"));
+        tips.add((locale) -> Tr.t(locale, "tip.star", "url", Cfg.GITHUB_URL));
+        tips.add((locale) -> Tr.t(locale, "tip.be_respectful"));
+        tips.add((locale) -> Tr.t(locale, "tip.report_griefers"));
+        tips.add((locale) -> Tr.t(locale, "tip.ask_admins"));
         tips.add((locale) -> "[white]" + Iconc.blockRouter + "Router chains");
-        tips.add((locale) -> I18n.t(locale, "@Have fun!!!"));
+        tips.add((locale) -> Tr.t(locale, "tip.have_fun"));
         tips.add((locale) -> "The factory must grow!!!");
-        tips.add((locale) -> I18n.t(locale, "@Reach level", " ", Cfg.COLOR_NAME_LEVEL, " ",
-                "@to unlock colored name"));
-        tips.add((locale) -> I18n.t(locale,
-                "@If you found a bugs or have any suggestions, please report them on our Discord server using",
-                "[accent]/discord[white]"));
+        tips.add((locale) -> Tr.t(locale, "tip.level_color", "level", Cfg.COLOR_NAME_LEVEL));
+        tips.add((locale) -> Tr.t(locale, "tip.bugs"));
     }
 
     public void registerTip(Func<Locale, String> tip) {

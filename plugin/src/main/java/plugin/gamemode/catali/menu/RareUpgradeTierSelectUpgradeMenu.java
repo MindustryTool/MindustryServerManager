@@ -10,7 +10,7 @@ import plugin.gamemode.catali.CataliConfig;
 import plugin.gamemode.catali.data.CataliTeamData;
 import plugin.gamemode.catali.event.CataliTierRareUpgrade;
 import plugin.menus.PluginMenu;
-import plugin.utils.I18n;
+import plugin.utils.Tr;
 import plugin.session.Session;
 
 @Gamemode("catali")
@@ -24,8 +24,8 @@ public class RareUpgradeTierSelectUpgradeMenu extends PluginMenu<Pair<CataliTeam
         var team = pair.first;
         var unit = pair.second;
 
-        title = I18n.t(session, "@Select Evolution");
-        description = I18n.t(session, "@Choose what this unit should evolve into.");
+        title = Tr.t(session, "catali.select_evolution");
+        description = Tr.t(session, "catali.choose_evolution");
 
         var availableUnitsUpgradeTo = config.getUnitEvolutions(unit.type);
 
@@ -43,10 +43,10 @@ public class RareUpgradeTierSelectUpgradeMenu extends PluginMenu<Pair<CataliTeam
 
         row();
 
-        option(I18n.t(session, "@Back"), (s, st) -> {
+        option(Tr.t(session, "catali.back"), (s, st) -> {
             Registry.createNew(RareUpgradeTierSelectUnitMenu.class).send(s, team);
         });
-        option(I18n.t(session, "@Close"), (s, st) -> {
+        option(Tr.t(session, "catali.close"), (s, st) -> {
         });
     }
 }

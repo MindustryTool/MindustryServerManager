@@ -5,7 +5,7 @@ import plugin.annotations.ClientCommand;
 import plugin.annotations.Component;
 import plugin.annotations.Param;
 import plugin.session.Session;
-import plugin.utils.I18n;
+import plugin.utils.Tr;
 
 @Component
 @RequiredArgsConstructor
@@ -18,7 +18,7 @@ public class VoteCommands {
     public void rtv(Session session, @Param(name = "yes", required = false) String yes) {
         if (yes != null && yes.equalsIgnoreCase("yes")) {
             if (voteService.lastMap == null) {
-                session.player.sendMessage(I18n.t(session.locale, "@No map is currently being voted on."));
+                session.player.sendMessage(Tr.t(session.locale, "vote.no_map_voted"));
             } else {
                 voteService.handleVote(session.player);
             }

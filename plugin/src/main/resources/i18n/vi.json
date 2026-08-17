@@ -1,0 +1,60 @@
+{
+  "hub": {
+    "choose_server": "{text}",
+    "not_found": "Không tìm thấy máy chủ",
+    "global": {
+      "title": "Máy chủ",
+      "server_name": "[#FFD700]Tên máy chủ",
+      "players_playing": "[#FFD700]Người chơi đang chơi",
+      "server_gamemode": "[#87CEEB]Gamemode máy chủ",
+      "map_playing": "[#FFA500]Bản đồ đang chơi",
+      "server_mods": "[#DA70D6]Mod của máy chủ",
+      "server_description": "[#B0B0B0]Mô tả máy chủ",
+      "players": "[#32CD32]Người chơi: {players}",
+      "gamemode": "[#87CEEB]Gamemode: {mode}",
+      "map": "[#1E90FF]Bản đồ: {map}",
+      "server_offline": "[#FF4500]Máy chủ ngoại tuyến",
+      "mods": "[#DA70D6]Mod: {mods}",
+      "previous": "[yellow]Trước",
+      "first_page": "Trang đầu",
+      "dont_click": "Đừng bấm vào đó",
+      "next": "[green]Tiếp",
+      "no_more": "Hết",
+      "close": "[red]Đóng"
+    },
+    "list": {
+      "title": "Danh sách tất cả máy chủ",
+      "server_offline": "[scarlet]Máy chủ ngoại tuyến.",
+      "players": "[lime]Người chơi:[] {players}",
+      "gamemode": "[cyan]Gamemode:[] {mode}",
+      "map": "[blue]Bản đồ:[] {map}",
+      "mods": "[purple]Mod:[] {mods}",
+      "previous": "[orange]Trước",
+      "next": "[lime]Tiếp",
+      "close": "[scarlet]Đóng"
+    },
+    "redirect": {
+      "title": "Chuyển hướng",
+      "confirm": "Bạn có muốn đến máy chủ: {server}",
+      "no": "[red]Không",
+      "yes": "[green]Có",
+      "starting": "[green]Đang khởi động máy chủ [white]{server}, [white]việc này có thể mất đến 1 phút, xin hãy chờ",
+      "redirecting": "[green]Đang chuyển hướng",
+      "announce": "{player} [green]đang chuyển hướng đến máy chủ [white]{server}, [white]dùng [accent]/servers[white] để theo dõi",
+      "error": "[scarlet]Lỗi: Không thể tải máy chủ"
+    }
+  },
+  "vote": {
+    "already_voted": "Bạn đã bỏ phiếu rồi.",
+    "too_many_enemies": "Bạn không thể bỏ phiếu khi có hơn 1000 kẻ địch.",
+    "failed": "[scarlet]Bỏ phiếu thất bại, không đủ phiếu.",
+    "voted_new_wave": "{player} [orange]đã bỏ phiếu gửi sóng mới. [lightgray](còn thiếu {missing} phiếu) [white]dùng [accent]/vnw[white] để bỏ qua sóng",
+    "passed_new_wave": "[green]Bỏ phiếu thành công. Đang gửi sóng mới.",
+    "stop_sending_waves": "[scarlet]Dừng gửi sóng, có hơn 1000 kẻ địch.",
+    "new_wave_timeout": "[orange]Hết thời gian bỏ phiếu sóng mới trong {time} giây.",
+    "no_map_voted": "Hiện không có bản đồ nào đang được bỏ phiếu."
+  },
+  "welcome": {
+    "message": "{text}"
+  }
+}

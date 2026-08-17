@@ -19,6 +19,7 @@ import plugin.core.Registry;
 import plugin.database.DB;
 import plugin.event.PluginUnloadEvent;
 import plugin.event.UnloadServerEvent;
+import plugin.update.PluginUpdater;
 import plugin.event.KickEvent;
 
 public class Control extends mindustry.mod.Plugin {
@@ -53,6 +54,7 @@ public class Control extends mindustry.mod.Plugin {
         Core.settings.put("startedAt", System.currentTimeMillis());
 
         try {
+            Registry.get(PluginUpdater.class);
             DB.init();
             Registry.init(getClass().getPackage().getName());
             Registry.get(this.getClass());

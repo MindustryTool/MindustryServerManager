@@ -2,7 +2,7 @@ package plugin.vote;
 
 import plugin.session.SessionService;
 
-import plugin.utils.I18n;
+import plugin.utils.Tr;
 
 import arc.math.Mathf;
 import lombok.RequiredArgsConstructor;
@@ -42,13 +42,12 @@ public class VoteNewWaveService {
 
     public synchronized void vote(Session session, Integer number) {
         if (session.votedVNW) {
-            session.player.sendMessage(I18n.t(session.locale, "@You already voted."));
+            session.player.sendMessage(Tr.t(session.locale, "vote.already_voted"));
             return;
         }
 
         if (Groups.unit.count(unit -> unit.team != session.player.team()) > 1000) {
-            session.player.sendMessage(I18n.t(session.locale,
-                    "@You can't vote when there are more than 1000 enemies."));
+            session.player.sendMessage(Tr.t(session.locale, "vote.too_many_enemies"));
             return;
         }
 
@@ -71,7 +70,7 @@ public class VoteNewWaveService {
             voteTimeout = scheduler.schedule(() -> {
                 sessionService.each(s -> s.votedVNW = false);
                 Utils.forEachPlayerLocale((locale, players) -> {
-                    String msg = I18n.t(locale, "[scarlet]", "@Vote failed, not enough votes.");
+                    String msg = Tr.t(locale, "vote.failed");
                     for (var p : players) {
                         p.sendMessage(msg);
                     }
@@ -89,9 +88,8 @@ public class VoteNewWaveService {
 
         if (voted < required && !session.player.admin) {
             Utils.forEachPlayerLocale((locale, players) -> {
-                String msg = I18n.t(locale,
-                        session.player.name, "[orange]", " ", "@voted to send a new wave. ", "[lightgray]", "(",
-                        required - voted, " ", "@votes missing", ")", " ", "@use", "/vnw", " ", "@to skip waves");
+                String msg = Tr.t(locale, "vote.voted_new_wave",
+                        "player", session.player.name, "missing", required - voted);
                 for (var p : players) {
                     p.sendMessage(msg);
                 }
@@ -107,7 +105,7 @@ public class VoteNewWaveService {
         sessionService.each(s -> s.votedVNW = false);
 
         Utils.forEachPlayerLocale((locale, players) -> {
-            String msg = I18n.t(locale, "[green]", "@Vote passed. Sending new wave.");
+            String msg = Tr.t(locale, "vote.passed_new_wave");
             for (var p : players) {
                 p.sendMessage(msg);
             }
@@ -124,7 +122,7 @@ public class VoteNewWaveService {
 
         if (Groups.unit.count(unit -> unit.team == Vars.state.rules.waveTeam) > 1000) {
             Utils.forEachPlayerLocale((locale, players) -> {
-                String msg = I18n.t(locale, "[scarlet]", "@Stop sending waves, more than 1000 enemies.");
+                String msg = Tr.t(locale, "vote.stop_sending_waves");
                 for (var p : players) {
                     p.sendMessage(msg);
                 }
@@ -144,8 +142,7 @@ public class VoteNewWaveService {
 
         voteCountDown = scheduler.schedule(() -> {
             Utils.forEachPlayerLocale((locale, players) -> {
-                String msg = I18n.t(locale, "[orange]", "@Vote new wave timeout in", " ", time, " ",
-                        "@seconds.");
+                String msg = Tr.t(locale, "vote.new_wave_timeout", "time", time);
                 for (var p : players) {
                     p.sendMessage(msg);
                 }

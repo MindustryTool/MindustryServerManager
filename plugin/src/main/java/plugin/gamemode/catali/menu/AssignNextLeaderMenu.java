@@ -6,7 +6,7 @@ import mindustry.gen.Player;
 import plugin.annotations.Gamemode;
 import plugin.gamemode.catali.data.CataliTeamData;
 import plugin.menus.PluginMenu;
-import plugin.utils.I18n;
+import plugin.utils.Tr;
 import plugin.session.Session;
 
 @Gamemode("catali")
@@ -25,12 +25,12 @@ public class AssignNextLeaderMenu extends PluginMenu<CataliTeamData> {
         }
 
         if (availableTeammates.isEmpty()) {
-            title = I18n.t(session, "@No available teammates to transfer leadership to.");
+            title = Tr.t(session, "catali.no_teammates");
             return;
         }
 
-        title = I18n.t(session, "@Assign Next Leader");
-        description = I18n.t(session, "@Select a teammate to be the next leader.");
+        title = Tr.t(session, "catali.assign_next_leader");
+        description = Tr.t(session, "catali.select_next_leader");
 
         int i = 0;
         for (var p : availableTeammates) {
@@ -39,12 +39,12 @@ public class AssignNextLeaderMenu extends PluginMenu<CataliTeamData> {
 
             option(p.name(), (s, st) -> {
                 team.assignNextLeader(p.uuid());
-                s.player.sendMessage(I18n.t(s, "@Leadership transferred to @", p));
+                s.player.sendMessage(Tr.t(s, "catali.leadership_transferred", "name", p.name()));
             });
             i++;
         }
 
         row();
-        text(I18n.t(session, "@Close"));
+        text(Tr.t(session, "catali.close"));
     }
 }

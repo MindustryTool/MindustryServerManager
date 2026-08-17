@@ -9,7 +9,7 @@ import plugin.gamemode.catali.CataliConfig;
 import plugin.gamemode.catali.data.CataliTeamData;
 import plugin.gamemode.catali.event.CataliBuffRareUpgrade;
 import plugin.menus.PluginMenu;
-import plugin.utils.I18n;
+import plugin.utils.Tr;
 import plugin.session.Session;
 
 @Gamemode("catali")
@@ -22,8 +22,8 @@ public class RareUpgradeBuffSelectBuffMenu extends PluginMenu<Pair<CataliTeamDat
 
         var availableEffectsAppliedTo = CataliConfig.selectBuffsCanBeApplied(unit);
 
-        title = I18n.t(session, "@Select Buff");
-        description = I18n.t(session, "@Choose a buff to apply to the unit.");
+        title = Tr.t(session, "catali.select_buff");
+        description = Tr.t(session, "catali.choose_buff");
 
         int i = 0;
         for (var effect : availableEffectsAppliedTo) {
@@ -38,10 +38,10 @@ public class RareUpgradeBuffSelectBuffMenu extends PluginMenu<Pair<CataliTeamDat
 
         row();
 
-        option(I18n.t(session, "@Back"), (s, st) -> {
+        option(Tr.t(session, "catali.back"), (s, st) -> {
             Registry.createNew(RareUpgradeBuffSelectUnitMenu.class).send(s, team);
         });
-        option(I18n.t(session, "@Close"), (s, st) -> {
+        option(Tr.t(session, "catali.close"), (s, st) -> {
         });
     }
 }

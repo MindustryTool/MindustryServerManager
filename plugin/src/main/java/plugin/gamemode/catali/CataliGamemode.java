@@ -48,7 +48,7 @@ import plugin.gamemode.catali.menu.RareUpgradeMenu;
 import plugin.gamemode.catali.spawner.BlockSpawner;
 import plugin.gamemode.catali.spawner.SpawnerHelper;
 import plugin.gamemode.catali.spawner.UnitSpawner;
-import plugin.utils.I18n;
+import plugin.utils.Tr;
 import plugin.session.SessionService;
 import plugin.utils.TimeUtils;
 import plugin.utils.Utils;
@@ -292,9 +292,9 @@ public class CataliGamemode {
             }
 
             if (team.inCoreRange && within == false) {
-                team.eachMember(player -> player.sendMessage(I18n.t(player, "@Leaved core range")));
+                team.eachMember(player -> player.sendMessage(Tr.t(player, "catali.leaved_core_range")));
             } else if (!team.inCoreRange && within == true) {
-                team.eachMember(player -> player.sendMessage(I18n.t(player, "@Enter core range, gain +20% exp")));
+                team.eachMember(player -> player.sendMessage(Tr.t(player, "catali.enter_core_range")));
             }
 
             team.inCoreRange = within;
@@ -339,7 +339,7 @@ public class CataliGamemode {
         for (var player : Groups.player) {
             var team = findTeam(player);
 
-            String message = I18n.t(player, "@No team");
+            String message = Tr.t(player, "catali.no_team");
 
             if (team != null) {
                 StringBuilder sb = new StringBuilder("");
@@ -354,7 +354,7 @@ public class CataliGamemode {
 
                 String units = team.team.data().units.size > 0
                         ? sb.toString()
-                        : "@No unit";
+                        : Tr.t(player, "catali.no_unit");
 
                 StringBuilder respawnSb = new StringBuilder();
 
@@ -367,7 +367,7 @@ public class CataliGamemode {
 
                 String respawn = team.getRespawn().size > 0
                         ? respawnSb.toString()
-                        : "@No unit";
+                        : Tr.t(player, "catali.no_unit");
 
                 String separator = "==========================\n";
                 String bossString = "";
@@ -386,26 +386,26 @@ public class CataliGamemode {
                         + "/"
                         + String.valueOf((int) team.level.requiredExp) + ")[white]";
 
-                message = I18n.t(player, separator,
-                        "@Team ID:", String.valueOf(team.team.id), "\n",
-                        "@Level:",
-                        levelString, "\n",
-                        "@Member:", String.valueOf(team.members.size), "\n",
-                        "[sky]Hp:",
-                        String.format("%.2f", team.upgrades.getHealthMultiplier()) + "x[white]\n",
-                        "[red]Dmg:",
-                        String.format("%.2f", team.upgrades.getDamageMultiplier()) + "x[white]\n",
-                        "[accent]Exp:",
-                        String.format("%.2f", team.upgrades.getExpMultiplier()) + "x[white]\n",
-                        "[green]Regen:",
-                        String.format("%.2f", team.upgrades.getRegenMultiplier()) + "x[white]\n",
-                        "@Upgrades:", "", String.valueOf(team.level.commonUpgradePoints), "[accent]",
-                        String.valueOf(team.level.rareUpgradePoints), "[white]\n",
-                        "@Unit:", units, "\n",
-                        "@Respawn:", respawn, "\n",
-                        separator,
-                        bossString//
-                );
+                message = new StringBuilder(separator)
+                        .append(Tr.t(player, "catali.team_id")).append(" ").append(team.team.id).append("\n")
+                        .append(Tr.t(player, "catali.level")).append(" ").append(levelString).append("\n")
+                        .append(Tr.t(player, "catali.member")).append(" ").append(team.members.size).append("\n")
+                        .append("[sky]Hp:")
+                        .append(String.format("%.2f", team.upgrades.getHealthMultiplier())).append("x[white]\n")
+                        .append("[red]Dmg:")
+                        .append(String.format("%.2f", team.upgrades.getDamageMultiplier())).append("x[white]\n")
+                        .append("[accent]Exp:")
+                        .append(String.format("%.2f", team.upgrades.getExpMultiplier())).append("x[white]\n")
+                        .append("[green]Regen:")
+                        .append(String.format("%.2f", team.upgrades.getRegenMultiplier())).append("x[white]\n")
+                        .append(Tr.t(player, "catali.upgrades")).append(" ")
+                        .append(team.level.commonUpgradePoints).append("[accent]")
+                        .append(team.level.rareUpgradePoints).append("[white]\n")
+                        .append(Tr.t(player, "catali.unit")).append(" ").append(units).append("\n")
+                        .append(Tr.t(player, "catali.respawn")).append(" ").append(respawn).append("\n")
+                        .append(separator)
+                        .append(bossString)
+                        .toString();
 
                 Call.infoPopup(player.con, message, 1.1f, Align.left | Align.top, 200, 0, 0, 0);
             }
@@ -425,14 +425,14 @@ public class CataliGamemode {
                     createTeam(player);
                 } else {
                     Call.infoPopup(player.con,
-                            I18n.t(player, "@Respawn in",
-                                    TimeUtils.toSeconds(Duration.between(Instant.now(), respawnCountdown.get(player)))),
+                            Tr.t(player, "catali.respawn_in",
+                                    "time", TimeUtils.toSeconds(Duration.between(Instant.now(), respawnCountdown.get(player)))),
                             1,
                             Align.center, 0, 0, 30, 0);
                 }
 
             } else if (team.level.level == 1 && team.level.currentExp == 0 && team.spawning == false) {
-                Call.infoPopup(player.con, I18n.t(player, "@Destroy block to get", "[accent]exp[white]"), 1,
+                Call.infoPopup(player.con, Tr.t(player, "catali.destroy_block"), 1,
                         Align.center, 0, 0, 80, 0);
             }
 
@@ -448,7 +448,7 @@ public class CataliGamemode {
             for (var entry : respawns) {
                 data.spawnUnit(entry.type, (spawned) -> {
                     data.eachMember(member -> {
-                        member.sendMessage(I18n.t(member, spawned.type.emoji(), "@respawned"));
+                        member.sendMessage(Tr.t(member, "catali.respawned", "emoji", spawned.type.emoji()));
                     });
                 });
             }
@@ -473,7 +473,7 @@ public class CataliGamemode {
             }
 
             if (team.spawning == true && leader != null) {
-                Call.infoPopup(leader.con, I18n.t(leader, "@Tap to spawn"), 2, Align.center, 0, 0, 0, 0);
+                Call.infoPopup(leader.con, Tr.t(leader, "catali.tap_to_spawn"), 2, Align.center, 0, 0, 0, 0);
             }
         }
 
@@ -498,8 +498,7 @@ public class CataliGamemode {
         });
 
         Utils.forEachPlayerLocale((locale, players) -> {
-            String message = I18n.t(locale, "[scarlet]", "@Team", event.team.name(), "[scarlet]",
-                    "@has been eliminated!");
+            String message = Tr.t(locale, "catali.team_eliminated", "name", event.team.name());
             for (var player : players) {
                 player.sendMessage(message);
             }
@@ -604,7 +603,7 @@ public class CataliGamemode {
     @Listener
     public void onTeamCreated(TeamCreatedEvent event) {
         Utils.forEachPlayerLocale((locale, players) -> {
-            String message = I18n.t(locale, "[green]", "@Team", event.team.name(), "@has been created!");
+            String message = Tr.t(locale, "catali.team_created", "name", event.team.name());
             for (var player : players) {
                 player.sendMessage(message);
             }
@@ -642,8 +641,8 @@ public class CataliGamemode {
 
                     playerTeam.spawning = false;
                 } else {
-                    Call.infoPopup(event.player.con, I18n.t(event.player, "[scarlet]", "@Tile is not safe to spawn"),
-                            5, Align.center, 5, 5, 5, 5);
+Call.infoPopup(event.player.con, Tr.t(event.player, "catali.tile_not_safe"),
+                        5, Align.center, 5, 5, 5, 5);
                 }
             } else {
                 var x = event.tile.worldx();
@@ -727,7 +726,7 @@ public class CataliGamemode {
 
         event.team.eachMember(player -> {
             player.sendMessage(
-                    I18n.t(player, event.type.emoji(), "[scarlet]", "@destroyed! Respawning in", "[accent]", timeStr));
+                    Tr.t(player, "catali.destroyed_respawn", "emoji", event.type.emoji(), "time", timeStr));
         });
     }
 
@@ -778,8 +777,7 @@ public class CataliGamemode {
     @Listener
     public void onTrayUnitCaught(TrayUnitCaughtEvent event) {
         Utils.forEachPlayerLocale((locale, players) -> {
-            String message = I18n.t(locale, "[green]", "@Team", event.team.name(),
-                    "@has caught a stray unit!");
+            String message = Tr.t(locale, "catali.team_caught_unit", "name", event.team.name());
 
             for (var player : players) {
                 player.sendMessage(message);
@@ -936,14 +934,14 @@ public class CataliGamemode {
 
             teams.add(playerTeam);
         } else {
-            leader.sendMessage(I18n.t(leader, "@You already have a team!"));
+            leader.sendMessage(Tr.t(leader, "catali.already_have_team"));
         }
 
         leader.team(playerTeam.team);
 
         if (!playerTeam.hasUnit()) {
             playerTeam.spawning = true;
-            leader.sendMessage(I18n.t(leader, "@Cick to where you want to start"));
+            leader.sendMessage(Tr.t(leader, "catali.click_to_start"));
         }
 
         return playerTeam;

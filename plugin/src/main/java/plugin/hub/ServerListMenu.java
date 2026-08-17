@@ -6,7 +6,7 @@ import arc.util.Log;
 import plugin.Cfg;
 import plugin.core.Registry;
 import plugin.gateway.ApiGateway;
-import plugin.utils.I18n;
+import plugin.utils.Tr;
 import plugin.session.Session;
 import dto.ServerDto;
 
@@ -26,8 +26,8 @@ public class ServerListMenu extends PluginMenu<Integer> {
             PaginationRequest request = new PaginationRequest().setPage(page).setSize(size);
             List<ServerDto> servers = Registry.get(ApiGateway.class).getServers(request);
 
-            this.title = I18n.t(session.locale, "@List of all servers");
-            this.description = I18n.t(session.locale, "@" + Cfg.CHOOSE_SERVER_MESSAGE);
+            this.title = Tr.t(session.locale, "hub.list.title");
+            this.description = Tr.tWithFallback(session.locale, "hub.choose_server", Cfg.CHOOSE_SERVER_MESSAGE);
 
             servers.stream().sorted(Comparator.comparing(ServerDto::getPlayers).reversed()).forEach(server -> {
                 row();
@@ -40,25 +40,25 @@ public class ServerListMenu extends PluginMenu<Integer> {
                 if (server.getMapName() == null) {
                     option(String.format("[yellow]%s", server.getName()),
                             (p, s) -> ServerUtils.redirect(p.player, server));
-                    option(I18n.t(session.locale, "[scarlet]", "@Server offline."),
+                    option(Tr.t(session.locale, "hub.list.server_offline"),
                             (p, s) -> ServerUtils.redirect(p.player, server));
                 } else {
                     option(server.getName(),
                             (p, s) -> ServerUtils.redirect(p.player, server));
-                    option(I18n.t(session.locale, "[lime]", "@Players:[] ", server.getPlayers()),
+                    option(Tr.t(session.locale, "hub.list.players", "players", server.getPlayers()),
                             (p, s) -> ServerUtils.redirect(p.player, server));
 
                     row();
-                    option(I18n.t(session.locale, "[cyan]", "@Gamemode:[] ",
+                    option(Tr.t(session.locale, "hub.list.gamemode", "mode",
                             server.getMode().toLowerCase()),
                             (p, s) -> ServerUtils.redirect(p.player, server));
-                    option(I18n.t(session.locale, "[blue]", "@Map:[] ", server.getMapName()),
+                    option(Tr.t(session.locale, "hub.list.map", "map", server.getMapName()),
                             (p, s) -> ServerUtils.redirect(p.player, server));
                 }
 
                 if (server.getMods() != null && !server.getMods().isEmpty()) {
                     row();
-                    option(I18n.t(session.locale, "[purple]", "@Mods:[] ", String.join(", ", mods)),
+                    option(Tr.t(session.locale, "hub.list.mods", "mods", String.join(", ", mods)),
                             (p, s) -> ServerUtils.redirect(p.player, server));
                 }
 
@@ -74,17 +74,17 @@ public class ServerListMenu extends PluginMenu<Integer> {
 
             row();
             if (page > 0) {
-                option(I18n.t(session.locale, "[orange]", "@Previous"),
+                option(Tr.t(session.locale, "hub.list.previous"),
                         (p, s) -> new ServerListMenu().send(p, s - 1));
             }
 
             if (servers.size() == size) {
-                option(I18n.t(session.locale, "[lime]", "@Next"),
+                option(Tr.t(session.locale, "hub.list.next"),
                         (p, s) -> new ServerListMenu().send(p, s + 1));
             }
 
             row();
-            text(I18n.t(session.locale, "[scarlet]", "@Close"));
+            text(Tr.t(session.locale, "hub.list.close"));
         } catch (Exception e) {
             Log.err("Failed to build server list menu", e);
         }

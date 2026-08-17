@@ -12,7 +12,7 @@ import mindustry.gen.Player;
 import plugin.annotations.ClientCommand;
 import plugin.annotations.Component;
 import plugin.annotations.Destroy;
-import plugin.utils.I18n;
+import plugin.utils.Tr;
 import plugin.session.SessionService;
 import plugin.utils.CommandUtils;
 import plugin.utils.Utils;
@@ -87,8 +87,7 @@ public class ClientCommandHandler {
 
         public void handle(String[] args, Player player) {
             if (admin && !player.admin) {
-                player.sendMessage(I18n.t(Utils.parseLocale(player.locale()), "[scarlet]",
-                        "@You must be admin to use this command."));
+                player.sendMessage(Tr.t(Utils.parseLocale(player.locale()), "commands.admin_only"));
                 return;
             }
 
@@ -96,8 +95,7 @@ public class ClientCommandHandler {
 
             if (session == null) {
                 Log.info("[scarlet]Failed to get session for player.");
-                player.sendMessage(I18n.t(Utils.parseLocale(player.locale()), "[scarlet]",
-                        "@Failed to get session for player."));
+                player.sendMessage(Tr.t(Utils.parseLocale(player.locale()), "commands.no_session"));
                 Thread.dumpStack();
                 return;
             }
@@ -110,11 +108,11 @@ public class ClientCommandHandler {
                     method.invoke(object);
                 }
             } catch (ParamException e) {
-                session.player.sendMessage(I18n.t(
-                        session.locale, "[scarlet]", "@Error: ", e.getMessage()));
+                session.player.sendMessage(Tr.t(
+                        session.locale, "commands.param_error", "message", e.getMessage()));
             } catch (Exception e) {
-                session.player.sendMessage(I18n.t(
-                        session.locale, "[scarlet]", "@Error"));
+                session.player.sendMessage(Tr.t(
+                        session.locale, "commands.error"));
                 Log.err("Failed to execute command " + name, e);
             }
         }

@@ -1,6 +1,6 @@
 package plugin.grief;
 
-import plugin.utils.I18n;
+import plugin.utils.Tr;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -89,12 +89,10 @@ public class TileLogger {
         var uuid = session.player.uuid();
 
         if (inspectAdmins.add(uuid)) {
-            session.player.sendMessage(
-                    I18n.t(session, "[green]", "@Tile logger", "[yellow]", "@enabled - tap any tile to inspect its history"));
+            session.player.sendMessage(Tr.t(session, "grief.tilelog_enabled"));
         } else {
             inspectAdmins.remove(uuid);
-            session.player.sendMessage(
-                    I18n.t(session, "[scarlet]", "@Tile logger", "[yellow]", "@disabled"));
+            session.player.sendMessage(Tr.t(session, "grief.tilelog_disabled"));
         }
     }
 
@@ -109,13 +107,13 @@ public class TileLogger {
         var entries = logsByPos.get(event.tile.pos());
 
         if (entries == null || entries.isEmpty()) {
-            player.sendMessage(I18n.t(player, "[gray]", "@No records for this tile"));
+            player.sendMessage(Tr.t(player, "grief.no_records"));
             return;
         }
 
         player.sendMessage(SEPARATOR);
-        player.sendMessage(I18n.t(player, "[accent]", "@Tile log",
-                "[white](" + event.tile.x + ", " + event.tile.y + ")"));
+        player.sendMessage(Tr.t(player, "grief.tile_log_title",
+                "pos", "(" + event.tile.x + ", " + event.tile.y + ")"));
 
         var now = Instant.now().toEpochMilli();
         int shown = 0;
@@ -139,7 +137,7 @@ public class TileLogger {
 
         if (entries.size() > shown) {
             player.sendMessage(
-                    I18n.t(player, "[gray]", "@and", entries.size() - shown, "@more entries[]"));
+                    Tr.t(player, "grief.more_entries", "count", entries.size() - shown));
         }
 
         player.sendMessage(SEPARATOR);

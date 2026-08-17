@@ -2,7 +2,7 @@ package plugin.security;
 
 import plugin.session.SessionService;
 
-import plugin.utils.I18n;
+import plugin.utils.Tr;
 
 import lombok.RequiredArgsConstructor;
 import mindustry.net.Administration.ActionType;
@@ -29,7 +29,7 @@ public class SecurityService {
                 return true;
             }
 
-            action.player.sendMessage(I18n.t(action.player, "@Login first to use display/canvas block, use /login to login"));
+            action.player.sendMessage(Tr.t(action.player, "security.login_logic"));
 
             return false;
         }

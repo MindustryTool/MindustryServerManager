@@ -25,7 +25,7 @@ import plugin.annotations.Component;
 import plugin.annotations.Destroy;
 import plugin.annotations.Listener;
 import plugin.annotations.Schedule;
-import plugin.utils.I18n;
+import plugin.utils.Tr;
 import plugin.utils.Utils;
 
 @Component
@@ -244,7 +244,7 @@ public class SessionService {
         session.player.name(getPlayerName.apply(session));
 
         if (login.getIsAdmin()) {
-            session.player.sendMessage(I18n.t(session, "[accent]", "@Use /admin to toogle admin"));
+            session.player.sendMessage(Tr.t(session, "session.use_admin"));
         }
     }
 }

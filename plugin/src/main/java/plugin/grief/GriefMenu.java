@@ -3,7 +3,7 @@ package plugin.grief;
 import plugin.menus.PluginMenu;
 
 import plugin.core.Registry;
-import plugin.utils.I18n;
+import plugin.utils.Tr;
 import plugin.session.SessionService;
 import plugin.session.Session;
 
@@ -14,7 +14,7 @@ public class GriefMenu extends PluginMenu<Session> {
 
     @Override
     public void build(Session session, Session target) {
-        this.title = I18n.t(session.locale, "@Grief Report");
+        this.title = Tr.t(session.locale, "grief.report_title");
 
         if (target == null) {
             Registry.get(SessionService.class).each(t -> t != session, t -> {
@@ -22,12 +22,12 @@ public class GriefMenu extends PluginMenu<Session> {
                 row();
             });
 
-            text(I18n.t(session.locale, "[red]", "@Close"));
+            text(Tr.t(session.locale, "grief.close"));
         } else {
-            option(I18n.t(session.locale, "@Report"),
+            option(Tr.t(session.locale, "grief.report"),
                     (p, s) -> Registry.get(AdminService.class).reportGrief(session, target));
             row();
-            text(I18n.t(session.locale, "@Cancel"));
+            text(Tr.t(session.locale, "grief.cancel"));
         }
     }
 }

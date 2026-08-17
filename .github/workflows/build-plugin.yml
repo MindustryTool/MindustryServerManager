@@ -34,8 +34,8 @@ jobs:
          - name: Build plugin jar
            run: ./gradlew :plugin:build --stacktrace
 
-         #  - name: Run tests
-         #    run: ./gradlew test --stacktrace
+         - name: Run tests
+           run: ./gradlew :plugin:test --stacktrace
 
          - name: Upload built jar file
            uses: actions/upload-artifact@v4
@@ -43,12 +43,12 @@ jobs:
               name: plugin-test
               path: plugin/build/libs/plugin.jar
 
-         #  - name: Upload test report
-         #    if: always() # ensures this runs even if tests fail
-         #    uses: actions/upload-artifact@v4
-         #    with:
-         #       name: test-report
-         #       path: plugin/build/reports/tests/test/
+         - name: Upload test report
+           if: always() # ensures this runs even if tests fail
+           uses: actions/upload-artifact@v4
+           with:
+              name: test-report
+              path: plugin/build/reports/tests/test/
 
          #  - name: Deploy test report to GitHub Pages
          #    if: success() || failure() # run this even if tests fail

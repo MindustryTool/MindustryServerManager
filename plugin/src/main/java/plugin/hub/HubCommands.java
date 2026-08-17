@@ -6,7 +6,7 @@ import plugin.annotations.ClientCommand;
 import plugin.annotations.Component;
 import plugin.gateway.ApiGateway;
 import plugin.session.Session;
-import plugin.utils.I18n;
+import plugin.utils.Tr;
 
 @Component
 @RequiredArgsConstructor
@@ -21,7 +21,7 @@ public class HubCommands {
         var hub = servers.find(server -> server.getIsHub());
 
         if (hub == null) {
-            session.player.sendMessage(I18n.t(session, "@Hub not found"));
+            session.player.sendMessage(Tr.t(session, "hub.not_found"));
             return;
         }
 

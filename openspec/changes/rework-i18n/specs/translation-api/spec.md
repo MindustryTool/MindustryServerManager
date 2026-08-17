@@ -23,14 +23,16 @@ The `args` varargs SHALL be alternating `name, value` pairs used to fill named p
 
 ### Requirement: Config message fallback
 
-The plugin SHALL provide a fallback-text overload `t(Locale locale, String key, Object fallbackText, Object... args)`. When the key is absent in every fallback level, the plugin SHALL return the interpolated `fallbackText` instead of the raw key. When the key exists in any catalog, the catalog value SHALL win over the config fallback.
+The plugin SHALL provide a fallback-text overload `tWithFallback(Locale locale, String key, Object fallbackText, Object... args)`. When the key is absent in every fallback level, the plugin SHALL return the interpolated `fallbackText` instead of the raw key. When the key exists in any catalog, the catalog value SHALL win over the config fallback.
+
+> Note: the fallback overload is named `tWithFallback` (not `t`) because an overload named `t(Locale, String, Object, Object...)` is ambiguous with `t(Locale, String, Object...)` at call sites passing 3+ args (JLS most-specific resolution fails for variable-arity overloads of different arity).
 
 #### Scenario: Key present overrides config
-- **WHEN** `welcome.message` exists in a catalog and `t(locale, "welcome.message", cfgText)` is called
+- **WHEN** `welcome.message` exists in a catalog and `tWithFallback(locale, "welcome.message", cfgText)` is called
 - **THEN** the catalog value is returned
 
 #### Scenario: Key absent uses config text
-- **WHEN** `welcome.message` is absent from all catalogs and `t(locale, "welcome.message", cfgText)` is called
+- **WHEN** `welcome.message` is absent from all catalogs and `tWithFallback(locale, "welcome.message", cfgText)` is called
 - **THEN** the interpolated `cfgText` is returned
 
 ### Requirement: I18n removal

@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
 import plugin.PluginEvents;
 import plugin.annotations.Component;
 import plugin.annotations.Listener;
-import plugin.utils.I18n;
+import plugin.utils.Tr;
 
 @Component
 @RequiredArgsConstructor
@@ -34,7 +34,7 @@ public class DailyService {
         }
 
         dailyRepository.setLastLogin(uuid, today);
-        session.player.sendMessage(I18n.t(session, "@Daily login bonus", "+" + DAILY_BONUS_EXP + " exp"));
+        session.player.sendMessage(Tr.t(session, "session.daily_bonus", "bonus", "+" + DAILY_BONUS_EXP + " exp"));
         PluginEvents.fire(new ExpGainEvent(session, DAILY_BONUS_EXP));
     }
 }

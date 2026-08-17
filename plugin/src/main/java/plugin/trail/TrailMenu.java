@@ -4,7 +4,7 @@ import plugin.menus.PluginMenu;
 
 import arc.struct.Seq;
 import plugin.core.Registry;
-import plugin.utils.I18n;
+import plugin.utils.Tr;
 import plugin.session.Session;
 
 public class TrailMenu extends PluginMenu<Integer> {
@@ -30,14 +30,14 @@ public class TrailMenu extends PluginMenu<Integer> {
             });
 
             for (var req : trail.getRequirements()) {
-                text((req.getAllowed().apply(session) ? "[green]" : "[red]") + I18n.t(session, req.getMessage()));
+                text((req.getAllowed().apply(session) ? "[green]" : "[red]") + req.getMessage());
             }
             row();
         }
 
-        option(I18n.t(session, "@Previous"), (p, s) -> this.send(session, Math.max(0, page - 1)));
-        option(I18n.t(session, "@Next"), (p, s) -> this.send(session, Math.min(trails.size / size, page + 1)));
+        option(Tr.t(session, "trail.previous"), (p, s) -> this.send(session, Math.max(0, page - 1)));
+        option(Tr.t(session, "trail.next"), (p, s) -> this.send(session, Math.min(trails.size / size, page + 1)));
         row();
-        text(I18n.t(session, "@Close"));
+        text(Tr.t(session, "trail.close"));
     }
 }

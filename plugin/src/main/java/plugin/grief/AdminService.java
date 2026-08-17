@@ -2,7 +2,7 @@ package plugin.grief;
 
 import plugin.session.SessionService;
 
-import plugin.utils.I18n;
+import plugin.utils.Tr;
 
 import plugin.gateway.ApiGateway;
 
@@ -107,14 +107,12 @@ public class AdminService {
 
     public void voteGrief(Session session) {
         if (reported == null) {
-            session.player.sendMessage(I18n.t(session.locale,
-                    "@No player is being reported."));
+            session.player.sendMessage(Tr.t(session.locale, "grief.no_report"));
             return;
         }
 
         if (session.votedGrief) {
-            session.player.sendMessage(I18n.t(session.locale,
-                    "@You already voted."));
+            session.player.sendMessage(Tr.t(session.locale, "grief.already_voted"));
             return;
         }
 
@@ -126,8 +124,7 @@ public class AdminService {
         if (voted >= required) {
             reported.player.kick(KickReason.kick);
             Utils.forEachPlayerLocale((locale, players) -> {
-                String msg = I18n.t(locale, "[red]", "@Player ", reported.player.name,
-                        " ", "@was kicked for griefing.");
+                String msg = Tr.t(locale, "grief.kicked", "player", reported.player.name);
                 for (var p : players) {
                     p.sendMessage(msg);
                 }
@@ -138,9 +135,8 @@ public class AdminService {
             reset();
         } else {
             Utils.forEachPlayerLocale((locale, players) -> {
-                String msg = I18n.t(locale, "[red]", "@Player ", session.player.name,
-                        " ", "@voted for player ", reported.player.name,
-                        " ", "@for griefing. Use ", "/grief", " ", "@to kick this player.");
+                String msg = Tr.t(locale, "grief.voted_for",
+                        "voter", session.player.name, "target", reported.player.name);
                 for (var p : players) {
                     p.sendMessage(msg);
                 }
@@ -150,14 +146,12 @@ public class AdminService {
 
     public void reportGrief(Session player, Session target) {
         if (Groups.player.size() < 3) {
-            player.player.sendMessage(I18n.t(player.locale,
-                    "@You cannot report grief if there are less than 3 players."));
+            player.player.sendMessage(Tr.t(player.locale, "grief.need_more_players"));
             return;
         }
 
         if (target == player) {
-            player.player.sendMessage(I18n.t(player.locale,
-                    "@You cannot report yourself.(Bud are you alright)"));
+            player.player.sendMessage(Tr.t(player.locale, "grief.report_self"));
             return;
         }
 
@@ -168,8 +162,7 @@ public class AdminService {
                 long remaining = lastReportTime.plusSeconds(Cfg.GRIEF_REPORT_COOLDOWN)
                         .getEpochSecond() - Instant.now().getEpochSecond();
 
-                player.player.sendMessage(I18n.t(player.locale,
-                        "@You must wait ", remaining, " ", "@seconds to report again."));
+                player.player.sendMessage(Tr.t(player.locale, "grief.cooldown", "seconds", remaining));
                 return;
             }
         }
@@ -185,9 +178,8 @@ public class AdminService {
         target.player.team(Team.derelict);
 
         Utils.forEachPlayerLocale((locale, players) -> {
-            String msg = I18n.t(locale, "[red]", "@Player ", player.player.name, " ",
-                    "@reported player ", target.player.name, " ", "@for griefing. Use ", "/grief", " ",
-                    "@to kick this player.");
+            String msg = Tr.t(locale, "grief.reported",
+                    "reporter", player.player.name, "target", target.player.name);
             for (var p : players) {
                 p.sendMessage(msg);
             }
@@ -195,7 +187,7 @@ public class AdminService {
 
         voteTimeout = scheduler.schedule(() -> {
             Utils.forEachPlayerLocale((locale, players) -> {
-                String msg = I18n.t(locale, "[scarlet]", "@Vote failed, not enough votes.");
+                String msg = Tr.t(locale, "grief.vote_failed");
                 for (var p : players) {
                     p.sendMessage(msg);
                 }

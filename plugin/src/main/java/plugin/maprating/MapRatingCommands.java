@@ -8,7 +8,7 @@ import plugin.annotations.ClientCommand;
 import plugin.annotations.Component;
 import plugin.annotations.Param;
 import plugin.session.Session;
-import plugin.utils.I18n;
+import plugin.utils.Tr;
 
 @Component
 public class MapRatingCommands {
@@ -16,8 +16,7 @@ public class MapRatingCommands {
     @ClientCommand(name = "map", description = "Display current map info", admin = false)
     public void map(Session session) {
         if (Vars.state.map == null) {
-            session.player.sendMessage(I18n.t(session.locale,
-                    "@Map is not loaded"));
+            session.player.sendMessage(Tr.t(session.locale, "maprating.map_not_loaded"));
             return;
         }
 
@@ -37,7 +36,7 @@ public class MapRatingCommands {
         int maxSize = Vars.maps.customMaps().size;
 
         if (start >= maxSize) {
-            session.player.sendMessage(I18n.t(session.locale, "@No more maps"));
+            session.player.sendMessage(Tr.t(session.locale, "maprating.no_more_maps"));
             return;
         }
 

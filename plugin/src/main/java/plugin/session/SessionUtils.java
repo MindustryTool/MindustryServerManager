@@ -2,12 +2,11 @@ package plugin.session;
 
 import java.util.Locale;
 
-import arc.util.Strings;
 import mindustry.gen.Iconc;
 import mindustry.gen.Player;
 import mindustry.type.UnitType;
 import mindustry.ui.dialogs.LanguageDialog;
-import plugin.utils.I18n;
+import plugin.utils.Tr;
 
 public class SessionUtils {
     public static String getInfoString(Session session, SessionData data) {
@@ -65,16 +64,11 @@ public class SessionUtils {
     }
 
     public static String getLevelUpMessage(Locale locale, int oldLevel, int newLevel) {
-        String message = I18n.t(locale, "Level up");
-        return " [green]" + message + Strings.format(" @ -> @", oldLevel, newLevel);
+        return Tr.t(locale, "session.level_up", "old", oldLevel, "new", newLevel);
     }
 
     public static String getKillMessage(Locale locale, String playerName, long count, UnitType unit, long exp) {
-        String formatted = Strings.format(" @ @ (+@exp)",
-                count,
-                unit.emoji(),
-                exp);
-
-        return I18n.t(locale, playerName, " ", "@killed", formatted);
+        return Tr.t(locale, "session.killed",
+                "player", playerName, "count", count, "unit", unit.emoji(), "exp", exp);
     }
 }

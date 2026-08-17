@@ -12,7 +12,7 @@ import mindustry.gen.Player;
 import plugin.Tasks;
 import plugin.core.Registry;
 import plugin.gateway.ApiGateway;
-import plugin.utils.I18n;
+import plugin.utils.Tr;
 
 public class ServerUtils {
 
@@ -26,19 +26,17 @@ public class ServerUtils {
 
         Tasks.io("Server Choose", () -> {
             try {
-                player.sendMessage(I18n.t(Utils.parseLocale(player.locale()),
-                        "[green]", "@Starting server ", "[white]", name,
-                        ", ", "[white]", "@this can take up to 1 minutes, please wait"));
+                player.sendMessage(Tr.t(Utils.parseLocale(player.locale()),
+                        "hub.redirect.starting", "server", name));
                 Log.info(String.format("Send host command to server %s %S", name, id));
 
                 var data = Registry.get(ApiGateway.class).hostRemoteServer(id);
 
-                player.sendMessage(I18n.t(Utils.parseLocale(player.locale()), "[green]", "@Redirecting"));
+                player.sendMessage(Tr.t(Utils.parseLocale(player.locale()), "hub.redirect.redirecting"));
 
                 Utils.forEachPlayerLocale((locale, players) -> {
-                    String msg = I18n.t(locale, player.coloredName(), " ", "[green]",
-                            "@redirecting to server ", "[white]", name,
-                            ", ", "@use ", "[green]", "/servers", "[white]", " ", "@to follow");
+                    String msg = Tr.t(locale, "hub.redirect.announce",
+                            "player", player.coloredName(), "server", name);
                     for (var p : players) {
                         p.sendMessage(msg);
                     }
@@ -60,8 +58,7 @@ public class ServerUtils {
 
                 Call.connect(player.con, InetAddress.getByName(host.trim()).getHostAddress(), port);
             } catch (Exception e) {
-                player.sendMessage(I18n.t(Utils.parseLocale(player.locale()),
-                        "@Error: ", "@Can not load server"));
+                player.sendMessage(Tr.t(Utils.parseLocale(player.locale()), "hub.redirect.error"));
                 e.printStackTrace();
             }
         });

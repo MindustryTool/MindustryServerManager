@@ -13,7 +13,7 @@ import plugin.annotations.Param;
 import plugin.annotations.ServerCommand;
 import plugin.core.Registry;
 import plugin.database.DB;
-import plugin.utils.I18n;
+import plugin.utils.Tr;
 import plugin.utils.Utils;
 
 @Component
@@ -55,8 +55,7 @@ public class ServerCommands {
                 target.kick(reason);
             }
             Utils.forEachPlayerLocale((locale, players) -> {
-                String msg = I18n.t(locale, "[scarlet]", target.name(), "[scarlet]", " ",
-                        "@has been kicked by the server.");
+                String msg = Tr.t(locale, "admin.kicked_by_server", "player", target.name());
                 for (var p : players) {
                     p.sendMessage(msg);
                 }

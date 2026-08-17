@@ -5,7 +5,7 @@ import mindustry.gen.Player;
 import plugin.annotations.Gamemode;
 import plugin.gamemode.catali.CataliGamemode;
 import plugin.menus.PluginMenu;
-import plugin.utils.I18n;
+import plugin.utils.Tr;
 import plugin.session.Session;
 
 @Gamemode("catali")
@@ -24,23 +24,23 @@ public class IncomingRequestMenu extends PluginMenu<Player> {
         if (team == null)
             return;
 
-        title = I18n.t(session, "@Incoming Join Request");
-        description = I18n.t(session, "@Accept or reject the join request.");
+        title = Tr.t(session, "catali.incoming_join_request");
+        description = Tr.t(session, "catali.accept_reject_request");
 
-        option(I18n.t(session, "@Accept"), (s, st) -> {
+        option(Tr.t(session, "catali.accept"), (s, st) -> {
             team.joinRequests.remove(requester.uuid());
             team.members.add(requester.uuid());
             requester.team(team.team);
-            requester.sendMessage(I18n.t(requester, "@Your request to join @'s team was accepted."));
+            requester.sendMessage(Tr.t(requester, "catali.join_accepted", "name", session.player.name));
         });
 
-        option(I18n.t(session, "@Reject"), (s, st) -> {
+        option(Tr.t(session, "catali.reject"), (s, st) -> {
             team.joinRequests.remove(requester.uuid());
-            requester.sendMessage(I18n.t(requester, "@Your request to join @'s team was rejected."));
+            requester.sendMessage(Tr.t(requester, "catali.join_rejected", "name", session.player.name));
         });
 
         row();
-        option(I18n.t(session, "@Close"), (s, st) -> {
+        option(Tr.t(session, "catali.close"), (s, st) -> {
         });
     }
 }

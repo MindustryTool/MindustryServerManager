@@ -5,7 +5,7 @@ import plugin.hub.ServerListMenu;
 import plugin.menus.PluginMenu;
 
 import plugin.core.Registry;
-import plugin.utils.I18n;
+import plugin.utils.Tr;
 
 public class PlayerInfoMenu extends PluginMenu<Session> {
 
@@ -14,7 +14,7 @@ public class PlayerInfoMenu extends PluginMenu<Session> {
 
     @Override
     public void build(Session session, Session caller) {
-        this.title = I18n.t(session.locale, "@Servers");
+        this.title = Tr.t(session.locale, "session.players_title");
 
         Registry.get(SessionService.class).each(p -> {
             option(p.player.name, (t, s) -> {
@@ -23,7 +23,7 @@ public class PlayerInfoMenu extends PluginMenu<Session> {
             row();
         });
 
-        option(I18n.t(session.locale, "[red]", "@Close"),
+        option(Tr.t(session.locale, "session.close"),
                 (p, s) -> new ServerListMenu().send(session, 0));
     }
 }

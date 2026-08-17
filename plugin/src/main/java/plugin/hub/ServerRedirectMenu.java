@@ -7,7 +7,7 @@ import mindustry.gen.Player;
 import plugin.Tasks;
 import plugin.core.Registry;
 import plugin.gateway.ApiGateway;
-import plugin.utils.I18n;
+import plugin.utils.Tr;
 import plugin.session.Session;
 import plugin.utils.Utils;
 
@@ -23,33 +23,29 @@ public class ServerRedirectMenu extends PluginMenu<ServerDto> {
 
     @Override
     public void build(Session session, ServerDto serverData) {
-        this.title = I18n.t(session.locale, "@Redirect");
-        this.description = I18n.t(session.locale,
-                "@Do you want to go to server: ", serverData.getName());
+        this.title = Tr.t(session.locale, "hub.redirect.title");
+        this.description = Tr.t(session.locale, "hub.redirect.confirm", "server", serverData.getName());
 
-        text(I18n.t(session.locale, "[red]", "@No"));
-        option(I18n.t(session.locale, "[green]", "@Yes"),
+        text(Tr.t(session.locale, "hub.redirect.no"));
+        option(Tr.t(session.locale, "hub.redirect.yes"),
                 (p, s) -> onServerChoose(p.player, s.getId().toString(), s.getName()));
     }
 
     public void onServerChoose(Player player, String id, String name) {
         Tasks.io("Server Choose", () -> {
             try {
-                player.sendMessage(I18n.t(Utils.parseLocale(player.locale()),
-                        "[green]", "@Starting server ", "[white]", name,
-                        ", ", "[white]", "@this can take up to 1 minutes, please wait"));
+                player.sendMessage(Tr.t(Utils.parseLocale(player.locale()),
+                        "hub.redirect.starting", "server", name));
 
                 Log.info(String.format("Send host command to server %s %S", name, id));
 
                 var data = Registry.get(ApiGateway.class).hostRemoteServer(id);
 
-                player.sendMessage(I18n.t(Utils.parseLocale(player.locale()), "[green]", "@Redirecting"));
+                player.sendMessage(Tr.t(Utils.parseLocale(player.locale()), "hub.redirect.redirecting"));
 
                 Utils.forEachPlayerLocale((locale, players) -> {
-                    String msg = I18n.t(locale, player.coloredName(), " ", "[green]",
-                            "@redirecting to server ", "[white]", name, ", [white]", "@use ", "[accent]", "/servers",
-                            "[white]",
-                            " ", "@to follow");
+                    String msg = Tr.t(locale, "hub.redirect.announce",
+                            "player", player.coloredName(), "server", name);
                     for (var p : players) {
                         p.sendMessage(msg);
                     }
@@ -71,8 +67,7 @@ public class ServerRedirectMenu extends PluginMenu<ServerDto> {
 
                 Call.connect(player.con, InetAddress.getByName(host.trim()).getHostAddress(), port);
             } catch (Exception e) {
-                player.sendMessage(I18n.t(Utils.parseLocale(player.locale()),
-                        "[scarlet]", "@Error: ", "@Can not load server"));
+                player.sendMessage(Tr.t(Utils.parseLocale(player.locale()), "hub.redirect.error"));
                 e.printStackTrace();
             }
         });

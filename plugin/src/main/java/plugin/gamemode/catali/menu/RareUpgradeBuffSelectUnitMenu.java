@@ -5,7 +5,7 @@ import plugin.annotations.Gamemode;
 import plugin.core.Registry;
 import plugin.gamemode.catali.data.CataliTeamData;
 import plugin.menus.PluginMenu;
-import plugin.utils.I18n;
+import plugin.utils.Tr;
 import plugin.session.Session;
 
 @Gamemode("catali")
@@ -13,8 +13,8 @@ public class RareUpgradeBuffSelectUnitMenu extends PluginMenu<CataliTeamData> {
 
     @Override
     public void build(Session session, CataliTeamData team) {
-        title = I18n.t(session, "@Select Unit for Buff");
-        description = I18n.t(session, "@Choose a unit to apply a buff to.");
+        title = Tr.t(session, "catali.select_unit_for_buff");
+        description = Tr.t(session, "catali.choose_unit_for_buff");
 
         int i = 0;
         for (var unit : team.units()) {
@@ -30,10 +30,10 @@ public class RareUpgradeBuffSelectUnitMenu extends PluginMenu<CataliTeamData> {
 
         row();
 
-        option(I18n.t(session, "@Back"), (s, st) -> {
+        option(Tr.t(session, "catali.back"), (s, st) -> {
             Registry.createNew(RareUpgradeMenu.class).send(s, team);
         });
-        option(I18n.t(session, "@Close"), (s, st) -> {
+        option(Tr.t(session, "catali.close"), (s, st) -> {
         });
     }
 }

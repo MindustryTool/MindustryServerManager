@@ -4,7 +4,7 @@ import plugin.session.SessionService;
 
 import plugin.maprating.MapRating;
 
-import plugin.utils.I18n;
+import plugin.utils.Tr;
 
 import plugin.gateway.ApiGateway;
 
@@ -198,17 +198,15 @@ public class EventHandler {
                 var isLoggedIn = playerData.getLoginLink() == null;
 
                 if (isLoggedIn) {
-                    session.player.sendMessage(I18n.t(session.locale,
-                            "@Logged in as ", playerData.getName()));
+                    session.player.sendMessage(Tr.t(session.locale,
+                            "event.logged_in", "name", playerData.getName()));
                 } else {
-                    session.player.sendMessage(I18n.t(session.locale,
-                            "@You are not logged in, consider log in via ", " MindustryTool ", "@using",
-                            " [accent]/login[white]"));
+                    session.player.sendMessage(Tr.t(session.locale, "event.not_logged_in"));
                 }
             });
 
             Tasks.io("Welcome Message", () -> {
-                var translated = I18n.t(session.locale, Cfg.WELCOME_MESSAGE);
+                var translated = Tr.tWithFallback(session.locale, "welcome.message", Cfg.WELCOME_MESSAGE);
                 session.player.sendMessage(translated);
             });
 

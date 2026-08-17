@@ -5,7 +5,7 @@ import plugin.annotations.Gamemode;
 import plugin.gamemode.catali.CataliGamemode;
 import plugin.gamemode.catali.data.CataliTeamData;
 import plugin.menus.PluginMenu;
-import plugin.utils.I18n;
+import plugin.utils.Tr;
 import plugin.session.Session;
 
 @Gamemode("catali")
@@ -29,10 +29,10 @@ public class AbandonMenu extends PluginMenu<CataliTeamData> {
             }
         }
         row();
-        option(I18n.t(session, "@Abandon team"), (s, t) -> {
+        option(Tr.t(session, "catali.abandon_team"), (s, t) -> {
             gamemode.abandonTeam(team);
         });
         row();
-        text(I18n.t(session, "@Close"));
+        text(Tr.t(session, "catali.close"));
     }
 }

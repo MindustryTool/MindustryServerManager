@@ -6,7 +6,7 @@ import java.util.Locale;
 
 import mindustry.gen.Iconc;
 import mindustry.maps.Map;
-import plugin.utils.I18n;
+import plugin.utils.Tr;
 import plugin.session.Session;
 import plugin.utils.Utils;
 
@@ -16,7 +16,7 @@ public class RateMapMenu extends PluginMenu<Map> {
     public void build(Session session, Map map) {
         Locale locale = session.locale;
 
-        this.title = I18n.t(locale, "@Rate last map");
+        this.title = Tr.t(locale, "maprating.rate_title");
         this.description = map.name();
 
         for (int i = 5; i > 0; i--) {
@@ -25,8 +25,8 @@ public class RateMapMenu extends PluginMenu<Map> {
             option(MapRating.getStarDisplay(star), (p, s) -> {
                 MapRating.updateMapRating(s, star);
                 Utils.forEachPlayerLocale((l, players) -> {
-                    String msg = I18n.t(l, p.player.name(), " [accent] ", "@voted", " ", star, "[accent]",
-                            Iconc.star, " [] ", "@on map ", " ", map.name());
+                    String msg = Tr.t(l, "maprating.voted",
+                            "player", p.player.name(), "star", star, "icon", Iconc.star, "map", map.name());
                     for (var pp : players) {
                         pp.sendMessage(msg);
                     }

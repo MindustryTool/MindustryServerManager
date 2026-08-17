@@ -11,7 +11,7 @@ import plugin.gamemode.catali.menu.AIPickMenu;
 import plugin.gamemode.catali.menu.AbandonMenu;
 import plugin.gamemode.catali.menu.CommonUpgradeMenu;
 import plugin.gamemode.catali.menu.RareUpgradeMenu;
-import plugin.utils.I18n;
+import plugin.utils.Tr;
 import plugin.session.Session;
 
 @Gamemode("catali")
@@ -28,7 +28,7 @@ public class CataliClientCommands {
         var team = gamemode.findTeam(session.player);
 
         if (team == null) {
-            session.player.sendMessage(I18n.t(session, "@You are not in a team"));
+            session.player.sendMessage(Tr.t(session, "catali.not_in_team"));
             return;
         }
 
@@ -38,7 +38,7 @@ public class CataliClientCommands {
     @ClientCommand(name = "addexp", description = "Add experience points to a unit", admin = true)
     public void addExp(Session session, @Param(name = "amount") Integer amount) {
         if (amount < 0) {
-            session.player.sendMessage(I18n.t(session, "@Amount must be positive"));
+            session.player.sendMessage(Tr.t(session, "catali.amount_positive"));
             return;
         }
 
@@ -46,7 +46,7 @@ public class CataliClientCommands {
         var teamData = gamemode.findTeam(team);
 
         if (teamData == null) {
-            session.player.sendMessage(I18n.t(session, "@You are not in a team"));
+            session.player.sendMessage(Tr.t(session, "catali.not_in_team"));
             return;
         }
 
@@ -70,7 +70,7 @@ public class CataliClientCommands {
         var team = gamemode.findTeam(player);
 
         if (team == null) {
-            session.player.sendMessage(I18n.t(player, "@Use", "[accent]/p[white]", "@to start a new team"));
+            session.player.sendMessage(Tr.t(player, "catali.start_new_team"));
         } else {
             var showed = false;
             if (team.level.commonUpgradePoints > 0) {
@@ -84,7 +84,7 @@ public class CataliClientCommands {
             }
 
             if (!showed) {
-                session.player.sendMessage(I18n.t(player, "@You have no upgrade points"));
+                session.player.sendMessage(Tr.t(player, "catali.no_upgrade_points"));
             }
         }
     }
@@ -95,7 +95,7 @@ public class CataliClientCommands {
         var team = gamemode.findTeam(player);
 
         if (team == null) {
-            session.player.sendMessage(I18n.t(player, "@Use", "[accent]/p[white]", "@to start a new team"));
+            session.player.sendMessage(Tr.t(player, "catali.start_new_team"));
         } else {
             new AIPickMenu().send(session, team);
         }

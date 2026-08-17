@@ -7,7 +7,7 @@ import arc.util.Log;
 import mindustry.gen.Call;
 import plugin.core.Registry;
 import plugin.gateway.ApiGateway;
-import plugin.utils.I18n;
+import plugin.utils.Tr;
 import plugin.session.Session;
 import dto.ServerDto;
 import java.util.List;
@@ -27,21 +27,21 @@ public class GlobalServerListMenu extends PluginMenu<Integer> {
             PaginationRequest request = new PaginationRequest().setPage(page).setSize(size);
             List<ServerDto> servers = Registry.get(ApiGateway.class).getServers(request);
 
-            this.title = I18n.t(session.locale, "@Servers");
+            this.title = Tr.t(session.locale, "hub.global.title");
             this.description = "";
 
-            text(I18n.t(session.locale, "[#FFD700]", "@Server name"));
-            text(I18n.t(session.locale, "[#FFD700]", "@Players playing"));
+            text(Tr.t(session.locale, "hub.global.server_name"));
+            text(Tr.t(session.locale, "hub.global.players_playing"));
             row();
 
-            text(I18n.t(session.locale, "[#87CEEB]", "@Server Gamemode"));
-            text(I18n.t(session.locale, "[#FFA500]", "@Map Playing"));
+            text(Tr.t(session.locale, "hub.global.server_gamemode"));
+            text(Tr.t(session.locale, "hub.global.map_playing"));
             row();
 
-            text(I18n.t(session.locale, "[#DA70D6]", "@Server Mods"));
+            text(Tr.t(session.locale, "hub.global.server_mods"));
             row();
 
-            text(I18n.t(session.locale, "[#B0B0B0]", "@Server Description"));
+            text(Tr.t(session.locale, "hub.global.server_description"));
             row();
 
             servers.forEach(server -> {
@@ -51,20 +51,20 @@ public class GlobalServerListMenu extends PluginMenu<Integer> {
 
                 option(String.format("[#FFD700]%s", server.getName()),
                         (p, s) -> handle.get(server));
-                option(I18n.t(session.locale, "[#32CD32]", "@Players: ", server.getPlayers()),
+                option(Tr.t(session.locale, "hub.global.players", "players", server.getPlayers()),
                         (p, s) -> handle.get(server));
                 row();
 
-                option(I18n.t(session.locale, "[#87CEEB]", "@Gamemode: ", server.getMode()),
+                option(Tr.t(session.locale, "hub.global.gamemode", "mode", server.getMode()),
                         (p, s) -> handle.get(server));
-                option(I18n.t(session.locale, "[#1E90FF]", "@Map: ",
+                option(Tr.t(session.locale, "hub.global.map", "map",
                         server.getMapName() != null ? server.getMapName()
-                                : I18n.t(session.locale, "[#FF4500]", "@Server offline")),
+                                : Tr.t(session.locale, "hub.global.server_offline")),
                         (p, s) -> handle.get(server));
                 row();
 
                 if (server.getMods() != null && !server.getMods().isEmpty()) {
-                    option(I18n.t(session.locale, "[#DA70D6]", "@Mods: ",
+                    option(Tr.t(session.locale, "hub.global.mods", "mods",
                             String.join(", ", server.getMods())),
                             (p, s) -> handle.get(server));
                     row();
@@ -78,27 +78,27 @@ public class GlobalServerListMenu extends PluginMenu<Integer> {
             });
 
             if (page > 0) {
-                option(I18n.t(session.locale, "[yellow]", "@Previous"),
+                option(Tr.t(session.locale, "hub.global.previous"),
                         (p, s) -> new GlobalServerListMenu(handle).send(p, s - 1));
             } else {
-                option(I18n.t(session.locale, "@First page"), (p, s) -> {
+                option(Tr.t(session.locale, "hub.global.first_page"), (p, s) -> {
                     new GlobalServerListMenu(handle).send(p, s);
-                    Call.infoToast(p.player.con, I18n.t(session.locale, "@Please don't click there"), 10f);
+                    Call.infoToast(p.player.con, Tr.t(session.locale, "hub.global.dont_click"), 10f);
                 });
             }
 
             if (servers.size() == size) {
-                option(I18n.t(session.locale, "[green]", "@Next"), (p, s) -> new GlobalServerListMenu(handle).send(p, s + 1));
+                option(Tr.t(session.locale, "hub.global.next"), (p, s) -> new GlobalServerListMenu(handle).send(p, s + 1));
             } else {
-                option(I18n.t(session.locale, "@No more"), (p, s) -> {
+                option(Tr.t(session.locale, "hub.global.no_more"), (p, s) -> {
                     new GlobalServerListMenu(handle).send(p, s);
-                    Call.infoToast(p.player.con, I18n.t(session.locale, "@Please don't click there"), 10f);
+                    Call.infoToast(p.player.con, Tr.t(session.locale, "hub.global.dont_click"), 10f);
                 });
             }
 
             row();
 
-            text(I18n.t(session.locale, "[red]", "@Close"));
+            text(Tr.t(session.locale, "hub.global.close"));
         } catch (Exception e) {
             Log.err("Failed to build global server list menu", e);
         }

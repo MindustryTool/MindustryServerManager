@@ -6,14 +6,14 @@ import java.util.Locale;
 
 import arc.struct.Seq;
 import plugin.session.SessionRepository.RankData;
-import plugin.utils.I18n;
+import plugin.utils.Tr;
 
 public class RankUtils {
     public static String getRankString(Locale locale, Seq<RankData> players) {
         StringBuilder sb = new StringBuilder("[white]\n");
 
-        sb.append(I18n.t(locale, "[accent]", Utils.padRight("@Rank", 10)))
-                .append(Utils.padRight("Exp", 20))
+        sb.append("[accent]").append(Utils.padRight(Tr.t(locale, "session.rank"), 10))
+                .append(Utils.padRight(Tr.t(locale, "session.exp"), 20))
                 .append("[white]\n");
 
         for (int i = 0; i < players.size; i++) {
