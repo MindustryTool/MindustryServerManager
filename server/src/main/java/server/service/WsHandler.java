@@ -79,17 +79,14 @@ public class WsHandler {
 
             return UUID.fromString(idString);
         } catch (Exception e) {
-            ServerConfigDto serverConfig;
+            ServerConfigDto serverConfig = new ServerConfigDto();
             try {
                 Fi serverConfigFile = nodeManager.getFile(serverId, "server.json");
                 if (serverConfigFile.exists()) {
                     serverConfig = Utils.objectMapper.readValue(serverConfigFile.readBytes(), ServerConfigDto.class);
-                } else {
-                    serverConfig = new ServerConfigDto();
                 }
             } catch (Exception ex) {
                 Log.warn("Failed to read server.json for @, creating fresh", serverId);
-                serverConfig = new ServerConfigDto();
             }
             serverConfig.setJwt(generateServerJwt(serverId, securityKey));
             try {
