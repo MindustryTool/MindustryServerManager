@@ -3,6 +3,7 @@ package server.manager;
 import java.io.Closeable;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -38,6 +39,8 @@ import server.utils.ApiError;
 import server.utils.FileUtils;
 import server.utils.Utils;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.async.ResultCallback;
 import com.github.dockerjava.api.exception.NotFoundException;
@@ -58,6 +61,9 @@ public class DockerNodeManager implements NodeManager {
     private final DockerClient dockerClient;
     private final EnvConfig envConfig;
     private final EventBus eventBus;
+    private final Cache<String, Instant> lastLogTimeCache = Caffeine.newBuilder()
+            .expireAfterWrite(Duration.ofMinutes(5))
+            .build();
 
     private final Map<UUID, ResultCallback.Adapter<Frame>> logCallbacks = new ConcurrentHashMap<>();
 
@@ -623,6 +629,7 @@ public class DockerNodeManager implements NodeManager {
                     if (!message.isBlank()) {
                         eventBus.emit(LogEvent.info(serverId, message));
                     }
+                    lastLogTimeCache.put(containerId, Instant.now());
                 }
 
                 @Override
@@ -633,10 +640,14 @@ public class DockerNodeManager implements NodeManager {
             };
 
             Const.executorService.execute(() -> {
+                Instant lastTime = lastLogTimeCache.getIfPresent(containerId);
+                int since = lastTime == null ? 0 : (int) lastTime.getEpochSecond();
+
                 dockerClient.logContainerCmd(containerId)
                         .withStdOut(true)
                         .withStdErr(true)
                         .withFollowStream(true)
+                        .withSince(since)
                         .exec(callback);
             });
 

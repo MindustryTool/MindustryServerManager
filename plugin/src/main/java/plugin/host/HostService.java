@@ -123,6 +123,7 @@ public class HostService {
             Log.info("[sky]Hosting map @ with mode @.", result.plainName(), preset.name());
 
             Vars.logic.reset();
+
             try {
                 Vars.world.loadMap(result, result.applyRules(preset));
             } catch (Exception e) {
@@ -131,6 +132,7 @@ public class HostService {
                 Log.info("[sky]Randomized next map to be @.", result.plainName());
                 Vars.world.loadMap(result, result.applyRules(preset));
             }
+            
             Vars.state.rules = result.applyRules(preset);
             Vars.logic.play();
             Vars.netServer.openServer();
