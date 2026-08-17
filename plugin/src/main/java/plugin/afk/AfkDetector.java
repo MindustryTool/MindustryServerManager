@@ -34,7 +34,7 @@ public class AfkDetector {
             boolean hasMoved = session.lastX != session.player.x() || session.lastY != session.player.y();
             session.lastX = session.player.x();
             session.lastY = session.player.y();
-            boolean hasClicked = Duration.between(Instant.now(), session.lastClickTime).toSeconds() < 5;
+            boolean hasClicked = Duration.between(session.lastClickTime, Instant.now()).abs().toSeconds() < 5;
             session.isAfk = !hasMoved && !hasClicked;
         });
     }
@@ -42,7 +42,7 @@ public class AfkDetector {
     @Schedule(fixedDelay = 1, unit = TimeUnit.SECONDS)
     public void updateAfkLabel() {
         sessionService.each(session -> session.isAfk, session -> {
-            Call.label("Afk", 1, session.player.x, session.player.y);
+            Call.label("Afk", 1, session.player.x(), session.player.y());
         });
     }
 }
