@@ -38,13 +38,13 @@ public class HostService {
 
         synchronized (lock) {
             try {
-                Log.info("[sky]Hosting server: " + serverId);
+                Log.info("Hosting server: " + serverId);
                 return fn.get();
             } catch (Exception e) {
                 throw new RuntimeException("Host failed", e);
             } finally {
                 hostingLock.remove(serverId);
-                Log.info("[sky]Finish hosting server: " + serverId);
+                Log.info("Finish hosting server: " + serverId);
             }
         }
     }
@@ -56,7 +56,7 @@ public class HostService {
             public void exit() {
                 if (Vars.state.isPlaying()) {
                     SaveIO.save(SAVE_FILE);
-                    Log.info("[sky]Save map to: " + SAVE_FILE);
+                    Log.info("Save map to: " + SAVE_FILE);
                 }
             }
         });
@@ -93,7 +93,7 @@ public class HostService {
                     for (var listener : Core.app.getListeners()) {
                         if (listener.getClass().equals(clazz)) {
                             Reflect.set(clazz, listener, "lastMode", preset);
-                            Log.info("[sky]Last gamemode: " + preset.name());
+                            Log.info("Last gamemode: " + preset.name());
                             break;
                         }
                     }
@@ -108,7 +108,7 @@ public class HostService {
             if (mapName == null) {
                 if (result == null) {
                     result = Vars.maps.getShuffleMode().next(preset, Vars.state.map);
-                    Log.info("[sky]Randomized next map to be @.", result.plainName());
+                    Log.info("Randomized next map to be @.", result.plainName());
                 }
             } else {
                 result = Vars.maps.all().find(map -> map.plainName().replace('_', ' ')
@@ -120,7 +120,7 @@ public class HostService {
                 }
             }
 
-            Log.info("[sky]Hosting map @ with mode @.", result.plainName(), preset.name());
+            Log.info("Hosting map @ with mode @.", result.plainName(), preset.name());
 
             Vars.logic.reset();
 
@@ -129,7 +129,7 @@ public class HostService {
             } catch (Exception e) {
                 Log.info("Fail to host map: " + result.name(), e);
                 result = Vars.maps.getShuffleMode().next(preset, Vars.state.map);
-                Log.info("[sky]Randomized next map to be @.", result.plainName());
+                Log.info("Randomized next map to be @.", result.plainName());
                 Vars.world.loadMap(result, result.applyRules(preset));
             }
             

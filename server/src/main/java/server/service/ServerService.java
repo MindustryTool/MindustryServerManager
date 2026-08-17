@@ -85,7 +85,7 @@ public class ServerService {
             synchronized (buffer) {
                 if (eventListeners.isEmpty()) {
                     buffer.add(event);
-                    if (buffer.size() > 1000){
+                    if (buffer.size() > 1000) {
                         buffer.remove(0);
                     }
                 } else {
@@ -160,7 +160,7 @@ public class ServerService {
 
     public void host(ServerConfig request) {
         ReentrantLock lock = locks.get(request.getId().toString());
-        
+
         lock.lock();
 
         try {
@@ -171,8 +171,14 @@ public class ServerService {
             }
 
             eventBus.emit(LogEvent.info(serverId, "Delete old loader.jar"));
-            nodeManager.deleteFile(serverId, "mindustry-tool-plugins");
-            nodeManager.deleteFile(serverId, "mods/loader.jar");
+
+            var unusedFiles = List.of("mindustry-tool-plugins", "mods/loader.jar", "WEBSOCKET.txt");
+
+            for (String file : unusedFiles) {
+                if (nodeManager.deleteFile(serverId, file)) {
+                    Log.info("Delete old file: " + file);
+                }
+            }
 
             eventBus.emit(LogEvent.info(serverId, "Generate server config file"));
             String jwt = wsHandler.generateServerJwt(serverId, envConfig.serverConfig().securityKey());
@@ -227,7 +233,7 @@ public class ServerService {
 
                 eventBus.emit(LogEvent.info(serverId, "Wait for server status"));
             } catch (Exception e) {
-                throw new ApiError(500,"Fail to send host command", e);
+                throw new ApiError(500, "Fail to send host command", e);
             }
 
             for (int i = 0; i < 120; i++) {
@@ -243,7 +249,9 @@ public class ServerService {
 
             Log.err("Server waiting for hosting status timeout, serverId " + serverId);
 
-            throw new ApiError(503, "Server waiting for hosting status timeout, make sure host command is valid, current host command: " + request.getHostCommand());
+            throw new ApiError(503,
+                    "Server waiting for hosting status timeout, make sure host command is valid, current host command: "
+                            + request.getHostCommand());
         } finally {
             lock.unlock();
         }
@@ -325,8 +333,7 @@ public class ServerService {
                     .server()
                     .getState()
                     .get(2, TimeUnit.SECONDS);
-        } 
-        catch (Exception e) {
+        } catch (Exception e) {
             return new ServerStateDto().setServerId(serverId).setStatus(ServerStatus.DISCONNECT);
         }
     }
