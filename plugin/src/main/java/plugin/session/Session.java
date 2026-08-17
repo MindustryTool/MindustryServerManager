@@ -17,11 +17,18 @@ public class Session {
     public boolean votedGrief = false;
     public int currentLevel = 0;
 
-    public boolean isAfk = false;
+    public static enum AfkState {
+        ACTIVE,
+        POTENTIAL_AFK,
+        AFK
+    }
+
+    public AfkState afkState = AfkState.ACTIVE;
     public double lastX = 0;
     public double lastY = 0;
     public double lastClickX = 0;
     public double lastClickY = 0;
+    public Instant lastPotentialAfkTime = Instant.now();
     public Instant lastClickTime = Instant.now();
 
     public Session(Player player, SessionData data) {

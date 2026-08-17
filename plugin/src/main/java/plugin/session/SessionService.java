@@ -74,6 +74,7 @@ public class SessionService {
 
     public void update(Session session) {
         int level = getLevel.apply(session);
+        
 
         if (level != session.currentLevel) {
             if (session.currentLevel != 0) {
