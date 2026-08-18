@@ -78,7 +78,7 @@ public final class Registry {
                     .toList());
 
             TimeUtils.measure("component scan", () -> filtered
-                    .forEach(clazz -> TimeUtils.measure(clazz.getSimpleName() + " create", () -> getOrCreate(clazz))));
+                    .forEach(clazz -> getOrCreate(clazz)));
 
         } catch (Exception e) {
             throw new RuntimeException("Registry init failed", e);
@@ -205,61 +205,65 @@ public final class Registry {
             return;
         }
 
-        Class<?> clazz = instance.getClass();
+        TimeUtils.measure("initialize " + instance.getClass().getName(), () -> {
 
-        withAnnotation(clazz, Configuration.class, a -> get(ConfigManager.class).process(a, instance));
+            Class<?> clazz = instance.getClass();
 
-        for (Field field : clazz.getDeclaredFields()) {
-            field.setAccessible(true);
+            withAnnotation(clazz, Configuration.class, a -> get(ConfigManager.class).process(a, instance));
 
-            withAnnotation(field, Persistence.class, f -> get(PersistenceManager.class).load(field, f, instance));
-        }
+            for (Field field : clazz.getDeclaredFields()) {
+                field.setAccessible(true);
 
-        for (Method method : clazz.getDeclaredMethods()) {
-            method.setAccessible(true);
+                withAnnotation(field, Persistence.class, f -> get(PersistenceManager.class).load(field, f, instance));
+            }
 
-            withAnnotation(method, Init.class, a -> {
-                try {
-                    method.invoke(instance);
-                } catch (Exception e) {
-                    throw new RuntimeException("Failed to invoke @Init on " + clazz.getName(), e);
-                }
-            });
+            for (Method method : clazz.getDeclaredMethods()) {
+                method.setAccessible(true);
 
-            withAnnotation(method, Schedule.class, a -> {
-                if (ConditionUtils.passes(method)) {
-                    get(Scheduler.class).process(a, instance, method);
-                }
-            });
-            withAnnotation(method, Listener.class, a -> {
-                if (ConditionUtils.passes(method)) {
-                    get(EventRegistrar.class).register(a, instance, method);
-                }
-            });
-            withAnnotation(method, Trigger.class, a -> {
-                if (ConditionUtils.passes(method)) {
-                    get(EventRegistrar.class).register(a, instance, method);
-                }
-            });
-            withAnnotation(method, FileWatcher.class, a -> get(FileWatcherManager.class).process(a, instance, method));
-            withAnnotation(method, ClientCommand.class, a -> {
-                if (ConditionUtils.passes(method)) {
-                    get(ClientCommandHandler.class).addCommand(a, method, instance);
-                }
-            });
-            withAnnotation(method, ServerCommand.class, a -> {
-                if (ConditionUtils.passes(method)) {
-                    get(ServerCommandHandler.class).addCommand(a, method, instance);
-                }
-            });
-            withAnnotation(method, PlayerActionFilter.class, a -> {
-                if (ConditionUtils.passes(method)) {
-                    get(ActionFilterManager.class).addFilter(a, method, instance);
-                }
-            });
-        }
+                withAnnotation(method, Init.class, a -> {
+                    try {
+                        method.invoke(instance);
+                    } catch (Exception e) {
+                        throw new RuntimeException("Failed to invoke @Init on " + clazz.getName(), e);
+                    }
+                });
 
-        initialized.add(instance);
+                withAnnotation(method, Schedule.class, a -> {
+                    if (ConditionUtils.passes(method)) {
+                        get(Scheduler.class).process(a, instance, method);
+                    }
+                });
+                withAnnotation(method, Listener.class, a -> {
+                    if (ConditionUtils.passes(method)) {
+                        get(EventRegistrar.class).register(a, instance, method);
+                    }
+                });
+                withAnnotation(method, Trigger.class, a -> {
+                    if (ConditionUtils.passes(method)) {
+                        get(EventRegistrar.class).register(a, instance, method);
+                    }
+                });
+                withAnnotation(method, FileWatcher.class,
+                        a -> get(FileWatcherManager.class).process(a, instance, method));
+                withAnnotation(method, ClientCommand.class, a -> {
+                    if (ConditionUtils.passes(method)) {
+                        get(ClientCommandHandler.class).addCommand(a, method, instance);
+                    }
+                });
+                withAnnotation(method, ServerCommand.class, a -> {
+                    if (ConditionUtils.passes(method)) {
+                        get(ServerCommandHandler.class).addCommand(a, method, instance);
+                    }
+                });
+                withAnnotation(method, PlayerActionFilter.class, a -> {
+                    if (ConditionUtils.passes(method)) {
+                        get(ActionFilterManager.class).addFilter(a, method, instance);
+                    }
+                });
+            }
+
+            initialized.add(instance);
+        });
     }
 
     private static boolean isLazy(Class<?> type) {
