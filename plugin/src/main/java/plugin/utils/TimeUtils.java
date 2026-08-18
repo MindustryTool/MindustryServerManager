@@ -15,13 +15,13 @@ public class TimeUtils {
     public static void measure(String name, Runnable action) {
         Instant start = Instant.now();
         action.run();
-        Log.debug("[timing] @ took @", name, toString(Duration.between(start, Instant.now())));
+        Log.info("[timing] @ took @", name, toString(Duration.between(start, Instant.now())));
     }
 
     public static <T> T measure(String name, Supplier<T> action) {
         Instant start = Instant.now();
         T result = action.get();
-        Log.debug("[timing] @ took @", name, toString(Duration.between(start, Instant.now())));
+        Log.info("[timing] @ took @", name, toString(Duration.between(start, Instant.now())));
         return result;
     }
 
@@ -30,7 +30,7 @@ public class TimeUtils {
             return "0ms";
         }
 
-        long ms = duration.toMillis();
+        long ms = duration.abs().toMillis();
         StringBuilder out = new StringBuilder();
 
         long days = ms / 86_400_000L;
@@ -64,7 +64,7 @@ public class TimeUtils {
             return "0ms";
         }
 
-        long ms = duration.toMillis();
+        long ms = duration.abs().toMillis();
         StringBuilder out = new StringBuilder();
 
         long days = ms / 86_400_000L;
