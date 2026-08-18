@@ -8,11 +8,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import arc.Core;
-import arc.Events;
 import arc.util.*;
 import mindustry.Vars;
 import mindustry.core.GameState.State;
-import mindustry.game.EventType;
 import mindustry.gen.Groups;
 import plugin.annotations.Schedule;
 import plugin.commands.ClientCommandHandler;
@@ -60,9 +58,7 @@ public class Control extends mindustry.mod.Plugin {
         Core.settings.put("startedAt", System.currentTimeMillis());
 
         try {
-            registerEventListener();
-            registerTriggerListener();
-
+            PluginEvents.register();    
             PluginEvents.on(UnloadServerEvent.class, this::unload);
 
             Registry.init(getClass().getPackage().getName());
@@ -117,6 +113,12 @@ public class Control extends mindustry.mod.Plugin {
             DB.close();
             PluginEvents.unregister();
 
+            try {
+                Core.settings.forceSave();
+            } catch (Exception e) {
+                Log.err("Failed to save settings", e);
+            }
+
             Log.info("Server controller unloaded after running for "
                     + TimeUtils.toString(Duration.between(start, Instant.now())));
         } catch (Exception e) {
@@ -128,7 +130,7 @@ public class Control extends mindustry.mod.Plugin {
         }
     }
 
-    @Schedule(delay = 30, fixedDelay = 2, unit = TimeUnit.SECONDS)
+    @Schedule(delay = 2, fixedDelay = 2, unit = TimeUnit.SECONDS)
     private void autoPause() {
         if (Vars.state.isPlaying() && Groups.player.size() == 0) {
             Vars.state.set(State.paused);
@@ -136,42 +138,6 @@ public class Control extends mindustry.mod.Plugin {
         } else if (Vars.state.isPaused() && Groups.player.size() > 0) {
             Vars.state.set(State.playing);
             Log.info("Player joined: playing");
-        }
-    }
-
-    private void registerEventListener() {
-        for (Class<?> clazz : EventType.class.getDeclaredClasses()) {
-            Events.on(clazz, event -> {
-                try {
-                    if (state != PluginState.LOADED) {
-                        return;
-                    }
-
-                    PluginEvents.fire(event);
-
-                } catch (Exception e) {
-                    Log.err("Failed to invoke event @", event, e);
-                    Log.err(e);
-                }
-            });
-        }
-    }
-
-    private void registerTriggerListener() {
-        for (EventType.Trigger trigger : EventType.Trigger.values()) {
-            Events.run(trigger, () -> {
-                try {
-                    if (state != PluginState.LOADED) {
-                        return;
-                    }
-
-                    PluginEvents.fire(trigger);
-
-                } catch (Exception e) {
-                    Log.err("Failed to invoke trigger @", trigger);
-                    Log.err(e);
-                }
-            });
         }
     }
 }

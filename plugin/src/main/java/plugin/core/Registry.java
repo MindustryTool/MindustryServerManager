@@ -101,12 +101,6 @@ public final class Registry {
 
         instances.clear();
         initialized.clear();
-
-        try {
-            Core.settings.forceSave();
-        } catch (Exception e) {
-            Log.err("Failed to save settings", e);
-        }
     }
 
     @SuppressWarnings("unchecked")

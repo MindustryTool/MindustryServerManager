@@ -2,7 +2,9 @@ package plugin;
 
 import arc.struct.Seq;
 import arc.util.Log;
+import mindustry.game.EventType;
 import arc.struct.ObjectMap;
+import arc.Events;
 import arc.func.Cons;
 
 @SuppressWarnings({ "unchecked", "rawtypes" })
@@ -66,8 +68,50 @@ public class PluginEvents {
         }
     }
 
+    public static void register() {
+        registerEventListener();
+        registerTriggerListener();
+    }
+
     /** Don't do this. */
     public static void unregister() {
         events.clear();
+    }
+
+    
+    private static void registerEventListener() {
+        for (Class<?> clazz : EventType.class.getDeclaredClasses()) {
+            Events.on(clazz, event -> {
+                try {
+                    if (Control.state != PluginState.LOADED) {
+                        return;
+                    }
+
+                    PluginEvents.fire(event);
+
+                } catch (Exception e) {
+                    Log.err("Failed to invoke event @", event, e);
+                    Log.err(e);
+                }
+            });
+        }
+    }
+
+    private static void registerTriggerListener() {
+        for (EventType.Trigger trigger : EventType.Trigger.values()) {
+            Events.run(trigger, () -> {
+                try {
+                    if (Control.state != PluginState.LOADED) {
+                        return;
+                    }
+
+                    PluginEvents.fire(trigger);
+
+                } catch (Exception e) {
+                    Log.err("Failed to invoke trigger @", trigger);
+                    Log.err(e);
+                }
+            });
+        }
     }
 }
