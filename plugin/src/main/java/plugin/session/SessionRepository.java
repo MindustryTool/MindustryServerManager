@@ -277,7 +277,7 @@ public class SessionRepository {
                 continue;
             }
 
-            data.exp = ExpUtils.playTimeToExp(data.playTime);
+            data.exp = data.playTime / 1000;
 
             var updatedJson = JsonUtils.toJsonString(data);
             long totalExp = (long) data.exp;

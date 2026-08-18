@@ -55,3 +55,15 @@ Catalog values SHALL support named placeholders of the form `{token}`. When a tr
 #### Scenario: Color codes preserved
 - **WHEN** a catalog value begins with a color code like `[scarlet]` and contains a placeholder
 - **THEN** the color code remains at the start of the interpolated result
+
+### Requirement: Non-English catalogs kept key-identical to English
+
+All non-English catalog files SHALL maintain the exact same set of dotted keys as `i18n/en.json` at all times. Whenever a key is added, renamed, or removed in `en.json`, translators SHALL apply the same operation to every other catalog. This requirement is enforced by the `locale-key-parity` test.
+
+#### Scenario: Key added to English catalog
+- **WHEN** a new entry is added to `i18n/en.json`
+- **THEN** the same key SHALL exist in `vi.json`, `zh.json`, and `ru.json`, or the parity test fails
+
+#### Scenario: Key removed from English catalog
+- **WHEN** an entry is removed from `i18n/en.json`
+- **THEN** the parity test fails until the same key is removed from every other catalog

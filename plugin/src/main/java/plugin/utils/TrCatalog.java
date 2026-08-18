@@ -1,8 +1,10 @@
 package plugin.utils;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -34,6 +36,11 @@ public class TrCatalog {
 
     public boolean hasLanguage(String language) {
         return catalogs.containsKey(language);
+    }
+
+    public Set<String> keys(String language) {
+        Map<String, String> entries = catalogs.get(language);
+        return entries == null ? Collections.emptySet() : entries.keySet();
     }
 
     public String lookup(Locale locale, String key) {

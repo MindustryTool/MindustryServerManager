@@ -132,7 +132,7 @@ public class ApiGateway {
         this.registerMessageHandler("get-kicked-ips", Void.class, (request) -> getKicks());
     }
 
-    @Schedule(delay = 10, fixedDelay = 60, unit = TimeUnit.SECONDS)
+@Schedule(delay = 5, fixedDelay = 60, unit = TimeUnit.SECONDS)
     private void autoHost() {
         try {
             boolean isGame = Vars.state.isGame();
