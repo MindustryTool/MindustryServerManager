@@ -1,12 +1,29 @@
 package plugin.utils;
 
+import arc.util.Log;
+
 import java.time.Duration;
+import java.time.Instant;
+import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class TimeUtils {
 
     private static final Pattern PART = Pattern.compile("(\\d+)(ms|s|m|h|d)", Pattern.CASE_INSENSITIVE);
+
+    public static void measure(String name, Runnable action) {
+        Instant start = Instant.now();
+        action.run();
+        Log.debug("[timing] @ took @", name, toString(Duration.between(start, Instant.now())));
+    }
+
+    public static <T> T measure(String name, Supplier<T> action) {
+        Instant start = Instant.now();
+        T result = action.get();
+        Log.debug("[timing] @ took @", name, toString(Duration.between(start, Instant.now())));
+        return result;
+    }
 
     public static String toString(Duration duration) {
         if (duration == null || duration.isZero()) {

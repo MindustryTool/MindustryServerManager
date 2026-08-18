@@ -7,6 +7,7 @@ import org.reflections.scanners.Scanners;
 import plugin.annotations.*;
 import plugin.commands.ClientCommandHandler;
 import plugin.commands.ServerCommandHandler;
+import plugin.utils.TimeUtils;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
@@ -27,47 +28,57 @@ public final class Registry {
 
     public static void init(String packageName) {
         try {
-            Reflections reflections = new Reflections(packageName, Scanners.TypesAnnotated);
-            Set<Class<?>> components = reflections.getTypesAnnotatedWith(Component.class);
-
-            currentGamemode = Core.settings.getString(GAMEMODE_KEY, "");
-
-            if (currentGamemode != null) {
-                Log.info("[sky]Current gamemode: " + currentGamemode);
-            }
-
-            components.stream().sorted(Comparator.comparingInt(c -> {
-                var cons = c.getDeclaredConstructors();
-
-                if (cons.length == 0) {
-                    return 1;
-                }
-
-                return cons[0].getParameterCount();
-            })).forEach(clazz -> {
-                if (clazz.isAnnotation() || clazz.isInterface()) {
-                    return;
-                }
-
-                if (isLazy(clazz)) {
-                    return;
-                }
-
-                if (!ConditionUtils.passes(clazz)) {
-                    Log.debug("[gray]Skipping component @ due to condition @", clazz.getName(),
-                            clazz.getAnnotation(ConditionOn.class).value().getName());
-                    return;
-                }
-
-                if (clazz.isAnnotationPresent(Gamemode.class)) {
-                    Gamemode gamemode = clazz.getAnnotation(Gamemode.class);
-                    if (!Arrays.stream(gamemode.value()).anyMatch(g -> g.equalsIgnoreCase(currentGamemode))) {
-                        return;
-                    }
-                }
-
-                getOrCreate(clazz);
+            Set<Class<?>> components = TimeUtils.measure("reflection scan", () -> {
+                Reflections reflections = new Reflections(packageName, Scanners.TypesAnnotated);
+                return reflections.getTypesAnnotatedWith(Component.class);
             });
+
+            TimeUtils.measure("gamemode setup", () -> {
+                currentGamemode = Core.settings.getString(GAMEMODE_KEY, "");
+
+                if (currentGamemode != null) {
+                    Log.info("[sky]Current gamemode: " + currentGamemode);
+                }
+            });
+
+            List<Class<?>> filtered = TimeUtils.measure("filtering", () -> components.stream()
+                    .sorted(Comparator.comparingInt(c -> {
+                        var cons = c.getDeclaredConstructors();
+
+                        if (cons.length == 0) {
+                            return 1;
+                        }
+
+                        return cons[0].getParameterCount();
+                    }))
+                    .filter(clazz -> {
+                        if (clazz.isAnnotation() || clazz.isInterface()) {
+                            return false;
+                        }
+
+                        if (isLazy(clazz)) {
+                            return false;
+                        }
+
+                        if (!ConditionUtils.passes(clazz)) {
+                            Log.debug("[gray]Skipping component @ due to condition @", clazz.getName(),
+                                    clazz.getAnnotation(ConditionOn.class).value().getName());
+                            return false;
+                        }
+
+                        if (clazz.isAnnotationPresent(Gamemode.class)) {
+                            Gamemode gamemode = clazz.getAnnotation(Gamemode.class);
+                            if (!Arrays.stream(gamemode.value()).anyMatch(g -> g.equalsIgnoreCase(currentGamemode))) {
+                                return false;
+                            }
+                        }
+
+                        return true;
+                    })
+                    .toList());
+
+            TimeUtils.measure("component scan", () -> filtered
+                    .forEach(clazz -> TimeUtils.measure(clazz.getSimpleName() + " create", () -> getOrCreate(clazz))));
 
         } catch (Exception e) {
             throw new RuntimeException("Registry init failed", e);
@@ -90,6 +101,12 @@ public final class Registry {
 
         instances.clear();
         initialized.clear();
+
+        try {
+            Core.settings.forceSave();
+        } catch (Exception e) {
+            Log.err("Failed to save settings", e);
+        }
     }
 
     @SuppressWarnings("unchecked")
