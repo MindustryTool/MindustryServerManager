@@ -1,0 +1,3 @@
+rootProject.name = "MindustryServerManager"
+
+include("server", "plugin", "dto")

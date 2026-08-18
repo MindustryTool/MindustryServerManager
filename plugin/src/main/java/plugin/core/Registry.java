@@ -2,8 +2,6 @@ package plugin.core;
 
 import arc.Core;
 import arc.util.Log;
-import org.reflections.Reflections;
-import org.reflections.scanners.Scanners;
 import plugin.annotations.*;
 import plugin.commands.ClientCommandHandler;
 import plugin.commands.ServerCommandHandler;
@@ -28,10 +26,7 @@ public final class Registry {
 
     public static void init(String packageName) {
         try {
-            Set<Class<?>> components = TimeUtils.measure("reflection scan", () -> {
-                Reflections reflections = new Reflections(packageName, Scanners.TypesAnnotated);
-                return reflections.getTypesAnnotatedWith(Component.class);
-            });
+            List<Class<?>> components = List.of(ComponentRegistry.COMPONENTS);
 
             TimeUtils.measure("gamemode setup", () -> {
                 currentGamemode = Core.settings.getString(GAMEMODE_KEY, "");
@@ -46,7 +41,7 @@ public final class Registry {
                         var cons = c.getDeclaredConstructors();
 
                         if (cons.length == 0) {
-                            return 1;
+                            return 0;
                         }
 
                         return cons[0].getParameterCount();

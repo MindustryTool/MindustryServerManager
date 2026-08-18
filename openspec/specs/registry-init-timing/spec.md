@@ -3,7 +3,7 @@
 ## Requirements
 
 ### Requirement: Measure named operations during init
-The Registry SHALL time each major init step by wrapping it in a helper that takes a name and a `Runnable`, runs the operation, and logs the elapsed duration at debug level. Steps SHALL include reflection scan, gamemode setup, filtering, and the component scan loop.
+The Registry SHALL time each major init step by wrapping it in a helper that takes a name and a `Runnable`, runs the operation, and logs the elapsed duration at debug level. Steps SHALL include component discovery, gamemode setup, filtering, and the component scan loop.
 
 #### Scenario: Init step duration is logged
 - **WHEN** `Registry.init` executes a timed init step
