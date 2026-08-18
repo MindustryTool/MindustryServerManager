@@ -1,3 +1,4 @@
+
 java {
     targetCompatibility = JavaVersion.VERSION_17
     sourceCompatibility = JavaVersion.VERSION_17
@@ -67,6 +68,7 @@ $body
 tasks.named("compileJava") {
     dependsOn("generateComponentRegistry")
 }
+
 
 tasks.withType<JavaCompile> {
     options.encoding = "UTF-8"

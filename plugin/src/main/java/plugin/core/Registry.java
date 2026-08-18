@@ -37,15 +37,6 @@ public final class Registry {
             });
 
             List<Class<?>> filtered = TimeUtils.measure("filtering", () -> components.stream()
-                    .sorted(Comparator.comparingInt(c -> {
-                        var cons = c.getDeclaredConstructors();
-
-                        if (cons.length == 0) {
-                            return 0;
-                        }
-
-                        return cons[0].getParameterCount();
-                    }))
                     .filter(clazz -> {
                         if (clazz.isAnnotation() || clazz.isInterface()) {
                             return false;
