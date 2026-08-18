@@ -71,13 +71,23 @@ public class ServerMain {
 
         app.exception(ApiError.class, (e, ctx) -> {
             ctx.status(e.status);
-            ctx.json(Map.of("error", e.getMessage(), "message", e.getMessage(), "url", ctx.path()));
+            ctx.json(Map.of(
+                    "error", e.getMessage(),
+                    "message", e.getMessage(),
+                    "url", ctx.path(),
+                    "source", "Server Manager"//
+            ));
         });
 
         app.exception(Exception.class, (e, ctx) -> {
             Log.err(e);
             ctx.status(500);
-            ctx.json(Map.of("error", "Internal Server Error: " + e.getMessage(), "message", e.getMessage(), "url", ctx.path()));
+            ctx.json(Map.of(
+                    "error", "Internal Server Error: " + e.getMessage(),
+                    "message", e.getMessage(),
+                    "url", ctx.path(),
+                    "source", "Server Manager"//
+            ));
         });
 
         app.before(ctx -> ctx.attribute("start", Instant.now()));
