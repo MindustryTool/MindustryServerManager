@@ -512,7 +512,8 @@ public class DockerNodeManager implements NodeManager {
     public Object getFiles(UUID serverId, String path) {
         Fi file = getFile(serverId, path);
         if (!file.exists())
-            throw new ApiError(404, file.absolutePath());
+            return new ArrayList<>();
+
         return FileUtils.getFiles(file.absolutePath());
     }
 
