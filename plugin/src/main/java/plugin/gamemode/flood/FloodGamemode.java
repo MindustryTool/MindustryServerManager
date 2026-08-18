@@ -98,7 +98,7 @@ public class FloodGamemode {
 
         var unitCount = Groups.unit.count(u -> u.team == Team.crux);
 
-        if (unitCount >= 100) {
+        if (unitCount >= 50) {
             return;
         }
 
@@ -108,9 +108,9 @@ public class FloodGamemode {
             unitType = null;
         } else if (days < 2) {
             unitType = UnitTypes.atrax;
-        } else if (days < 4) {
+        } else if (days < 8) {
             unitType = UnitTypes.spiroct;
-        } else if (days < 5) {
+        } else if (days < 12) {
             unitType = UnitTypes.arkyid;
         } else {
             unitType = UnitTypes.toxopid;
@@ -393,7 +393,7 @@ public class FloodGamemode {
         float elapsedMinutes = (Time.millis() - startedAt) / 1000 / 60;
         float destroyedCores = (cores - Team.crux.cores().size) + suppressed.size();
 
-        return 1f + (destroyedCores / cores) + (0.01f * elapsedMinutes) + (isNight ? 2 : 0);
+        return 1f + (destroyedCores / cores) + (0.01f * elapsedMinutes) + (isNight ? 1.5f : 0);
     }
 
     @MainThread
