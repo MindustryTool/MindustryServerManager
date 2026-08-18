@@ -1,10 +1,7 @@
 package plugin.host;
 
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 
-import arc.ApplicationListener;
 import arc.Core;
 import arc.files.Fi;
 import arc.util.Log;
@@ -19,47 +16,25 @@ import mindustry.maps.MapException;
 import plugin.Control;
 import plugin.PluginState;
 import plugin.annotations.Component;
-import plugin.annotations.Init;
+import plugin.annotations.Destroy;
 import plugin.annotations.MainThread;
 import plugin.annotations.Schedule;
 
 @Component
 @RequiredArgsConstructor
 public class HostService {
-    private final ConcurrentHashMap<String, Object> hostingLock = new ConcurrentHashMap<>();
     public final Fi SAVE_FILE = Vars.dataDirectory.child("LAST_MAP.msav");
 
-    public boolean isHosting(String serverId) {
-        return hostingLock.containsKey(serverId);
-    }
-
-    public String hostLock(String serverId, Supplier<String> fn) {
-        Object lock = hostingLock.computeIfAbsent(serverId, k -> new Object());
-
-        synchronized (lock) {
-            try {
-                Log.info("Hosting server: " + serverId);
-                return fn.get();
-            } catch (Exception e) {
-                throw new RuntimeException("Host failed", e);
-            } finally {
-                hostingLock.remove(serverId);
-                Log.info("Finish hosting server: " + serverId);
-            }
-        }
-    }
-
-    @Init
+    @Destroy
     private void saveOnExit() {
-        Core.app.addListener(new ApplicationListener() {
-            @Override
-            public void exit() {
-                if (Vars.state.isPlaying()) {
-                    SaveIO.save(SAVE_FILE);
-                    Log.info("Save map to: " + SAVE_FILE);
-                }
+        try {
+            if (Vars.state.isPlaying()) {
+                SaveIO.save(SAVE_FILE);
+                Log.info("Save map to: " + SAVE_FILE);
             }
-        });
+        } catch (Exception e) {
+            Log.err("Failed to save map", e);
+        }
     }
 
     @MainThread
@@ -132,7 +107,7 @@ public class HostService {
                 Log.info("Randomized next map to be @.", result.plainName());
                 Vars.world.loadMap(result, result.applyRules(preset));
             }
-            
+
             Vars.state.rules = result.applyRules(preset);
             Vars.logic.play();
             Vars.netServer.openServer();

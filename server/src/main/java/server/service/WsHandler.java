@@ -30,7 +30,7 @@ public class WsHandler {
         ws.onConnect(handler -> {
             try {
                 UUID serverId = parseServerJwt(handler, securityKey);
-                gatewayService.of(serverId).setSocketContext(handler);
+                gatewayService.of(serverId).onOpen(handler);
             } catch (Exception e) {
                 Log.err("Error on connect", e);
                 handler.closeSession();
@@ -51,7 +51,7 @@ public class WsHandler {
         ws.onClose(handler -> {
             try {
                 UUID serverId = parseServerJwt(handler, securityKey);
-                gatewayService.of(serverId).setSocketContext(null);
+                gatewayService.of(serverId).onClose(handler);
             } catch (Exception e) {
                 Log.err("Error on close", e);
             }

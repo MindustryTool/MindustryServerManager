@@ -47,7 +47,9 @@ import events.ServerEvents;
 import events.ServerEvents.LogEvent;
 import events.ServerEvents.StartEvent;
 import events.ServerEvents.StopEvent;
+import io.javalin.websocket.WsCloseContext;
 import io.javalin.websocket.WsCloseStatus;
+import io.javalin.websocket.WsConnectContext;
 import io.javalin.websocket.WsContext;
 import io.javalin.websocket.WsMessageContext;
 import server.EnvConfig;
@@ -108,13 +110,18 @@ public class GatewayService {
     }
 
     public boolean terminate(UUID serverId, NodeRemoveReason reason) {
-        var client = clients.remove(serverId);
+        var client = clients.get(serverId);
 
         if (client == null) {
             return nodeManager.remove(serverId, reason);
         }
 
-        client.terminate(reason);
+        boolean handled = client.terminate(reason);
+
+        if (handled) {
+            clients.remove(serverId);
+        }
+
         return true;
     }
 
@@ -173,28 +180,27 @@ public class GatewayService {
             });
         }
 
-        public synchronized void setSocketContext(WsContext context) {
-            if (context == null) {
-                if (nodeManager.isRunning(id)) {
-                    eventBus.emit(new StopEvent(id, NodeRemoveReason.SOCKET_DISCONNECT));
-                }
-                this.context.completeExceptionally(new RuntimeException("Disconnected"));
-                this.context = new CompletableFuture<WsContext>();
-                state = ClientState.DISCONNECTED;
-
-                Log.err("Gateway client disconnected: " + id);
-                return;
-            } else {
-                if (this.context.isDone()) {
-                    this.context = CompletableFuture.completedFuture(context);
-                }
-
-                state = ClientState.CONNECTED;
-                lastHeartBeatAt = Instant.now();
-                eventBus.emit(new StartEvent(id));
-                this.context.complete(context);
-                Log.info("Gateway client connected: " + id);
+        public synchronized void onOpen(WsConnectContext context) {
+            if (this.context.isDone()) {
+                this.context = CompletableFuture.completedFuture(context);
             }
+
+            state = ClientState.CONNECTED;
+            lastHeartBeatAt = Instant.now();
+            eventBus.emit(new StartEvent(id));
+            this.context.complete(context);
+            Log.info("Gateway client connected: " + id);
+        }
+
+        public synchronized void onClose(WsCloseContext context) {
+            if (!isTerminated() && nodeManager.isRunning(id)) {
+                eventBus.emit(new StopEvent(id, NodeRemoveReason.SOCKET_DISCONNECT));
+            }
+            this.context.completeExceptionally(new RuntimeException("Disconnected"));
+            this.context = new CompletableFuture<WsContext>();
+            state = ClientState.DISCONNECTED;
+
+            Log.info("Gateway client disconnected: " + id);
         }
 
         public boolean isTerminated() {
@@ -205,14 +211,25 @@ public class GatewayService {
             return !isTerminated() && Instant.now().isAfter(lastHeartBeatAt.plus(TERMINATE_CONNECTION_AFTER));
         }
 
-        public void terminate(NodeRemoveReason reason) {
+        public boolean terminate(NodeRemoveReason reason) {
+            if (isTerminated()) {
+                return false;
+            }
             terminatedAt = Instant.now();
-            try {
 
+            try {
+                this.server.shutdown().get(10, TimeUnit.SECONDS);
+            } catch (Exception e) {
+                Log.err("Error terminating client: " + id, e);
+            }
+
+            try {
                 WsContext socket = context.getNow(null);
 
                 if (socket != null) {
-                    socket.closeSession(WsCloseStatus.NORMAL_CLOSURE, "Terminate by server");
+                    if (socket.session.isOpen()) {
+                        socket.closeSession(WsCloseStatus.NORMAL_CLOSURE, "Terminate by server");
+                    }
                 } else {
                     context.completeExceptionally(ApiError.badRequest("Server terminate"));
                 }
@@ -231,6 +248,8 @@ public class GatewayService {
                     Log.err("Error removing node: " + id, e2);
                 }
             }
+
+            return true;
         }
 
         public void checkHeartbeat() {
@@ -451,6 +470,10 @@ public class GatewayService {
 
             public CompletableFuture<Void> sendChat(JsonNode request) {
                 return sendRequest("chat", request);
+            }
+
+            public CompletableFuture<Void> shutdown() {
+                return sendRequest("shutdown", null);
             }
 
             public CompletableFuture<Boolean> isHosting() {

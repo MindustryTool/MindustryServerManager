@@ -29,8 +29,8 @@ import com.neovisionaries.ws.client.WebSocket;
 import arc.struct.Seq;
 import arc.util.Log;
 import plugin.Control;
+import plugin.PluginEvents;
 import plugin.annotations.Component;
-import plugin.annotations.Destroy;
 import plugin.annotations.Listener;
 import plugin.session.SessionCreatedEvent;
 import plugin.session.SessionRemovedEvent;
@@ -74,6 +74,7 @@ import plugin.commands.ServerCommandHandler;
 import plugin.Cfg;
 import plugin.PluginState;
 import plugin.core.Registry;
+import plugin.event.UnloadServerEvent;
 import dto.CommandParamDto;
 import dto.PlayerInfoDto;
 import dto.ServerCommandDto;
@@ -109,7 +110,7 @@ public class ApiGateway {
 
     private final Map<UUID, CompletableFuture<JsonNode>> pendingRequests = new ConcurrentHashMap<>();
 
-    private boolean isDestroyed = false;
+    private boolean shutdown = false;
     private boolean lastIsGame = true;
 
     @Init
@@ -130,14 +131,16 @@ public class ApiGateway {
         this.registerMessageHandler("get-commands", Void.class, (request) -> getCommands());
         this.registerMessageHandler("get-players-info", JsonNode.class, (request) -> getPlayersInfo(request));
         this.registerMessageHandler("get-kicked-ips", Void.class, (request) -> getKicks());
+        this.registerMessageHandler("shutdown", Void.class, (request) -> shutdown());
+
     }
 
-@Schedule(delay = 5, fixedDelay = 60, unit = TimeUnit.SECONDS)
+    @Schedule(delay = 5, fixedDelay = 60, unit = TimeUnit.SECONDS)
     private void autoHost() {
         try {
             boolean isGame = Vars.state.isGame();
 
-            if (lastIsGame == false && isGame == false && !hostService.isHosting(Control.SERVER_ID.toString())) {
+            if (lastIsGame == false && isGame == false) {
                 Log.info("[sky]Server not hosting, auto host");
                 ServerConfigDto serverConfig = Cfg.serverConfig();
                 if (serverConfig != null && serverConfig.getStartServer() != null) {
@@ -178,8 +181,20 @@ public class ApiGateway {
         return sendRequest(type, payload, Void.class);
     }
 
+    public Void shutdown() {
+        shutdown = true;
+        Log.info("[purple]Server shutdown");
+
+        PluginEvents.fire(new UnloadServerEvent(false));
+        return null;
+    }
+
     private synchronized void connect() {
         try {
+            if (shutdown) {
+                return;
+            }
+
             if (webSocket != null && webSocket.isOpen()) {
                 return;
             }
@@ -216,7 +231,8 @@ public class ApiGateway {
         @Override
         public void onDisconnected(WebSocket websocket, WebSocketFrame serverCloseFrame,
                 WebSocketFrame clientCloseFrame, boolean closedByServer) throws Exception {
-            if (isDestroyed) {
+
+            if (shutdown) {
                 return;
             }
 
@@ -233,7 +249,7 @@ public class ApiGateway {
 
         @Override
         public void onConnectError(WebSocket websocket, WebSocketException exception) throws Exception {
-            if (isDestroyed) {
+            if (shutdown) {
                 return;
             }
             Log.err("Error connecting to server manager", exception);
@@ -299,7 +315,7 @@ public class ApiGateway {
 
     @Schedule(delay = 5, fixedDelay = 5, unit = TimeUnit.SECONDS)
     private void autoReconnect() {
-        if (isDestroyed) {
+        if (shutdown) {
             return;
         }
 
@@ -515,7 +531,8 @@ public class ApiGateway {
 
             return null;
         } catch (Exception e) {
-            Log.err("Failed to host server with map: " + mapName + " and mode: " + gameMode + " commands: " + commands, e);
+            Log.err("Failed to host server with map: " + mapName + " and mode: " + gameMode + " commands: " + commands,
+                    e);
             throw new RuntimeException("Fail to host server", e);
         }
     }
@@ -647,14 +664,15 @@ public class ApiGateway {
         }
     }
 
-    public String hostRemoteServer(String targetServerId) {
-        return hostService.hostLock(targetServerId, () -> {
-            try {
-                return sendRequest("host", targetServerId, String.class).get(90, TimeUnit.SECONDS);
-            } catch (InterruptedException | ExecutionException | TimeoutException e) {
-                throw new RuntimeException("Host failed", e);
-            }
-        });
+    public synchronized String hostRemoteServer(String targetServerId) {
+        try {
+            Log.info("Hosting server: " + targetServerId);
+            return sendRequest("host", targetServerId, String.class).get(90, TimeUnit.SECONDS);
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            throw new RuntimeException("Host failed", e);
+        } finally {
+            Log.info("Finish hosting server: " + targetServerId);
+        }
     }
 
     public synchronized List<ServerDto> getServers(PaginationRequest request) {
@@ -704,16 +722,6 @@ public class ApiGateway {
             fire(event);
         } catch (Exception error) {
             Log.err("Failed to send state update", error);
-        }
-    }
-
-    @Destroy
-    public void destroy() {
-        isDestroyed = true;
-        serverQueryCache.invalidateAll();
-
-        if (webSocket != null) {
-            webSocket.disconnect();
         }
     }
 }

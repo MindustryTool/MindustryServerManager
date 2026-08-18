@@ -97,9 +97,8 @@ public class PluginUpdater {
             pluginFile.writeBytes(data);
         }
 
-        PluginEvents.fire(new UnloadServerEvent());
         Log.info("[purple]Plugin updated, restarting...");
-        System.exit(0);
+        PluginEvents.fire(new UnloadServerEvent(true));
     }
 
     private String readCurrentUpdatedAt(PluginData plugin) {

@@ -60,22 +60,21 @@ public class Control extends mindustry.mod.Plugin {
         Core.settings.put("startedAt", System.currentTimeMillis());
 
         try {
-            Registry.init(getClass().getPackage().getName());
-            Registry.get(this.getClass());
-
             registerEventListener();
             registerTriggerListener();
 
-            state = PluginState.LOADED;
+            PluginEvents.on(UnloadServerEvent.class, this::unload);
 
-            PluginEvents.run(UnloadServerEvent.class, this::unload);
+            Registry.init(getClass().getPackage().getName());
+            Registry.get(this.getClass());
+
+            state = PluginState.LOADED;
 
             Log.info("Plugin loaded in " + TimeUtils.toString(Duration.between(start, Instant.now())));
 
         } catch (Exception e) {
             Log.err("Failed to init plugin", e);
-            unload();
-            System.exit(0);
+            unload(new UnloadServerEvent(true));
         }
     }
 
@@ -85,8 +84,7 @@ public class Control extends mindustry.mod.Plugin {
             Log.err("[scarlet]Server in invalid state, auto exit: state=@, server=@, plugin-state=@",
                     Vars.state.getState().name(),
                     Vars.net.server(), state);
-            unload();
-            System.exit(0);
+            PluginEvents.fire(new UnloadServerEvent(true));
         }
     }
 
@@ -102,24 +100,32 @@ public class Control extends mindustry.mod.Plugin {
         Registry.get(ClientCommandHandler.class).registerCommands(handler);
     }
 
-    public synchronized void unload() {
-        if (state == PluginState.UNLOADED) {
-            return;
+    public synchronized void unload(UnloadServerEvent event) {
+        try {
+            if (state == PluginState.UNLOADED) {
+                return;
+            }
+
+            state = PluginState.UNLOADED;
+
+            Log.info("Unload");
+
+            Tasks.destroy();
+
+            PluginEvents.fire(new PluginUnloadEvent());
+            Registry.destroy();
+            DB.close();
+            PluginEvents.unregister();
+
+            Log.info("Server controller unloaded after running for "
+                    + TimeUtils.toString(Duration.between(start, Instant.now())));
+        } catch (Exception e) {
+            Log.err("Failed to unload plugin", e);
+        } finally {
+            if (event.exit) {
+                System.exit(0);
+            }
         }
-
-        state = PluginState.UNLOADED;
-
-        Log.info("Unload");
-
-        Tasks.destroy();
-
-        PluginEvents.fire(new PluginUnloadEvent());
-        Registry.destroy();
-        DB.close();
-        PluginEvents.unregister();
-
-        Log.info("Server controller unloaded after running for "
-                + TimeUtils.toString(Duration.between(start, Instant.now())));
     }
 
     @Schedule(delay = 30, fixedDelay = 2, unit = TimeUnit.SECONDS)

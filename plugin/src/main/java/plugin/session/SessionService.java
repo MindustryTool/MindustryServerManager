@@ -8,6 +8,7 @@ import java.util.function.Function;
 
 import arc.func.Boolf;
 import arc.func.Cons;
+import arc.struct.Seq;
 import arc.util.Log;
 import arc.util.Strings;
 import dto.LoginDto;
@@ -25,6 +26,7 @@ import plugin.annotations.Component;
 import plugin.annotations.Destroy;
 import plugin.annotations.Listener;
 import plugin.annotations.Schedule;
+import plugin.session.SessionRepository.RankData;
 import plugin.utils.Tr;
 import plugin.utils.Utils;
 
@@ -34,6 +36,7 @@ public class SessionService {
     private final ConcurrentHashMap<String, Session> data = new ConcurrentHashMap<>();
 
     private final SessionRepository sessionRepository;
+    private Seq<RankData> leaderboard = new Seq<>();
 
     public Function<Session, Integer> getLevel = session -> {
         SessionData data = session.getData();
@@ -45,15 +48,22 @@ public class SessionService {
         boolean hasColor = session.currentLevel > Cfg.COLOR_NAME_LEVEL || session.player.admin;
         String playerName = hasColor ? session.getData().name : Strings.stripColors(session.getData().name);
         Locale locale = Utils.parseLocale(session.player.locale);
-        String language = locale.getLanguage().toUpperCase();
+        String languageOrRank = locale.getLanguage().toUpperCase();
 
-        if (language.isEmpty()) {
-            language = session.player.locale;
+        if (languageOrRank.isEmpty()) {
+            languageOrRank = session.player.locale;
+        }
+
+        for (int i = 0; i < leaderboard.size; i++) {
+            if (leaderboard.get(i).uuid.equals(session.player.uuid())) {
+                languageOrRank = String.format("Rank %d", i + 1);
+                break;
+            }
         }
 
         return "[white]"
                 + (session.isLoggedIn() ? Iconc.ok : "") + "["
-                + language + "] " + "<" + "[accent]" + session.currentLevel + "[white]> "
+                + languageOrRank + "] " + "<" + "[accent]" + session.currentLevel + "[white]> "
                 + playerName;
     };
 
@@ -69,6 +79,11 @@ public class SessionService {
 
     public ConcurrentHashMap<String, Session> get() {
         return data;
+    }
+
+    @Schedule(fixedDelay = 1, unit = TimeUnit.MINUTES)
+    private void updateLeaderboardData() {
+        leaderboard = sessionRepository.leaderBoard(3);
     }
 
     @Schedule(fixedDelay = 1, unit = TimeUnit.SECONDS)
@@ -135,8 +150,8 @@ public class SessionService {
             }
 
             session.currentLevel = level;
-            session.player.name(getPlayerName.apply(session));
         }
+        session.player.name(getPlayerName.apply(session));
         sessionRepository.markDirty(session);
     }
 
