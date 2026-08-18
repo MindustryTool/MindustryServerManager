@@ -104,3 +104,15 @@ The daily login process SHALL NOT be hardcoded in `SessionService`. It SHALL be 
 #### Scenario: Excludes AFK sessions
 - **WHEN** `SessionService.countActive()` is called while some sessions are AFK
 - **THEN** the returned count excludes those AFK sessions
+
+### Requirement: Returning player data is never silently discarded
+
+`SessionRepository` SHALL NOT silently substitute a fresh zeroed `SessionData` when a returning player's stored row exists but cannot be read or parsed. `get(uuid)` SHALL return a fresh `SessionData` only for uuids with no existing row; for an existing row that fails to load, the failure SHALL be logged (including the uuid and error) and the previously cached `SessionData` SHALL be preserved so the player's level is not reset.
+
+#### Scenario: Fresh player initializes normally
+- **WHEN** a `PlayerJoin` event fires for a uuid with no row in the `sessions` table
+- **THEN** `SessionService.put(Player)` creates a session backed by a fresh `SessionData` and the player starts at level 1
+
+#### Scenario: Corrupt row does not reset level
+- **WHEN** a `PlayerJoin` event fires for a uuid whose stored row exists but fails to deserialize
+- **THEN** the error is logged with the uuid, the previously cached `SessionData` is kept if present, and the player is not silently reset to level 1

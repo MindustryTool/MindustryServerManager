@@ -2,10 +2,12 @@ package plugin.session;
 
 import java.sql.SQLException;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
+import arc.Core;
 import arc.struct.Seq;
 import arc.util.Log;
 import lombok.AllArgsConstructor;
@@ -27,6 +29,7 @@ public class SessionRepository {
     @Init
     public void init() {
         createTableIfNotExists();
+        migrateStoredExpCounters();
     }
 
     @Listener
@@ -62,14 +65,26 @@ public class SessionRepository {
             return existing;
         }
 
+        SessionData loaded;
         try {
-            var loaded = read(uuid);
-            cache.put(uuid, loaded);
-            return loaded;
+            loaded = read(uuid);
         } catch (Exception e) {
             Log.err("Error while loading session data for uuid: @", uuid, e);
-            return new SessionData();
+            var cached = cache.get(uuid);
+
+            if (cached != null) {
+                return cached;
+            }
+
+            loaded = new SessionData();
         }
+
+        if (loaded == null) {
+            loaded = new SessionData();
+        }
+
+        cache.put(uuid, loaded);
+        return loaded;
     }
 
     public void put(String uuid, SessionData data) {
@@ -181,11 +196,11 @@ public class SessionRepository {
                     var json = rs.getString(1);
 
                     if (json == null || json.isEmpty()) {
-                        throw new IllegalArgumentException("No session data found for uuid: " + uuid);
+                        throw new IllegalArgumentException("Session data is empty for uuid: " + uuid);
                     }
                     return JsonUtils.readJsonAsClass(json, SessionData.class);
                 } else {
-                    return new SessionData();
+                    return null;
                 }
             }
         });
@@ -217,6 +232,67 @@ public class SessionRepository {
         } catch (Exception e) {
             Log.err("Error while saving session", e);
         }
+    }
+
+    private void migrateStoredExpCounters() {
+        if (Core.settings.has("EXP_RECALCULATED_5")) {
+            return;
+        }
+
+        try {
+            int repaired = seedStoredExpCounters();
+            Core.settings.put("EXP_RECALCULATED_5", true);
+            Core.settings.forceSave();
+            Log.info("Exp migration complete (v5): @ sessions repaired", repaired);
+        } catch (Exception e) {
+            Log.err("Failed to migrate exp to stored counter (v5): @", e.getMessage());
+        }
+    }
+
+    private int seedStoredExpCounters() throws SQLException {
+        var rows = DB.statement(statement -> {
+            var list = new ArrayList<String[]>();
+            try (var rs = statement.executeQuery("SELECT uuid, data FROM sessions")) {
+                while (rs.next()) {
+                    list.add(new String[] { rs.getString("uuid"), rs.getString("data") });
+                }
+            }
+            return list;
+        });
+
+        var updateSql = "UPDATE sessions SET data = ?, totalExp = ? WHERE uuid = ?";
+        int repaired = 0;
+
+        for (var row : rows) {
+            var uuid = row[0];
+            var json = row[1];
+
+            if (json == null || json.isEmpty()) {
+                continue;
+            }
+
+            var data = JsonUtils.readJsonAsClass(json, SessionData.class);
+
+            if (data.exp > 0 || data.playTime <= 0) {
+                continue;
+            }
+
+            data.exp = ExpUtils.playTimeToExp(data.playTime);
+
+            var updatedJson = JsonUtils.toJsonString(data);
+            long totalExp = (long) data.exp;
+
+            DB.prepare(updateSql, ps -> {
+                ps.setString(1, updatedJson);
+                ps.setLong(2, totalExp);
+                ps.setString(3, uuid);
+                ps.executeUpdate();
+            });
+
+            repaired++;
+        }
+
+        return repaired;
     }
 
     private void createTableIfNotExists() {
