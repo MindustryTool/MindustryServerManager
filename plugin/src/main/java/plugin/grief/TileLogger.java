@@ -20,7 +20,6 @@ import mindustry.world.Tile;
 import plugin.annotations.ClientCommand;
 import plugin.annotations.Component;
 import plugin.annotations.Destroy;
-import plugin.annotations.Init;
 import plugin.annotations.Listener;
 import plugin.session.Session;
 import plugin.utils.TimeUtils;
@@ -37,13 +36,6 @@ public class TileLogger {
     private final ConcurrentHashMap<Integer, Deque<TileLogEntry>> logsByPos = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<Integer, Player> pendingBreaks = new ConcurrentHashMap<>();
     private final Set<String> inspectings = ConcurrentHashMap.newKeySet();
-
-    @Init
-    public void init() {
-        logsByPos.clear();
-        pendingBreaks.clear();
-        inspectings.clear();
-    }
 
     @Destroy
     public void destroy() {

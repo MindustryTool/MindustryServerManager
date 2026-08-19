@@ -42,7 +42,7 @@ public class TrCatalog {
             return;
         }
 
-        catalogs.put(language, entries);
+        catalogs.put(baseLanguage(language), entries);
     }
 
     public boolean hasLanguage(String language) {
@@ -91,15 +91,27 @@ public class TrCatalog {
      * only once per language; subsequent lookups fall back through the chain.
      */
     private Map<String, String> getEntries(String language) {
-        Map<String, String> entries = catalogs.get(language);
+        String base = baseLanguage(language);
+        Map<String, String> entries = catalogs.get(base);
         if (entries == null) {
             Consumer<String> loader = this.loader;
-            if (loader != null && attempted.add(language)) {
-                loader.accept(language);
-                entries = catalogs.get(language);
+            if (loader != null && attempted.add(base)) {
+                loader.accept(base);
+                entries = catalogs.get(base);
             }
         }
         return entries;
+    }
+
+    private static String baseLanguage(String language) {
+        if (language == null) {
+            return null;
+        }
+        int idx = language.indexOf('-');
+        if (idx <= 0) {
+            idx = language.indexOf('_');
+        }
+        return idx > 0 ? language.substring(0, idx) : language;
     }
 
     private void flatten(String prefix, JsonNode node, Map<String, String> out, Consumer<String> warning) {

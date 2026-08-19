@@ -59,6 +59,31 @@ public class TrCatalogTest {
     }
 
     @Test
+    void regionTagDoesNotTriggerLoaderWithRegion() {
+        TrCatalog catalog = newCatalog();
+        List<String> loaded = new ArrayList<>();
+        catalog.setLoader(language -> loaded.add(language));
+
+        assertEquals("Hub not found", catalog.lookup(Locale.forLanguageTag("en-PH"), "hub.not_found"));
+        assertTrue(loaded.isEmpty());
+    }
+
+    @Test
+    void regionTagLoadsBaseLanguageCatalog() {
+        TrCatalog catalog = new TrCatalog();
+        List<String> loaded = new ArrayList<>();
+        catalog.setLoader(language -> {
+            loaded.add(language);
+            catalog.load(language, "{\"key\": \"lazy " + language + "\"}", null);
+        });
+
+        assertEquals("lazy vi", catalog.lookup(Locale.forLanguageTag("vi-VN"), "key"));
+        assertEquals(List.of("vi"), loaded);
+        assertEquals("lazy zh", catalog.lookup(Locale.forLanguageTag("zh-TW"), "key"));
+        assertEquals(List.of("vi", "zh"), loaded);
+    }
+
+    @Test
     void unknownLocaleFallsBackToEnglish() {
         TrCatalog catalog = newCatalog();
 
