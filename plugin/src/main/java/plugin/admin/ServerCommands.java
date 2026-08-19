@@ -12,7 +12,7 @@ import plugin.annotations.Component;
 import plugin.annotations.Param;
 import plugin.annotations.ServerCommand;
 import plugin.core.Registry;
-import plugin.database.DB;
+import plugin.database.Database;
 import plugin.utils.Tr;
 import plugin.utils.Utils;
 
@@ -107,7 +107,7 @@ public class ServerCommands {
     private void sql(@Param(name = "script", variadic = true) String[] code) {
         var sql = String.join(" ", code);
         
-        DB.prepare(sql, statement -> {
+        Database.prepare(sql, statement -> {
             boolean hasResultSet = statement.execute();
 
             if (hasResultSet) {

@@ -5,7 +5,7 @@ import java.util.Optional;
 import arc.util.Log;
 import plugin.annotations.Component;
 import plugin.annotations.Init;
-import plugin.database.DB;
+import plugin.database.Database;
 
 @Component
 public class DailyRepository {
@@ -19,7 +19,7 @@ public class DailyRepository {
         var sql = "SELECT last_login_date FROM player_logins WHERE uuid = ?";
 
         try {
-            return DB.prepare(sql, ps -> {
+            return Database.prepare(sql, ps -> {
                 ps.setString(1, uuid);
 
                 try (var rs = ps.executeQuery()) {
@@ -39,7 +39,7 @@ public class DailyRepository {
         var sql = "INSERT INTO player_logins(uuid, last_login_date) VALUES(?, ?) ON CONFLICT(uuid) DO UPDATE SET last_login_date = excluded.last_login_date";
 
         try {
-            DB.prepare(sql, ps -> {
+            Database.prepare(sql, ps -> {
                 ps.setString(1, uuid);
                 ps.setString(2, date);
                 ps.executeUpdate();
@@ -53,7 +53,7 @@ public class DailyRepository {
         try {
             var sql = "CREATE TABLE IF NOT EXISTS player_logins (uuid TEXT PRIMARY KEY, last_login_date TEXT NOT NULL)";
 
-            DB.statement(statement -> {
+            Database.statement(statement -> {
                 statement.executeUpdate(sql);
             });
         } catch (Exception e) {

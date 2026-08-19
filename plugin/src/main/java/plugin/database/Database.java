@@ -18,7 +18,7 @@ import org.sqlite.SQLiteConfig;
 import arc.util.Log;
 import plugin.Control;
 
-public class DB {
+public class Database {
     private static final String DATABASE_DIR = "./config/database";
     private static final String DATABASE_FILE = "mindustry_tool.db";
     private static final String JDBC_URL_PREFIX = "jdbc:sqlite:";

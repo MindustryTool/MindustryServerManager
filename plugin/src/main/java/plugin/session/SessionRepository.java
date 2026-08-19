@@ -13,7 +13,7 @@ import arc.util.Log;
 import lombok.AllArgsConstructor;
 import mindustry.gen.Player;
 import plugin.Tasks;
-import plugin.database.DB;
+import plugin.database.Database;
 import plugin.annotations.Component;
 import plugin.annotations.Destroy;
 import plugin.annotations.Init;
@@ -140,7 +140,7 @@ public class SessionRepository {
     public Seq<RankData> leaderBoard(int size) {
         var sql = "SELECT uuid, data, totalExp FROM sessions ORDER BY totalExp DESC, uuid ASC LIMIT ?";
 
-        return DB.prepare(sql, statement -> {
+        return Database.prepare(sql, statement -> {
             statement.setInt(1, size);
 
             try (var rs = statement.executeQuery()) {
@@ -174,7 +174,7 @@ public class SessionRepository {
                     FROM (SELECT uuid, totalExp FROM sessions WHERE uuid = ?) p
                 """;
 
-        return DB.prepare(sql, ps -> {
+        return Database.prepare(sql, ps -> {
             ps.setString(1, uuid);
 
             try (var rs = ps.executeQuery()) {
@@ -189,7 +189,7 @@ public class SessionRepository {
     private SessionData read(String uuid) throws SQLException {
         var sql = "SELECT data FROM sessions WHERE uuid = ?";
 
-        return DB.prepare(sql, ps -> {
+        return Database.prepare(sql, ps -> {
             ps.setString(1, uuid);
 
             try (var rs = ps.executeQuery()) {
@@ -224,7 +224,7 @@ public class SessionRepository {
 
             var sql = "INSERT INTO sessions(uuid, data, totalExp) VALUES(?, ?, ?) ON CONFLICT(uuid) DO UPDATE SET data = excluded.data, totalExp = excluded.totalExp";
 
-            DB.prepare(sql, statement -> {
+            Database.prepare(sql, statement -> {
                 statement.setString(1, uuid);
                 statement.setString(2, json);
                 statement.setLong(3, totalExp);
@@ -251,7 +251,7 @@ public class SessionRepository {
     }
 
     private int seedStoredExpCounters() throws SQLException {
-        var rows = DB.statement(statement -> {
+        var rows = Database.statement(statement -> {
             var list = new ArrayList<String[]>();
             try (var rs = statement.executeQuery("SELECT uuid, data FROM sessions")) {
                 while (rs.next()) {
@@ -283,7 +283,7 @@ public class SessionRepository {
             var updatedJson = JsonUtils.toJsonString(data);
             long totalExp = (long) data.exp;
 
-            DB.prepare(updateSql, ps -> {
+            Database.prepare(updateSql, ps -> {
                 ps.setString(1, updatedJson);
                 ps.setLong(2, totalExp);
                 ps.setString(3, uuid);
@@ -300,10 +300,10 @@ public class SessionRepository {
         try {
             var sql = "CREATE TABLE IF NOT EXISTS sessions (uuid TEXT PRIMARY KEY, data TEXT NOT NULL, totalExp INTEGER DEFAULT 0)";
 
-            DB.statement(statement -> {
+            Database.statement(statement -> {
                 statement.executeUpdate(sql);
 
-                if (!DB.hasColumn(statement, "sessions", "totalExp")) {
+                if (!Database.hasColumn(statement, "sessions", "totalExp")) {
                     statement.executeUpdate("ALTER TABLE sessions ADD COLUMN totalExp INTEGER DEFAULT 0");
                 }
             });

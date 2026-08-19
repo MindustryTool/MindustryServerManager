@@ -16,7 +16,7 @@ import plugin.annotations.Schedule;
 import plugin.commands.ClientCommandHandler;
 import plugin.commands.ServerCommandHandler;
 import plugin.core.Registry;
-import plugin.database.DB;
+import plugin.database.Database;
 import plugin.event.PluginUnloadEvent;
 import plugin.event.UnloadServerEvent;
 import plugin.utils.TimeUtils;
@@ -110,7 +110,7 @@ public class Control extends mindustry.mod.Plugin {
 
             PluginEvents.fire(new PluginUnloadEvent());
             Registry.destroy();
-            DB.close();
+            Database.close();
             PluginEvents.unregister();
 
             try {
