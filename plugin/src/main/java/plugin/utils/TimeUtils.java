@@ -56,6 +56,9 @@ public class TimeUtils {
         if (ms > 0)
             out.append(ms).append("ms");
 
+        if (out.length() == 0)
+            out.append("0ms");
+
         return out.toString();
     }
 
@@ -87,6 +90,9 @@ public class TimeUtils {
             out.append(minutes).append("m");
         if (seconds > 0)
             out.append(seconds).append("s");
+        
+        if (out.length() == 0)
+            out.append("0s");
 
         return out.toString();
     }
