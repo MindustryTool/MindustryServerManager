@@ -14,11 +14,45 @@ public final class Column<T> {
     private final Table<?> table;
     private final String name;
     private final Class<T> type;
+    private final boolean primaryKey;
+    private final boolean notNull;
+    private final Object defaultValue;
 
     Column(Table<?> table, String name, Class<T> type) {
+        this(table, name, type, false, false, null);
+    }
+
+    private Column(Table<?> table, String name, Class<T> type, boolean primaryKey, boolean notNull, Object defaultValue) {
         this.table = table;
         this.name = name;
         this.type = type;
+        this.primaryKey = primaryKey;
+        this.notNull = notNull;
+        this.defaultValue = defaultValue;
+    }
+
+    public Column<T> primaryKey() {
+        return new Column<>(table, name, type, true, notNull, defaultValue);
+    }
+
+    public Column<T> notNull() {
+        return new Column<>(table, name, type, primaryKey, true, defaultValue);
+    }
+
+    public Column<T> defaultValue(T value) {
+        return new Column<>(table, name, type, primaryKey, notNull, value);
+    }
+
+    public boolean isPrimaryKey() {
+        return primaryKey;
+    }
+
+    public boolean isNotNullConstraint() {
+        return notNull;
+    }
+
+    public Object defaultValueOrNull() {
+        return defaultValue;
     }
 
     public Table<?> table() {

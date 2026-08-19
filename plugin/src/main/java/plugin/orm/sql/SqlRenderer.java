@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.function.Function;
 
 import plugin.orm.OrmException;
+import plugin.orm.SqlTypeConverter;
 import plugin.orm.query.DeleteQuery;
 import plugin.orm.query.InsertQuery;
 import plugin.orm.query.Join;
@@ -127,6 +128,55 @@ public final class SqlRenderer {
         }
 
         return new SqlQuery(sql.toString(), parameters);
+    }
+
+    public static SqlQuery renderTable(TableQuery query) {
+        if (query.columns().isEmpty()) {
+            throw new OrmException("Table definition requires at least one column");
+        }
+
+        StringBuilder sql = new StringBuilder("CREATE TABLE IF NOT EXISTS ").append(query.table().name()).append(" (");
+        for (int i = 0; i < query.columns().size(); i++) {
+            if (i > 0) {
+                sql.append(", ");
+            }
+            appendColumnDefinition(sql, query.columns().get(i));
+        }
+        sql.append(')');
+
+        return new SqlQuery(sql.toString(), List.of());
+    }
+
+    private static void appendColumnDefinition(StringBuilder sql, Column<?> column) {
+        sql.append(columnDefinition(column));
+    }
+
+    public static String columnDefinition(Column<?> column) {
+        StringBuilder sql = new StringBuilder(column.name()).append(' ').append(SqlTypeConverter.columnTypeFor(column.type()));
+        if (column.isPrimaryKey()) {
+            sql.append(" PRIMARY KEY");
+        }
+        if (column.isNotNullConstraint()) {
+            sql.append(" NOT NULL");
+        }
+        Object defaultValue = column.defaultValueOrNull();
+        if (defaultValue != null) {
+            sql.append(" DEFAULT ").append(renderLiteral(defaultValue));
+        }
+        return sql.toString();
+    }
+
+    private static String renderLiteral(Object value) {
+        if (value instanceof Boolean bool) {
+            return bool ? "1" : "0";
+        }
+        if (value instanceof Number) {
+            return value.toString();
+        }
+        if (value.getClass().isArray()) {
+            throw new OrmException("Array values cannot be used as a column DEFAULT (BLOB defaults are unsupported)");
+        }
+        return "'" + String.valueOf(value).replace("'", "''") + "'";
     }
 
     private static <T> void appendList(StringBuilder sql, List<T> items, String separator, Function<T, String> renderer) {

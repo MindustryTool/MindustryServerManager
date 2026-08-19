@@ -5,9 +5,9 @@ import plugin.orm.table.Table;
 
 public final class Sessions {
     public static final Table<Void> TABLE = Table.of("sessions");
-    public static final Column<String> UUID = TABLE.column("uuid", String.class);
-    public static final Column<String> DATA = TABLE.column("data", String.class);
-    public static final Column<Long> TOTAL_EXP = TABLE.column("totalExp", Long.class);
+    public static final Column<String> UUID = TABLE.column("uuid", String.class).primaryKey();
+    public static final Column<String> DATA = TABLE.column("data", String.class).notNull();
+    public static final Column<Long> TOTAL_EXP = TABLE.column("totalExp", Long.class).defaultValue(0L);
 
     private Sessions() {
     }

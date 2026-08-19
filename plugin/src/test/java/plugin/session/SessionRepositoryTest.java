@@ -7,6 +7,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.reflect.Method;
 import java.nio.file.Path;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import arc.Core;
 import arc.Settings;
@@ -54,6 +57,11 @@ public class SessionRepositoryTest {
         Method method = target.getClass().getDeclaredMethod(name, types);
         method.setAccessible(true);
         return method.invoke(target, args);
+    }
+
+    private Map<String, plugin.orm.Row> tableInfo(String table) {
+        return database.db().rawQuery("PRAGMA table_info(" + table + ")").stream()
+                .collect(Collectors.toMap(row -> row.getString("name"), Function.identity()));
     }
 
     private void seed(String uuid, String json, long totalExp) {
@@ -213,6 +221,28 @@ public class SessionRepositoryTest {
 
         database.db().raw("INSERT INTO sessions(uuid, data) VALUES('x', '{}')");
         assertEquals(1, database.db().rawQuery("SELECT COUNT(*) AS c FROM sessions").get(0).getInt("c"));
+
+        var info = tableInfo("sessions");
+        assertEquals(3, info.size());
+        assertEquals(1, info.get("uuid").getInt("pk"));
+        assertEquals("TEXT", info.get("uuid").getString("type"));
+        assertEquals("TEXT", info.get("data").getString("type"));
+        assertEquals(1, info.get("data").getInt("notnull"));
+        assertEquals("INTEGER", info.get("totalExp").getString("type"));
+        assertEquals("0", info.get("totalExp").getString("dflt_value"));
+    }
+
+    @Test
+    void createTableIfNotExistsUpgradesLegacySchema() throws Exception {
+        database.db().raw("DROP TABLE sessions");
+        database.db().raw("CREATE TABLE sessions (uuid TEXT PRIMARY KEY, data TEXT NOT NULL)");
+
+        invoke(repository, "createTableIfNotExists", new Class<?>[0]);
+
+        var info = tableInfo("sessions");
+        assertEquals(3, info.size());
+        assertEquals("INTEGER", info.get("totalExp").getString("type"));
+        assertEquals("0", info.get("totalExp").getString("dflt_value"));
     }
 
     @Test

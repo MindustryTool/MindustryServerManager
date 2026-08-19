@@ -77,5 +77,13 @@ public class DailyRepositoryTest {
 
         repository.setLastLogin("u1", "2026-08-19");
         assertTrue(repository.getLastLogin("u1").isPresent());
+
+        var info = database.db().rawQuery("PRAGMA table_info(player_logins)").stream()
+                .collect(java.util.stream.Collectors.toMap(row -> row.getString("name"), java.util.function.Function.identity()));
+        assertEquals(2, info.size());
+        assertEquals(1, info.get("uuid").getInt("pk"));
+        assertEquals("TEXT", info.get("uuid").getString("type"));
+        assertEquals("TEXT", info.get("last_login_date").getString("type"));
+        assertEquals(1, info.get("last_login_date").getInt("notnull"));
     }
 }

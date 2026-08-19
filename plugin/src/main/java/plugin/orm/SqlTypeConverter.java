@@ -49,6 +49,23 @@ public final class SqlTypeConverter {
         }
     }
 
+    public static String columnTypeFor(Class<?> type) {
+        if (type == String.class || type == UUID.class || type == Instant.class || type.isEnum()) {
+            return "TEXT";
+        }
+        if (type == Integer.class || type == Long.class || type == Short.class || type == Byte.class
+                || type == Boolean.class) {
+            return "INTEGER";
+        }
+        if (type == Float.class || type == Double.class) {
+            return "REAL";
+        }
+        if (type == byte[].class) {
+            return "BLOB";
+        }
+        throw new OrmException("No SQLite column type for " + type.getName());
+    }
+
     @SuppressWarnings({ "unchecked", "rawtypes" })
     private static <T> T doConvert(Object raw, Class<T> type) {
         if (type == Object.class || type.isInstance(raw)) {

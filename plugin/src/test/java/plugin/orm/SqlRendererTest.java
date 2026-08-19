@@ -8,6 +8,10 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
+import plugin.orm.sql.SqlRenderer;
+import plugin.orm.sql.TableQuery;
+import plugin.orm.table.Table;
+
 public class SqlRendererTest {
 
     private final SQLiteDatabase db = SQLiteDatabase.builder().path("render-only.db").build();
@@ -222,5 +226,97 @@ public class SqlRendererTest {
     @Test
     void onWithoutJoinFails() {
         assertThrows(OrmException.class, () -> db.select().from(Fixtures.USERS).on(Fixtures.USERS_ID.eq(1L)));
+    }
+
+    @Test
+    void rendersSessionsSchema() {
+        var table = new TableQuery(Fixtures.SESSIONS, List.of(
+                Fixtures.SESSIONS_UUID.primaryKey(),
+                Fixtures.SESSIONS_DATA.notNull(),
+                Fixtures.SESSIONS_TOTAL_EXP.defaultValue(0L)));
+
+        var q = SqlRenderer.renderTable(table);
+
+        assertEquals(
+                "CREATE TABLE IF NOT EXISTS sessions (uuid TEXT PRIMARY KEY, data TEXT NOT NULL, totalExp INTEGER DEFAULT 0)",
+                Render.normalize(q.sql()));
+        assertTrue(q.parameters().isEmpty());
+    }
+
+    @Test
+    void rendersPlayerLoginsSchema() {
+        var table = new TableQuery(Fixtures.PLAYER_LOGINS, List.of(
+                Fixtures.PLAYER_LOGINS_UUID.primaryKey(),
+                Fixtures.PLAYER_LOGINS_DATE.notNull()));
+
+        var q = SqlRenderer.renderTable(table);
+
+        assertEquals(
+                "CREATE TABLE IF NOT EXISTS player_logins (uuid TEXT PRIMARY KEY, last_login_date TEXT NOT NULL)",
+                Render.normalize(q.sql()));
+        assertTrue(q.parameters().isEmpty());
+    }
+
+    @Test
+    void rendersEveryConstraintFlagCombination() {
+        var table = new TableQuery(Fixtures.USERS, List.of(
+                Fixtures.USERS_ID.primaryKey(),
+                Fixtures.USERS_NAME.notNull(),
+                Fixtures.USERS_ACTIVE.primaryKey().notNull()));
+
+        var q = SqlRenderer.renderTable(table);
+
+        assertEquals(
+                "CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, name TEXT NOT NULL, active INTEGER PRIMARY KEY NOT NULL)",
+                Render.normalize(q.sql()));
+    }
+
+    @Test
+    void rendersNumericLiteralDefaults() {
+        var users = Table.of("users");
+        var table = new TableQuery(users, List.of(
+                users.column("totalExp", Long.class).defaultValue(0L),
+                users.column("active", Boolean.class).defaultValue(true),
+                users.column("score", Float.class).defaultValue(1.5f)));
+
+        var q = SqlRenderer.renderTable(table);
+
+        assertEquals(
+                "CREATE TABLE IF NOT EXISTS users (totalExp INTEGER DEFAULT 0, active INTEGER DEFAULT 1, score REAL DEFAULT 1.5)",
+                Render.normalize(q.sql()));
+    }
+
+    @Test
+    void rendersTextDefaultQuotedAndEscaped() {
+        var table = new TableQuery(Fixtures.USERS, List.of(
+                Fixtures.USERS_NAME.defaultValue("new")));
+
+        var q = SqlRenderer.renderTable(table);
+
+        assertEquals("CREATE TABLE IF NOT EXISTS users (name TEXT DEFAULT 'new')", Render.normalize(q.sql()));
+    }
+
+    @Test
+    void omitsDefaultClauseWhenNoDefaultSet() {
+        var table = new TableQuery(Fixtures.USERS, List.of(
+                Fixtures.USERS_NAME.primaryKey()));
+
+        var q = SqlRenderer.renderTable(table);
+
+        assertEquals("CREATE TABLE IF NOT EXISTS users (name TEXT PRIMARY KEY)", Render.normalize(q.sql()));
+    }
+
+    @Test
+    void rejectsArrayDefault() {
+        var users = Table.of("users");
+        var table = new TableQuery(users, List.of(
+                users.column("blob", byte[].class).defaultValue(new byte[] { 1 })));
+
+        assertThrows(OrmException.class, () -> SqlRenderer.renderTable(table));
+    }
+
+    @Test
+    void renderTableWithoutColumnsFails() {
+        assertThrows(OrmException.class, () -> SqlRenderer.renderTable(new TableQuery(Fixtures.USERS, List.of())));
     }
 }

@@ -23,6 +23,8 @@ import plugin.orm.query.InsertQuery;
 import plugin.orm.query.SelectQuery;
 import plugin.orm.query.UpdateQuery;
 import plugin.orm.sql.SqlQuery;
+import plugin.orm.sql.SqlRenderer;
+import plugin.orm.sql.TableQuery;
 import plugin.orm.table.Column;
 import plugin.orm.table.Table;
 import plugin.orm.transaction.Transaction;
@@ -100,6 +102,60 @@ public final class SQLiteDatabase implements QuerySource, AutoCloseable {
 
     public DeleteQuery delete(Table<?> table) {
         return new DeleteQuery(this, table);
+    }
+
+    public void createTableIfNotExists(Table<?> table) {
+        createTableIfNotExists(table, table.columns().toArray(new Column<?>[0]));
+    }
+
+    public void createTableIfNotExists(Table<?> table, Column<?>... columns) {
+        SqlQuery ddl = SqlRenderer.renderTable(new TableQuery(table, List.of(columns)));
+        ensureOpen();
+        try (Connection connection = acquireConnection()) {
+            executeWith(connection, ddl);
+        } catch (SQLException e) {
+            throw new OrmException("Failed to create table: " + ddl.sql(), e);
+        }
+    }
+
+    public CompletableFuture<Void> createTableIfNotExistsAsync(Table<?> table) {
+        return createTableIfNotExistsAsync(table, table.columns().toArray(new Column<?>[0]));
+    }
+
+    public CompletableFuture<Void> createTableIfNotExistsAsync(Table<?> table, Column<?>... columns) {
+        ExecutorService executor = executorForAsync();
+        if (executor == null) {
+            return CompletableFuture.failedFuture(new OrmException("Database is closed"));
+        }
+        return CompletableFuture.supplyAsync(() -> {
+            createTableIfNotExists(table, columns);
+            return null;
+        }, executor);
+    }
+
+    public void addColumnIfMissing(Table<?> table, Column<?> column) {
+        if (hasColumn(table.name(), column.name())) {
+            return;
+        }
+        String ddl = "ALTER TABLE " + table.name() + " ADD COLUMN " + SqlRenderer.columnDefinition(column);
+        ensureOpen();
+        try (Connection connection = acquireConnection();
+                PreparedStatement statement = connection.prepareStatement(ddl)) {
+            statement.executeUpdate();
+        } catch (SQLException e) {
+            throw new OrmException("Failed to add column: " + ddl, e);
+        }
+    }
+
+    public CompletableFuture<Void> addColumnIfMissingAsync(Table<?> table, Column<?> column) {
+        ExecutorService executor = executorForAsync();
+        if (executor == null) {
+            return CompletableFuture.failedFuture(new OrmException("Database is closed"));
+        }
+        return CompletableFuture.supplyAsync(() -> {
+            addColumnIfMissing(table, column);
+            return null;
+        }, executor);
     }
 
     public <T> void registerMapper(Class<T> type, RowMapper<T> mapper) {

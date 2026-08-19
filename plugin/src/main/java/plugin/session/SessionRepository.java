@@ -284,12 +284,10 @@ public class SessionRepository {
 
     private void createTableIfNotExists() {
         try {
-            database.db().raw("CREATE TABLE IF NOT EXISTS sessions (uuid TEXT PRIMARY KEY, data TEXT NOT NULL, totalExp INTEGER DEFAULT 0)");
+            database.db().createTableIfNotExists(Sessions.TABLE);
 
-            if (!database.db().hasColumn("sessions", "totalExp")) {
-                database.db().raw("ALTER TABLE sessions ADD COLUMN totalExp INTEGER DEFAULT 0");
-            }
-
+            // Legacy databases created before the stored exp counter may be missing the column.
+            database.db().addColumnIfMissing(Sessions.TABLE, Sessions.TOTAL_EXP);
         } catch (Exception e) {
             Log.err("Failed to create sessions table: @", e);
         }

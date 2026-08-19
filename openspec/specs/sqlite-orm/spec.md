@@ -184,12 +184,14 @@ Every operation SHALL close its `ResultSet`, `PreparedStatement`, and `Connectio
 
 ### Requirement: Raw SQL escape hatch
 
-`SQLiteDatabase` SHALL provide a narrow raw API — `raw(String sql, Object... params)` returning affected rows, `rawQuery(String sql, Object... params)` returning `List<Row>`, and `hasColumn(table, column)` — for intentional schema setup (DDL), SQLite-specific SQL the typed API cannot express, and admin tooling. Raw values SHALL still be bound as `?` parameters.
-
-#### Scenario: DDL via raw
-- **WHEN** `raw("CREATE TABLE IF NOT EXISTS ...")` runs
-- **THEN** the table exists and subsequent typed queries work against it
+`SQLiteDatabase` SHALL provide a narrow raw API — `raw(String sql, Object... params)` returning affected rows, `rawQuery(String sql, Object... params)` returning `List<Row>`, and `hasColumn(table, column)` — for SQLite-specific SQL the typed API cannot express and for admin tooling. Schema setup SHALL use the typed table-creation API (`createTableIfNotExists` / `addColumnIfMissing`) rather than raw DDL. Raw values SHALL still be bound as `?` parameters.
 
 #### Scenario: Raw values are parameterized
+- **WHEN** `rawQuery` is called with bound parameters
+- **THEN** the SQL text contains `?` placeholders and no value is concatenated
+
+#### Scenario: Ad-hoc SQL still supported
+- **WHEN** an operator-supplied statement runs through the raw API
+- **THEN** it executes with results (rows or affected count) returned to the caller
 - **WHEN** `rawQuery` is called with bound parameters
 - **THEN** the SQL text contains `?` placeholders and no value is concatenated

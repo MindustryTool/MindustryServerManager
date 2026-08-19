@@ -11,17 +11,24 @@ import java.util.regex.Pattern;
 public class TimeUtils {
 
     private static final Pattern PART = Pattern.compile("(\\d+)(ms|s|m|h|d)", Pattern.CASE_INSENSITIVE);
+    private static final Duration DEFAULT_THRESHOLD = Duration.ofSeconds(20);
 
     public static void measure(String name, Runnable action) {
         Instant start = Instant.now();
         action.run();
-        Log.info("[#50C878][timing] @ took @", name, toString(Duration.between(start, Instant.now())));
+        var duration = Duration.between(start, Instant.now());
+        if (duration.toSeconds() > DEFAULT_THRESHOLD.toSeconds()) {
+            Log.info("[#50C878][timing] @ took @", name, toString(duration));
+        }
     }
 
     public static <T> T measure(String name, Supplier<T> action) {
         Instant start = Instant.now();
         T result = action.get();
-        Log.info("[#50C878][timing] @ took @", name, toString(Duration.between(start, Instant.now())));
+        var duration = Duration.between(start, Instant.now());
+        if (duration.toSeconds() > DEFAULT_THRESHOLD.toSeconds()) {
+            Log.info("[#50C878][timing] @ took @", name, toString(duration));
+        }
         return result;
     }
 
@@ -90,7 +97,7 @@ public class TimeUtils {
             out.append(minutes).append("m");
         if (seconds > 0)
             out.append(seconds).append("s");
-        
+
         if (out.length() == 0)
             out.append("0s");
 

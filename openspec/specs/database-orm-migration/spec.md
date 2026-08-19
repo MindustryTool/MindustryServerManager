@@ -8,15 +8,19 @@ TBD - created by syncing change sqlite-orm-migration. Update Purpose after imple
 
 ### Requirement: All existing SQL migrated to the ORM
 
-Every database statement that previously used `Database.prepare` / `Database.statement` or raw SQL in the plugin SHALL be rewritten on the ORM: the `sessions` and `player_logins` upserts, session read/leaderboard/exp-counter queries and updates, last-login queries, and schema setup. Raw SQL SHALL remain only for intentional cases: `CREATE TABLE IF NOT EXISTS` / `ALTER TABLE` schema setup, the `getRank` correlated subquery (when it is kept), and the admin `/sql` command. Existing parameter semantics, result mapping, and transaction behavior SHALL be preserved.
+Every database statement that previously used `Database.prepare` / `Database.statement` or raw SQL in the plugin SHALL be rewritten on the ORM: the `sessions` and `player_logins` upserts, session read/leaderboard/exp-counter queries and updates, last-login queries, and schema setup. Schema setup SHALL use the typed table-creation API: `createTableIfNotExists` for `sessions` and `player_logins`, and `addColumnIfMissing` for the guarded legacy `totalExp` upgrade. Raw SQL SHALL remain only for the `getRank` correlated subquery (when it is kept) and the admin `/sql` command. Existing parameter semantics, result mapping, and transaction behavior SHALL be preserved.
 
 #### Scenario: Repository queries run through the ORM
 - **WHEN** `SessionRepository` and `DailyRepository` are exercised end-to-end
 - **THEN** every operation executes through the ORM with the same inputs and outputs the previous JDBC code produced
 
-#### Scenario: Schema setup is explicit DDL
+#### Scenario: Schema setup uses the typed table-creation API
 - **WHEN** repository `init()` runs
-- **THEN** the `sessions` and `player_logins` tables are created via the raw DDL hook with the same column definitions as before (including the guarded `ALTER TABLE ... ADD COLUMN totalExp` for legacy databases)
+- **THEN** the `sessions` and `player_logins` tables are created via `createTableIfNotExists` with the same column definitions as before, and legacy databases missing `totalExp` are upgraded via `addColumnIfMissing`
+
+#### Scenario: No raw DDL remains in repositories
+- **WHEN** the migrated source tree is inspected
+- **THEN** `SessionRepository` and `DailyRepository` contain no `CREATE TABLE` or `ALTER TABLE` raw SQL strings
 
 ### Requirement: Repository behavior preserved
 

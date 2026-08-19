@@ -11,7 +11,6 @@ import arc.util.Log;
 import plugin.Control;
 import plugin.annotations.Component;
 import plugin.annotations.Destroy;
-import plugin.annotations.Init;
 import plugin.orm.SQLiteDatabase;
 
 @Component
@@ -29,11 +28,6 @@ public class Database {
 
     public static void clearTestPath() {
         testPathOverride = null;
-    }
-
-    @Init
-    public void init() {
-        Log.info("Database component initialized (lazy, no connection opened)");
     }
 
     public SQLiteDatabase db() {

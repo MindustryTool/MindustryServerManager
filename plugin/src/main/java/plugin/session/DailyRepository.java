@@ -53,7 +53,7 @@ public class DailyRepository {
 
     private void createTableIfNotExists() {
         try {
-            database.db().raw("CREATE TABLE IF NOT EXISTS player_logins (uuid TEXT PRIMARY KEY, last_login_date TEXT NOT NULL)");
+            database.db().createTableIfNotExists(PlayerLogins.TABLE);
         } catch (Exception e) {
             Log.err("Failed to create player_logins table: @", e);
         }
