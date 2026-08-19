@@ -17,18 +17,23 @@ import org.sqlite.SQLiteConfig;
 
 import arc.util.Log;
 import plugin.Control;
+import plugin.annotations.Component;
+import plugin.annotations.Destroy;
+import plugin.annotations.Init;
 
+@Component
 public class Database {
     private static final String DATABASE_DIR = "./config/database";
     private static final String DATABASE_FILE = "mindustry_tool.db";
     private static final String JDBC_URL_PREFIX = "jdbc:sqlite:";
 
-    private static volatile boolean isInitialized = false;
-    private static String databasePath;
-    private static Connection connection;
-    private static ExecutorService executor;
+    private boolean isInitialized = false;
+    private String databasePath;
+    private Connection connection;
+    private ExecutorService executor;
 
-    public static synchronized void init() {
+    @Init
+    public void init() {
         if (isInitialized && connection != null) {
             return;
         }
@@ -69,7 +74,7 @@ public class Database {
         }
     }
 
-    public static synchronized Connection getConnection() {
+    public synchronized Connection getConnection() {
         if (!isInitialized || connection == null) {
             init();
         }
@@ -86,7 +91,7 @@ public class Database {
         void accept(S statement) throws SQLException;
     }
 
-    public static <T> T statement(SqlHandler<T, Statement> consumer) {
+    public <T> T statement(SqlHandler<T, Statement> consumer) {
         return execute(() -> {
             try (var statement = connection.createStatement()) {
                 return consumer.accept(statement);
@@ -96,7 +101,7 @@ public class Database {
         });
     }
 
-    public static void statement(SqlConsumer<Statement> consumer) {
+    public void statement(SqlConsumer<Statement> consumer) {
         execute(() -> {
             try (var statement = connection.createStatement()) {
                 consumer.accept(statement);
@@ -107,7 +112,7 @@ public class Database {
         });
     }
 
-    public static <T> T prepare(String sql, SqlHandler<T, PreparedStatement> consumer) {
+    public <T> T prepare(String sql, SqlHandler<T, PreparedStatement> consumer) {
         return execute(() -> {
             try (var statement = connection.prepareStatement(sql)) {
                 return consumer.accept(statement);
@@ -117,7 +122,7 @@ public class Database {
         });
     }
 
-    public static void prepare(String sql, SqlConsumer<PreparedStatement> consumer) {
+    public void prepare(String sql, SqlConsumer<PreparedStatement> consumer) {
         execute(() -> {
             try (var statement = connection.prepareStatement(sql)) {
                 consumer.accept(statement);
@@ -128,13 +133,13 @@ public class Database {
         });
     }
 
-    public static boolean hasRow(Statement statement, String tableName) throws SQLException {
+    public boolean hasRow(Statement statement, String tableName) throws SQLException {
         try (var result = statement.executeQuery("SELECT * FROM " + tableName + " LIMIT 1")) {
             return result.next();
         }
     }
 
-    public static boolean hasColumn(Statement statement, String tableName, String columnName) throws SQLException {
+    public boolean hasColumn(Statement statement, String tableName, String columnName) throws SQLException {
         try (var result = statement.executeQuery("SELECT * FROM " + tableName + " LIMIT 1")) {
             var metaData = result.getMetaData();
             int columnCount = metaData.getColumnCount();
@@ -149,7 +154,7 @@ public class Database {
         }
     }
 
-    private static <T> T execute(Callable<T> task) {
+    private <T> T execute(Callable<T> task) {
         init();
         try {
             return executor.submit(task).get();
@@ -165,7 +170,8 @@ public class Database {
         }
     }
 
-    public static void close() {
+    @Destroy
+    public void close() {
         executor.shutdown();
         try {
             if (connection != null && !connection.isClosed()) {

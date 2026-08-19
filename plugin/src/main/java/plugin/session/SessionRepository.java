@@ -23,9 +23,14 @@ import plugin.utils.JsonUtils;
 
 @Component
 public class SessionRepository {
+    private final Database database;
     private final ConcurrentHashMap<String, SessionData> cache = new ConcurrentHashMap<>();
 
     private final Set<String> dirty = ConcurrentHashMap.newKeySet();
+
+    public SessionRepository(Database database) {
+        this.database = database;
+    }
 
     @Init
     public void init() {
@@ -140,7 +145,7 @@ public class SessionRepository {
     public Seq<RankData> leaderBoard(int size) {
         var sql = "SELECT uuid, data, totalExp FROM sessions ORDER BY totalExp DESC, uuid ASC LIMIT ?";
 
-        return Database.prepare(sql, statement -> {
+        return database.prepare(sql, statement -> {
             statement.setInt(1, size);
 
             try (var rs = statement.executeQuery()) {
@@ -174,7 +179,7 @@ public class SessionRepository {
                     FROM (SELECT uuid, totalExp FROM sessions WHERE uuid = ?) p
                 """;
 
-        return Database.prepare(sql, ps -> {
+        return database.prepare(sql, ps -> {
             ps.setString(1, uuid);
 
             try (var rs = ps.executeQuery()) {
@@ -189,7 +194,7 @@ public class SessionRepository {
     private SessionData read(String uuid) throws SQLException {
         var sql = "SELECT data FROM sessions WHERE uuid = ?";
 
-        return Database.prepare(sql, ps -> {
+        return database.prepare(sql, ps -> {
             ps.setString(1, uuid);
 
             try (var rs = ps.executeQuery()) {
@@ -224,7 +229,7 @@ public class SessionRepository {
 
             var sql = "INSERT INTO sessions(uuid, data, totalExp) VALUES(?, ?, ?) ON CONFLICT(uuid) DO UPDATE SET data = excluded.data, totalExp = excluded.totalExp";
 
-            Database.prepare(sql, statement -> {
+            database.prepare(sql, statement -> {
                 statement.setString(1, uuid);
                 statement.setString(2, json);
                 statement.setLong(3, totalExp);
@@ -251,7 +256,7 @@ public class SessionRepository {
     }
 
     private int seedStoredExpCounters() throws SQLException {
-        var rows = Database.statement(statement -> {
+        var rows = database.statement(statement -> {
             var list = new ArrayList<String[]>();
             try (var rs = statement.executeQuery("SELECT uuid, data FROM sessions")) {
                 while (rs.next()) {
@@ -283,7 +288,7 @@ public class SessionRepository {
             var updatedJson = JsonUtils.toJsonString(data);
             long totalExp = (long) data.exp;
 
-            Database.prepare(updateSql, ps -> {
+            database.prepare(updateSql, ps -> {
                 ps.setString(1, updatedJson);
                 ps.setLong(2, totalExp);
                 ps.setString(3, uuid);
@@ -300,10 +305,10 @@ public class SessionRepository {
         try {
             var sql = "CREATE TABLE IF NOT EXISTS sessions (uuid TEXT PRIMARY KEY, data TEXT NOT NULL, totalExp INTEGER DEFAULT 0)";
 
-            Database.statement(statement -> {
+            database.statement(statement -> {
                 statement.executeUpdate(sql);
 
-                if (!Database.hasColumn(statement, "sessions", "totalExp")) {
+                if (!database.hasColumn(statement, "sessions", "totalExp")) {
                     statement.executeUpdate("ALTER TABLE sessions ADD COLUMN totalExp INTEGER DEFAULT 0");
                 }
             });

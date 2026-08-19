@@ -71,8 +71,8 @@ public class SessionService {
         }
 
         return "[white]"
-                + (session.isLoggedIn() ? Iconc.ok : "") + "["
-                + languageOrRank + "] " + "<" + "[accent]" + session.currentLevel + "[white]> "
+                + (session.isLoggedIn() ? Iconc.ok : "") + "{"
+                + languageOrRank + "} " + "<" + "[accent]" + session.currentLevel + "[white]> "
                 + playerName;
     };
 

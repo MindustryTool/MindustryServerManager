@@ -9,6 +9,11 @@ import plugin.database.Database;
 
 @Component
 public class DailyRepository {
+    private final Database database;
+
+    public DailyRepository(Database database) {
+        this.database = database;
+    }
 
     @Init
     public void init() {
@@ -19,7 +24,7 @@ public class DailyRepository {
         var sql = "SELECT last_login_date FROM player_logins WHERE uuid = ?";
 
         try {
-            return Database.prepare(sql, ps -> {
+            return database.prepare(sql, ps -> {
                 ps.setString(1, uuid);
 
                 try (var rs = ps.executeQuery()) {
@@ -39,7 +44,7 @@ public class DailyRepository {
         var sql = "INSERT INTO player_logins(uuid, last_login_date) VALUES(?, ?) ON CONFLICT(uuid) DO UPDATE SET last_login_date = excluded.last_login_date";
 
         try {
-            Database.prepare(sql, ps -> {
+            database.prepare(sql, ps -> {
                 ps.setString(1, uuid);
                 ps.setString(2, date);
                 ps.executeUpdate();
@@ -53,7 +58,7 @@ public class DailyRepository {
         try {
             var sql = "CREATE TABLE IF NOT EXISTS player_logins (uuid TEXT PRIMARY KEY, last_login_date TEXT NOT NULL)";
 
-            Database.statement(statement -> {
+            database.statement(statement -> {
                 statement.executeUpdate(sql);
             });
         } catch (Exception e) {

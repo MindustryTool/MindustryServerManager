@@ -18,6 +18,11 @@ import plugin.utils.Utils;
 
 @Component
 public class ServerCommands {
+    private final Database database;
+
+    public ServerCommands(Database database) {
+        this.database = database;
+    }
 
     @ServerCommand(name = "gamemode", description = "Set gamemode")
     private void gamemode(@Param(name = "gamemode") String gamemode) {
@@ -107,7 +112,7 @@ public class ServerCommands {
     private void sql(@Param(name = "script", variadic = true) String[] code) {
         var sql = String.join(" ", code);
         
-        Database.prepare(sql, statement -> {
+        database.prepare(sql, statement -> {
             boolean hasResultSet = statement.execute();
 
             if (hasResultSet) {
