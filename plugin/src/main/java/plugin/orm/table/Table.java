@@ -1,11 +1,14 @@
 package plugin.orm.table;
 
-import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+
+import plugin.orm.OrmException;
 
 public final class Table<T> {
     private final String name;
-    private final List<Column<?>> columns = new ArrayList<>();
+    private final Map<String, Column<?>> columns = new LinkedHashMap<>();
 
     private Table(String name) {
         this.name = name;
@@ -15,20 +18,22 @@ public final class Table<T> {
         return new Table<>(name);
     }
 
-    @SuppressWarnings("unchecked")
     public <V> Column<V> column(String name, Class<V> type) {
-        for (Column<?> existing : columns) {
-            if (existing.name().equals(name)) {
-                return (Column<V>) existing;
-            }
+        Column<?> existing = columns.get(name);
+        if (existing != null) {
+            throw new OrmException("Column '" + name + "' already exists on table '" + this.name + "'");
         }
         Column<V> column = new Column<>(this, name, type);
-        columns.add(column);
+        columns.put(name, column);
         return column;
     }
 
+    void register(Column<?> column) {
+        columns.put(column.name(), column);
+    }
+
     public List<Column<?>> columns() {
-        return List.copyOf(columns);
+        return List.copyOf(columns.values());
     }
 
     public String name() {

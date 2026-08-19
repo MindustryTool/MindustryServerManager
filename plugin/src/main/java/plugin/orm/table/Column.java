@@ -32,15 +32,21 @@ public final class Column<T> {
     }
 
     public Column<T> primaryKey() {
-        return new Column<>(table, name, type, true, notNull, defaultValue);
+        Column<T> column = new Column<>(table, name, type, true, notNull, defaultValue);
+        table.register(column);
+        return column;
     }
 
     public Column<T> notNull() {
-        return new Column<>(table, name, type, primaryKey, true, defaultValue);
+        Column<T> column = new Column<>(table, name, type, primaryKey, true, defaultValue);
+        table.register(column);
+        return column;
     }
 
     public Column<T> defaultValue(T value) {
-        return new Column<>(table, name, type, primaryKey, notNull, value);
+        Column<T> column = new Column<>(table, name, type, primaryKey, notNull, value);
+        table.register(column);
+        return column;
     }
 
     public boolean isPrimaryKey() {

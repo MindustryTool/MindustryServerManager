@@ -14,6 +14,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import plugin.database.schema.PlayerLogins;
+import plugin.database.schema.Sessions;
 import plugin.orm.table.Column;
 import plugin.orm.table.Table;
 
@@ -57,8 +59,23 @@ public class TableCreationTest {
     }
 
     @Test
+    void tableTracksMetadataFromColumnBuilders() {
+        var table = Table.of("tracked");
+        table.column("uuid", String.class).primaryKey();
+        table.column("data", String.class).notNull();
+        table.column("totalExp", Long.class).defaultValue(0L);
+
+        var columns = table.columns();
+        assertEquals(3, columns.size());
+        assertTrue(columns.get(0).isPrimaryKey());
+        assertTrue(columns.get(1).isNotNullConstraint());
+        assertEquals(0L, columns.get(2).defaultValueOrNull());
+    }
+
+    @Test
     void createsSessionsSchemaWithConstraints() {
-        test.db.createTableIfNotExists(Fixtures.SESSIONS);
+        test.db.raw("DROP TABLE sessions");
+        test.db.createTableIfNotExists(Sessions.TABLE);
 
         Map<String, Row> info = tableInfo("sessions");
 
@@ -74,7 +91,8 @@ public class TableCreationTest {
 
     @Test
     void createsPlayerLoginsSchema() {
-        test.db.createTableIfNotExists(Fixtures.PLAYER_LOGINS);
+        test.db.raw("DROP TABLE player_logins");
+        test.db.createTableIfNotExists(PlayerLogins.TABLE);
 
         Map<String, Row> info = tableInfo("player_logins");
 
@@ -86,12 +104,13 @@ public class TableCreationTest {
 
     @Test
     void createIsIdempotentAndPreservesData() {
-        test.db.createTableIfNotExists(Fixtures.SESSIONS);
-        test.db.insert(Fixtures.SESSIONS).set(Fixtures.SESSIONS_UUID, "u1").set(Fixtures.SESSIONS_DATA, "{}").execute();
+        test.db.raw("DROP TABLE sessions");
+        test.db.createTableIfNotExists(Sessions.TABLE);
+        test.db.insert(Sessions.TABLE).set(Sessions.UUID, "u1").set(Sessions.DATA, "{}").execute();
 
-        test.db.createTableIfNotExists(Fixtures.SESSIONS);
+        test.db.createTableIfNotExists(Sessions.TABLE);
 
-        assertEquals(1, test.db.select().from(Fixtures.SESSIONS).fetch().size());
+        assertEquals(1, test.db.select().from(Sessions.TABLE).fetch().size());
     }
 
     @Test
