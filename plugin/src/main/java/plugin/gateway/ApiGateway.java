@@ -17,7 +17,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -92,7 +92,7 @@ public class ApiGateway {
 
     private final String API_URL = "https://api.mindustry-tool.com/api/v4/";
     private static final String GATEWAY_URL = "http://server.mindustry-tool.com:8089/gateway";
-    private static final Executor executor = Executors.newCachedThreadPool();
+    private static final ExecutorService executor = Executors.newCachedThreadPool();
 
     private final HostService hostService;
 
@@ -102,6 +102,8 @@ public class ApiGateway {
 
     private Instant lastSendEventAt = Instant.now();
     private WebSocket webSocket;
+
+    private volatile boolean connecting = false;
 
     private Cache<PaginationRequest, List<ServerDto>> serverQueryCache = Caffeine.newBuilder()
             .expireAfterWrite(Duration.ofSeconds(15))
@@ -115,8 +117,7 @@ public class ApiGateway {
 
     @Init
     public void init() {
-        connect();
-
+        connectAsync();
         this.registerMessageHandler("get-json", Void.class, (request) -> getJson());
         this.registerMessageHandler("get-plugin-version", Void.class, (request) -> Cfg.PLUGIN_VERSION);
         this.registerMessageHandler("update-player", LoginDto.class, this::updatePlayer);
@@ -192,6 +193,34 @@ public class ApiGateway {
 
         PluginEvents.fire(new UnloadServerEvent(false));
         return null;
+    }
+
+    private void connectAsync() {
+        if (shutdown) {
+            return;
+        }
+
+        synchronized (this) {
+            if (connecting) {
+                return;
+            }
+
+            if (webSocket != null && webSocket.isOpen()) {
+                return;
+            }
+
+            connecting = true;
+        }
+
+        executor.submit(() -> {
+            try {
+                connect();
+            } catch (Exception e) {
+                Log.err("Error connecting to server manager", e);
+            } finally {
+                connecting = false;
+            }
+        });
     }
 
     private synchronized void connect() {
@@ -325,7 +354,7 @@ public class ApiGateway {
         }
 
         if (webSocket == null || webSocket.getState() == WebSocketState.CLOSED) {
-            connect();
+            connectAsync();
         }
     }
 

@@ -1,0 +1,44 @@
+# Startup timing baseline - captured 2026-08-19 before optimize-startup-performance
+# Format: the plugin logs `[timing] <operation> took <duration>` via TimeUtils.measure.
+# Reference scan total: 5s402ms (component scan), plugin load 5s625ms.
+# NOTE: pre-optimization reference. After the optimize-startup-performance change lands,
+# boot the plugin with debug logging, run `./gradlew :plugin:startupBenchmark` on the new
+# log (default threshold 2000ms), and re-capture this file with the post-change profile.
+
+01:04:16:430 Current gamemode: SURVIVAL
+01:04:16:431 [timing] gamemode setup took 1ms
+01:04:16:522 [timing] filtering took 92ms
+01:04:16:614 [timing] initialize plugin.core.Scheduler took 2ms
+01:04:17:684 SQLite database initialized at: /./config/database/mindustry_tool.db
+01:04:17:709 [timing] initialize plugin.session.SessionRepository took 1s167ms
+01:04:17:725 [timing] initialize plugin.session.SessionService took 15ms
+01:04:17:731 [timing] initialize plugin.commands.ClientCommandHandler took 16ms
+01:04:17:731 [timing] initialize plugin.admin.AdminCommands took 1s208ms
+01:04:17:806 [timing] initialize plugin.admin.ServerCommands took 67ms
+01:04:17:810 [timing] initialize plugin.afk.AfkDetector took 9ms
+01:04:17:832 [timing] initialize plugin.core.FileWatcherManager took 17ms
+01:04:17:898 [timing] initialize plugin.host.HostService took 61ms
+01:04:18:807 Connecting to server manager
+01:04:20:708 [timing] initialize plugin.gateway.ApiGateway took 2s168ms
+01:04:20:715 [timing] initialize plugin.event.EventHandler took 3ms
+01:04:20:729 [timing] initialize plugin.grief.AdminService took 1ms
+01:04:20:741 [timing] initialize plugin.grief.GriefDetectService took 5ms
+01:04:20:811 [timing] initialize plugin.grief.TileLogger took 65ms
+01:04:20:828 [timing] initialize plugin.host.MapWatcher took 19ms
+01:04:20:912 [timing] initialize plugin.hub.HubCommands took 4ms
+01:04:21:014 [timing] initialize plugin.hub.HubService took 78ms
+01:04:21:101 [timing] initialize plugin.maprating.MapRatingCommands took 71ms
+01:04:21:115 [timing] initialize plugin.security.SecurityService took 7ms
+01:04:21:124 [timing] initialize plugin.session.OfficialCommands took 1ms
+01:04:21:125 [timing] initialize plugin.session.SessionCommands took 1ms
+01:04:21:206 [timing] initialize plugin.tip.TipService took 74ms
+01:04:21:304 [timing] initialize plugin.trail.TrailService took 81ms
+01:04:21:317 [timing] initialize plugin.update.PluginUpdater took 7ms
+01:04:21:333 [timing] initialize plugin.update.UpdateCommands took 9ms
+01:04:21:899 [timing] initialize plugin.utils.TranslationLoader took 566ms
+01:04:21:908 [timing] initialize plugin.vote.RtvService took 5ms
+01:04:21:916 [timing] initialize plugin.vote.VoteNewWaveService took 1ms
+01:04:21:923 [timing] initialize plugin.vote.VoteCommands took 1ms
+01:04:21:924 [timing] initialize plugin.welcome.WelcomeCommands took 1ms
+01:04:21:924 [timing] component scan took 5s402ms
+01:04:21:928 Plugin loaded in 5s625ms

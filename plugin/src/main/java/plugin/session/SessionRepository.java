@@ -12,6 +12,7 @@ import arc.struct.Seq;
 import arc.util.Log;
 import lombok.AllArgsConstructor;
 import mindustry.gen.Player;
+import plugin.Tasks;
 import plugin.database.DB;
 import plugin.annotations.Component;
 import plugin.annotations.Destroy;
@@ -29,7 +30,7 @@ public class SessionRepository {
     @Init
     public void init() {
         createTableIfNotExists();
-        migrateStoredExpCounters();
+        Tasks.io("session exp migration", this::migrateStoredExpCounters);
     }
 
     @Listener

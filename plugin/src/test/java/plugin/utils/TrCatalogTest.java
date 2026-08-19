@@ -135,6 +135,48 @@ public class TrCatalogTest {
     }
 
     @Test
+    void firstLookupTriggersLazyLoad() {
+        TrCatalog catalog = new TrCatalog();
+        int[] loads = { 0 };
+        catalog.setLoader(language -> {
+            loads[0]++;
+            catalog.load(language, String.format("{\"key\": \"lazy %s\"}", language), null);
+        });
+
+        assertEquals("lazy vi", catalog.lookup(Locale.forLanguageTag("vi"), "key"));
+        assertEquals(1, loads[0]);
+    }
+
+    @Test
+    void lazyLoadHappensAtMostOncePerLanguage() {
+        TrCatalog catalog = new TrCatalog();
+        int[] loads = { 0 };
+        catalog.setLoader(language -> {
+            loads[0]++;
+            catalog.load(language, "{\"key\": \"value\"}", null);
+        });
+
+        assertEquals("value", catalog.lookup(Locale.forLanguageTag("vi"), "key"));
+        assertEquals("value", catalog.lookup(Locale.forLanguageTag("vi"), "key"));
+        assertEquals("value", catalog.lookup(Locale.forLanguageTag("vi"), "key"));
+        assertEquals(1, loads[0]);
+    }
+
+    @Test
+    void failedLazyLoadIsAttemptedOnceAndFallsBack() {
+        TrCatalog catalog = new TrCatalog();
+        catalog.load("en", "{\"key\": \"english\"}", null);
+        int[] loads = { 0 };
+        catalog.setLoader(language -> {
+            loads[0]++;
+        });
+
+        assertEquals("english", catalog.lookup(Locale.forLanguageTag("vi"), "key"));
+        assertEquals("english", catalog.lookup(Locale.forLanguageTag("vi"), "key"));
+        assertEquals(1, loads[0]);
+    }
+
+    @Test
     void loadValidatesAgainstKeyPattern() {
         TrCatalog catalog = new TrCatalog();
         List<String> warnings = new ArrayList<>();

@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -14,7 +15,17 @@ public class TrCatalog {
     private static final String KEY_PATTERN = "[a-z0-9_]+";
 
     private final ObjectMapper mapper = new ObjectMapper();
-    private final Map<String, Map<String, String>> catalogs = new HashMap<>();
+    private final Map<String, Map<String, String>> catalogs = new ConcurrentHashMap<>();
+    private final Set<String> attempted = ConcurrentHashMap.newKeySet();
+    private volatile Consumer<String> loader;
+
+    /**
+     * Registers an on-demand catalog loader, invoked at most once per language on
+     * the first lookup that needs it.
+     */
+    public void setLoader(Consumer<String> loader) {
+        this.loader = loader;
+    }
 
     public void load(String language, String jsonText, Consumer<String> warning) {
         Map<String, String> entries = new HashMap<>();
@@ -35,11 +46,11 @@ public class TrCatalog {
     }
 
     public boolean hasLanguage(String language) {
-        return catalogs.containsKey(language);
+        return getEntries(language) != null;
     }
 
     public Set<String> keys(String language) {
-        Map<String, String> entries = catalogs.get(language);
+        Map<String, String> entries = getEntries(language);
         return entries == null ? Collections.emptySet() : entries.keySet();
     }
 
@@ -70,8 +81,25 @@ public class TrCatalog {
     }
 
     private String get(String language, String key) {
-        Map<String, String> entries = catalogs.get(language);
+        Map<String, String> entries = getEntries(language);
         return entries == null ? null : entries.get(key);
+    }
+
+    /**
+     * Returns the flattened catalog for a language, loading it lazily via the
+     * registered loader on first use. A missing/corrupt catalog is attempted
+     * only once per language; subsequent lookups fall back through the chain.
+     */
+    private Map<String, String> getEntries(String language) {
+        Map<String, String> entries = catalogs.get(language);
+        if (entries == null) {
+            Consumer<String> loader = this.loader;
+            if (loader != null && attempted.add(language)) {
+                loader.accept(language);
+                entries = catalogs.get(language);
+            }
+        }
+        return entries;
     }
 
     private void flatten(String prefix, JsonNode node, Map<String, String> out, Consumer<String> warning) {

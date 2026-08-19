@@ -56,7 +56,16 @@ public class SessionService {
 
         for (int i = 0; i < leaderboard.size; i++) {
             if (leaderboard.get(i).uuid.equals(session.player.uuid())) {
-                languageOrRank = String.format("Rank %d", i + 1);
+                if (i == 0) {
+                    languageOrRank = "[gold]1st[]";
+                } else if (i == 1) {
+                    languageOrRank = "[#C0C0C0]2nd[]";
+                } else if (i == 2) {
+                    languageOrRank = "[#CD7F32]3rd[]";
+                } else {
+                    languageOrRank = (i + 1) + "th";
+                }
+
                 break;
             }
         }

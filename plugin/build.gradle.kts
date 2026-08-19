@@ -99,6 +99,31 @@ tasks.test {
     useJUnitPlatform()
 }
 
+/**
+ * Parses a captured startup log and reports the [timing] summary.
+ * Usage: ./gradlew :plugin:startupBenchmark -PstartupLog=path/to/log.txt [-PstartupThreshold=2000]
+ */
+tasks.register("startupBenchmark") {
+    group = "verification"
+    description = "Parse plugin startup [timing] output and print a machine-readable summary."
+
+    doLast {
+        val logPath = (project.findProperty("startupLog") as String?)
+            ?: rootProject.file("openspec/benchmark/startup-baseline.txt").absolutePath
+        val threshold = (project.findProperty("startupThreshold") as String?)?.toIntOrNull() ?: 2000
+        val baseline = rootProject.file("openspec/benchmark/startup-baseline.txt").absolutePath
+
+        exec {
+            workingDir = rootProject.projectDir
+            commandLine(
+                "python", "scripts/startup_benchmark.py", logPath,
+                "--baseline", baseline,
+                "--threshold", threshold.toString()
+            )
+        }
+    }
+}
+
 tasks.jar {
     dependsOn(":dto:jar")
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
