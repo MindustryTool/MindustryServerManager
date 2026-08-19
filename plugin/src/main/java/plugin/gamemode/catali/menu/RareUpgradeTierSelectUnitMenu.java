@@ -2,6 +2,7 @@ package plugin.gamemode.catali.menu;
 
 import dto.Pair;
 import lombok.RequiredArgsConstructor;
+import plugin.annotations.Component;
 import plugin.annotations.ConditionOn;
 import plugin.gamemode.GamemodeCondition;
 import plugin.core.Registry;
@@ -11,6 +12,7 @@ import plugin.menus.PluginMenu;
 import plugin.utils.Tr;
 import plugin.session.Session;
 
+@Component
 @ConditionOn(value = GamemodeCondition.class, args = {"catali"})
 @RequiredArgsConstructor
 public class RareUpgradeTierSelectUnitMenu extends PluginMenu<CataliTeamData> {

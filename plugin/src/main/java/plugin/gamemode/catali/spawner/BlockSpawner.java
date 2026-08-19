@@ -6,11 +6,13 @@ import mindustry.Vars;
 import mindustry.game.Team;
 import mindustry.gen.Groups;
 import mindustry.world.Tile;
+import plugin.annotations.Component;
 import plugin.annotations.ConditionOn;
 import plugin.gamemode.GamemodeCondition;
 import plugin.gamemode.catali.CataliConfig;
 
 @RequiredArgsConstructor
+@Component
 @ConditionOn(value = GamemodeCondition.class, args = {"catali"})
 public class BlockSpawner {
 

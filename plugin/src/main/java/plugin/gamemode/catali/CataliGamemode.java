@@ -24,6 +24,7 @@ import mindustry.type.StatusEffect;
 import mindustry.type.UnitType;
 import mindustry.type.unit.MissileUnitType;
 import plugin.PluginEvents;
+import plugin.annotations.Component;
 import plugin.annotations.ConditionOn;
 import plugin.gamemode.GamemodeCondition;
 import plugin.annotations.Init;
@@ -61,6 +62,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 @ConditionOn(value = GamemodeCondition.class, args = {"catali"})
+@Component
 @RequiredArgsConstructor
 public class CataliGamemode {
 

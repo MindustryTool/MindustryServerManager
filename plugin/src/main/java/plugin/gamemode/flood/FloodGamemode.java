@@ -29,6 +29,7 @@ import mindustry.gen.Iconc;
 import mindustry.type.UnitType;
 import mindustry.world.Block;
 import mindustry.world.Tile;
+import plugin.annotations.Component;
 import plugin.annotations.ConditionOn;
 import plugin.gamemode.GamemodeCondition;
 import plugin.annotations.Listener;
@@ -40,7 +41,8 @@ import plugin.utils.TimeUtils;
 import plugin.utils.Tr;
 import plugin.utils.Utils;
 
-@ConditionOn(value = GamemodeCondition.class, args = {"flood"})
+@ConditionOn(value = GamemodeCondition.class, args = { "flood" })
+@Component
 @RequiredArgsConstructor
 public class FloodGamemode {
 
@@ -150,7 +152,8 @@ public class FloodGamemode {
             String popup = Tr.t(locale, "flood.flood", "color", color, "percent", getFloodMultiplier() * 100) + "\n" +
                     Tr.t(locale, "flood.suppressed_count", "count", suppressed.size(), "total", cores) + "\n" +
                     Tr.t(locale, isNight ? "flood.night_in" : "flood.day_in", "color", color,
-                            "time", TimeUtils.toSeconds(time)) + "\n" +
+                            "time", TimeUtils.toSeconds(time))
+                    + "\n" +
                     Tr.t(locale, "flood.days", "days", days);
 
             for (var p : players) {

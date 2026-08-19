@@ -1,6 +1,7 @@
 package plugin.gamemode.catali;
 
 import lombok.RequiredArgsConstructor;
+import plugin.annotations.Component;
 import plugin.annotations.ConditionOn;
 import plugin.gamemode.GamemodeCondition;
 import plugin.annotations.Init;
@@ -8,6 +9,7 @@ import plugin.utils.Tr;
 import plugin.tip.TipService;
 
 @ConditionOn(value = GamemodeCondition.class, args = {"catali"})
+@Component
 @RequiredArgsConstructor
 public class CataliTip {
 

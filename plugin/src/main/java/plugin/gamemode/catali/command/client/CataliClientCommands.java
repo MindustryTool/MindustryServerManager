@@ -3,6 +3,7 @@ package plugin.gamemode.catali.command.client;
 import mindustry.game.Team;
 import plugin.PluginEvents;
 import plugin.annotations.ClientCommand;
+import plugin.annotations.Component;
 import plugin.annotations.ConditionOn;
 import plugin.gamemode.GamemodeCondition;
 import plugin.annotations.Param;
@@ -16,6 +17,7 @@ import plugin.utils.Tr;
 import plugin.session.Session;
 
 @ConditionOn(value = GamemodeCondition.class, args = {"catali"})
+@Component
 public class CataliClientCommands {
 
     private final CataliGamemode gamemode;

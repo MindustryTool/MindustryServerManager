@@ -9,10 +9,12 @@ import mindustry.content.Blocks;
 import mindustry.game.EventType;
 import mindustry.world.Block;
 import mindustry.world.meta.BuildVisibility;
+import plugin.annotations.Component;
 import plugin.annotations.ConditionOn;
 import plugin.gamemode.GamemodeCondition;
 import plugin.annotations.Listener;
 
+@Component
 @ConditionOn(value = GamemodeCondition.class, args = {"sandbox"})
 @RequiredArgsConstructor
 public class SandboxGamemode {

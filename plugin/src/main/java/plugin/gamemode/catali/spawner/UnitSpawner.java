@@ -7,6 +7,7 @@ import mindustry.Vars;
 import mindustry.game.Team;
 import mindustry.gen.Groups;
 import mindustry.gen.Unit;
+import plugin.annotations.Component;
 import plugin.annotations.ConditionOn;
 import plugin.gamemode.GamemodeCondition;
 import plugin.gamemode.catali.CataliConfig;
@@ -14,6 +15,7 @@ import plugin.gamemode.catali.CataliGamemode;
 import plugin.gamemode.catali.ai.FlyingRadiusAI;
 import plugin.gamemode.catali.ai.GroundRadiusAI;
 
+@Component
 @ConditionOn(value = GamemodeCondition.class, args = {"catali"})
 @RequiredArgsConstructor
 public class UnitSpawner {
