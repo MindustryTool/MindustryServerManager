@@ -54,25 +54,27 @@ public class SessionService {
             languageOrRank = session.player.locale;
         }
 
+        languageOrRank = "[" + languageOrRank + "]";
+
         for (int i = 0; i < leaderboard.size; i++) {
             if (leaderboard.get(i).uuid.equals(session.player.uuid())) {
                 if (i == 0) {
-                    languageOrRank = "[gold]1st[]";
+                    languageOrRank = "[gold][1st][]";
                 } else if (i == 1) {
-                    languageOrRank = "[#C0C0C0]2nd[]";
+                    languageOrRank = "[#C0C0C0][2nd][]";
                 } else if (i == 2) {
-                    languageOrRank = "[#CD7F32]3rd[]";
+                    languageOrRank = "[#CD7F32][3rd][]";
                 } else {
-                    languageOrRank = (i + 1) + "th";
+                    languageOrRank = "[" + (i + 1) + "th]";
                 }
-
                 break;
             }
         }
 
-        return "[white]"
-                + (session.isLoggedIn() ? Iconc.ok : "") + "{"
-                + languageOrRank + "} " + "<" + "[accent]" + session.currentLevel + "[white]> "
+        String status = session.isLoggedIn() ? String.valueOf(Iconc.ok) : "";
+
+        return status
+                + languageOrRank + " " + "<" + "[accent]" + session.currentLevel + "[white]> "
                 + playerName;
     };
 
