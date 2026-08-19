@@ -83,6 +83,9 @@ public class DockerNodeManager implements NodeManager {
     @Override
     public void create(ServerConfig request) {
         UUID serverId = request.getId();
+
+        eventBus.emit(LogEvent.info(serverId, "Checking container status"));
+
         var containers = dockerClient.listContainersCmd()
                 .withShowAll(true)
                 .withLabelFilter(Map.of(Const.serverIdLabel, request.getId().toString()))
@@ -110,6 +113,7 @@ public class DockerNodeManager implements NodeManager {
         }
 
         eventBus.emit(LogEvent.info(serverId, "Pulling image: " + request.getImage()));
+
         try {
             dockerClient.pullImageCmd(request.getImage())
                     .exec(new ResultCallback.Adapter<PullResponseItem>())
@@ -155,6 +159,8 @@ public class DockerNodeManager implements NodeManager {
             }
         }
 
+        eventBus.emit(LogEvent.info(serverId, "Creating new container on port " + request.getPort()));
+
         Volume volume = new Volume("/config");
         Bind bind = new Bind(serverPath.toString(), volume);
 
@@ -165,7 +171,6 @@ public class DockerNodeManager implements NodeManager {
         portBindings.bind(tcp, Ports.Binding.bindPort(request.getPort()));
         portBindings.bind(udp, Ports.Binding.bindPort(request.getPort()));
 
-        eventBus.emit(LogEvent.info(serverId, "Creating new container on port " + request.getPort()));
 
         var image = request.getImage() == null || request.getImage().isEmpty()
                 ? envConfig.docker().mindustryServerImage()
@@ -233,6 +238,8 @@ public class DockerNodeManager implements NodeManager {
 
         var result = command.exec();
         var containerId = result.getId();
+
+        eventBus.emit(LogEvent.info(serverId, "Container created"));
 
         dockerClient.startContainerCmd(containerId).exec();
         attachLogCallback(containerId, serverId);
