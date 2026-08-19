@@ -17,7 +17,7 @@ public class TimeUtils {
         Instant start = Instant.now();
         action.run();
         var duration = Duration.between(start, Instant.now());
-        if (duration.toSeconds() > DEFAULT_THRESHOLD.toSeconds()) {
+        if (duration.toMillis() > DEFAULT_THRESHOLD.toMillis()) {
             Log.info("[#50C878][timing] @ took @", name, toString(duration));
         }
     }
@@ -26,7 +26,7 @@ public class TimeUtils {
         Instant start = Instant.now();
         T result = action.get();
         var duration = Duration.between(start, Instant.now());
-        if (duration.toSeconds() > DEFAULT_THRESHOLD.toSeconds()) {
+        if (duration.toMillis() > DEFAULT_THRESHOLD.toMillis()) {
             Log.info("[#50C878][timing] @ took @", name, toString(duration));
         }
         return result;
