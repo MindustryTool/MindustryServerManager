@@ -2,16 +2,11 @@ package plugin.gamemode.catali.menu;
 
 import lombok.RequiredArgsConstructor;
 import mindustry.gen.Player;
-import plugin.annotations.Component;
-import plugin.annotations.ConditionOn;
-import plugin.gamemode.GamemodeCondition;
 import plugin.gamemode.catali.CataliGamemode;
 import plugin.menus.PluginMenu;
 import plugin.utils.Tr;
 import plugin.session.Session;
 
-@Component
-@ConditionOn(value = GamemodeCondition.class, args = {"catali"})
 @RequiredArgsConstructor
 public class IncomingRequestMenu extends PluginMenu<Player> {
 

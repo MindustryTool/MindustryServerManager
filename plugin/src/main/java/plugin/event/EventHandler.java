@@ -19,7 +19,6 @@ import mindustry.game.EventType.PlayerLeave;
 import mindustry.game.EventType.WorldLoadEndEvent;
 import mindustry.gen.Groups;
 import mindustry.gen.Player;
-import plugin.Cfg;
 import plugin.Control;
 import plugin.session.SessionCreatedEvent;
 import plugin.session.SessionRemovedEvent;
@@ -166,7 +165,7 @@ public class EventHandler {
             });
 
             Tasks.io("Welcome Message", () -> {
-                var translated = Tr.tWithFallback(session.locale, "welcome.message", Cfg.WELCOME_MESSAGE);
+                var translated = Tr.t(session.locale, "welcome.message");
                 session.player.sendMessage(translated);
             });
 

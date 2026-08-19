@@ -47,16 +47,6 @@ public class Cfg {
 
     public static final int MAX_IDENTICAL_IPS = 3;
 
-    public static final String CHOOSE_SERVER_MESSAGE = """
-            [accent]Click[] [orange]any server data[] to [lime]play[]
-            [accent]Click[] to [scarlet]offline server[] to [lime]starting & play[] this.
-            """;
-
-    public static final String WELCOME_MESSAGE = """
-            [accent]Welcome to the server!
-            [lightgray]Play fair, have fun, and enjoy your stay.
-            """;
-
     public static final int COLOR_NAME_LEVEL = 10;
     public static final int GRIEF_REPORT_COOLDOWN = 60;
 

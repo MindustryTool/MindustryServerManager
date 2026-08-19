@@ -3,7 +3,6 @@ package plugin.hub;
 import plugin.menus.PluginMenu;
 
 import arc.util.Log;
-import plugin.Cfg;
 import plugin.core.Registry;
 import plugin.gateway.ApiGateway;
 import plugin.utils.Tr;
@@ -27,7 +26,7 @@ public class ServerListMenu extends PluginMenu<Integer> {
             List<ServerDto> servers = Registry.get(ApiGateway.class).getServers(request);
 
             this.title = Tr.t(session.locale, "hub.list.title");
-            this.description = Tr.tWithFallback(session.locale, "hub.choose_server", Cfg.CHOOSE_SERVER_MESSAGE);
+            this.description = Tr.t(session.locale, "hub.choose_server");
 
             servers.stream().sorted(Comparator.comparing(ServerDto::getPlayers).reversed()).forEach(server -> {
                 row();

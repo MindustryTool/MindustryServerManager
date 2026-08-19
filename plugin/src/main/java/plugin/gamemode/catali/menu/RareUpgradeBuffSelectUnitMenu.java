@@ -1,17 +1,12 @@
 package plugin.gamemode.catali.menu;
 
 import dto.Pair;
-import plugin.annotations.Component;
-import plugin.annotations.ConditionOn;
-import plugin.gamemode.GamemodeCondition;
 import plugin.core.Registry;
 import plugin.gamemode.catali.data.CataliTeamData;
 import plugin.menus.PluginMenu;
 import plugin.utils.Tr;
 import plugin.session.Session;
 
-@Component
-@ConditionOn(value = GamemodeCondition.class, args = {"catali"})
 public class RareUpgradeBuffSelectUnitMenu extends PluginMenu<CataliTeamData> {
 
     @Override
