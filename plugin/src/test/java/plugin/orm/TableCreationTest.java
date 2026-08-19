@@ -2,6 +2,7 @@ package plugin.orm;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Path;
@@ -53,8 +54,7 @@ public class TableCreationTest {
         assertTrue(table.columns().contains(uuid));
         assertTrue(table.columns().contains(exp));
 
-        Column<String> again = table.column("uuid", String.class);
-        assertTrue(again == uuid);
+        assertThrows(OrmException.class, () -> table.column("uuid", String.class));
         assertEquals(2, table.columns().size());
     }
 
@@ -116,15 +116,16 @@ public class TableCreationTest {
     @Test
     void addColumnIfMissingAddsOnlyWhenAbsent() {
         var legacy = Table.of("legacy");
+        var totalExp = legacy.column("totalExp", Long.class).defaultValue(0L);
         test.db.raw("CREATE TABLE legacy (uuid TEXT PRIMARY KEY, data TEXT NOT NULL)");
 
-        test.db.addColumnIfMissing(legacy, legacy.column("totalExp", Long.class).defaultValue(0L));
+        test.db.addColumnIfMissing(legacy, totalExp);
 
         Map<String, Row> info = tableInfo("legacy");
         assertEquals("INTEGER", info.get("totalExp").getString("type"));
         assertEquals("0", info.get("totalExp").getString("dflt_value"));
 
-        test.db.addColumnIfMissing(legacy, legacy.column("totalExp", Long.class).defaultValue(0L));
+        test.db.addColumnIfMissing(legacy, totalExp);
         assertEquals(3, tableInfo("legacy").size());
     }
 
