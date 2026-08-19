@@ -128,7 +128,7 @@ public class HubService {
                             players = totalPlayers;
                         }
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        Log.err("Failed to get server data: " + e.getMessage());
                     }
                 }
 
@@ -234,7 +234,7 @@ public class HubService {
             }
 
         } catch (Exception e) {
-            e.printStackTrace();
+            Log.err("Failed to refresh server list: " + e.getMessage());
         }
     }
 

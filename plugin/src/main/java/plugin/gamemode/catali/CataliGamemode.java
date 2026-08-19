@@ -600,7 +600,7 @@ public class CataliGamemode {
                         spawned.apply(statusEffect);
                     }
                 } catch (IllegalArgumentException | IllegalAccessException e) {
-                    e.printStackTrace();
+                    Log.err("Failed to apply status effect: " + e.getMessage());
                 }
             }
         });

@@ -716,7 +716,7 @@ public class ApiGateway {
 
                 return HttpUtils.sendList(HttpUtils.get(API_URL, query), Duration.ofSeconds(5), ServerDto.class);
             } catch (Exception e) {
-                e.printStackTrace();
+                Log.err("Failed to fetch server list: " + e.getMessage());
                 return new ArrayList<>();
             }
         });

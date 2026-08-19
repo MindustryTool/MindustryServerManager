@@ -59,7 +59,7 @@ public class ServerUtils {
                 Call.connect(player.con, InetAddress.getByName(host.trim()).getHostAddress(), port);
             } catch (Exception e) {
                 player.sendMessage(Tr.t(Utils.parseLocale(player.locale()), "hub.redirect.error"));
-                e.printStackTrace();
+                Log.err("Failed to redirect player: " + e.getMessage());
             }
         });
     }

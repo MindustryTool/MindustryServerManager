@@ -170,7 +170,7 @@ public class Utils {
 
             return new byte[] {};
         } catch (Exception e) {
-            e.printStackTrace();
+            Log.err("Failed to generate map preview: " + e.getMessage());
             return new byte[] {};
         } finally {
             if (pix != null) {

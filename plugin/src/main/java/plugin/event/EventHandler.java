@@ -103,7 +103,7 @@ public class EventHandler {
             }
 
         } catch (Exception e) {
-            e.printStackTrace();
+            Log.err("Failed to handle player connect: " + e.getMessage());
         }
     }
 
@@ -113,7 +113,7 @@ public class EventHandler {
             var request = PlayerDto.from(event.session.player).setJoinedAt(event.session.joinedAt);
             apiGateway.fire(new ServerEvents.PlayerLeaveEvent(Control.SERVER_ID, request));
         } catch (Exception e) {
-            e.printStackTrace();
+            Log.err("Failed to handle player leave: " + e.getMessage());
         }
 
         try {
@@ -127,7 +127,7 @@ public class EventHandler {
 
             Log.info(chat);
         } catch (Exception e) {
-            e.printStackTrace();
+            Log.err("Failed to handle player leave: " + e.getMessage());
         }
     }
 
@@ -172,7 +172,7 @@ public class EventHandler {
             new WelcomeMenu().send(session, null);
 
         } catch (Exception e) {
-            e.printStackTrace();
+            Log.err("Failed to handle player join: " + e.getMessage());
         }
     }
 }
