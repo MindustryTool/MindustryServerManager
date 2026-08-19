@@ -1,6 +1,5 @@
 package plugin.core;
 
-import arc.Core;
 import arc.util.Log;
 import plugin.annotations.*;
 import plugin.commands.ClientCommandHandler;
@@ -20,21 +19,9 @@ public final class Registry {
     private static final Set<Class<?>> creating = new HashSet<>();
     private static final Set<Object> initialized = new HashSet<>();
 
-    public static final String GAMEMODE_KEY = "plugin-gamemode";
-
-    private static String currentGamemode;
-
     public static void init(String packageName) {
         try {
             List<Class<?>> components = List.of(ComponentRegistry.COMPONENTS);
-
-            TimeUtils.measure("gamemode setup", () -> {
-                currentGamemode = Core.settings.getString(GAMEMODE_KEY, "");
-
-                if (currentGamemode != null) {
-                    Log.info("[sky]Current gamemode: " + currentGamemode);
-                }
-            });
 
             List<Class<?>> filtered = TimeUtils.measure("filtering", () -> components.stream()
                     .filter(clazz -> {
@@ -50,13 +37,6 @@ public final class Registry {
                             Log.debug("[gray]Skipping component @ due to condition @", clazz.getName(),
                                     clazz.getAnnotation(ConditionOn.class).value().getName());
                             return false;
-                        }
-
-                        if (clazz.isAnnotationPresent(Gamemode.class)) {
-                            Gamemode gamemode = clazz.getAnnotation(Gamemode.class);
-                            if (!Arrays.stream(gamemode.value()).anyMatch(g -> g.equalsIgnoreCase(currentGamemode))) {
-                                return false;
-                            }
                         }
 
                         return true;
@@ -132,14 +112,9 @@ public final class Registry {
     }
 
     private static Object create(Class<?> type) {
-        if (type.isAnnotationPresent(Gamemode.class)) {
-            Gamemode gamemode = type.getAnnotation(Gamemode.class);
-            if (!Arrays.stream(gamemode.value()).anyMatch(g -> g.equalsIgnoreCase(currentGamemode))) {
-                throw new RuntimeException("Gamemode mismatch!" +
-                        "Current: " + currentGamemode +
-                        "\nComponent: " + type.getName() +
-                        "\nExpects " + gamemode.value());
-            }
+        if (!ConditionUtils.passes(type)) {
+            throw new RuntimeException("Condition mismatch!" +
+                    "Component: " + type.getName());
         }
 
         if (creating.contains(type)) {

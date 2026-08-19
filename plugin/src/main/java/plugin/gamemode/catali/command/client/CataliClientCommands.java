@@ -3,7 +3,8 @@ package plugin.gamemode.catali.command.client;
 import mindustry.game.Team;
 import plugin.PluginEvents;
 import plugin.annotations.ClientCommand;
-import plugin.annotations.Gamemode;
+import plugin.annotations.ConditionOn;
+import plugin.gamemode.GamemodeCondition;
 import plugin.annotations.Param;
 import plugin.gamemode.catali.CataliGamemode;
 import plugin.gamemode.catali.event.ExpGainEvent;
@@ -14,7 +15,7 @@ import plugin.gamemode.catali.menu.RareUpgradeMenu;
 import plugin.utils.Tr;
 import plugin.session.Session;
 
-@Gamemode("catali")
+@ConditionOn(value = GamemodeCondition.class, args = {"catali"})
 public class CataliClientCommands {
 
     private final CataliGamemode gamemode;

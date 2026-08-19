@@ -3,13 +3,14 @@ package plugin.gamemode.catali.menu;
 import arc.struct.Seq;
 import mindustry.gen.Groups;
 import mindustry.gen.Player;
-import plugin.annotations.Gamemode;
+import plugin.annotations.ConditionOn;
+import plugin.gamemode.GamemodeCondition;
 import plugin.gamemode.catali.data.CataliTeamData;
 import plugin.menus.PluginMenu;
 import plugin.utils.Tr;
 import plugin.session.Session;
 
-@Gamemode("catali")
+@ConditionOn(value = GamemodeCondition.class, args = {"catali"})
 public class AssignNextLeaderMenu extends PluginMenu<CataliTeamData> {
 
     @Override

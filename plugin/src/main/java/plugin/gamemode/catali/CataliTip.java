@@ -1,12 +1,13 @@
 package plugin.gamemode.catali;
 
 import lombok.RequiredArgsConstructor;
-import plugin.annotations.Gamemode;
+import plugin.annotations.ConditionOn;
+import plugin.gamemode.GamemodeCondition;
 import plugin.annotations.Init;
 import plugin.utils.Tr;
 import plugin.tip.TipService;
 
-@Gamemode("catali")
+@ConditionOn(value = GamemodeCondition.class, args = {"catali"})
 @RequiredArgsConstructor
 public class CataliTip {
 

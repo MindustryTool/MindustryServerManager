@@ -1,11 +1,12 @@
 package plugin.gamemode.catali.menu;
 
-import plugin.annotations.Gamemode;
+import plugin.annotations.ConditionOn;
+import plugin.gamemode.GamemodeCondition;
 import plugin.menus.PluginMenu;
 import plugin.utils.Tr;
 import plugin.session.Session;
 
-@Gamemode("catali")
+@ConditionOn(value = GamemodeCondition.class, args = {"catali"})
 public class JoinTeamMenu extends PluginMenu<Void> {
 
     @Override

@@ -3,7 +3,8 @@ package plugin.gamemode.catali.menu;
 import dto.Pair;
 import mindustry.gen.Unit;
 import plugin.PluginEvents;
-import plugin.annotations.Gamemode;
+import plugin.annotations.ConditionOn;
+import plugin.gamemode.GamemodeCondition;
 import plugin.core.Registry;
 import plugin.gamemode.catali.CataliConfig;
 import plugin.gamemode.catali.data.CataliTeamData;
@@ -12,7 +13,7 @@ import plugin.menus.PluginMenu;
 import plugin.utils.Tr;
 import plugin.session.Session;
 
-@Gamemode("catali")
+@ConditionOn(value = GamemodeCondition.class, args = {"catali"})
 public class RareUpgradeBuffSelectBuffMenu extends PluginMenu<Pair<CataliTeamData, Unit>> {
 
     @Override

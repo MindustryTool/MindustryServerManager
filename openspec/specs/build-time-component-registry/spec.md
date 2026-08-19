@@ -22,4 +22,4 @@ The build SHALL generate a `ComponentRegistry` class containing the list of clas
 
 #### Scenario: Runtime filtering is preserved
 - **WHEN** the component list is read from `ComponentRegistry`
-- **THEN** annotation/interface, lazy, condition (`ConditionOn`), and gamemode filtering still run at runtime in `Registry.init`
+- **THEN** annotation/interface, lazy, and condition (`ConditionOn`) filtering still run at runtime in `Registry.init`, and gamemode gating is performed by the `ConditionOn` mode check rather than a separate `@Gamemode` filter

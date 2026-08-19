@@ -1,14 +1,15 @@
 package plugin.gamemode.catali.menu;
 
 import lombok.RequiredArgsConstructor;
-import plugin.annotations.Gamemode;
+import plugin.annotations.ConditionOn;
+import plugin.gamemode.GamemodeCondition;
 import plugin.gamemode.catali.data.CataliTeamData;
 import plugin.menus.PluginMenu;
 import plugin.utils.Tr;
 import plugin.session.Session;
 
 @RequiredArgsConstructor
-@Gamemode("catali")
+@ConditionOn(value = GamemodeCondition.class, args = {"catali"})
 public class AIPickMenu extends PluginMenu<CataliTeamData> {
 
     @Override

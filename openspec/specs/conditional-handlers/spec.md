@@ -8,7 +8,7 @@ Allows `@ConditionOn` to gate individual method-level handler registrations so c
 
 ### Requirement: ConditionOn applicable to methods
 
-The `@ConditionOn` annotation SHALL be applicable to both classes and methods (`@Target({TYPE, METHOD})`). A method annotated with `@ConditionOn` MUST declare a `Condition` implementation class whose no-argument constructor can be instantiated.
+The `@ConditionOn` annotation SHALL be applicable to both classes and methods (`@Target({TYPE, METHOD})`) and SHALL be repeatable. A method annotated with `@ConditionOn` MUST declare a `Condition` implementation class that can be instantiated via its no-argument constructor, or via a `String[]` constructor when `args` are provided.
 
 #### Scenario: Annotation placed on a method
 - **WHEN** a method declares `@ConditionOn(SomeCondition.class)`
@@ -19,6 +19,42 @@ The `@ConditionOn` annotation SHALL be applicable to both classes and methods (`
 - **WHEN** a component class declares `@ConditionOn(SomeCondition.class)` as before
 - **THEN** the source compiles without error
 - **AND** behavior is unchanged
+
+### Requirement: ConditionOn supports constructor arguments
+
+`@ConditionOn` SHALL accept simple string arguments via `args()` alongside the condition class in `value()`. When `args()` is non-empty, the condition SHALL be instantiated via a public `String[]` constructor receiving those args; when empty, the existing no-argument constructor SHALL be used. If `args()` is non-empty and the condition class has no `String[]` constructor, evaluation SHALL fail with a `RuntimeException` naming the affected target. `args` SHALL be passed positionally in declaration order.
+
+#### Scenario: Args are passed to the condition
+- **WHEN** a target declares `@ConditionOn(value = GamemodeCondition.class, args = {"catali"})` and evaluation runs
+- **THEN** the condition is instantiated with `new GamemodeCondition(new String[]{"catali"})` and its `check()` result gates the target
+
+#### Scenario: No args uses the no-arg constructor
+- **WHEN** a target declares `@ConditionOn(Cfg.OnHub.class)` with no args
+- **THEN** the condition is instantiated via its no-argument constructor, exactly as before
+
+#### Scenario: Args without a String[] constructor fails loudly
+- **WHEN** a target declares args for a condition class lacking a `String[]` constructor
+- **THEN** evaluation throws a `RuntimeException` naming the affected target
+
+### Requirement: Multiple ConditionOn annotations are ANDed
+
+`@ConditionOn` SHALL be repeatable on a single target via its container annotation. When a target declares multiple `@ConditionOn` annotations, ALL of them SHALL pass for the target to be enabled. A target with no `@ConditionOn` SHALL always be enabled. Evaluation SHALL happen once per annotation at the existing timing (initialization/registration).
+
+#### Scenario: No condition is always enabled
+- **WHEN** a class or method has no `@ConditionOn`
+- **THEN** it passes unconditionally
+
+#### Scenario: All conditions must pass
+- **WHEN** a class declares two `@ConditionOn` annotations and the current state satisfies both
+- **THEN** the class passes and is enabled
+
+#### Scenario: One failing condition disables the target
+- **WHEN** a class declares two `@ConditionOn` annotations and exactly one fails
+- **THEN** the class fails and is not enabled
+
+#### Scenario: Repeatable form compiles at class and method level
+- **WHEN** repeated `@ConditionOn` annotations are placed on both a class and a method
+- **THEN** the source compiles without error and both targets are evaluated independently
 
 ### Requirement: Method-level condition gates handler registration
 
@@ -43,7 +79,7 @@ During component initialization, for every method annotated with one of `@Client
 
 ### Requirement: Condition evaluation semantics
 
-Conditions SHALL be evaluated once at component initialization time. Each `Condition` implementation SHALL be instantiated via its public no-argument constructor, matching class-level behavior. If the condition class cannot be instantiated or `check()` throws, initialization SHALL fail with a `RuntimeException` naming the affected target.
+Conditions SHALL be evaluated once at component initialization time. Each `Condition` implementation SHALL be instantiated via its public no-argument constructor, or via a public `String[]` constructor receiving `args` when `args()` is non-empty, matching class-level behavior. If the condition class cannot be instantiated or `check()` throws, initialization SHALL fail with a `RuntimeException` naming the affected target.
 
 #### Scenario: Condition instantiated via no-arg constructor
 - **WHEN** a method-level `@ConditionOn` references a `Condition` class with a no-argument constructor

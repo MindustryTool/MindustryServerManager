@@ -14,7 +14,8 @@ import mindustry.Vars;
 import mindustry.game.EventType.GameOverEvent;
 import mindustry.game.EventType.PlayEvent;
 import mindustry.game.EventType.PlayerJoin;
-import plugin.annotations.Gamemode;
+import plugin.annotations.ConditionOn;
+import plugin.gamemode.GamemodeCondition;
 import plugin.annotations.Init;
 import plugin.annotations.Listener;
 import plugin.session.SessionService;
@@ -23,7 +24,7 @@ import plugin.utils.TimeUtils;
 import plugin.utils.Tr;
 import plugin.utils.Utils;
 
-@Gamemode({ "attack", "ziger" })
+@ConditionOn(value = GamemodeCondition.class, args = {"attack", "ziger"})
 @RequiredArgsConstructor
 public class AttackRank {
     private final SessionService sessionService;

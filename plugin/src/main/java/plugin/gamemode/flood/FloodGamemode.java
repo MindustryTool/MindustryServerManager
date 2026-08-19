@@ -29,7 +29,8 @@ import mindustry.gen.Iconc;
 import mindustry.type.UnitType;
 import mindustry.world.Block;
 import mindustry.world.Tile;
-import plugin.annotations.Gamemode;
+import plugin.annotations.ConditionOn;
+import plugin.gamemode.GamemodeCondition;
 import plugin.annotations.Listener;
 import plugin.annotations.MainThread;
 import plugin.annotations.Schedule;
@@ -39,7 +40,7 @@ import plugin.utils.TimeUtils;
 import plugin.utils.Tr;
 import plugin.utils.Utils;
 
-@Gamemode("flood")
+@ConditionOn(value = GamemodeCondition.class, args = {"flood"})
 @RequiredArgsConstructor
 public class FloodGamemode {
 

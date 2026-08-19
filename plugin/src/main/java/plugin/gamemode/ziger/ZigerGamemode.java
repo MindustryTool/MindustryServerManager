@@ -24,11 +24,12 @@ import mindustry.world.consumers.ConsumeItems;
 import mindustry.world.consumers.ConsumeLiquid;
 import mindustry.world.consumers.ConsumeLiquidFilter;
 import mindustry.world.consumers.ConsumeLiquids;
-import plugin.annotations.Gamemode;
+import plugin.annotations.ConditionOn;
+import plugin.gamemode.GamemodeCondition;
 import plugin.annotations.Listener;
 import plugin.annotations.Trigger;
 
-@Gamemode("ziger")
+@ConditionOn(value = GamemodeCondition.class, args = {"ziger"})
 @RequiredArgsConstructor
 public class ZigerGamemode {
 

@@ -11,28 +11,32 @@ public final class ConditionUtils {
     }
 
     public static boolean passes(Class<?> type) {
-        if (!type.isAnnotationPresent(ConditionOn.class)) {
-            return true;
-        }
-
-        ConditionOn annotation = type.getAnnotation(ConditionOn.class);
-        return check(annotation, type.getName());
+        return passes(type.getAnnotationsByType(ConditionOn.class), type.getName());
     }
 
     public static boolean passes(Method method) {
-        if (!method.isAnnotationPresent(ConditionOn.class)) {
-            return true;
-        }
+        return passes(method.getAnnotationsByType(ConditionOn.class), method.getName());
+    }
 
-        ConditionOn annotation = method.getAnnotation(ConditionOn.class);
-        return check(annotation, method.getName());
+    private static boolean passes(ConditionOn[] annotations, String target) {
+        for (ConditionOn annotation : annotations) {
+            if (!check(annotation, target)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static boolean check(ConditionOn annotation, String target) {
         Class<? extends Condition> conditionClass = annotation.value();
 
         try {
-            Condition condition = conditionClass.getDeclaredConstructor().newInstance();
+            Condition condition;
+            if (annotation.args().length > 0) {
+                condition = conditionClass.getDeclaredConstructor(String[].class).newInstance((Object) annotation.args());
+            } else {
+                condition = conditionClass.getDeclaredConstructor().newInstance();
+            }
             return condition.check();
         } catch (Exception e) {
             throw new RuntimeException("Failed to check condition for " + target, e);

@@ -13,7 +13,8 @@ import lombok.RequiredArgsConstructor;
 import mindustry.Vars;
 import mindustry.game.EventType.PlayEvent;
 import mindustry.game.EventType.PlayerJoin;
-import plugin.annotations.Gamemode;
+import plugin.annotations.ConditionOn;
+import plugin.gamemode.GamemodeCondition;
 import plugin.annotations.Init;
 import plugin.annotations.Listener;
 import plugin.session.SessionService;
@@ -22,7 +23,7 @@ import plugin.utils.TimeUtils;
 import plugin.utils.Tr;
 import plugin.utils.Utils;
 
-@Gamemode("flood")
+@ConditionOn(value = GamemodeCondition.class, args = {"flood"})
 @RequiredArgsConstructor
 public class FloodRank {
     private final SessionService sessionService;

@@ -1,7 +1,8 @@
 package plugin.gamemode.catali.menu;
 
 import plugin.PluginEvents;
-import plugin.annotations.Gamemode;
+import plugin.annotations.ConditionOn;
+import plugin.gamemode.GamemodeCondition;
 import plugin.core.Registry;
 import plugin.gamemode.catali.data.CataliTeamData;
 import plugin.gamemode.catali.event.CataliSpawnRareUpgrade;
@@ -9,7 +10,7 @@ import plugin.menus.PluginMenu;
 import plugin.utils.Tr;
 import plugin.session.Session;
 
-@Gamemode("catali")
+@ConditionOn(value = GamemodeCondition.class, args = {"catali"})
 public class RareUpgradeMenu extends PluginMenu<CataliTeamData> {
 
     @Override

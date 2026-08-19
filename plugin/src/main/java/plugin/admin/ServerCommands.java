@@ -11,8 +11,8 @@ import plugin.update.PluginUpdater;
 import plugin.annotations.Component;
 import plugin.annotations.Param;
 import plugin.annotations.ServerCommand;
-import plugin.core.Registry;
 import plugin.database.Database;
+import plugin.gamemode.Gamemode;
 import plugin.utils.Tr;
 import plugin.utils.Utils;
 
@@ -26,8 +26,7 @@ public class ServerCommands {
 
     @ServerCommand(name = "gamemode", description = "Set gamemode")
     private void gamemode(@Param(name = "gamemode") String gamemode) {
-        Core.settings.put(Registry.GAMEMODE_KEY, gamemode);
-        Core.settings.forceSave();
+        Gamemode.set(gamemode);
 
         Log.info("[sky]Set gamemode to: " + gamemode);
     }
