@@ -8,7 +8,7 @@ import plugin.annotations.Init;
 import plugin.utils.Tr;
 import plugin.tip.TipService;
 
-@ConditionOn(value = GamemodeCondition.class, args = {"catali"})
+@ConditionOn(value = GamemodeCondition.class, args = { "catali" })
 @Component
 @RequiredArgsConstructor
 public class CataliTip {

@@ -103,7 +103,7 @@ public class Control extends mindustry.mod.Plugin {
 
             state = PluginState.UNLOADED;
 
-            Log.info("Unload");
+            Log.info("Unloading");
 
             Tasks.destroy();
 

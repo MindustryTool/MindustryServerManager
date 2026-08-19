@@ -16,7 +16,7 @@ import plugin.gamemode.catali.menu.RareUpgradeMenu;
 import plugin.utils.Tr;
 import plugin.session.Session;
 
-@ConditionOn(value = GamemodeCondition.class, args = {"catali"})
+@ConditionOn(value = GamemodeCondition.class, args = { "catali" })
 @Component
 public class CataliClientCommands {
 
