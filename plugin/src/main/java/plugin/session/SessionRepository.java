@@ -1,8 +1,6 @@
 package plugin.session;
 
-import java.sql.SQLException;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -13,12 +11,13 @@ import arc.util.Log;
 import lombok.AllArgsConstructor;
 import mindustry.gen.Player;
 import plugin.Tasks;
-import plugin.database.Database;
 import plugin.annotations.Component;
 import plugin.annotations.Destroy;
 import plugin.annotations.Init;
 import plugin.annotations.Listener;
 import plugin.annotations.Schedule;
+import plugin.database.Database;
+import plugin.database.schema.Sessions;
 import plugin.utils.JsonUtils;
 
 @Component
@@ -143,73 +142,67 @@ public class SessionRepository {
     }
 
     public Seq<RankData> leaderBoard(int size) {
-        var sql = "SELECT uuid, data, totalExp FROM sessions ORDER BY totalExp DESC, uuid ASC LIMIT ?";
+        var rows = database.db().select(Sessions.UUID, Sessions.DATA, Sessions.TOTAL_EXP)
+                .from(Sessions.TABLE)
+                .orderBy(Sessions.TOTAL_EXP.desc(), Sessions.UUID.asc())
+                .limit(size)
+                .fetch();
 
-        return database.prepare(sql, statement -> {
-            statement.setInt(1, size);
+        Seq<RankData> players = new Seq<>();
 
-            try (var rs = statement.executeQuery()) {
-                Seq<RankData> players = new Seq<>();
+        for (var row : rows) {
+            var uuid = row.get(Sessions.UUID);
+            var json = row.get(Sessions.DATA);
+            var totalExp = row.get(Sessions.TOTAL_EXP);
 
-                while (rs.next()) {
-                    var uuid = rs.getString(1);
-                    var json = rs.getString(2);
-                    var totalExp = rs.getLong(3);
-
-                    if (json == null || json.isEmpty()) {
-                        throw new IllegalArgumentException("No session data found for uuid: " + uuid);
-                    }
-                    var data = JsonUtils.readJsonAsClass(json, SessionData.class);
-
-                    players.add(new RankData(uuid, data, totalExp));
-                }
-
-                return players;
+            if (json == null || json.isEmpty()) {
+                throw new IllegalArgumentException("No session data found for uuid: " + uuid);
             }
-        });
+            var data = JsonUtils.readJsonAsClass(json, SessionData.class);
+
+            players.add(new RankData(uuid, data, totalExp));
+        }
+
+        return players;
     }
 
     public int getRank(String uuid) {
+        // Raw hook: the correlated subquery (count of sessions with higher exp, uuid tiebreak)
+        // is beyond the typed ORM API. Output column aliased for position-independent reads.
         var sql = """
                     SELECT CASE WHEN p.uuid IS NULL THEN -1 ELSE
                         1 + (SELECT COUNT(*) FROM sessions s
                              WHERE s.totalExp > p.totalExp
                                 OR (s.totalExp = p.totalExp AND s.uuid < p.uuid))
-                    END
+                    END AS rank
                     FROM (SELECT uuid, totalExp FROM sessions WHERE uuid = ?) p
                 """;
 
-        return database.prepare(sql, ps -> {
-            ps.setString(1, uuid);
+        var rows = database.db().rawQuery(sql, uuid);
 
-            try (var rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getInt(1);
-                }
-                return -1;
-            }
-        });
+        if (rows.isEmpty()) {
+            return -1;
+        }
+
+        return rows.get(0).getInt("rank");
     }
 
-    private SessionData read(String uuid) throws SQLException {
-        var sql = "SELECT data FROM sessions WHERE uuid = ?";
+    private SessionData read(String uuid) {
+        var row = database.db().select(Sessions.DATA).from(Sessions.TABLE)
+                .where(Sessions.UUID.eq(uuid))
+                .fetchOne()
+                .orElse(null);
 
-        return database.prepare(sql, ps -> {
-            ps.setString(1, uuid);
+        if (row == null) {
+            return null;
+        }
 
-            try (var rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    var json = rs.getString(1);
+        var json = row.get(Sessions.DATA);
 
-                    if (json == null || json.isEmpty()) {
-                        throw new IllegalArgumentException("Session data is empty for uuid: " + uuid);
-                    }
-                    return JsonUtils.readJsonAsClass(json, SessionData.class);
-                } else {
-                    return null;
-                }
-            }
-        });
+        if (json == null || json.isEmpty()) {
+            throw new IllegalArgumentException("Session data is empty for uuid: " + uuid);
+        }
+        return JsonUtils.readJsonAsClass(json, SessionData.class);
     }
 
     private void write(String uuid, SessionData pdata) {
@@ -227,14 +220,12 @@ public class SessionRepository {
                 totalExp = (long) pdata.exp;
             }
 
-            var sql = "INSERT INTO sessions(uuid, data, totalExp) VALUES(?, ?, ?) ON CONFLICT(uuid) DO UPDATE SET data = excluded.data, totalExp = excluded.totalExp";
-
-            database.prepare(sql, statement -> {
-                statement.setString(1, uuid);
-                statement.setString(2, json);
-                statement.setLong(3, totalExp);
-                statement.executeUpdate();
-            });
+            database.db().insert(Sessions.TABLE)
+                    .set(Sessions.UUID, uuid)
+                    .set(Sessions.DATA, json)
+                    .set(Sessions.TOTAL_EXP, totalExp)
+                    .onConflictDoUpdate(Sessions.UUID, Sessions.DATA, Sessions.TOTAL_EXP)
+                    .execute();
         } catch (Exception e) {
             Log.err("Error while saving session", e);
         }
@@ -255,23 +246,14 @@ public class SessionRepository {
         }
     }
 
-    private int seedStoredExpCounters() throws SQLException {
-        var rows = database.statement(statement -> {
-            var list = new ArrayList<String[]>();
-            try (var rs = statement.executeQuery("SELECT uuid, data FROM sessions")) {
-                while (rs.next()) {
-                    list.add(new String[] { rs.getString("uuid"), rs.getString("data") });
-                }
-            }
-            return list;
-        });
+    private int seedStoredExpCounters() {
+        var rows = database.db().select(Sessions.UUID, Sessions.DATA).from(Sessions.TABLE).fetch();
 
-        var updateSql = "UPDATE sessions SET data = ?, totalExp = ? WHERE uuid = ?";
         int repaired = 0;
 
         for (var row : rows) {
-            var uuid = row[0];
-            var json = row[1];
+            var uuid = row.get(Sessions.UUID);
+            var json = row.get(Sessions.DATA);
 
             if (json == null || json.isEmpty()) {
                 continue;
@@ -288,12 +270,11 @@ public class SessionRepository {
             var updatedJson = JsonUtils.toJsonString(data);
             long totalExp = (long) data.exp;
 
-            database.prepare(updateSql, ps -> {
-                ps.setString(1, updatedJson);
-                ps.setLong(2, totalExp);
-                ps.setString(3, uuid);
-                ps.executeUpdate();
-            });
+            database.db().update(Sessions.TABLE)
+                    .set(Sessions.DATA, updatedJson)
+                    .set(Sessions.TOTAL_EXP, totalExp)
+                    .where(Sessions.UUID.eq(uuid))
+                    .execute();
 
             repaired++;
         }
@@ -303,15 +284,11 @@ public class SessionRepository {
 
     private void createTableIfNotExists() {
         try {
-            var sql = "CREATE TABLE IF NOT EXISTS sessions (uuid TEXT PRIMARY KEY, data TEXT NOT NULL, totalExp INTEGER DEFAULT 0)";
+            database.db().raw("CREATE TABLE IF NOT EXISTS sessions (uuid TEXT PRIMARY KEY, data TEXT NOT NULL, totalExp INTEGER DEFAULT 0)");
 
-            database.statement(statement -> {
-                statement.executeUpdate(sql);
-
-                if (!database.hasColumn(statement, "sessions", "totalExp")) {
-                    statement.executeUpdate("ALTER TABLE sessions ADD COLUMN totalExp INTEGER DEFAULT 0");
-                }
-            });
+            if (!database.db().hasColumn("sessions", "totalExp")) {
+                database.db().raw("ALTER TABLE sessions ADD COLUMN totalExp INTEGER DEFAULT 0");
+            }
 
         } catch (Exception e) {
             Log.err("Failed to create sessions table: @", e);

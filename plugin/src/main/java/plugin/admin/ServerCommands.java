@@ -111,34 +111,28 @@ public class ServerCommands {
     @ServerCommand(name = "sql", description = "Run SQL script")
     private void sql(@Param(name = "script", variadic = true) String[] code) {
         var sql = String.join(" ", code);
-        
-        database.prepare(sql, statement -> {
-            boolean hasResultSet = statement.execute();
 
-            if (hasResultSet) {
-                try (var result = statement.getResultSet()) {
-                    var metaData = result.getMetaData();
-                    int columnCount = metaData.getColumnCount();
+        var result = database.db().rawExecute(sql);
 
-                    StringBuilder header = new StringBuilder("[sky]");
-                    for (int i = 1; i <= columnCount; i++) {
-                        header.append(metaData.getColumnName(i)).append(" | ");
-                    }
+        if (result.hasRows()) {
+            var rows = result.rows();
 
-                    Log.info(header.toString());
-
-                    while (result.next()) {
-                        StringBuilder row = new StringBuilder("[sky]");
-                        for (int i = 1; i <= columnCount; i++) {
-                            row.append(result.getString(i)).append(" | ");
-                        }
-                        Log.info(row.toString());
-                    }
-                }
-            } else {
-                int updateCount = statement.getUpdateCount();
-                Log.info("Query OK, " + updateCount + " rows affected.");
+            StringBuilder header = new StringBuilder("[sky]");
+            for (var column : rows.get(0).columnNames()) {
+                header.append(column).append(" | ");
             }
-        });
+
+            Log.info(header.toString());
+
+            for (var row : rows) {
+                StringBuilder line = new StringBuilder("[sky]");
+                for (var column : row.columnNames()) {
+                    line.append(row.getObject(column)).append(" | ");
+                }
+                Log.info(line.toString());
+            }
+        } else {
+            Log.info("Query OK, " + result.updateCount() + " rows affected.");
+        }
     }
 }

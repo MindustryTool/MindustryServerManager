@@ -6,6 +6,7 @@ import arc.util.Log;
 import plugin.annotations.Component;
 import plugin.annotations.Init;
 import plugin.database.Database;
+import plugin.database.schema.PlayerLogins;
 
 @Component
 public class DailyRepository {
@@ -21,19 +22,17 @@ public class DailyRepository {
     }
 
     public Optional<String> getLastLogin(String uuid) {
-        var sql = "SELECT last_login_date FROM player_logins WHERE uuid = ?";
-
         try {
-            return database.prepare(sql, ps -> {
-                ps.setString(1, uuid);
+            var row = database.db().select(PlayerLogins.LAST_LOGIN_DATE).from(PlayerLogins.TABLE)
+                    .where(PlayerLogins.UUID.eq(uuid))
+                    .fetchOne()
+                    .orElse(null);
 
-                try (var rs = ps.executeQuery()) {
-                    if (rs.next()) {
-                        return Optional.of(rs.getString(1));
-                    }
-                    return Optional.empty();
-                }
-            });
+            if (row == null) {
+                return Optional.empty();
+            }
+
+            return Optional.ofNullable(row.get(PlayerLogins.LAST_LOGIN_DATE));
         } catch (Exception e) {
             Log.err("Error while reading last login for uuid: @", uuid, e);
             return Optional.empty();
@@ -41,14 +40,12 @@ public class DailyRepository {
     }
 
     public void setLastLogin(String uuid, String date) {
-        var sql = "INSERT INTO player_logins(uuid, last_login_date) VALUES(?, ?) ON CONFLICT(uuid) DO UPDATE SET last_login_date = excluded.last_login_date";
-
         try {
-            database.prepare(sql, ps -> {
-                ps.setString(1, uuid);
-                ps.setString(2, date);
-                ps.executeUpdate();
-            });
+            database.db().insert(PlayerLogins.TABLE)
+                    .set(PlayerLogins.UUID, uuid)
+                    .set(PlayerLogins.LAST_LOGIN_DATE, date)
+                    .onConflictDoUpdate(PlayerLogins.UUID, PlayerLogins.LAST_LOGIN_DATE)
+                    .execute();
         } catch (Exception e) {
             Log.err("Error while saving last login for uuid: @", uuid, e);
         }
@@ -56,11 +53,7 @@ public class DailyRepository {
 
     private void createTableIfNotExists() {
         try {
-            var sql = "CREATE TABLE IF NOT EXISTS player_logins (uuid TEXT PRIMARY KEY, last_login_date TEXT NOT NULL)";
-
-            database.statement(statement -> {
-                statement.executeUpdate(sql);
-            });
+            database.db().raw("CREATE TABLE IF NOT EXISTS player_logins (uuid TEXT PRIMARY KEY, last_login_date TEXT NOT NULL)");
         } catch (Exception e) {
             Log.err("Failed to create player_logins table: @", e);
         }
