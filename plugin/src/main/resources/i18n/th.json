@@ -1,6 +1,6 @@
 {
   "hub": {
-    "choose_server": "{text}",
+    "choose_server": "[accent]คลิก[] [orange]ข้อมูลเซิร์ฟเวอร์ใดก็ได้[] เพื่อ [lime]เล่น[]\\n[accent]คลิก[] [scarlet]เซิร์ฟเวอร์ออฟไลน์[] เพื่อ [lime]เริ่มต้นและเล่น[]",
     "not_found": "ไม่พบฮับ",
     "global": {
       "title": "เซิร์ฟเวอร์",
@@ -192,7 +192,7 @@
     "restart_scheduled": "[scarlet]เซิร์ฟเวอร์ถูกกำหนดเวลาให้รีสตาร์ท"
   },
   "welcome": {
-    "message": "{text}",
+    "message": "[accent]ยินดีต้อนรับสู่เซิร์ฟเวอร์!\\n[lightgray]เล่นอย่างยุติธรรม ขอให้สนุกและเพลิดเพลินกับการเล่น",
     "rules": "กติกา",
     "website": "เว็บไซต์",
     "discord": "Discord",

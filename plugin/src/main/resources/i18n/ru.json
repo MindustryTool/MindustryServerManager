@@ -1,6 +1,6 @@
 {
   "hub": {
-    "choose_server": "{text}",
+    "choose_server": "[accent]Нажмите[] на [orange]любой сервер[], чтобы [lime]играть[]\\n[accent]Нажмите[] на [scarlet]оффлайн сервер[], чтобы [lime]запустить и играть[].",
     "not_found": "Хаб не найден",
     "global": {
       "title": "Серверы",
@@ -192,7 +192,7 @@
     "restart_scheduled": "[scarlet]Сервер запланирован на перезапуск"
   },
   "welcome": {
-    "message": "{text}",
+    "message": "[accent]Добро пожаловать на сервер!\\n[lightgray]Играйте честно, получайте удовольствие и приятной игры.",
     "rules": "Правила",
     "website": "Сайт",
     "discord": "Discord",

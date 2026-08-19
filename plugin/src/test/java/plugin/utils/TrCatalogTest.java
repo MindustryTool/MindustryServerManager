@@ -252,4 +252,30 @@ public class TrCatalogTest {
         assertEquals("No map is currently being voted on.", catalog.lookup(new Locale("xx"), "vote.no_map_voted"));
         assertEquals("no.such.key", catalog.resolve(vi, "no.such.key"));
     }
+
+    @Test
+    void allCatalogsLoadCleanlyAndTranslateMessages() throws Exception {
+        String[] languages = {"ar", "en", "id", "ja", "pl", "ru", "th", "vi", "zh"};
+        TrCatalog catalog = new TrCatalog();
+
+        for (String lang : languages) {
+            List<String> warnings = new ArrayList<>();
+            var stream = getClass().getResourceAsStream("/i18n/" + lang + ".json");
+            org.junit.jupiter.api.Assertions.assertNotNull(stream, "Missing resource for: " + lang);
+            String json = new String(stream.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+            catalog.load(lang, json, warnings::add);
+
+            assertTrue(warnings.isEmpty(), lang + ".json produced validation warnings: " + warnings);
+            assertTrue(catalog.hasLanguage(lang));
+
+            Locale locale = Locale.forLanguageTag(lang);
+            String chooseServer = catalog.lookup(locale, "hub.choose_server");
+            String welcomeMsg = catalog.lookup(locale, "welcome.message");
+
+            org.junit.jupiter.api.Assertions.assertNotNull(chooseServer, "hub.choose_server missing in " + lang);
+            org.junit.jupiter.api.Assertions.assertNotNull(welcomeMsg, "welcome.message missing in " + lang);
+            assertFalse(chooseServer.equals("{text}"), "hub.choose_server was not translated in " + lang);
+            assertFalse(welcomeMsg.equals("{text}"), "welcome.message was not translated in " + lang);
+        }
+    }
 }

@@ -1,6 +1,6 @@
 {
   "hub": {
-    "choose_server": "{text}",
+    "choose_server": "[accent]点击[] [orange]任意服务器数据[] 即可 [lime]加入游戏[]\\n[accent]点击[] [scarlet]离线服务器[] 即可 [lime]启动并游玩[]。",
     "not_found": "未找到枢纽",
     "global": {
       "title": "服务器",
@@ -192,7 +192,7 @@
     "restart_scheduled": "[scarlet]服务器已计划重启"
   },
   "welcome": {
-    "message": "{text}",
+    "message": "[accent]欢迎来到服务器！\\n[lightgray]请公平竞技，祝你游戏愉快。",
     "rules": "规则",
     "website": "网站",
     "discord": "Discord",

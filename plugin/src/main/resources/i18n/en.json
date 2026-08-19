@@ -1,6 +1,6 @@
 {
   "hub": {
-    "choose_server": "{text}",
+    "choose_server": "[accent]Click[] [orange]any server data[] to [lime]play[]\\n[accent]Click[] to [scarlet]offline server[] to [lime]starting & play[] this.",
     "not_found": "Hub not found",
     "global": {
       "title": "Servers",
@@ -192,7 +192,7 @@
     "restart_scheduled": "[scarlet]Server scheduled for a restart"
   },
   "welcome": {
-    "message": "{text}",
+    "message": "[accent]Welcome to the server!\\n[lightgray]Play fair, have fun, and enjoy your stay.",
     "rules": "Rules",
     "website": "Website",
     "discord": "Discord",

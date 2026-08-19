@@ -1,6 +1,6 @@
 {
   "hub": {
-    "choose_server": "{text}",
+    "choose_server": "[accent]Nhấp[] vào [orange]bất kỳ máy chủ nào[] để [lime]chơi[]\\n[accent]Nhấp[] vào [scarlet]máy chủ ngoại tuyến[] để [lime]khởi động & chơi[].",
     "not_found": "Không tìm thấy máy chủ",
     "global": {
       "title": "Máy chủ",
@@ -192,7 +192,7 @@
     "restart_scheduled": "[scarlet]Máy chủ được lên lịch khởi động lại"
   },
   "welcome": {
-    "message": "{text}",
+    "message": "[accent]Chào mừng bạn đến với máy chủ!\\n[lightgray]Hãy chơi đẹp, vui vẻ và tận hưởng khoảng thời gian tại đây.",
     "rules": "Luật lệ",
     "website": "Trang web",
     "discord": "Discord",

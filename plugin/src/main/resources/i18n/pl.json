@@ -1,6 +1,6 @@
 {
   "hub": {
-    "choose_server": "{text}",
+    "choose_server": "[accent]Kliknij[] [orange]dane dowolnego serwera[], aby [lime]zagrać[]\\n[accent]Kliknij[] [scarlet]serwer offline[], aby [lime]uruchomić i zagrać[].",
     "not_found": "Nie znaleziono serwera",
     "global": {
       "title": "Serwery",
@@ -192,7 +192,7 @@
     "restart_scheduled": "[scarlet]Serwer zaplanowany do restartu"
   },
   "welcome": {
-    "message": "{text}",
+    "message": "[accent]Witamy na serwerze!\\n[lightgray]Graj uczciwie, baw się dobrze i miłego spędzania czasu.",
     "rules": "Zasady",
     "website": "Strona",
     "discord": "Discord",

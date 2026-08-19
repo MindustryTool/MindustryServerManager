@@ -1,6 +1,6 @@
 {
   "hub": {
-    "choose_server": "{text}",
+    "choose_server": "[accent]Klik[] [orange]data server mana saja[] untuk [lime]bermain[]\\n[accent]Klik[] [scarlet]server offline[] untuk [lime]memulai & bermain[].",
     "not_found": "Hub tidak ditemukan",
     "global": {
       "title": "Server",
@@ -192,7 +192,7 @@
     "restart_scheduled": "[scarlet]Server dijadwalkan untuk restart"
   },
   "welcome": {
-    "message": "{text}",
+    "message": "[accent]Selamat datang di server!\\n[lightgray]Bermainlah secara adil, bersenang-senang, dan nikmati waktu Anda.",
     "rules": "Aturan",
     "website": "Situs web",
     "discord": "Discord",

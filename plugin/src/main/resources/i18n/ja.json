@@ -1,6 +1,6 @@
 {
   "hub": {
-    "choose_server": "{text}",
+    "choose_server": "[accent]プレイするには[] [orange]サーバー情報[] を [lime]クリック[]\\n[accent]起動してプレイするには[] [scarlet]オフラインサーバー[] を [lime]クリック[]",
     "not_found": "ハブが見つかりません",
     "global": {
       "title": "サーバー",
@@ -192,7 +192,7 @@
     "restart_scheduled": "[scarlet]サーバーは再起動が予定されています"
   },
   "welcome": {
-    "message": "{text}",
+    "message": "[accent]サーバーへようこそ！\\n[lightgray]ルールを守って楽しくプレイしましょう。",
     "rules": "ルール",
     "website": "ウェブサイト",
     "discord": "Discord",
