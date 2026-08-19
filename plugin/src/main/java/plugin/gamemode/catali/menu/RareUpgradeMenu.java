@@ -31,13 +31,13 @@ public class RareUpgradeMenu extends PluginMenu<CataliTeamData> {
         row();
 
         option(Tr.t(session, "catali.evolve_unit"), (s, st) -> {
-            Registry.createNew(RareUpgradeTierSelectUnitMenu.class).send(s, team);
+            Registry.inject(RareUpgradeTierSelectUnitMenu.class).send(s, team);
         });
 
         row();
 
         option(Tr.t(session, "catali.apply_buff"), (s, st) -> {
-            Registry.createNew(RareUpgradeBuffSelectUnitMenu.class).send(s, team);
+            Registry.inject(RareUpgradeBuffSelectUnitMenu.class).send(s, team);
         });
 
         row();

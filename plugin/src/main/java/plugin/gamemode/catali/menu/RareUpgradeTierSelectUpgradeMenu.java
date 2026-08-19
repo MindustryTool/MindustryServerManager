@@ -44,7 +44,7 @@ public class RareUpgradeTierSelectUpgradeMenu extends PluginMenu<Pair<CataliTeam
         row();
 
         option(Tr.t(session, "catali.back"), (s, st) -> {
-            Registry.createNew(RareUpgradeTierSelectUnitMenu.class).send(s, team);
+            Registry.inject(RareUpgradeTierSelectUnitMenu.class).send(s, team);
         });
         option(Tr.t(session, "catali.close"), (s, st) -> {
         });

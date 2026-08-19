@@ -167,6 +167,8 @@ public final class Registry {
         }
     }
 
+
+
     @SuppressWarnings("unchecked")
     public static <T> T createNew(Class<T> type) {
         try {
@@ -179,6 +181,23 @@ public final class Registry {
             Object instance = constructor.newInstance(args);
 
             initialize(instance);
+
+            return (T) instance;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to create prototype " + type.getName(), e);
+        }
+    }
+    
+    @SuppressWarnings("unchecked")
+    public static <T> T inject(Class<T> type) {
+        try {
+            Constructor<?> constructor = selectConstructor(type);
+
+            Object[] args = Arrays.stream(constructor.getParameterTypes())
+                    .map(Registry::get)
+                    .toArray();
+
+            Object instance = constructor.newInstance(args);
 
             return (T) instance;
         } catch (Exception e) {

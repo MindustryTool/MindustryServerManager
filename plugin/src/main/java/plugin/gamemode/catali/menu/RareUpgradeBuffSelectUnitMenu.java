@@ -23,7 +23,7 @@ public class RareUpgradeBuffSelectUnitMenu extends PluginMenu<CataliTeamData> {
             }
 
             option(unit.type.emoji() + " " + unit.type.name, (s, st) -> {
-                Registry.createNew(RareUpgradeBuffSelectBuffMenu.class).send(s, Pair.of(team, unit));
+                Registry.inject(RareUpgradeBuffSelectBuffMenu.class).send(s, Pair.of(team, unit));
             });
             i++;
         }
@@ -31,7 +31,7 @@ public class RareUpgradeBuffSelectUnitMenu extends PluginMenu<CataliTeamData> {
         row();
 
         option(Tr.t(session, "catali.back"), (s, st) -> {
-            Registry.createNew(RareUpgradeMenu.class).send(s, team);
+            Registry.inject(RareUpgradeMenu.class).send(s, team);
         });
         option(Tr.t(session, "catali.close"), (s, st) -> {
         });

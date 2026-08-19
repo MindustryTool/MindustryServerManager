@@ -39,7 +39,7 @@ public class RareUpgradeBuffSelectBuffMenu extends PluginMenu<Pair<CataliTeamDat
         row();
 
         option(Tr.t(session, "catali.back"), (s, st) -> {
-            Registry.createNew(RareUpgradeBuffSelectUnitMenu.class).send(s, team);
+            Registry.inject(RareUpgradeBuffSelectUnitMenu.class).send(s, team);
         });
         option(Tr.t(session, "catali.close"), (s, st) -> {
         });

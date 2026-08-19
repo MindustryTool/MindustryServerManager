@@ -15,13 +15,13 @@ public class TimeUtils {
     public static void measure(String name, Runnable action) {
         Instant start = Instant.now();
         action.run();
-        Log.info("[timing] @ took @", name, toString(Duration.between(start, Instant.now())));
+        Log.info("[#50C878][timing] @ took @", name, toString(Duration.between(start, Instant.now())));
     }
 
     public static <T> T measure(String name, Supplier<T> action) {
         Instant start = Instant.now();
         T result = action.get();
-        Log.info("[timing] @ took @", name, toString(Duration.between(start, Instant.now())));
+        Log.info("[#50C878][timing] @ took @", name, toString(Duration.between(start, Instant.now())));
         return result;
     }
 
