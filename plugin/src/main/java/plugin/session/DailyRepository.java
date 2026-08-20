@@ -3,6 +3,7 @@ package plugin.session;
 import java.util.Optional;
 
 import arc.util.Log;
+import plugin.Tasks;
 import plugin.annotations.Component;
 import plugin.annotations.Init;
 import plugin.database.Database;
@@ -18,7 +19,9 @@ public class DailyRepository {
 
     @Init
     public void init() {
-        createTableIfNotExists();
+        Tasks.io("daily login migration", () -> {
+            createTableIfNotExists();
+        });
     }
 
     public Optional<String> getLastLogin(String uuid) {

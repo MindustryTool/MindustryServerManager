@@ -33,8 +33,10 @@ public class SessionRepository {
 
     @Init
     public void init() {
-        createTableIfNotExists();
-        Tasks.io("session exp migration", this::migrateStoredExpCounters);
+        Tasks.io("session exp migration", () -> {
+            createTableIfNotExists();
+            migrateStoredExpCounters();
+        });
     }
 
     @Listener
@@ -167,8 +169,10 @@ public class SessionRepository {
     }
 
     public int getRank(String uuid) {
-        // Raw hook: the correlated subquery (count of sessions with higher exp, uuid tiebreak)
-        // is beyond the typed ORM API. Output column aliased for position-independent reads.
+        // Raw hook: the correlated subquery (count of sessions with higher exp, uuid
+        // tiebreak)
+        // is beyond the typed ORM API. Output column aliased for position-independent
+        // reads.
         var sql = """
                     SELECT CASE WHEN p.uuid IS NULL THEN -1 ELSE
                         1 + (SELECT COUNT(*) FROM sessions s
@@ -286,7 +290,8 @@ public class SessionRepository {
         try {
             database.db().createTableIfNotExists(Sessions.TABLE);
 
-            // Legacy databases created before the stored exp counter may be missing the column.
+            // Legacy databases created before the stored exp counter may be missing the
+            // column.
             database.db().addColumnIfMissing(Sessions.TABLE, Sessions.TOTAL_EXP);
         } catch (Exception e) {
             Log.err("Failed to create sessions table: @", e);
