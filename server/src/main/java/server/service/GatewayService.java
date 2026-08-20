@@ -218,16 +218,15 @@ public class GatewayService {
             terminatedAt = Instant.now();
 
             try {
-                this.server.shutdown().get(10, TimeUnit.SECONDS);
-            } catch (Exception e) {
-                Log.err("Error terminating client: " + id, e);
-            }
-
-            try {
                 WsContext socket = context.getNow(null);
 
                 if (socket != null) {
                     if (socket.session.isOpen()) {
+                        try {
+                            this.server.shutdown().get(5, TimeUnit.SECONDS);
+                        } catch (Exception e) {
+                            Log.err("Error terminating client: " + id, e);
+                        }
                         socket.closeSession(WsCloseStatus.NORMAL_CLOSURE, "Terminate by server");
                     }
                 } else {

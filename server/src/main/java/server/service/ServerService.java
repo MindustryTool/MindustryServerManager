@@ -1,8 +1,12 @@
 package server.service;
 
 import java.io.Closeable;
+import java.io.File;
+import java.nio.file.Files;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.LinkedList;
@@ -106,10 +110,10 @@ public class ServerService {
             if (file.isDirectory()) {
                 String serverId = file.name();
                 try {
-                    Instant lastModifiedTime = gatewayService
-                            .of(UUID.fromString(serverId))
-                            .server()
-                            .getLastModifiedTime();
+                    File previewFile = nodeManager.getFile(UUID.fromString(serverId), "map-preview-image.png").file();
+
+                    Instant lastModifiedTime = previewFile.exists() ? Files.getLastModifiedTime(previewFile.toPath()).toInstant()
+                            : LocalDateTime.of(2026, 1, 1, 0, 0).toInstant(ZoneOffset.UTC);
 
                     Instant canBeDeletedAt = lastModifiedTime.plus(Duration.ofDays(removeAfterDays));
 
