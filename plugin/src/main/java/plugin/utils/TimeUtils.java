@@ -11,7 +11,7 @@ import java.util.regex.Pattern;
 public class TimeUtils {
 
     private static final Pattern PART = Pattern.compile("(\\d+)(ms|s|m|h|d)", Pattern.CASE_INSENSITIVE);
-    private static final Duration DEFAULT_THRESHOLD = Duration.ofSeconds(20);
+    private static final Duration DEFAULT_THRESHOLD = Duration.ofMillis(20);
 
     public static void measure(String name, Runnable action) {
         Instant start = Instant.now();

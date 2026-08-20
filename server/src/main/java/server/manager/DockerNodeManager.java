@@ -244,7 +244,7 @@ public class DockerNodeManager implements NodeManager {
         dockerClient.startContainerCmd(containerId).exec();
         attachLogCallback(containerId, serverId);
 
-        eventBus.emit(LogEvent.info(serverId, "Container " + containerId + " started"));
+        eventBus.emit(LogEvent.info(serverId, "Container started"));
 
     }
 
