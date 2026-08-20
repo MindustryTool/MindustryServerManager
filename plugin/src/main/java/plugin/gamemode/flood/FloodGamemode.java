@@ -10,7 +10,6 @@ import java.util.concurrent.TimeUnit;
 
 import arc.Core;
 import arc.Events;
-import arc.graphics.Color;
 import arc.math.Mathf;
 import arc.struct.Seq;
 import arc.util.Align;
@@ -19,7 +18,6 @@ import arc.util.Time;
 import lombok.RequiredArgsConstructor;
 import mindustry.Vars;
 import mindustry.content.Blocks;
-import mindustry.content.Fx;
 import mindustry.content.UnitTypes;
 import mindustry.game.EventType;
 import mindustry.game.Team;
@@ -31,7 +29,6 @@ import mindustry.gen.Iconc;
 import mindustry.type.UnitType;
 import mindustry.world.Block;
 import mindustry.world.Tile;
-import mindustry.world.blocks.storage.CoreBlock.CoreBuild;
 import plugin.annotations.Component;
 import plugin.annotations.ConditionOn;
 import plugin.gamemode.GamemodeCondition;
@@ -68,10 +65,6 @@ public class FloodGamemode {
     private Duration dayDuration = Duration.ofMinutes(12);
     private Duration nightDuration = Duration.ofMinutes(8);
     private int days = 0;
-
-    private FloodOrb orb = null;
-    private Seq<Tile> orbTiles = new Seq<>();
-    private Block orbBlock = Blocks.thoriumReactor;
 
     private boolean shouldUpdate() {
         return Vars.state.isPlaying();
@@ -246,20 +239,6 @@ public class FloodGamemode {
 
         Seq<Building> cores = Team.crux.cores().map(core -> (Building) core);
         Seq<Building> unsuppressedCores = cores.select(c -> !suppressed.containsKey(c));
-
-        if (orbTiles.size > 20) {
-            orbTiles.remove(orbTile -> orbTile.build == null || orbTile.build.block != orbBlock);
-        }
-
-        orbTiles.forEach(tile -> {
-            var build = tile.build;
-
-            if (build == null || build.block != orbBlock) {
-                return;
-            }
-
-            unsuppressedCores.add(build);
-        });
 
         if (unsuppressedCores.isEmpty()) {
             return;
@@ -455,93 +434,6 @@ public class FloodGamemode {
         if (suppressed.size() == cores) {
             Events.fire(new FloodWonEvent());
             Events.fire(new EventType.GameOverEvent(Team.sharded));
-        }
-    }
-
-    @Schedule(fixedDelay = 100, unit = TimeUnit.MILLISECONDS)
-    private void spawnOrbs() {
-        if (!shouldUpdate()) {
-            return;
-        }
-
-        if (orb != null) {
-            orb.update();
-        } else {
-            if (Team.crux.cores().size == 0) {
-                return;
-            }
-
-            int x = Mathf.random(0, Vars.world.width() - 1);
-            int y = Mathf.random(0, Vars.world.height() - 1);
-
-            int maxAttempts = 10;
-
-            int attempts = 0;
-            boolean found = false;
-
-            while (attempts < maxAttempts) {
-                var tile = Vars.world.tile(x, y);
-
-                if (tile != null && orbBlock.canPlaceOn(tile, Team.crux, 0)) {
-                    found = true;
-                    break;
-                }
-
-                x = Mathf.random(0, Vars.world.width() - 1);
-                y = Mathf.random(0, Vars.world.height() - 1);
-
-                attempts++;
-            }
-
-            var destX = x;
-            var destY = y;
-
-            var closetCore = Team.crux.cores().min(core -> Mathf.dst(core.tile.x, core.tile.y, destX, destY));
-
-            if (closetCore == null) {
-                return;
-            }
-
-            if (found) {
-                orb = new FloodOrb(destX, destY, closetCore);
-            } else {
-                Log.err("Failed to spawn orb at @, @", destX, destY);
-            }
-        }
-    }
-
-    private class FloodOrb {
-        public final int coreX, coreY;
-        public final int destX, destY;
-        public final float duration;
-        public static final float speed = 1;// tiles/second
-
-        public float spawnTime = 0f;
-
-        public FloodOrb(int destX, int destY, CoreBuild closetCore) {
-            this.destX = destX;
-            this.destY = destY;
-
-            coreX = closetCore.tile.x;
-            coreY = closetCore.tile.y;
-            duration = Mathf.dst2(coreX, coreY, destX, destY) / speed;
-            spawnTime = Time.time + duration;
-        }
-
-        public void update() {
-            float progress = (1f - (spawnTime - Time.time) / duration);
-            float x = Mathf.lerp(coreX, destX, progress);
-            float y = Mathf.lerp(coreY, destY, progress);
-
-            Call.effect(Fx.placeBlock, x, y, 0, Color.cyan);
-
-            if (Time.time >= spawnTime) {
-                var tile = Vars.world.tile(destX, destY);
-                orbTiles.add(tile);
-                Call.logicExplosion(Team.crux, x, y, 5, 500, true, true, false, true);
-                Call.setTile(tile, orbBlock, Team.crux, 0);
-                orb = null;
-            }
         }
     }
 }
