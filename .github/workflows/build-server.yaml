@@ -6,8 +6,8 @@ on:
     paths:
       - 'server/**'
       - 'dto/**'
-      - 'build.gradle'
-      - 'settings.gradle'
+      - 'build.gradle.kt'
+      - 'settings.gradle.kt'
       - 'Dockerfile'
 
 jobs:
