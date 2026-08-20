@@ -452,9 +452,6 @@ public class FloodGamemode {
     private void spawnOrbs() {
         if (orb != null) {
             orb.update();
-            if (orb.spawned) {
-                orb = null;
-            }
         } else {
             if (Team.crux.cores().size == 0) {
                 return;
@@ -505,7 +502,7 @@ public class FloodGamemode {
         public final float duration;
         public static final float speed = 1;// tiles/second
 
-        public float time = 0f;
+        public float spawnTime = 0f;
         public boolean spawned = false;
 
         public FloodOrb(int destX, int destY, CoreBuild closetCore) {
@@ -515,25 +512,27 @@ public class FloodGamemode {
             coreX = closetCore.tile.x;
             coreY = closetCore.tile.y;
             duration = Mathf.dst2(coreX, coreY, destX, destY) / speed;
+            spawnTime = Time.time + duration;
         }
 
         public void update() {
-            if (spawned == true) {
+            if (spawned) {
                 return;
             }
 
-            time += Time.delta;
-            float progress = time / duration;
+            float progress = (1f - (spawnTime - Time.time) / duration);
             float x = Mathf.lerp(coreX, destX, progress);
             float y = Mathf.lerp(coreY, destY, progress);
 
-            Call.effect(Fx.colorSpark, x, y, 0, Color.cyan);
+            Call.effect(Fx.placeBlock, x, y, 0, Color.cyan);
+            Call.logicExplosion(Team.crux, x, y, 5, 500, true, true, false, true);
 
-            if (time >= duration) {
+            if (Time.time >= spawnTime) {
                 spawned = true;
                 var tile = Vars.world.tile(destX, destY);
                 orbTiles.add(tile);
                 Call.setTile(tile, orbBlock, Team.crux, 0);
+                orb = null;
             }
         }
     }

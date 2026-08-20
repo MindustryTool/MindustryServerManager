@@ -38,7 +38,8 @@ public class AdminCommands {
                     .map(field -> field.getName())
                     .toList();
 
-            session.player.sendMessage("Available effects: " + Strings.join(", ", fields));
+            session.player.sendMessage("Available effects: " + Strings.join("\n", fields));
+            return;
         }
 
         var field = Fx.class.getField(name);
