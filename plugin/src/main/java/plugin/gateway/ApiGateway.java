@@ -550,7 +550,6 @@ public class ApiGateway {
 
         try {
             if (Vars.state.isGame()) {
-                Log.warn("API: Already hosting. Type 'stop' to stop hosting first.");
                 return null;
             }
 
