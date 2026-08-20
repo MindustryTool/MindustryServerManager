@@ -7,8 +7,8 @@ on:
     paths:
       - 'plugin/**'
       - 'dto/**'
-      - 'build.gradle.kt'
-      - 'settings.gradle.kt'
+      - 'build.gradle.kts'
+      - 'settings.gradle.kts'
 
 
 
