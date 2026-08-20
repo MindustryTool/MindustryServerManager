@@ -526,9 +526,7 @@ public class FloodGamemode {
             float x = Mathf.lerp(coreX, destX, progress);
             float y = Mathf.lerp(coreY, destY, progress);
 
-            Call.effect(Fx.lightningCharge, x, y, 0, Color.cyan);
-
-            Log.info("Progress: @ x=@, y=@", progress, x, y);
+            Call.effect(Fx.placeBlock, x, y, 0, Color.cyan);
 
             if (Time.time >= spawnTime) {
                 var tile = Vars.world.tile(destX, destY);
