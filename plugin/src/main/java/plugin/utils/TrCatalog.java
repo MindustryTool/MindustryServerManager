@@ -1,5 +1,8 @@
 package plugin.utils;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Locale;
@@ -8,23 +11,21 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
+import arc.util.Log;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class TrCatalog {
     private static final String KEY_PATTERN = "[a-z0-9_]+";
+    private static final String CATALOG_DIR = "i18n";
 
     private final ObjectMapper mapper = new ObjectMapper();
     private final Map<String, Map<String, String>> catalogs = new ConcurrentHashMap<>();
-    private final Set<String> attempted = ConcurrentHashMap.newKeySet();
-    private volatile Consumer<String> loader;
+    private final ConcurrentHashMap<String, Object> loadLocks = new ConcurrentHashMap<>();
+    private final Consumer<String> loader;
 
-    /**
-     * Registers an on-demand catalog loader, invoked at most once per language on
-     * the first lookup that needs it.
-     */
-    public void setLoader(Consumer<String> loader) {
-        this.loader = loader;
+    public TrCatalog() {
+        this.loader = this::loadDefault;
     }
 
     public void load(String language, String jsonText, Consumer<String> warning) {
@@ -86,21 +87,31 @@ public class TrCatalog {
     }
 
     /**
-     * Returns the flattened catalog for a language, loading it lazily via the
-     * registered loader on first use. A missing/corrupt catalog is attempted
-     * only once per language; subsequent lookups fall back through the chain.
+     * Returns the flattened catalog for a language, loading it on demand via the
+     * registered loader. The first load per language is serialized by a per-language
+     * lock so concurrent first lookups all observe the loaded catalog (no English
+     * fallback mid-load). A failed load is not remembered, so the next lookup
+     * retries rather than being stuck with the raw key.
      */
     private Map<String, String> getEntries(String language) {
         String base = baseLanguage(language);
         Map<String, String> entries = catalogs.get(base);
-        if (entries == null) {
-            Consumer<String> loader = this.loader;
-            if (loader != null && attempted.add(base)) {
+        if (entries != null) {
+            return entries;
+        }
+
+        Object lock = loadLocks.computeIfAbsent(base, k -> new Object());
+        synchronized (lock) {
+            entries = catalogs.get(base);
+            if (entries == null) {
                 loader.accept(base);
                 entries = catalogs.get(base);
+                if (entries == null) {
+                    loadLocks.remove(base);
+                }
             }
+            return entries;
         }
-        return entries;
     }
 
     private static String baseLanguage(String language) {
@@ -112,6 +123,31 @@ public class TrCatalog {
             idx = language.indexOf('_');
         }
         return idx > 0 ? language.substring(0, idx) : language;
+    }
+
+    private void loadDefault(String language) {
+        String content = readClasspathCatalog(language);
+
+        if (content == null) {
+            Log.warn("TranslationLoader: could not read catalog '@'", CATALOG_DIR + "/" + language + ".json");
+            return;
+        }
+
+        load(language, content, message -> Log.warn("TranslationLoader: @", message));
+        Log.info("TranslationLoader: loaded catalog '@'", language);
+    }
+
+    private static String readClasspathCatalog(String language) {
+        try (InputStream stream = TrCatalog.class.getResourceAsStream(
+                "/" + CATALOG_DIR + "/" + language + ".json")) {
+            if (stream == null) {
+                return null;
+            }
+            return new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            Log.warn("TranslationLoader: failed to read catalog '@': @", language, e);
+            return null;
+        }
     }
 
     private void flatten(String prefix, JsonNode node, Map<String, String> out, Consumer<String> warning) {

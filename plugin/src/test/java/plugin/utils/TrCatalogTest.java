@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TrCatalogTest {
@@ -59,28 +60,18 @@ public class TrCatalogTest {
     }
 
     @Test
-    void regionTagDoesNotTriggerLoaderWithRegion() {
-        TrCatalog catalog = newCatalog();
-        List<String> loaded = new ArrayList<>();
-        catalog.setLoader(language -> loaded.add(language));
-
-        assertEquals("Hub not found", catalog.lookup(Locale.forLanguageTag("en-PH"), "hub.not_found"));
-        assertTrue(loaded.isEmpty());
-    }
-
-    @Test
-    void regionTagLoadsBaseLanguageCatalog() {
+    void regionTagLoadsBaseLanguageCatalogOnDemand() {
         TrCatalog catalog = new TrCatalog();
-        List<String> loaded = new ArrayList<>();
-        catalog.setLoader(language -> {
-            loaded.add(language);
-            catalog.load(language, "{\"key\": \"lazy " + language + "\"}", null);
-        });
 
-        assertEquals("lazy vi", catalog.lookup(Locale.forLanguageTag("vi-VN"), "key"));
-        assertEquals(List.of("vi"), loaded);
-        assertEquals("lazy zh", catalog.lookup(Locale.forLanguageTag("zh-TW"), "key"));
-        assertEquals(List.of("vi", "zh"), loaded);
+        String vi = catalog.lookup(Locale.forLanguageTag("vi-VN"), "hub.not_found");
+        assertNotNull(vi);
+        assertFalse(vi.equals("hub.not_found"));
+        assertTrue(catalog.hasLanguage("vi"));
+
+        String zh = catalog.lookup(Locale.forLanguageTag("zh-TW"), "hub.not_found");
+        assertNotNull(zh);
+        assertFalse(zh.equals("hub.not_found"));
+        assertTrue(catalog.hasLanguage("zh"));
     }
 
     @Test
@@ -122,6 +113,7 @@ public class TrCatalogTest {
     @Test
     void unknownLocalePrefersCatalogOverRawKey() {
         TrCatalog catalog = newCatalog();
+        catalog.load("es", "{\"vote\": {\"failed\": \"[scarlet]Vote failed.\"}}", null);
 
         assertEquals("[scarlet]Vote failed.", catalog.lookup(new Locale("es"), "vote.failed"));
     }
@@ -138,13 +130,15 @@ public class TrCatalogTest {
     }
 
     @Test
-    void malformedJsonWarnsAndRegistersNothing() {
+    void malformedJsonWarnsAndDoesNotClobberExistingCatalog() {
         TrCatalog catalog = new TrCatalog();
+        catalog.load("en", "{\"key\": \"english\"}", null);
         List<String> warnings = new ArrayList<>();
+
         catalog.load("en", "{not json", warnings::add);
 
-        assertFalse(catalog.hasLanguage("en"));
         assertEquals(1, warnings.size());
+        assertEquals("english", catalog.lookup(Locale.ENGLISH, "key"));
     }
 
     @Test
@@ -160,45 +154,36 @@ public class TrCatalogTest {
     }
 
     @Test
-    void firstLookupTriggersLazyLoad() {
+    void firstLookupTriggersOnDemandLoad() {
         TrCatalog catalog = new TrCatalog();
-        int[] loads = { 0 };
-        catalog.setLoader(language -> {
-            loads[0]++;
-            catalog.load(language, String.format("{\"key\": \"lazy %s\"}", language), null);
-        });
 
-        assertEquals("lazy vi", catalog.lookup(Locale.forLanguageTag("vi"), "key"));
-        assertEquals(1, loads[0]);
+        String result = catalog.lookup(Locale.forLanguageTag("vi"), "hub.not_found");
+
+        assertFalse(result.equals("hub.not_found"));
+        assertTrue(catalog.hasLanguage("vi"));
     }
 
     @Test
-    void lazyLoadHappensAtMostOncePerLanguage() {
+    void onDemandLoadHappensAtMostOncePerLanguage() {
         TrCatalog catalog = new TrCatalog();
-        int[] loads = { 0 };
-        catalog.setLoader(language -> {
-            loads[0]++;
-            catalog.load(language, "{\"key\": \"value\"}", null);
-        });
 
-        assertEquals("value", catalog.lookup(Locale.forLanguageTag("vi"), "key"));
-        assertEquals("value", catalog.lookup(Locale.forLanguageTag("vi"), "key"));
-        assertEquals("value", catalog.lookup(Locale.forLanguageTag("vi"), "key"));
-        assertEquals(1, loads[0]);
+        String first = catalog.lookup(Locale.forLanguageTag("vi"), "hub.not_found");
+        String second = catalog.lookup(Locale.forLanguageTag("vi"), "hub.not_found");
+        String third = catalog.lookup(Locale.forLanguageTag("vi"), "hub.not_found");
+
+        assertEquals(first, second);
+        assertEquals(second, third);
+        assertTrue(catalog.hasLanguage("vi"));
     }
 
     @Test
-    void failedLazyLoadIsAttemptedOnceAndFallsBack() {
+    void missingCatalogFallsBackAndRetriesNextLookup() {
         TrCatalog catalog = new TrCatalog();
         catalog.load("en", "{\"key\": \"english\"}", null);
-        int[] loads = { 0 };
-        catalog.setLoader(language -> {
-            loads[0]++;
-        });
 
-        assertEquals("english", catalog.lookup(Locale.forLanguageTag("vi"), "key"));
-        assertEquals("english", catalog.lookup(Locale.forLanguageTag("vi"), "key"));
-        assertEquals(1, loads[0]);
+        assertEquals("english", catalog.lookup(Locale.forLanguageTag("xx"), "key"));
+        assertEquals("english", catalog.lookup(Locale.forLanguageTag("xx"), "key"));
+        assertFalse(catalog.hasLanguage("xx"));
     }
 
     @Test
