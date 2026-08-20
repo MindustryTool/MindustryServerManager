@@ -17,11 +17,7 @@ import java.util.function.Consumer;
 
 @Component
 public class FileWatcherManager {
-    private final ExecutorService executor = Executors.newSingleThreadExecutor(r -> {
-        Thread t = new Thread(r, "FileWatcherService");
-        t.setDaemon(true);
-        return t;
-    });
+    private final Thread watcherThread = new Thread(this::processEvents, "FileWatcherService");
 
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
         Thread t = new Thread(r, "FileWatcher-Scheduler");
@@ -37,7 +33,8 @@ public class FileWatcherManager {
     public void init() {
         try {
             watchService = FileSystems.getDefault().newWatchService();
-            executor.submit(this::processEvents);
+            watcherThread.setDaemon(true);
+            watcherThread.start();
         } catch (IOException e) {
             Log.err("Failed to initialize FileWatcherService", e);
         }
@@ -73,38 +70,41 @@ public class FileWatcherManager {
         if (target == null)
             return;
 
-        Path dirToWatch;
-        boolean isDirectory;
+        scheduler.execute(() -> {
 
-        if (Files.isDirectory(target)) {
-            dirToWatch = target;
-            isDirectory = true;
-        } else {
-            dirToWatch = target.getParent();
-            if (dirToWatch == null)
+            Path dirToWatch;
+            boolean isDirectory;
+
+            if (Files.isDirectory(target)) {
                 dirToWatch = target;
-            isDirectory = false;
-        }
-
-        if (!Files.exists(dirToWatch)) {
-            try {
-                Files.createDirectories(dirToWatch);
-            } catch (IOException e) {
-                Log.err("Failed to create directory" + dirToWatch, e);
-                return;
+                isDirectory = true;
+            } else {
+                dirToWatch = target.getParent();
+                if (dirToWatch == null)
+                    dirToWatch = target;
+                isDirectory = false;
             }
-        }
 
-        try {
-            WatchKey key = dirToWatch.register(watchService, events);
+            if (!Files.exists(dirToWatch)) {
+                try {
+                    Files.createDirectories(dirToWatch);
+                } catch (IOException e) {
+                    Log.err("Failed to create directory" + dirToWatch, e);
+                    return;
+                }
+            }
 
-            WatcherRegistration reg = new WatcherRegistration(target, callback, debounceMs, isDirectory);
-            keys.computeIfAbsent(key, k -> new CopyOnWriteArrayList<>()).add(reg);
+            try {
+                WatchKey key = dirToWatch.register(watchService, events);
 
-            Log.debug("[gray]Started watching @", target);
-        } catch (IOException e) {
-            Log.err("Failed to register watcher for @", target, e);
-        }
+                WatcherRegistration reg = new WatcherRegistration(target, callback, debounceMs, isDirectory);
+                keys.computeIfAbsent(key, k -> new CopyOnWriteArrayList<>()).add(reg);
+
+                Log.debug("[gray]Started watching @", target);
+            } catch (IOException e) {
+                Log.err("Failed to register watcher for @", target, e);
+            }
+        });
     }
 
     private void processEvents() {
@@ -144,7 +144,7 @@ public class FileWatcherManager {
     @Destroy
     public void destroy() {
         running = false;
-        executor.shutdownNow();
+        watcherThread.interrupt();
         scheduler.shutdownNow();
         try {
             if (watchService != null)
@@ -193,7 +193,7 @@ public class FileWatcherManager {
                 if (debounceMs > 0) {
                     pendingTask = scheduler.schedule(task, debounceMs, TimeUnit.MILLISECONDS);
                 } else {
-                    executor.submit(task);
+                    scheduler.execute(task);
                 }
             }
         }

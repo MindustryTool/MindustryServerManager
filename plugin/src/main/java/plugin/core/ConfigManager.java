@@ -2,6 +2,7 @@ package plugin.core;
 
 import arc.files.Fi;
 import arc.util.Log;
+import lombok.RequiredArgsConstructor;
 import mindustry.Vars;
 import plugin.annotations.Configuration;
 import plugin.utils.JsonUtils;
@@ -11,12 +12,9 @@ import java.lang.reflect.Modifier;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 
+@RequiredArgsConstructor
 public class ConfigManager {
     private final FileWatcherManager fileWatcher;
-
-    public ConfigManager(FileWatcherManager fileWatcher) {
-        this.fileWatcher = fileWatcher;
-    }
 
     public void process(Configuration config, Object instance) {
         String path = config.value();

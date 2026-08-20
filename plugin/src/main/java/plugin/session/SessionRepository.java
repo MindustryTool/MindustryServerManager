@@ -9,6 +9,7 @@ import arc.Core;
 import arc.struct.Seq;
 import arc.util.Log;
 import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import mindustry.gen.Player;
 import plugin.Tasks;
 import plugin.annotations.Component;
@@ -21,15 +22,12 @@ import plugin.database.schema.Sessions;
 import plugin.utils.JsonUtils;
 
 @Component
+@RequiredArgsConstructor
 public class SessionRepository {
     private final Database database;
     private final ConcurrentHashMap<String, SessionData> cache = new ConcurrentHashMap<>();
 
     private final Set<String> dirty = ConcurrentHashMap.newKeySet();
-
-    public SessionRepository(Database database) {
-        this.database = database;
-    }
 
     @Init
     public void init() {
