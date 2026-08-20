@@ -138,7 +138,9 @@ public class ApiGateway {
 
     @Schedule(fixedDelay = 5, unit = TimeUnit.MINUTES)
     private void autoGenerateMapImage() {
-        generateMapImage();
+        if (Vars.state.isPlaying()) {
+            generateMapImage();
+        }
     }
 
     @Schedule(fixedDelay = 10, unit = TimeUnit.SECONDS)

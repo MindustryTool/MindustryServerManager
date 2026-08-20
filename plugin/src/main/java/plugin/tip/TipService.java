@@ -7,6 +7,7 @@ import java.util.concurrent.TimeUnit;
 
 import arc.func.Func;
 import arc.struct.Seq;
+import mindustry.Vars;
 import mindustry.gen.Iconc;
 import plugin.Cfg;
 import plugin.Tasks;
@@ -48,14 +49,16 @@ public class TipService {
 
     @Schedule(fixedDelay = 3, unit = TimeUnit.MINUTES)
     private void sendTips() {
-        var tip = tips.random();
+        if (Vars.state.isPlaying()) {
+            var tip = tips.random();
 
-        Tasks.io("Send tip", () -> {
-            Utils.forEachPlayerLocale((locale, players) -> {
-                for (var player : players) {
-                    player.sendMessage("\n[sky]" + tip.get(locale) + "[white]\n");
-                }
+            Tasks.io("Send tip", () -> {
+                Utils.forEachPlayerLocale((locale, players) -> {
+                    for (var player : players) {
+                        player.sendMessage("\n[sky]" + tip.get(locale) + "[white]\n");
+                    }
+                });
             });
-        });
+        }
     }
 }

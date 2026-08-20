@@ -94,7 +94,9 @@ public class SessionService {
 
     @Schedule(fixedDelay = 1, unit = TimeUnit.MINUTES)
     private void updateLeaderboardData() {
-        leaderboard = sessionRepository.leaderBoard(3);
+        if (Vars.state.isPlaying()) {
+            leaderboard = sessionRepository.leaderBoard(3);
+        }
     }
 
     @Schedule(fixedDelay = 1, unit = TimeUnit.SECONDS)
