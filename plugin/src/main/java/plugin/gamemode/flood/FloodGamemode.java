@@ -31,6 +31,7 @@ import mindustry.gen.Iconc;
 import mindustry.type.UnitType;
 import mindustry.world.Block;
 import mindustry.world.Tile;
+import mindustry.world.blocks.storage.CoreBlock.CoreBuild;
 import plugin.annotations.Component;
 import plugin.annotations.ConditionOn;
 import plugin.gamemode.GamemodeCondition;
@@ -455,6 +456,10 @@ public class FloodGamemode {
                 orb = null;
             }
         } else {
+            if (Team.crux.cores().size == 0) {
+                return;
+            }
+
             int x = Mathf.random(0, Vars.world.width());
             int y = Mathf.random(0, Vars.world.height());
 
@@ -477,10 +482,19 @@ public class FloodGamemode {
                 attempts++;
             }
 
+            var destX = x;
+            var destY = y;
+
+            var closetCore = Team.crux.cores().min(core -> Mathf.dst2(core.tile.x, core.tile.y, destX, destY));
+
+            if (closetCore == null) {
+                return;
+            }
+
             if (found) {
-                orb = new FloodOrb(x, y);
+                orb = new FloodOrb(destX, destY, closetCore);
             } else {
-                Log.err("Failed to spawn orb at @, @", x, y);
+                Log.err("Failed to spawn orb at @, @", destX, destY);
             }
         }
     }
@@ -494,11 +508,10 @@ public class FloodGamemode {
         public float time = 0f;
         public boolean spawned = false;
 
-        public FloodOrb(int destX, int destY) {
+        public FloodOrb(int destX, int destY, CoreBuild closetCore) {
             this.destX = destX;
             this.destY = destY;
 
-            var closetCore = Team.crux.cores().min(core -> Mathf.dst2(core.tile.x, core.tile.y, destX, destY));
             coreX = closetCore.tile.x;
             coreY = closetCore.tile.y;
             duration = Mathf.dst2(coreX, coreY, destX, destY) / speed;
