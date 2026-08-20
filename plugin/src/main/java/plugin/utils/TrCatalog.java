@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -23,6 +24,7 @@ public class TrCatalog {
     private final Map<String, Map<String, String>> catalogs = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Object> loadLocks = new ConcurrentHashMap<>();
     private final Consumer<String> loader;
+    private final HashSet<String> unsupportedLanguages = new HashSet<>();
 
     public TrCatalog() {
         this.loader = this::loadDefault;
@@ -88,7 +90,8 @@ public class TrCatalog {
 
     /**
      * Returns the flattened catalog for a language, loading it on demand via the
-     * registered loader. The first load per language is serialized by a per-language
+     * registered loader. The first load per language is serialized by a
+     * per-language
      * lock so concurrent first lookups all observe the loaded catalog (no English
      * fallback mid-load). A failed load is not remembered, so the next lookup
      * retries rather than being stuck with the raw key.
@@ -126,10 +129,17 @@ public class TrCatalog {
     }
 
     private void loadDefault(String language) {
+        if (unsupportedLanguages.contains(language)) {
+            return;
+        }
+
         String content = readClasspathCatalog(language);
 
         if (content == null) {
-            Log.warn("TranslationLoader: could not read catalog '@'", CATALOG_DIR + "/" + language + ".json");
+            if (!unsupportedLanguages.contains(language)) {
+                unsupportedLanguages.add(language);
+                Log.warn("TranslationLoader: could not read catalog '@'", CATALOG_DIR + "/" + language + ".json");
+            }
             return;
         }
 
