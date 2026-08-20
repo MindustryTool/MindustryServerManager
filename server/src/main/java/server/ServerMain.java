@@ -73,8 +73,8 @@ public class ServerMain {
             ctx.status(e.status);
             ctx.json(Map.of(
                     "error", e.getMessage(),
-                    "message", e.getMessage(),
-                    "url", ctx.path(),
+                    "message", e.getMessage() + "",
+                    "url", ctx.path() + "",
                     "source", "Server Manager"//
             ));
         });
@@ -84,8 +84,8 @@ public class ServerMain {
             ctx.status(500);
             ctx.json(Map.of(
                     "error", "Internal Server Error: " + e.getMessage(),
-                    "message", e.getMessage(),
-                    "url", ctx.path(),
+                    "message", e.getMessage() + "",
+                    "url", ctx.path() + "",
                     "source", "Server Manager"//
             ));
         });
