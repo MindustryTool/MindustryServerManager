@@ -87,7 +87,23 @@ public class JsonUtils {
         }
     }
 
+    public static <T> List<T> readJsonAsArrayClass(byte[] data, Class<T> clazz) {
+        try {
+            return objectMapper.readerForListOf(clazz).readValue(data);
+        } catch (Exception e) {
+            throw new RuntimeException("Can not parse to json: " + e.getMessage(), e);
+        }
+    }
+  
     public static <T> T readJsonAsClass(String data, TypeReference<T> clazz) {
+        try {
+            return objectMapper.readValue(data, clazz);
+        } catch (Exception e) {
+            throw new RuntimeException("Can not parse to json: " + e.getMessage(), e);
+        }
+    }
+
+    public static <T> T readJsonAsClass(byte[] data, TypeReference<T> clazz) {
         try {
             return objectMapper.readValue(data, clazz);
         } catch (Exception e) {

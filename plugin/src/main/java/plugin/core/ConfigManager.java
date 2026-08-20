@@ -9,7 +9,6 @@ import plugin.utils.JsonUtils;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 
 @RequiredArgsConstructor
@@ -42,8 +41,8 @@ public class ConfigManager {
                 return;
             }
 
-            String json = new String(Files.readAllBytes(file.file().toPath()), StandardCharsets.UTF_8);
-            Object newData = JsonUtils.readJsonAsClass(json, instance.getClass());
+            byte[] jsonBytes = Files.readAllBytes(file.file().toPath());
+            Object newData = JsonUtils.readJsonAsArrayClass(jsonBytes, instance.getClass());
 
             for (Field field : instance.getClass().getDeclaredFields()) {
                 if (Modifier.isStatic(field.getModifiers()) || Modifier.isFinal(field.getModifiers())) {

@@ -280,33 +280,39 @@ public final class Registry {
         throw new RuntimeException("Multiple constructors found in " + type.getName() + ", no default constructor");
     }
 
-    private static <T extends Annotation> void withAnnotation(
+    private static <T extends Annotation> boolean withAnnotation(
             Field method,
             Class<T> annotation,
             Consumer<T> consumer//
     ) {
         if (method.isAnnotationPresent(annotation)) {
             consumer.accept(method.getAnnotation(annotation));
+            return true;
         }
+        return false;
     }
 
-    private static <T extends Annotation> void withAnnotation(
+    private static <T extends Annotation> boolean withAnnotation(
             Method method,
             Class<T> annotation,
             Consumer<T> consumer//
     ) {
         if (method.isAnnotationPresent(annotation)) {
             consumer.accept(method.getAnnotation(annotation));
+            return true;
         }
+        return false;
     }
 
-    private static <T extends Annotation> void withAnnotation(
+    private static <T extends Annotation> boolean withAnnotation(
             Class<?> clazz,
             Class<T> annotation,
             Consumer<T> consumer//
     ) {
         if (clazz.isAnnotationPresent(annotation)) {
             consumer.accept(clazz.getAnnotation(annotation));
+            return true;
         }
+        return false;
     }
 }
