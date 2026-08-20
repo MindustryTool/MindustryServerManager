@@ -18,6 +18,7 @@ import arc.util.Strings;
 import dto.ServerDto;
 import lombok.RequiredArgsConstructor;
 import mindustry.Vars;
+import mindustry.content.Blocks;
 import mindustry.content.Fx;
 import mindustry.core.Version;
 import mindustry.game.EventType.PlayerJoin;
@@ -32,6 +33,7 @@ import mindustry.gen.Groups;
 import mindustry.gen.Iconc;
 import mindustry.net.ArcNetProvider;
 import mindustry.net.Net;
+import mindustry.world.blocks.logic.LogicBlock.LogicBuild;
 import plugin.Cfg;
 import plugin.annotations.Component;
 import plugin.annotations.ConditionOn;
@@ -51,6 +53,14 @@ public class HubService {
 
     private final SessionService sessionService;
     private final ApiGateway apiGateway;
+
+    private enum LabelType {
+        WorldLabel,
+        WorldProcessor,
+        MapObjective
+    }
+
+    private LabelType type = LabelType.WorldLabel;
 
     @Init
     public void init() {
@@ -250,48 +260,70 @@ public class HubService {
             return;
         }
 
-        // TODO: Temp solution
-        boolean useWorldLabel = false;
+        switch (type) {
+            case WorldLabel: {
+                for (var core : serverCores) {
+                    ServerDto server = core.getServer();
+                    if (server == null) {
+                        continue;
+                    }
 
-        if (useWorldLabel) {
-            for (var core : serverCores) {
-                ServerDto server = core.getServer();
-                if (server == null) {
-                    continue;
+                    String message = createServerString(server);
+                    Call.label(message, 5.1f, core.getX(), core.getY());
+                }
+                break;
+            }
+
+            case WorldProcessor: {
+                var tile = Vars.world.tile(0, 0);
+
+                if (tile == null) {
+                    return;
                 }
 
-                String message = createServerString(server);
-                Call.label(message, 5.1f, core.getX(), core.getY());
+                if (tile.build == null || !(tile.build instanceof LogicBuild)) {
+                    Call.setTile(tile, Blocks.worldProcessor, Team.sharded, 0);
+                } else {
+                    if (tile.build instanceof LogicBuild logic) {
+                        logic.updateCode("");
+                    }   
+                }
+
+                break;
             }
-            return;
-        }
 
-        MapObjectives objectives = new MapObjectives();
-        FlagObjective flagObjective = new FlagObjective();
+            case MapObjective: {
+                MapObjectives objectives = new MapObjectives();
+                FlagObjective flagObjective = new FlagObjective();
 
-        Seq<TextMarker> markers = new Seq<>();
+                Seq<TextMarker> markers = new Seq<>();
 
-        for (var core : serverCores) {
-            var marker = createServerMarker(core);
-            if (marker != null) {
-                markers.add(marker);
+                for (var core : serverCores) {
+                    var marker = createServerMarker(core);
+                    if (marker != null) {
+                        markers.add(marker);
+                    }
+                }
+
+                if (markers.isEmpty()) {
+                    return;
+                }
+
+                TextMarker[] markerArray = new TextMarker[markers.size];
+                for (int i = 0; i < markers.size; i++) {
+                    markerArray[i] = markers.get(i);
+                }
+
+                flagObjective.markers(markerArray);
+                objectives.add(flagObjective);
+
+                if (objectives.any()) {
+                    Call.setObjectives(objectives);
+                }
             }
-        }
 
-        if (markers.isEmpty()) {
-            return;
-        }
-
-        TextMarker[] markerArray = new TextMarker[markers.size];
-        for (int i = 0; i < markers.size; i++) {
-            markerArray[i] = markers.get(i);
-        }
-
-        flagObjective.markers(markerArray);
-        objectives.add(flagObjective);
-
-        if (objectives.any()) {
-            Call.setObjectives(objectives);
+            default:
+                break;
         }
     }
 
