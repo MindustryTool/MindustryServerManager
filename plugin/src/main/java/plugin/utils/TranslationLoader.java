@@ -5,19 +5,14 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
 import arc.util.Log;
-import plugin.annotations.Component;
-import plugin.annotations.Init;
 
-@Component
 public class TranslationLoader {
     private static final String CATALOG_DIR = "i18n";
 
-    @Init
-    private void init() {
-        Tr.catalog().setLoader(this::loadCatalog);
+    private TranslationLoader() {
     }
 
-    private void loadCatalog(String language) {
+    static void loadCatalog(String language) {
         String content = readCatalog(language);
 
         if (content == null) {
@@ -26,9 +21,10 @@ public class TranslationLoader {
         }
 
         Tr.catalog().load(language, content, message -> Log.warn("TranslationLoader: @", message));
+        Log.info("TranslationLoader: loaded catalog '@'", language);
     }
 
-    private String readCatalog(String language) {
+    private static String readCatalog(String language) {
         try (InputStream stream = TranslationLoader.class.getResourceAsStream(
                 "/" + CATALOG_DIR + "/" + language + ".json")) {
             if (stream == null) {

@@ -8,6 +8,10 @@ import plugin.session.Session;
 public class Tr {
     private static final TrCatalog CATALOG = new TrCatalog();
 
+    static {
+        CATALOG.setLoader(TranslationLoader::loadCatalog);
+    }
+
     private Tr() {
     }
 
