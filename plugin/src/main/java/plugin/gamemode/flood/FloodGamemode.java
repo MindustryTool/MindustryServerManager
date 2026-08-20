@@ -10,6 +10,7 @@ import java.util.concurrent.TimeUnit;
 
 import arc.Core;
 import arc.Events;
+import arc.graphics.Color;
 import arc.math.Mathf;
 import arc.struct.Seq;
 import arc.util.Align;
@@ -18,6 +19,7 @@ import arc.util.Time;
 import lombok.RequiredArgsConstructor;
 import mindustry.Vars;
 import mindustry.content.Blocks;
+import mindustry.content.Fx;
 import mindustry.content.UnitTypes;
 import mindustry.game.EventType;
 import mindustry.game.Team;
@@ -449,6 +451,9 @@ public class FloodGamemode {
     private void spawnOrbs() {
         if (orb != null) {
             orb.update();
+            if (orb.spawned) {
+                orb = null;
+            }
         } else {
             int x = Mathf.random(0, Vars.world.width());
             int y = Mathf.random(0, Vars.world.height());
@@ -505,6 +510,11 @@ public class FloodGamemode {
             }
 
             time += Time.delta;
+            float progress = time / duration;
+            float x = Mathf.lerp(coreX, destX, progress);
+            float y = Mathf.lerp(coreY, destY, progress);
+
+            Call.effect(Fx.colorSpark, x, y, 0, Color.cyan);
 
             if (time >= duration) {
                 spawned = true;
