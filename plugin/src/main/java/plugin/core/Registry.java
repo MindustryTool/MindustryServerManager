@@ -15,7 +15,7 @@ import java.util.function.Consumer;
 
 public final class Registry {
 
-    private static final Map<Class<?>, Object> instances = new HashMap<>();
+    private static final Map<Class<?>, Object> instances = new LinkedHashMap<>();
     private static final Set<Class<?>> creating = new HashSet<>();
     private static final Set<Object> initialized = new HashSet<>();
 
@@ -51,8 +51,11 @@ public final class Registry {
         }
     }
 
-    public static void destroy() {
-        for (Object obj : instances.values()) {
+    public static synchronized void destroy() {
+        List<Object> ordered = new ArrayList<>(instances.values());
+        Collections.reverse(ordered);
+
+        for (Object obj : ordered) {
             for (Method method : obj.getClass().getDeclaredMethods()) {
                 withAnnotation(method, Destroy.class, d -> {
                     try {
