@@ -450,6 +450,10 @@ public class FloodGamemode {
 
     @Schedule(fixedDelay = 1, unit = TimeUnit.SECONDS)
     private void spawnOrbs() {
+        if (!shouldUpdate()) {
+            return;
+        }
+
         if (orb != null) {
             orb.update();
         } else {
@@ -460,7 +464,7 @@ public class FloodGamemode {
             int x = Mathf.random(0, Vars.world.width());
             int y = Mathf.random(0, Vars.world.height());
 
-            int maxAttempts = 100;
+            int maxAttempts = 10;
 
             int attempts = 0;
             boolean found = false;
@@ -527,12 +531,14 @@ public class FloodGamemode {
             Call.effect(Fx.placeBlock, x, y, 0, Color.cyan);
             Call.logicExplosion(Team.crux, x, y, 5, 500, true, true, false, true);
 
+            Log.info("Progress: @ x=@, y=@", progress, x, y);
+
             if (Time.time >= spawnTime) {
-                spawned = true;
                 var tile = Vars.world.tile(destX, destY);
                 orbTiles.add(tile);
                 Call.setTile(tile, orbBlock, Team.crux, 0);
                 orb = null;
+                spawned = true;
             }
         }
     }
