@@ -251,7 +251,7 @@ public class HubService {
         }
 
         // TODO: Temp solution
-        boolean useWorldLabel = true;
+        boolean useWorldLabel = false;
 
         if (useWorldLabel) {
             for (var core : serverCores) {
