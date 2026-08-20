@@ -69,7 +69,7 @@ public class PluginUpdater {
                 continue;
             }
 
-            Log.info("[cyan]Downloading plugin: @/@/@", pluginData.getOwner(), pluginData.getRepo(),
+            Log.info("[purple]Downloading plugin: @/@/@", pluginData.getOwner(), pluginData.getRepo(),
                     pluginData.getTag());
 
             byte[] data = pluginData.download();

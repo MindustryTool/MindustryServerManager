@@ -276,6 +276,8 @@ public class ApiGateway {
             pendingRequests.forEach((id, future) -> future.completeExceptionally(err));
             pendingRequests.clear();
 
+            connectAsync();
+
             if (closedByServer) {
                 Log.info("[red]Server manager disconnected: " + serverCloseFrame);
             } else {
