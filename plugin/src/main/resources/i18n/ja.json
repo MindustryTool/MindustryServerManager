@@ -177,6 +177,7 @@
     "invalid_name": "無効な名前"
   },
   "flood": {
+    "objective": "フラッドタイルを破壊し、フラッドコアを攻撃して抑制しましょう。各コアが抑制されるまでダメージを与え続けます。すべてのコアを抑制すると勝利です。",
     "suppressed": "*抑制中*",
     "flood": "{color}フラッド: {percent}%",
     "suppressed_count": "抑制: {count}/{total}",

@@ -177,6 +177,7 @@
     "invalid_name": "Nombre no válido"
   },
   "flood": {
+    "objective": "Destruye los bloques de Inundación y ataca los Núcleos de Inundación para suprimirlos. Sigue dañando cada Núcleo hasta que esté suprimido. Suprime todos los Núcleos para ganar.",
     "suppressed": "*Suprimido*",
     "flood": "{color}Inundación: {percent}%",
     "suppressed_count": "Suprimido: {count}/{total}",

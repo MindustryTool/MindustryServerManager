@@ -177,6 +177,7 @@
     "invalid_name": "名称无效"
   },
   "flood": {
+    "objective": "摧毁洪潮地块并攻击洪潮核心以压制它们。持续攻击每个核心直到它被压制。压制所有核心即可获胜。",
     "suppressed": "*已压制*",
     "flood": "{color}洪水：{percent}%",
     "suppressed_count": "已压制：{count}/{total}",

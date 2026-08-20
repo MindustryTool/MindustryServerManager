@@ -37,6 +37,7 @@ import plugin.annotations.MainThread;
 import plugin.annotations.Schedule;
 import plugin.annotations.Trigger;
 import plugin.gamemode.flood.FloodConfig.FloodTile;
+import plugin.session.SessionCreatedEvent;
 import plugin.utils.TimeUtils;
 import plugin.utils.Tr;
 import plugin.utils.Utils;
@@ -91,6 +92,11 @@ public class FloodGamemode {
     @Listener
     private void onPlayEvent(EventType.PlayEvent event) {
         applyRules();
+    }
+
+    @Listener
+    private void onPlayerJoin(SessionCreatedEvent event) {
+        event.session.player.sendMessage(Tr.t(event.session, "flood.objective"));
     }
 
     @Schedule(fixedRate = 30, unit = TimeUnit.SECONDS)

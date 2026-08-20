@@ -177,6 +177,7 @@
     "invalid_name": "Nama tidak valid"
   },
   "flood": {
+    "objective": "Hancurkan ubin Flood dan serang Inti Flood untuk menekannya. Terus serang setiap Inti sampai ditekan. Tekan semua Inti untuk menang.",
     "suppressed": "*Ditekan*",
     "flood": "{color}Flood: {percent}%",
     "suppressed_count": "Ditekan: {count}/{total}",

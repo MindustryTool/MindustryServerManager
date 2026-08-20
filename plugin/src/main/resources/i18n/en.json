@@ -177,6 +177,7 @@
     "invalid_name": "Invalid name"
   },
   "flood": {
+    "objective": "Destroy the Flood tiles and attack Flood Cores to suspend them. Keep damaging each Core until it is suspended. Suspend all Cores to win.",
     "suppressed": "*Suppressed*",
     "flood": "{color}Flood: {percent}%",
     "suppressed_count": "Suppressed: {count}/{total}",

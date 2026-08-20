@@ -177,6 +177,7 @@
     "invalid_name": "유효하지 않은 이름"
   },
   "flood": {
+    "objective": "홍수 타일을 파괴하고 홍수 코어를 공격해 억제하세요. 각 코어가 억제될 때까지 계속 공격하세요. 모든 코어를 억제하면 승리합니다.",
     "suppressed": "*억제됨*",
     "flood": "{color}침수: {percent}%",
     "suppressed_count": "억제됨: {count}/{total}",

@@ -177,6 +177,7 @@
     "invalid_name": "Tên không hợp lệ"
   },
   "flood": {
+    "objective": "Phá hủy các ô Lũ lụt và tấn công Lõi Lũ lụt để kìm nén chúng. Tiếp tục tấn công mỗi Lõi cho đến khi nó bị kìm nén. Kìm nén tất cả Lõi để chiến thắng.",
     "suppressed": "*Bị kìm nén*",
     "flood": "{color}Lũ lụt: {percent}%",
     "suppressed_count": "Bị kìm nén: {count}/{total}",

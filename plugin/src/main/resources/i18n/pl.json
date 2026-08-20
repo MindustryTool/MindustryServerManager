@@ -177,6 +177,7 @@
     "invalid_name": "Nieprawidłowa nazwa"
   },
   "flood": {
+    "objective": "Zniszcz płytki Zalewu i atakuj Rdzenie Zalewu, aby je stłumić. Zadawaj obrażenia każdemu Rdzeniowi, aż zostanie stłumiony. Stłum wszystkie Rdzenie, aby wygrać.",
     "suppressed": "*Stłumione*",
     "flood": "{color}Zalew: {percent}%",
     "suppressed_count": "Stłumione: {count}/{total}",
