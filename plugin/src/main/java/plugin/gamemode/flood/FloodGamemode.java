@@ -247,16 +247,18 @@ public class FloodGamemode {
         Seq<Building> cores = Team.crux.cores().map(core -> (Building) core);
         Seq<Building> unsuppressedCores = cores.select(c -> !suppressed.containsKey(c));
 
-        orbTiles.remove(orbTile -> {
-            var build = orbTile.build;
+        if (orbTiles.size > 20) {
+            orbTiles.remove(orbTile -> orbTile.build == null || orbTile.build.block != orbBlock);
+        }
+
+        orbTiles.forEach(tile -> {
+            var build = tile.build;
 
             if (build == null || build.block != orbBlock) {
-                return true;
+                return;
             }
 
             unsuppressedCores.add(build);
-
-            return false;
         });
 
         if (unsuppressedCores.isEmpty()) {
@@ -391,13 +393,17 @@ public class FloodGamemode {
     private Seq<Tile> around(Building core) {
         Seq<Tile> tiles = new Seq<>();
 
-        int half = core.block.size / 2;
+        int size = core.block.size;
+        int leftOffset = (size - 1) / 2;
+        int rightOffset = size / 2;
+
         int cx = core.tile.x;
         int cy = core.tile.y;
 
-        for (int y = cy - half; y <= cy + half; y++) {
-            Tile left = Vars.world.tile(cx - half - 1, y);
-            Tile right = Vars.world.tile(cx + half + 1, y);
+        // Left and right
+        for (int y = cy - leftOffset; y <= cy + rightOffset; y++) {
+            Tile left = Vars.world.tile(cx - leftOffset - 1, y);
+            Tile right = Vars.world.tile(cx + rightOffset + 1, y);
 
             if (left != null)
                 tiles.add(left);
@@ -405,9 +411,10 @@ public class FloodGamemode {
                 tiles.add(right);
         }
 
-        for (int x = cx - half; x <= cx + half; x++) {
-            Tile bottom = Vars.world.tile(x, cy - half - 1);
-            Tile top = Vars.world.tile(x, cy + half + 1);
+        // Bottom and top
+        for (int x = cx - leftOffset; x <= cx + rightOffset; x++) {
+            Tile bottom = Vars.world.tile(x, cy - leftOffset - 1);
+            Tile top = Vars.world.tile(x, cy + rightOffset + 1);
 
             if (bottom != null)
                 tiles.add(bottom);
