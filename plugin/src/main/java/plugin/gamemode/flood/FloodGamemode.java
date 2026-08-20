@@ -66,6 +66,10 @@ public class FloodGamemode {
     private Duration nightDuration = Duration.ofMinutes(8);
     private int days = 0;
 
+    private FloodOrb orb = null;
+    private Seq<Tile> orbTiles = new Seq<>();
+    private Block orbBlock = Blocks.thoriumReactor;
+
     private boolean shouldUpdate() {
         return Vars.state.isPlaying();
     }
@@ -234,8 +238,20 @@ public class FloodGamemode {
 
         suppressed.entrySet().removeIf(e -> e.getValue() < Time.millis() || !e.getKey().isValid());
 
-        var cores = Team.crux.cores();
-        var unsuppressedCores = cores.select(c -> !suppressed.containsKey(c));
+        Seq<Building> cores = Team.crux.cores().map(core -> (Building) core);
+        Seq<Building> unsuppressedCores = cores.select(c -> !suppressed.containsKey(c));
+
+        orbTiles.remove(orbTile -> {
+            var build = orbTile.build;
+
+            if (build == null || build.block != orbBlock) {
+                return true;
+            }
+
+            unsuppressedCores.add(build);
+
+            return false;
+        });
 
         if (unsuppressedCores.isEmpty()) {
             return;
@@ -426,6 +442,76 @@ public class FloodGamemode {
         if (suppressed.size() == cores) {
             Events.fire(new FloodWonEvent());
             Events.fire(new EventType.GameOverEvent(Team.sharded));
+        }
+    }
+
+    @Schedule(fixedDelay = 1, unit = TimeUnit.SECONDS)
+    private void spawnOrbs() {
+        if (orb != null) {
+            orb.update();
+        } else {
+            int x = Mathf.random(0, Vars.world.width());
+            int y = Mathf.random(0, Vars.world.height());
+
+            int maxAttempts = 100;
+
+            int attempts = 0;
+            boolean found = false;
+
+            while (attempts < maxAttempts) {
+                var tile = Vars.world.tile(x, y);
+
+                if (orbBlock.canPlaceOn(tile, Team.crux, 0)) {
+                    found = true;
+                    break;
+                }
+
+                x = Mathf.random(0, Vars.world.width());
+                y = Mathf.random(0, Vars.world.height());
+
+                attempts++;
+            }
+
+            if (found) {
+                orb = new FloodOrb(x, y);
+            } else {
+                Log.err("Failed to spawn orb at @, @", x, y);
+            }
+        }
+    }
+
+    private class FloodOrb {
+        public final int coreX, coreY;
+        public final int destX, destY;
+        public final float duration;
+        public static final float speed = 1;// tiles/second
+
+        public float time = 0f;
+        public boolean spawned = false;
+
+        public FloodOrb(int destX, int destY) {
+            this.destX = destX;
+            this.destY = destY;
+
+            var closetCore = Team.crux.cores().min(core -> Mathf.dst2(core.tile.x, core.tile.y, destX, destY));
+            coreX = closetCore.tile.x;
+            coreY = closetCore.tile.y;
+            duration = Mathf.dst2(coreX, coreY, destX, destY) / speed;
+        }
+
+        public void update() {
+            if (spawned == true) {
+                return;
+            }
+
+            time += Time.delta;
+
+            if (time >= duration) {
+                spawned = true;
+                var tile = Vars.world.tile(destX, destY);
+                orbTiles.add(tile);
+                Call.setTile(tile, orbBlock, Team.crux, 0);
+            }
         }
     }
 }
