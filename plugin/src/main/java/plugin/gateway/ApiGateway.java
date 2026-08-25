@@ -608,6 +608,8 @@ public class ApiGateway {
         int page = pageString != null ? Integer.parseInt(pageString) : 0;
         int size = sizeString != null ? Integer.parseInt(sizeString) : 10;
 
+        Log.info(node.toPrettyString());
+
         int offset = page * size;
 
         List<Predicate<PlayerInfo>> conditions = new ArrayList<>();
