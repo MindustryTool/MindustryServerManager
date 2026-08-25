@@ -603,12 +603,10 @@ public class ApiGateway {
     private PlayerInfoPageDto getPlayersInfo(JsonNode node) {
         String pageString = node.get("page").asText();
         String sizeString = node.get("size").asText();
-        String isBannedString = node.path("banned").asText(null);
         String filter = node.path("filter").asText(null);
 
         int page = pageString != null ? Integer.parseInt(pageString) : 0;
         int size = sizeString != null ? Integer.parseInt(sizeString) : 10;
-        Boolean isBanned = isBannedString != null ? Boolean.parseBoolean(isBannedString) : null;
 
         int offset = page * size;
 
@@ -620,8 +618,8 @@ public class ApiGateway {
                     || info.ips.contains(ip -> ip.contains(filter)));
         }
 
-        if (isBanned != null) {
-            conditions.add(info -> info.banned == isBanned);
+        if (node.has("banned")) {
+            conditions.add(info -> info.banned == node.path("banned").asBoolean());
         }
 
         return Utils.appPostWithTimeout(() -> {

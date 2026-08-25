@@ -87,7 +87,7 @@ public class SessionService {
         Vars.netServer.admins.save();
         int removed = count - Vars.netServer.admins.playerInfo.size;
         if (removed > 0) {
-            Log.info("Removed @ invalid players", removed);
+            Log.info("[purple]Removed @ invalid players", removed);
         }
     }
 
