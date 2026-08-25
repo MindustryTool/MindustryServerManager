@@ -653,7 +653,7 @@ public class ApiGateway {
                     .setItems(filtered.size())
                     .setPage(page)
                     .setData(data);
-        }, "Get player info");
+        }, 2000, "Get player info");
     }
 
     private HashMap<Object, Object> getKicks() {

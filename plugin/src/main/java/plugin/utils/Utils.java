@@ -76,7 +76,7 @@ public class Utils {
         return appPostWithTimeout(fn, 200, taskName);
     }
 
-    private static synchronized <T> T appPostWithTimeout(Supplier<T> fn, int timeoutMillis, String taskName) {
+    public static synchronized <T> T appPostWithTimeout(Supplier<T> fn, int timeoutMillis, String taskName) {
         Log.debug("Start task: " + taskName);
 
         if (Thread.currentThread() == Core.app.getMainThread()) {
