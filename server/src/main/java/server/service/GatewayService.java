@@ -31,6 +31,7 @@ import lombok.experimental.Accessors;
 import dto.LoginDto;
 import dto.LoginRequestDto;
 import dto.PlayerInfoDto;
+import dto.PlayerInfoPageDto;
 import dto.ServerCommandDto;
 import dto.ServerStateDto;
 import dto.StartServerDto;
@@ -468,7 +469,7 @@ public class GatewayService {
                 });
             }
 
-            public CompletableFuture<List<PlayerInfoDto>> getPlayersInfo(int page, int size,
+            public CompletableFuture<PlayerInfoPageDto> getPlayersInfo(int page, int size,
                     Boolean banned, String filter//
             ) {
                 ObjectNode payload = Utils.getObjectMapper().createObjectNode();
@@ -485,13 +486,7 @@ public class GatewayService {
                     payload.put("filter", filter);
                 }
 
-                return sendRequest("get-players-info", payload, JsonNode.class).thenApply(n -> {
-                    try {
-                        return Utils.getObjectMapper().readerForListOf(PlayerInfoDto.class).readValue(n);
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                });
+                return sendRequest("get-players-info", payload, PlayerInfoPageDto.class);
             }
 
             public CompletableFuture<Map<String, Long>> getKickedIps() {

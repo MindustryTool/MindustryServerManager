@@ -77,6 +77,7 @@ import plugin.core.Registry;
 import plugin.event.UnloadServerEvent;
 import dto.CommandParamDto;
 import dto.PlayerInfoDto;
+import dto.PlayerInfoPageDto;
 import dto.ServerCommandDto;
 import dto.ServerConfigDto;
 import dto.StartServerDto;
@@ -599,7 +600,7 @@ public class ApiGateway {
         return null;
     }
 
-    private List<PlayerInfoDto> getPlayersInfo(JsonNode node) {
+    private PlayerInfoPageDto getPlayersInfo(JsonNode node) {
         String pageString = node.get("page").asText();
         String sizeString = node.get("size").asText();
         String isBannedString = node.path("banned").asText(null);
@@ -623,12 +624,15 @@ public class ApiGateway {
             conditions.add(info -> info.banned == isBanned);
         }
 
-        List<PlayerInfoDto> result = Utils.appPostWithTimeout(() -> {
+        return Utils.appPostWithTimeout(() -> {
             Seq<PlayerInfo> bans = Vars.netServer.admins.playerInfo.values().toSeq();
 
-            return bans.list()//
+            List<PlayerInfo> filtered = bans.list()//
                     .stream()//
                     .filter(info -> conditions.stream().allMatch(condition -> condition.test(info)))//
+                    .collect(Collectors.toList());
+
+            List<PlayerInfoDto> data = filtered.stream()//
                     .skip(offset)//
                     .limit(size)//
                     .map(ban -> new PlayerInfoDto()
@@ -644,9 +648,12 @@ public class ApiGateway {
                             .setAdmin(ban.admin)
                             .setLastKicked(ban.lastKicked))
                     .collect(Collectors.toList());
-        }, "Get player info");
 
-        return result;
+            return new PlayerInfoPageDto()
+                    .setItems(filtered.size())
+                    .setPage(page)
+                    .setData(data);
+        }, "Get player info");
     }
 
     private HashMap<Object, Object> getKicks() {

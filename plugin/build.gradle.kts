@@ -46,7 +46,8 @@ tasks.test {
 }
 
 tasks.jar {
-    dependsOn(":dto:jar")
+    dependsOn(":dto:classes")
+    dependsOn(":graph:classes")
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     archiveFileName.set("${project.name}.jar")
 

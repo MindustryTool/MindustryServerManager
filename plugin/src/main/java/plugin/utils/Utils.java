@@ -127,7 +127,7 @@ public class Utils {
         List<PlayerDto> players = Registry.get(SessionService.class).get()
                 .values()
                 .stream()
-                .map(session -> PlayerDto.from(session.player).setJoinedAt(session.joinedAt))
+                .map(session -> PlayerDto.from(session.player, session.login).setJoinedAt(session.joinedAt))
                 .collect(Collectors.toList());
 
         int kicks = 0;

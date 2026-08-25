@@ -14,12 +14,13 @@ public class PlayerDto {
     private TeamDto team;
     private Boolean isAdmin;
     private Long joinedAt;
+    private LoginDto login;
 
     private PlayerDto() {
 
     }
 
-    public static PlayerDto from(Player player) {
+    public static PlayerDto from(Player player, LoginDto login) {
         return new PlayerDto()//
                 .setName(player.coloredName())//
                 .setUuid(player.uuid())//
@@ -28,6 +29,7 @@ public class PlayerDto {
                 .setIsAdmin(player.admin)//
                 .setTeam(new TeamDto()//
                         .setColor(player.team().color.toString())//
-                        .setName(player.team().name));
+                        .setName(player.team().name))//
+                .setLogin(login);
     }
 }
