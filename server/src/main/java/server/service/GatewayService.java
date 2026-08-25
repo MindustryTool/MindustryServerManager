@@ -30,7 +30,6 @@ import lombok.Getter;
 import lombok.experimental.Accessors;
 import dto.LoginDto;
 import dto.LoginRequestDto;
-import dto.PlayerInfoDto;
 import dto.PlayerInfoPageDto;
 import dto.ServerCommandDto;
 import dto.ServerStateDto;
