@@ -44,24 +44,37 @@ dependencies {
 tasks.test {
     useJUnitPlatform()
 }
-
 tasks.jar {
+    dependsOn(
+        ":dto:classes",
+        ":annotation:classes",
+        ":graph:classes"
+    )
+
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     archiveFileName.set("${project.name}.jar")
 
+    // Current project
+    from(sourceSets.main.get().output)
+
+    // Internal modules
     from(project(":dto").sourceSets.main.get().output)
     from(project(":annotation").sourceSets.main.get().output)
     from(project(":graph").sourceSets.main.get().output)
 
-    // External dependencies
-    from(configurations.runtimeClasspath.get().files
-        .filter { it.name !in setOf(
-            "dto-${project.version}.jar",
-            "annotation-${project.version}.jar",
-            "graph-${project.version}.jar"
-        )}
-        .map { if (it.isDirectory) it else zipTree(it) }
-    )
+    // External dependencies only
+    configurations.runtimeClasspath.get()
+        .filter { dependency ->
+            dependency.name !in listOf(
+                "dto-${project.version}.jar",
+                "annotation-${project.version}.jar",
+                "graph-${project.version}.jar"
+            )
+        }
+        .forEach { dependency ->
+            from(if (dependency.isDirectory) dependency else zipTree(dependency))
+        }
+
     exclude(
         "org/sqlite/native/Windows/**",
         "org/sqlite/native/Mac/**",
