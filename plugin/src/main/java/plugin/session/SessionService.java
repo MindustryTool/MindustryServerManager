@@ -83,7 +83,12 @@ public class SessionService {
     @Init
     public void init() {
         int count = Vars.netServer.admins.playerInfo.size;
-        Vars.netServer.admins.playerInfo.values().toSeq().removeAll(info -> info.timesJoined <= 0);
+        var iter = Vars.netServer.admins.playerInfo.values();
+        while (iter.hasNext()) {
+            if (iter.next().timesJoined <= 0) {
+                iter.remove();
+            }
+        }
         Vars.netServer.admins.save();
         int removed = count - Vars.netServer.admins.playerInfo.size;
         if (removed > 0) {
