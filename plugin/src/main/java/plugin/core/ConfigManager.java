@@ -42,7 +42,7 @@ public class ConfigManager {
             }
 
             byte[] jsonBytes = Files.readAllBytes(file.file().toPath());
-            Object newData = JsonUtils.readJsonAsArrayClass(jsonBytes, instance.getClass());
+            Object newData = JsonUtils.readJsonAsClass(jsonBytes, instance.getClass());
 
             for (Field field : instance.getClass().getDeclaredFields()) {
                 if (Modifier.isStatic(field.getModifiers()) || Modifier.isFinal(field.getModifiers())) {
