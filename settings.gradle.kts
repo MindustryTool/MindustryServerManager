@@ -1,3 +1,3 @@
 rootProject.name = "MindustryServerManager"
 
-include("annotation", "server", "plugin", "dto")
+include("annotation", "server", "plugin", "dto", "graph")

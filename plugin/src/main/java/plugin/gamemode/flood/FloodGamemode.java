@@ -15,8 +15,9 @@ import lombok.RequiredArgsConstructor;
 import mindustry.Vars;
 import mindustry.content.UnitTypes;
 import mindustry.game.EventType;
-import mindustry.game.Team;
+import mindustry.game.EventType.BlockBuildEndEvent;
 import mindustry.game.EventType.BlockDestroyEvent;
+import mindustry.game.Team;
 import mindustry.gen.Building;
 import mindustry.gen.Call;
 import mindustry.gen.Groups;
@@ -266,11 +267,15 @@ public class FloodGamemode {
 
     @Listener
     private void onBlockDestroyed(BlockDestroyEvent event) {
-        var tile = event.tile;
-        var block = tile.build;
+        if (spreader != null && event.tile != null) {
+            spreader.onTileDestroyed(spreader.posOf(event.tile));
+        }
+    }
 
-        if (spreader != null && block != null && block.team == Team.crux) {
-            spreader.onTileDestroyed(spreader.posOf(tile));
+    @Listener
+    private void onBlockBuildEnd(BlockBuildEndEvent event) {
+        if (spreader != null && event.tile != null && event.breaking) {
+            spreader.onTileDestroyed(spreader.posOf(event.tile));
         }
     }
 

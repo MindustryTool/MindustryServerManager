@@ -104,9 +104,9 @@ public class FloodSpreader {
     }
 
     public void onTileDestroyed(int pos) {
-        scheduled.clear(pos);
-        seededPulses.clear(pos);
-        deadlines[pos] = 0;
+        if (pos >= 0 && pos < deadlines.length) {
+            clear(pos);
+        }
     }
 
     /**
@@ -263,7 +263,8 @@ public class FloodSpreader {
         var build = tile.build;
         if (build == null || !build.isValid()) {
             var firstTier = firstTier();
-            if (firstTier != null && build == null && (tile.block() == Blocks.air || tile.block().alwaysReplace)) {
+            if (firstTier != null && build == null && (tile.block() == Blocks.air || tile.block().alwaysReplace)
+                    && deadlines[pos] > 0 && now >= deadlines[pos]) {
                 place(tile, firstTier, now, multiplier);
                 propagate(tile, now);
                 push(deadlines[pos], pos);
