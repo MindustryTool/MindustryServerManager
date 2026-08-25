@@ -46,13 +46,22 @@ tasks.test {
 }
 
 tasks.jar {
-    dependsOn(":dto:classes")
-    dependsOn(":graph:classes")
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     archiveFileName.set("${project.name}.jar")
 
-    from(configurations.getByName("runtimeClasspath").files.map { if (it.isDirectory) it else zipTree(it) })
+    from(project(":dto").sourceSets.main.get().output)
+    from(project(":annotation").sourceSets.main.get().output)
+    from(project(":graph").sourceSets.main.get().output)
 
+    // External dependencies
+    from(configurations.runtimeClasspath.get().files
+        .filter { it.name !in setOf(
+            "dto-${project.version}.jar",
+            "annotation-${project.version}.jar",
+            "graph-${project.version}.jar"
+        )}
+        .map { if (it.isDirectory) it else zipTree(it) }
+    )
     exclude(
         "org/sqlite/native/Windows/**",
         "org/sqlite/native/Mac/**",
