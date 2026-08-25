@@ -24,6 +24,7 @@ import plugin.Cfg;
 import plugin.PluginEvents;
 import plugin.annotations.Component;
 import plugin.annotations.Destroy;
+import plugin.annotations.Init;
 import plugin.annotations.Listener;
 import plugin.annotations.Schedule;
 import plugin.session.SessionRepository.RankData;
@@ -36,7 +37,8 @@ public class SessionService {
     private final ConcurrentHashMap<String, Session> data = new ConcurrentHashMap<>();
 
     private final SessionRepository sessionRepository;
-    private Seq<RankData> leaderboard = new Seq<>();
+
+    private Seq<RankData> leaderboardCache = new Seq<>();
 
     public Function<Session, Integer> getLevel = session -> {
         SessionData data = session.getData();
@@ -56,8 +58,8 @@ public class SessionService {
 
         languageOrRank = "[" + languageOrRank + "]";
 
-        for (int i = 0; i < leaderboard.size; i++) {
-            if (leaderboard.get(i).uuid.equals(session.player.uuid())) {
+        for (int i = 0; i < leaderboardCache.size; i++) {
+            if (leaderboardCache.get(i).uuid.equals(session.player.uuid())) {
                 if (i == 0) {
                     languageOrRank = "[gold][1st][]";
                 } else if (i == 1) {
@@ -78,6 +80,17 @@ public class SessionService {
                 + playerName;
     };
 
+    @Init
+    public void init() {
+        int count = Vars.netServer.admins.playerInfo.size;
+        Vars.netServer.admins.playerInfo.values().toSeq().removeAll(info -> info.timesJoined <= 0);
+        Vars.netServer.admins.save();
+        int removed = count - Vars.netServer.admins.playerInfo.size;
+        if (removed > 0) {
+            Log.info("Removed @ invalid players", removed);
+        }
+    }
+
     @Listener
     public void onPlayerJoin(PlayerJoin event) {
         put(event.player);
@@ -95,7 +108,7 @@ public class SessionService {
     @Schedule(fixedDelay = 1, unit = TimeUnit.MINUTES)
     private void updateLeaderboardData() {
         if (Vars.state.isPlaying()) {
-            leaderboard = sessionRepository.leaderBoard(3);
+            leaderboardCache = sessionRepository.leaderBoard(3);
         }
     }
 
