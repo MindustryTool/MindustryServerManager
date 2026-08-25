@@ -169,7 +169,7 @@
         "admin_only": "[scarlet]你必须拥有管理员权限才能使用此命令。",
         "no_session": "[scarlet]获取玩家会话失败。",
         "param_error": "[scarlet]错误：{message}",
-        "error": "[scarlet]错误"
+        "error": "[scarlet]命令失败：[white]{message}"
     },
     "event": {
         "logged_in": "以 {name} 的身份登录",

@@ -169,7 +169,7 @@
         "admin_only": "[scarlet]Bạn phải là admin để dùng lệnh này.",
         "no_session": "[scarlet]Không thể lấy phiên cho người chơi.",
         "param_error": "[scarlet]Lỗi: {message}",
-        "error": "[scarlet]Lỗi"
+        "error": "[scarlet]Lệnh thất bại: [white]{message}"
     },
     "event": {
         "logged_in": "Đã đăng nhập với tên {name}",

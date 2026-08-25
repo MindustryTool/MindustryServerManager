@@ -169,7 +169,7 @@
         "admin_only": "[scarlet]이 명령어를 사용하려면 관리자여야 합니다.",
         "no_session": "[scarlet]플레이어 세션을 가져오는 데 실패했습니다.",
         "param_error": "[scarlet]오류: {message}",
-        "error": "[scarlet]오류"
+        "error": "[scarlet]명령어 실행 실패: [white]{message}"
     },
     "event": {
         "logged_in": "{name}(으)로 로그인되었습니다",

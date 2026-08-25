@@ -169,7 +169,7 @@
         "admin_only": "[scarlet]You must be admin to use this command.",
         "no_session": "[scarlet]Failed to get session for player.",
         "param_error": "[scarlet]Error: {message}",
-        "error": "[scarlet]Error"
+        "error": "[scarlet]Command failed: [white]{message}"
     },
     "event": {
         "logged_in": "Logged in as {name}",

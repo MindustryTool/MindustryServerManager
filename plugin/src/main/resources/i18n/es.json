@@ -169,7 +169,7 @@
         "admin_only": "[scarlet]Debes ser administrador para usar este comando.",
         "no_session": "[scarlet]Error al obtener la sesión del jugador.",
         "param_error": "[scarlet]Error: {message}",
-        "error": "[scarlet]Error"
+        "error": "[scarlet]Error del comando: [white]{message}"
     },
     "event": {
         "logged_in": "Sesión iniciada como {name}",

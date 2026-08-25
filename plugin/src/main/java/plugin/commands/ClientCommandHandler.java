@@ -112,9 +112,10 @@ public class ClientCommandHandler {
                 session.player.sendMessage(Tr.t(
                         session.locale, "commands.param_error", "message", e.getMessage()));
             } catch (Exception e) {
+                var cause = CommandErrors.unwrap(e);
                 session.player.sendMessage(Tr.t(
-                        session.locale, "commands.error"));
-                Log.err("Failed to execute command " + name, e);
+                        session.locale, "commands.error", "message", CommandErrors.describe(cause)));
+                Log.err("Failed to execute command " + name + " by " + player.name, cause);
             }
         }
     }

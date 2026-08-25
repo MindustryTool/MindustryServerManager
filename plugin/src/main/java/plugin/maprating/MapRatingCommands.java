@@ -27,7 +27,7 @@ public class MapRatingCommands {
     @ClientCommand(name = "maps", description = "List map", admin = false)
     public void maps(Session session, @Param(name = "page", required = false) Integer page) {
         int pageSize = 5;
-        if (page != null) {
+        if (page == null) {
             page = 0;
         }
 

@@ -169,7 +169,7 @@
         "admin_only": "[scarlet]Anda harus menjadi admin untuk menggunakan perintah ini.",
         "no_session": "[scarlet]Gagal mendapatkan sesi untuk pemain.",
         "param_error": "[scarlet]Error: {message}",
-        "error": "[scarlet]Error"
+        "error": "[scarlet]Perintah gagal: [white]{message}"
     },
     "event": {
         "logged_in": "Masuk sebagai {name}",

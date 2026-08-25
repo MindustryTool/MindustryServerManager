@@ -169,7 +169,7 @@
         "admin_only": "[scarlet]Вы должны быть администратором, чтобы использовать эту команду.",
         "no_session": "[scarlet]Не удалось получить сессию для игрока.",
         "param_error": "[scarlet]Ошибка: {message}",
-        "error": "[scarlet]Ошибка"
+        "error": "[scarlet]Ошибка команды: [white]{message}"
     },
     "event": {
         "logged_in": "Вы вошли как {name}",

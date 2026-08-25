@@ -103,7 +103,7 @@ public class ServerCommandHandler {
                     method.invoke(object);
                 }
             } catch (Exception e) {
-                Log.err("Failed to execute command " + name, e);
+                Log.err("Failed to execute command " + name, CommandErrors.unwrap(e));
             }
         }
     }

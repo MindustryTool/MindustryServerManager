@@ -169,7 +169,7 @@
         "admin_only": "[scarlet]Musisz być adminem, aby użyć tej komendy.",
         "no_session": "[scarlet]Nie udało się uzyskać sesji gracza.",
         "param_error": "[scarlet]Błąd: {message}",
-        "error": "[scarlet]Błąd"
+        "error": "[scarlet]Błąd polecenia: [white]{message}"
     },
     "event": {
         "logged_in": "Zalogowano jako {name}",

@@ -169,7 +169,7 @@
         "admin_only": "[scarlet]このコマンドを使用するにはアドミンである必要があります。",
         "no_session": "[scarlet]プレイヤーのセッションを取得できませんでした。",
         "param_error": "[scarlet]エラー: {message}",
-        "error": "[scarlet]エラー"
+        "error": "[scarlet]コマンドが失敗しました: [white]{message}"
     },
     "event": {
         "logged_in": "{name} としてログインしました",

@@ -56,7 +56,7 @@ public class CommandUtils {
             }
 
             if (argIndex >= args.length && meta.required()) {
-                throw new ParamException("Missing argument: " + param.getName());
+                throw new ParamException("Missing argument: " + meta.name());
             }
 
             if (argIndex > (args.length - 1) && meta.required() == false) {
