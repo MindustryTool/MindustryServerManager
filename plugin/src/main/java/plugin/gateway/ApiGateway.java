@@ -96,14 +96,12 @@ public class ApiGateway {
 
     private final HostService hostService;
 
-    private final Duration HEARTBEAT_DURATION = Duration.ofSeconds(10);
+    private final Duration HEARTBEAT_DURATION = Duration.ofSeconds(5);
     private final HashMap<String, MessageHandler<Object, Object>> messageHandlers = new HashMap<>();
     private final WsHandler wsHandler = new WsHandler();
 
     private Instant lastSendEventAt = Instant.now();
     private WebSocket webSocket;
-
-    private volatile boolean connecting = false;
 
     private Cache<PaginationRequest, List<ServerDto>> serverQueryCache = Caffeine.newBuilder()
             .expireAfterWrite(Duration.ofSeconds(15))
@@ -197,21 +195,13 @@ public class ApiGateway {
         return null;
     }
 
-    private void connectAsync() {
+    private synchronized void connectAsync() {
         if (shutdown) {
             return;
         }
 
-        synchronized (this) {
-            if (connecting) {
-                return;
-            }
-
-            if (webSocket != null && webSocket.isOpen()) {
-                return;
-            }
-
-            connecting = true;
+        if (webSocket != null && webSocket.isOpen()) {
+            return;
         }
 
         executor.submit(() -> {
@@ -219,8 +209,6 @@ public class ApiGateway {
                 connect();
             } catch (Exception e) {
                 Log.err("Error connecting to server manager", e);
-            } finally {
-                connecting = false;
             }
         });
     }
@@ -275,6 +263,7 @@ public class ApiGateway {
             var err = new RuntimeException("WebSocket disconnected");
             pendingRequests.forEach((id, future) -> future.completeExceptionally(err));
             pendingRequests.clear();
+            websocket = null;
 
             connectAsync();
 
@@ -294,7 +283,7 @@ public class ApiGateway {
         }
     }
 
-    @Schedule(delay = 5, fixedDelay = 10, unit = TimeUnit.SECONDS)
+    @Schedule(delay = 5, fixedDelay = 5, unit = TimeUnit.SECONDS)
     private void keepAlive() {
         if (lastSendEventAt.plus(HEARTBEAT_DURATION).isBefore(Instant.now()) && isConnected()) {
             sendStateUpdate();
