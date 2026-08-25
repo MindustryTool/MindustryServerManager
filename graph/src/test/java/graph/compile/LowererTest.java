@@ -18,6 +18,7 @@ import graph.types.TypeRef;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -93,8 +94,9 @@ class LowererTest {
         Ir.InvokeStmt invoke = assertInstanceOf(Ir.InvokeStmt.class,
                 result.ir().entries().get(0).body().get(0));
         assertEquals("say", invoke.nodeId());
-        assertEquals("plugin.graph.facades.PlayerFacades", invoke.ownerClass());
-        assertEquals("sendMessage", invoke.staticMethod());
+        assertNull(invoke.ownerClass());
+        assertNull(invoke.staticMethod());
+        assertNotNull(invoke.overloadHash());
         assertFalse(invoke.asyncDispatch());
         assertEquals(2, invoke.args().size());
         Ir.PortRef playerArg = assertInstanceOf(Ir.PortRef.class, invoke.args().get(0));

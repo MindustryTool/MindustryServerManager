@@ -132,8 +132,19 @@ public final class Lowerer {
             case "set-property" -> lowerPropertySet(node, linkedNode);
             case "delay" -> new Ir.DelayStmt(nodeId,
                     numericArgOr(node, "seconds", 1.0), resumeSlots++);
-            case "schedule" -> new Ir.ScheduleOnceStmt(nodeId,
-                    numericArgOr(node, "seconds", 1.0), resumeSlots++);
+            case "schedule" -> lowerSchedule(node);
+            case "parallel" -> {
+                List<Ir.IrStmt> branch = chainFrom(nodeId, "body");
+                yield new Ir.ScheduleStmt(nodeId, "next-tick",
+                        new Ir.LiteralValue(TypeRef.FLOAT, "0.0f"), branch, null);
+            }
+            case "cancel-schedule" -> {
+                String source = findDataSourcePort(nodeId, null);
+                yield new Ir.CancelScheduleStmt(nodeId,
+                        source != null
+                                ? portRef(source, TypeRef.of("Object"))
+                                : new Ir.LiteralValue(TypeRef.of("Object"), "null"));
+            }
             case "await" -> lowerAwait(node);
             case "http-get", "http-post", "http-put", "http-delete" -> lowerHttp(node);
             case "db-query", "db-insert", "db-update", "db-delete" -> lowerDb(node);
@@ -357,14 +368,51 @@ public final class Lowerer {
         TypeRef valueType = inferredPorts.getOrDefault(node.id() + ".value",
                 TypeRef.of("Object"));
         Ir.IrExpr future = singleDataInput(node.id(), TypeRef.future(valueType));
+        JsonNode to = node.get("timeoutSeconds");
+        if (to == null || to.isNull()) {
+            JsonNode props = node.get("properties");
+            to = props == null ? null : props.get("timeoutSeconds");
+        }
+        Double timeout = to != null && !to.isNull() ? to.asDouble() : null;
         return new Ir.AwaitStmt(node.id(), future, resultVarName(node.id()), valueType,
-                resumeSlots++);
+                timeout, resumeSlots++);
+    }
+
+    private Ir.IrStmt lowerSchedule(GraphNode node) {
+        JsonNode props = node.get("properties");
+        JsonNode modeNode = props == null ? null : props.get("mode");
+        String mode = modeNode != null && modeNode.isTextual() ? modeNode.asText() : "after";
+        JsonNode seconds = node.get("seconds");
+        if (seconds == null || seconds.isNull()) {
+            seconds = props == null ? null : props.get("seconds");
+        }
+        double value = seconds != null && !seconds.isNull() ? seconds.asDouble() : 1.0;
+        List<Ir.IrStmt> onFire = chainFrom(node.id(), "body");
+        return new Ir.ScheduleStmt(node.id(), mode,
+                new Ir.LiteralValue(TypeRef.FLOAT, value + "f"), onFire,
+                resultVarName(node.id()));
+    }
+
+    private List<Ir.IrStmt> chainFrom(String nodeId, String execPort) {
+        String next = execSuccessor.get(execOutKey(nodeId, execPort));
+        return next == null ? List.of() : lowerChain(next);
     }
 
     private Ir.IrStmt lowerHttp(GraphNode node) {
         String url = findDataSourcePort(node.id(), "url");
+        Ir.IrExpr urlExpr;
+        if (url != null) {
+            urlExpr = portRef(url, TypeRef.STRING);
+        } else {
+            JsonNode props = node.get("properties");
+            JsonNode configured = props == null ? null : props.get("url");
+            String value = configured != null && configured.isTextual()
+                    ? configured.asText() : "";
+            urlExpr = new Ir.LiteralValue(TypeRef.STRING,
+                    '"' + value.replace("\\", "\\\\").replace("\"", "\\\"") + '"');
+        }
         return new Ir.HttpCallStmt(node.id(), httpMethod(node.type()),
-                portOrLiteral(url, TypeRef.STRING, "\"\""),
+                urlExpr,
                 mapArgOrEmpty(node.id(), "headers"),
                 mapArgOrEmpty(node.id(), "query"),
                 textArgOrNull(node, "body"),
@@ -443,6 +491,10 @@ public final class Lowerer {
     private Ir.IrExpr numericArgOr(GraphNode node, String field, double fallback) {
         JsonNode value = node.get(field);
         if (value == null || value.isNull()) {
+            JsonNode props = node.get("properties");
+            value = props == null ? null : props.get(field);
+        }
+        if (value == null || value.isNull()) {
             return new Ir.LiteralValue(TypeRef.FLOAT, fallback + "f");
         }
         return new Ir.LiteralValue(TypeRef.FLOAT, value.asDouble() + "f");
@@ -450,6 +502,10 @@ public final class Lowerer {
 
     private Ir.IrExpr textArgOrDefault(GraphNode node, String field, String defaultJava) {
         JsonNode value = node.get(field);
+        if (value == null || value.isNull()) {
+            JsonNode props = node.get("properties");
+            value = props == null ? null : props.get(field);
+        }
         if (value == null || !value.isTextual()) {
             return new Ir.LiteralValue(TypeRef.STRING, defaultJava);
         }
@@ -458,6 +514,10 @@ public final class Lowerer {
 
     private Ir.IrExpr textArgOrNull(GraphNode node, String field) {
         JsonNode value = node.get(field);
+        if (value == null || value.isNull()) {
+            JsonNode props = node.get("properties");
+            value = props == null ? null : props.get(field);
+        }
         if (value == null || value.isNull()) {
             return new Ir.LiteralValue(TypeRef.STRING.asNullable(), "null");
         }

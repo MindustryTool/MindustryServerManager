@@ -12,7 +12,7 @@ public interface GraphExecutable {
     Set<String> eventNodeIds();
 
     void execute(String eventNodeId, Map<String, Object> payload,
-                 InvocationContext ctx, RuntimeServices services);
+                 InvocationContext ctx, RuntimeServices services) throws Exception;
 
     default int abiVersion() {
         return ABI_VERSION;

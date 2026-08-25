@@ -51,6 +51,13 @@ public final class Ir {
     public record WhileLoopStmt(String nodeId, IrExpr count, List<IrStmt> body) implements IrStmt {
     }
 
+    public record ScheduleStmt(String nodeId, String mode, IrExpr seconds,
+                               List<IrStmt> onFire, String resultVar) implements IrStmt {
+    }
+
+    public record CancelScheduleStmt(String nodeId, IrExpr handle) implements IrStmt {
+    }
+
     public record SetVariableStmt(String nodeId, String variable, String scope,
                                   IrExpr value) implements IrStmt {
     }
@@ -74,7 +81,7 @@ public final class Ir {
     }
 
     public record AwaitStmt(String nodeId, IrExpr future, String resultVar, TypeRef resultType,
-                            int resumeSlot) implements IrStmt {
+                            Double timeoutSeconds, int resumeSlot) implements IrStmt {
     }
 
     public record HttpCallStmt(String nodeId, String method, IrExpr url, IrExpr headers,

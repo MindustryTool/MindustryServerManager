@@ -33,11 +33,15 @@ public final class TypeRef {
                 throw new IllegalArgumentException("Invalid type base name: " + base);
             }
         }
-        if (ARITY_ONE_CONTAINERS.contains(base) && params.size() != 1) {
-            throw new IllegalArgumentException(base + " requires exactly 1 type parameter, got " + params.size());
-        }
-        if (base.equals("Map") && params.size() != 2) {
-            throw new IllegalArgumentException("Map requires exactly 2 type parameters, got " + params.size());
+        if (!params.isEmpty()) {
+            if (ARITY_ONE_CONTAINERS.contains(base) && params.size() != 1) {
+                throw new IllegalArgumentException(
+                        base + " requires exactly 1 type parameter, got " + params.size());
+            }
+            if (base.equals("Map") && params.size() != 2) {
+                throw new IllegalArgumentException(
+                        "Map requires exactly 2 type parameters, got " + params.size());
+            }
         }
         this.params = List.copyOf(params);
         this.nullable = nullable;

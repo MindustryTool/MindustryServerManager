@@ -82,7 +82,7 @@ class JavaGeneratorTest {
             "{\"id\":\"ev\",\"type\":\"event\",\"event\":\"mindustry.event.player.join\"}";
 
     @Test
-    void directFacadeCallGeneratedForJavaTarget() throws Exception {
+    void reflectiveDispatchGeneratedWithOverloadHash() throws Exception {
         Built built = build(JOIN + "\n" + """
                 {"id":"say","type":"call","function":"mindustry.player.sendMessage",
                  "args":{"message":{"kind":"literal","value":"Welcome"}}}
@@ -95,15 +95,15 @@ class JavaGeneratorTest {
 
         assertTrue(src.fullySupported());
         assertTrue(src.source().contains(
-                "plugin.graph.facades.PlayerFacades.sendMessage(p_ev_player, \"Welcome\")"),
+                        "svc.invokeFunction(\"mindustry.player.sendMessage\", \""),
                 () -> src.source());
-        assertTrue(src.source().contains("final java.lang.Boolean v_say ="),
-                "result vars use boxed types for uniform slot storage");
+        assertTrue(src.source().contains("new Object[]{p_ev_player, \"Welcome\"}"),
+                () -> src.source());
+        assertTrue(src.source().contains("v_say = svc.invokeFunction(\"mindustry.player.sendMessage\", \""),
+                "result vars are class fields assigned from dispatch");
         assertTrue(src.source().contains("class Graph_welcome_flow implements GraphExecutable"),
                 () -> src.source());
         assertTrue(src.source().contains("\"ev\""), "event node id registered");
-        assertFalse(src.source().contains("svc.invokeFunction(\"mindustry.player.sendMessage\")"),
-                "direct call must not fall back to reflective dispatch");
     }
 
     @Test
@@ -129,9 +129,13 @@ class JavaGeneratorTest {
 
         JavaGenerator.GeneratedSource src = new JavaGenerator("welcome-flow")
                 .generate(ir(built));
-        assertTrue(src.source().contains("if (!suspended_wait) {"));
+        assertTrue(src.source().contains("if (suspended_wait) {"),
+                "resume pass clears the flag; fresh pass suspends");
         assertTrue(src.source().contains("suspended_wait = true;"));
-        assertTrue(src.source().contains("svc.scheduleResume((double) (5.0d)"));
+        assertTrue(src.source().contains("((Number) (5.0f)).doubleValue()"),
+                () -> src.source());
+        assertTrue(src.source().contains("svc.postToMain(this::runSegmentsSafe)"),
+                () -> src.source());
         assertTrue(src.source().contains("return;"), () -> src.source());
     }
 
@@ -195,8 +199,8 @@ class JavaGeneratorTest {
             if ("say".equals(mapping.nodeId())) {
                 sayCovered = true;
                 String covered = lines[mapping.lineStart() - 1];
-                assertTrue(covered.contains("PlayerFacades.sendMessage")
-                                || covered.contains("final boolean v_say"),
+                assertTrue(covered.contains("svc.invokeFunction")
+                                || covered.contains("final java.lang.Boolean v_say"),
                         "mapped line should contain the generated call: " + covered);
             }
         }

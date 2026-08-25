@@ -53,13 +53,19 @@ public final class ReflectionRegistryLoader {
             if (overloads.isEmpty()) {
                 continue;
             }
-            FunctionDescriptor template = FunctionDescriptor.builder(id)
-                    .category(category != null ? category : clazz.getPackageName())
-                    .ownerType(clazz.getSimpleName())
-                    .displayName(group.getKey())
-                    .description("Reflected from " + clazz.getName())
-                    .build();
-            FunctionDescriptor descriptor = withOverloads(template, overloads);
+            FunctionDescriptor descriptor = new FunctionDescriptor(
+                    id,
+                    group.getKey(),
+                    category != null ? category : clazz.getPackageName(),
+                    clazz.getSimpleName(),
+                    overloads,
+                    ThreadRequirement.MAIN_THREAD,
+                    true,
+                    false,
+                    false,
+                    "",
+                    "Reflected from " + clazz.getName(),
+                    List.of());
             entries.add(new LoadedEntry(id, descriptor, invokers));
         }
         return entries;
@@ -118,10 +124,19 @@ public final class ReflectionRegistryLoader {
         if (type == byte.class) {
             return "Byte";
         }
-        if (type.isAnonymousClass() || type.getSimpleName().isEmpty()) {
+        if (type.isArray()) {
             return "Object";
         }
-        return type.getSimpleName();
+        String name = type.getSimpleName();
+        if (name.isEmpty() || !Character.isJavaIdentifierStart(name.charAt(0))) {
+            return "Object";
+        }
+        for (char c : name.toCharArray()) {
+            if (!Character.isJavaIdentifierPart(c)) {
+                return "Object";
+            }
+        }
+        return name;
     }
 
     public static final class CachedInvoker implements Invoker {

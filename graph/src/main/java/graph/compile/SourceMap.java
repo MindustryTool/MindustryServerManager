@@ -13,6 +13,10 @@ public record SourceMap(String graphId, String className, List<Mapping> mappings
 
     }
 
+    public SourceMap withClassName(String qualifiedName) {
+        return new SourceMap(graphId, qualifiedName, mappings);
+    }
+
     public static final class Builder {
         private final String graphId;
         private final String className;

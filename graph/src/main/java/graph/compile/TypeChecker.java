@@ -193,8 +193,13 @@ public final class TypeChecker {
             }
             case "db-query" -> outputs.put("rows",
                     TypeRef.list(TypeRef.map(TypeRef.STRING, TypeRef.of("Object"))));
-            case "delay", "schedule", "log", "try-catch-finally", "retry", "timeout",
-                    "set-variable", "transaction" -> outputs.put("then", execType());
+            case "delay", "log", "try-catch-finally", "retry", "timeout",
+                    "set-variable", "transaction", "parallel" -> outputs.put("then", execType());
+            case "schedule" -> {
+                outputs.put("then", execType());
+                outputs.put("result", TypeRef.of("Object"));
+            }
+            case "cancel-schedule" -> outputs.put("then", execType());
             default -> {
             }
         }
