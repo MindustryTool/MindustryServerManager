@@ -396,7 +396,7 @@ public class FloodSpreader {
     private void place(Tile tile, FloodConfig.FloodTile tier, long now, float multiplier) {
         int pos = posOf(tile);
         IntSeq seq = pendingUpdates.computeIfAbsent(tier.block, k -> new IntSeq());
-        seq.add(pos);
+        seq.add(tile.pos());
         pendingCount++;
         statPlaced++;
 
