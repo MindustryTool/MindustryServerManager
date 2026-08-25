@@ -221,7 +221,13 @@ public class FloodSpreader {
 
         var build = tile.build;
         if (build == null || !build.isValid()) {
-            clear(pos);
+            // Deadline fired on air/replaceable tile - place first tier and propagate
+            if (build == null && (tile.block() == Blocks.air || tile.block().alwaysReplace)) {
+                place(tile, config.floodTiles.get(0), now, multiplier);
+                propagate(tile, now);
+            } else {
+                clear(pos);
+            }
             return;
         }
 

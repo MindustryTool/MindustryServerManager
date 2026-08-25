@@ -17,6 +17,14 @@ The system SHALL spread flood tiles outward from unsuppressed crux cores using a
 - **WHEN** a crux building that was part of the flood is destroyed
 - **THEN** its pending events are discarded and it does not re-enter the simulation unless re-seeded
 
+#### Scenario: First tier placed when spread deadline fires on air tile
+- **WHEN** a spread deadline (5-10s after frontier reached tile) fires on an air/replaceable tile
+- **THEN** the first configured flood tier is placed on that tile and its neighbors are scheduled with new 5-10s delays
+
+#### Scenario: Tier evolution proceeds through all configured tiers
+- **WHEN** a flood tile has existed for its tier's evolve time / multiplier + jitter
+- **THEN** it transitions to the next configured tier until the final tier is reached
+
 ### Requirement: Flood tiles require core connectivity
 A flood tile SHALL remain active only while it is connected to at least one unsuppressed crux core through a chain of scheduled flood tiles (plus core footprints). Connectivity SHALL be validated by a periodic sweep (approximately every 5 seconds) that retires every scheduled tile unreachable from any unsuppressed core; retired tiles stop evolving, pulsing damage, and propagating.
 
