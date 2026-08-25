@@ -37,11 +37,19 @@ A flood tile SHALL remain active only while it is connected to at least one unsu
 - **THEN** its tiles remain active with their existing deadlines
 
 ### Requirement: Event-driven scheduling performance
-The flood simulation SHALL use an event-driven min-heap scheduler with primitive parallel arrays such that ticks with no due events perform O(1) work, no per-tick allocations occur in steady state, and network tile-block updates are only emitted when tiles actually transitioned.
+The flood simulation SHALL use an event-driven min-heap scheduler with primitive parallel arrays such that ticks with no due events perform O(1) work, no per-tick allocations occur in steady state, and network tile-block updates are batched per block and flushed at most once per 100 ms window, only when tiles actually transitioned since the last flush. The first flush after simulation reset SHALL not be delayed by the window gate.
 
 #### Scenario: No-op tick does not send network tile updates
 - **WHEN** a tick completes with no tiles transitioning to new flood blocks
 - **THEN** no `Call.setTileBlocks` packets are emitted for that tick
+
+#### Scenario: Rapid transitions coalesce into one flush per window
+- **WHEN** tiles transition to new flood blocks on many consecutive ticks within a single 100 ms window
+- **THEN** exactly one `Call.setTileBlocks` packet per affected block is emitted when the window opens, containing every placement accumulated during that window
+
+#### Scenario: First flush after reset is immediate
+- **WHEN** the flood simulation resets (map load) and tiles transition before any flush window has opened
+- **THEN** those placements are emitted without waiting for an interval boundary
 
 #### Scenario: Idle tick performs near-zero work
 - **WHEN** all flooded tiles are waiting on future deadlines and no enemy structures are adjacent to the flood

@@ -80,9 +80,9 @@ public class FloodGamemode {
         damageReceived.clear();
         warnedNoCores = false;
 
-        Log.info("Flood rules applied: world=@x@ cores=@ tiers=@ debug=@",
+        Log.info("Flood rules applied: world=@x@ cores=@ tiers=@",
                 Vars.world.width(), Vars.world.height(), Team.crux.cores().size,
-                config.floodTiles.size, config.debug);
+                config.floodTiles.size);
     }
 
     @Listener

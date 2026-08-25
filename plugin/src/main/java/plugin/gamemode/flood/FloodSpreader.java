@@ -26,7 +26,7 @@ public class FloodSpreader {
 
     private static final long DAMAGE_PULSE_MILLIS = 1000;
     private static final long ORPHAN_SWEEP_MILLIS = 5000;
-    private static final long STATUS_LOG_MILLIS = 10000;
+    private static final long FLUSH_INTERVAL_MILLIS = 100;
     private static final int INITIAL_HEAP_CAPACITY = 256;
 
     private final FloodConfig config;
@@ -52,15 +52,11 @@ public class FloodSpreader {
     private BitSet reachable = new BitSet();
     private long nextSweepAt = 0;
 
-    // Debug/diagnostic counters, reported at most once per STATUS_LOG_MILLIS.
-    private long nextStatusLogAt = 0;
-    private int statProcessed = 0;
-    private int statPlaced = 0;
-    private int statEvolved = 0;
-    private int statSweptOrphans = 0;
-    private int statFlushed = 0;
     private boolean loggedFirstPlacement = false;
     private boolean warnedNoTiers = false;
+
+    /** Earliest wall-clock time at which a buffered tile-update flush may be emitted. */
+    private long nextFlushAt = 0;
 
     private int width = 0;
     private int height = 0;
@@ -87,12 +83,7 @@ public class FloodSpreader {
         sweepQueue.clear();
         reachable.clear();
         nextSweepAt = 0;
-        nextStatusLogAt = Time.millis() + STATUS_LOG_MILLIS;
-        statProcessed = 0;
-        statPlaced = 0;
-        statEvolved = 0;
-        statSweptOrphans = 0;
-        statFlushed = 0;
+        nextFlushAt = 0;
         loggedFirstPlacement = false;
         warnedNoTiers = false;
     }
@@ -191,7 +182,6 @@ public class FloodSpreader {
         for (int pos = scheduled.nextSetBit(0); pos >= 0; pos = scheduled.nextSetBit(pos + 1)) {
             if (!reachable.get(pos)) {
                 clear(pos);
-                statSweptOrphans++;
             }
         }
     }
@@ -215,12 +205,10 @@ public class FloodSpreader {
         while (heapSize > 0 && heapAt[0] <= now) {
             int pos = heapPos[0];
             pop();
-            statProcessed++;
             process(pos, now, multiplier);
         }
 
         flushUpdates();
-        maybeLogStatus(multiplier, now);
     }
 
     /** Flood tier used for seeding and enemy-structure pulses; null when unconfigured. */
@@ -233,24 +221,6 @@ public class FloodSpreader {
             return null;
         }
         return config.floodTiles.first();
-    }
-
-    private void maybeLogStatus(float multiplier, long now) {
-        if (!config.debug || now < nextStatusLogAt) {
-            return;
-        }
-        nextStatusLogAt = now + STATUS_LOG_MILLIS;
-
-        Log.info("Flood status: active=@ heap=@ nextEventMs=@ processed=@ placed=@ evolved=@ swept=@ flushed=@ mult=@",
-                scheduled.cardinality(), heapSize, heapSize > 0 ? heapAt[0] - now : -1,
-                statProcessed, statPlaced, statEvolved, statSweptOrphans, statFlushed,
-                Math.round(multiplier * 100f) / 100f);
-
-        statProcessed = 0;
-        statPlaced = 0;
-        statEvolved = 0;
-        statSweptOrphans = 0;
-        statFlushed = 0;
     }
 
     private void touch(Tile tile, FloodConfig.FloodTile firstTier, float multiplier, long now) {
@@ -321,7 +291,6 @@ public class FloodSpreader {
             var next = config.nextTier(build);
             if (next != null) {
                 place(tile, next, now, multiplier);
-                statEvolved++;
                 propagate(tile, now);
                 deadline = deadlines[pos];
                 tier = next;
@@ -398,7 +367,6 @@ public class FloodSpreader {
         IntSeq seq = pendingUpdates.computeIfAbsent(tier.block, k -> new IntSeq());
         seq.add(tile.pos());
         pendingCount++;
-        statPlaced++;
 
         deadlines[pos] = now + (long) (tier.evolveTime * 1000 / multiplier)
                 + Mathf.random(1000 * 1, 1000 * 5);
@@ -416,9 +384,10 @@ public class FloodSpreader {
     }
 
     private void flushUpdates() {
-        if (pendingCount == 0) {
+        if (pendingCount == 0 || Time.millis() < nextFlushAt) {
             return;
         }
+        nextFlushAt = Time.millis() + FLUSH_INTERVAL_MILLIS;
 
         for (var entry : pendingUpdates.entrySet()) {
             IntSeq seq = entry.getValue();
@@ -428,10 +397,6 @@ public class FloodSpreader {
             int[] out = new int[seq.size];
             System.arraycopy(seq.items, 0, out, 0, seq.size);
             Call.setTileBlocks(entry.getKey(), Team.crux, out);
-            statFlushed += seq.size;
-            if (config.debug) {
-                Log.info("Flood flush: @ tiles -> @", seq.size, entry.getKey().name);
-            }
             seq.clear();
         }
 
