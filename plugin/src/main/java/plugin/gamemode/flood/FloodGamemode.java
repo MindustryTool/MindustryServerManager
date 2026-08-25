@@ -51,6 +51,7 @@ public class FloodGamemode {
 
     private long startedAt = 0;
     private int cores = 1;
+    private boolean warnedNoCores = false;
 
     private boolean isNight = false;
     private Instant cycleChangeAt = Instant.now();
@@ -77,8 +78,11 @@ public class FloodGamemode {
 
         suppressed.clear();
         damageReceived.clear();
+        warnedNoCores = false;
 
-        Log.info("Flood rules applied");
+        Log.info("Flood rules applied: world=@x@ cores=@ tiers=@ debug=@",
+                Vars.world.width(), Vars.world.height(), Team.crux.cores().size,
+                config.floodTiles.size, config.debug);
     }
 
     @Listener
@@ -225,6 +229,14 @@ public class FloodGamemode {
         }
 
         if (spreader == null || !spreader.isInitialized()) {
+            return;
+        }
+
+        if (Team.crux.cores().size == 0) {
+            if (!warnedNoCores) {
+                warnedNoCores = true;
+                Log.err("Flood: map has no Team.crux cores - flood cannot spread, check the map spawn setup");
+            }
             return;
         }
 

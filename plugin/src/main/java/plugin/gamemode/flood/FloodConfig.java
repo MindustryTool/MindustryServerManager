@@ -27,6 +27,9 @@ public class FloodConfig {
     public float suppressThreshold = 500f;
     public long suppressTime = 1000 * 5;
 
+    /** Enables rate-limited diagnostic logging (status every 10s, flushes, first placement). */
+    public boolean debug = false;
+
     @Data
     @AllArgsConstructor
     @NoArgsConstructor

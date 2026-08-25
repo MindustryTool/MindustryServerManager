@@ -7,6 +7,7 @@ import java.util.HashMap;
 import arc.math.Mathf;
 import arc.struct.IntSeq;
 import arc.struct.Seq;
+import arc.util.Log;
 import arc.util.Time;
 import mindustry.Vars;
 import mindustry.content.Blocks;
@@ -25,6 +26,7 @@ public class FloodSpreader {
 
     private static final long DAMAGE_PULSE_MILLIS = 1000;
     private static final long ORPHAN_SWEEP_MILLIS = 5000;
+    private static final long STATUS_LOG_MILLIS = 10000;
     private static final int INITIAL_HEAP_CAPACITY = 256;
 
     private final FloodConfig config;
@@ -50,14 +52,22 @@ public class FloodSpreader {
     private BitSet reachable = new BitSet();
     private long nextSweepAt = 0;
 
+    // Debug/diagnostic counters, reported at most once per STATUS_LOG_MILLIS.
+    private long nextStatusLogAt = 0;
+    private int statProcessed = 0;
+    private int statPlaced = 0;
+    private int statEvolved = 0;
+    private int statSweptOrphans = 0;
+    private int statFlushed = 0;
+    private boolean loggedFirstPlacement = false;
+    private boolean warnedNoTiers = false;
+
     private int width = 0;
     private int height = 0;
 
     public FloodSpreader(FloodConfig config) {
         this.config = config;
-        for (var tier : config.floodTiles) {
-            tierByBlock.put(tier.block, tier);
-        }
+        rebuildTiers();
     }
 
     public boolean isInitialized() {
@@ -67,6 +77,7 @@ public class FloodSpreader {
     public void reset(int width, int height) {
         this.width = width;
         this.height = height;
+        rebuildTiers();
         deadlines = new long[width * height];
         scheduled = new BitSet(width * height);
         seededPulses = new BitSet(width * height);
@@ -76,6 +87,25 @@ public class FloodSpreader {
         sweepQueue.clear();
         reachable.clear();
         nextSweepAt = 0;
+        nextStatusLogAt = Time.millis() + STATUS_LOG_MILLIS;
+        statProcessed = 0;
+        statPlaced = 0;
+        statEvolved = 0;
+        statSweptOrphans = 0;
+        statFlushed = 0;
+        loggedFirstPlacement = false;
+        warnedNoTiers = false;
+    }
+
+    private void rebuildTiers() {
+        tierByBlock.clear();
+        for (var tier : config.floodTiles) {
+            tierByBlock.put(tier.block, tier);
+        }
+
+        if (config.floodTiles.size == 0) {
+            Log.err("Flood: floodTiles in flood/config.json is empty - flood cannot spread");
+        }
     }
 
     public int posOf(Tile tile) {
@@ -100,7 +130,10 @@ public class FloodSpreader {
             sweepOrphans(cores);
         }
 
-        var firstTier = config.floodTiles.get(0);
+        var firstTier = firstTier();
+        if (firstTier == null || cores.size == 0) {
+            return;
+        }
 
         for (var core : cores) {
             int size = core.block.size;
@@ -158,6 +191,7 @@ public class FloodSpreader {
         for (int pos = scheduled.nextSetBit(0); pos >= 0; pos = scheduled.nextSetBit(pos + 1)) {
             if (!reachable.get(pos)) {
                 clear(pos);
+                statSweptOrphans++;
             }
         }
     }
@@ -181,10 +215,42 @@ public class FloodSpreader {
         while (heapSize > 0 && heapAt[0] <= now) {
             int pos = heapPos[0];
             pop();
+            statProcessed++;
             process(pos, now, multiplier);
         }
 
         flushUpdates();
+        maybeLogStatus(multiplier, now);
+    }
+
+    /** Flood tier used for seeding and enemy-structure pulses; null when unconfigured. */
+    private FloodConfig.FloodTile firstTier() {
+        if (config.floodTiles.size == 0) {
+            if (!warnedNoTiers) {
+                warnedNoTiers = true;
+                Log.err("Flood: floodTiles is empty, spreader idle");
+            }
+            return null;
+        }
+        return config.floodTiles.first();
+    }
+
+    private void maybeLogStatus(float multiplier, long now) {
+        if (!config.debug || now < nextStatusLogAt) {
+            return;
+        }
+        nextStatusLogAt = now + STATUS_LOG_MILLIS;
+
+        Log.info("Flood status: active=@ heap=@ nextEventMs=@ processed=@ placed=@ evolved=@ swept=@ flushed=@ mult=@",
+                scheduled.cardinality(), heapSize, heapSize > 0 ? heapAt[0] - now : -1,
+                statProcessed, statPlaced, statEvolved, statSweptOrphans, statFlushed,
+                Math.round(multiplier * 100f) / 100f);
+
+        statProcessed = 0;
+        statPlaced = 0;
+        statEvolved = 0;
+        statSweptOrphans = 0;
+        statFlushed = 0;
     }
 
     private void touch(Tile tile, FloodConfig.FloodTile firstTier, float multiplier, long now) {
@@ -203,6 +269,7 @@ public class FloodSpreader {
             push(now, pos);
         } else if (build == null && (tile.block() == Blocks.air || tile.block().alwaysReplace)) {
             place(tile, firstTier, now, multiplier);
+            push(deadlines[pos], pos);
             propagate(tile, now);
         } else if (build != null) {
             seededPulses.set(pos);
@@ -213,6 +280,10 @@ public class FloodSpreader {
     }
 
     private void process(int pos, long now, float multiplier) {
+        if (!scheduled.get(pos)) {
+            return;
+        }
+
         Tile tile = Vars.world.tile(pos % width, pos / width);
         if (tile == null) {
             clear(pos);
@@ -221,10 +292,11 @@ public class FloodSpreader {
 
         var build = tile.build;
         if (build == null || !build.isValid()) {
-            // Deadline fired on air/replaceable tile - place first tier and propagate
-            if (build == null && (tile.block() == Blocks.air || tile.block().alwaysReplace)) {
-                place(tile, config.floodTiles.get(0), now, multiplier);
+            var firstTier = firstTier();
+            if (firstTier != null && build == null && (tile.block() == Blocks.air || tile.block().alwaysReplace)) {
+                place(tile, firstTier, now, multiplier);
                 propagate(tile, now);
+                push(deadlines[pos], pos);
             } else {
                 clear(pos);
             }
@@ -232,11 +304,12 @@ public class FloodSpreader {
         }
 
         if (build.team != Team.crux) {
-            if (!seededPulses.get(pos)) {
+            var pulse = firstTier();
+            if (!seededPulses.get(pos) || pulse == null) {
                 clear(pos);
                 return;
             }
-            build.damage(config.floodTiles.get(0).damage * multiplier);
+            build.damage(pulse.damage * multiplier);
             push(now + DAMAGE_PULSE_MILLIS, pos);
             return;
         }
@@ -248,6 +321,7 @@ public class FloodSpreader {
             var next = config.nextTier(build);
             if (next != null) {
                 place(tile, next, now, multiplier);
+                statEvolved++;
                 propagate(tile, now);
                 deadline = deadlines[pos];
                 tier = next;
@@ -324,9 +398,15 @@ public class FloodSpreader {
         IntSeq seq = pendingUpdates.computeIfAbsent(tier.block, k -> new IntSeq());
         seq.add(pos);
         pendingCount++;
+        statPlaced++;
 
         deadlines[pos] = now + (long) (tier.evolveTime * 1000 / multiplier)
                 + Mathf.random(1000 * 1, 1000 * 5);
+
+        if (!loggedFirstPlacement) {
+            loggedFirstPlacement = true;
+            Log.info("Flood: placed first tile @ at @,@ - spread started", tier.block.name, tile.x, tile.y);
+        }
     }
 
     private void clear(int pos) {
@@ -348,6 +428,10 @@ public class FloodSpreader {
             int[] out = new int[seq.size];
             System.arraycopy(seq.items, 0, out, 0, seq.size);
             Call.setTileBlocks(entry.getKey(), Team.crux, out);
+            statFlushed += seq.size;
+            if (config.debug) {
+                Log.info("Flood flush: @ tiles -> @", seq.size, entry.getKey().name);
+            }
             seq.clear();
         }
 

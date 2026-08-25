@@ -29,7 +29,6 @@ import plugin.utils.Utils;
 import plugin.Tasks;
 import plugin.annotations.Component;
 import plugin.annotations.Listener;
-import plugin.core.Registry;
 import java.time.Instant;
 
 import events.ServerEvents;
@@ -68,7 +67,7 @@ public class EventHandler {
         var rateMap = Vars.state.map;
 
         if (rateMap != null) {
-            Registry.get(SessionService.class).each(session -> new RateMapMenu().send(session, rateMap));
+            sessionService.each(session -> new RateMapMenu().send(session, rateMap));
         }
     }
 

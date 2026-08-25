@@ -195,7 +195,9 @@ public class DockerNodeManager implements NodeManager {
 
         List<String> args = List.of(
                 "-XX:+CrashOnOutOfMemoryError",
-                "-XX:MaxRAM=" + request.getMemory() + "m", "-XX:+HeapDumpOnOutOfMemoryError",
+                "-XX:+UseSerialGC",
+                "-XX:TieredStopAtLevel=1",
+                "-XX:+HeapDumpOnOutOfMemoryError",
                 "-XX:HeapDumpPath=/config",
                 "-XX:MinHeapFreeRatio=5",
                 "-XX:MaxHeapFreeRatio=20",
