@@ -22,8 +22,9 @@ public record FunctionDescriptor(
         if (id.isBlank()) {
             throw new IllegalArgumentException("Function id must not be blank");
         }
-        if (!id.matches("[a-z0-9][a-z0-9.\\-_]*")) {
-            throw new IllegalArgumentException("Function id must be dot-separated lowercase: " + id);
+        if (!id.matches("[a-zA-Z_][a-zA-Z0-9_]*(\\.[a-zA-Z_][a-zA-Z0-9_]*)*")) {
+            throw new IllegalArgumentException(
+                    "Function id must be dot-separated identifier segments: " + id);
         }
         overloads = List.copyOf(overloads);
         if (overloads.isEmpty()) {
@@ -48,7 +49,7 @@ public record FunctionDescriptor(
         private boolean deprecated;
         private String sinceVersion = "";
         private String description = "";
-        private final List<String> aliases = new java.util.ArrayList<>();
+                private final List<String> aliases = new java.util.ArrayList<>();
 
         private Builder(String id) {
             this.id = Objects.requireNonNull(id, "id");
@@ -119,5 +120,8 @@ public record FunctionDescriptor(
                     threadRequirement, codegenSafe, advanced, deprecated, sinceVersion,
                     description, aliases);
         }
+
     }
 }
+
+

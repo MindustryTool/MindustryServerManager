@@ -23,6 +23,10 @@ public record Diagnostic(Severity severity, String code, String message, String 
         return new Diagnostic(Severity.ERROR, code, message, nodeId, pointer);
     }
 
+    public static Diagnostic warning(String code, String message, String nodeId) {
+        return new Diagnostic(Severity.WARNING, code, message, nodeId, null);
+    }
+
     public boolean isError() {
         return severity == Severity.ERROR;
     }

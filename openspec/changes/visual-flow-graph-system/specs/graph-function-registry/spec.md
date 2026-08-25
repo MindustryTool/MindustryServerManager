@@ -18,19 +18,23 @@ Each registered function SHALL have a stable id, display name, description, cate
 - **WHEN** a raw packet helper is registered with `advanced=true`
 - **THEN** the metadata carries the flag for editor grouping/warning purposes without any runtime denial behavior
 
-### Requirement: Multiple registration channels
-The system SHALL support registering functions via build-time annotation processing over curated facade classes, programmatic registration by plugin modules at runtime, and generated registration from annotated component methods; adding a new Java function SHALL NOT require any new frontend node type.
+### Requirement: Reflection-based registration channels
+The system SHALL populate the registry by reflecting over configured class roots (Mindustry, Arc, plugin packages), deriving descriptors from public methods, constructors, fields, and event types, with cached reflective invokers bound once per overload; hand-written wrapper/facade classes SHALL NOT be required, and adding a new Java function SHALL NOT require any new frontend node type. Programmatic registration remains available for plugin contributions and metadata overrides.
 
 #### Scenario: Plugin contributes a custom function
-- **WHEN** a plugin module calls `GraphRegistry.register(descriptor, invoker)` for `myplugin.mute.player`
+- **WHEN** a plugin module registers a descriptor and cached invoker for `myplugin.mute.player`
 - **THEN** the function becomes discoverable through the search API and invocable from a standard Call node without editor or backend node changes
 
-### Requirement: Build-time index, no runtime scanning of Mindustry classes
-Registry indexes SHALL be produced by annotation processing at build time; the plugin SHALL NOT scan Mindustry classes eagerly at startup to build the registry.
+#### Scenario: Mindustry methods discoverable without wrappers
+- **WHEN** the registry loads its reflection index for root `mindustry.gen`
+- **THEN** methods such as Player.sendMessage appear as searchable descriptors with correct parameter and return types, with no hand-written wrapper involved
+
+### Requirement: Build-time index replaced by lazy reflective scan
+The registry index SHALL be produced by a **lazy** reflection pass over configured roots on first query or first compilation use; the plugin SHALL NOT scan classes eagerly at startup, and SHALL NOT require a build-time annotation-processing step to expose Mindustry APIs (annotation enrichment stays optional).
 
 #### Scenario: Startup does not scan the classpath
-- **WHEN** the plugin initializes with the graph subsystem enabled
-- **THEN** startup performs only lightweight index loading and completes without reflective traversal of Mindustry API packages
+- **WHEN** the plugin initializes with the graph subsystem enabled and no graph operation occurs
+- **THEN** no reflective traversal of Mindustry API packages happens during startup
 
 ### Requirement: Lazy metadata loading
 Full descriptors SHALL be loaded lazily: startup loads only a compact id/category/type-summary index, and full pages load on first query or first use by a compiling graph.

@@ -9,19 +9,19 @@
 
 ## 2. Registry core
 
-- [ ] 2.1 Implement `FunctionDescriptor`/`PropertyDescriptor`/`EventDescriptor`/`TypeDescriptor` records (overloads + hashes, thread requirement `MAIN_THREAD|ASYNC|PURE|READ_ONLY|UNSAFE`, codegen-safe flag, aliases, deprecation, advisory `advanced` flag) with integrity unit tests
-- [ ] 2.2 Implement `GraphRegistry`: index load, lazy page materialization, programmatic `register()` for plugins, fingerprint computation over consumed ids + fingerprint stability/change unit tests
-- [ ] 2.3 Write curated Mindustry facade set #1 (player/team/world basics: sendMessage, kick, team get/set, tile lookup, vars accessors); CI test cross-checks facade signatures against reflected reality
-- [ ] 2.4 Unit tests: unique ids, resolvable types, invalidation scoping (affected vs unaffected consumers)
+- [x] 2.1 Implement `FunctionDescriptor`/`PropertyDescriptor`/`EventDescriptor`/`TypeDescriptor` records (overloads + hashes, thread requirement `MAIN_THREAD|ASYNC|PURE|READ_ONLY|UNSAFE`, codegen-safe flag, aliases, deprecation, advisory `advanced` flag) with integrity unit tests
+- [x] 2.2 Implement `GraphRegistry`: index load, lazy page materialization, programmatic `register()` for plugins, fingerprint computation over consumed ids + fingerprint stability/change unit tests
+- [x] 2.3 ~~Curated facade set~~ REPLACED per plan adjustment: facades removed in favor of full reflective access; superseded by `ReflectionRegistryLoader` (implemented alongside 3.7 adjustments)
+- [x] 2.4 Unit tests: unique ids, resolvable types, invalidation scoping (affected vs unaffected consumers)
 
 ## 3. Compiler pipeline
 
-- [ ] 3.1 Implement linker: resolve function/event/property ids, deterministic overload selection, consumed-signature recording + unit tests
-- [ ] 3.2 Implement implicit-conversion matrix + Cast/Convert resolution with typed failure errors + matrix unit tests
-- [ ] 3.3 Implement type checker: constraint-based generic inference, nullability enforcement, node/port-scoped diagnostics + fixture-driven unit tests
-- [ ] 3.4 Implement thread-safety check (MAIN_THREAD-in-async hop insertion plan) and control-flow checks (reachability, bounded loops, exhaustive subgraph returns) + unit tests
-- [ ] 3.5 Define Graph IR (blocks, ops, suspend segments, state slots) with lower() pass from validated documents + lowering unit tests
-- [ ] 3.6 Implement optimizations: literal folding, PURE dedup within execution scope, dead-node elimination — each with unit tests
+- [x] 3.1 Implement linker: resolve function/event/property ids, deterministic overload selection, consumed-signature recording + unit tests
+- [x] 3.2 Implement implicit-conversion matrix + Cast/Convert resolution with typed failure errors + matrix unit tests
+- [x] 3.3 Implement type checker: constraint-based generic inference, nullability enforcement, node/port-scoped diagnostics + fixture-driven unit tests
+- [x] 3.4 Implement thread-safety check (MAIN_THREAD-in-async hop insertion plan) and control-flow checks (reachability, bounded loops, exhaustive subgraph returns) + unit tests
+- [x] 3.5 Define Graph IR (blocks, ops, suspend segments, state slots) with lower() pass from validated documents + lowering unit tests
+- [x] 3.6 Implement optimizations: literal folding, PURE dedup within execution scope, dead-node elimination — each with unit tests
 - [ ] 3.7 Implement Java code generator: one class per graph on stable `GraphExecutable` ABI; entry methods per event/function; If/Switch/Sequence/Loop/ForEach/variables/Try-Catch-Finally/Throw/Log; budget-counter injection at back-edges + golden-file codegen tests
 - [ ] 3.8 Emit source-map sidecar (class/method/line-range → nodeId/functionId/arg slots) + mapping unit tests
 - [ ] 3.9 Implement compilation service: in-memory JavaFileManager via ToolProvider, shaded-ECJ fallback with engine reporting, off-main-thread execution + compiler-selection unit tests

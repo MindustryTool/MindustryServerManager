@@ -49,6 +49,7 @@ public class FloodSpreader {
 
     // Scratch state for the periodic connectivity sweep.
     private final IntSeq sweepQueue = new IntSeq();
+    private final IntSeq discoveryQueue = new IntSeq();
     private BitSet reachable = new BitSet();
     private long nextSweepAt = 0;
 
@@ -81,6 +82,7 @@ public class FloodSpreader {
         pendingUpdates.clear();
         pendingCount = 0;
         sweepQueue.clear();
+        discoveryQueue.clear();
         reachable.clear();
         nextSweepAt = 0;
         nextFlushAt = 0;
@@ -192,7 +194,15 @@ public class FloodSpreader {
         }
 
         int pos = x + y * width;
-        if (scheduled.get(pos) && !reachable.get(pos)) {
+        if (reachable.get(pos)) {
+            return;
+        }
+
+        Tile tile = Vars.world.tile(x, y);
+        boolean isFloodBlock = tile != null && tile.build != null && tile.build.team == Team.crux
+                && tierByBlock.containsKey(tile.build.block);
+
+        if (scheduled.get(pos) || isFloodBlock) {
             reachable.set(pos);
             sweepQueue.add(pos);
         }
@@ -236,11 +246,17 @@ public class FloodSpreader {
 
         var build = tile.build;
         if (build != null && build.team == Team.crux) {
-            push(now, pos);
+            var tier = tierByBlock.get(build.block);
+            if (tier != null) {
+                deadlines[pos] = now + (long) (tier.evolveTime * 1000 / multiplier)
+                        + Mathf.random(1000 * 1, 1000 * 5);
+                push(deadlines[pos], pos);
+                exploreConnectedFlood(tile, now, multiplier);
+            }
         } else if (build == null && (tile.block() == Blocks.air || tile.block().alwaysReplace)) {
             place(tile, firstTier, now, multiplier);
             push(deadlines[pos], pos);
-            propagate(tile, now);
+            propagate(tile, now, multiplier);
         } else if (build != null) {
             seededPulses.set(pos);
             push(now + DAMAGE_PULSE_MILLIS, pos);
@@ -266,7 +282,7 @@ public class FloodSpreader {
             if (firstTier != null && build == null && (tile.block() == Blocks.air || tile.block().alwaysReplace)
                     && deadlines[pos] > 0 && now >= deadlines[pos]) {
                 place(tile, firstTier, now, multiplier);
-                propagate(tile, now);
+                propagate(tile, now, multiplier);
                 push(deadlines[pos], pos);
             } else {
                 clear(pos);
@@ -292,7 +308,7 @@ public class FloodSpreader {
             var next = config.nextTier(build);
             if (next != null) {
                 place(tile, next, now, multiplier);
-                propagate(tile, now);
+                propagate(tile, now, multiplier);
                 deadline = deadlines[pos];
                 tier = next;
             } else {
@@ -313,14 +329,35 @@ public class FloodSpreader {
         }
     }
 
-    private void propagate(Tile tile, long now) {
-        explore(tile.x - 1, tile.y, now);
-        explore(tile.x + 1, tile.y, now);
-        explore(tile.x, tile.y - 1, now);
-        explore(tile.x, tile.y + 1, now);
+    private void exploreConnectedFlood(Tile startTile, long now, float multiplier) {
+        discoveryQueue.clear();
+        discoveryQueue.add(posOf(startTile));
+
+        int head = 0;
+        while (head < discoveryQueue.size) {
+            int currentPos = discoveryQueue.get(head++);
+            int cx = currentPos % width;
+            int cy = currentPos / width;
+
+            exploreNeighbor(cx - 1, cy, now, multiplier, true);
+            exploreNeighbor(cx + 1, cy, now, multiplier, true);
+            exploreNeighbor(cx, cy - 1, now, multiplier, true);
+            exploreNeighbor(cx, cy + 1, now, multiplier, true);
+        }
     }
 
-    private void explore(int x, int y, long now) {
+    private void propagate(Tile tile, long now, float multiplier) {
+        exploreNeighbor(tile.x - 1, tile.y, now, multiplier, false);
+        exploreNeighbor(tile.x + 1, tile.y, now, multiplier, false);
+        exploreNeighbor(tile.x, tile.y - 1, now, multiplier, false);
+        exploreNeighbor(tile.x, tile.y + 1, now, multiplier, false);
+    }
+
+    private void exploreNeighbor(int x, int y, long now, float multiplier, boolean enqueueCrux) {
+        if (x < 0 || x >= width || y < 0 || y >= height) {
+            return;
+        }
+
         Tile neighbor = Vars.world.tile(x, y);
         if (neighbor == null) {
             return;
@@ -333,8 +370,18 @@ public class FloodSpreader {
 
         var build = neighbor.build;
         if (build != null && build.team == Team.crux) {
-            scheduled.set(pos);
-            push(now, pos);
+            var tier = tierByBlock.get(build.block);
+            if (tier != null) {
+                scheduled.set(pos);
+                deadlines[pos] = now + (long) (tier.evolveTime * 1000 / multiplier)
+                        + Mathf.random(1000 * 1, 1000 * 5);
+                push(deadlines[pos], pos);
+                if (enqueueCrux) {
+                    discoveryQueue.add(pos);
+                }
+            } else {
+                scheduled.set(pos);
+            }
         } else if (build == null && (neighbor.block() == Blocks.air || neighbor.block().alwaysReplace)) {
             scheduled.set(pos);
             deadlines[pos] = now + Mathf.random(1000 * 5, 1000 * 10);

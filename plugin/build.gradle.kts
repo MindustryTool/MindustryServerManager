@@ -26,6 +26,7 @@ dependencies {
 
     implementation(project(":dto"))
     implementation(project(":annotation"))
+    implementation(project(":graph"))
 
     compileOnly("org.projectlombok:lombok:1.18.30")
     compileOnly("Anuken:Mindustry:${property("mindustryVersion")}")
