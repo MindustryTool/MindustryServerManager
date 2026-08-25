@@ -171,7 +171,8 @@ public class FloodGamemode {
         });
     }
 
-    @Trigger(EventType.Trigger.update)
+    @MainThread
+    @Schedule(fixedRate = 1, unit = TimeUnit.SECONDS)
     private void update() {
         if (!shouldUpdate()) {
             return;
