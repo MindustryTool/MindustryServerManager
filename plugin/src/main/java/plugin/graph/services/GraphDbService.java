@@ -156,7 +156,11 @@ public final class GraphDbService {
                         c.commit();
                         return total;
                     } catch (Exception failure) {
-                        c.rollback();
+                        try {
+                            c.rollback();
+                        } catch (Exception rollbackFailure) {
+                            failure.addSuppressed(rollbackFailure);
+                        }
                         throw failure;
                     } finally {
                         c.setAutoCommit(oldAutoCommit);

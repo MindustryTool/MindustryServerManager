@@ -9,6 +9,7 @@ import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.Statement;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -97,6 +98,14 @@ class GraphDbServiceTest {
                 "rejected statements must not have executed");
     }
 
+    private static Map<String, Object> orderedRow(Object id, Object name, Object score) {
+        Map<String, Object> row = new LinkedHashMap<>();
+        row.put("a", id);
+        row.put("b", name);
+        row.put("c", score);
+        return row;
+    }
+
     @Test
     void transactionRollsBackEverythingOnFailure() throws Exception {
         service.update("db-insert", "players",
@@ -104,9 +113,9 @@ class GraphDbServiceTest {
 
         var batch = List.of(
                 Map.entry("INSERT INTO players (id, name, score) VALUES (?, ?, ?)",
-                        Map.<String, Object>of("a", 2, "b", "Temp", "c", 9)),
+                        orderedRow(2, "Temp", 9)),
                 Map.entry("INSERT INTO players (id, name, score) VALUES (?, ?, ?)",
-                        Map.<String, Object>of("a", 3, "b", "Also-temp", "c", 8)),
+                        orderedRow(3, "Also-temp", 8)),
                 Map.entry("INSERT INTO missing_table VALUES (?)",
                         Map.<String, Object>of("x", 99)));
 
@@ -116,8 +125,9 @@ class GraphDbServiceTest {
         } catch (Exception expected) {
             Throwable root = expected;
             while (root.getCause() != null) { root = root.getCause(); }
-            assertTrue(String.valueOf(root).contains("missing_table"),
-                    String.valueOf(expected));
+            assertTrue(String.valueOf(root).toLowerCase().contains("missing_table")
+                            || String.valueOf(root).toLowerCase().contains("no such table"),
+                    "unexpected failure: " + expected);
         }
 
         List<Map<String, Object>> rows = join(service.query(
