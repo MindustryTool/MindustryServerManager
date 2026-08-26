@@ -128,7 +128,7 @@ public class Control extends mindustry.mod.Plugin {
         }
     }
 
-    @Schedule(delay = 2, fixedDelay = 2, unit = TimeUnit.SECONDS)
+    @Schedule(delay = 5, fixedDelay = 2 * 60, unit = TimeUnit.SECONDS)
     private void autoPause() {
         if (Vars.state.isPlaying() && Groups.player.size() == 0) {
             Vars.state.set(State.paused);
