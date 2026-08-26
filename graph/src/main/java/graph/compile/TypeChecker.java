@@ -199,6 +199,10 @@ public final class TypeChecker {
                 outputs.put("then", execType());
                 outputs.put("result", TypeRef.of("Object"));
             }
+            case "code" -> {
+                outputs.put("then", execType());
+                outputs.put("result", TypeRef.of("Object"));
+            }
             case "cancel-schedule" -> outputs.put("then", execType());
             default -> {
             }

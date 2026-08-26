@@ -22,8 +22,8 @@
 - [x] 3.4 Implement thread-safety check (MAIN_THREAD-in-async hop insertion plan) and control-flow checks (reachability, bounded loops, exhaustive subgraph returns) + unit tests
 - [x] 3.5 Define Graph IR (blocks, ops, suspend segments, state slots) with lower() pass from validated documents + lowering unit tests
 - [x] 3.6 Implement optimizations: literal folding, PURE dedup within execution scope, dead-node elimination — each with unit tests
-- [ ] 3.7 Implement Java code generator: one class per graph on stable `GraphExecutable` ABI; entry methods per event/function; If/Switch/Sequence/Loop/ForEach/variables/Try-Catch-Finally/Throw/Log; budget-counter injection at back-edges + golden-file codegen tests
-- [ ] 3.8 Emit source-map sidecar (class/method/line-range → nodeId/functionId/arg slots) + mapping unit tests
+- [x] 3.7 Implement Java code generator: one class per graph on stable `GraphExecutable` ABI; entry methods per event/function; If/Switch/Sequence/Loop/ForEach/variables/Try-Catch-Finally/Throw/Log; budget-counter injection at back-edges + golden-file codegen tests
+- [x] 3.8 Emit source-map sidecar (class/method/line-range → nodeId/functionId/arg slots) + mapping unit tests
 - [x] 3.9 Implement compilation service: in-memory JavaFileManager via ToolProvider with shaded-ECJ fallback with engine reporting, off-main-thread execution + compiler-selection unit tests *(ECJ fallback currently returns explicit operator guidance instead of compiling; wiring ECJ remains)*
 - [x] 3.10 Implement content-addressed cache (`config/mindy_graph/cache/<hash>/graph.jar+sourcemap.json`), key = SHA-256(canonical doc ‖ compiler ‖ schema ‖ ABI ‖ fingerprint) + hit/miss/persist/clear-and-self-heal unit tests
 - [x] 3.11 Implement per-generation graph class loader with explicit retire-on-remove/disable + leak regression unit test
@@ -37,7 +37,7 @@
 - [x] 4.5 Enforce thread requirements at runtime (assert MAIN_THREAD, generated hops for async segments) + unit tests
 - [x] 4.6 Budget enforcement: infinite visual loop fails with node-attributed GraphBudgetExceeded within bounded time + overhead micro-benchmark recorded
 - [x] 4.7 Implement runtime lifecycle operations: enable (lazy validate/compile/load + bridge attach), update (generational atomic swap), disable/remove (detach bridges, cancel pending resumes, retire loader), status query — all without restart + lifecycle unit tests including mid-delay removal race
-- [ ] 4.8 Implement lazy `GraphBootstrap` `@Component @Lazy` (SQLite index read + gateway handler registration only) and verify startup delta < 50 ms cold / ≈0 warm via existing init-timing instrumentation
+- [x] 4.8 Implement lazy `GraphBootstrap` `@Component @Lazy` (SQLite index read + gateway handler registration only) and verify startup delta < 50 ms cold / ≈0 warm via existing init-timing instrumentation
 
 ## 5. Events, variables, first end-to-end graph
 
@@ -63,44 +63,44 @@
 
 ## 8. Database nodes
 
-- [ ] 8.1 Implement Query/Insert/Update/Delete nodes over ORM async paths on its dedicated executor with typed row results + unit tests
-- [ ] 8.2 Parameterization-only validation rejecting concatenated statement text + rejection unit tests
-- [ ] 8.3 Transaction node with rollback-on-failure + temp-SQLite unit/integration tests
-- [ ] 8.4 Main-thread safety verification under simulated large result sets
+- [x] 8.1 Implement Query/Insert/Update/Delete nodes over ORM async paths on its dedicated executor with typed row results + unit tests
+- [x] 8.2 Parameterization-only validation rejecting concatenated statement text + rejection unit tests
+- [x] 8.3 Transaction node with rollback-on-failure + temp-SQLite unit/integration tests
+- [x] 8.4 Main-thread safety verification under simulated large result sets
 
 ## 9. Code node (native compilation)
 
-- [ ] 9.1 Implement code-body fragment wrapper: typed `input(name)` accessors, declared outputs, compilation into the graph class within the normal pipeline/cache + unit tests
-- [ ] 9.2 Inject shared budget checkpoints into fragment loops; infinite-loop-in-body contained with node attribution + unit tests
-- [ ] 9.3 Structured error wrapping attributing exceptions to the Code node with stack trace + unit tests
-- [ ] 9.4 Integration test proving full-classpath access works as designed (body uses Files API and Mindustry internals successfully)
+- [x] 9.1 Implement code-body fragment wrapper: typed `input(name)` accessors, declared outputs, compilation into the graph class within the normal pipeline/cache + unit tests
+- [x] 9.2 Inject shared budget checkpoints into fragment loops; infinite-loop-in-body contained with node attribution + unit tests
+- [x] 9.3 Structured error wrapping attributing exceptions to the Code node with stack trace + unit tests
+- [x] 9.4 Integration test proving full-classpath access works as designed (body uses Files API and Mindustry internals successfully)
 
 ## 10. Subgraphs
 
-- [ ] 10.1 Define subgraph signatures (inputs/outputs/local vars/docs) and publish-to-registry flow (`graph:<name>@<hash>` callable via Call node) + unit tests
-- [ ] 10.2 Version pinning by content hash, caller upgrade path, caller-set-only invalidation/recompile + unit tests
-- [ ] 10.3 Recursion rules: reject synchronous cycles at compile time, permit async-boundary cycles with runtime depth cap + unit tests
-- [ ] 10.4 Async subgraphs returning Future-typed outputs consumable via Await; main-thread resume tests
+- [x] 10.1 Define subgraph signatures (inputs/outputs/local vars/docs) and publish-to-registry flow (`graph:<name>@<hash>` callable via Call node) + unit tests
+- [x] 10.2 Version pinning by content hash, caller upgrade path, caller-set-only invalidation/recompile + unit tests
+- [x] 10.3 Recursion rules: reject synchronous cycles at compile time, permit async-boundary cycles with runtime depth cap + unit tests
+- [x] 10.4 Async subgraphs returning Future-typed outputs consumable via Await; main-thread resume tests
 
 ## 11. Debugging & snapshots
 
-- [ ] 11.1 Implement `DebugHook` prologue emission (no-op detached path) and per-node state tracking fed from the lifecycle + overhead unit tests
-- [ ] 11.2 Implement debug session manager: attach/detach, breakpoint evaluation, pause-before-node, step/resume/cancel isolated from unrelated executions + unit tests
-- [ ] 11.3 Value inspection snapshots at breakpoints/completion/failure + unit tests
-- [ ] 11.4 Execution trace recording + per-node timing histograms; source-map fidelity test (deep frame → correct nodeId)
-- [ ] 11.5 Implement file-backed flow snapshot writer gated by the dedicated boolean flag in `Core.settings`: JSON-line snapshots on SUSPEND/RESUME and throttled boundaries, written off-main-thread, zero overhead when disabled + unit tests for both flag states
+- [x] 11.1 Implement `DebugHook` prologue emission (no-op detached path) and per-node state tracking fed from the lifecycle + overhead unit tests
+- [x] 11.2 Implement debug session manager: attach/detach, breakpoint evaluation, pause-before-node, step/resume/cancel isolated from unrelated executions + unit tests
+- [x] 11.3 Value inspection snapshots at breakpoints/completion/failure + unit tests
+- [x] 11.4 Execution trace recording + per-node timing histograms; source-map fidelity test (deep frame → correct nodeId)
+- [x] 11.5 Implement file-backed flow snapshot writer gated by the dedicated boolean flag in `Core.settings`: JSON-line snapshots on SUSPEND/RESUME and throttled boundaries, written off-main-thread, zero overhead when disabled + unit tests for both flag states
 
 ## 12. API contracts & persistence (server-module exclusive)
 
-- [ ] 12.1 SQLite persistence for graph documents (JSON text rows: id, revision, doc) following table-creation conventions + repository unit tests; DB is the sole authoritative store
-- [ ] 12.2 Gateway RPC handlers in plugin for discovery search/detail/events/types (query/category/ownerType/compatibleWith/pagination + fingerprint), CRUD, validate/compile/enable/disable/remove/status + handler unit tests
-- [ ] 12.3 Server-module REST routes `GET /api/v2/graph/functions…`, `/events`, `/types`, `/api/v2/graphs[/{id}]…` with JWT auth, conditional requests, optimistic revision conflicts + route unit tests
-- [ ] 12.4 SSE endpoints hosted by server module: `/api/v2/graphs/{id}/debug/stream` and `/api/v2/graphs/events` (heartbeats, disconnect cleanup, no client-facing WebSocket) + streaming unit/integration tests
-- [ ] 12.5 Contract tests: full round trip client-simulation → manager REST/SSE → gateway → plugin → response; stale-revision rejection; enable→status→remove lifecycle over HTTP
+- [x] 12.1 SQLite persistence for graph documents (JSON text rows: id, revision, doc) following table-creation conventions + repository unit tests; DB is the sole authoritative store
+- [x] 12.2 Gateway RPC handlers in plugin for discovery search/detail/events/types (query/category/ownerType/compatibleWith/pagination + fingerprint), CRUD, validate/compile/enable/disable/remove/status + handler unit tests
+- [x] 12.3 Server-module REST routes `GET /api/v2/graph/functions…`, `/events`, `/types`, `/api/v2/graphs[/{id}]…` with JWT auth, conditional requests, optimistic revision conflicts + route unit tests
+- [x] 12.4 SSE endpoints hosted by server module: `/api/v2/graphs/{id}/debug/stream` and `/api/v2/graphs/events` (heartbeats, disconnect cleanup, no client-facing WebSocket) + streaming unit/integration tests
+- [x] 12.5 Contract tests: full round trip client-simulation → manager REST/SSE → gateway → plugin → response; stale-revision rejection; enable→status→remove lifecycle over HTTP
 
 ## 13. Hardening, performance, docs
 
-- [ ] 13.1 Perf smoke suite: trivial graph across 10k ticks (overhead vs baseline tick), thousands of suspended executions with flat thread count, many-graph concurrent triggering, compile-cache hit latency
+- [x] 13.1 Perf smoke suite: trivial graph across 10k ticks (overhead vs baseline tick), thousands of suspended executions with flat thread count, many-graph concurrent triggering, compile-cache hit latency
 - [ ] 13.2 Hot-lifecycle stress: repeated add/update/remove cycles under traffic with leak regression checks (loader retirement verified)
 - [ ] 13.3 Snapshot correctness drill: suspend-heavy flows produce parseable complete snapshot streams; flag toggle stops/starts cleanly
 - [ ] 13.4 Startup budget verification in CI (cold <50 ms delta, warm ≈0) using registry-init-timing instrumentation

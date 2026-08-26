@@ -114,7 +114,10 @@ class GraphDbServiceTest {
             join(service.transaction(batch));
             throw new AssertionError("transaction should have failed");
         } catch (Exception expected) {
-            assertTrue(String.valueOf(expected).contains("missing_table"));
+            Throwable root = expected;
+            while (root.getCause() != null) { root = root.getCause(); }
+            assertTrue(String.valueOf(root).contains("missing_table"),
+                    String.valueOf(expected));
         }
 
         List<Map<String, Object>> rows = join(service.query(

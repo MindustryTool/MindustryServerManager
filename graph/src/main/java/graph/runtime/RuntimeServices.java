@@ -46,6 +46,17 @@ public interface RuntimeServices {
 
     void log(String message);
 
+    /**
+     * Debug prologue invoked before every statement. Detached default is a
+     * no-op so the fast path costs one virtual call.
+     */
+    default void debugNode(String nodeId) {
+    }
+
+    /** Wall-time spent executing a synchronous node body. */
+    default void recordNodeTiming(String nodeId, long nanos) {
+    }
+
     default Object startSchedule(String mode, double seconds, Runnable onFire,
                                  InvocationContext ctx) {
         throw new UnsupportedOperationException("schedule services not wired yet");

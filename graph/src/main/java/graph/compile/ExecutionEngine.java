@@ -19,11 +19,12 @@ import graph.registry.Invoker;
 import graph.runtime.CancellationToken;
 import graph.runtime.InvocationContext;
 import graph.runtime.GraphExecutable;
+import graph.runtime.GraphReturnSignal;
 import graph.runtime.MainThreadDispatcher;
 import graph.runtime.RuntimeServices;
 import graph.runtime.VariableStore;
 
-public final class ExecutionEngine {
+    public final class ExecutionEngine {
 
     public enum ExecutionState {
         PENDING, RUNNING, SUSPENDED, SCHEDULED, COMPLETED, FAILED, CANCELLED
@@ -36,6 +37,13 @@ public final class ExecutionEngine {
 
     public record Generation(int number, GraphExecutable executable,
             GenerationClassLoader loader, SourceMap sourceMap) {
+
+        /** Executables carry per-execution state; use fresh instances. */
+        public GraphExecutable newExecutable() throws Exception {
+            return (GraphExecutable) loader
+                    .loadMain(executable.getClass().getName())
+                    .getDeclaredConstructor().newInstance();
+        }
     }
 
     public static final class LoadedGraph {
@@ -67,6 +75,7 @@ public final class ExecutionEngine {
             return live.size();
         }
 
+
         int nextGenerationNumber() {
             Generation g = current;
             return g == null ? 1 : g.number() + 1;
@@ -81,9 +90,12 @@ public final class ExecutionEngine {
 
         private final long id;
         private final LoadedGraph graph;
-        private final InvocationContext context;
+        private InvocationContext context;
         private final VariableStore variables = new VariableStore();
         private final Map<String, Object> payload;
+        private final List<String> trace = new ArrayList<>();
+        private final Map<String, Long> nodeVisitCounts = new ConcurrentHashMap<>();
+        private final Map<String, Long> nodeTimeNanos = new ConcurrentHashMap<>();
         private final List<Runnable> onCancel = new CopyOnWriteArrayList<>();
         final java.util.concurrent.atomic.AtomicInteger pendingHops =
                 new java.util.concurrent.atomic.AtomicInteger();
@@ -109,6 +121,13 @@ public final class ExecutionEngine {
 
         public LoadedGraph graph() {
             return graph;
+        }
+        public List<String> trace() { synchronized (trace) { return List.copyOf(trace); } }
+        public long nodeVisitCount(String nodeId) {
+            return nodeVisitCounts.getOrDefault(nodeId, 0L);
+        }
+        public long nodeTimeNanos(String nodeId) {
+            return nodeTimeNanos.getOrDefault(nodeId, 0L);
         }
 
         void cancel(String reason) {
@@ -199,6 +218,205 @@ public final class ExecutionEngine {
 
     public void installDbDelegate(DbDelegate delegate) {
         this.dbDelegate = Objects.requireNonNull(delegate);
+    }
+
+    private volatile graph.runtime.DebugHook debugHook;
+
+    public void installDebugHook(graph.runtime.DebugHook hook) {
+        this.debugHook = hook;
+    }
+
+    public static final class SubgraphEntry {
+        final LoadedGraph graph;
+        final Generation generation;
+        final String hash;
+
+        SubgraphEntry(LoadedGraph graph, Generation generation, String hash) {
+            this.graph = graph;
+            this.generation = generation;
+            this.hash = hash;
+        }
+    }
+
+    private final java.util.Map<String, SubgraphEntry> subgraphs =
+            new java.util.concurrent.ConcurrentHashMap<>();
+    private static final int MAX_SUBGRAPH_DEPTH = 64;
+    private final ThreadLocal<Integer> subgraphDepth =
+            ThreadLocal.withInitial(() -> 0);
+    private final java.util.Map<String, List<String>> subgraphCalleesByName =
+            new java.util.concurrent.ConcurrentHashMap<>();
+    private final java.util.Set<String> asyncBoundaryNames =
+            java.util.concurrent.ConcurrentHashMap.newKeySet();
+    private final java.util.Map<String, String> activeHashByName =
+            new java.util.concurrent.ConcurrentHashMap<>();
+    private final java.util.Map<String, java.util.Set<String>> callerSetsByKey =
+            new java.util.concurrent.ConcurrentHashMap<>();
+
+    /**
+     * Loads a compiled subgraph and exposes it as callable
+     * {@code graph:<name>@<hash>} from within other graphs. Callers must also
+     * register a matching placeholder descriptor in the registry so linking
+     * succeeds.
+     */
+    public void publishSubgraph(String name, String hash, String sourceDocId,
+            Map<String, byte[]> classes) throws Exception {
+        publishSubgraph(name, hash, sourceDocId, classes, List.of(), false);
+    }
+
+    /**
+     * Full form: declares the callable subgraphs this one invokes (for
+     * compile-time synchronous-cycle rejection) and whether its body contains
+     * an async boundary (Delay/Await), which permits cycles.
+     */
+    public synchronized void publishSubgraph(String name, String hash,
+            String sourceDocId, Map<String, byte[]> classes,
+            List<String> calleeNames, boolean hasAsyncBoundary) throws Exception {
+        List<String> previousCallees = subgraphCalleesByName.get(name);
+        boolean previousAsync = asyncBoundaryNames.contains(name);
+        if (hasAsyncBoundary) {
+            asyncBoundaryNames.add(name);
+        }
+        subgraphCalleesByName.put(name, List.copyOf(calleeNames));
+        List<String> cycle = findSyncCycleFrom(name);
+        boolean cycleAllowed = cycle == null || cycle.stream()
+                .anyMatch(asyncBoundaryNames::contains);
+        if (!cycleAllowed) {
+            if (previousCallees == null) {
+                subgraphCalleesByName.remove(name);
+            } else {
+                subgraphCalleesByName.put(name, previousCallees);
+            }
+            if (hasAsyncBoundary && !previousAsync) {
+                asyncBoundaryNames.remove(name);
+            }
+            throw new IllegalArgumentException(
+                    "Synchronous recursion cycle rejected: "
+                            + String.join(" -> ", cycle));
+        }
+        String callableId = "graph:" + name + "@" + hash;
+        LoadedGraph loaded = graphs.computeIfAbsent(callableId, LoadedGraph::new);
+        Generation generation = buildGeneration(sourceDocId,
+                loaded.nextGenerationNumber(), classes,
+                GraphExecutable.class.getClassLoader(), null);
+        loaded.current = generation;
+        loaded.enabled = true;
+        subgraphs.put(name + "@" + hash, new SubgraphEntry(loaded, generation, hash));
+        if (hasAsyncBoundary) {
+            asyncBoundaryNames.add(name);
+        } else {
+            asyncBoundaryNames.remove(name);
+        }
+        activeHashByName.put(name, hash);
+    }
+
+    private List<String> findSyncCycleFrom(String start) {
+        for (String first : subgraphCalleesByName.getOrDefault(start, List.of())) {
+            List<String> path = new ArrayList<>();
+            path.add(start);
+            path.add(first);
+            List<String> found = pathTo(first, start, new java.util.HashSet<>(), path);
+            if (found != null) {
+                return found;
+            }
+        }
+        return null;
+    }
+
+    private List<String> pathTo(String from, String target,
+            java.util.Set<String> visited, List<String> path) {
+        if (from.equals(target)) {
+            return path;
+        }
+        if (!visited.add(from)) {
+            return null;
+        }
+        for (String callee : subgraphCalleesByName.getOrDefault(from, List.of())) {
+            path.add(callee);
+            List<String> found = pathTo(callee, target, visited, path);
+            if (found != null) {
+                return found;
+            }
+            path.remove(path.size() - 1);
+        }
+        return null;
+    }
+
+    /**
+     * Publishes a new hash revision of {@code name}, retires the previously
+     * active revision, and disables exactly the recorded caller set of the
+     * retired hash so they recompile against the new version.
+     */
+    public synchronized java.util.Set<String> updateSubgraph(String name,
+            String newHash, String sourceDocId, Map<String, byte[]> classes,
+            List<String> calleeNames, boolean hasAsyncBoundary) throws Exception {
+        String oldHash = activeHashByName.get(name);
+        java.util.Set<String> affected = oldHash == null
+                ? java.util.Set.of()
+                : callerSetsByKey.getOrDefault(name + "@" + oldHash,
+                        java.util.Set.of());
+        publishSubgraph(name, newHash, sourceDocId, classes, calleeNames,
+                hasAsyncBoundary);
+        if (oldHash != null && !oldHash.equals(newHash)) {
+            SubgraphEntry old = subgraphs.remove(name + "@" + oldHash);
+            if (old != null) {
+                disable(old.graph.id());
+                graphs.remove(old.graph.id());
+            }
+            callerSetsByKey.remove(name + "@" + oldHash);
+        }
+        for (String caller : affected) {
+            if (graphs.containsKey(caller)) {
+                disable(caller);
+            }
+        }
+        return affected;
+    }
+
+    private Object runSubgraphCall(String nameAndHash, Object[] args,
+            InvocationContext callerCtx) throws Exception {
+        SubgraphEntry entry = subgraphs.get(nameAndHash);
+        if (entry == null) {
+            throw new IllegalArgumentException("Unknown subgraph: " + nameAndHash);
+        }
+        int depth = subgraphDepth.get();
+        if (depth >= MAX_SUBGRAPH_DEPTH) {
+            throw new IllegalStateException("Subgraph recursion depth exceeded "
+                    + MAX_SUBGRAPH_DEPTH + ": " + nameAndHash);
+        }
+        Execution execution = new Execution(executionSeq.incrementAndGet(),
+                entry.graph, argsAsPayload(args), maxOperationsPerExecution);
+        entry.graph.live.add(execution);
+        execution.state = ExecutionState.RUNNING;
+        InvocationContext childCtx = new InvocationContext(execution.id,
+                callerCtx.cancellation(), callerCtx.budget());
+        execution.context = childCtx;
+        EngineServices services = new EngineServices(execution, entry.generation);
+        subgraphDepth.set(depth + 1);
+        try {
+            entry.generation.newExecutable().execute("in", execution.payload,
+                    childCtx, services);
+            settle(execution);
+        } catch (GraphReturnSignal signal) {
+            execution.state = ExecutionState.COMPLETED;
+            entry.graph.live.remove(execution);
+            return signal.value();
+        } catch (Throwable throwable) {
+            fail(execution, entry.generation, throwable);
+            throw throwable;
+        } finally {
+            subgraphDepth.set(depth);
+        }
+        return null;
+    }
+
+    private Map<String, Object> argsAsPayload(Object[] args) {
+        Map<String, Object> payload = new java.util.LinkedHashMap<>();
+        if (args != null) {
+            for (int i = 0; i < args.length; i++) {
+                payload.put("arg" + i, args[i]);
+            }
+        }
+        return payload;
     }
 
     public LoadedGraph enable(String graphId, Map<String, byte[]> classes,
@@ -302,7 +520,7 @@ public final class ExecutionEngine {
         execution.state = ExecutionState.RUNNING;
         EngineServices services = new EngineServices(execution, generation);
         try {
-            generation.executable().execute(eventNodeId, execution.payload,
+            generation.newExecutable().execute(eventNodeId, execution.payload,
                     execution.context, services);
             settle(execution);
         } catch (Throwable throwable) {
@@ -318,6 +536,11 @@ public final class ExecutionEngine {
         if (execution.state == ExecutionState.RUNNING) {
             execution.state = ExecutionState.COMPLETED;
             execution.graph().live.remove(execution);
+            graph.runtime.DebugHook hook = debugHook;
+            if (hook != null) {
+                hook.onExecutionEvent(execution.id(), execution.graph().id(),
+                        "completed", null, execution.variables.snapshot());
+            }
         } else if (execution.state != ExecutionState.SUSPENDED
                 && execution.state != ExecutionState.SCHEDULED) {
             execution.graph().live.remove(execution);
@@ -330,6 +553,12 @@ public final class ExecutionEngine {
         execution.graph().live.remove(execution);
         errorSink.accept(attributed(execution, generation, throwable));
         logOnce(execution, throwable);
+        graph.runtime.DebugHook hook = debugHook;
+        if (hook != null) {
+            String node = attributed(execution, generation, throwable).nodeId();
+            hook.onExecutionEvent(execution.id(), execution.graph().id(),
+                    "failed", node, execution.variables.snapshot());
+        }
     }
 
     private StructuredError attributed(Execution execution, Generation generation,
@@ -465,11 +694,38 @@ public final class ExecutionEngine {
         }
 
         @Override
+        public void debugNode(String nodeId) {
+            synchronized (execution.trace) {
+                execution.trace.add(nodeId);
+            }
+            execution.nodeVisitCounts.merge(nodeId, 1L, Long::sum);
+            graph.runtime.DebugHook hook = debugHook;
+            if (hook == null) {
+                return;
+            }
+            hook.onNodeEnter(execution.id(), execution.graph.id(),
+                    generation.number(), nodeId,
+                    execution.variables.snapshot());
+        }
+
+        @Override
+        public void recordNodeTiming(String nodeId, long nanos) {
+            execution.nodeTimeNanos.merge(nodeId, nanos, Long::sum);
+        }
+
+        @Override
         public Object invokeFunction(String functionId, String overloadHash,
                 Object[] args, InvocationContext ctx) throws Exception {
             if (enforceMainThread && !main.isMainThread()) {
                 throw new IllegalStateException("Function '" + functionId
                         + "' requires the main thread");
+            }
+            if (functionId.startsWith("graph:")) {
+                callerSetsByKey
+                        .computeIfAbsent(functionId.substring(6),
+                                k -> java.util.concurrent.ConcurrentHashMap.newKeySet())
+                        .add(execution.graph.id());
+                return runSubgraphCall(functionId.substring(6), args, ctx);
             }
             Invoker invoker = registry.invoker(functionId);
             if (invoker == null) {
@@ -595,6 +851,20 @@ public final class ExecutionEngine {
         @Override
         public java.util.concurrent.CompletableFuture<?> dispatchAsync(String functionId, String overloadHash,
                 Object[] args, InvocationContext ctx) {
+            if (functionId.startsWith("graph:")) {
+                try {
+                    callerSetsByKey
+                            .computeIfAbsent(functionId.substring(6),
+                                    k -> java.util.concurrent.ConcurrentHashMap.newKeySet())
+                            .add(execution.graph.id());
+                    return java.util.concurrent.CompletableFuture.completedFuture(
+                            runSubgraphCall(functionId.substring(6), args, ctx));
+                } catch (RuntimeException e) {
+                    throw e;
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
             return java.util.concurrent.CompletableFuture.supplyAsync(() -> {
                 try {
                     Invoker invoker = registry.invoker(functionId);
@@ -741,7 +1011,15 @@ public final class ExecutionEngine {
             logger.accept(message);
         }
 
-        private void markSuspended() {
+                private void emitExecutionEvent(String event) {
+            graph.runtime.DebugHook hook = debugHook;
+            if (hook != null) {
+                hook.onExecutionEvent(execution.id(), execution.graph.id(),
+                        event, null, execution.variables.snapshot());
+            }
+        }
+
+private void markSuspended() {
             if (execution.state == ExecutionState.RUNNING
                     || execution.state == ExecutionState.PENDING) {
                 execution.state = ExecutionState.SUSPENDED;

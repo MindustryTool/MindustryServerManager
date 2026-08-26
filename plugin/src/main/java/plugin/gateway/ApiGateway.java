@@ -120,7 +120,7 @@ public class ApiGateway {
         this.registerMessageHandler("get-json", Void.class, (request) -> getJson());
         this.registerMessageHandler("get-plugin-version", Void.class, (request) -> Cfg.PLUGIN_VERSION);
         this.registerMessageHandler("update-player", LoginDto.class, this::updatePlayer);
-        this.registerMessageHandler("paused", Void.class, (request) -> tooglePause());
+        this.registerMessageHandler("pause", Void.class, (request) -> tooglePause());
         this.registerMessageHandler("get-state", Void.class, (request) -> Utils.getState());
         this.registerMessageHandler("generate-map-image", Void.class, (request) -> generateMapImage());
         this.registerMessageHandler("send-command", String[].class, (request) -> sendCommand(request));
@@ -335,7 +335,12 @@ public class ApiGateway {
     }
 
     @SuppressWarnings("unchecked")
-    private <Req, Res> void registerMessageHandler(String type, Class<Req> clazz, Function<Req, Res> handler) {
+    public <Req, Res> void exposeHandler(String type, Class<Req> clazz,
+            Function<Req, Res> handler) {
+        registerMessageHandler(type, clazz, handler);
+    }
+
+private <Req, Res> void registerMessageHandler(String type, Class<Req> clazz, Function<Req, Res> handler) {
         MessageHandler<Object, Object> mh = new MessageHandler<Object, Object>((Class<Object>) clazz,
                 (Function<Object, Object>) handler);
         messageHandlers.put(type, mh);
@@ -607,8 +612,6 @@ public class ApiGateway {
 
         int page = pageString != null ? Integer.parseInt(pageString) : 0;
         int size = sizeString != null ? Integer.parseInt(sizeString) : 10;
-
-        Log.info(node.toPrettyString());
 
         int offset = page * size;
 

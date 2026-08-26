@@ -70,6 +70,22 @@ public final class GraphRegistry {
         markIndexLoaded(descriptor.id());
     }
 
+    public synchronized List<FunctionDescriptor> functions() {
+        return List.copyOf(functions.values());
+    }
+
+    public synchronized List<EventDescriptor> eventsList() {
+        return List.copyOf(events.values());
+    }
+
+    public synchronized List<TypeDescriptor> typesList() {
+        return List.copyOf(types.values());
+    }
+
+    public synchronized TypeDescriptor type(String id) {
+        return types.get(id);
+    }
+
     public synchronized void register(TypeDescriptor descriptor) {
         putUnique(types, descriptor.baseName().toLowerCase(Locale.ROOT), descriptor);
     }

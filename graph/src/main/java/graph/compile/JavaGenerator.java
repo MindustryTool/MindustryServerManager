@@ -72,6 +72,8 @@ public final class JavaGenerator {
         line("    private InvocationContext ctx;");
         line("    private RuntimeServices svc;");
         line("    private int phase;");
+        line("    private final java.util.Map<String, Object> codeInputs = new java.util.LinkedHashMap<>();");
+        line("    private final java.util.Map<String, Object> codeOutputs = new java.util.LinkedHashMap<>();");
         for (String nodeId : suspendNodes) {
             line("    private boolean suspended_" + sanitize(nodeId) + ";");
             line("    private Object slot_" + sanitize(nodeId) + ";");
@@ -98,6 +100,10 @@ public final class JavaGenerator {
         line("    private static Map<String, String> stringMap(Map<?, ?> raw) {");
         line("        return raw == null ? java.util.Collections.emptyMap() : (Map<String, String>) raw;");
         line("    }");
+        line("    @SuppressWarnings(\"unchecked\")");
+        line("    private static Map<String, Object> objectMap(Map<?, ?> raw) {");
+        line("        return raw == null ? java.util.Collections.emptyMap() : (Map<String, Object>) raw;");
+        line("    }");
 
         for (Ir.IrEntry entry : ir.entries()) {
             emitEntry(entry);
@@ -110,6 +116,32 @@ public final class JavaGenerator {
             line("        } catch (java.lang.Throwable t_) {");
             line("            svc.log(\"[graph] schedule error: \" + t_);");
             line("        }");
+            line("    }");
+        }
+
+        java.util.List<Ir.CodeFragmentStmt> codeFragments = collectCodeFragments(ir);
+        if (!codeFragments.isEmpty()) {
+            line("    @SuppressWarnings(\"unchecked\")");
+            line("    private <T> T input(String name) {");
+            line("        Object v = codeInputs.get(name);");
+            line("        if (v == null && !codeInputs.containsKey(name)) {");
+            line("            throw new java.lang.IllegalArgumentException(\"unknown input: \" + name);");
+            line("        }");
+            line("        return (T) v;");
+            line("    }");
+            line("    private void output(String name, Object value) {");
+            line("        codeOutputs.put(name, value);");
+            line("    }");
+        }
+        for (Ir.CodeFragmentStmt code : codeFragments) {
+            line("    private void code_" + sanitize(code.nodeId()) + "() throws Exception {");
+            line("        ctx.spend(1);");
+            line("        codeOutputs.clear();");
+            if (!code.body().isBlank()) {
+                for (String bodyLine : code.body().split("\\n")) {
+                    line("        " + bodyLine);
+                }
+            }
             line("    }");
         }
 
@@ -141,6 +173,34 @@ public final class JavaGenerator {
             } else if (stmt instanceof Ir.SequenceStmt seq) {
                 for (List<Ir.IrStmt> step : seq.steps()) {
                     collectSchedules(step, into);
+                }
+            }
+        }
+    }
+
+    private java.util.List<Ir.CodeFragmentStmt> collectCodeFragments(Ir.IrGraph ir) {
+        java.util.List<Ir.CodeFragmentStmt> found = new java.util.ArrayList<>();
+        for (Ir.IrEntry entry : ir.entries()) {
+            collectCodeFragments(entry.body(), found);
+        }
+        return found;
+    }
+
+    private void collectCodeFragments(List<Ir.IrStmt> bodyList,
+            java.util.List<Ir.CodeFragmentStmt> into) {
+        for (Ir.IrStmt stmt : bodyList) {
+            if (stmt instanceof Ir.CodeFragmentStmt code) {
+                into.add(code);
+            } else if (stmt instanceof Ir.IfStmt ifStmt) {
+                collectCodeFragments(ifStmt.thenBranch(), into);
+                collectCodeFragments(ifStmt.elseBranch(), into);
+            } else if (stmt instanceof Ir.ForEachStmt loop) {
+                collectCodeFragments(loop.body(), into);
+            } else if (stmt instanceof Ir.WhileLoopStmt loop) {
+                collectCodeFragments(loop.body(), into);
+            } else if (stmt instanceof Ir.SequenceStmt seq) {
+                for (List<Ir.IrStmt> step : seq.steps()) {
+                    collectCodeFragments(step, into);
                 }
             }
         }
@@ -218,6 +278,8 @@ public final class JavaGenerator {
                     objectFields.add(resultVar(sched.nodeId()));
                 }
                 collectResultFields(sched.onFire());
+            } else if (stmt instanceof Ir.CodeFragmentStmt code) {
+                objectFields.add(resultVar(code.nodeId()));
             } else if (stmt instanceof Ir.DbStmt db) {
                 objectFields.add(resultVar(db.nodeId()));
             } else if (stmt instanceof Ir.IfStmt ifStmt) {
@@ -303,6 +365,7 @@ public final class JavaGenerator {
     private void body(List<Ir.IrStmt> statements, int depth) {
         String ind = indent(depth);
         for (Ir.IrStmt stmt : statements) {
+            line(ind + "svc.debugNode(\"" + stmt.nodeId() + "\");");
             map.markNode(stmt.nodeId(),
                     stmt instanceof Ir.InvokeStmt inv ? inv.functionId() : null);
 
@@ -411,6 +474,21 @@ public final class JavaGenerator {
                 }
             } else if (stmt instanceof Ir.CancelScheduleStmt cancel) {
                 line(ind + "svc.cancelSchedule(" + expr(cancel.handle()) + ");");
+            } else if (stmt instanceof Ir.ReturnStmt returnStmt) {
+                line(ind + "throw new graph.runtime.GraphReturnSignal("
+                        + expr(returnStmt.value()) + ");");
+            } else if (stmt instanceof Ir.CodeFragmentStmt code) {
+                line(ind + "codeInputs.clear();");
+                for (java.util.Map.Entry<String, Ir.IrExpr> binding :
+                        code.inputs().entrySet()) {
+                    line(ind + "codeInputs.put(\"" + binding.getKey() + "\", "
+                            + expr(binding.getValue()) + ");");
+                }
+                line(ind + "code_" + sanitize(code.nodeId()) + "();");
+                if (code.resultVar() != null) {
+                    line(ind + resultVar(code.nodeId())
+                            + " = java.util.Map.copyOf(codeOutputs);");
+                }
             } else if (stmt instanceof Ir.ThrowStmt throwStmt) {
                 line(ind + "throw new IllegalStateException(java.lang.String.valueOf("
                         + expr(throwStmt.message()) + "));");
@@ -437,10 +515,11 @@ public final class JavaGenerator {
         line(ind + "    } else {");
         line(ind + "        suspended_" + safe + " = true;");
         String call = db.kind().equals("db-query")
-                ? "svc.dbQueryAsync(" + expr(db.sqlOrTable()) + ", (Map<String, Object>) "
-                + expr(db.paramsOrRow()) + ", ctx)"
-                : "svc.dbUpdateAsync(\"" + db.kind() + "\", " + expr(db.sqlOrTable())
-                + ", (Map<String, Object>) " + expr(db.paramsOrRow()) + ", ctx)";
+                ? "svc.dbQueryAsync((java.lang.String) " + expr(db.sqlOrTable())
+                + ", objectMap(" + expr(db.paramsOrRow()) + "), ctx)"
+                : "svc.dbUpdateAsync(\"" + db.kind() + "\", (java.lang.String) "
+                + expr(db.sqlOrTable()) + ", objectMap(" + expr(db.paramsOrRow())
+                + "), ctx)";
         line(ind + "        final java.util.concurrent.CompletableFuture<?> db_" + safe + " = " + call + ";");
         line(ind + "        svc.awaitFuture(db_" + safe + ", (v, t) -> {");
         line(ind + "            slot_" + safe + " = (t != null) ? t : v;");
@@ -483,10 +562,18 @@ public final class JavaGenerator {
         String call = "svc.invokeFunction(\"" + invoke.functionId()
                 + "\", \"" + invoke.overloadHash()
                 + "\", new Object[]{" + args(invoke) + "}, ctx)";
+        String timedCall = "{ final long __t = java.lang.System.nanoTime(); try { "
+                + call
+                + "; } finally { svc.recordNodeTiming(\"" + invoke.nodeId()
+                + "\", java.lang.System.nanoTime() - __t); } }";
         if (invoke.resultVar() == null) {
-            line(ind + call + ";");
+            line(ind + timedCall);
         } else {
-            line(ind + resultVar(invoke.nodeId()) + " = " + call + ";");
+            line(ind + "{ final long __t = java.lang.System.nanoTime(); "
+                    + "final Object __rv; try { __rv = " + call
+                    + "; } finally { svc.recordNodeTiming(\"" + invoke.nodeId()
+                    + "\", java.lang.System.nanoTime() - __t); } "
+                    + resultVar(invoke.nodeId()) + " = __rv; }");
         }
     }
 
@@ -537,7 +624,8 @@ public final class JavaGenerator {
 
     private String expr(Ir.IrExpr expression) {
         if (expression instanceof Ir.PortRef ref) {
-            if (ref.port().equals("result") || ref.port().equals("value")) {
+            if (ref.port().equals("result") || ref.port().equals("value")
+                    || ref.port().equals("rows") || ref.port().equals("count")) {
                 return resultVar(ref.nodeId());
             }
             return varRef(ref.nodeId(), ref.port());

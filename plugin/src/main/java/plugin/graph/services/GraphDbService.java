@@ -110,8 +110,8 @@ public final class GraphDbService {
         }
         return CompletableFuture.supplyAsync(() -> {
             try {
-                Connection c = connectionSupplier.get();
-                try (PreparedStatement ps = c.prepareStatement(sql)) {
+                try (Connection c = connectionSupplier.get();
+                     PreparedStatement ps = c.prepareStatement(sql)) {
                     List<Object> values = bindValues(kind, row);
                     for (int i = 0; i < values.size(); i++) {
                         ps.setObject(i + 1, values.get(i));
@@ -132,32 +132,35 @@ public final class GraphDbService {
             List<Map.Entry<String, Map<String, Object>>> statements) {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                Connection c = connectionSupplier.get();
-                boolean oldAutoCommit = c.getAutoCommit();
-                c.setAutoCommit(false);
-                try {
-                    int total = 0;
-                    for (Map.Entry<String, Map<String, Object>> entry : statements) {
-                        List<String> problems = validateSql(entry.getKey());
-                        if (!problems.isEmpty()) {
-                            throw new IllegalArgumentException(
-                                    String.join("; ", problems));
-                        }
-                        try (PreparedStatement ps = c.prepareStatement(entry.getKey())) {
-                            List<Object> values = new ArrayList<>(entry.getValue().values());
-                            for (int i = 0; i < values.size(); i++) {
-                                ps.setObject(i + 1, values.get(i));
+                try (Connection c = connectionSupplier.get()) {
+                    boolean oldAutoCommit = c.getAutoCommit();
+                    c.setAutoCommit(false);
+                    try {
+                        int total = 0;
+                        for (Map.Entry<String, Map<String, Object>> entry : statements) {
+                            List<String> problems = validateSql(entry.getKey());
+                            if (!problems.isEmpty()) {
+                                throw new IllegalArgumentException(
+                                        String.join("; ", problems));
                             }
-                            total += ps.executeUpdate();
+                            try (PreparedStatement ps =
+                                         c.prepareStatement(entry.getKey())) {
+                                List<Object> values =
+                                        new ArrayList<>(entry.getValue().values());
+                                for (int i = 0; i < values.size(); i++) {
+                                    ps.setObject(i + 1, values.get(i));
+                                }
+                                total += ps.executeUpdate();
+                            }
                         }
+                        c.commit();
+                        return total;
+                    } catch (Exception failure) {
+                        c.rollback();
+                        throw failure;
+                    } finally {
+                        c.setAutoCommit(oldAutoCommit);
                     }
-                    c.commit();
-                    return total;
-                } catch (Exception failure) {
-                    c.rollback();
-                    throw failure;
-                } finally {
-                    c.setAutoCommit(oldAutoCommit);
                 }
             } catch (RuntimeException e) {
                 throw e;
@@ -169,8 +172,8 @@ public final class GraphDbService {
 
     private List<Map<String, Object>> runQuery(String sql, Map<String, Object> params)
             throws Exception {
-        Connection c = connectionSupplier.get();
-        try (PreparedStatement ps = c.prepareStatement(sql)) {
+        try (Connection c = connectionSupplier.get();
+             PreparedStatement ps = c.prepareStatement(sql)) {
             List<Object> values = params == null ? List.of() : List.copyOf(params.values());
             for (int i = 0; i < values.size(); i++) {
                 ps.setObject(i + 1, values.get(i));

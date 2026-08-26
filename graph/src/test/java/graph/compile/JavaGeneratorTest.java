@@ -99,7 +99,7 @@ class JavaGeneratorTest {
                 () -> src.source());
         assertTrue(src.source().contains("new Object[]{p_ev_player, \"Welcome\"}"),
                 () -> src.source());
-        assertTrue(src.source().contains("v_say = svc.invokeFunction(\"mindustry.player.sendMessage\", \""),
+        assertTrue(src.source().contains("try { __rv = svc.invokeFunction(\"mindustry.player.sendMessage\", \""),
                 "result vars are class fields assigned from dispatch");
         assertTrue(src.source().contains("class Graph_welcome_flow implements GraphExecutable"),
                 () -> src.source());
@@ -199,9 +199,17 @@ class JavaGeneratorTest {
             if ("say".equals(mapping.nodeId())) {
                 sayCovered = true;
                 String covered = lines[mapping.lineStart() - 1];
-                assertTrue(covered.contains("svc.invokeFunction")
-                                || covered.contains("final java.lang.Boolean v_say"),
-                        "mapped line should contain the generated call: " + covered);
+                boolean rangeHasCall = false;
+                for (int ln = mapping.lineStart();
+                        ln <= Math.min(mapping.lineEnd(), lines.length); ln++) {
+                    if (lines[ln - 1].contains("svc.invokeFunction")) {
+                        rangeHasCall = true;
+                        break;
+                    }
+                }
+                assertTrue(rangeHasCall,
+                        "mapped range should contain the generated call: "
+                                + covered);
             }
         }
         assertTrue(evCovered && sayCovered,

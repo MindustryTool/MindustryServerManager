@@ -30,6 +30,11 @@ dependencies {
 
     implementation("Anuken:Mindustry:${property("mindustryVersion")}")
 
+    testImplementation(project(":plugin"))
+    testImplementation("org.junit.jupiter:junit-jupiter:5.10.0")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    testRuntimeOnly("org.xerial:sqlite-jdbc:3.43.2.0")
+
     compileOnly("org.projectlombok:lombok:1.18.30")
 
     annotationProcessor("org.projectlombok:lombok:1.18.30")
@@ -39,6 +44,10 @@ configurations {
     compileOnly {
         extendsFrom(configurations.getByName("annotationProcessor"))
     }
+}
+
+tasks.test {
+    useJUnitPlatform()
 }
 
 configurations.all {

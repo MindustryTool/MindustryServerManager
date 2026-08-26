@@ -35,6 +35,8 @@ dependencies {
     annotationProcessor(project(":annotation"))
 
     testImplementation("org.junit.jupiter:junit-jupiter:5.10.0")
+    testImplementation(project(":server"))
+    testImplementation("io.javalin:javalin:6.7.0")
 
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 

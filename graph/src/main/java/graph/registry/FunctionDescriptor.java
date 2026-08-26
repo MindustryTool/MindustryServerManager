@@ -22,7 +22,8 @@ public record FunctionDescriptor(
         if (id.isBlank()) {
             throw new IllegalArgumentException("Function id must not be blank");
         }
-        if (!id.matches("[a-zA-Z_][a-zA-Z0-9_]*(\\.[a-zA-Z_][a-zA-Z0-9_]*)*")) {
+        if (!id.startsWith("graph:")
+                && !id.matches("[a-zA-Z_][a-zA-Z0-9_]*(\\.[a-zA-Z_][a-zA-Z0-9_]*)*")) {
             throw new IllegalArgumentException(
                     "Function id must be dot-separated identifier segments: " + id);
         }

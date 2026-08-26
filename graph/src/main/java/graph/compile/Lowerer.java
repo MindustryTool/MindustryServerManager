@@ -150,10 +150,31 @@ public final class Lowerer {
             case "db-query", "db-insert", "db-update", "db-delete" -> lowerDb(node);
             case "log" -> new Ir.LogStmt(nodeId,
                     textArgOrDefault(node, "message", "\"[graph] log\""));
-            case "code" -> new Ir.CodeFragmentStmt(nodeId);
+            case "code" -> {
+                Map<String, Ir.IrExpr> bindings = new java.util.LinkedHashMap<>();
+                for (GraphEdge edge : document.edges()) {
+                    if (!edge.to().nodeId().equals(nodeId)) {
+                        continue;
+                    }
+                    String port = edge.to().port();
+                    if (port.startsWith("exec") || port.equals("then")) {
+                        continue;
+                    }
+                    bindings.put(port, portRef(
+                            edge.from().nodeId() + "." + edge.from().port(),
+                            TypeRef.of("Object")));
+                }
+                JsonNode props = node.get("properties");
+                JsonNode bodyNode = props == null ? null : props.get("body");
+                String body = bodyNode != null && bodyNode.isTextual()
+                        ? bodyNode.asText() : "";
+                yield new Ir.CodeFragmentStmt(nodeId, bindings, body,
+                        resultVarName(nodeId));
+            }
             case "throw" -> new Ir.ThrowStmt(nodeId,
                     textArgOrDefault(node, "message", "\"graph error\""));
-            case "return" -> new Ir.ReturnStmt(nodeId);
+            case "return" -> new Ir.ReturnStmt(nodeId,
+                    singleDataInput(nodeId, TypeRef.of("Object")));
             default -> new Ir.Nop(nodeId);
         };
     }

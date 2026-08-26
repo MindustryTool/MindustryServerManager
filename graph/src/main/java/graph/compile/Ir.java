@@ -1,6 +1,7 @@
 package graph.compile;
 
 import java.util.List;
+import java.util.Map;
 
 import graph.registry.ParamDescriptor;
 import graph.types.TypeRef;
@@ -58,6 +59,10 @@ public final class Ir {
     public record CancelScheduleStmt(String nodeId, IrExpr handle) implements IrStmt {
     }
 
+    public record CodeFragmentStmt(String nodeId, Map<String, IrExpr> inputs,
+                                   String body, String resultVar) implements IrStmt {
+    }
+
     public record SetVariableStmt(String nodeId, String variable, String scope,
                                   IrExpr value) implements IrStmt {
     }
@@ -96,13 +101,10 @@ public final class Ir {
     public record LogStmt(String nodeId, IrExpr message) implements IrStmt {
     }
 
-    public record CodeFragmentStmt(String nodeId) implements IrStmt {
-    }
-
     public record ThrowStmt(String nodeId, IrExpr message) implements IrStmt {
     }
 
-    public record ReturnStmt(String nodeId) implements IrStmt {
+    public record ReturnStmt(String nodeId, IrExpr value) implements IrStmt {
     }
 
     public record Nop(String nodeId) implements IrStmt {
