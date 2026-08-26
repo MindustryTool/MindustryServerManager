@@ -238,7 +238,7 @@ public class Utils {
             return Locale.ENGLISH;
         }
 
-        return Locale.forLanguageTag(locale.replace('_', '-'));
+        return Locale.forLanguageTag(locale.replace('_', '-').substring(0, Math.min(locale.length(), 6)));
     }
 
     public static void forEachPlayerLocale(BiConsumer<Locale, List<Player>> cons) {
