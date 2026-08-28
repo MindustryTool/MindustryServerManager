@@ -8,6 +8,7 @@ import lombok.experimental.Accessors;
 public class ServerFileDto {
     public String path;
     public boolean directory;
+    public int items = 0;
     public String data;
     public long size;
 }

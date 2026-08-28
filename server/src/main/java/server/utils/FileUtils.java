@@ -41,6 +41,7 @@ public class FileUtils {
             return file.seq()
                     .map(child -> new ServerFileDto()
                             .path(toRelativeToServer(child.absolutePath()))
+                            .items(child.isDirectory() ? child.file().list().length : 0)
                             .size(child.length())
                             .directory(child.isDirectory()))
                     .list();
