@@ -7,7 +7,7 @@ The system SHALL spread flood tiles outward from unsuppressed crux cores using a
 
 #### Scenario: Flood spreads from an unsuppressed core
 - **WHEN** the game is running and at least one crux core is not suppressed
-- **THEN** air/replaceable tiles on the core perimeter are flooded immediately and frontier tiles flood within the randomized delay window
+- **THEN** air/replaceable tiles on the core perimeter and flood frontier are scheduled and flood after staying spreadable for the randomized 5-10s delay window
 
 #### Scenario: All cores suppressed halts spread
 - **WHEN** every crux core is currently suppressed
@@ -17,8 +17,8 @@ The system SHALL spread flood tiles outward from unsuppressed crux cores using a
 - **WHEN** a crux building that was part of the flood is destroyed
 - **THEN** its pending events are discarded and it does not re-enter the simulation unless re-seeded
 
-#### Scenario: First tier placed when spread deadline fires on air tile
-- **WHEN** a spread deadline (5-10s after frontier reached tile) fires on an air/replaceable tile
+#### Scenario: First tier placed when spread deadline fires on spreadable tile
+- **WHEN** a spread deadline (5-10s after frontier reached tile) fires on a tile that is still spreadable (air/replaceable tile with adjacent flood tile or core)
 - **THEN** the first configured flood tier is placed on that tile and its neighbors are scheduled with new 5-10s delays
 
 #### Scenario: Tier evolution proceeds through all configured tiers

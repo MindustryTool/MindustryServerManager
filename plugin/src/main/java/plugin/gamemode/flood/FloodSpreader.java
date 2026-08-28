@@ -233,6 +233,41 @@ public class FloodSpreader {
         return config.floodTiles.first();
     }
 
+    public boolean isFloodTile(Tile tile) {
+        if (tile == null) {
+            return false;
+        }
+        var build = tile.build;
+        if (build == null || !build.isValid()) {
+            return false;
+        }
+        return build.team == Team.crux && (tierByBlock.containsKey(build.block) || build.block instanceof mindustry.world.blocks.storage.CoreBlock);
+    }
+
+    public boolean hasAdjacentFlood(Tile tile) {
+        if (tile == null) {
+            return false;
+        }
+        return isFloodTile(Vars.world.tile(tile.x - 1, tile.y))
+                || isFloodTile(Vars.world.tile(tile.x + 1, tile.y))
+                || isFloodTile(Vars.world.tile(tile.x, tile.y - 1))
+                || isFloodTile(Vars.world.tile(tile.x, tile.y + 1));
+    }
+
+    public boolean isSpreadable(Tile tile) {
+        if (tile == null) {
+            return false;
+        }
+        var build = tile.build;
+        if (build != null && build.isValid()) {
+            return false;
+        }
+        if (tile.block() != Blocks.air && !tile.block().alwaysReplace) {
+            return false;
+        }
+        return hasAdjacentFlood(tile);
+    }
+
     private void touch(Tile tile, FloodConfig.FloodTile firstTier, float multiplier, long now) {
         if (tile == null) {
             return;
@@ -253,10 +288,9 @@ public class FloodSpreader {
                 push(deadlines[pos], pos);
                 exploreConnectedFlood(tile, now, multiplier);
             }
-        } else if (build == null && (tile.block() == Blocks.air || tile.block().alwaysReplace)) {
-            place(tile, firstTier, now, multiplier);
+        } else if (isSpreadable(tile)) {
+            deadlines[pos] = now + Mathf.random(1000 * 5, 1000 * 10);
             push(deadlines[pos], pos);
-            propagate(tile, now, multiplier);
         } else if (build != null) {
             seededPulses.set(pos);
             push(now + DAMAGE_PULSE_MILLIS, pos);
@@ -279,7 +313,7 @@ public class FloodSpreader {
         var build = tile.build;
         if (build == null || !build.isValid()) {
             var firstTier = firstTier();
-            if (firstTier != null && build == null && (tile.block() == Blocks.air || tile.block().alwaysReplace)
+            if (firstTier != null && isSpreadable(tile)
                     && deadlines[pos] > 0 && now >= deadlines[pos]) {
                 place(tile, firstTier, now, multiplier);
                 propagate(tile, now, multiplier);
@@ -382,7 +416,7 @@ public class FloodSpreader {
             } else {
                 scheduled.set(pos);
             }
-        } else if (build == null && (neighbor.block() == Blocks.air || neighbor.block().alwaysReplace)) {
+        } else if (isSpreadable(neighbor)) {
             scheduled.set(pos);
             deadlines[pos] = now + Mathf.random(1000 * 5, 1000 * 10);
             push(deadlines[pos], pos);
