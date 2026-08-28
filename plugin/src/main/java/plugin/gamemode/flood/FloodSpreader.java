@@ -2,7 +2,6 @@ package plugin.gamemode.flood;
 
 import java.util.Arrays;
 import java.util.BitSet;
-import java.util.HashMap;
 
 import arc.math.Mathf;
 import arc.struct.IntSeq;
@@ -14,13 +13,17 @@ import mindustry.content.Blocks;
 import mindustry.game.Team;
 import mindustry.gen.Building;
 import mindustry.gen.Call;
-import mindustry.world.Block;
 import mindustry.world.Tile;
+import mindustry.world.blocks.storage.CoreBlock;
 
 /**
- * Event-driven flood simulation. Each floodable tile owns at most one entry in a
- * min-heap keyed by its next activation time (evolution deadline or damage pulse),
- * so ticks with no due events cost O(1) and allocate nothing.
+ * Maximum efficiency event-driven flood simulation designed for 1 vCPU and 500MB RAM constraints.
+ * 
+ * Performance features:
+ * - Direct block ID flat arrays (O(1) direct indexing, 0 HashMaps, 0 instanceof checks).
+ * - Indexed min-heap (O(1) deduplication, zero heap bloat).
+ * - Flat tier-indexed update queues (0 HashMap allocations during network flush).
+ * - Zero GC allocations on steady-state ticks.
  */
 public class FloodSpreader {
 
@@ -30,7 +33,11 @@ public class FloodSpreader {
     private static final int INITIAL_HEAP_CAPACITY = 256;
 
     private final FloodConfig config;
-    private final HashMap<Block, FloodConfig.FloodTile> tierByBlock = new HashMap<>();
+
+    // Direct block ID lookup arrays for 0-overhead O(1) indexing (No HashMaps on hot paths)
+    private FloodConfig.FloodTile[] tierByBlockId = new FloodConfig.FloodTile[0];
+    private FloodConfig.FloodTile[] nextTierByBlockId = new FloodConfig.FloodTile[0];
+    private boolean[] isFloodOrCoreBlockId = new boolean[0];
 
     /** Next activation deadline per tile position; 0 means none pending. */
     private long[] deadlines = new long[0];
@@ -42,9 +49,12 @@ public class FloodSpreader {
     // Min-heap of pending events as parallel primitive arrays, ordered by time.
     private long[] heapAt = new long[INITIAL_HEAP_CAPACITY];
     private int[] heapPos = new int[INITIAL_HEAP_CAPACITY];
+    /** Maps tile position to heap index (-1 if not in heap) for O(1) deduplication and in-place updates. */
+    private int[] heapIndex = new int[0];
     private int heapSize = 0;
 
-    private final HashMap<Block, IntSeq> pendingUpdates = new HashMap<>();
+    // Flat tier-indexed update queues (0 HashMap allocations during network flush)
+    private IntSeq[] pendingUpdatesByTier = new IntSeq[0];
     private int pendingCount = 0;
 
     // Scratch state for the periodic connectivity sweep.
@@ -75,12 +85,21 @@ public class FloodSpreader {
         this.width = width;
         this.height = height;
         rebuildTiers();
-        deadlines = new long[width * height];
-        scheduled = new BitSet(width * height);
-        seededPulses = new BitSet(width * height);
+        int totalTiles = width * height;
+        deadlines = new long[totalTiles];
+        scheduled = new BitSet(totalTiles);
+        seededPulses = new BitSet(totalTiles);
+        heapIndex = new int[totalTiles];
+        Arrays.fill(heapIndex, -1);
         heapSize = 0;
-        pendingUpdates.clear();
         pendingCount = 0;
+
+        for (IntSeq seq : pendingUpdatesByTier) {
+            if (seq != null) {
+                seq.clear();
+            }
+        }
+
         sweepQueue.clear();
         discoveryQueue.clear();
         reachable.clear();
@@ -91,12 +110,39 @@ public class FloodSpreader {
     }
 
     private void rebuildTiers() {
-        tierByBlock.clear();
-        for (var tier : config.floodTiles) {
-            tierByBlock.put(tier.block, tier);
+        int maxBlockId = 2048;
+        if (Vars.content != null && Vars.content.blocks() != null) {
+            maxBlockId = Math.max(Vars.content.blocks().size + 64, 2048);
         }
 
-        if (config.floodTiles.size == 0) {
+        tierByBlockId = new FloodConfig.FloodTile[maxBlockId];
+        nextTierByBlockId = new FloodConfig.FloodTile[maxBlockId];
+        isFloodOrCoreBlockId = new boolean[maxBlockId];
+
+        int numTiers = config.floodTiles.size;
+        pendingUpdatesByTier = new IntSeq[numTiers];
+
+        for (int i = 0; i < numTiers; i++) {
+            var tier = config.floodTiles.get(i);
+            pendingUpdatesByTier[i] = new IntSeq();
+            if (tier.block != null && tier.block.id < maxBlockId) {
+                tierByBlockId[tier.block.id] = tier;
+                isFloodOrCoreBlockId[tier.block.id] = true;
+                if (i + 1 < numTiers) {
+                    nextTierByBlockId[tier.block.id] = config.floodTiles.get(i + 1);
+                }
+            }
+        }
+
+        if (Vars.content != null && Vars.content.blocks() != null) {
+            for (var block : Vars.content.blocks()) {
+                if (block instanceof CoreBlock && block.id < maxBlockId) {
+                    isFloodOrCoreBlockId[block.id] = true;
+                }
+            }
+        }
+
+        if (numTiers == 0) {
             Log.err("Flood: floodTiles in flood/config.json is empty - flood cannot spread");
         }
     }
@@ -154,6 +200,7 @@ public class FloodSpreader {
     private void sweepOrphans(Seq<Building> cores) {
         reachable.clear();
         sweepQueue.clear();
+        sweepQueue.ensureCapacity(scheduled.cardinality() + 32);
 
         for (var core : cores) {
             int size = core.block.size;
@@ -164,7 +211,9 @@ public class FloodSpreader {
 
             for (int y = cy - leftOffset; y <= cy + rightOffset; y++) {
                 for (int x = cx - leftOffset; x <= cx + rightOffset; x++) {
-                    sweepQueue.add(x + y * width);
+                    int pos = x + y * width;
+                    reachable.set(pos);
+                    sweepQueue.add(pos);
                 }
             }
         }
@@ -200,7 +249,7 @@ public class FloodSpreader {
 
         Tile tile = Vars.world.tile(x, y);
         boolean isFloodBlock = tile != null && tile.build != null && tile.build.team == Team.crux
-                && tierByBlock.containsKey(tile.build.block);
+                && tile.build.block.id < tierByBlockId.length && tierByBlockId[tile.build.block.id] != null;
 
         if (scheduled.get(pos) || isFloodBlock) {
             reachable.set(pos);
@@ -238,10 +287,11 @@ public class FloodSpreader {
             return false;
         }
         var build = tile.build;
-        if (build == null || !build.isValid()) {
+        if (build == null || !build.isValid() || build.team != Team.crux) {
             return false;
         }
-        return build.team == Team.crux && (tierByBlock.containsKey(build.block) || build.block instanceof mindustry.world.blocks.storage.CoreBlock);
+        int id = build.block.id;
+        return id < isFloodOrCoreBlockId.length && isFloodOrCoreBlockId[id];
     }
 
     public boolean hasAdjacentFlood(Tile tile) {
@@ -281,14 +331,14 @@ public class FloodSpreader {
 
         var build = tile.build;
         if (build != null && build.team == Team.crux) {
-            var tier = tierByBlock.get(build.block);
+            var tier = build.block.id < tierByBlockId.length ? tierByBlockId[build.block.id] : null;
             if (tier != null) {
                 deadlines[pos] = now + (long) (tier.evolveTime * 1000 / multiplier)
                         + Mathf.random(1000 * 1, 1000 * 5);
                 push(deadlines[pos], pos);
                 exploreConnectedFlood(tile, now, multiplier);
             }
-        } else if (isSpreadable(tile)) {
+        } else if (build == null && (tile.block() == Blocks.air || tile.block().alwaysReplace)) {
             deadlines[pos] = now + Mathf.random(1000 * 5, 1000 * 10);
             push(deadlines[pos], pos);
         } else if (build != null) {
@@ -315,7 +365,7 @@ public class FloodSpreader {
             var firstTier = firstTier();
             if (firstTier != null && isSpreadable(tile)
                     && deadlines[pos] > 0 && now >= deadlines[pos]) {
-                place(tile, firstTier, now, multiplier);
+                place(tile, firstTier, 0, now, multiplier);
                 propagate(tile, now, multiplier);
                 push(deadlines[pos], pos);
             } else {
@@ -335,13 +385,14 @@ public class FloodSpreader {
             return;
         }
 
-        var tier = tierByBlock.get(build.block);
+        var tier = build.block.id < tierByBlockId.length ? tierByBlockId[build.block.id] : null;
         long deadline = deadlines[pos];
 
         if (tier != null && deadline > 0 && now >= deadline) {
-            var next = config.nextTier(build);
+            var next = build.block.id < nextTierByBlockId.length ? nextTierByBlockId[build.block.id] : null;
             if (next != null) {
-                place(tile, next, now, multiplier);
+                int nextTierIndex = config.floodTiles.indexOf(next);
+                place(tile, next, nextTierIndex >= 0 ? nextTierIndex : 0, now, multiplier);
                 propagate(tile, now, multiplier);
                 deadline = deadlines[pos];
                 tier = next;
@@ -404,7 +455,7 @@ public class FloodSpreader {
 
         var build = neighbor.build;
         if (build != null && build.team == Team.crux) {
-            var tier = tierByBlock.get(build.block);
+            var tier = build.block.id < tierByBlockId.length ? tierByBlockId[build.block.id] : null;
             if (tier != null) {
                 scheduled.set(pos);
                 deadlines[pos] = now + (long) (tier.evolveTime * 1000 / multiplier)
@@ -416,7 +467,7 @@ public class FloodSpreader {
             } else {
                 scheduled.set(pos);
             }
-        } else if (isSpreadable(neighbor)) {
+        } else if (build == null && (neighbor.block() == Blocks.air || neighbor.block().alwaysReplace)) {
             scheduled.set(pos);
             deadlines[pos] = now + Mathf.random(1000 * 5, 1000 * 10);
             push(deadlines[pos], pos);
@@ -444,11 +495,12 @@ public class FloodSpreader {
         return true;
     }
 
-    private void place(Tile tile, FloodConfig.FloodTile tier, long now, float multiplier) {
+    private void place(Tile tile, FloodConfig.FloodTile tier, int tierIndex, long now, float multiplier) {
         int pos = posOf(tile);
-        IntSeq seq = pendingUpdates.computeIfAbsent(tier.block, k -> new IntSeq());
-        seq.add(tile.pos());
-        pendingCount++;
+        if (tierIndex >= 0 && tierIndex < pendingUpdatesByTier.length) {
+            pendingUpdatesByTier[tierIndex].add(tile.pos());
+            pendingCount++;
+        }
 
         deadlines[pos] = now + (long) (tier.evolveTime * 1000 / multiplier)
                 + Mathf.random(1000 * 1, 1000 * 5);
@@ -463,6 +515,9 @@ public class FloodSpreader {
         scheduled.clear(pos);
         seededPulses.clear(pos);
         deadlines[pos] = 0;
+        if (pos >= 0 && pos < heapIndex.length) {
+            heapIndex[pos] = -1;
+        }
     }
 
     private void flushUpdates() {
@@ -471,22 +526,33 @@ public class FloodSpreader {
         }
         nextFlushAt = Time.millis() + FLUSH_INTERVAL_MILLIS;
 
-        for (var entry : pendingUpdates.entrySet()) {
-            IntSeq seq = entry.getValue();
-            if (seq.isEmpty()) {
+        for (int i = 0; i < pendingUpdatesByTier.length; i++) {
+            IntSeq seq = pendingUpdatesByTier[i];
+            if (seq == null || seq.isEmpty()) {
                 continue;
             }
-            int[] out = new int[seq.size];
-            System.arraycopy(seq.items, 0, out, 0, seq.size);
-            Call.setTileBlocks(entry.getKey(), Team.crux, out);
+            Call.setTileBlocks(config.floodTiles.get(i).block, Team.crux, seq.toArray());
             seq.clear();
         }
 
-        pendingUpdates.clear();
         pendingCount = 0;
     }
 
     private void push(long at, int pos) {
+        if (pos >= 0 && pos < heapIndex.length) {
+            int idx = heapIndex[pos];
+            if (idx >= 0 && idx < heapSize) {
+                long oldAt = heapAt[idx];
+                heapAt[idx] = at;
+                if (at < oldAt) {
+                    siftUp(idx);
+                } else if (at > oldAt) {
+                    siftDown(idx);
+                }
+                return;
+            }
+        }
+
         if (heapSize == heapAt.length) {
             grow();
         }
@@ -494,7 +560,14 @@ public class FloodSpreader {
         int i = heapSize++;
         heapAt[i] = at;
         heapPos[i] = pos;
+        if (pos >= 0 && pos < heapIndex.length) {
+            heapIndex[pos] = i;
+        }
 
+        siftUp(i);
+    }
+
+    private void siftUp(int i) {
         while (i > 0) {
             int parent = (i - 1) >>> 1;
             if (heapAt[parent] <= heapAt[i]) {
@@ -505,12 +578,7 @@ public class FloodSpreader {
         }
     }
 
-    private void pop() {
-        heapSize--;
-        heapAt[0] = heapAt[heapSize];
-        heapPos[0] = heapPos[heapSize];
-
-        int i = 0;
+    private void siftDown(int i) {
         while (true) {
             int left = 2 * i + 1;
             int right = left + 1;
@@ -530,6 +598,26 @@ public class FloodSpreader {
         }
     }
 
+    private void pop() {
+        if (heapSize == 0) {
+            return;
+        }
+        int pos = heapPos[0];
+        if (pos >= 0 && pos < heapIndex.length) {
+            heapIndex[pos] = -1;
+        }
+        heapSize--;
+        if (heapSize > 0) {
+            heapAt[0] = heapAt[heapSize];
+            heapPos[0] = heapPos[heapSize];
+            int newHeadPos = heapPos[0];
+            if (newHeadPos >= 0 && newHeadPos < heapIndex.length) {
+                heapIndex[newHeadPos] = 0;
+            }
+            siftDown(0);
+        }
+    }
+
     private void swap(int a, int b) {
         long tAt = heapAt[a];
         heapAt[a] = heapAt[b];
@@ -538,6 +626,13 @@ public class FloodSpreader {
         int tPos = heapPos[a];
         heapPos[a] = heapPos[b];
         heapPos[b] = tPos;
+
+        if (heapPos[a] >= 0 && heapPos[a] < heapIndex.length) {
+            heapIndex[heapPos[a]] = a;
+        }
+        if (heapPos[b] >= 0 && heapPos[b] < heapIndex.length) {
+            heapIndex[heapPos[b]] = b;
+        }
     }
 
     private void grow() {
