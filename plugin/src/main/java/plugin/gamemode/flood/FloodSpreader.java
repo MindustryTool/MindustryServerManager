@@ -166,7 +166,7 @@ public class FloodSpreader {
 
         if (now >= nextSweepAt) {
             nextSweepAt = now + ORPHAN_SWEEP_MILLIS;
-            sweepOrphans(cores);
+            sweepOrphans(cores, multiplier);
         }
 
         var firstTier = firstTier();
@@ -194,10 +194,9 @@ public class FloodSpreader {
 
     /**
      * Retires every scheduled tile that has no connection to an unsuppressed core
-     * through the set of scheduled tiles. Cost is proportional to active flood
-     * tiles, not map size.
+     * and re-activates reachable Crux flood tiles that were previously orphaned.
      */
-    private void sweepOrphans(Seq<Building> cores) {
+    private void sweepOrphans(Seq<Building> cores, float multiplier) {
         reachable.clear();
         sweepQueue.clear();
         sweepQueue.ensureCapacity(scheduled.cardinality() + 32);
@@ -230,9 +229,29 @@ public class FloodSpreader {
             visitSweepNeighbor(x, y + 1);
         }
 
+        long now = Time.millis();
+
+        // 1. Clear scheduled tiles that are no longer reachable from any unsuppressed core
         for (int pos = scheduled.nextSetBit(0); pos >= 0; pos = scheduled.nextSetBit(pos + 1)) {
             if (!reachable.get(pos)) {
                 clear(pos);
+            }
+        }
+
+        // 2. Re-activate Crux flood tiles that are reachable from a core but currently NOT scheduled
+        for (int pos = reachable.nextSetBit(0); pos >= 0; pos = reachable.nextSetBit(pos + 1)) {
+            if (!scheduled.get(pos)) {
+                Tile tile = Vars.world.tile(pos % width, pos / width);
+                if (tile != null && tile.build != null && tile.build.team == Team.crux) {
+                    var tier = tile.build.block.id < tierByBlockId.length ? tierByBlockId[tile.build.block.id] : null;
+                    if (tier != null) {
+                        scheduled.set(pos);
+                        deadlines[pos] = now + (long) (tier.evolveTime * 1000 / multiplier)
+                                + Mathf.random(1000 * 1, 1000 * 5);
+                        push(deadlines[pos], pos);
+                        propagate(tile, now, multiplier);
+                    }
+                }
             }
         }
     }
@@ -463,6 +482,8 @@ public class FloodSpreader {
                 push(deadlines[pos], pos);
                 if (enqueueCrux) {
                     discoveryQueue.add(pos);
+                } else {
+                    exploreConnectedFlood(neighbor, now, multiplier);
                 }
             } else {
                 scheduled.set(pos);
