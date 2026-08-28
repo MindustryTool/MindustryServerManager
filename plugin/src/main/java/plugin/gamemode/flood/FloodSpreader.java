@@ -158,7 +158,7 @@ public class FloodSpreader {
             if (tile != null && isSpreadable(tile)) {
                 long now = Time.millis();
                 scheduled.set(pos);
-                deadlines[pos] = now + Mathf.random(1000 * 5, 1000 * 10);
+                deadlines[pos] = now + randomStep(1000 * 5, 1000 * 10, 100);
                 push(deadlines[pos], pos);
             }
         }
@@ -254,7 +254,7 @@ public class FloodSpreader {
                     if (tier != null) {
                         scheduled.set(pos);
                         deadlines[pos] = now + (long) (tier.evolveTime * 1000 / multiplier)
-                                + Mathf.random(1000 * 1, 1000 * 5);
+                                + randomStep(1000 * 1, 1000 * 5, 100);
                         push(deadlines[pos], pos);
                         propagate(tile, now, multiplier);
                     }
@@ -360,12 +360,12 @@ public class FloodSpreader {
             var tier = build.block.id < tierByBlockId.length ? tierByBlockId[build.block.id] : null;
             if (tier != null) {
                 deadlines[pos] = now + (long) (tier.evolveTime * 1000 / multiplier)
-                        + Mathf.random(1000 * 1, 1000 * 5);
+                        + randomStep(1000 * 1, 1000 * 5, 100);
                 push(deadlines[pos], pos);
                 exploreConnectedFlood(tile, now, multiplier);
             }
         } else if (build == null && (tile.block() == Blocks.air || tile.block().alwaysReplace)) {
-            deadlines[pos] = now + Mathf.random(1000 * 5, 1000 * 10);
+            deadlines[pos] = now + randomStep(1000 * 5, 1000 * 10, 100);
             push(deadlines[pos], pos);
         } else if (build != null) {
             seededPulses.set(pos);
@@ -485,7 +485,7 @@ public class FloodSpreader {
             if (tier != null) {
                 scheduled.set(pos);
                 deadlines[pos] = now + (long) (tier.evolveTime * 1000 / multiplier)
-                        + Mathf.random(1000 * 1, 1000 * 5);
+                        + randomStep(1000 * 1, 1000 * 5, 100);
                 push(deadlines[pos], pos);
                 if (enqueueCrux) {
                     discoveryQueue.add(pos);
@@ -497,7 +497,7 @@ public class FloodSpreader {
             }
         } else if (build == null && (neighbor.block() == Blocks.air || neighbor.block().alwaysReplace)) {
             scheduled.set(pos);
-            deadlines[pos] = now + Mathf.random(1000 * 5, 1000 * 10);
+            deadlines[pos] = now + randomStep(1000 * 5, 1000 * 10, 100);
             push(deadlines[pos], pos);
         }
     }
@@ -531,7 +531,7 @@ public class FloodSpreader {
         }
 
         deadlines[pos] = now + (long) (tier.evolveTime * 1000 / multiplier)
-                + Mathf.random(1000 * 1, 1000 * 5);
+                + randomStep(1000 * 1, 1000 * 5, 100);
 
         if (!loggedFirstPlacement) {
             loggedFirstPlacement = true;
@@ -667,5 +667,9 @@ public class FloodSpreader {
         int capacity = heapAt.length << 1;
         heapAt = Arrays.copyOf(heapAt, capacity);
         heapPos = Arrays.copyOf(heapPos, capacity);
+    }
+
+    private static long randomStep(int min, int max, int step) {
+        return (long) Mathf.random(min / step, max / step) * step;
     }
 }
