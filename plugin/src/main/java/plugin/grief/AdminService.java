@@ -70,7 +70,7 @@ public class AdminService {
     @Listener
     public void onBanEvent(PlayerBanEvent event) {
         ServerEvents.PlayerBanEvent banEvent = new ServerEvents.PlayerBanEvent(Control.SERVER_ID, event.player.ip(),
-                event.uuid, event.player.name);
+                event.uuid, Strings.stripColors(event.player.name));
         apiGateway.fire(banEvent);
     }
 

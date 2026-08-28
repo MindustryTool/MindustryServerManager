@@ -5,5 +5,5 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ExpGainEvent {
     public final Session session;
-    public final long amount;
+    public final float amount;
 }
