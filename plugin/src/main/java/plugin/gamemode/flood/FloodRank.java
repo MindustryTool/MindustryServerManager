@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import mindustry.Vars;
 import mindustry.game.EventType.PlayEvent;
 import mindustry.game.EventType.PlayerJoin;
+import mindustry.game.EventType.StateChangeEvent;
 import plugin.annotations.Component;
 import plugin.annotations.ConditionOn;
 import plugin.gamemode.GamemodeCondition;
@@ -31,9 +32,17 @@ public class FloodRank {
     private final SessionService sessionService;
 
     private Instant mapStartedAt = Instant.now();
+    private Instant pauseStartedAt = null;
 
     private final String KEY = "flood-rank";
     private final String version = "1";
+
+    public Instant getMapStartedAt() {
+        if (pauseStartedAt != null) {
+            return mapStartedAt.plus(Duration.between(pauseStartedAt, Instant.now()));
+        }
+        return mapStartedAt;
+    }
 
     @Init
     private void init() {
@@ -65,6 +74,7 @@ public class FloodRank {
     @Listener
     public void onPlayEvent(PlayEvent event) {
         mapStartedAt = Instant.now();
+        pauseStartedAt = Vars.state.isPaused() ? Instant.now() : null;
 
         Utils.forEachPlayerLocale((locale, players) -> {
             String msg = buildRankString(locale);
@@ -72,6 +82,20 @@ public class FloodRank {
                 p.sendMessage(msg);
             }
         });
+    }
+
+    @Listener
+    public void onStateChangeEvent(StateChangeEvent event) {
+        if (Vars.state.isPaused()) {
+            if (pauseStartedAt == null) {
+                pauseStartedAt = Instant.now();
+            }
+        } else {
+            if (pauseStartedAt != null) {
+                mapStartedAt = mapStartedAt.plus(Duration.between(pauseStartedAt, Instant.now()));
+                pauseStartedAt = null;
+            }
+        }
     }
 
     @Listener
@@ -90,7 +114,7 @@ public class FloodRank {
         sessionService.get().values().stream().map(v -> v.player.name()).forEach(v -> players.add(v));
 
         wrapper.data.compute(mapName, (k, v) -> {
-            long clearTimeMilis = Duration.between(mapStartedAt, Instant.now()).toMillis();
+            long clearTimeMilis = Duration.between(getMapStartedAt(), Instant.now()).toMillis();
 
             if (v == null) {
                 v = new FloodRankData();
@@ -117,7 +141,7 @@ public class FloodRank {
         sessionService.each(session -> {
             long playerPlayedDuration = Duration.between(Instant.ofEpochMilli(session.joinedAt), Instant.now()).abs()
                     .toSeconds();
-            long mapDuration = Duration.between(mapStartedAt, Instant.now()).abs().toSeconds();
+            long mapDuration = Duration.between(getMapStartedAt(), Instant.now()).abs().toSeconds();
             float playerParticipation = (float) playerPlayedDuration / mapDuration;
 
             if (playerPlayedDuration > mapDuration) {
