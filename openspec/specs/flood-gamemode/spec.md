@@ -13,9 +13,9 @@ The system SHALL spread flood tiles outward from unsuppressed crux cores using a
 - **WHEN** every crux core is currently suppressed
 - **THEN** the flood simulation is frozen (no placements, evolutions, or damage pulses) and resumes when suppression ends
 
-#### Scenario: Destroyed flood block stops simulating
+#### Scenario: Destroyed flood block attempts regrowth
 - **WHEN** a crux building that was part of the flood is destroyed
-- **THEN** its pending events are discarded and it does not re-enter the simulation unless re-seeded
+- **THEN** its high-tier events are discarded, and if adjacent flood tiles remain, it is scheduled to regrow from a tier-1 flood after a randomized 5-10s delay
 
 #### Scenario: First tier placed when spread deadline fires on spreadable tile
 - **WHEN** a spread deadline (5-10s after frontier reached tile) fires on a tile that is still spreadable (air/replaceable tile with adjacent flood tile or core)

@@ -154,6 +154,13 @@ public class FloodSpreader {
     public void onTileDestroyed(int pos) {
         if (pos >= 0 && pos < deadlines.length) {
             clear(pos);
+            Tile tile = Vars.world.tile(pos % width, pos / width);
+            if (tile != null && isSpreadable(tile)) {
+                long now = Time.millis();
+                scheduled.set(pos);
+                deadlines[pos] = now + Mathf.random(1000 * 5, 1000 * 10);
+                push(deadlines[pos], pos);
+            }
         }
     }
 
