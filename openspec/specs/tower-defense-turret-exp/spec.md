@@ -1,4 +1,10 @@
-## ADDED Requirements
+# tower-defense-turret-exp
+
+## Purpose
+
+Track turret ownership and reward player experience for turret kills in Tower Defense gamemode while preserving ownership across rebuilds.
+
+## Requirements
 
 ### Requirement: Tower Defense Turret Ownership Persistence
 The plugin SHALL track player ownership of turrets placed in Tower Defense gamemodes (`TowerDefense` or `td`). When a turret is placed, the tile position SHALL be registered to the original builder. If the turret is partially or fully deconstructed by another player and rebuilt on that same tile, the system SHALL retain the original builder as the owner for EXP rewards.
