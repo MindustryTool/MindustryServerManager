@@ -15,6 +15,7 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 
 import arc.Events;
 import arc.math.Mathf;
+import arc.util.Strings;
 import events.ServerEvents;
 import lombok.RequiredArgsConstructor;
 import mindustry.Vars;
@@ -78,7 +79,7 @@ public class AdminService {
         PlayerInfo playerInfo = Vars.netServer.admins.findByIP(event.address);
         String name = playerInfo == null ? "<Unknown Player>" : playerInfo.lastName;
         ServerEvents.PlayerKickEvent kickEvent = new ServerEvents.PlayerKickEvent(Control.SERVER_ID, event.address,
-                event.uuid, name, event.reason);
+                event.uuid, Strings.stripColors(name), Strings.stripColors(event.reason));
         apiGateway.fire(kickEvent);
     }
 
