@@ -47,6 +47,10 @@ public class Control extends mindustry.mod.Plugin {
                 String uuid = matcher.group(2);
                 String reason = matcher.group(3);
 
+                if (reason != null && reason.contains("Incompatible mods")){
+                    return;
+                }
+
                 PluginEvents.fire(new KickEvent(address, uuid, reason));
             }
 
