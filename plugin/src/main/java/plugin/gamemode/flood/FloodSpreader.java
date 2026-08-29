@@ -31,6 +31,7 @@ public class FloodSpreader {
     private static final long ORPHAN_SWEEP_MILLIS = 5000;
     private static final long FLUSH_INTERVAL_MILLIS = 100;
     private static final int INITIAL_HEAP_CAPACITY = 256;
+    private static final int MAX_EVENTS_PER_TICK = 64;
 
     private final FloodConfig config;
 
@@ -59,7 +60,6 @@ public class FloodSpreader {
 
     // Scratch state for the periodic connectivity sweep.
     private final IntSeq sweepQueue = new IntSeq();
-    private final IntSeq discoveryQueue = new IntSeq();
     private BitSet reachable = new BitSet();
     private long nextSweepAt = 0;
 
@@ -86,6 +86,19 @@ public class FloodSpreader {
         this.height = height;
         rebuildTiers();
         int totalTiles = width * height;
+        resetHeapState(totalTiles);
+        clearPendingUpdateQueues();
+
+        sweepQueue.clear();
+        reachable.clear();
+        nextSweepAt = 0;
+        nextFlushAt = 0;
+        loggedFirstPlacement = false;
+        warnedNoTiers = false;
+    }
+
+    // Resets indexed min-heap state and pending deadline buffers for the given tile count.
+    private void resetHeapState(int totalTiles) {
         deadlines = new long[totalTiles];
         scheduled = new BitSet(totalTiles);
         seededPulses = new BitSet(totalTiles);
@@ -93,20 +106,15 @@ public class FloodSpreader {
         Arrays.fill(heapIndex, -1);
         heapSize = 0;
         pendingCount = 0;
+    }
 
+    // Clears all buffered tile-block update queues across configured tiers.
+    private void clearPendingUpdateQueues() {
         for (IntSeq seq : pendingUpdatesByTier) {
             if (seq != null) {
                 seq.clear();
             }
         }
-
-        sweepQueue.clear();
-        discoveryQueue.clear();
-        reachable.clear();
-        nextSweepAt = 0;
-        nextFlushAt = 0;
-        loggedFirstPlacement = false;
-        warnedNoTiers = false;
     }
 
     private void rebuildTiers() {
@@ -122,6 +130,16 @@ public class FloodSpreader {
         int numTiers = config.floodTiles.size;
         pendingUpdatesByTier = new IntSeq[numTiers];
 
+        mapFloodTierBlocks(maxBlockId, numTiers);
+        mapCoreBlocks(maxBlockId);
+
+        if (numTiers == 0) {
+            Log.err("Flood: floodTiles in flood/config.json is empty - flood cannot spread");
+        }
+    }
+
+    // Maps configured flood tiers and their progression transitions by block ID.
+    private void mapFloodTierBlocks(int maxBlockId, int numTiers) {
         for (int i = 0; i < numTiers; i++) {
             var tier = config.floodTiles.get(i);
             pendingUpdatesByTier[i] = new IntSeq();
@@ -133,17 +151,16 @@ public class FloodSpreader {
                 }
             }
         }
+    }
 
+    // Flags all registered core block IDs as valid flood-connected anchor structures.
+    private void mapCoreBlocks(int maxBlockId) {
         if (Vars.content != null && Vars.content.blocks() != null) {
             for (var block : Vars.content.blocks()) {
                 if (block instanceof CoreBlock && block.id < maxBlockId) {
                     isFloodOrCoreBlockId[block.id] = true;
                 }
             }
-        }
-
-        if (numTiers == 0) {
-            Log.err("Flood: floodTiles in flood/config.json is empty - flood cannot spread");
         }
     }
 
@@ -158,7 +175,7 @@ public class FloodSpreader {
             if (tile != null && isSpreadable(tile)) {
                 long now = Time.millis();
                 scheduled.set(pos);
-                deadlines[pos] = now + randomStep(1000 * 5, 1000 * 10, 100);
+                deadlines[pos] = now + Mathf.random(1000 * 5, 1000 * 10);
                 push(deadlines[pos], pos);
             }
         }
@@ -182,20 +199,25 @@ public class FloodSpreader {
         }
 
         for (var core : cores) {
-            int size = core.block.size;
-            int leftOffset = (size - 1) / 2;
-            int rightOffset = size / 2;
-            int cx = core.tile.x;
-            int cy = core.tile.y;
+            seedCorePerimeter(core, firstTier, multiplier, now);
+        }
+    }
 
-            for (int y = cy - leftOffset; y <= cy + rightOffset; y++) {
-                touch(Vars.world.tile(cx - leftOffset - 1, y), firstTier, multiplier, now);
-                touch(Vars.world.tile(cx + rightOffset + 1, y), firstTier, multiplier, now);
-            }
-            for (int x = cx - leftOffset; x <= cx + rightOffset; x++) {
-                touch(Vars.world.tile(x, cy - leftOffset - 1), firstTier, multiplier, now);
-                touch(Vars.world.tile(x, cy + rightOffset + 1), firstTier, multiplier, now);
-            }
+    // Schedules flood activation for all tiles along the perimeter ring of a core.
+    private void seedCorePerimeter(Building core, FloodConfig.FloodTile firstTier, float multiplier, long now) {
+        int size = core.block.size;
+        int leftOffset = (size - 1) / 2;
+        int rightOffset = size / 2;
+        int cx = core.tile.x;
+        int cy = core.tile.y;
+
+        for (int y = cy - leftOffset; y <= cy + rightOffset; y++) {
+            touch(Vars.world.tile(cx - leftOffset - 1, y), firstTier, multiplier, now);
+            touch(Vars.world.tile(cx + rightOffset + 1, y), firstTier, multiplier, now);
+        }
+        for (int x = cx - leftOffset; x <= cx + rightOffset; x++) {
+            touch(Vars.world.tile(x, cy - leftOffset - 1), firstTier, multiplier, now);
+            touch(Vars.world.tile(x, cy + rightOffset + 1), firstTier, multiplier, now);
         }
     }
 
@@ -208,6 +230,27 @@ public class FloodSpreader {
         sweepQueue.clear();
         sweepQueue.ensureCapacity(scheduled.cardinality() + 32);
 
+        enqueueCoreFootprints(cores);
+
+        int head = 0;
+        while (head < sweepQueue.size) {
+            int pos = sweepQueue.get(head++);
+            int x = pos % width;
+            int y = pos / width;
+
+            visitSweepNeighbor(x - 1, y);
+            visitSweepNeighbor(x + 1, y);
+            visitSweepNeighbor(x, y - 1);
+            visitSweepNeighbor(x, y + 1);
+        }
+
+        long now = Time.millis();
+        retireUnreachableTiles();
+        reactivateReachableTiles(now, multiplier);
+    }
+
+    // Enqueues all core footprint tiles as root nodes for the connectivity sweep BFS.
+    private void enqueueCoreFootprints(Seq<Building> cores) {
         for (var core : cores) {
             int size = core.block.size;
             int leftOffset = (size - 1) / 2;
@@ -223,29 +266,19 @@ public class FloodSpreader {
                 }
             }
         }
+    }
 
-        int head = 0;
-        while (head < sweepQueue.size) {
-            int pos = sweepQueue.get(head++);
-            int x = pos % width;
-            int y = pos / width;
-
-            visitSweepNeighbor(x - 1, y);
-            visitSweepNeighbor(x + 1, y);
-            visitSweepNeighbor(x, y - 1);
-            visitSweepNeighbor(x, y + 1);
-        }
-
-        long now = Time.millis();
-
-        // 1. Clear scheduled tiles that are no longer reachable from any unsuppressed core
+    // Clears scheduled status for all flood tiles disconnected from unsuppressed cores.
+    private void retireUnreachableTiles() {
         for (int pos = scheduled.nextSetBit(0); pos >= 0; pos = scheduled.nextSetBit(pos + 1)) {
             if (!reachable.get(pos)) {
                 clear(pos);
             }
         }
+    }
 
-        // 2. Re-activate Crux flood tiles that are reachable from a core but currently NOT scheduled
+    // Re-schedules reachable Crux flood tiles that are currently inactive.
+    private void reactivateReachableTiles(long now, float multiplier) {
         for (int pos = reachable.nextSetBit(0); pos >= 0; pos = reachable.nextSetBit(pos + 1)) {
             if (!scheduled.get(pos)) {
                 Tile tile = Vars.world.tile(pos % width, pos / width);
@@ -254,9 +287,8 @@ public class FloodSpreader {
                     if (tier != null) {
                         scheduled.set(pos);
                         deadlines[pos] = now + (long) (tier.evolveTime * 1000 / multiplier)
-                                + randomStep(1000 * 1, 1000 * 5, 100);
+                                + Mathf.random(1000 * 1, 1000 * 5);
                         push(deadlines[pos], pos);
-                        propagate(tile, now, multiplier);
                     }
                 }
             }
@@ -283,14 +315,16 @@ public class FloodSpreader {
         }
     }
 
-    /** Processes all events due at or before the current time, then emits batched tile updates. */
+    /** Processes all events due at or before the current time, up to MAX_EVENTS_PER_TICK, then emits batched tile updates. */
     public void tick(float multiplier) {
         long now = Time.millis();
+        int processed = 0;
 
-        while (heapSize > 0 && heapAt[0] <= now) {
+        while (heapSize > 0 && heapAt[0] <= now && processed < MAX_EVENTS_PER_TICK) {
             int pos = heapPos[0];
             pop();
             process(pos, now, multiplier);
+            processed++;
         }
 
         flushUpdates();
@@ -357,21 +391,25 @@ public class FloodSpreader {
 
         var build = tile.build;
         if (build != null && build.team == Team.crux) {
-            var tier = build.block.id < tierByBlockId.length ? tierByBlockId[build.block.id] : null;
-            if (tier != null) {
-                deadlines[pos] = now + (long) (tier.evolveTime * 1000 / multiplier)
-                        + randomStep(1000 * 1, 1000 * 5, 100);
-                push(deadlines[pos], pos);
-                exploreConnectedFlood(tile, now, multiplier);
-            }
+            scheduleCruxTile(pos, build, multiplier, now);
         } else if (build == null && (tile.block() == Blocks.air || tile.block().alwaysReplace)) {
-            deadlines[pos] = now + randomStep(1000 * 5, 1000 * 10, 100);
+            deadlines[pos] = now + Mathf.random(1000 * 5, 1000 * 10);
             push(deadlines[pos], pos);
         } else if (build != null) {
             seededPulses.set(pos);
             push(now + DAMAGE_PULSE_MILLIS, pos);
         } else {
             scheduled.clear(pos);
+        }
+    }
+
+    // Schedules evolution deadline for an existing Crux flood structure.
+    private void scheduleCruxTile(int pos, Building build, float multiplier, long now) {
+        var tier = build.block.id < tierByBlockId.length ? tierByBlockId[build.block.id] : null;
+        if (tier != null) {
+            deadlines[pos] = now + (long) (tier.evolveTime * 1000 / multiplier)
+                    + Mathf.random(1000 * 1, 1000 * 5);
+            push(deadlines[pos], pos);
         }
     }
 
@@ -388,29 +426,44 @@ public class FloodSpreader {
 
         var build = tile.build;
         if (build == null || !build.isValid()) {
-            var firstTier = firstTier();
-            if (firstTier != null && isSpreadable(tile)
-                    && deadlines[pos] > 0 && now >= deadlines[pos]) {
-                place(tile, firstTier, 0, now, multiplier);
-                propagate(tile, now, multiplier);
-                push(deadlines[pos], pos);
-            } else {
-                clear(pos);
-            }
+            processAirSpread(tile, pos, now, multiplier);
             return;
         }
 
         if (build.team != Team.crux) {
-            var pulse = firstTier();
-            if (!seededPulses.get(pos) || pulse == null) {
-                clear(pos);
-                return;
-            }
-            build.damage(pulse.damage * multiplier);
-            push(now + DAMAGE_PULSE_MILLIS, pos);
+            processEnemyPulse(build, pos, now, multiplier);
             return;
         }
 
+        processCruxEvolution(tile, build, pos, now, multiplier);
+    }
+
+    // Handles flood placement and propagation onto an empty or replaceable tile.
+    private void processAirSpread(Tile tile, int pos, long now, float multiplier) {
+        var firstTier = firstTier();
+        if (firstTier != null && isSpreadable(tile)
+                && deadlines[pos] > 0 && now >= deadlines[pos]) {
+            place(tile, firstTier, 0, now, multiplier);
+            propagate(tile, now, multiplier);
+            push(deadlines[pos], pos);
+        } else {
+            clear(pos);
+        }
+    }
+
+    // Applies periodic first-tier damage pulse to enemy structures anchored to core perimeters.
+    private void processEnemyPulse(Building build, int pos, long now, float multiplier) {
+        var pulse = firstTier();
+        if (!seededPulses.get(pos) || pulse == null) {
+            clear(pos);
+            return;
+        }
+        build.damage(pulse.damage * multiplier);
+        push(now + DAMAGE_PULSE_MILLIS, pos);
+    }
+
+    // Handles tier evolution progression and neighboring enemy damage pulses for Crux flood tiles.
+    private void processCruxEvolution(Tile tile, Building build, int pos, long now, float multiplier) {
         var tier = build.block.id < tierByBlockId.length ? tierByBlockId[build.block.id] : null;
         long deadline = deadlines[pos];
 
@@ -440,31 +493,14 @@ public class FloodSpreader {
         }
     }
 
-    private void exploreConnectedFlood(Tile startTile, long now, float multiplier) {
-        discoveryQueue.clear();
-        discoveryQueue.add(posOf(startTile));
-
-        int head = 0;
-        while (head < discoveryQueue.size) {
-            int currentPos = discoveryQueue.get(head++);
-            int cx = currentPos % width;
-            int cy = currentPos / width;
-
-            exploreNeighbor(cx - 1, cy, now, multiplier, true);
-            exploreNeighbor(cx + 1, cy, now, multiplier, true);
-            exploreNeighbor(cx, cy - 1, now, multiplier, true);
-            exploreNeighbor(cx, cy + 1, now, multiplier, true);
-        }
-    }
-
     private void propagate(Tile tile, long now, float multiplier) {
-        exploreNeighbor(tile.x - 1, tile.y, now, multiplier, false);
-        exploreNeighbor(tile.x + 1, tile.y, now, multiplier, false);
-        exploreNeighbor(tile.x, tile.y - 1, now, multiplier, false);
-        exploreNeighbor(tile.x, tile.y + 1, now, multiplier, false);
+        exploreNeighbor(tile.x - 1, tile.y, now, multiplier);
+        exploreNeighbor(tile.x + 1, tile.y, now, multiplier);
+        exploreNeighbor(tile.x, tile.y - 1, now, multiplier);
+        exploreNeighbor(tile.x, tile.y + 1, now, multiplier);
     }
 
-    private void exploreNeighbor(int x, int y, long now, float multiplier, boolean enqueueCrux) {
+    private void exploreNeighbor(int x, int y, long now, float multiplier) {
         if (x < 0 || x >= width || y < 0 || y >= height) {
             return;
         }
@@ -481,24 +517,24 @@ public class FloodSpreader {
 
         var build = neighbor.build;
         if (build != null && build.team == Team.crux) {
-            var tier = build.block.id < tierByBlockId.length ? tierByBlockId[build.block.id] : null;
-            if (tier != null) {
-                scheduled.set(pos);
-                deadlines[pos] = now + (long) (tier.evolveTime * 1000 / multiplier)
-                        + randomStep(1000 * 1, 1000 * 5, 100);
-                push(deadlines[pos], pos);
-                if (enqueueCrux) {
-                    discoveryQueue.add(pos);
-                } else {
-                    exploreConnectedFlood(neighbor, now, multiplier);
-                }
-            } else {
-                scheduled.set(pos);
-            }
+            scheduleCruxNeighbor(pos, build, multiplier, now);
         } else if (build == null && (neighbor.block() == Blocks.air || neighbor.block().alwaysReplace)) {
             scheduled.set(pos);
-            deadlines[pos] = now + randomStep(1000 * 5, 1000 * 10, 100);
+            deadlines[pos] = now + Mathf.random(1000 * 5, 1000 * 10);
             push(deadlines[pos], pos);
+        }
+    }
+
+    // Schedules evolution deadline for an adjacent Crux flood neighbor if not already scheduled.
+    private void scheduleCruxNeighbor(int pos, Building build, float multiplier, long now) {
+        var tier = build.block.id < tierByBlockId.length ? tierByBlockId[build.block.id] : null;
+        if (tier != null) {
+            scheduled.set(pos);
+            deadlines[pos] = now + (long) (tier.evolveTime * 1000 / multiplier)
+                    + Mathf.random(1000 * 1, 1000 * 5);
+            push(deadlines[pos], pos);
+        } else {
+            scheduled.set(pos);
         }
     }
 
@@ -531,7 +567,7 @@ public class FloodSpreader {
         }
 
         deadlines[pos] = now + (long) (tier.evolveTime * 1000 / multiplier)
-                + randomStep(1000 * 1, 1000 * 5, 100);
+                + Mathf.random(1000 * 1, 1000 * 5);
 
         if (!loggedFirstPlacement) {
             loggedFirstPlacement = true;
@@ -570,13 +606,7 @@ public class FloodSpreader {
         if (pos >= 0 && pos < heapIndex.length) {
             int idx = heapIndex[pos];
             if (idx >= 0 && idx < heapSize) {
-                long oldAt = heapAt[idx];
-                heapAt[idx] = at;
-                if (at < oldAt) {
-                    siftUp(idx);
-                } else if (at > oldAt) {
-                    siftDown(idx);
-                }
+                updateExistingHeapEntry(idx, at);
                 return;
             }
         }
@@ -593,6 +623,17 @@ public class FloodSpreader {
         }
 
         siftUp(i);
+    }
+
+    // Updates the deadline timestamp of an existing min-heap entry and restores heap invariant.
+    private void updateExistingHeapEntry(int idx, long at) {
+        long oldAt = heapAt[idx];
+        heapAt[idx] = at;
+        if (at < oldAt) {
+            siftUp(idx);
+        } else if (at > oldAt) {
+            siftDown(idx);
+        }
     }
 
     private void siftUp(int i) {
@@ -667,9 +708,5 @@ public class FloodSpreader {
         int capacity = heapAt.length << 1;
         heapAt = Arrays.copyOf(heapAt, capacity);
         heapPos = Arrays.copyOf(heapPos, capacity);
-    }
-
-    private static long randomStep(int min, int max, int step) {
-        return (long) Mathf.random(min / step, max / step) * step;
     }
 }
