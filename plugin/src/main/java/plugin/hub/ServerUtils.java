@@ -5,6 +5,7 @@ import plugin.utils.Utils;
 import java.net.InetAddress;
 
 import arc.util.Log;
+import arc.util.Timer;
 import dto.ServerDto;
 import mindustry.gen.Call;
 import mindustry.gen.Groups;
@@ -55,8 +56,11 @@ public class ServerUtils {
                 }
 
                 Log.info("Redirecting " + player.name + " to " + host + ":" + port);
-
-                Call.connect(player.con, InetAddress.getByName(host.trim()).getHostAddress(), port);
+                InetAddress finalHost = InetAddress.getByName(host.trim());
+                int finalPort = port;
+                Timer.schedule(() -> {
+                    Call.connect(player.con, finalHost.getHostAddress(), finalPort);
+                }, 1f);
             } catch (Exception e) {
                 player.sendMessage(Tr.t(Utils.parseLocale(player.locale()), "hub.redirect.error"));
                 Log.err("Failed to redirect player: " + e.getMessage());
