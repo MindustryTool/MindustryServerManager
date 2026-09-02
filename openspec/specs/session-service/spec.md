@@ -22,13 +22,14 @@ The plugin SHALL provide a single `@Component` class `plugin.session.SessionServ
 
 ### Requirement: Session container management
 
-`SessionService` SHALL manage the in-memory session container keyed by player uuid with the same behavior the former `SessionHandler` had.
+`SessionService` SHALL manage the in-memory session container keyed by player uuid with the same behavior the former `SessionHandler` had. In addition, `SessionService` SHALL track recently joined players by recording their IP, name, and UUID into an expiring list without holding a reference to the active `Session`.
 
 The container SHALL expose: `get()` returning the map, `get(Player)`, `getByUuid(String)`, `put(Player)`, `remove(Player)`, `contains(Player)`, `size()`, `each(Cons<Session>)`, `each(Boolf<Session>, Cons<Session>)`, `count(Boolf<Session>)`, and `find(Boolf<Session>)`.
 
 #### Scenario: Player join creates a session
 - **WHEN** a `PlayerJoin` event fires
 - **THEN** a `Session` is created for the player, backed by `SessionRepository` data, stored in the container, a `SessionCreatedEvent` fires, and `update(session)` runs
+- **AND** the player's join info (IP, name, UUID) is added to the recent players tracking collection
 
 #### Scenario: Player leave removes a session
 - **WHEN** a `PlayerLeave` event fires

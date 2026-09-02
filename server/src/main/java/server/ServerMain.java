@@ -144,7 +144,7 @@ public class ServerMain {
         server.http.GraphRoutes.register(app, gatewayService);
         server.http.GraphSse.register(app);
 
-app.get("/", ctx -> ctx.result("pong"));
+        app.get("/", ctx -> ctx.result("pong"));
 
         app.sse("/api/v2/events", client -> {
             Consumer<BaseEvent> listener = event -> client.sendEvent(Utils.toJsonString(event));
@@ -305,6 +305,18 @@ app.get("/", ctx -> ctx.result("pong"));
         app.get("/api/v2/servers/{id}/kicks", ctx -> {
             UUID id = UUID.fromString(ctx.pathParam("id"));
             ctx.json(gatewayService.of(id).server().getKickedIps().get(10, TimeUnit.SECONDS));
+        });
+
+        app.delete("/api/v2/servers/{id}/kicks/{ip}", ctx -> {
+            UUID id = UUID.fromString(ctx.pathParam("id"));
+            String ip = ctx.pathParam("ip");
+            Boolean result = gatewayService.of(id).server().deleteKickedIp(ip).get(10, TimeUnit.SECONDS);
+            ctx.json(Map.of("success", Boolean.TRUE.equals(result)));
+        });
+
+        app.get("/api/v2/servers/{id}/recent-players", ctx -> {
+            UUID id = UUID.fromString(ctx.pathParam("id"));
+            ctx.json(gatewayService.of(id).server().getRecentPlayers().get(10, TimeUnit.SECONDS));
         });
 
         app.get("/api/v2/servers/{id}/json", ctx -> {

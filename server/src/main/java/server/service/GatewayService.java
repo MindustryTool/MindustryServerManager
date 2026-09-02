@@ -23,6 +23,7 @@ import org.apache.hc.core5.net.URIBuilder;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.core.type.TypeReference;
 
 import arc.files.Fi;
 import arc.util.Log;
@@ -31,6 +32,7 @@ import lombok.experimental.Accessors;
 import dto.LoginDto;
 import dto.LoginRequestDto;
 import dto.PlayerInfoPageDto;
+import dto.RecentPlayerDto;
 import dto.ServerCommandDto;
 import dto.ServerStateDto;
 import dto.StartServerDto;
@@ -53,7 +55,6 @@ import server.manager.NodeManager;
 import server.http.GraphSse;
 import server.utils.ApiError;
 import server.utils.Utils;
-import com.fasterxml.jackson.core.type.TypeReference;
 
 public class GatewayService {
 
@@ -512,6 +513,20 @@ public class GatewayService {
                 return sendRequest("get-kicked-ips", null)
                         .thenApply(n -> Utils.getObjectMapper().convertValue(n, new TypeReference<>() {
                         }));
+            }
+
+            public CompletableFuture<List<RecentPlayerDto>> getRecentPlayers() {
+                return sendRequest("get-recent-players", null, JsonNode.class).thenApply(n -> {
+                    try {
+                        return Utils.getObjectMapper().readerForListOf(RecentPlayerDto.class).readValue(n);
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+            }
+
+            public CompletableFuture<Boolean> deleteKickedIp(String ip) {
+                return sendRequest("delete-kicked-ip", ip, Boolean.class);
             }
         }
     }

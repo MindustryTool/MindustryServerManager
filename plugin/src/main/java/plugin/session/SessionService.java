@@ -1,5 +1,7 @@
 package plugin.session;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -12,6 +14,7 @@ import arc.struct.Seq;
 import arc.util.Log;
 import arc.util.Strings;
 import dto.LoginDto;
+import dto.RecentPlayerDto;
 import lombok.RequiredArgsConstructor;
 import mindustry.Vars;
 import mindustry.game.EventType.PlayerJoin;
@@ -35,6 +38,7 @@ import plugin.utils.Utils;
 @RequiredArgsConstructor
 public class SessionService {
     private final ConcurrentHashMap<String, Session> data = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, RecentPlayerDto> recentPlayers = new ConcurrentHashMap<>();
 
     private final SessionRepository sessionRepository;
 
@@ -98,6 +102,13 @@ public class SessionService {
 
     @Listener
     public void onPlayerJoin(PlayerJoin event) {
+        if (event.player != null) {
+            recentPlayers.put(event.player.uuid(), new RecentPlayerDto()
+                    .setName(event.player.name)
+                    .setIp(event.player.ip())
+                    .setUuid(event.player.uuid())
+                    .setJoinedAt(System.currentTimeMillis()));
+        }
         put(event.player);
     }
 
@@ -108,6 +119,18 @@ public class SessionService {
 
     public ConcurrentHashMap<String, Session> get() {
         return data;
+    }
+
+    public List<RecentPlayerDto> getRecentPlayers() {
+        long cutoff = System.currentTimeMillis() - TimeUnit.MINUTES.toMillis(30);
+        recentPlayers.entrySet().removeIf(entry -> entry.getValue().getJoinedAt() < cutoff);
+        return new ArrayList<>(recentPlayers.values());
+    }
+
+    @Schedule(fixedDelay = 1, unit = TimeUnit.MINUTES)
+    private void cleanupRecentPlayers() {
+        long cutoff = System.currentTimeMillis() - TimeUnit.MINUTES.toMillis(30);
+        recentPlayers.entrySet().removeIf(entry -> entry.getValue().getJoinedAt() < cutoff);
     }
 
     @Schedule(fixedDelay = 1, unit = TimeUnit.MINUTES)
@@ -128,6 +151,7 @@ public class SessionService {
         each(Session::reset);
 
         data.clear();
+        recentPlayers.clear();
     }
 
     @Listener

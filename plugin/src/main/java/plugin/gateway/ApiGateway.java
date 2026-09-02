@@ -10,10 +10,12 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import dto.RecentPlayerDto;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -96,6 +98,7 @@ public class ApiGateway {
     private static final ExecutorService executor = Executors.newCachedThreadPool();
 
     private final HostService hostService;
+    private final SessionService sessionService;
 
     private final Duration HEARTBEAT_DURATION = Duration.ofSeconds(5);
     private final HashMap<String, MessageHandler<Object, Object>> messageHandlers = new HashMap<>();
@@ -131,6 +134,8 @@ public class ApiGateway {
         this.registerMessageHandler("get-commands", Void.class, (request) -> getCommands());
         this.registerMessageHandler("get-players-info", JsonNode.class, (request) -> getPlayersInfo(request));
         this.registerMessageHandler("get-kicked-ips", Void.class, (request) -> getKicks());
+        this.registerMessageHandler("get-recent-players", Void.class, (request) -> getRecentPlayers());
+        this.registerMessageHandler("delete-kicked-ip", String.class, (request) -> deleteKickedIp(request));
         this.registerMessageHandler("shutdown", Void.class, (request) -> shutdown());
 
     }
@@ -340,7 +345,7 @@ public class ApiGateway {
         registerMessageHandler(type, clazz, handler);
     }
 
-private <Req, Res> void registerMessageHandler(String type, Class<Req> clazz, Function<Req, Res> handler) {
+    private <Req, Res> void registerMessageHandler(String type, Class<Req> clazz, Function<Req, Res> handler) {
         MessageHandler<Object, Object> mh = new MessageHandler<Object, Object>((Class<Object>) clazz,
                 (Function<Object, Object>) handler);
         messageHandlers.put(type, mh);
@@ -620,7 +625,8 @@ private <Req, Res> void registerMessageHandler(String type, Class<Req> clazz, Fu
         if (filter != null) {
             conditions.add(info -> //
             info.names.contains(name -> name.contains(filter))
-                    || info.ips.contains(ip -> ip.contains(filter)));
+                    || info.ips.contains(ip -> ip.contains(filter))
+                    || info.id.contains(filter));
         }
 
         if (node.has("banned")) {
@@ -671,6 +677,23 @@ private <Req, Res> void registerMessageHandler(String type, Class<Req> clazz, Fu
         }, "Get kicks");
 
         return result;
+    }
+
+    private List<RecentPlayerDto> getRecentPlayers() {
+        if (sessionService == null) {
+            return Collections.emptyList();
+        }
+        return sessionService.getRecentPlayers();
+    }
+
+    private Boolean deleteKickedIp(String ip) {
+        return Utils.appPostWithTimeout(() -> {
+            if (ip == null || ip.isEmpty()) {
+                return false;
+            }
+            Long removed = Vars.netServer.admins.kickedIPs.remove(ip);
+            return removed != null;
+        }, "Delete kicked ip");
     }
 
     private Void generateMapImage() {

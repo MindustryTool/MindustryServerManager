@@ -16,7 +16,7 @@ class GraphBootstrapTest {
     void ensureStartedRegistersHandlersAndPersistsDocumentsOnce(
             @TempDir Path tempDir) throws Exception {
 
-        plugin.gateway.ApiGateway gateway = new plugin.gateway.ApiGateway(null);
+        plugin.gateway.ApiGateway gateway = new plugin.gateway.ApiGateway(null, null);
         GraphBootstrap bootstrap = new GraphBootstrap(gateway);
         assertFalse(bootstrap.isStarted());
 
