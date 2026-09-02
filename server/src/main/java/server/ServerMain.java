@@ -304,7 +304,8 @@ public class ServerMain {
 
         app.get("/api/v2/servers/{id}/kicks", ctx -> {
             UUID id = UUID.fromString(ctx.pathParam("id"));
-            ctx.json(gatewayService.of(id).server().getKickedIps().get(10, TimeUnit.SECONDS));
+            Map<String, Long> kicks = gatewayService.of(id).server().getKickedIps().get(10, TimeUnit.SECONDS);
+            ctx.json(kicks != null ? kicks : Map.of());
         });
 
         app.delete("/api/v2/servers/{id}/kicks/{ip}", ctx -> {

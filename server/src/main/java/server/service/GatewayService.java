@@ -13,6 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -510,9 +511,14 @@ public class GatewayService {
             }
 
             public CompletableFuture<Map<String, Long>> getKickedIps() {
-                return sendRequest("get-kicked-ips", null)
-                        .thenApply(n -> Utils.getObjectMapper().convertValue(n, new TypeReference<>() {
-                        }));
+                return sendRequest("get-kicked-ips", null, JsonNode.class)
+                        .thenApply(n -> {
+                            if (n == null || n.isNull()) {
+                                return Collections.emptyMap();
+                            }
+                            return Utils.getObjectMapper().convertValue(n, new TypeReference<Map<String, Long>>() {
+                            });
+                        });
             }
 
             public CompletableFuture<List<RecentPlayerDto>> getRecentPlayers() {
