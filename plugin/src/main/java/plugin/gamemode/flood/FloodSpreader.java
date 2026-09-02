@@ -282,14 +282,9 @@ public class FloodSpreader {
         for (int pos = reachable.nextSetBit(0); pos >= 0; pos = reachable.nextSetBit(pos + 1)) {
             if (!scheduled.get(pos)) {
                 Tile tile = Vars.world.tile(pos % width, pos / width);
-                if (tile != null && tile.build != null && tile.build.team == Team.crux) {
-                    var tier = tile.build.block.id < tierByBlockId.length ? tierByBlockId[tile.build.block.id] : null;
-                    if (tier != null) {
-                        scheduled.set(pos);
-                        deadlines[pos] = now + (long) (tier.evolveTime * 1000 / multiplier)
-                                + Mathf.random(1000 * 1, 1000 * 5);
-                        push(deadlines[pos], pos);
-                    }
+                var tier = getFloodTier(tile);
+                if (tier != null) {
+                    scheduleCruxTile(pos, tier, multiplier, now);
                 }
             }
         }
@@ -306,8 +301,7 @@ public class FloodSpreader {
         }
 
         Tile tile = Vars.world.tile(x, y);
-        boolean isFloodBlock = tile != null && tile.build != null && tile.build.team == Team.crux
-                && tile.build.block.id < tierByBlockId.length && tierByBlockId[tile.build.block.id] != null;
+        boolean isFloodBlock = tile != null && (getFloodTier(tile) != null || isFloodTile(tile));
 
         if (scheduled.get(pos) || isFloodBlock) {
             reachable.set(pos);
@@ -342,16 +336,36 @@ public class FloodSpreader {
         return config.floodTiles.first();
     }
 
+    public FloodConfig.FloodTile getFloodTier(Tile tile) {
+        if (tile == null) {
+            return null;
+        }
+        var build = tile.build;
+        if (build != null && build.isValid() && build.team == Team.crux) {
+            int id = build.block.id;
+            return id < tierByBlockId.length ? tierByBlockId[id] : null;
+        }
+        if (tile.block() != null && (tile.build == null || tile.build.team == Team.crux || tile.team() == Team.crux)) {
+            int id = tile.block().id;
+            return id < tierByBlockId.length ? tierByBlockId[id] : null;
+        }
+        return null;
+    }
+
     public boolean isFloodTile(Tile tile) {
         if (tile == null) {
             return false;
         }
         var build = tile.build;
-        if (build == null || !build.isValid() || build.team != Team.crux) {
-            return false;
+        if (build != null && build.isValid() && build.team == Team.crux) {
+            int id = build.block.id;
+            return id < isFloodOrCoreBlockId.length && isFloodOrCoreBlockId[id];
         }
-        int id = build.block.id;
-        return id < isFloodOrCoreBlockId.length && isFloodOrCoreBlockId[id];
+        if (tile.block() != null && (tile.build == null || tile.build.team == Team.crux || tile.team() == Team.crux)) {
+            int id = tile.block().id;
+            return id < isFloodOrCoreBlockId.length && isFloodOrCoreBlockId[id];
+        }
+        return false;
     }
 
     public boolean hasAdjacentFlood(Tile tile) {
@@ -389,9 +403,15 @@ public class FloodSpreader {
         }
         scheduled.set(pos);
 
+        var tier = getFloodTier(tile);
+        if (tier != null) {
+            scheduleCruxTile(pos, tier, multiplier, now);
+            return;
+        }
+
         var build = tile.build;
         if (build != null && build.team == Team.crux) {
-            scheduleCruxTile(pos, build, multiplier, now);
+            scheduled.set(pos);
         } else if (build == null && (tile.block() == Blocks.air || tile.block().alwaysReplace)) {
             deadlines[pos] = now + Mathf.random(1000 * 5, 1000 * 10);
             push(deadlines[pos], pos);
@@ -404,12 +424,14 @@ public class FloodSpreader {
     }
 
     // Schedules evolution deadline for an existing Crux flood structure.
-    private void scheduleCruxTile(int pos, Building build, float multiplier, long now) {
-        var tier = build.block.id < tierByBlockId.length ? tierByBlockId[build.block.id] : null;
+    private void scheduleCruxTile(int pos, FloodConfig.FloodTile tier, float multiplier, long now) {
         if (tier != null) {
+            scheduled.set(pos);
             deadlines[pos] = now + (long) (tier.evolveTime * 1000 / multiplier)
                     + Mathf.random(1000 * 1, 1000 * 5);
             push(deadlines[pos], pos);
+        } else {
+            scheduled.set(pos);
         }
     }
 
@@ -447,7 +469,14 @@ public class FloodSpreader {
             propagate(tile, now, multiplier);
             push(deadlines[pos], pos);
         } else {
-            clear(pos);
+            var tier = getFloodTier(tile);
+            if (tier != null) {
+                scheduleCruxTile(pos, tier, multiplier, now);
+                propagate(tile, now, multiplier);
+                damageNeighbors(tile, tier.damage * multiplier);
+            } else {
+                clear(pos);
+            }
         }
     }
 
@@ -515,26 +544,19 @@ public class FloodSpreader {
             return;
         }
 
+        var tier = getFloodTier(neighbor);
+        if (tier != null) {
+            scheduleCruxTile(pos, tier, multiplier, now);
+            return;
+        }
+
         var build = neighbor.build;
         if (build != null && build.team == Team.crux) {
-            scheduleCruxNeighbor(pos, build, multiplier, now);
+            scheduled.set(pos);
         } else if (build == null && (neighbor.block() == Blocks.air || neighbor.block().alwaysReplace)) {
             scheduled.set(pos);
             deadlines[pos] = now + Mathf.random(1000 * 5, 1000 * 10);
             push(deadlines[pos], pos);
-        }
-    }
-
-    // Schedules evolution deadline for an adjacent Crux flood neighbor if not already scheduled.
-    private void scheduleCruxNeighbor(int pos, Building build, float multiplier, long now) {
-        var tier = build.block.id < tierByBlockId.length ? tierByBlockId[build.block.id] : null;
-        if (tier != null) {
-            scheduled.set(pos);
-            deadlines[pos] = now + (long) (tier.evolveTime * 1000 / multiplier)
-                    + Mathf.random(1000 * 1, 1000 * 5);
-            push(deadlines[pos], pos);
-        } else {
-            scheduled.set(pos);
         }
     }
 
