@@ -61,6 +61,8 @@ public class FloodGamemode {
     private Duration nightDuration = Duration.ofMinutes(8);
     private int days = 0;
 
+    private boolean isGameOver = false; 
+
     private boolean shouldUpdate() {
         return Vars.state.isPlaying();
     }
@@ -80,6 +82,7 @@ public class FloodGamemode {
         suppressed.clear();
         damageReceived.clear();
         warnedNoCores = false;
+        isGameOver = false;
 
         Log.info("Flood rules applied: world=@x@ cores=@ tiers=@",
                 Vars.world.width(), Vars.world.height(), Team.crux.cores().size,
@@ -102,7 +105,7 @@ public class FloodGamemode {
             return;
         }
 
-        var unitCount = Groups.unit.count(u -> u.team == Team.crux);
+        long unitCount = Groups.unit.count(u -> u.team == Team.crux);
 
         if (unitCount >= 50) {
             return;
@@ -176,7 +179,7 @@ public class FloodGamemode {
         }
 
         for (var core : Team.crux.cores()) {
-            var damaged = core.maxHealth - core.health;
+            float damaged = core.maxHealth - core.health;
             core.maxHealth(100000000);
             core.heal();
             if (damaged > 0) {
@@ -306,9 +309,10 @@ public class FloodGamemode {
             damageReceived.put(core, 0f);
         }
 
-        if (suppressed.size() == cores) {
+        if (suppressed.size() == cores && isGameOver == false) {
             Events.fire(new FloodWonEvent());
             Events.fire(new EventType.GameOverEvent(Team.sharded));
+            isGameOver = true;
         }
     }
 }
