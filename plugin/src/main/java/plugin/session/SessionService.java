@@ -37,8 +37,18 @@ import plugin.utils.Utils;
 @Component
 @RequiredArgsConstructor
 public class SessionService {
+    private static class RecentPlayerEntry {
+        final RecentPlayerDto dto;
+        volatile long leftAt;
+
+        RecentPlayerEntry(RecentPlayerDto dto, long leftAt) {
+            this.dto = dto;
+            this.leftAt = leftAt;
+        }
+    }
+
     private final ConcurrentHashMap<String, Session> data = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<String, RecentPlayerDto> recentPlayers = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, RecentPlayerEntry> recentPlayers = new ConcurrentHashMap<>();
 
     private final SessionRepository sessionRepository;
 
@@ -103,17 +113,35 @@ public class SessionService {
     @Listener
     public void onPlayerJoin(PlayerJoin event) {
         if (event.player != null) {
-            recentPlayers.put(event.player.uuid(), new RecentPlayerDto()
-                    .setName(event.player.name)
-                    .setIp(event.player.ip())
-                    .setUuid(event.player.uuid())
-                    .setJoinedAt(System.currentTimeMillis()));
+            recentPlayers.put(event.player.uuid(), new RecentPlayerEntry(
+                    new RecentPlayerDto()
+                            .setName(event.player.name)
+                            .setIp(event.player.ip())
+                            .setUuid(event.player.uuid())
+                            .setJoinedAt(System.currentTimeMillis()),
+                    0));
         }
         put(event.player);
     }
 
     @Listener
     public void onPlayerLeave(PlayerLeave event) {
+        if (event.player != null) {
+            RecentPlayerEntry recent = recentPlayers.get(event.player.uuid());
+            if (recent != null) {
+                recent.leftAt = System.currentTimeMillis();
+                recent.dto.setName(event.player.name);
+                recent.dto.setIp(event.player.ip());
+            } else {
+                recentPlayers.put(event.player.uuid(), new RecentPlayerEntry(
+                        new RecentPlayerDto()
+                                .setName(event.player.name)
+                                .setIp(event.player.ip())
+                                .setUuid(event.player.uuid())
+                                .setJoinedAt(System.currentTimeMillis()),
+                        System.currentTimeMillis()));
+            }
+        }
         remove(event.player);
     }
 
@@ -122,15 +150,26 @@ public class SessionService {
     }
 
     public List<RecentPlayerDto> getRecentPlayers() {
-        long cutoff = System.currentTimeMillis() - TimeUnit.MINUTES.toMillis(30);
-        recentPlayers.entrySet().removeIf(entry -> entry.getValue().getJoinedAt() < cutoff);
-        return new ArrayList<>(recentPlayers.values());
+        cleanupRecentPlayers();
+        List<RecentPlayerDto> list = new ArrayList<>(recentPlayers.size());
+        for (RecentPlayerEntry entry : recentPlayers.values()) {
+            list.add(entry.dto);
+        }
+        return list;
     }
 
     @Schedule(fixedDelay = 1, unit = TimeUnit.MINUTES)
     private void cleanupRecentPlayers() {
         long cutoff = System.currentTimeMillis() - TimeUnit.MINUTES.toMillis(30);
-        recentPlayers.entrySet().removeIf(entry -> entry.getValue().getJoinedAt() < cutoff);
+        recentPlayers.entrySet().removeIf(entry -> {
+            String uuid = entry.getKey();
+            RecentPlayerEntry player = entry.getValue();
+            if (data.containsKey(uuid)) {
+                return false;
+            }
+            long leaveTime = player.leftAt > 0 ? player.leftAt : player.dto.getJoinedAt();
+            return leaveTime < cutoff;
+        });
     }
 
     @Schedule(fixedDelay = 1, unit = TimeUnit.MINUTES)
