@@ -69,8 +69,21 @@ public class AdminService {
 
     @Listener
     public void onBanEvent(PlayerBanEvent event) {
-        ServerEvents.PlayerBanEvent banEvent = new ServerEvents.PlayerBanEvent(Control.SERVER_ID, event.player.ip(),
-                event.uuid, Strings.stripColors(event.player.name));
+        String name = "Unknown";
+        String ip = "Unknown";
+
+        if (event.player != null) {
+            name = Strings.stripColors(event.player.name);
+            ip = event.player.ip();
+        } else {
+            var info = Vars.netServer.admins.getInfoOptional(event.uuid);
+            if (info != null) {
+                name = info.lastName;
+                ip = info.lastIP;
+            }
+        }
+
+        ServerEvents.PlayerBanEvent banEvent = new ServerEvents.PlayerBanEvent(Control.SERVER_ID, ip, event.uuid, name);
         apiGateway.fire(banEvent);
     }
 
