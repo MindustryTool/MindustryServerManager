@@ -42,6 +42,7 @@ public class ServerCommands {
 
     @ServerCommand(name = "kickWithReason", description = "Kick player")
     private void kickWithReason(@Param(name = "id") String id,
+            @Param(name = "duration") String duration,
             @Param(name = "message", variadic = true) String[] reasons) {
         if (!Vars.state.isGame()) {
             Log.err("Not hosting. Host a game first.");
