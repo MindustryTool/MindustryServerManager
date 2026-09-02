@@ -630,7 +630,7 @@ public class ApiGateway {
         }
 
         if (node.has("banned")) {
-            conditions.add(info -> info.banned == node.path("banned").asBoolean());
+            conditions.add(info -> info.banned == node.path("banned").asText().equals("true"));
         }
 
         return Utils.appPostWithTimeout(() -> {
