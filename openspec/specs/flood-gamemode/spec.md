@@ -111,3 +111,14 @@ The system SHALL periodically apply the matching flood tier's damage to non-crux
 - **WHEN** a non-crux unit occupies a tile with a crux building of a configured flood block
 - **THEN** the unit takes that tier's configured damage per check
 
+### Requirement: Crux unit death spawns last-tier flood
+When a Crux team unit is destroyed, the system SHALL attempt to place the last configured flood tier under the unit's death position if the tile allows placement. Placement SHALL succeed on unflooded, buildable non-deep terrain or on existing lower-tier Crux flood tiles, and SHALL NOT overwrite player buildings, non-flood Crux structures (including cores), or solid/unbuildable environment obstacles.
+
+#### Scenario: Crux unit dies on buildable ground
+- **WHEN** a Crux team unit is destroyed at a position with valid buildable ground
+- **THEN** a last-tier flood block is placed under its position belonging to Team.crux
+
+#### Scenario: Crux unit dies on non-placeable tile
+- **WHEN** a Crux team unit is destroyed over deep liquid, an obstacle, or an enemy building
+- **THEN** no flood block is placed
+

@@ -51,4 +51,11 @@ public class FloodConfig {
 
         return null;
     }
+
+    public FloodTile lastTier() {
+        if (floodTiles == null || floodTiles.isEmpty()) {
+            return null;
+        }
+        return floodTiles.peek();
+    }
 }

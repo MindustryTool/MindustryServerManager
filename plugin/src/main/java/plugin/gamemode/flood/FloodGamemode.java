@@ -17,12 +17,14 @@ import mindustry.content.UnitTypes;
 import mindustry.game.EventType;
 import mindustry.game.EventType.BlockBuildEndEvent;
 import mindustry.game.EventType.BlockDestroyEvent;
+import mindustry.game.EventType.UnitDestroyEvent;
 import mindustry.game.Team;
 import mindustry.gen.Building;
 import mindustry.gen.Call;
 import mindustry.gen.Groups;
 import mindustry.gen.Iconc;
 import mindustry.type.UnitType;
+import mindustry.type.unit.MissileUnitType;
 import plugin.annotations.Component;
 import plugin.annotations.ConditionOn;
 import plugin.gamemode.GamemodeCondition;
@@ -279,6 +281,29 @@ public class FloodGamemode {
     private void onBlockBuildEnd(BlockBuildEndEvent event) {
         if (spreader != null && event.tile != null && event.breaking) {
             spreader.onTileDestroyed(spreader.posOf(event.tile));
+        }
+    }
+
+    @Listener
+    private void onUnitDestroy(UnitDestroyEvent event) {
+        if (!shouldUpdate() || event.unit == null || event.unit.team != Team.crux) {
+            return;
+        }
+
+        if (event.unit.type instanceof MissileUnitType) {
+            return;
+        }
+
+        var tile = event.unit.tileOn();
+        if (tile == null && Vars.world != null) {
+            tile = Vars.world.tileWorld(event.unit.x, event.unit.y);
+        }
+        if (tile == null) {
+            return;
+        }
+
+        if (spreader != null && spreader.isInitialized()) {
+            spreader.tryPlaceLastTier(tile, getFloodMultiplier());
         }
     }
 

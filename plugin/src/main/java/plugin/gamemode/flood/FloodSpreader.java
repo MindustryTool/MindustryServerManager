@@ -13,6 +13,7 @@ import mindustry.content.Blocks;
 import mindustry.game.Team;
 import mindustry.gen.Building;
 import mindustry.gen.Call;
+import mindustry.world.Block;
 import mindustry.world.Tile;
 import mindustry.world.blocks.storage.CoreBlock;
 
@@ -398,6 +399,91 @@ public class FloodSpreader {
             return null;
         }
         return config.floodTiles.first();
+    }
+
+    /** Flood tier used for death placement; null when unconfigured. */
+    public FloodConfig.FloodTile lastTier() {
+        return config.lastTier();
+    }
+
+    public boolean canPlaceFlood(Tile tile, FloodConfig.FloodTile lastTier) {
+        if (tile == null || lastTier == null || lastTier.block == null) {
+            return false;
+        }
+        if (Vars.world == null) {
+            return false;
+        }
+
+        Block block = lastTier.block;
+        int size = block.size;
+        int offset = -(size - 1) / 2;
+
+        for (int dx = 0; dx < size; dx++) {
+            for (int dy = 0; dy < size; dy++) {
+                int tx = tile.x + offset + dx;
+                int ty = tile.y + offset + dy;
+                if (tx < 0 || tx >= width || ty < 0 || ty >= height) {
+                    return false;
+                }
+                Tile t = Vars.world.tile(tx, ty);
+                if (t == null) {
+                    return false;
+                }
+                if (t.floor() != null && t.floor().isDeep() && !block.floating && !block.placeableLiquid) {
+                    return false;
+                }
+                if (t.solid() && (t.build == null || t.build.team != Team.crux)) {
+                    return false;
+                }
+                if (!block.canPlaceOn(t, Team.crux, 0)) {
+                    return false;
+                }
+
+                if (t.build != null) {
+                    if (t.build.team != Team.crux) {
+                        return false;
+                    }
+                    var currentTier = getFloodTier(t);
+                    if (currentTier == null || currentTier == lastTier) {
+                        return false;
+                    }
+                } else {
+                    if (t.block() != null && t.block() != Blocks.air && !t.block().alwaysReplace) {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        return true;
+    }
+
+    public boolean tryPlaceLastTier(Tile tile, float multiplier) {
+        var lastTier = lastTier();
+        if (lastTier == null || lastTier.block == null || tile == null) {
+            return false;
+        }
+
+        if (!canPlaceFlood(tile, lastTier)) {
+            return false;
+        }
+
+        if (Vars.net != null) {
+            Call.setTile(tile, lastTier.block, Team.crux, 0);
+        } else {
+            tile.setBlock(lastTier.block, Team.crux, 0);
+        }
+
+        int pos = posOf(tile);
+        if (pos >= 0 && pos < width * height) {
+            long now = Time.millis();
+            if (hasSpreadableNeighbor(pos)) {
+                addEdgeTile(pos);
+            }
+            scheduleCruxTile(pos, lastTier, multiplier, now);
+        }
+
+        return true;
     }
 
     public FloodConfig.FloodTile getFloodTier(Tile tile) {
