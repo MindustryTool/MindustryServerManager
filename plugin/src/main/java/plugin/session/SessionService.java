@@ -177,7 +177,7 @@ public class SessionService {
     @Schedule(fixedDelay = 1, unit = TimeUnit.MINUTES)
     private void updateLeaderboardData() {
         if (Vars.state.isPlaying()) {
-            leaderboardCache = sessionRepository.leaderBoard(3);
+            leaderboardCache = sessionRepository.leaderBoard(10);
         }
     }
 
