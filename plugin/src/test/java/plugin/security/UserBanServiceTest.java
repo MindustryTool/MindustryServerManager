@@ -1,7 +1,5 @@
 package plugin.security;
 
-import java.time.Instant;
-
 import arc.Core;
 import arc.Settings;
 import org.junit.jupiter.api.BeforeEach;

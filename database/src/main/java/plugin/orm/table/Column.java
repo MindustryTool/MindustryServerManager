@@ -1,5 +1,6 @@
 package plugin.orm.table;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -115,7 +116,11 @@ public final class Column<T> {
 
     @SafeVarargs
     public final Condition in(T... values) {
-        return new InCondition(this, false, List.of(values));
+        List<T> list = new ArrayList<>(values.length);
+        for (T val : values) {
+            list.add(val);
+        }
+        return new InCondition(this, false, list);
     }
 
     public Condition notIn(Collection<? extends T> values) {
@@ -124,7 +129,11 @@ public final class Column<T> {
 
     @SafeVarargs
     public final Condition notIn(T... values) {
-        return new InCondition(this, true, List.of(values));
+        List<T> list = new ArrayList<>(values.length);
+        for (T val : values) {
+            list.add(val);
+        }
+        return new InCondition(this, true, list);
     }
 
     public Condition like(String pattern) {

@@ -61,7 +61,7 @@ public class AsyncExecutionTest {
                 futures.add(db.select().from(Fixtures.USERS).fetchAsync()
                         .thenAccept(rows -> threadNames.add(Thread.currentThread().getName() + n)));
             }
-            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+            CompletableFuture.allOf(futures.toArray(CompletableFuture<?>[]::new)).join();
 
             assertFalse(threadNames.isEmpty());
             assertTrue(threadNames.stream().allMatch(name -> name.startsWith("test-exec")));
@@ -138,7 +138,7 @@ public class AsyncExecutionTest {
             final int n = i;
             futures.add(test.db.insert(Fixtures.USERS).set(Fixtures.USERS_NAME, "u" + n).executeAsync());
         }
-        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+        CompletableFuture.allOf(futures.toArray(CompletableFuture<?>[]::new)).join();
 
         assertEquals(total, test.db.select().from(Fixtures.USERS).fetch().size());
     }

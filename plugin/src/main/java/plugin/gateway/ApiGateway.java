@@ -101,7 +101,7 @@ public class ApiGateway {
     private final SessionService sessionService;
 
     private final Duration HEARTBEAT_DURATION = Duration.ofSeconds(5);
-    private final HashMap<String, MessageHandler<Object, Object>> messageHandlers = new HashMap<>();
+    private final HashMap<String, MessageHandler<?, ?>> messageHandlers = new HashMap<>();
     private final WsHandler wsHandler = new WsHandler();
 
     private Instant lastSendEventAt = Instant.now();
@@ -315,12 +315,11 @@ public class ApiGateway {
             return;
         }
 
-        MessageHandler<Object, Object> handler = messageHandlers.get(wsMessage.getType());
+        MessageHandler<?, ?> handler = messageHandlers.get(wsMessage.getType());
 
         if (handler != null) {
             try {
-                Object param = JsonUtils.readJsonAsClass(payload, handler.getClazz());
-                Object result = handler.getFn().apply(param);
+                Object result = invokeMessageHandler(handler, payload);
                 WsMessage<?> response = wsMessage.response(result);
                 ws.sendText(JsonUtils.toJsonString(response));
             } catch (Exception e) {
@@ -339,16 +338,18 @@ public class ApiGateway {
         }
     }
 
-    @SuppressWarnings("unchecked")
+    private static <Req, Res> Res invokeMessageHandler(MessageHandler<Req, Res> handler, JsonNode payload) {
+        Req param = JsonUtils.readJsonAsClass(payload, handler.getClazz());
+        return handler.getFn().apply(param);
+    }
+
     public <Req, Res> void exposeHandler(String type, Class<Req> clazz,
             Function<Req, Res> handler) {
         registerMessageHandler(type, clazz, handler);
     }
 
     private <Req, Res> void registerMessageHandler(String type, Class<Req> clazz, Function<Req, Res> handler) {
-        MessageHandler<Object, Object> mh = new MessageHandler<Object, Object>((Class<Object>) clazz,
-                (Function<Object, Object>) handler);
-        messageHandlers.put(type, mh);
+        messageHandlers.put(type, new MessageHandler<>(clazz, handler));
     }
 
     @Schedule(delay = 5, fixedDelay = 5, unit = TimeUnit.SECONDS)

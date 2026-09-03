@@ -161,7 +161,7 @@ public class RtvService {
             return 0;
         }
 
-        return (int) vote.count(uuid -> {
+        return vote.count(uuid -> {
             var session = sessionService.getByUuid(uuid);
             return session.isEmpty() || !session.get().isAfk();
         });

@@ -5,6 +5,7 @@ import plugin.annotations.Param;
 
 @Getter
 public class ParamException extends RuntimeException {
+    private static final long serialVersionUID = 1L;
     private final Param param;
     private final String value;
 

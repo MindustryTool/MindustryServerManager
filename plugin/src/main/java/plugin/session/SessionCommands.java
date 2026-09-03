@@ -1,9 +1,6 @@
 package plugin.session;
 
-import arc.util.Log;
-import dto.LoginDto;
 import lombok.RequiredArgsConstructor;
-import mindustry.gen.Call;
 import plugin.annotations.ClientCommand;
 import plugin.annotations.Component;
 import plugin.gateway.ApiGateway;

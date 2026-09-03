@@ -320,6 +320,7 @@ public class HubService {
                 if (objectives.any()) {
                     Call.setObjectives(objectives);
                 }
+                break;
             }
 
             default:
