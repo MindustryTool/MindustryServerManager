@@ -10,6 +10,7 @@ import lombok.experimental.Accessors;
 @Data
 @Accessors(chain = true)
 public class LoginDto {
+    String userId;
     String uuid;
     Boolean isAdmin = false;
     String name;

@@ -32,6 +32,9 @@ public class ClientCommandHandler {
     public void registerCommands(CommandHandler handler) {
         this.handler = handler;
 
+        handler.removeCommand("votekick");
+        handler.removeCommand("vote");
+
         for (PluginClientCommand command : commands) {
             command.register(handler);
         }
@@ -59,6 +62,7 @@ public class ClientCommandHandler {
         commands.add(cmd);
 
         if (handler != null) {
+            handler.removeCommand(name);
             cmd.register(handler);
         }
     }
