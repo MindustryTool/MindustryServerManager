@@ -1,4 +1,10 @@
-## ADDED Requirements
+# portable-registry
+
+## Purpose
+
+Defines the pure-Java dependency injection and lifecycle management engine residing in the `annotation` module, providing constructor injection, lifecycle hooks, condition evaluation, and pluggable annotation handler registration without Mindustry dependencies.
+
+## Requirements
 
 ### Requirement: Pluggable annotation handler registration
 

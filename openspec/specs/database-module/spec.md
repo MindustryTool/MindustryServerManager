@@ -1,4 +1,10 @@
-## ADDED Requirements
+# database-module
+
+## Purpose
+
+Defines the dedicated `:database` Gradle subproject housing the SQLite ORM engine, query builders, schema models, converters, transactions, and unit tests without game engine coupling.
+
+## Requirements
 
 ### Requirement: Dedicated database subproject
 
