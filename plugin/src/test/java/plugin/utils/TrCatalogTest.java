@@ -240,7 +240,7 @@ public class TrCatalogTest {
 
     @Test
     void allCatalogsLoadCleanlyAndTranslateMessages() throws Exception {
-        String[] languages = {"ar", "en", "es", "id", "ja", "ko", "pl", "ru", "th", "vi", "zh"};
+        String[] languages = {"ar", "en", "es", "fr", "id", "ja", "ko", "pl", "ru", "th", "uk", "vi", "zh"};
         TrCatalog catalog = new TrCatalog();
 
         for (String lang : languages) {

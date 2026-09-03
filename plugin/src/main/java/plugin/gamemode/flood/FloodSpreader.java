@@ -373,7 +373,7 @@ public class FloodSpreader {
         long now = Time.millis();
 
         if (now >= nextSpreadAt) {
-            nextSpreadAt = now + SPREAD_INTERVAL_MILLIS;
+            nextSpreadAt = now + (long)(SPREAD_INTERVAL_MILLIS / multiplier);
             spreadEdges(now, multiplier);
         }
 
