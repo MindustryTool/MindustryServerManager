@@ -1,6 +1,5 @@
 package dto;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -14,8 +13,6 @@ public class LoginDto {
     String uuid;
     Boolean isAdmin = false;
     String name;
-    @JsonIgnore
     String loginLink;
-    @JsonIgnore
     JsonNode stats = new ObjectMapper().createObjectNode();
 }
