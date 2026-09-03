@@ -196,7 +196,11 @@
     },
     "update": {
         "updated": "[#B388FF]プラグイン {owner}/{repo}/{tag} を更新しました。バージョン: {version}",
-        "restart_scheduled": "[scarlet]サーバーは再起動が予定されています"
+        "restart_scheduled": "[scarlet]サーバーは再起動が予定されています",
+        "restart_scheduled_sandbox": "[scarlet]プラグインの更新が利用可能です。サーバーは {minutes} 分後に再起動します。",
+        "restart_pending_gameover": "[scarlet]プラグインの更新が利用可能です。ゲーム終了時にサーバーが再起動します。",
+        "restart_join_sandbox": "[scarlet]お知らせ：プラグインの更新が予定されています。サーバーは {minutes} 分後に再起動します。",
+        "restart_join_gameover": "[scarlet]お知らせ：プラグインの更新が保留中です。このゲーム終了後にサーバーが再起動します。"
     },
     "welcome": {
         "message": "[accent]サーバーへようこそ！\n[lightgray]ルールを守って楽しくプレイしましょう。",

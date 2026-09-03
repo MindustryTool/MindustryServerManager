@@ -196,7 +196,11 @@
     },
     "update": {
         "updated": "[#B388FF]อัปเดตปลั๊กอิน {owner}/{repo}/{tag} แล้ว เวอร์ชัน: {version}",
-        "restart_scheduled": "[scarlet]เซิร์ฟเวอร์ถูกกำหนดเวลาให้รีสตาร์ท"
+        "restart_scheduled": "[scarlet]เซิร์ฟเวอร์ถูกกำหนดเวลาให้รีสตาร์ท",
+        "restart_scheduled_sandbox": "[scarlet]มีการอัปเดตปลั๊กอิน เซิร์ฟเวอร์จะรีสตาร์ทใน {minutes} นาที",
+        "restart_pending_gameover": "[scarlet]มีการอัปเดตปลั๊กอิน เซิร์ฟเวอร์จะรีสตาร์ทเมื่อเกมสิ้นสุดลง",
+        "restart_join_sandbox": "[scarlet]แจ้งเตือน: กำหนดการอัปเดตปลั๊กอิน เซิร์ฟเวอร์จะรีสตาร์ทใน {minutes} นาที",
+        "restart_join_gameover": "[scarlet]แจ้งเตือน: กำลังรออัปเดตปลั๊กอิน เซิร์ฟเวอร์จะรีสตาร์ทหลังจบเกมนี้"
     },
     "welcome": {
         "message": "[accent]ยินดีต้อนรับสู่เซิร์ฟเวอร์!\n[lightgray]เล่นอย่างยุติธรรม ขอให้สนุกและเพลิดเพลินกับการเล่น",

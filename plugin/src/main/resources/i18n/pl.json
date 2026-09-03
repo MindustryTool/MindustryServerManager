@@ -196,7 +196,11 @@
     },
     "update": {
         "updated": "[#B388FF]Plugin {owner}/{repo}/{tag} zaktualizowany, wersja: {version}",
-        "restart_scheduled": "[scarlet]Serwer zaplanowany do restartu"
+        "restart_scheduled": "[scarlet]Serwer zaplanowany do restartu",
+        "restart_scheduled_sandbox": "[scarlet]Dostępna jest aktualizacja pluginu. Serwer uruchomi się ponownie za {minutes} minut.",
+        "restart_pending_gameover": "[scarlet]Dostępna jest aktualizacja pluginu. Serwer uruchomi się ponownie po zakończeniu gry.",
+        "restart_join_sandbox": "[scarlet]Uwaga: Zaplanowano aktualizację pluginu. Serwer uruchomi się ponownie za {minutes} minut.",
+        "restart_join_gameover": "[scarlet]Uwaga: Oczekuje aktualizacja pluginu. Serwer uruchomi się ponownie po zakończeniu tej gry."
     },
     "welcome": {
         "message": "[accent]Witamy na serwerze!\n[lightgray]Graj uczciwie, baw się dobrze i miłego spędzania czasu.",

@@ -196,7 +196,11 @@
     },
     "update": {
         "updated": "[#B388FF]Plugin {owner}/{repo}/{tag} mis à jour, version : {version}",
-        "restart_scheduled": "[scarlet]Redémarrage du serveur programmé"
+        "restart_scheduled": "[scarlet]Redémarrage du serveur programmé",
+        "restart_scheduled_sandbox": "[scarlet]Une mise à jour du plugin est disponible. Le serveur redémarrera dans {minutes} minutes.",
+        "restart_pending_gameover": "[scarlet]Une mise à jour du plugin est disponible. Le serveur redémarrera à la fin de la partie.",
+        "restart_join_sandbox": "[scarlet]Avis : Une mise à jour du plugin est planifiée. Le serveur redémarrera dans {minutes} minutes.",
+        "restart_join_gameover": "[scarlet]Avis : Une mise à jour du plugin est en attente. Le serveur redémarrera à la fin de cette partie."
     },
     "welcome": {
         "message": "[accent]Bienvenue sur le serveur !\n[lightgray]Jouez loyalement, amusez-vous et profitez de votre séjour.",

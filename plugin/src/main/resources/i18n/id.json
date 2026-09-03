@@ -196,7 +196,11 @@
     },
     "update": {
         "updated": "[#B388FF]Plugin {owner}/{repo}/{tag} diperbarui, versi: {version}",
-        "restart_scheduled": "[scarlet]Server dijadwalkan untuk restart"
+        "restart_scheduled": "[scarlet]Server dijadwalkan untuk restart",
+        "restart_scheduled_sandbox": "[scarlet]Pembaruan plugin tersedia. Server akan dimulai ulang dalam {minutes} menit.",
+        "restart_pending_gameover": "[scarlet]Pembaruan plugin tersedia. Server akan dimulai ulang saat permainan berakhir.",
+        "restart_join_sandbox": "[scarlet]Pemberitahuan: Pembaruan plugin dijadwalkan. Server akan dimulai ulang dalam {minutes} menit.",
+        "restart_join_gameover": "[scarlet]Pemberitahuan: Pembaruan plugin tertunda. Server akan dimulai ulang setelah permainan ini selesai."
     },
     "welcome": {
         "message": "[accent]Selamat datang di server!\n[lightgray]Bermainlah secara adil, bersenang-senang, dan nikmati waktu Anda.",

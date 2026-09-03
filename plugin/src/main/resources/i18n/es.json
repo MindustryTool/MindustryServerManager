@@ -196,7 +196,11 @@
     },
     "update": {
         "updated": "[#B388FF]Plugin {owner}/{repo}/{tag} actualizado, versión: {version}",
-        "restart_scheduled": "[scarlet]Reinicio del servidor programado"
+        "restart_scheduled": "[scarlet]Reinicio del servidor programado",
+        "restart_scheduled_sandbox": "[scarlet]Actualización de plugin disponible. El servidor se reiniciará en {minutes} minutos.",
+        "restart_pending_gameover": "[scarlet]Actualización de plugin disponible. El servidor se reiniciará al finalizar la partida.",
+        "restart_join_sandbox": "[scarlet]Aviso: Hay una actualización programada. El servidor se reiniciará en {minutes} minutos.",
+        "restart_join_gameover": "[scarlet]Aviso: Hay una actualización pendiente. El servidor se reiniciará al concluir esta partida."
     },
     "welcome": {
         "message": "[accent]¡Bienvenido al servidor!\n[lightgray]Juega limpio, diviértete y disfruta tu estancia.",

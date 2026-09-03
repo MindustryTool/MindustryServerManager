@@ -196,7 +196,11 @@
     },
     "update": {
         "updated": "[#B388FF]플러그인 {owner}/{repo}/{tag} 업데이트 완료, 버전: {version}",
-        "restart_scheduled": "[scarlet]서버 재시작이 예약되었습니다"
+        "restart_scheduled": "[scarlet]서버 재시작이 예약되었습니다",
+        "restart_scheduled_sandbox": "[scarlet]플러그인 업데이트가 있습니다. 서버가 {minutes}분 후에 다시 시작됩니다.",
+        "restart_pending_gameover": "[scarlet]플러그인 업데이트가 있습니다. 게임이 종료되면 서버가 다시 시작됩니다.",
+        "restart_join_sandbox": "[scarlet]알림: 플러그인 업데이트가 예정되어 있습니다. 서버가 {minutes}분 후에 다시 시작됩니다.",
+        "restart_join_gameover": "[scarlet]알림: 플러그인 업데이트가 대기 중입니다. 이번 게임이 종료된 후 서버가 다시 시작됩니다."
     },
     "welcome": {
         "message": "[accent]서버에 오신 것을 환영합니다!\n[lightgray]매너를 지키며 즐겁게 플레이하세요.",

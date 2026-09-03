@@ -196,7 +196,11 @@
     },
     "update": {
         "updated": "[#B388FF]الملحق {owner}/{repo}/{tag} تم تحديثه، الإصدار: {version}",
-        "restart_scheduled": "[scarlet]تمت جدولة إعادة تشغيل الخادم"
+        "restart_scheduled": "[scarlet]تمت جدولة إعادة تشغيل الخادم",
+        "restart_scheduled_sandbox": "[scarlet]يتوفر تحديث للمكون الإضافي. سيتم إعادة تشغيل الخادم بعد {minutes} دقيقة.",
+        "restart_pending_gameover": "[scarlet]يتوفر تحديث للمكون الإضافي. سيتم إعادة تشغيل الخادم عند انتهاء اللعبة.",
+        "restart_join_sandbox": "[scarlet]إشعار: تم جدولة تحديث للمكون الإضافي. سيتم إعادة تشغيل الخادم بعد {minutes} دقيقة.",
+        "restart_join_gameover": "[scarlet]إشعار: هناك تحديث قيد الانتظار. سيتم إعادة تشغيل الخادم بعد انتهاء هذه اللعبة."
     },
     "welcome": {
         "message": "[accent]مرحبًا بك في الخادم!\n[lightgray]العب بنزاهة، استمتع بوقتك ونتمنى لك تجربة ممتعة.",

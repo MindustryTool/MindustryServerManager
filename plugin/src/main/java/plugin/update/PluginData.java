@@ -69,38 +69,36 @@ public class PluginData {
             httpConn.setReadTimeout(60_000);
             httpConn.setConnectTimeout(60_000);
 
-            int responseCode = httpConn.getResponseCode();
+            // Fix #4: always disconnect in finally so the connection is released on error
+            try {
+                int responseCode = httpConn.getResponseCode();
 
-            try (BufferedInputStream in = new BufferedInputStream(httpConn.getInputStream());
-                    ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+                try (BufferedInputStream in = new BufferedInputStream(httpConn.getInputStream());
+                        ByteArrayOutputStream out = new ByteArrayOutputStream()) {
 
-                if (responseCode == HttpURLConnection.HTTP_OK) {
-                    byte[] buffer = new byte[4096];
-                    int bytesRead;
-                    while ((bytesRead = in.read(buffer)) != -1) {
-                        out.write(buffer, 0, bytesRead);
+                    if (responseCode == HttpURLConnection.HTTP_OK) {
+                        byte[] buffer = new byte[4096];
+                        int bytesRead;
+                        while ((bytesRead = in.read(buffer)) != -1) {
+                            out.write(buffer, 0, bytesRead);
+                        }
+                    } else {
+                        throw new IOException("Server returned non-OK response code: " + responseCode);
                     }
-                } else {
-                    throw new IOException("Server returned non-OK response code: " + responseCode);
+
+                    return out.toByteArray();
                 }
-
+            } finally {
                 httpConn.disconnect();
-
-                return out.toByteArray();
             }
         } catch (Exception e) {
             throw new RuntimeException("Error while downloading plugin: " + this.id, e);
         }
     }
 
+    // Fix #8: use @Data for consistency with the outer class — Lombok generates equals/hashCode/getters
+    @lombok.Data
     public static class PluginVersion {
         private String updatedAt;
-
-        public PluginVersion() {
-        }
-
-        public String getUpdatedAt() {
-            return this.updatedAt;
-        }
     }
 }

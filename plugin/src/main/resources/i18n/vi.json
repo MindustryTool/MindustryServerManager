@@ -196,7 +196,11 @@
     },
     "update": {
         "updated": "[#B388FF]Plugin {owner}/{repo}/{tag} đã cập nhật, phiên bản: {version}",
-        "restart_scheduled": "[scarlet]Máy chủ được lên lịch khởi động lại"
+        "restart_scheduled": "[scarlet]Máy chủ được lên lịch khởi động lại",
+        "restart_scheduled_sandbox": "[scarlet]Có bản cập nhật plugin mới. Máy chủ sẽ khởi động lại sau {minutes} phút.",
+        "restart_pending_gameover": "[scarlet]Có bản cập nhật plugin mới. Máy chủ sẽ khởi động lại khi kết thúc trận đấu.",
+        "restart_join_sandbox": "[scarlet]Thông báo: Có bản cập nhật plugin đã lên lịch. Máy chủ sẽ khởi động lại sau {minutes} phút.",
+        "restart_join_gameover": "[scarlet]Thông báo: Đang chờ cập nhật plugin. Máy chủ sẽ khởi động lại sau khi kết thúc trận."
     },
     "welcome": {
         "message": "[accent]Chào mừng bạn đến với máy chủ!\n[lightgray]Hãy chơi đẹp, vui vẻ và tận hưởng khoảng thời gian tại đây.",

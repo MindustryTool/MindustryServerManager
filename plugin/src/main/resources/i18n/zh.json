@@ -196,7 +196,11 @@
     },
     "update": {
         "updated": "[#B388FF]插件 {owner}/{repo}/{tag} 已更新，版本：{version}",
-        "restart_scheduled": "[scarlet]服务器已计划重启"
+        "restart_scheduled": "[scarlet]服务器已计划重启",
+        "restart_scheduled_sandbox": "[scarlet]插件有新更新可用。服务器将在 {minutes} 分钟后重启。",
+        "restart_pending_gameover": "[scarlet]插件有新更新可用。本局游戏结束后服务器将重启。",
+        "restart_join_sandbox": "[scarlet]提示：已安排插件更新。服务器将在 {minutes} 分钟后重启。",
+        "restart_join_gameover": "[scarlet]提示：插件更新待处理。本局游戏结束后服务器将重启。"
     },
     "welcome": {
         "message": "[accent]欢迎来到服务器！\n[lightgray]请公平竞技，祝你游戏愉快。",
