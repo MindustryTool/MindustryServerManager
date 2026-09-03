@@ -116,6 +116,22 @@ public class SessionRepository {
         dirty.remove(uuid);
     }
 
+    public boolean exists(String uuid) {
+        if (cache.containsKey(uuid)) {
+            return true;
+        }
+        return database.db().select(Sessions.UUID).from(Sessions.TABLE)
+                .where(Sessions.UUID.eq(uuid))
+                .fetchOne()
+                .isPresent();
+    }
+
+    public void save(String uuid, SessionData data) {
+        cache.put(uuid, data);
+        write(uuid, data);
+        dirty.remove(uuid);
+    }
+
     @Schedule(delay = 10, fixedDelay = 10, unit = TimeUnit.SECONDS)
     public void flushBatch() {
         if (dirty.isEmpty()) {

@@ -1,13 +1,16 @@
 package plugin.admin;
 
+import java.time.Instant;
 import java.util.Set;
 
 import arc.Core;
 import arc.util.Log;
+import arc.util.Strings;
 import mindustry.Vars;
 import mindustry.gen.Call;
 import mindustry.gen.Groups;
 import mindustry.gen.Player;
+import mindustry.net.Administration.PlayerInfo;
 import mindustry.net.Packets.KickReason;
 import plugin.update.PluginUpdater;
 import plugin.annotations.Component;
@@ -16,6 +19,11 @@ import plugin.annotations.ServerCommand;
 import plugin.database.Database;
 import plugin.gamemode.Gamemode;
 import plugin.security.UserBanService;
+import plugin.session.ExpUtils;
+import plugin.session.Session;
+import plugin.session.SessionData;
+import plugin.session.SessionRepository;
+import plugin.session.SessionService;
 import plugin.utils.Tr;
 import plugin.utils.Utils;
 
@@ -165,5 +173,83 @@ public class ServerCommands {
         } else {
             Log.info("Banned user IDs (@): @", bans.size(), String.join(", ", bans));
         }
+    }
+
+    @ServerCommand(name = "exp", description = "Add, remove, or set exp or level for a player uuid")
+    public void exp(@Param(name = "uuid") String uuid,
+            @Param(name = "amount", variadic = true) String[] amount,
+            SessionService sessionService,
+            SessionRepository sessionRepository) {
+        if (uuid == null || uuid.trim().isEmpty()) {
+            Log.err("UUID cannot be empty.");
+            return;
+        }
+
+        String targetUuid = uuid.trim();
+        String rawAmount = String.join("", amount).replaceAll("\\s+", "");
+
+        Session online = sessionService.getByUuid(targetUuid).orElse(null);
+        SessionData data;
+        String playerName;
+        boolean isOnline = online != null;
+
+        if (isOnline) {
+            data = online.getData();
+            playerName = Strings.stripColors(online.player.name);
+        } else {
+            PlayerInfo info = (Vars.netServer != null && Vars.netServer.admins != null)
+                    ? Vars.netServer.admins.getInfoOptional(targetUuid)
+                    : null;
+            boolean exists = sessionRepository.exists(targetUuid) || info != null;
+            if (!exists) {
+                Log.err("Player with uuid '@' not found.", targetUuid);
+                return;
+            }
+
+            data = sessionRepository.get(targetUuid);
+            if (data.name == null || data.name.isEmpty()) {
+                if (info != null && info.lastName != null) {
+                    data.name = info.lastName;
+                }
+            }
+            playerName = (data.name != null && !data.name.isEmpty()) ? Strings.stripColors(data.name) : targetUuid;
+            // Prevent offline time from being counted as playtime when writing session data
+            data.lastSaved = Instant.now().toEpochMilli();
+        }
+
+        float oldExp;
+        int oldLevel;
+        synchronized (data) {
+            oldExp = data.exp;
+        }
+        oldLevel = (isOnline && online.currentLevel > 0)
+                ? online.currentLevel
+                : ExpUtils.levelFromTotalExp((long) oldExp);
+
+        float newExp;
+        try {
+            newExp = ExpUtils.calculateExp(oldExp, rawAmount);
+        } catch (IllegalArgumentException e) {
+            Log.err(e.getMessage());
+            return;
+        }
+
+        synchronized (data) {
+            data.exp = newExp;
+        }
+
+        int newLevel;
+        if (isOnline) {
+            sessionService.updateLevel(online);
+            newLevel = online.currentLevel;
+            sessionRepository.save(targetUuid, online.getData());
+        } else {
+            newLevel = ExpUtils.levelFromTotalExp((long) newExp);
+            sessionRepository.save(targetUuid, data);
+        }
+
+        Log.info("Updated exp for @ (@)@: @ -> @ exp, level @ -> @",
+                playerName, targetUuid, isOnline ? "" : " [offline]",
+                (long) oldExp, (long) newExp, oldLevel, newLevel);
     }
 }
