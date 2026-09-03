@@ -141,9 +141,6 @@ public class ServerMain {
             }
         });
 
-        server.http.GraphRoutes.register(app, gatewayService);
-        server.http.GraphSse.register(app);
-
         app.get("/", ctx -> ctx.result("pong"));
 
         app.sse("/api/v2/events", client -> {

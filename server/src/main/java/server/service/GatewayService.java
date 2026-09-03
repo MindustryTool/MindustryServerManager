@@ -53,7 +53,6 @@ import io.javalin.websocket.WsMessageContext;
 import server.EnvConfig;
 import server.config.Const;
 import server.manager.NodeManager;
-import server.http.GraphSse;
 import server.utils.ApiError;
 import server.utils.Utils;
 
@@ -151,10 +150,6 @@ public class GatewayService {
         @Getter
         private final Server server = new Server();
         public final Instant createdAt = Instant.now();
-        /** Graph RPC passthrough for the graph REST routes. */
-        public java.util.concurrent.CompletableFuture<JsonNode> graphRequest(String type, Object payload) {
-            return server.graphRequest(type, payload);
-        }
 
         private volatile ClientState state = ClientState.CONNECTING;
         private volatile Instant terminatedAt = null;
@@ -173,13 +168,6 @@ public class GatewayService {
                     return null;
                 }
 
-                if (name.startsWith("graph.")) {
-                    String topic = event.has("graphId")
-                            ? GraphSse.debugTopic(event.get("graphId").asText())
-                            : "events";
-                    GraphSse.broker().publish(topic, name, event.toString());
-                    return null;
-                }
                 var eventType = ServerEvents.getEventMap().get(name);
                 if (eventType == null) {
                     Log.warn("Invalid event name: " + name + " in " + ServerEvents.getEventMap().keySet());
@@ -383,10 +371,6 @@ public class GatewayService {
         }
 
         public class Server {
-            /** Generic RPC passthrough used by the graph REST routes. */
-            public java.util.concurrent.CompletableFuture<JsonNode> graphRequest(String type, Object payload) {
-                return sendRequest(type, payload, JsonNode.class);
-            }
             private <R> CompletableFuture<R> sendRequest(String type, Object payload, Class<R> clazz) {
                 WsMessage<?> request = WsMessage.create(type).withPayload(payload);
 

@@ -26,7 +26,6 @@ dependencies {
 
     implementation(project(":dto"))
     implementation(project(":annotation"))
-    implementation(project(":graph"))
 
     compileOnly("org.projectlombok:lombok:1.18.30")
     compileOnly("Anuken:Mindustry:${property("mindustryVersion")}")
@@ -49,8 +48,7 @@ tasks.test {
 tasks.jar {
     dependsOn(
         ":dto:classes",
-        ":annotation:classes",
-        ":graph:classes"
+        ":annotation:classes"
     )
 
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
@@ -62,15 +60,13 @@ tasks.jar {
     // Internal modules
     from(project(":dto").sourceSets.main.get().output)
     from(project(":annotation").sourceSets.main.get().output)
-    from(project(":graph").sourceSets.main.get().output)
 
     // External dependencies only
     configurations.runtimeClasspath.get()
         .filter { dependency ->
             dependency.name !in listOf(
                 "dto-${project.version}.jar",
-                "annotation-${project.version}.jar",
-                "graph-${project.version}.jar"
+                "annotation-${project.version}.jar"
             )
         }
         .forEach { dependency ->
