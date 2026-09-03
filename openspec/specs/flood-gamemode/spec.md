@@ -1,25 +1,31 @@
 # flood-gamemode
 
-## Requirements
+## Purpose
 
+Defines the flood gamemode mechanics, including core-anchored flood spreading, tier evolution, connectivity-based orphan sweeping, damage pulses, core suppression accounting, and day/night cycle behaviors.
+## Requirements
 ### Requirement: Flood spread behavior
-The system SHALL spread flood tiles outward from unsuppressed crux cores using an event-driven scheduler: air/replaceable tiles reached by the flood frontier SHALL be placed as the first flood tier after a randomized 5–10 s delay, and flooded tiles SHALL evolve through configured tiers after their evolve time divided by the current multiplier plus 1–5 s jitter. Spread reach and tier progression SHALL match the configured flood tile list.
+The system SHALL track edge flood tiles (crux flood tiles adjacent to at least one spreadable unflooded tile) and attempt to spread new flood tiles from the active edge list every 5 seconds. When spreading, adjacent air/replaceable tiles reached by the edge tiles SHALL be placed as the first configured flood tier. Newly placed flood tiles with spreadable neighbors SHALL be added to the edge list, and edge tiles with no remaining spreadable neighbors SHALL be removed. Flooded tiles SHALL evolve through configured tiers after their evolve time divided by the current multiplier plus 1–5 s jitter. Spread reach and tier progression SHALL match the configured flood tile list.
 
 #### Scenario: Flood spreads from an unsuppressed core
 - **WHEN** the game is running and at least one crux core is not suppressed
-- **THEN** air/replaceable tiles on the core perimeter and flood frontier are scheduled and flood after staying spreadable for the randomized 5-10s delay window
+- **THEN** spreadable tiles on the core perimeter are seeded with the first flood tier and added as edge flood tiles to initiate spreading
 
 #### Scenario: All cores suppressed halts spread
 - **WHEN** every crux core is currently suppressed
 - **THEN** the flood simulation is frozen (no placements, evolutions, or damage pulses) and resumes when suppression ends
 
-#### Scenario: Destroyed flood block attempts regrowth
-- **WHEN** a crux building that was part of the flood is destroyed
-- **THEN** its high-tier events are discarded, and if adjacent flood tiles remain, it is scheduled to regrow from a tier-1 flood after a randomized 5-10s delay
+#### Scenario: Edge flood tiles attempt spread every 5 seconds
+- **WHEN** 5 seconds elapse and active edge flood tiles exist
+- **THEN** the spreader attempts to place the first configured flood tier onto adjacent spreadable tiles from the edge list
 
-#### Scenario: First tier placed when spread deadline fires on spreadable tile
-- **WHEN** a spread deadline (5-10s after frontier reached tile) fires on a tile that is still spreadable (air/replaceable tile with adjacent flood tile or core)
-- **THEN** the first configured flood tier is placed on that tile and its neighbors are scheduled with new 5-10s delays
+#### Scenario: Edge list updates as frontier advances
+- **WHEN** an edge flood tile spreads and no longer has any spreadable neighbors
+- **THEN** it is removed from the edge list, and newly placed flood tiles that have spreadable neighbors are added to the edge list
+
+#### Scenario: Destroyed flood block restores neighbor to edge list
+- **WHEN** a crux flood block is destroyed leaving an adjacent flood block with an open neighbor
+- **THEN** the adjacent flood block is added back to the edge list and attempts spread into the cleared tile on the 5-second cycle
 
 #### Scenario: Tier evolution proceeds through all configured tiers
 - **WHEN** a flood tile has existed for its tier's evolve time / multiplier + jitter
@@ -104,3 +110,4 @@ The system SHALL periodically apply the matching flood tier's damage to non-crux
 #### Scenario: Unit stands on flooded tile
 - **WHEN** a non-crux unit occupies a tile with a crux building of a configured flood block
 - **THEN** the unit takes that tier's configured damage per check
+

@@ -29,6 +29,7 @@ public class FloodSpreader {
 
     private static final long DAMAGE_PULSE_MILLIS = 1000;
     private static final long ORPHAN_SWEEP_MILLIS = 5000;
+    private static final long SPREAD_INTERVAL_MILLIS = 5000;
     private static final long FLUSH_INTERVAL_MILLIS = 100;
     private static final int INITIAL_HEAP_CAPACITY = 256;
     private static final int MAX_EVENTS_PER_TICK = 64;
@@ -62,6 +63,12 @@ public class FloodSpreader {
     private final IntSeq sweepQueue = new IntSeq();
     private BitSet reachable = new BitSet();
     private long nextSweepAt = 0;
+    private long nextSpreadAt = 0;
+
+    // Edge flood tile tracking: packed array of active edge tiles + reverse index for O(1) ops
+    private final IntSeq edgeTiles = new IntSeq();
+    private int[] edgeTileIndex = new int[0];
+    private final IntSeq scratchNewEdges = new IntSeq();
 
     private boolean loggedFirstPlacement = false;
     private boolean warnedNoTiers = false;
@@ -78,7 +85,7 @@ public class FloodSpreader {
     }
 
     public boolean isInitialized() {
-        return width > 0 && deadlines.length == width * height;
+        return width > 0 && deadlines.length == width * height && edgeTileIndex.length == width * height;
     }
 
     public void reset(int width, int height) {
@@ -91,7 +98,13 @@ public class FloodSpreader {
 
         sweepQueue.clear();
         reachable.clear();
+        edgeTiles.clear();
+        edgeTileIndex = new int[totalTiles];
+        Arrays.fill(edgeTileIndex, -1);
+        scratchNewEdges.clear();
+
         nextSweepAt = 0;
+        nextSpreadAt = 0;
         nextFlushAt = 0;
         loggedFirstPlacement = false;
         warnedNoTiers = false;
@@ -171,13 +184,23 @@ public class FloodSpreader {
     public void onTileDestroyed(int pos) {
         if (pos >= 0 && pos < deadlines.length) {
             clear(pos);
-            Tile tile = Vars.world.tile(pos % width, pos / width);
-            if (tile != null && isSpreadable(tile)) {
-                long now = Time.millis();
-                scheduled.set(pos);
-                deadlines[pos] = now + Mathf.random(1000 * 5, 1000 * 10);
-                push(deadlines[pos], pos);
-            }
+            int x = pos % width;
+            int y = pos / width;
+            checkAndReaddEdgeTile(x - 1, y);
+            checkAndReaddEdgeTile(x + 1, y);
+            checkAndReaddEdgeTile(x, y - 1);
+            checkAndReaddEdgeTile(x, y + 1);
+        }
+    }
+
+    private void checkAndReaddEdgeTile(int x, int y) {
+        if (x < 0 || x >= width || y < 0 || y >= height) {
+            return;
+        }
+        int p = x + y * width;
+        Tile t = Vars.world.tile(x, y);
+        if (t != null && isFloodTile(t)) {
+            addEdgeTile(p);
         }
     }
 
@@ -203,7 +226,7 @@ public class FloodSpreader {
         }
     }
 
-    // Schedules flood activation for all tiles along the perimeter ring of a core.
+    // Schedules flood activation and edge seeding for all tiles along the perimeter ring of a core.
     private void seedCorePerimeter(Building core, FloodConfig.FloodTile firstTier, float multiplier, long now) {
         int size = core.block.size;
         int leftOffset = (size - 1) / 2;
@@ -212,12 +235,45 @@ public class FloodSpreader {
         int cy = core.tile.y;
 
         for (int y = cy - leftOffset; y <= cy + rightOffset; y++) {
-            touch(Vars.world.tile(cx - leftOffset - 1, y), firstTier, multiplier, now);
-            touch(Vars.world.tile(cx + rightOffset + 1, y), firstTier, multiplier, now);
+            seedPerimeterTile(Vars.world.tile(cx - leftOffset - 1, y), firstTier, multiplier, now);
+            seedPerimeterTile(Vars.world.tile(cx + rightOffset + 1, y), firstTier, multiplier, now);
         }
         for (int x = cx - leftOffset; x <= cx + rightOffset; x++) {
-            touch(Vars.world.tile(x, cy - leftOffset - 1), firstTier, multiplier, now);
-            touch(Vars.world.tile(x, cy + rightOffset + 1), firstTier, multiplier, now);
+            seedPerimeterTile(Vars.world.tile(x, cy - leftOffset - 1), firstTier, multiplier, now);
+            seedPerimeterTile(Vars.world.tile(x, cy + rightOffset + 1), firstTier, multiplier, now);
+        }
+    }
+
+    private void seedPerimeterTile(Tile tile, FloodConfig.FloodTile firstTier, float multiplier, long now) {
+        if (tile == null) {
+            return;
+        }
+        int pos = posOf(tile);
+
+        var tier = getFloodTier(tile);
+        if (tier != null) {
+            if (!scheduled.get(pos)) {
+                scheduleCruxTile(pos, tier, multiplier, now);
+            }
+            if (hasSpreadableNeighbor(pos)) {
+                addEdgeTile(pos);
+            }
+            return;
+        }
+
+        var build = tile.build;
+        if (build != null && build.team == Team.crux) {
+            scheduled.set(pos);
+        } else if (build == null && (tile.block() == Blocks.air || tile.block().alwaysReplace)) {
+            place(tile, firstTier, 0, now, multiplier);
+            scheduled.set(pos);
+            push(deadlines[pos], pos);
+            if (hasSpreadableNeighbor(pos)) {
+                addEdgeTile(pos);
+            }
+        } else if (build != null) {
+            seededPulses.set(pos);
+            push(now + DAMAGE_PULSE_MILLIS, pos);
         }
     }
 
@@ -285,6 +341,9 @@ public class FloodSpreader {
                 var tier = getFloodTier(tile);
                 if (tier != null) {
                     scheduleCruxTile(pos, tier, multiplier, now);
+                    if (hasSpreadableNeighbor(pos)) {
+                        addEdgeTile(pos);
+                    }
                 }
             }
         }
@@ -309,11 +368,16 @@ public class FloodSpreader {
         }
     }
 
-    /** Processes all events due at or before the current time, up to MAX_EVENTS_PER_TICK, then emits batched tile updates. */
+    /** Processes 5-second edge spread and all events due at or before the current time, up to MAX_EVENTS_PER_TICK, then emits batched tile updates. */
     public void tick(float multiplier) {
         long now = Time.millis();
-        int processed = 0;
 
+        if (now >= nextSpreadAt) {
+            nextSpreadAt = now + SPREAD_INTERVAL_MILLIS;
+            spreadEdges(now, multiplier);
+        }
+
+        int processed = 0;
         while (heapSize > 0 && heapAt[0] <= now && processed < MAX_EVENTS_PER_TICK) {
             int pos = heapPos[0];
             pop();
@@ -392,35 +456,125 @@ public class FloodSpreader {
         return hasAdjacentFlood(tile);
     }
 
-    private void touch(Tile tile, FloodConfig.FloodTile firstTier, float multiplier, long now) {
-        if (tile == null) {
+    public void addEdgeTile(int pos) {
+        if (pos < 0 || pos >= edgeTileIndex.length) {
+            return;
+        }
+        if (edgeTileIndex[pos] != -1) {
+            return;
+        }
+        edgeTileIndex[pos] = edgeTiles.size;
+        edgeTiles.add(pos);
+    }
+
+    public void removeEdgeTile(int pos) {
+        if (pos < 0 || pos >= edgeTileIndex.length) {
+            return;
+        }
+        int idx = edgeTileIndex[pos];
+        if (idx == -1) {
+            return;
+        }
+        int lastPos = edgeTiles.pop();
+        if (idx < edgeTiles.size) {
+            edgeTiles.set(idx, lastPos);
+            edgeTileIndex[lastPos] = idx;
+        }
+        edgeTileIndex[pos] = -1;
+    }
+
+    public boolean isEdgeTile(int pos) {
+        return pos >= 0 && pos < edgeTileIndex.length && edgeTileIndex[pos] != -1;
+    }
+
+    public int edgeTileCount() {
+        return edgeTiles.size;
+    }
+
+    private boolean isSpreadableNeighbor(int nx, int ny) {
+        if (nx < 0 || nx >= width || ny < 0 || ny >= height) {
+            return false;
+        }
+        Tile tile = Vars.world.tile(nx, ny);
+        return isSpreadable(tile);
+    }
+
+    public boolean hasSpreadableNeighbor(int pos) {
+        int x = pos % width;
+        int y = pos / width;
+        return isSpreadableNeighbor(x - 1, y)
+                || isSpreadableNeighbor(x + 1, y)
+                || isSpreadableNeighbor(x, y - 1)
+                || isSpreadableNeighbor(x, y + 1);
+    }
+
+    // Spreads flood onto adjacent spreadable tiles from active edge flood tiles.
+    private void spreadEdges(long now, float multiplier) {
+        var firstTier = firstTier();
+        if (firstTier == null) {
             return;
         }
 
-        int pos = posOf(tile);
-        if (scheduled.get(pos)) {
-            return;
-        }
-        scheduled.set(pos);
-
-        var tier = getFloodTier(tile);
-        if (tier != null) {
-            scheduleCruxTile(pos, tier, multiplier, now);
+        int count = edgeTiles.size;
+        if (count == 0) {
             return;
         }
 
-        var build = tile.build;
-        if (build != null && build.team == Team.crux) {
-            scheduled.set(pos);
-        } else if (build == null && (tile.block() == Blocks.air || tile.block().alwaysReplace)) {
-            deadlines[pos] = now + Mathf.random(1000 * 5, 1000 * 10);
-            push(deadlines[pos], pos);
-        } else if (build != null) {
-            seededPulses.set(pos);
-            push(now + DAMAGE_PULSE_MILLIS, pos);
-        } else {
-            scheduled.clear(pos);
+        scratchNewEdges.clear();
+
+        for (int i = 0; i < count; i++) {
+            int pos = edgeTiles.get(i);
+            Tile tile = Vars.world.tile(pos % width, pos / width);
+            if (tile == null || !isFloodTile(tile)) {
+                continue;
+            }
+
+            int x = pos % width;
+            int y = pos / width;
+
+            spreadToNeighbor(x - 1, y, firstTier, now, multiplier);
+            spreadToNeighbor(x + 1, y, firstTier, now, multiplier);
+            spreadToNeighbor(x, y - 1, firstTier, now, multiplier);
+            spreadToNeighbor(x, y + 1, firstTier, now, multiplier);
         }
+
+        for (int i = 0; i < scratchNewEdges.size; i++) {
+            addEdgeTile(scratchNewEdges.get(i));
+        }
+        scratchNewEdges.clear();
+
+        int i = 0;
+        while (i < edgeTiles.size) {
+            int pos = edgeTiles.get(i);
+            Tile tile = Vars.world.tile(pos % width, pos / width);
+            if (tile == null || !isFloodTile(tile) || !hasSpreadableNeighbor(pos)) {
+                removeEdgeTile(pos);
+            } else {
+                i++;
+            }
+        }
+    }
+
+    private void spreadToNeighbor(int nx, int ny, FloodConfig.FloodTile firstTier, long now, float multiplier) {
+        if (nx < 0 || nx >= width || ny < 0 || ny >= height) {
+            return;
+        }
+
+        Tile nTile = Vars.world.tile(nx, ny);
+        if (nTile == null || !isSpreadable(nTile)) {
+            return;
+        }
+
+        place(nTile, firstTier, 0, now, multiplier);
+        int nPos = posOf(nTile);
+        scheduled.set(nPos);
+        push(deadlines[nPos], nPos);
+
+        if (hasSpreadableNeighbor(nPos)) {
+            scratchNewEdges.add(nPos);
+        }
+
+        damageNeighbors(nTile, firstTier.damage * multiplier);
     }
 
     // Schedules evolution deadline for an existing Crux flood structure.
@@ -448,7 +602,7 @@ public class FloodSpreader {
 
         var build = tile.build;
         if (build == null || !build.isValid()) {
-            processAirSpread(tile, pos, now, multiplier);
+            clear(pos);
             return;
         }
 
@@ -458,26 +612,6 @@ public class FloodSpreader {
         }
 
         processCruxEvolution(tile, build, pos, now, multiplier);
-    }
-
-    // Handles flood placement and propagation onto an empty or replaceable tile.
-    private void processAirSpread(Tile tile, int pos, long now, float multiplier) {
-        var firstTier = firstTier();
-        if (firstTier != null && isSpreadable(tile)
-                && deadlines[pos] > 0 && now >= deadlines[pos]) {
-            place(tile, firstTier, 0, now, multiplier);
-            propagate(tile, now, multiplier);
-            push(deadlines[pos], pos);
-        } else {
-            var tier = getFloodTier(tile);
-            if (tier != null) {
-                scheduleCruxTile(pos, tier, multiplier, now);
-                propagate(tile, now, multiplier);
-                damageNeighbors(tile, tier.damage * multiplier);
-            } else {
-                clear(pos);
-            }
-        }
     }
 
     // Applies periodic first-tier damage pulse to enemy structures anchored to core perimeters.
@@ -501,7 +635,9 @@ public class FloodSpreader {
             if (next != null) {
                 int nextTierIndex = config.floodTiles.indexOf(next);
                 place(tile, next, nextTierIndex >= 0 ? nextTierIndex : 0, now, multiplier);
-                propagate(tile, now, multiplier);
+                if (hasSpreadableNeighbor(pos)) {
+                    addEdgeTile(pos);
+                }
                 deadline = deadlines[pos];
                 tier = next;
             } else {
@@ -519,44 +655,6 @@ public class FloodSpreader {
             push(now + DAMAGE_PULSE_MILLIS, pos);
         } else {
             clear(pos);
-        }
-    }
-
-    private void propagate(Tile tile, long now, float multiplier) {
-        exploreNeighbor(tile.x - 1, tile.y, now, multiplier);
-        exploreNeighbor(tile.x + 1, tile.y, now, multiplier);
-        exploreNeighbor(tile.x, tile.y - 1, now, multiplier);
-        exploreNeighbor(tile.x, tile.y + 1, now, multiplier);
-    }
-
-    private void exploreNeighbor(int x, int y, long now, float multiplier) {
-        if (x < 0 || x >= width || y < 0 || y >= height) {
-            return;
-        }
-
-        Tile neighbor = Vars.world.tile(x, y);
-        if (neighbor == null) {
-            return;
-        }
-
-        int pos = posOf(neighbor);
-        if (scheduled.get(pos)) {
-            return;
-        }
-
-        var tier = getFloodTier(neighbor);
-        if (tier != null) {
-            scheduleCruxTile(pos, tier, multiplier, now);
-            return;
-        }
-
-        var build = neighbor.build;
-        if (build != null && build.team == Team.crux) {
-            scheduled.set(pos);
-        } else if (build == null && (neighbor.block() == Blocks.air || neighbor.block().alwaysReplace)) {
-            scheduled.set(pos);
-            deadlines[pos] = now + Mathf.random(1000 * 5, 1000 * 10);
-            push(deadlines[pos], pos);
         }
     }
 
@@ -604,6 +702,7 @@ public class FloodSpreader {
         if (pos >= 0 && pos < heapIndex.length) {
             heapIndex[pos] = -1;
         }
+        removeEdgeTile(pos);
     }
 
     private void flushUpdates() {
