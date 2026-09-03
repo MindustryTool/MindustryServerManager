@@ -46,7 +46,7 @@ public class EventHandler {
 
     @Listener
     private void onPlayerBan(PlayerBanEvent event) {
-        String message = Strings.format("[scarlet]Player @ has been banned", event.player.name);
+        String message = Strings.format("[scarlet]Player @ has been banned", event.uuid);
 
         apiGateway.fire(ServerEvents.LogEvent.info(Control.SERVER_ID, message));
         apiGateway.fire(new ServerEvents.ChatEvent(Control.SERVER_ID, message));
