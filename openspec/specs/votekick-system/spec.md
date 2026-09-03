@@ -3,15 +3,20 @@
 ## Purpose
 
 Provides interactive UI menus and chat commands (`/votekick`, `/vote`) for initiating and voting on player kicks, complete with categorized kick reasons, AFK player exclusion, team isolation in PvP, cooldown management, and non-reflective integration with Mindustry's networking server.
-
 ## Requirements
 ### Requirement: Interactive votekick initiation via UI Menu
-The system SHALL provide a multi-step UI menu for initiating a votekick against a disruptive player without requiring manual chat syntax.
+The system SHALL provide a multi-step UI menu for initiating a votekick against a disruptive player without requiring manual chat syntax, requiring the initiator to be an authenticated user.
 
 #### Scenario: Opening votekick menu with eligible targets
-- **WHEN** an eligible player executes `/votekick` with no arguments
+- **WHEN** an eligible authenticated player executes `/votekick` with no arguments
 - **THEN** the system displays a menu showing all eligible players to kick (excluding self, admins, and opposing team members in PvP)
 - **AND** displays a close option
+
+#### Scenario: Unauthenticated player attempts to initiate votekick
+- **WHEN** a player who is not logged in attempts to start a votekick or open the votekick menu
+- **THEN** the system rejects the votekick action
+- **AND** sends a localized message that authentication is required
+- **AND** presents the login UI menu to prompt authentication
 
 #### Scenario: Less than minimum player threshold
 - **WHEN** a player tries to open the votekick menu or start a vote when fewer than 3 players are connected

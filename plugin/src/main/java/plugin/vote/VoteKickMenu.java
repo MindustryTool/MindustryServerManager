@@ -6,6 +6,7 @@ import mindustry.gen.Groups;
 import mindustry.gen.Player;
 import plugin.core.Registry;
 import plugin.menus.PluginMenu;
+import plugin.session.LoginMenu;
 import plugin.session.Session;
 import plugin.utils.Tr;
 
@@ -13,6 +14,12 @@ public class VoteKickMenu extends PluginMenu<Player> {
 
     @Override
     public void build(Session session, Player target) {
+        if (!session.isLoggedIn()) {
+            session.player.sendMessage(Tr.t(session, "votekick.login_required"));
+            new LoginMenu().send(session, null);
+            return;
+        }
+
         this.title = Tr.t(session, "votekick.menu_title");
 
         if (target == null) {

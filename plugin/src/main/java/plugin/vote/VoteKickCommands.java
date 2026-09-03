@@ -7,6 +7,7 @@ import mindustry.gen.Player;
 import plugin.annotations.ClientCommand;
 import plugin.annotations.Component;
 import plugin.annotations.Param;
+import plugin.session.LoginMenu;
 import plugin.session.Session;
 import plugin.utils.Tr;
 
@@ -20,6 +21,12 @@ public class VoteKickCommands {
     public void votekick(Session session,
                          @Param(name = "player", required = false) String targetName,
                          @Param(name = "reason", required = false, variadic = true) String[] reasonWords) {
+        if (!session.isLoggedIn()) {
+            session.player.sendMessage(Tr.t(session, "votekick.login_required"));
+            new LoginMenu().send(session, null);
+            return;
+        }
+
         if (voteKickService.isVoting()) {
             new VotePromptMenu().send(session, null);
             return;

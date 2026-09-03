@@ -37,12 +37,18 @@ public class CommandUtils {
             }
 
             if (!param.isAnnotationPresent(Param.class)) {
-                var dep = Registry.get(param.getType());
-                if (dep == null) {
-                    throw new ParamException("Dependency not found: " + param.getType().getSimpleName());
+                try {
+                    var dep = Registry.get(param.getType());
+                    if (dep == null) {
+                        throw new ParamException("Dependency not found: " + param.getType().getSimpleName());
+                    }
+                    resolved[i] = dep;
+                    continue;
+                } catch (ParamException e) {
+                    throw e;
+                } catch (Exception e) {
+                    throw new ParamException("Dependency not found: " + param.getType().getSimpleName(), e);
                 }
-                resolved[i] = dep;
-                continue;
             }
 
             var meta = param.getAnnotation(Param.class);

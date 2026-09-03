@@ -163,7 +163,13 @@
         "server_label": "[scarlet][Máy chủ][white] "
     },
     "security": {
-        "login_logic": "Đăng nhập trước để sử dụng khối hiển thị/canvas, dùng /login để đăng nhập"
+        "login_logic": "Đăng nhập trước để sử dụng khối hiển thị/canvas, dùng /login để đăng nhập",
+        "account_banned": "[scarlet]Tài khoản của bạn đã bị cấm khỏi máy chủ này.",
+        "user_banned_feedback": "[orange]Người dùng '{id}' đã bị cấm.",
+        "user_unbanned_feedback": "[green]Người dùng '{id}' đã được gỡ cấm.",
+        "user_not_banned": "[scarlet]Người dùng '{id}' không bị cấm.",
+        "user_bans_list": "[gold]Danh sách ID bị cấm ({count}): [white]{ids}",
+        "user_bans_empty": "[lightgray]Hiện không có người dùng nào bị cấm."
     },
     "commands": {
         "admin_only": "[scarlet]Bạn phải là admin để dùng lệnh này.",
@@ -314,6 +320,15 @@
         "btn_no": "[red]Không đồng ý (No)",
         "btn_cancel": "[scarlet]Hủy bỏ (Admin)",
         "btn_back": "[yellow]<< Quay lại",
-        "btn_close": "[scarlet]Đóng"
+        "btn_close": "[scarlet]Đóng",
+        "login_required": "[scarlet]Bạn phải đăng nhập để bắt đầu vote-kick."
+    },
+    "login": {
+        "menu_title": "Đăng nhập tài khoản",
+        "menu_desc": "Vui lòng đăng nhập tài khoản để sử dụng tính năng này.\n[gold]Lưu ý:[] Đường link đăng nhập sẽ hết hạn sau 5 phút.",
+        "btn_open": "[green]Mở liên kết đăng nhập",
+        "btn_cancel": "[scarlet]Hủy bỏ",
+        "link_opened": "[green]Đã mở liên kết đăng nhập trong trình duyệt. Liên kết có hiệu lực trong 5 phút.",
+        "link_expired": "[scarlet]Liên kết đăng nhập đã hết hạn. Đang tạo liên kết mới..."
     }
 }

@@ -1,5 +1,8 @@
 package plugin.admin;
 
+import java.util.Collections;
+import java.util.Set;
+
 import arc.Core;
 import arc.util.Log;
 import mindustry.Vars;
@@ -13,6 +16,7 @@ import plugin.annotations.Param;
 import plugin.annotations.ServerCommand;
 import plugin.database.Database;
 import plugin.gamemode.Gamemode;
+import plugin.security.UserBanService;
 import plugin.utils.Tr;
 import plugin.utils.Utils;
 
@@ -133,6 +137,34 @@ public class ServerCommands {
             }
         } else {
             Log.info("Query OK, " + result.updateCount() + " rows affected.");
+        }
+    }
+
+    @ServerCommand(name = "userban", description = "Ban an account by userId")
+    private void userban(@Param(name = "userId") String userId, UserBanService banService) {
+        if (banService.ban(userId)) {
+            Log.info("User '@' has been banned.", userId);
+        } else {
+            Log.info("User '@' is already banned or invalid ID.", userId);
+        }
+    }
+
+    @ServerCommand(name = "userunban", description = "Unban an account by userId")
+    private void userunban(@Param(name = "userId") String userId, UserBanService banService) {
+        if (banService.unban(userId)) {
+            Log.info("User '@' has been unbanned.", userId);
+        } else {
+            Log.info("User '@' is not banned.", userId);
+        }
+    }
+
+    @ServerCommand(name = "userbans", description = "List banned userIds")
+    private void userbans(UserBanService banService) {
+        Set<String> bans = banService.getBannedUserIds();
+        if (bans.isEmpty()) {
+            Log.info("No user IDs are currently banned.");
+        } else {
+            Log.info("Banned user IDs (@): @", bans.size(), String.join(", ", bans));
         }
     }
 }

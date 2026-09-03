@@ -28,6 +28,8 @@ import plugin.PluginEvents;
 import plugin.annotations.Component;
 import plugin.annotations.Destroy;
 import plugin.annotations.Init;
+import plugin.core.Registry;
+import plugin.security.UserBanService;
 import plugin.annotations.Listener;
 import plugin.annotations.Schedule;
 import plugin.session.SessionRepository.RankData;
@@ -334,6 +336,15 @@ public class SessionService {
     }
 
     public void setLogin(Session session, LoginDto login) {
+        if (login != null) {
+            UserBanService userBanService = Registry.get(UserBanService.class);
+            if (userBanService != null && userBanService.isBanned(login.getUserId())) {
+                Log.warn("Player @ attempted to log in with banned userId @", session.player.name, login.getUserId());
+                session.player.kick(Tr.t(session, "security.account_banned"));
+                return;
+            }
+        }
+
         PlayerInfo target = Vars.netServer.admins.getInfoOptional(session.player.uuid());
 
         if (target != null) {

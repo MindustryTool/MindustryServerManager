@@ -25,4 +25,10 @@ public class ParamException extends RuntimeException {
         this.param = null;
         this.value = null;
     }
+
+    public ParamException(String message, Throwable cause) {
+        super(message, cause);
+        this.param = null;
+        this.value = null;
+    }
 }

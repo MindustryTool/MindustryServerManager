@@ -31,19 +31,12 @@ public class SessionCommands {
 
     @ClientCommand(name = "login", description = "Login", admin = false)
     public void login(Session session) {
-        try {
-            LoginDto login = apiGateway.login(session.player);
-
-            var loginLink = login.getLoginLink();
-
-            if (loginLink != null && !loginLink.isEmpty()) {
-                Call.openURI(session.player.con, loginLink);
-            } else {
-                session.player.sendMessage(Tr.t(session.locale, "session.already_logged_in"));
-            }
-        } catch (Exception e) {
-            Log.err("Failed to login", e);
+        if (session.isLoggedIn()) {
+            session.player.sendMessage(Tr.t(session.locale, "session.already_logged_in"));
+            return;
         }
+
+        new LoginMenu().send(session, null);
     }
 
     @ClientCommand(name = "me", description = "Display your info", admin = false)

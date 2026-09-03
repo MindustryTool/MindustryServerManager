@@ -1,6 +1,8 @@
 package plugin.admin;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 import arc.graphics.Color;
 import arc.util.Strings;
@@ -11,7 +13,9 @@ import mindustry.gen.Call;
 import plugin.annotations.ClientCommand;
 import plugin.annotations.Component;
 import plugin.annotations.Param;
+import plugin.security.UserBanService;
 import plugin.session.Session;
+import plugin.utils.Tr;
 
 @Component
 public class AdminCommands {
@@ -47,6 +51,35 @@ public class AdminCommands {
 
         if (value != null && value instanceof Effect effect) {
             Call.effect(effect, session.player.x, session.player.y, 0, Color.white);
+        }
+    }
+
+    @ClientCommand(name = "userban", description = "Ban an account by userId", admin = true)
+    public void userban(Session session, @Param(name = "userId") String userId, UserBanService banService) {
+        if (banService.ban(userId)) {
+            session.player.sendMessage(Tr.t(session, "security.user_banned_feedback", "id", userId));
+        } else {
+            session.player.sendMessage("[scarlet]User is already banned or invalid ID.");
+        }
+    }
+
+    @ClientCommand(name = "userunban", description = "Unban an account by userId", admin = true)
+    public void userunban(Session session, @Param(name = "userId") String userId, UserBanService banService) {
+        if (banService.unban(userId)) {
+            session.player.sendMessage(Tr.t(session, "security.user_unbanned_feedback", "id", userId));
+        } else {
+            session.player.sendMessage(Tr.t(session, "security.user_not_banned", "id", userId));
+        }
+    }
+
+    @ClientCommand(name = "userbans", description = "List banned userIds", admin = true)
+    public void userbans(Session session, UserBanService banService) {
+        Set<String> bans = banService.getBannedUserIds();
+        if (bans.isEmpty()) {
+            session.player.sendMessage(Tr.t(session, "security.user_bans_empty"));
+        } else {
+            session.player.sendMessage(Tr.t(session, "security.user_bans_list",
+                    "count", bans.size(), "ids", String.join(", ", bans)));
         }
     }
 

@@ -160,7 +160,13 @@
         "win_bonus": "Bonificación de experiencia por victoria: +{percent}%"
     },
     "security": {
-        "login_logic": "Inicia sesión primero para usar bloques de pantalla/lienzo, usa /login para iniciar sesión"
+        "login_logic": "Inicia sesión primero para usar bloques de pantalla/lienzo, usa /login para iniciar sesión",
+        "account_banned": "[scarlet]Your account has been banned from this server.",
+        "user_banned_feedback": "[orange]User '{id}' has been banned.",
+        "user_unbanned_feedback": "[green]User '{id}' has been unbanned.",
+        "user_not_banned": "[scarlet]User '{id}' is not banned.",
+        "user_bans_list": "[gold]Banned user IDs ({count}): [white]{ids}",
+        "user_bans_empty": "[lightgray]No user IDs are currently banned."
     },
     "gateway": {
         "server_label": "[scarlet][Servidor][white] "
@@ -314,6 +320,15 @@
         "btn_no": "[red]Disagree (No)",
         "btn_cancel": "[scarlet]Cancel (Admin)",
         "btn_back": "[yellow]<< Back",
-        "btn_close": "[scarlet]Close"
+        "btn_close": "[scarlet]Close",
+        "login_required": "[scarlet]You must be logged in to start a votekick."
+    },
+    "login": {
+        "menu_title": "Account Login",
+        "menu_desc": "Please log in to your account to use this feature.\n[gold]Note:[] The login link expires in 5 minutes.",
+        "btn_open": "[green]Open Login Link",
+        "btn_cancel": "[scarlet]Cancel",
+        "link_opened": "[green]Login link opened in your browser. It expires in 5 minutes.",
+        "link_expired": "[scarlet]Login link expired. Generating a new link..."
     }
 }

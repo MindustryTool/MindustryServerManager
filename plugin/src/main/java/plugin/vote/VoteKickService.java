@@ -21,6 +21,7 @@ import plugin.annotations.Component;
 import plugin.annotations.Destroy;
 import plugin.annotations.Listener;
 import plugin.core.Scheduler;
+import plugin.session.LoginMenu;
 import plugin.session.SessionRemovedEvent;
 import plugin.session.SessionService;
 import plugin.utils.Tr;
@@ -106,6 +107,15 @@ public class VoteKickService {
     }
 
     public synchronized boolean startVote(Player initiator, Player target, String reason) {
+        var sessionOpt = sessionService.get(initiator);
+        if (sessionOpt.isEmpty() || !sessionOpt.get().isLoggedIn()) {
+            initiator.sendMessage(Tr.t(initiator, "votekick.login_required"));
+            if (sessionOpt.isPresent()) {
+                new LoginMenu().send(sessionOpt.get(), null);
+            }
+            return false;
+        }
+
         if (!Config.enableVotekick.bool()) {
             initiator.sendMessage(Tr.t(initiator, "votekick.disabled"));
             return false;
