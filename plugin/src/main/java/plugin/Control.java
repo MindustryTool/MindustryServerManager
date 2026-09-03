@@ -129,7 +129,8 @@ public class Control extends mindustry.mod.Plugin {
             Log.err("Failed to unload plugin", e);
         } finally {
             if (event.exit) {
-                System.exit(0);
+                System.exit(1);
+                // Force docker container restart
             }
         }
     }
