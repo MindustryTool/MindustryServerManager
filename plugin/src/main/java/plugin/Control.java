@@ -15,6 +15,7 @@ import mindustry.gen.Groups;
 import plugin.annotations.Schedule;
 import plugin.commands.ClientCommandHandler;
 import plugin.commands.ServerCommandHandler;
+import plugin.core.PluginBootstrap;
 import plugin.core.Registry;
 import plugin.event.PluginUnloadEvent;
 import plugin.event.UnloadServerEvent;
@@ -61,6 +62,7 @@ public class Control extends mindustry.mod.Plugin {
         Core.settings.put("startedAt", System.currentTimeMillis());
 
         try {
+            PluginBootstrap.initialize();
             PluginEvents.register();    
             PluginEvents.on(UnloadServerEvent.class, this::unload);
 

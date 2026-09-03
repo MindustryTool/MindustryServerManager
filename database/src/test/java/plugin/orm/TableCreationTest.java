@@ -15,12 +15,23 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import plugin.database.schema.PlayerLogins;
-import plugin.database.schema.Sessions;
 import plugin.orm.table.Column;
 import plugin.orm.table.Table;
 
 public class TableCreationTest {
+
+    static final class Sessions {
+        static final Table<Void> TABLE = Table.of("sessions");
+        static final Column<String> UUID = TABLE.column("uuid", String.class).primaryKey();
+        static final Column<String> DATA = TABLE.column("data", String.class).notNull();
+        static final Column<Long> TOTAL_EXP = TABLE.column("totalExp", Long.class).defaultValue(0L);
+    }
+
+    static final class PlayerLogins {
+        static final Table<Void> TABLE = Table.of("player_logins");
+        static final Column<String> UUID = TABLE.column("uuid", String.class).primaryKey();
+        static final Column<String> LAST_LOGIN_DATE = TABLE.column("last_login_date", String.class).notNull();
+    }
 
     @TempDir
     Path tempDir;
