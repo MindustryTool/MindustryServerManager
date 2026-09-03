@@ -160,7 +160,7 @@ public class SessionService {
 
     @Schedule(fixedDelay = 1, unit = TimeUnit.MINUTES)
     private void cleanupRecentPlayers() {
-        long cutoff = System.currentTimeMillis() - TimeUnit.MINUTES.toMillis(30);
+        long cutoff = System.currentTimeMillis() - TimeUnit.HOURS.toMillis(12);
         recentPlayers.entrySet().removeIf(entry -> {
             String uuid = entry.getKey();
             RecentPlayerEntry player = entry.getValue();

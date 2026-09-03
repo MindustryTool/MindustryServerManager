@@ -1,7 +1,7 @@
 # recent-player-tracking
 
 ## Purpose
-Track recently joined players with minimal metadata (IP, name, UUID) decoupled from active Session objects, with automatic 30-minute expiration after leaving and gateway query support.
+Track recently joined players with minimal metadata (IP, name, UUID) decoupled from active Session objects, with automatic 12-hour expiration after leaving and gateway query support.
 
 ## Requirements
 
@@ -23,14 +23,14 @@ The system SHALL provide a `RecentPlayerDto` class in the `dto` module containin
 #### Scenario: Player leaves server
 - **WHEN** a player disconnects from the server
 - **THEN** their `leftAt` timestamp is recorded on the `RecentPlayerDto` record
-- **AND** the record is retained for 30 minutes after leave before expiration
+- **AND** the record is retained for 12 hours after leave before expiration
 
 ### Requirement: Automatic Expiration
-Entries in the recent players tracking collection SHALL NOT expire while the player is still connected to the server. For players who have left the server, entries SHALL automatically expire and be removed 30 minutes after their `leftAt` timestamp.
+Entries in the recent players tracking collection SHALL NOT expire while the player is still connected to the server. For players who have left the server, entries SHALL automatically expire and be removed 12 hours after their `leftAt` timestamp.
 
 #### Scenario: Periodic expiration cleanup
 - **WHEN** a scheduled cleanup interval occurs or when recent players are requested
-- **THEN** any entry for a disconnected player whose `leftAt` timestamp is older than 30 minutes (1800000 milliseconds) is removed from the collection
+- **THEN** any entry for a disconnected player whose `leftAt` timestamp is older than 12 hours (43200000 milliseconds) is removed from the collection
 - **AND** any player currently active on the server is preserved regardless of join time
 
 ### Requirement: Gateway Query for Recent Players
@@ -38,4 +38,4 @@ The plugin `ApiGateway` SHALL register a message handler `get-recent-players` th
 
 #### Scenario: Gateway receives get-recent-players message
 - **WHEN** `ApiGateway` handles a `get-recent-players` request
-- **THEN** it returns a List of `RecentPlayerDto` containing all currently active players and players who left within the last 30 minutes
+- **THEN** it returns a List of `RecentPlayerDto` containing all currently active players and players who left within the last 12 hours
