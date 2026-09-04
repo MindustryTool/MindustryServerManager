@@ -166,7 +166,7 @@ public class EventHandler {
 
             Tasks.io("Welcome Message", () -> {
                 var translated = Tr.t(session.locale, "welcome.message");
-                session.player.sendMessage(translated);
+                session.player.sendMessage("\"" + translated + "\"");
             });
 
             new WelcomeMenu().send(session, null);
