@@ -469,29 +469,16 @@ public class ApiGateway {
     }
 
     private Void updatePlayer(LoginDto request) {
-        Boolean isAdmin = request.getIsAdmin();
         String uuid = request.getUuid();
-
-        PlayerInfo target = Vars.netServer.admins.getInfoOptional(uuid);
-        Player player = Groups.player.find(p -> p.getInfo() == target);
-
-        if (target != null) {
-            if (isAdmin) {
-                Vars.netServer.admins.adminPlayer(target.id,
-                        player == null ? target.adminUsid : player.usid());
-            } else {
-                Vars.netServer.admins.unAdminPlayer(target.id);
-            }
-            if (player != null)
-                player.admin = isAdmin;
-        } else {
-            Log.err("Nobody with that name or ID could be found. If adding an admin by name, make sure they're online; otherwise, use their UUID.");
-        }
+        SessionService sessionService = Registry.get(SessionService.class);
+        Player player = Groups.player.find(p -> p.uuid().equals(uuid));
 
         if (player != null) {
-            Registry.get(SessionService.class).getByUuid(uuid).ifPresent(
-                    session -> Registry.get(SessionService.class).setLogin(session, request));
+            player.admin = false;
         }
+
+        sessionService.getByUuid(uuid)
+                .ifPresent(session -> sessionService.setLogin(session, request));
 
         return null;
     }

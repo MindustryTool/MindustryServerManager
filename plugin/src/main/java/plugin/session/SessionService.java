@@ -19,10 +19,8 @@ import lombok.RequiredArgsConstructor;
 import mindustry.Vars;
 import mindustry.game.EventType.PlayerJoin;
 import mindustry.game.EventType.PlayerLeave;
-import mindustry.gen.Groups;
 import mindustry.gen.Iconc;
 import mindustry.gen.Player;
-import mindustry.net.Administration.PlayerInfo;
 import plugin.Cfg;
 import plugin.PluginEvents;
 import plugin.annotations.Component;
@@ -343,21 +341,6 @@ public class SessionService {
                 session.player.kick(Tr.t(session, "security.account_banned"));
                 return;
             }
-        }
-
-        PlayerInfo target = Vars.netServer.admins.getInfoOptional(session.player.uuid());
-
-        if (target != null) {
-            Player playert = Groups.player.find(p -> p.getInfo() == target);
-
-            if (login.getIsAdmin()) {
-                Vars.netServer.admins.adminPlayer(target.id, playert == null ? target.adminUsid : playert.usid());
-            } else {
-                Vars.netServer.admins.unAdminPlayer(target.id);
-            }
-        } else {
-            session.player.admin = false;
-            Log.info("Player @ is no longer an admin", session.player.name);
         }
 
         session.login = login;
