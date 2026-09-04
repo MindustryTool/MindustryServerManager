@@ -130,13 +130,18 @@ public class FloodGamemode {
         if (unitType == null) {
             return;
         }
-        for (int i = 0; i < suppressed.size(); i++) {
-            var core = Team.crux.cores().random();
-            if (core == null) {
+
+        var multiplier = getFloodMultiplier();
+
+        for (var core : Team.crux.cores()) {
+            if (suppressed.containsKey(core)) {
                 continue;
             }
+
             var unit = unitType.create(Team.crux);
+            unit.health(unit.maxHealth * multiplier);
             unit.set(core.getX(), core.getY());
+
             Core.app.post(() -> {
                 unit.add();
             });
