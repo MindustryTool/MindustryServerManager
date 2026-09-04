@@ -59,8 +59,8 @@ public class FloodGamemode {
     private boolean isNight = false;
     private Instant cycleChangeAt = Instant.now();
 
-    private Duration dayDuration = Duration.ofMinutes(12);
-    private Duration nightDuration = Duration.ofMinutes(8);
+    private Duration dayDuration = Duration.ofMinutes(6);
+    private Duration nightDuration = Duration.ofMinutes(4);
     private int days = 0;
 
     private boolean isGameOver = false; 
