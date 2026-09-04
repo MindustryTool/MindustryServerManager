@@ -31,6 +31,7 @@ public class FloodSpreader {
     private static final long DAMAGE_PULSE_MILLIS = 1000;
     private static final long ORPHAN_SWEEP_MILLIS = 5000;
     private static final long SPREAD_INTERVAL_MILLIS = 5000;
+    private static final long MIN_SPREAD_INTERVAL_MILLIS = 1000;
     private static final long FLUSH_INTERVAL_MILLIS = 100;
     private static final int INITIAL_HEAP_CAPACITY = 256;
     private static final int MAX_EVENTS_PER_TICK = 64;
@@ -374,7 +375,7 @@ public class FloodSpreader {
         long now = Time.millis();
 
         if (now >= nextSpreadAt) {
-            nextSpreadAt = now + (long)(SPREAD_INTERVAL_MILLIS / multiplier);
+            nextSpreadAt = now + Math.max((long)(SPREAD_INTERVAL_MILLIS / multiplier), MIN_SPREAD_INTERVAL_MILLIS);
             spreadEdges(now, multiplier);
         }
 
