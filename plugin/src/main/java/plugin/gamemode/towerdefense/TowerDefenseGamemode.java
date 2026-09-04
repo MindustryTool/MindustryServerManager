@@ -39,6 +39,7 @@ import plugin.annotations.ConditionOn;
 import plugin.annotations.Destroy;
 import plugin.annotations.Init;
 import plugin.annotations.Listener;
+import plugin.annotations.MainThread;
 import plugin.annotations.PlayerActionFilter;
 import plugin.annotations.Schedule;
 import plugin.gamemode.GamemodeCondition;
@@ -245,6 +246,7 @@ public class TowerDefenseGamemode {
         return true;
     }
 
+    @MainThread
     @Schedule(fixedDelay = 1, unit = TimeUnit.SECONDS)
     public void onSecondTick() {
         if (Vars.state.rules.waveTeam != null && Vars.state.rules.waveTeam.data() != null

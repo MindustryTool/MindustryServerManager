@@ -30,10 +30,11 @@ public class TrailService {
     @Init
     public void init() {
         Trail.create(this, "shock", Fx.landShock, TrailRequirement.level(2));
-        Trail.create(this, "lightning", Fx.chainLightning, TrailRequirement.level(5));
+        Trail.create(this, "lightning", Fx.lightningShoot, TrailRequirement.level(5));
         Trail.create(this, "fire", Fx.fire, TrailRequirement.level(15));
         Trail.create(this, "heal", Fx.healWave, TrailRequirement.level(35));
-        Trail.create(this, "placeblock", Fx.placeBlock, TrailRequirement.level(50));
+        Trail.custom(this, "placeblock", (x, y) -> Call.effect(Fx.placeBlock, x, y, 2.5f, Color.white),
+                TrailRequirement.level(50));
         Trail.create(this, "explotion", Fx.explosion, TrailRequirement.admin());
     }
 
@@ -41,11 +42,11 @@ public class TrailService {
     private void render() {
         sessionService.each(session -> {
             var userTrail = session.getData().trail;
-            if (userTrail != null) {
+            if (userTrail != null && !userTrail.isEmpty()) {
                 var trail = trails.get(userTrail);
                 if (trail != null && trail.allowed(session) && session.player.unit() != null
                         && session.player.unit().isValid()) {
-                    trail.render.get(session.player.x, session.player.y);
+                    trail.render.get(session.player.unit().x, session.player.unit().y);
                 }
             }
         });
@@ -88,7 +89,8 @@ public class TrailService {
         }
 
         public static TrailRequirement admin() {
-            return new TrailRequirement("@You must be an admin to use this trail", session -> session.player.admin);
+            return new TrailRequirement("@You must be an admin to use this trail",
+                    session -> session.isAdmin() || session.player.admin);
         }
     }
 }
