@@ -35,7 +35,7 @@ public class FloodSpreader {
     private static final long FLUSH_INTERVAL_MILLIS = 100;
     private static final int INITIAL_HEAP_CAPACITY = 256;
     private static final int MAX_EVENTS_PER_TICK = 64;
-    private static final int MAX_NEW_FLOOD_PER_TICK = 30;
+    private static final int MAX_NEW_FLOOD_PER_TICK = 100;
 
     private final FloodConfig config;
 
