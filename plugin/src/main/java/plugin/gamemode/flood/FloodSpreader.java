@@ -35,6 +35,7 @@ public class FloodSpreader {
     private static final long FLUSH_INTERVAL_MILLIS = 100;
     private static final int INITIAL_HEAP_CAPACITY = 256;
     private static final int MAX_EVENTS_PER_TICK = 64;
+    private static final int MAX_NEW_FLOOD_PER_TICK = 30;
 
     private final FloodConfig config;
 
@@ -609,6 +610,7 @@ public class FloodSpreader {
 
         scratchNewEdges.clear();
 
+        int placedCount = 0;
         for (int i = 0; i < count; i++) {
             int pos = edgeTiles.get(i);
             Tile tile = Vars.world.tile(pos % width, pos / width);
@@ -619,10 +621,10 @@ public class FloodSpreader {
             int x = pos % width;
             int y = pos / width;
 
-            spreadToNeighbor(x - 1, y, firstTier, now, multiplier);
-            spreadToNeighbor(x + 1, y, firstTier, now, multiplier);
-            spreadToNeighbor(x, y - 1, firstTier, now, multiplier);
-            spreadToNeighbor(x, y + 1, firstTier, now, multiplier);
+            if (spreadToNeighbor(x - 1, y, firstTier, now, multiplier) && ++placedCount >= MAX_NEW_FLOOD_PER_TICK) break;
+            if (spreadToNeighbor(x + 1, y, firstTier, now, multiplier) && ++placedCount >= MAX_NEW_FLOOD_PER_TICK) break;
+            if (spreadToNeighbor(x, y - 1, firstTier, now, multiplier) && ++placedCount >= MAX_NEW_FLOOD_PER_TICK) break;
+            if (spreadToNeighbor(x, y + 1, firstTier, now, multiplier) && ++placedCount >= MAX_NEW_FLOOD_PER_TICK) break;
         }
 
         for (int i = 0; i < scratchNewEdges.size; i++) {
@@ -642,14 +644,14 @@ public class FloodSpreader {
         }
     }
 
-    private void spreadToNeighbor(int nx, int ny, FloodConfig.FloodTile firstTier, long now, float multiplier) {
+    private boolean spreadToNeighbor(int nx, int ny, FloodConfig.FloodTile firstTier, long now, float multiplier) {
         if (nx < 0 || nx >= width || ny < 0 || ny >= height) {
-            return;
+            return false;
         }
 
         Tile nTile = Vars.world.tile(nx, ny);
         if (nTile == null || !isSpreadable(nTile)) {
-            return;
+            return false;
         }
 
         place(nTile, firstTier, 0, now, multiplier);
@@ -662,6 +664,7 @@ public class FloodSpreader {
         }
 
         damageNeighbors(nTile, firstTier.damage * multiplier);
+        return true;
     }
 
     // Schedules evolution deadline for an existing Crux flood structure.
