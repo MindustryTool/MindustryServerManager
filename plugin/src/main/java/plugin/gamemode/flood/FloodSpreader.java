@@ -35,7 +35,6 @@ public class FloodSpreader {
     private static final long FLUSH_INTERVAL_MILLIS = 100;
     private static final int INITIAL_HEAP_CAPACITY = 256;
     private static final int MAX_EVENTS_PER_TICK = 64;
-    private static final int MAX_NEW_FLOOD_PER_TICK = 300;
 
     private final FloodConfig config;
 
@@ -72,7 +71,6 @@ public class FloodSpreader {
     private final IntSeq edgeTiles = new IntSeq();
     private int[] edgeTileIndex = new int[0];
     private final IntSeq scratchNewEdges = new IntSeq();
-    private int spreadCursor = 0;
 
     private boolean loggedFirstPlacement = false;
     private boolean warnedNoTiers = false;
@@ -106,7 +104,6 @@ public class FloodSpreader {
         edgeTileIndex = new int[totalTiles];
         Arrays.fill(edgeTileIndex, -1);
         scratchNewEdges.clear();
-        spreadCursor = 0;
 
         nextSweepAt = 0;
         nextSpreadAt = 0;
@@ -569,9 +566,6 @@ public class FloodSpreader {
             edgeTileIndex[lastPos] = idx;
         }
         edgeTileIndex[pos] = -1;
-        if (edgeTiles.isEmpty() || spreadCursor >= edgeTiles.size) {
-            spreadCursor = 0;
-        }
     }
 
     public boolean isEdgeTile(int pos) {
@@ -580,10 +574,6 @@ public class FloodSpreader {
 
     public int edgeTileCount() {
         return edgeTiles.size;
-    }
-
-    public int getSpreadCursor() {
-        return spreadCursor;
     }
 
     private boolean isSpreadableNeighbor(int nx, int ny) {
@@ -611,7 +601,6 @@ public class FloodSpreader {
         }
 
         if (edgeTiles.isEmpty()) {
-            spreadCursor = 0;
             return;
         }
 
@@ -619,18 +608,10 @@ public class FloodSpreader {
 
         int initialCount = edgeTiles.size;
         int tilesChecked = 0;
-        int placedCount = 0;
+        int i = 0;
 
-        if (spreadCursor >= edgeTiles.size) {
-            spreadCursor = 0;
-        }
-
-        while (tilesChecked < initialCount && placedCount < MAX_NEW_FLOOD_PER_TICK && !edgeTiles.isEmpty()) {
-            if (spreadCursor >= edgeTiles.size) {
-                spreadCursor = 0;
-            }
-
-            int pos = edgeTiles.get(spreadCursor);
+        while (tilesChecked < initialCount && i < edgeTiles.size) {
+            int pos = edgeTiles.get(i);
             int x = pos % width;
             int y = pos / width;
 
@@ -641,50 +622,24 @@ public class FloodSpreader {
                 continue;
             }
 
-            boolean quotaReached = false;
-
-            if (spreadToNeighbor(x - 1, y, firstTier, now, multiplier)) {
-                if (++placedCount >= MAX_NEW_FLOOD_PER_TICK) {
-                    quotaReached = true;
-                }
-            }
-            if (!quotaReached && spreadToNeighbor(x + 1, y, firstTier, now, multiplier)) {
-                if (++placedCount >= MAX_NEW_FLOOD_PER_TICK) {
-                    quotaReached = true;
-                }
-            }
-            if (!quotaReached && spreadToNeighbor(x, y - 1, firstTier, now, multiplier)) {
-                if (++placedCount >= MAX_NEW_FLOOD_PER_TICK) {
-                    quotaReached = true;
-                }
-            }
-            if (!quotaReached && spreadToNeighbor(x, y + 1, firstTier, now, multiplier)) {
-                if (++placedCount >= MAX_NEW_FLOOD_PER_TICK) {
-                    quotaReached = true;
-                }
-            }
+            spreadToNeighbor(x - 1, y, firstTier, now, multiplier);
+            spreadToNeighbor(x + 1, y, firstTier, now, multiplier);
+            spreadToNeighbor(x, y - 1, firstTier, now, multiplier);
+            spreadToNeighbor(x, y + 1, firstTier, now, multiplier);
 
             tilesChecked++;
 
             if (!hasSpreadableNeighbor(pos)) {
                 removeEdgeTile(pos);
             } else {
-                spreadCursor++;
-            }
-
-            if (quotaReached) {
-                break;
+                i++;
             }
         }
 
-        for (int i = 0; i < scratchNewEdges.size; i++) {
-            addEdgeTile(scratchNewEdges.get(i));
+        for (int j = 0; j < scratchNewEdges.size; j++) {
+            addEdgeTile(scratchNewEdges.get(j));
         }
         scratchNewEdges.clear();
-
-        if (spreadCursor >= edgeTiles.size) {
-            spreadCursor = 0;
-        }
     }
 
     private boolean spreadToNeighbor(int nx, int ny, FloodConfig.FloodTile firstTier, long now, float multiplier) {
