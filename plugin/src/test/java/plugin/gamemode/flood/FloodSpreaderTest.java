@@ -89,4 +89,23 @@ public class FloodSpreaderTest {
         spreader.removeEdgeTile(100);
         assertEquals(0, spreader.edgeTileCount());
     }
+
+    @Test
+    void testSpreadCursorLifecycle() {
+        assertEquals(0, spreader.getSpreadCursor());
+
+        spreader.addEdgeTile(10);
+        spreader.addEdgeTile(20);
+        spreader.addEdgeTile(30);
+        assertEquals(0, spreader.getSpreadCursor());
+
+        // Removing tiles adjusts cursor if it exceeds size
+        spreader.removeEdgeTile(30);
+        spreader.removeEdgeTile(20);
+        spreader.removeEdgeTile(10);
+        assertEquals(0, spreader.getSpreadCursor());
+
+        spreader.reset(10, 10);
+        assertEquals(0, spreader.getSpreadCursor());
+    }
 }

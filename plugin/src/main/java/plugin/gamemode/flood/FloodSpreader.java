@@ -72,6 +72,7 @@ public class FloodSpreader {
     private final IntSeq edgeTiles = new IntSeq();
     private int[] edgeTileIndex = new int[0];
     private final IntSeq scratchNewEdges = new IntSeq();
+    private int spreadCursor = 0;
 
     private boolean loggedFirstPlacement = false;
     private boolean warnedNoTiers = false;
@@ -105,6 +106,7 @@ public class FloodSpreader {
         edgeTileIndex = new int[totalTiles];
         Arrays.fill(edgeTileIndex, -1);
         scratchNewEdges.clear();
+        spreadCursor = 0;
 
         nextSweepAt = 0;
         nextSpreadAt = 0;
@@ -493,15 +495,13 @@ public class FloodSpreader {
             return null;
         }
         var build = tile.build;
-        if (build != null && build.isValid() && build.team == Team.crux) {
-            int id = build.block.id;
-            return id < tierByBlockId.length ? tierByBlockId[id] : null;
+        if (build != null) {
+            return build.isValid() && build.team == Team.crux && build.block.id < tierByBlockId.length
+                    ? tierByBlockId[build.block.id] : null;
         }
-        if (tile.block() != null && (tile.build == null || tile.build.team == Team.crux || tile.team() == Team.crux)) {
-            int id = tile.block().id;
-            return id < tierByBlockId.length ? tierByBlockId[id] : null;
-        }
-        return null;
+        var block = tile.block();
+        return block != null && tile.team() == Team.crux && block.id < tierByBlockId.length
+                ? tierByBlockId[block.id] : null;
     }
 
     public boolean isFloodTile(Tile tile) {
@@ -509,19 +509,17 @@ public class FloodSpreader {
             return false;
         }
         var build = tile.build;
-        if (build != null && build.isValid() && build.team == Team.crux) {
-            int id = build.block.id;
-            return id < isFloodOrCoreBlockId.length && isFloodOrCoreBlockId[id];
+        if (build != null) {
+            return build.isValid() && build.team == Team.crux && build.block.id < isFloodOrCoreBlockId.length
+                    && isFloodOrCoreBlockId[build.block.id];
         }
-        if (tile.block() != null && (tile.build == null || tile.build.team == Team.crux || tile.team() == Team.crux)) {
-            int id = tile.block().id;
-            return id < isFloodOrCoreBlockId.length && isFloodOrCoreBlockId[id];
-        }
-        return false;
+        var block = tile.block();
+        return block != null && tile.team() == Team.crux && block.id < isFloodOrCoreBlockId.length
+                && isFloodOrCoreBlockId[block.id];
     }
 
     public boolean hasAdjacentFlood(Tile tile) {
-        if (tile == null) {
+        if (tile == null || Vars.world == null) {
             return false;
         }
         return isFloodTile(Vars.world.tile(tile.x - 1, tile.y))
@@ -538,10 +536,12 @@ public class FloodSpreader {
         if (build != null && build.isValid()) {
             return false;
         }
-        if (tile.block() != Blocks.air && !tile.block().alwaysReplace) {
+        var block = tile.block();
+        if (block != Blocks.air && !block.alwaysReplace) {
             return false;
         }
-        return hasAdjacentFlood(tile);
+        int pos = posOf(tile);
+        return pos >= 0 && pos < scheduled.size() && !scheduled.get(pos);
     }
 
     public void addEdgeTile(int pos) {
@@ -569,6 +569,9 @@ public class FloodSpreader {
             edgeTileIndex[lastPos] = idx;
         }
         edgeTileIndex[pos] = -1;
+        if (edgeTiles.isEmpty() || spreadCursor >= edgeTiles.size) {
+            spreadCursor = 0;
+        }
     }
 
     public boolean isEdgeTile(int pos) {
@@ -579,11 +582,15 @@ public class FloodSpreader {
         return edgeTiles.size;
     }
 
+    public int getSpreadCursor() {
+        return spreadCursor;
+    }
+
     private boolean isSpreadableNeighbor(int nx, int ny) {
         if (nx < 0 || nx >= width || ny < 0 || ny >= height) {
             return false;
         }
-        Tile tile = Vars.world.tile(nx, ny);
+        Tile tile = Vars.world != null ? Vars.world.tile(nx, ny) : null;
         return isSpreadable(tile);
     }
 
@@ -603,28 +610,71 @@ public class FloodSpreader {
             return;
         }
 
-        int count = edgeTiles.size;
-        if (count == 0) {
+        if (edgeTiles.isEmpty()) {
+            spreadCursor = 0;
             return;
         }
 
         scratchNewEdges.clear();
 
+        int initialCount = edgeTiles.size;
+        int tilesChecked = 0;
         int placedCount = 0;
-        for (int i = 0; i < count; i++) {
-            int pos = edgeTiles.get(i);
-            Tile tile = Vars.world.tile(pos % width, pos / width);
-            if (tile == null || !isFloodTile(tile)) {
-                continue;
+
+        if (spreadCursor >= edgeTiles.size) {
+            spreadCursor = 0;
+        }
+
+        while (tilesChecked < initialCount && placedCount < MAX_NEW_FLOOD_PER_TICK && !edgeTiles.isEmpty()) {
+            if (spreadCursor >= edgeTiles.size) {
+                spreadCursor = 0;
             }
 
+            int pos = edgeTiles.get(spreadCursor);
             int x = pos % width;
             int y = pos / width;
 
-            if (spreadToNeighbor(x - 1, y, firstTier, now, multiplier) && ++placedCount >= MAX_NEW_FLOOD_PER_TICK) break;
-            if (spreadToNeighbor(x + 1, y, firstTier, now, multiplier) && ++placedCount >= MAX_NEW_FLOOD_PER_TICK) break;
-            if (spreadToNeighbor(x, y - 1, firstTier, now, multiplier) && ++placedCount >= MAX_NEW_FLOOD_PER_TICK) break;
-            if (spreadToNeighbor(x, y + 1, firstTier, now, multiplier) && ++placedCount >= MAX_NEW_FLOOD_PER_TICK) break;
+            Tile tile = Vars.world != null ? Vars.world.tile(x, y) : null;
+            if (tile == null || !isFloodTile(tile)) {
+                removeEdgeTile(pos);
+                tilesChecked++;
+                continue;
+            }
+
+            boolean quotaReached = false;
+
+            if (spreadToNeighbor(x - 1, y, firstTier, now, multiplier)) {
+                if (++placedCount >= MAX_NEW_FLOOD_PER_TICK) {
+                    quotaReached = true;
+                }
+            }
+            if (!quotaReached && spreadToNeighbor(x + 1, y, firstTier, now, multiplier)) {
+                if (++placedCount >= MAX_NEW_FLOOD_PER_TICK) {
+                    quotaReached = true;
+                }
+            }
+            if (!quotaReached && spreadToNeighbor(x, y - 1, firstTier, now, multiplier)) {
+                if (++placedCount >= MAX_NEW_FLOOD_PER_TICK) {
+                    quotaReached = true;
+                }
+            }
+            if (!quotaReached && spreadToNeighbor(x, y + 1, firstTier, now, multiplier)) {
+                if (++placedCount >= MAX_NEW_FLOOD_PER_TICK) {
+                    quotaReached = true;
+                }
+            }
+
+            tilesChecked++;
+
+            if (!hasSpreadableNeighbor(pos)) {
+                removeEdgeTile(pos);
+            } else {
+                spreadCursor++;
+            }
+
+            if (quotaReached) {
+                break;
+            }
         }
 
         for (int i = 0; i < scratchNewEdges.size; i++) {
@@ -632,15 +682,8 @@ public class FloodSpreader {
         }
         scratchNewEdges.clear();
 
-        int i = 0;
-        while (i < edgeTiles.size) {
-            int pos = edgeTiles.get(i);
-            Tile tile = Vars.world.tile(pos % width, pos / width);
-            if (tile == null || !isFloodTile(tile) || !hasSpreadableNeighbor(pos)) {
-                removeEdgeTile(pos);
-            } else {
-                i++;
-            }
+        if (spreadCursor >= edgeTiles.size) {
+            spreadCursor = 0;
         }
     }
 
@@ -749,10 +792,15 @@ public class FloodSpreader {
     }
 
     private boolean damageNeighbors(Tile tile, float damage) {
-        boolean any = damageAt(tile.x - 1, tile.y, damage);
-        any |= damageAt(tile.x + 1, tile.y, damage);
-        any |= damageAt(tile.x, tile.y - 1, damage);
-        any |= damageAt(tile.x, tile.y + 1, damage);
+        if (damage <= 0 || tile == null) {
+            return false;
+        }
+        int x = tile.x;
+        int y = tile.y;
+        boolean any = damageAt(x - 1, y, damage);
+        any |= damageAt(x + 1, y, damage);
+        any |= damageAt(x, y - 1, damage);
+        any |= damageAt(x, y + 1, damage);
         return any;
     }
 
