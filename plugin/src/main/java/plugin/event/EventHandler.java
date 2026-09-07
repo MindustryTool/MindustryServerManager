@@ -14,6 +14,7 @@ import mindustry.Vars;
 import mindustry.core.GameState.State;
 import mindustry.game.EventType.GameOverEvent;
 import mindustry.game.EventType.PlayerBanEvent;
+import mindustry.game.EventType.PlayerChatEvent;
 import mindustry.game.EventType.PlayerConnect;
 import mindustry.game.EventType.PlayerLeave;
 import mindustry.game.EventType.WorldLoadEndEvent;
@@ -60,6 +61,11 @@ public class EventHandler {
             apiGateway.fire(ServerEvents.LogEvent.info(Control.SERVER_ID, message));
             apiGateway.fire(new ServerEvents.ChatEvent(Control.SERVER_ID, message));
         }
+    }
+
+    @Listener
+    private void onPlayerChat(PlayerChatEvent event) {
+        apiGateway.fire(new ServerEvents.ChatEvent(Control.SERVER_ID, event.message));
     }
 
     @Listener
