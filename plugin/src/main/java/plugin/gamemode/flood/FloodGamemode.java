@@ -277,9 +277,16 @@ public class FloodGamemode {
 
     @Listener
     private void onBlockDestroyed(BlockDestroyEvent event) {
-        if (spreader != null && event.tile != null) {
-            spreader.onTileDestroyed(spreader.posOf(event.tile));
+        if (spreader == null || event.tile == null) {
+            return;
         }
+        // BlockDestroyEvent fires before the block is removed, so tile.build is still
+        // valid. Attempt a tier downgrade; if the tile is already at tier 1 (or not a
+        // flood tile at all) we fall through and let the spreader clear its state.
+        if (spreader.tryDowngradeTile(event.tile, getFloodMultiplier())) {
+            return;
+        }
+        spreader.onTileDestroyed(spreader.posOf(event.tile));
     }
 
     @Listener
