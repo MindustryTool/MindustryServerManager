@@ -680,6 +680,12 @@ public class ApiGateway {
                 return false;
             }
             Long removed = Vars.netServer.admins.kickedIPs.remove(ip);
+            PlayerInfo info = Vars.netServer.admins.findByIP(ip);
+
+            if (info != null) {
+                info.lastKicked = 0;
+            }
+
             return removed != null;
         }, "Delete kicked ip");
     }
