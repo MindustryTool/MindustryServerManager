@@ -11,6 +11,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 
 import arc.util.Log;
+import arc.util.Strings;
 import events.ServerEvents;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -332,14 +333,14 @@ public class VoteKickService {
             for (String key : currentSession.voted.keySet()) {
                 var player = Vars.netServer.admins.getInfoOptional(key);
                 if (player != null) {
-                    participants.add(player.lastName);
+                    participants.add(Strings.stripColors(player.lastName));
                 }
             }
 
             Log.info("Vote kick pass, participants: @", participants);
 
             apiGateway.fire(new ServerEvents.PlayerVoteKickEvent(Control.SERVER_ID, target.ip(), target.uuid(),
-                    target.name, participants, currentSession.reason));
+                    Strings.stripColors(target.name), participants, currentSession.reason));
 
             reset();
             return true;
