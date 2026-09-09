@@ -10,6 +10,7 @@ import plugin.annotations.Param;
 import plugin.session.LoginMenu;
 import plugin.session.Session;
 import plugin.utils.Tr;
+import plugin.vote.VoteKickService.Vote;
 
 @Component
 @RequiredArgsConstructor
@@ -77,17 +78,17 @@ public class VoteKickCommands {
             return;
         }
 
-        int sign = switch (choice.toLowerCase()) {
-            case "y", "yes" -> 1;
-            case "n", "no" -> -1;
-            default -> 0;
+        Vote vote = switch (choice.toLowerCase()) {
+            case "y", "yes" -> Vote.YES;
+            case "n", "no" -> Vote.NO;
+            default -> null;
         };
 
-        if (sign == 0) {
+        if (vote == null) {
             session.player.sendMessage(Tr.t(session, "votekick.invalid_vote"));
             return;
         }
 
-        voteKickService.vote(session.player, sign);
+        voteKickService.vote(session.player, vote);
     }
 }

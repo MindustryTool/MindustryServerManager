@@ -4,6 +4,7 @@ import plugin.core.Registry;
 import plugin.menus.PluginMenu;
 import plugin.session.Session;
 import plugin.utils.Tr;
+import plugin.vote.VoteKickService.Vote;
 
 public class VotePromptMenu extends PluginMenu<Void> {
 
@@ -28,11 +29,11 @@ public class VotePromptMenu extends PluginMenu<Void> {
                 "time", voteKickService.getRemainingSeconds());
 
         option(Tr.t(session, "votekick.btn_yes"), (s, st) -> {
-            voteKickService.vote(s.player, 1);
+            voteKickService.vote(s.player, Vote.YES);
         });
 
         option(Tr.t(session, "votekick.btn_no"), (s, st) -> {
-            voteKickService.vote(s.player, -1);
+            voteKickService.vote(s.player, Vote.NO);
         });
 
         if (session.player.admin) {

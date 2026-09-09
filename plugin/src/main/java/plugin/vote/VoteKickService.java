@@ -50,12 +50,17 @@ public class VoteKickService {
     private VoteKickSession currentSession = null;
     private ScheduledFuture<?> timeoutTask = null;
 
+    public static enum Vote {
+        YES,
+        NO
+    }
+
     public static class VoteKickSession {
         public final Player target;
         public final Player initiator;
         public final String reason;
         public final Instant startTime = Instant.now();
-        public final ConcurrentHashMap<String, Integer> voted = new ConcurrentHashMap<>();
+        public final ConcurrentHashMap<String, Vote> voted = new ConcurrentHashMap<>();
 
         public VoteKickSession(Player target, Player initiator, String reason) {
             this.target = target;
@@ -81,14 +86,15 @@ public class VoteKickService {
             return 0;
         }
         int sum = 0;
+
         for (Player player : Groups.player) {
-            Integer vote = currentSession.voted.get(player.uuid());
-            if (vote != null && vote != 0) {
+            Vote vote = currentSession.voted.get(player.uuid());
+            if (vote != null && vote == Vote.YES) {
                 var sessionOpt = sessionService.get(player);
                 if (sessionOpt.isPresent() && sessionOpt.get().isAfk()) {
                     continue;
                 }
-                sum += vote;
+                sum++;
             }
         }
         return sum;
@@ -98,13 +104,20 @@ public class VoteKickService {
         if (currentSession == null) {
             return 2;
         }
+
         int activeCount = 0;
+
         for (Player player : Groups.player) {
             if (Vars.state.rules.pvp && player.team() != currentSession.target.team()) {
                 continue;
             }
+
+            if (player == currentSession.target) {
+                continue;
+            }
+
             var sessionOpt = sessionService.get(player);
-            if (sessionOpt.isEmpty() || !sessionOpt.get().isAfk()) {
+            if (sessionOpt.isPresent() && !sessionOpt.get().isAfk()) {
                 activeCount++;
             }
         }
@@ -179,10 +192,7 @@ public class VoteKickService {
         cooldowns.put(initiator.uuid(), Instant.now());
 
         currentSession = new VoteKickSession(target, initiator, reason);
-        currentSession.voted.put(initiator.uuid(), 1);
-        if (initiator.con != null && initiator.con.address != null) {
-            currentSession.voted.put(initiator.con.address, 1);
-        }
+        currentSession.voted.put(initiator.uuid(), Vote.YES);
 
         int currentVotes = getVotes();
         int required = getVotesRequired();
@@ -234,7 +244,7 @@ public class VoteKickService {
         }
     }
 
-    public synchronized void vote(Player player, int sign) {
+    public synchronized void vote(Player player, Vote vote) {
         if (currentSession == null) {
             player.sendMessage(Tr.t(player, "votekick.no_vote_in_progress"));
             return;
@@ -255,16 +265,13 @@ public class VoteKickService {
             return;
         }
 
-        Integer previousVote = currentSession.voted.get(player.uuid());
-        if (previousVote != null && previousVote == sign) {
-            player.sendMessage(Tr.t(player, "votekick.already_voted", "sign", sign > 0 ? "yes" : "no"));
+        Vote previousVote = currentSession.voted.get(player.uuid());
+        if (previousVote != null && previousVote == vote) {
+            player.sendMessage(Tr.t(player, "votekick.already_voted", "sign", vote == Vote.YES ? "yes" : "no"));
             return;
         }
 
-        currentSession.voted.put(player.uuid(), sign);
-        if (player.con != null && player.con.address != null) {
-            currentSession.voted.put(player.con.address, sign);
-        }
+        currentSession.voted.put(player.uuid(), vote);
 
         int currentVotes = getVotes();
         int required = getVotesRequired();
