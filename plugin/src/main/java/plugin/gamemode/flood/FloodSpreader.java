@@ -32,7 +32,7 @@ import mindustry.world.blocks.storage.CoreBlock;
 public class FloodSpreader {
 
     private static final long DAMAGE_PULSE_MILLIS = 1000;
-    private static final long SPREAD_INTERVAL_MILLIS = 5000;
+    private static final long SPREAD_INTERVAL_MILLIS = 8000;
     private static final long MIN_SPREAD_INTERVAL_MILLIS = 1000;
     private static final long FLUSH_INTERVAL_MILLIS = 100;
     private static final int INITIAL_HEAP_CAPACITY = 256;
