@@ -10,6 +10,8 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 
+import arc.util.Log;
+import events.ServerEvents;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import mindustry.Vars;
@@ -17,10 +19,12 @@ import mindustry.gen.Groups;
 import mindustry.gen.Player;
 import mindustry.net.Administration.Config;
 import mindustry.net.Packets.KickReason;
+import plugin.Control;
 import plugin.annotations.Component;
 import plugin.annotations.Destroy;
 import plugin.annotations.Listener;
 import plugin.core.Scheduler;
+import plugin.gateway.ApiGateway;
 import plugin.session.LoginMenu;
 import plugin.session.SessionRemovedEvent;
 import plugin.session.SessionService;
@@ -38,6 +42,7 @@ public class VoteKickService {
 
     private final Scheduler scheduler;
     private final SessionService sessionService;
+    private final ApiGateway apiGateway;
 
     private final ConcurrentHashMap<String, Instant> cooldowns = new ConcurrentHashMap<>();
 
@@ -319,6 +324,19 @@ public class VoteKickService {
             }
 
             Groups.player.each(p -> p.uuid().equals(target.uuid()), p -> p.kick(KickReason.vote, durationMillis));
+            List<String> participants = new ArrayList<>();
+
+            for (String key : currentSession.voted.keySet()) {
+                var player = Vars.netServer.admins.getInfoOptional(key);
+                if (player != null) {
+                    participants.add(player.lastName);
+                }
+            }
+
+            Log.info("Vote kick pass, participants: @", participants);
+
+            apiGateway.fire(new ServerEvents.PlayerVoteKickEvent(Control.SERVER_ID, target.ip(), target.uuid(),
+                    target.name, participants, currentSession.reason));
 
             reset();
             return true;

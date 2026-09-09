@@ -193,4 +193,25 @@ public class ServerEvents {
             this.reason = reason;
         }
     }
+
+    @Accessors(chain = true)
+    @Data
+    @EqualsAndHashCode(callSuper = false)
+    @NoArgsConstructor
+    public static class PlayerVoteKickEvent extends BaseEvent {
+        private String ip;
+        private String uuid;
+        private String playerName;
+        private List<String> participants;
+        private String reason;
+
+        public PlayerVoteKickEvent(UUID serverId, String ip, String uuid, String name, List<String> participants, String reason) {
+            super(serverId, "player-vote-kick");
+            this.ip = ip;
+            this.uuid = uuid;
+            this.playerName = name;
+            this.participants = participants;
+            this.reason = reason;
+        }
+    }
 }
