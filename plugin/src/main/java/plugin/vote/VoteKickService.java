@@ -90,10 +90,6 @@ public class VoteKickService {
         for (Player player : Groups.player) {
             Vote vote = currentSession.voted.get(player.uuid());
             if (vote != null && vote == Vote.YES) {
-                var sessionOpt = sessionService.get(player);
-                if (sessionOpt.isPresent() && sessionOpt.get().isAfk()) {
-                    continue;
-                }
                 sum++;
             }
         }
