@@ -1,5 +1,6 @@
 package plugin.admin;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Set;
 
@@ -24,6 +25,7 @@ import plugin.session.Session;
 import plugin.session.SessionData;
 import plugin.session.SessionRepository;
 import plugin.session.SessionService;
+import plugin.utils.TimeUtils;
 import plugin.utils.Tr;
 import plugin.utils.Utils;
 
@@ -53,7 +55,7 @@ public class ServerCommands {
 
     @ServerCommand(name = "kickWithReason", description = "Kick player")
     private void kickWithReason(@Param(name = "id") String id,
-            @Param(name = "duration") String duration,
+            @Param(name = "duration") long duration,
             @Param(name = "message", variadic = true) String[] reasons) {
         if (!Vars.state.isGame()) {
             Log.err("Not hosting. Host a game first.");
@@ -62,13 +64,13 @@ public class ServerCommands {
 
         var reason = String.join(" ", reasons);
 
-        Player target = Groups.player.find(p -> p.uuid().equals(id));
+        Player target = Groups.player.find(p -> p.uuid().equals(id.trim()));
 
         if (target != null) {
             if (reason == null || reason.trim().isEmpty()) {
-                target.kick(KickReason.kick);
+                target.kick(KickReason.kick, duration);
             } else {
-                target.kick(reason);
+                target.kick(reason, duration);
             }
             Utils.forEachPlayerLocale((locale, players) -> {
                 String msg = Tr.t(locale, "admin.kicked_by_server", "player", target.name());
@@ -76,7 +78,7 @@ public class ServerCommands {
                     p.sendMessage(msg);
                 }
             });
-            Log.info("It is done.");
+            Log.info("Kicked " + target.name + " for " + TimeUtils.toString(Duration.ofMillis(duration)));
         } else {
             Log.info("Nobody with that uuid could be found: " + id);
         }
