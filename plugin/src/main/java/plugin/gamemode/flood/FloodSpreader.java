@@ -15,6 +15,7 @@ import mindustry.gen.Building;
 import mindustry.gen.Call;
 import mindustry.world.Block;
 import mindustry.world.Tile;
+import mindustry.world.blocks.distribution.Conveyor;
 import mindustry.world.blocks.storage.CoreBlock;
 
 /**
@@ -31,6 +32,9 @@ import mindustry.world.blocks.storage.CoreBlock;
  */
 public class FloodSpreader {
 
+    public static final int MAX_SPREAD_PER_TICK = 150;
+    public static final int MAX_FLUSH_PER_WINDOW = 150;
+
     private static final long DAMAGE_PULSE_MILLIS = 1000;
     private static final long SPREAD_INTERVAL_MILLIS = 8000;
     private static final long MIN_SPREAD_INTERVAL_MILLIS = 1000;
@@ -46,6 +50,7 @@ public class FloodSpreader {
     private FloodConfig.FloodTile[] nextTierByBlockId = new FloodConfig.FloodTile[0];
     private FloodConfig.FloodTile[] prevTierByBlockId = new FloodConfig.FloodTile[0];
     private boolean[] isFloodOrCoreBlockId = new boolean[0];
+    private boolean[] isConveyorBlockId = new boolean[0];
 
     /** Next activation deadline per tile position; 0 means none pending. */
     private long[] deadlines = new long[0];
@@ -73,6 +78,12 @@ public class FloodSpreader {
     private final IntSeq edgeTiles = new IntSeq();
     private int[] edgeTileIndex = new int[0];
     private final IntSeq scratchNewEdges = new IntSeq();
+    private final IntSeq nextWaveEdges = new IntSeq();
+
+    private boolean isSpreadingWave = false;
+    private int waveInitialCount = 0;
+    private int waveIndex = 0;
+    private int waveTilesChecked = 0;
 
     private boolean loggedFirstPlacement = false;
     private boolean warnedNoTiers = false;
@@ -109,6 +120,11 @@ public class FloodSpreader {
         edgeTileIndex = new int[totalTiles];
         Arrays.fill(edgeTileIndex, -1);
         scratchNewEdges.clear();
+        nextWaveEdges.clear();
+        isSpreadingWave = false;
+        waveInitialCount = 0;
+        waveIndex = 0;
+        waveTilesChecked = 0;
 
         nextSpreadAt = 0;
         nextFlushAt = 0;
@@ -147,6 +163,7 @@ public class FloodSpreader {
         nextTierByBlockId = new FloodConfig.FloodTile[maxBlockId];
         prevTierByBlockId = new FloodConfig.FloodTile[maxBlockId];
         isFloodOrCoreBlockId = new boolean[maxBlockId];
+        isConveyorBlockId = new boolean[maxBlockId];
 
         int numTiers = config.floodTiles.size;
         pendingUpdatesByTier = new IntSeq[numTiers];
@@ -167,6 +184,9 @@ public class FloodSpreader {
             if (tier.block != null && tier.block.id < maxBlockId) {
                 tierByBlockId[tier.block.id] = tier;
                 isFloodOrCoreBlockId[tier.block.id] = true;
+                if (tier.block instanceof Conveyor) {
+                    isConveyorBlockId[tier.block.id] = true;
+                }
                 if (i + 1 < numTiers) {
                     nextTierByBlockId[tier.block.id] = config.floodTiles.get(i + 1);
                 }
@@ -185,6 +205,15 @@ public class FloodSpreader {
                 if (block instanceof CoreBlock && block.id < maxBlockId) {
                     isFloodOrCoreBlockId[block.id] = true;
                 }
+            }
+        }
+    }
+
+    public void sleepIfCruxConveyor(Tile tile) {
+        if (tile != null && tile.build != null && tile.build.team == Team.crux) {
+            int blockId = tile.build.block.id;
+            if (blockId < isConveyorBlockId.length && isConveyorBlockId[blockId]) {
+                tile.build.remove();
             }
         }
     }
@@ -235,21 +264,16 @@ public class FloodSpreader {
         }
 
         // Replace the block with the lower tier.
-        int prevTierIndex = config.floodTiles.indexOf(prev);
         if (Vars.net != null) {
             Call.setTile(tile, prev.block, Team.crux, 0);
         } else {
             tile.setBlock(prev.block, Team.crux, 0);
         }
+        sleepIfCruxConveyor(tile);
 
         int pos = posOf(tile);
         if (pos >= 0 && pos < deadlines.length) {
             long now = Time.millis();
-            // Queue a visual update for the downgraded tile.
-            if (prevTierIndex >= 0 && prevTierIndex < pendingUpdatesByTier.length) {
-                pendingUpdatesByTier[prevTierIndex].add(tile.pos());
-                pendingCount++;
-            }
             // Reschedule evolution from the new (lower) tier.
             scheduleCruxTile(pos, prev, multiplier, now);
             if (hasSpreadableNeighbor(pos)) {
@@ -341,15 +365,19 @@ public class FloodSpreader {
     }
 
     /**
-     * Processes 5-second edge spread and all events due at or before the current
+     * Processes periodic edge spread waves and all events due at or before the current
      * time, up to MAX_EVENTS_PER_TICK, then emits batched tile updates.
      */
     public void tick(float multiplier) {
         long now = Time.millis();
 
-        if (now >= nextSpreadAt) {
+        if (!isSpreadingWave && now >= nextSpreadAt) {
             nextSpreadAt = now + Math.max((long) (SPREAD_INTERVAL_MILLIS / multiplier), MIN_SPREAD_INTERVAL_MILLIS);
-            spreadEdges(now, multiplier);
+            startSpreadWave();
+        }
+
+        if (isSpreadingWave) {
+            continueSpreadWave(now, multiplier);
         }
 
         int processed = 0;
@@ -450,6 +478,7 @@ public class FloodSpreader {
         } else {
             tile.setBlock(lastTier.block, Team.crux, 0);
         }
+        sleepIfCruxConveyor(tile);
 
         int pos = posOf(tile);
         if (pos >= 0 && pos < width * height) {
@@ -544,6 +573,15 @@ public class FloodSpreader {
             edgeTileIndex[lastPos] = idx;
         }
         edgeTileIndex[pos] = -1;
+
+        if (isSpreadingWave) {
+            if (idx < waveIndex) {
+                waveIndex--;
+            }
+            if (waveInitialCount > edgeTiles.size) {
+                waveInitialCount = edgeTiles.size;
+            }
+        }
     }
 
     public boolean isEdgeTile(int pos) {
@@ -552,6 +590,14 @@ public class FloodSpreader {
 
     public int edgeTileCount() {
         return edgeTiles.size;
+    }
+
+    public boolean isSpreadingWave() {
+        return isSpreadingWave;
+    }
+
+    public int getNextWaveEdgeCount() {
+        return nextWaveEdges.size;
     }
 
     private boolean isSpreadableNeighbor(int nx, int ny) {
@@ -571,32 +617,36 @@ public class FloodSpreader {
                 || isSpreadableNeighbor(x, y + 1);
     }
 
-    // Spreads flood onto adjacent spreadable tiles from active edge flood tiles.
-    private void spreadEdges(long now, float multiplier) {
+    public void startSpreadWave() {
+        if (edgeTiles.isEmpty()) {
+            isSpreadingWave = false;
+            return;
+        }
+        isSpreadingWave = true;
+        waveInitialCount = edgeTiles.size;
+        waveIndex = 0;
+        waveTilesChecked = 0;
+        nextWaveEdges.clear();
+    }
+
+    public void continueSpreadWave(long now, float multiplier) {
         var firstTier = firstTier();
         if (firstTier == null) {
+            isSpreadingWave = false;
             return;
         }
 
-        if (edgeTiles.isEmpty()) {
-            return;
-        }
-
-        scratchNewEdges.clear();
-
-        int initialCount = edgeTiles.size;
-        int tilesChecked = 0;
-        int i = 0;
-
-        while (tilesChecked < initialCount && i < edgeTiles.size) {
-            int pos = edgeTiles.get(i);
+        int sliceChecked = 0;
+        while (sliceChecked < MAX_SPREAD_PER_TICK && waveTilesChecked < waveInitialCount && waveIndex < edgeTiles.size) {
+            int pos = edgeTiles.get(waveIndex);
             int x = pos % width;
             int y = pos / width;
 
             Tile tile = Vars.world != null ? Vars.world.tile(x, y) : null;
             if (tile == null || !isFloodTile(tile)) {
                 removeEdgeTile(pos);
-                tilesChecked++;
+                waveTilesChecked++;
+                sliceChecked++;
                 continue;
             }
 
@@ -605,19 +655,30 @@ public class FloodSpreader {
             spreadToNeighbor(x, y - 1, firstTier, now, multiplier);
             spreadToNeighbor(x, y + 1, firstTier, now, multiplier);
 
-            tilesChecked++;
+            waveTilesChecked++;
+            sliceChecked++;
 
             if (!hasSpreadableNeighbor(pos)) {
                 removeEdgeTile(pos);
             } else {
-                i++;
+                waveIndex++;
             }
         }
 
-        for (int j = 0; j < scratchNewEdges.size; j++) {
-            addEdgeTile(scratchNewEdges.get(j));
+        if (waveTilesChecked >= waveInitialCount || waveIndex >= edgeTiles.size || edgeTiles.isEmpty()) {
+            finishSpreadWave();
         }
-        scratchNewEdges.clear();
+    }
+
+    private void finishSpreadWave() {
+        for (int j = 0; j < nextWaveEdges.size; j++) {
+            addEdgeTile(nextWaveEdges.get(j));
+        }
+        nextWaveEdges.clear();
+        isSpreadingWave = false;
+        waveInitialCount = 0;
+        waveIndex = 0;
+        waveTilesChecked = 0;
     }
 
     private boolean spreadToNeighbor(int nx, int ny, FloodConfig.FloodTile firstTier, long now, float multiplier) {
@@ -636,7 +697,11 @@ public class FloodSpreader {
         push(deadlines[nPos], nPos);
 
         if (hasSpreadableNeighbor(nPos)) {
-            scratchNewEdges.add(nPos);
+            if (isSpreadingWave) {
+                nextWaveEdges.add(nPos);
+            } else {
+                addEdgeTile(nPos);
+            }
         }
 
         damageNeighbors(nTile, firstTier.damage * multiplier);
@@ -789,11 +854,28 @@ public class FloodSpreader {
             if (seq == null || seq.isEmpty()) {
                 continue;
             }
-            Call.setTileBlocks(config.floodTiles.get(i).block, Team.crux, seq.toArray());
-            seq.clear();
-        }
 
-        pendingCount = 0;
+            int count = Math.min(seq.size, MAX_FLUSH_PER_WINDOW);
+            int[] batch;
+            if (count == seq.size) {
+                batch = seq.toArray();
+                seq.clear();
+            } else {
+                batch = new int[count];
+                System.arraycopy(seq.items, 0, batch, 0, count);
+                seq.removeRange(0, count - 1);
+            }
+            pendingCount -= count;
+
+            Block block = config.floodTiles.get(i).block;
+            Call.setTileBlocks(block, Team.crux, batch);
+
+            if (block.id < isConveyorBlockId.length && isConveyorBlockId[block.id] && Vars.world != null) {
+                for (int pos : batch) {
+                    sleepIfCruxConveyor(Vars.world.tile(pos));
+                }
+            }
+        }
     }
 
     private void push(long at, int pos) {

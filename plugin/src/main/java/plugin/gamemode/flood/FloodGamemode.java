@@ -209,7 +209,7 @@ public class FloodGamemode {
     @MainThread
     @Schedule(fixedDelay = 100, unit = TimeUnit.MILLISECONDS)
     private void updateUnitDamgeOnFlood() {
-        if (!shouldUpdate()) {
+        if (!shouldUpdate() || spreader == null || !spreader.isInitialized()) {
             return;
         }
 
@@ -219,12 +219,11 @@ public class FloodGamemode {
             }
 
             var tile = unit.tileOn();
-
-            if (tile == null || tile.build == null || tile.build.team != Team.crux) {
+            if (tile == null) {
                 continue;
             }
-            var floodTile = config.floodTiles.find(t -> t.block == tile.build.block);
 
+            var floodTile = spreader.getFloodTier(tile);
             if (floodTile == null) {
                 continue;
             }

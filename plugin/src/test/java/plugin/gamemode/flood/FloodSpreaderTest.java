@@ -89,4 +89,49 @@ public class FloodSpreaderTest {
         spreader.removeEdgeTile(100);
         assertEquals(0, spreader.edgeTileCount());
     }
+
+    @Test
+    void testWaveSpreadLifecycle() {
+        // Empty edge tiles should not start wave
+        spreader.startSpreadWave();
+        assertFalse(spreader.isSpreadingWave());
+        assertEquals(0, spreader.getNextWaveEdgeCount());
+
+        // Adding edge tiles and starting wave
+        spreader.addEdgeTile(15);
+        spreader.addEdgeTile(25);
+        assertEquals(2, spreader.edgeTileCount());
+
+        spreader.startSpreadWave();
+        assertTrue(spreader.isSpreadingWave());
+
+        // Reset resets wave state
+        spreader.reset(10, 10);
+        assertFalse(spreader.isSpreadingWave());
+        assertEquals(0, spreader.getNextWaveEdgeCount());
+        assertEquals(0, spreader.edgeTileCount());
+    }
+
+    @Test
+    void testRemoveEdgeTileDuringSpreadWave() {
+        spreader.addEdgeTile(10);
+        spreader.addEdgeTile(20);
+        spreader.addEdgeTile(30);
+
+        spreader.startSpreadWave();
+        assertTrue(spreader.isSpreadingWave());
+
+        // Removing an edge tile during active wave adjusts wave tracking safely
+        spreader.removeEdgeTile(20);
+        assertEquals(2, spreader.edgeTileCount());
+        assertFalse(spreader.isEdgeTile(20));
+        assertTrue(spreader.isEdgeTile(10));
+        assertTrue(spreader.isEdgeTile(30));
+    }
+
+    @Test
+    void testPacedWaveAndFlushConstants() {
+        assertEquals(150, FloodSpreader.MAX_SPREAD_PER_TICK);
+        assertEquals(150, FloodSpreader.MAX_FLUSH_PER_WINDOW);
+    }
 }
