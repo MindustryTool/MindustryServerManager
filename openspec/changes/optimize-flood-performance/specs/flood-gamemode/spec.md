@@ -28,19 +28,19 @@ The system SHALL track edge flood tiles (crux flood tiles adjacent to at least o
 - **THEN** it transitions to the next configured tier until the final tier is reached
 
 ### Requirement: Event-driven scheduling performance
-The flood simulation SHALL use an event-driven min-heap scheduler with primitive parallel arrays such that ticks with no due events perform O(1) work, no per-tick allocations occur in steady state, Crux conveyor flood blocks are placed into a sleep state removing them from main-thread engine update loops, and network tile-block updates are batched per block and flushed at most once per 100 ms window, capped to at most 150–200 tile positions per flush packet. The first flush after simulation reset SHALL not be delayed by the window gate.
+The flood simulation SHALL use an event-driven min-heap scheduler with primitive parallel arrays such that ticks with no due events perform O(1) work, no per-tick allocations occur in steady state, standard Mindustry building invariants (`build.isValid() == true`) are preserved on all flood blocks to guarantee reliable engine and gamemode integration, and network tile-block updates are batched per block and flushed at most once per 100 ms window, chunked to at most 150–200 tile positions per packet. The first flush after simulation reset SHALL not be delayed by the window gate.
 
 #### Scenario: No-op tick does not send network tile updates
 - **WHEN** a tick completes with no tiles transitioning to new flood blocks
 - **THEN** no `Call.setTileBlocks` packets are emitted for that tick
 
-#### Scenario: Rapid transitions coalesce into capped flushes per window
+#### Scenario: Rapid transitions coalesce into capped packet batches per window
 - **WHEN** tiles transition to new flood blocks on many consecutive ticks within a single 100 ms window
-- **THEN** `Call.setTileBlocks` packets per affected block are emitted when the window opens, capped at 150–200 tile positions per packet, with any overflow deferred to subsequent flush windows
+- **THEN** `Call.setTileBlocks` packets per affected block are emitted when the window opens, chunked into packets of at most 150–200 tile positions without exceeding network MTU
 
-#### Scenario: Crux flood conveyors do not tick in engine build loop
-- **WHEN** a flood tile of a conveyor block tier is placed
-- **THEN** its building is marked as sleeping and removed from `Groups.build` on the server so that it consumes zero per-tick update cycles
+#### Scenario: Flood blocks preserve engine valid state
+- **WHEN** a flood tile of any tier is placed or evolved
+- **THEN** its building remains added to the engine with `isValid() == true`, allowing flood tier identification, unit damage, and edge tracking to function accurately
 
 #### Scenario: Unit damage check performs O(1) lookup without allocation
 - **WHEN** units are checked for contact damage on flood tiles

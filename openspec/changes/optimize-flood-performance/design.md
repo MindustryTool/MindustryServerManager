@@ -12,8 +12,8 @@ In mid-to-late game on larger maps, the flood frontier accumulates 1,500 to 5,00
 **Goals:**
 - **Zero Spread Slowdown & Identical Wave Feel**: Maintain the exact 8-second wave cadence (scaled by `multiplier`), identical wave frontier expansion, and unchanged flood tier visuals (conveyors evolving into walls).
 - **Eliminate Spread Frame Hitches**: Slice edge spread traversal across consecutive frames (e.g. 150–200 edge tiles per tick over ~0.25s) so main-thread frame time remains under 4ms (rock-solid 60 FPS).
-- **Eliminate Steady-State Conveyor Ticking**: Put Crux flood conveyors to sleep (`build.sleeping = true; build.remove()`), removing them from `Groups.build` while preserving health tracking, collision, damage processing, and client animations.
-- **Cap Network & Block Flush Bursts**: Restrict `setTileBlocks` batches to 150–200 tile positions per flush window.
+- **Preserve Mindustry Building Invariants**: Keep all Crux flood buildings active with `build.isValid() == true` without calling `build.remove()`, ensuring flood detection, health, unit damage, and evolution continue functioning accurately.
+- **Chunk Network Packets**: Chunk `setTileBlocks` packets to 150–200 tile positions per packet to avoid UDP MTU overflow while applying all world updates immediately without visual or gameplay lag.
 - **Zero Allocations & Clean Dispatches**: Use $O(1)$ block lookup for unit damage and eliminate duplicate network packets in `tryDowngradeTile`.
 
 **Non-Goals:**
@@ -23,33 +23,26 @@ In mid-to-late game on larger maps, the flood frontier accumulates 1,500 to 5,00
 
 ## Decisions
 
-### 1. Paced Wave Spreading (Sliced Frontier Traversal)
-- **Decision**: When `now >= nextSpreadAt`, initiate a spread wave that processes up to `MAX_SPREAD_PER_TICK = 150` edge tiles per frame over consecutive ticks until the current wave frontier is fully evaluated.
+### 1. Paced Wave Spreading (Snapshot Wave Queue)
+- **Decision**: When `now >= nextSpreadAt`, snapshot the active `edgeTiles` into a dedicated `waveQueue` and process up to `MAX_SPREAD_PER_TICK = 150` edge tiles per frame over consecutive ticks until the snapshot is exhausted.
 - **Details**:
-  - Edge tiles queued for the current wave are processed sequentially in sub-batches.
-  - Newly placed flood tiles that qualify as edge tiles are enqueued into a `nextWaveEdges` scratch buffer, ensuring they only participate in the *next* 8-second wave and do not cause runaway cascades within the current wave.
-  - Once the current wave completes (typically in 10–20 frames / ~0.25s), the spreader rests until `nextSpreadAt` (scheduled 8 seconds / `multiplier` from the wave start).
-- **Rationale**: Keeps total wave spread time under a fraction of a second (visually imperceptible to players from an instantaneous burst) while cutting per-frame CPU load by over 90%.
-- **Alternatives Considered**:
-  - *Hard quota per 8-second interval (old `MAX_NEW_FLOOD_PER_TICK = 300`)*: Caused waves to stall and take 50+ seconds to circle the map, producing lopsided growth.
-  - *Continuous single-tile trickling*: Destroys the tactical 8-second pulsing wave rhythm players rely on to build and react.
+  - Edge tiles snapshot for the current wave are processed sequentially via a monotonically increasing `waveIndex`.
+  - Newly placed flood tiles that qualify as edge tiles are enqueued into `edgeTiles`. Because `waveQueue` is an isolated snapshot, newly placed tiles strictly wait for the *next* 8-second wave and do not cause cascading expansions in the current wave.
+  - Removing an edge tile that has exhausted its spreadable neighbors uses O(1) swap-and-pop on `edgeTiles` without mutating `waveQueue` or its loop bounds, preventing skipped tiles or premature wave termination.
+  - Once the snapshot wave completes, `isSpreadingWave` becomes false and the spreader rests until `nextSpreadAt` (scheduled 8 seconds / `multiplier` from the wave start).
+- **Rationale**: Eliminates the frame hitch while guaranteeing that 100% of frontier edge tiles are evaluated with zero behavior drift.
 
-### 2. Sleeping Crux Flood Conveyors
-- **Decision**: Whenever Crux flood conveyors (`conveyor`, `titaniumConveyor`, `armoredConveyor`) are placed on the server, invoke `build.sleeping = true; build.remove();`.
+### 2. Preserved Building Invariants (No Conveyor Removal)
+- **Decision**: Avoid calling `build.remove()` on Crux conveyors.
 - **Details**:
-  - In Mindustry, `build.remove()` only removes the entity from `Groups.build` (the per-tick update collection).
-  - The building remains fully attached to `tile.build`, `Vars.indexer`, and `TeamData.buildingTree`.
-  - Bullets hit the conveyor normally, `damage()` modifies health normally, and `BlockDestroyEvent` cleans it up normally.
-  - Clients receive standard `setTileBlocks` packets and render animated conveyor textures locally.
-  - Player conveyors on `Team.sharded` are unaffected.
-- **Rationale**: Reduces server-side per-frame ticking overhead from ~900k calls/sec to 0, eliminating permanent TPS decay as the flood expands.
-- **Alternatives Considered**:
-  - *Replacing conveyors with non-ticking blocks (floors, environment, walls)*: Violates the requirement to keep the original visual identity and progression.
-  - *Setting `Blocks.conveyor.update = false` globally*: Breaks player-built conveyors across the entire server.
+  - In Mindustry, `build.remove()` sets `added = false`.
+  - The engine defines `isValid()` as `return added && !dead;`.
+  - Calling `build.remove()` caused `build.isValid()` to return `false` on all flood conveyors, breaking `isFloodTile`, `getFloodTier`, min-heap evolution processing, and unit damage.
+  - Idle Crux conveyors with no items have negligible overhead in Mindustry (a single branch check `items.total() > 0`), so preserving standard building validity guarantees 100% stable gameplay without performance degradation.
 
-### 3. Capped Flush Window & Sub-batching
-- **Decision**: In `flushUpdates()`, limit each `Call.setTileBlocks` packet to at most `MAX_FLUSH_PER_WINDOW = 150` tile positions per tier. Any remaining queued updates remain in `pendingUpdatesByTier` and flush in subsequent 100ms windows.
-- **Rationale**: Prevents huge bursts of `Tile.setBlock()` proximity and pathfinding recomputations on the server, and prevents packet oversized fragmentation over UDP.
+### 3. Chunked Network Packet Flushing
+- **Decision**: In `flushUpdates()`, chunk `Call.setTileBlocks` packets to at most `MAX_FLUSH_PER_WINDOW = 150` tile positions per packet.
+- **Rationale**: Prevents UDP packet drops and MTU fragmentation when large frontiers expand, while immediately applying all placed blocks to the world so tiles never remain as air on the server.
 
 ### 4. Direct $O(1)$ Block Tier Lookup for Unit Damage
 - **Decision**: Replace `config.floodTiles.find(t -> t.block == tile.build.block)` in `FloodGamemode.updateUnitDamgeOnFlood()` with `spreader.getFloodTier(tile)`.

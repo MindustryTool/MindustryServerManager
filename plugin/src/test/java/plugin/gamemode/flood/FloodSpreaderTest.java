@@ -96,6 +96,7 @@ public class FloodSpreaderTest {
         spreader.startSpreadWave();
         assertFalse(spreader.isSpreadingWave());
         assertEquals(0, spreader.getNextWaveEdgeCount());
+        assertEquals(0, spreader.getWaveQueueSize());
 
         // Adding edge tiles and starting wave
         spreader.addEdgeTile(15);
@@ -104,11 +105,14 @@ public class FloodSpreaderTest {
 
         spreader.startSpreadWave();
         assertTrue(spreader.isSpreadingWave());
+        assertEquals(2, spreader.getWaveQueueSize());
+        assertEquals(2, spreader.getNextWaveEdgeCount());
 
         // Reset resets wave state
         spreader.reset(10, 10);
         assertFalse(spreader.isSpreadingWave());
         assertEquals(0, spreader.getNextWaveEdgeCount());
+        assertEquals(0, spreader.getWaveQueueSize());
         assertEquals(0, spreader.edgeTileCount());
     }
 
@@ -120,13 +124,29 @@ public class FloodSpreaderTest {
 
         spreader.startSpreadWave();
         assertTrue(spreader.isSpreadingWave());
+        assertEquals(3, spreader.getWaveQueueSize());
 
-        // Removing an edge tile during active wave adjusts wave tracking safely
+        // Removing an edge tile removes it from edge list without altering waveQueue snapshot
         spreader.removeEdgeTile(20);
         assertEquals(2, spreader.edgeTileCount());
         assertFalse(spreader.isEdgeTile(20));
         assertTrue(spreader.isEdgeTile(10));
         assertTrue(spreader.isEdgeTile(30));
+        assertEquals(3, spreader.getWaveQueueSize());
+    }
+
+    @Test
+    void testWaveSpreadExecutionWithoutCrashWhenVarsWorldNull() {
+        spreader.addEdgeTile(10);
+        spreader.addEdgeTile(20);
+        spreader.startSpreadWave();
+        assertTrue(spreader.isSpreadingWave());
+
+        // With Vars.world null, continueSpreadWave cleans up missing/invalid tiles without crashing
+        spreader.continueSpreadWave(0, 1.0f);
+        // Wave should finish when all elements in waveQueue are checked
+        assertFalse(spreader.isSpreadingWave());
+        assertEquals(0, spreader.edgeTileCount());
     }
 
     @Test
