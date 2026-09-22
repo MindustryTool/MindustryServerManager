@@ -232,7 +232,7 @@ public class DockerNodeManager implements NodeManager {
                                 "max-size", "100m",
                                 "max-file", "5")))
                         .withPidsLimit(64L)
-                        // .withDns("8.8.8.8", "1.1.1.1")
+                        .withDns("8.8.8.8", "1.1.1.1")
                         .withExtraHosts("server.mindustry-tool.com:15.235.147.240",
                                 "api.mindustry-tool.com:15.235.147.240")
                         .withRuntime("io.containerd.kata.v2")
