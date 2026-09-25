@@ -35,6 +35,6 @@ public class HubCommands {
 
     @ClientCommand(name = "redirect", description = "Redirect all player to server")
     public void redirect(Session session) {
-        new GlobalServerListMenu(server -> ServerUtils.redirectAll(server)).send(session, 0);
+        new GlobalServerListMenu().send(session, 0);
     }
 }
