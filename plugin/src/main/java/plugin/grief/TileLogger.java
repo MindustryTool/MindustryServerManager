@@ -46,21 +46,27 @@ public class TileLogger {
 
     @Listener
     public void onBlockBuildEnd(BlockBuildEndEvent event) {
-        if (event.breaking || !event.unit.isPlayer()) {
+        if (event.tile == null || event.breaking || event.unit == null || !event.unit.isPlayer()) {
             return;
         }
 
         var player = event.unit.getPlayer();
+        if (player == null) {
+            return;
+        }
         append(event.tile.pos(), TileLogEntry.place(player, event.tile, mapName()));
     }
 
     @Listener
     public void onBlockBuildBegin(BlockBuildBeginEvent event) {
-        if (!event.breaking || !event.unit.isPlayer()) {
+        if (event.tile == null || !event.breaking || event.unit == null || !event.unit.isPlayer()) {
             return;
         }
 
-        pendingBreaks.put(event.tile.pos(), event.unit.getPlayer());
+        var player = event.unit.getPlayer();
+        if (player != null) {
+            pendingBreaks.put(event.tile.pos(), player);
+        }
     }
 
     @Listener

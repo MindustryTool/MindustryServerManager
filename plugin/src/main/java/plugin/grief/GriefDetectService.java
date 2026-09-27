@@ -82,13 +82,18 @@ public class GriefDetectService {
 
     @Listener
     public void onPlayerLeave(PlayerLeave event) {
-        scores.remove(event.player);
+        if (event.player != null) {
+            scores.remove(event.player);
+        }
     }
 
     @Listener
     public void onBlockBuildBegin(BlockBuildBeginEvent event) {
-        if (event.unit.isPlayer()) {
+        if (event.unit != null && event.unit.isPlayer()) {
             var player = event.unit.getPlayer();
+            if (player == null) {
+                return;
+            }
             var score = scores.getOrDefault(player, 0L);
 
             if (event.breaking) {
@@ -103,9 +108,12 @@ public class GriefDetectService {
             return;
         }
 
-        if (event.unit.isPlayer()) {
+        if (event.unit != null && event.unit.isPlayer()) {
             var player = event.unit.getPlayer();
-            var score = scores.getOrDefault(player, 0l);
+            if (player == null) {
+                return;
+            }
+            var score = scores.getOrDefault(player, 0L);
 
             if (event.breaking) {
                 scores.put(player, score - 1);
