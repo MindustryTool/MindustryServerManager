@@ -153,8 +153,19 @@ public class DockerNodeManager implements NodeManager {
             var isSameId = config.getId().equals(request.getId());
 
             if (isSamePort && !isSameId) {
-                eventBus.emit(LogEvent.error(serverId,
-                        "Port exists at container " + server.getNames()[0] + " port: " + config.getPort()));
+
+                if (server.getState().equalsIgnoreCase("running")) {
+                    eventBus.emit(LogEvent.error(serverId,
+                            "Container " + server.getNames()[0] + " port: " + config.getPort()
+                                    + " is running, cannot create new container on same port"));
+                } else {
+                    eventBus.emit(LogEvent.error(serverId, "Remove container " + server.getNames()[0] + " port: "
+                            + config.getPort() + " to create new container on same port"));
+
+                    dockerClient.removeContainerCmd(server.getId())
+                            .withForce(true)
+                            .exec();
+                }
                 return;
             }
         }
@@ -170,7 +181,6 @@ public class DockerNodeManager implements NodeManager {
         Ports portBindings = new Ports();
         portBindings.bind(tcp, Ports.Binding.bindPort(request.getPort()));
         portBindings.bind(udp, Ports.Binding.bindPort(request.getPort()));
-
 
         var image = request.getImage() == null || request.getImage().isEmpty()
                 ? envConfig.docker().mindustryServerImage()
