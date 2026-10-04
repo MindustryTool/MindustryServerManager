@@ -1,4 +1,9 @@
-## ADDED Requirements
+# server-plugin-proxy Specification
+
+## Purpose
+Proxies plugin version queries and plugin binary downloads from game server nodes via WebSocket to upstream distribution APIs with server-side Caffeine caching.
+
+## Requirements
 
 ### Requirement: Server Plugin Version Query Proxy
 The server manager SHALL expose a WebSocket message handler for `"get-plugin-version"` that receives plugin repository coordinates (`owner`, `repo`, `tag`) and returns a `PluginVersionDto` containing release metadata. The server manager SHALL cache version query results in memory with a 5-minute expiration time, returning cached values on hits and querying the upstream plugin version API on cache misses.

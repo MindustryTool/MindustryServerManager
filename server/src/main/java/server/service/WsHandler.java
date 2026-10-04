@@ -1,5 +1,6 @@
 package server.service;
 
+import java.nio.channels.ClosedChannelException;
 import java.time.Duration;
 import java.util.Date;
 import java.util.UUID;
@@ -58,7 +59,11 @@ public class WsHandler {
         });
 
         ws.onError(handler -> {
-            Log.err("WebSocket error", handler.error());
+            Throwable error = handler.error();
+            if (error != null && error instanceof ClosedChannelException) {
+                return; // Ignore closed channel exceptions
+            }
+            Log.err("WebSocket error", error != null ? error.getMessage() : "Unknown error");
         });
     }
 
