@@ -17,7 +17,7 @@ import mindustry.game.EventType.PlayerBanEvent;
 import mindustry.game.EventType.PlayerChatEvent;
 import mindustry.game.EventType.PlayerConnect;
 import mindustry.game.EventType.PlayerLeave;
-import mindustry.game.EventType.WorldLoadEndEvent;
+import mindustry.game.EventType.PlayEvent;
 import mindustry.gen.Groups;
 import mindustry.gen.Player;
 import plugin.Control;
@@ -81,7 +81,7 @@ public class EventHandler {
     }
 
     @Listener
-    private void onWorldLoadEnd(WorldLoadEndEvent event) {
+    private void onWorldLoadEnd(PlayEvent event) {
         var currentMap = Vars.state.map;
 
         if (currentMap != null) {

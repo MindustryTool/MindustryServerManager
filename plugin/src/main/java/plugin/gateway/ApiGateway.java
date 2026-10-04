@@ -52,7 +52,6 @@ import events.ServerEvents.ServerStateEvent;
 import lombok.RequiredArgsConstructor;
 import mindustry.game.EventType.PlayEvent;
 import mindustry.game.EventType.StateChangeEvent;
-import mindustry.game.EventType.WorldLoadEndEvent;
 import mindustry.gen.Player;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -756,7 +755,7 @@ public class ApiGateway {
         sendStateUpdate();
     }
 
-    @Listener(WorldLoadEndEvent.class)
+    @Listener(PlayEvent.class)
     private void onWorldLoadEnd() {
         sendStateUpdate();
     }
