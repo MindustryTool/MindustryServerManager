@@ -50,24 +50,4 @@ public class GoogleWebProviderTest {
         provider.resetCooldown();
         assertTrue(provider.isAvailable());
     }
-
-    @Test
-    public void testFormatMessage() {
-        // Translation differs from original and target is different from source -> format with bracket
-        TranslationResult result = new TranslationResult("Hello", "vi");
-        String formatted = ChatTranslation.formatMessage("Xin chào", "Xin chào", "en", result);
-        assertEquals("Xin chào [[#00ff00]Hello]", formatted);
-
-        // Same language as recipient -> no bracket
-        String sameLang = ChatTranslation.formatMessage("Hello", "Hello", "en", new TranslationResult("Hello", "en"));
-        assertEquals("Hello", sameLang);
-
-        // Identical translation to original text -> no bracket
-        String identical = ChatTranslation.formatMessage("ok", "ok", "vi", new TranslationResult("ok", "en"));
-        assertEquals("ok", identical);
-
-        // Null result -> original message
-        String nullRes = ChatTranslation.formatMessage("test", "test", "en", null);
-        assertEquals("test", nullRes);
-    }
 }

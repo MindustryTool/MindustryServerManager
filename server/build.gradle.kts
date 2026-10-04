@@ -30,7 +30,6 @@ dependencies {
 
     implementation("Anuken:Mindustry:${property("mindustryVersion")}")
 
-    testImplementation(project(":plugin"))
     testImplementation("org.junit.jupiter:junit-jupiter:5.10.0")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testRuntimeOnly("org.xerial:sqlite-jdbc:3.43.2.0")
