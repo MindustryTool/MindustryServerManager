@@ -19,7 +19,7 @@ import dto.TranslationResponseDto;
 public class LingvaProvider implements TranslationProvider {
     private static final String BASE_ENDPOINT = "https://lingva-api.onrender.com/api/v1/auto";
     private static final String USER_AGENT = "MindustryServerManager/1.0";
-    private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(8);
+
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(8);
     private static final Duration BASE_COOLDOWN = Duration.ofSeconds(5);
     private static final Duration MAX_COOLDOWN = Duration.ofMinutes(5);
@@ -30,10 +30,7 @@ public class LingvaProvider implements TranslationProvider {
     private volatile Instant cooldownUntil = Instant.MIN;
 
     public LingvaProvider() {
-        this(HttpClient.newBuilder()
-                .connectTimeout(CONNECT_TIMEOUT)
-                .followRedirects(HttpClient.Redirect.NORMAL)
-                .build(), new ObjectMapper());
+        this(server.utils.HttpClients.shared(), new ObjectMapper());
     }
 
     public LingvaProvider(HttpClient httpClient, ObjectMapper objectMapper) {

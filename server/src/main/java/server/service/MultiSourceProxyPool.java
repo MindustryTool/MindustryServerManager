@@ -75,6 +75,29 @@ public class MultiSourceProxyPool {
         }
     }
 
+    /**
+     * @return Dynamic java.net.ProxySelector backed by this proxy pool.
+     */
+    public java.net.ProxySelector asProxySelector() {
+        return new java.net.ProxySelector() {
+            @Override
+            public List<java.net.Proxy> select(java.net.URI uri) {
+                InetSocketAddress candidate = getNextCandidate();
+                if (candidate == null) {
+                    return List.of(java.net.Proxy.NO_PROXY);
+                }
+                return List.of(new java.net.Proxy(java.net.Proxy.Type.HTTP, candidate));
+            }
+
+            @Override
+            public void connectFailed(java.net.URI uri, java.net.SocketAddress sa, java.io.IOException ioe) {
+                if (sa instanceof InetSocketAddress inet) {
+                    evict(inet);
+                }
+            }
+        };
+    }
+
     public void checkAndTriggerRefresh() {
         if (activeSet.isEmpty() || Instant.now().isAfter(lastRefreshTime.plus(REFRESH_INTERVAL))) {
             if (isRefreshing.compareAndSet(false, true)) {

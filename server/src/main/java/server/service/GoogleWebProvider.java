@@ -1,7 +1,6 @@
 package server.service;
 
 import java.net.InetSocketAddress;
-import java.net.ProxySelector;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
@@ -23,7 +22,6 @@ import dto.TranslationResponseDto;
 public class GoogleWebProvider implements TranslationProvider {
     private static final String ENDPOINT = "https://translate.googleapis.com/translate_a/single";
     private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
-    private static final Duration DIRECT_CONNECT_TIMEOUT = Duration.ofSeconds(8);
     private static final Duration DIRECT_REQUEST_TIMEOUT = Duration.ofSeconds(8);
     private static final Duration PROXY_CONNECT_TIMEOUT = Duration.ofSeconds(4);
     private static final Duration PROXY_REQUEST_TIMEOUT = Duration.ofSeconds(5);
@@ -34,7 +32,7 @@ public class GoogleWebProvider implements TranslationProvider {
 
     private final String name;
     private final MultiSourceProxyPool proxyPool;
-    private final HttpClient directHttpClient;
+    private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
     private final AtomicInteger failureCount = new AtomicInteger(0);
     private volatile Instant cooldownUntil = Instant.MIN;
@@ -48,16 +46,15 @@ public class GoogleWebProvider implements TranslationProvider {
     }
 
     public GoogleWebProvider(String name, MultiSourceProxyPool proxyPool) {
-        this(name, proxyPool, HttpClient.newBuilder()
-                .connectTimeout(DIRECT_CONNECT_TIMEOUT)
-                .followRedirects(HttpClient.Redirect.NORMAL)
-                .build(), new ObjectMapper());
+        this(name, proxyPool, proxyPool != null
+                ? server.utils.HttpClients.createProxied(proxyPool.asProxySelector(), PROXY_CONNECT_TIMEOUT)
+                : server.utils.HttpClients.shared(), new ObjectMapper());
     }
 
-    public GoogleWebProvider(String name, MultiSourceProxyPool proxyPool, HttpClient directHttpClient, ObjectMapper objectMapper) {
+    public GoogleWebProvider(String name, MultiSourceProxyPool proxyPool, HttpClient httpClient, ObjectMapper objectMapper) {
         this.name = name != null ? name : "google-web";
         this.proxyPool = proxyPool;
-        this.directHttpClient = directHttpClient;
+        this.httpClient = httpClient;
         this.objectMapper = objectMapper;
     }
 
@@ -133,7 +130,7 @@ public class GoogleWebProvider implements TranslationProvider {
 
         HttpResponse<String> response;
         try {
-            response = directHttpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            response = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
         } catch (Exception e) {
             triggerCooldown();
             throw e;
@@ -156,44 +153,39 @@ public class GoogleWebProvider implements TranslationProvider {
     }
 
     private TranslationResponseDto executeProxiedRequest(String url) throws Exception {
+        if (proxyPool.size() == 0) {
+            triggerCooldown();
+            throw new IllegalStateException("No proxies available in MultiSourceProxyPool");
+        }
+
         Exception lastException = null;
 
         for (int attempt = 1; attempt <= MAX_PROXY_ATTEMPTS; attempt++) {
-            InetSocketAddress proxyAddress = proxyPool.getNextCandidate();
-            if (proxyAddress == null) {
-                triggerCooldown();
-                throw new IllegalStateException("No proxies available in MultiSourceProxyPool");
+            InetSocketAddress candidate = proxyPool.getNextCandidate();
+            if (candidate == null) {
+                break;
             }
 
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .header("User-Agent", USER_AGENT)
+                    .timeout(PROXY_REQUEST_TIMEOUT)
+                    .GET()
+                    .build();
+
             try {
-                HttpClient proxiedClient = HttpClient.newBuilder()
-                        .connectTimeout(PROXY_CONNECT_TIMEOUT)
-                        .proxy(ProxySelector.of(proxyAddress))
-                        .followRedirects(HttpClient.Redirect.NORMAL)
-                        .build();
-
-                HttpRequest request = HttpRequest.newBuilder()
-                        .uri(URI.create(url))
-                        .header("User-Agent", USER_AGENT)
-                        .timeout(PROXY_REQUEST_TIMEOUT)
-                        .GET()
-                        .build();
-
-                HttpResponse<String> response = proxiedClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+                // Uses the single long-lived proxied client backed by proxyPool.asProxySelector()
+                HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
 
                 if (response.statusCode() == 200) {
                     failureCount.set(0);
                     return parseResponse(response.body());
                 }
 
-                Log.debug("Proxy @:@ returned HTTP @, evicting candidate",
-                        proxyAddress.getHostString(), proxyAddress.getPort(), response.statusCode());
-                proxyPool.evict(proxyAddress);
-                lastException = new RuntimeException("Proxy " + proxyAddress + " returned HTTP " + response.statusCode());
+                proxyPool.evict(candidate);
+                lastException = new RuntimeException("Proxied request returned HTTP " + response.statusCode());
             } catch (Exception e) {
-                Log.debug("Proxy @:@ failed with @, evicting candidate",
-                        proxyAddress.getHostString(), proxyAddress.getPort(), e.getMessage());
-                proxyPool.evict(proxyAddress);
+                proxyPool.evict(candidate);
                 lastException = e;
             }
         }

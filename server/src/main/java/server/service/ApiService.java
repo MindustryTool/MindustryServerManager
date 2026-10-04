@@ -17,10 +17,7 @@ import server.utils.ApiError;
 public class ApiService {
 
     private final EnvConfig envConfig;
-
-    private final HttpClient httpClient = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(10))
-            .build();
+    private final HttpClient httpClient = server.utils.HttpClients.shared();
 
     private static final String BASE_URL = "https://api.mindustry-tool.com/api/v4/";
 

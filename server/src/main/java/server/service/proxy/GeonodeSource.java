@@ -22,7 +22,7 @@ public class GeonodeSource implements ProxySource {
     private final ObjectMapper objectMapper;
 
     public GeonodeSource() {
-        this(HttpClient.newBuilder().connectTimeout(TIMEOUT).build(), new ObjectMapper());
+        this(server.utils.HttpClients.shared(), new ObjectMapper());
     }
 
     public GeonodeSource(HttpClient httpClient, ObjectMapper objectMapper) {

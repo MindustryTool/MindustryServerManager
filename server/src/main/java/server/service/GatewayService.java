@@ -28,6 +28,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 
 import arc.files.Fi;
 import arc.util.Log;
+import server.utils.HttpClients;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import dto.LoginDto;
@@ -325,9 +326,7 @@ public class GatewayService {
         }
 
         public class Backend {
-            private final HttpClient httpClient = HttpClient.newBuilder()
-                    .connectTimeout(Duration.ofSeconds(10))
-                    .build();
+            private final HttpClient httpClient = HttpClients.shared();
 
             private HttpRequest.Builder createRequest(Object... segments) {
                 try {

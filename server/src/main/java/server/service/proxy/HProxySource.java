@@ -16,7 +16,7 @@ public class HProxySource implements ProxySource {
     private final HttpClient httpClient;
 
     public HProxySource() {
-        this(HttpClient.newBuilder().connectTimeout(TIMEOUT).build());
+        this(server.utils.HttpClients.shared());
     }
 
     public HProxySource(HttpClient httpClient) {

@@ -18,7 +18,7 @@ public class ProxyScrapeSource implements ProxySource {
     private final HttpClient httpClient;
 
     public ProxyScrapeSource() {
-        this(HttpClient.newBuilder().connectTimeout(TIMEOUT).build());
+        this(server.utils.HttpClients.shared());
     }
 
     public ProxyScrapeSource(HttpClient httpClient) {
