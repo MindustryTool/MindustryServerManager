@@ -334,5 +334,8 @@
         "btn_cancel": "[scarlet]Cancel",
         "link_opened": "[green]Login link opened in your browser. It expires in 5 minutes.",
         "link_expired": "[scarlet]Login link expired. Generating a new link..."
+    },
+    "restart": {
+        "redirecting_to_hub": "[scarlet]Server sedang dimulai ulang. Mengalihkan semua pemain ke Hub..."
     }
 }

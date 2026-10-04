@@ -334,5 +334,8 @@
         "btn_cancel": "[scarlet]Hủy bỏ",
         "link_opened": "[green]Đã mở liên kết đăng nhập trong trình duyệt. Liên kết có hiệu lực trong 5 phút.",
         "link_expired": "[scarlet]Liên kết đăng nhập đã hết hạn. Đang tạo liên kết mới..."
+    },
+    "restart": {
+        "redirecting_to_hub": "[scarlet]Máy chủ đang khởi động lại. Đang chuyển hướng người chơi về máy chủ Hub..."
     }
 }

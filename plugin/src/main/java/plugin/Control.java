@@ -19,6 +19,7 @@ import plugin.core.PluginBootstrap;
 import plugin.core.Registry;
 import plugin.event.PluginUnloadEvent;
 import plugin.event.UnloadServerEvent;
+import plugin.hub.ServerUtils;
 import plugin.utils.TimeUtils;
 import plugin.event.KickEvent;
 
@@ -129,6 +130,14 @@ public class Control extends mindustry.mod.Plugin {
             Log.err("Failed to unload plugin", e);
         } finally {
             if (event.exit) {
+                if (!Cfg.IS_HUB && Groups.player.size() > 0) {
+                    try {
+                        ServerUtils.redirectToHub();
+                        Thread.sleep(2500);
+                    } catch (Exception e) {
+                        Log.err("Error redirecting players before exit: @", e.getMessage());
+                    }
+                }
                 System.exit(1);
                 // Force docker container restart
             }

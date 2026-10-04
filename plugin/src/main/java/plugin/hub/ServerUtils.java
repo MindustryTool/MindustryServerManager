@@ -17,8 +17,38 @@ import plugin.utils.Tr;
 
 public class ServerUtils {
 
+    public static final String HUB_HOST = "server.mindustry-tool.com";
+    public static final int HUB_PORT = 10002;
+
     public static void redirectAll(ServerDto server) {
         Groups.player.each(player -> redirect(player, server));
+    }
+
+    public static void redirectToHub() {
+        if (Groups.player.size() == 0) {
+            return;
+        }
+
+        try {
+            Utils.forEachPlayerLocale((locale, players) -> {
+                String msg = Tr.t(locale, "restart.redirecting_to_hub");
+                for (var p : players) {
+                    p.sendMessage(msg);
+                }
+            });
+
+            InetAddress finalHost = InetAddress.getByName(HUB_HOST);
+            String hostAddress = finalHost.getHostAddress();
+            Log.info("Redirecting @ players to Hub (@:@)", Groups.player.size(), HUB_HOST, HUB_PORT);
+
+            Groups.player.each(p -> {
+                if (p.con != null) {
+                    Call.connect(p.con, hostAddress, HUB_PORT);
+                }
+            });
+        } catch (Exception e) {
+            Log.err("Failed to redirect players to hub: @", e.getMessage());
+        }
     }
 
     public static void redirect(Player player, ServerDto server) {
