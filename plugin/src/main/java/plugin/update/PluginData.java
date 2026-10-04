@@ -1,23 +1,16 @@
 package plugin.update;
 
-import java.io.BufferedInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.URI;
-import java.net.URL;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
-import arc.util.Http;
 import arc.util.Log;
+import dto.PluginQueryDto;
+import dto.PluginVersionDto;
 import lombok.Data;
-import plugin.utils.JsonUtils;
+import plugin.core.Registry;
+import plugin.gateway.ApiGateway;
 
 @Data
 public class PluginData {
-    private static final String PLUGIN_API_URL = "https://api.mindustry-tool.com";
-
     private final String id;
     private final String path;
     private final String owner;
@@ -33,70 +26,50 @@ public class PluginData {
     }
 
     public PluginVersion getPluginVersion() {
-        int timeout = 30000;
+        ApiGateway gateway = Registry.getOrNull(ApiGateway.class);
+        if (gateway == null || !gateway.isConnected()) {
+            Log.warn("ApiGateway not connected, skipping plugin version check for @", this.id);
+            return null;
+        }
+
         try {
-            CompletableFuture<PluginVersion> result = new CompletableFuture<>();
+            PluginQueryDto query = new PluginQueryDto(this.owner, this.repo, this.tag);
+            PluginVersionDto dto = gateway.sendRequest("get-plugin-version", query, PluginVersionDto.class)
+                    .get(30, TimeUnit.SECONDS);
 
-            Http.get(URI.create(PLUGIN_API_URL + "/api/v4/plugins/version?repo=" + this.repo + "&owner=" + this.owner
-                    + "&tag=" + this.tag).toString())
-                    .error(error -> {
-                        result.completeExceptionally(error);
-                        Log.err(error);
-                    })
-                    .timeout(timeout)
-                    .submit(res -> {
-                        String version = res.getResultAsString();
-                        PluginVersion pluginVersion = JsonUtils.readJsonAsClass(version, PluginVersion.class);
+            if (dto == null) {
+                return null;
+            }
 
-                        result.complete(pluginVersion);
-                    });
-
-            var data = result.get(timeout, TimeUnit.MILLISECONDS);
-
-            return data;
+            PluginVersion version = new PluginVersion();
+            version.setUpdatedAt(dto.getUpdatedAt());
+            return version;
         } catch (Exception e) {
             throw new RuntimeException("Error while getting plugin version " + this.id, e);
         }
     }
 
     public byte[] download() {
+        ApiGateway gateway = Registry.getOrNull(ApiGateway.class);
+        if (gateway == null || !gateway.isConnected()) {
+            throw new IllegalStateException("ApiGateway not connected, cannot download plugin: " + this.id);
+        }
+
         try {
-            URL url = URI.create(PLUGIN_API_URL + "/api/v4/plugins/download?repo=" + this.repo + "&owner=" + this.owner
-                    + "&tag=" + this.tag).toURL();
+            PluginQueryDto query = new PluginQueryDto(this.owner, this.repo, this.tag);
+            byte[] data = gateway.sendRequest("download-plugin", query, byte[].class)
+                    .get(120, TimeUnit.SECONDS);
 
-            HttpURLConnection httpConn = (HttpURLConnection) url.openConnection();
-
-            httpConn.setReadTimeout(60_000);
-            httpConn.setConnectTimeout(60_000);
-
-            // Fix #4: always disconnect in finally so the connection is released on error
-            try {
-                int responseCode = httpConn.getResponseCode();
-
-                try (BufferedInputStream in = new BufferedInputStream(httpConn.getInputStream());
-                        ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-
-                    if (responseCode == HttpURLConnection.HTTP_OK) {
-                        byte[] buffer = new byte[4096];
-                        int bytesRead;
-                        while ((bytesRead = in.read(buffer)) != -1) {
-                            out.write(buffer, 0, bytesRead);
-                        }
-                    } else {
-                        throw new IOException("Server returned non-OK response code: " + responseCode);
-                    }
-
-                    return out.toByteArray();
-                }
-            } finally {
-                httpConn.disconnect();
+            if (data == null || data.length == 0) {
+                throw new IllegalStateException("Received empty download response for plugin: " + this.id);
             }
+
+            return data;
         } catch (Exception e) {
             throw new RuntimeException("Error while downloading plugin: " + this.id, e);
         }
     }
 
-    // Fix #8: use @Data for consistency with the outer class — Lombok generates equals/hashCode/getters
     @lombok.Data
     public static class PluginVersion {
         private String updatedAt;

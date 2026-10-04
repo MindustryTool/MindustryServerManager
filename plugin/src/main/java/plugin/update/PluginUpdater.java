@@ -76,7 +76,7 @@ public class PluginUpdater {
                 && Vars.state.rules.mode() == mindustry.game.Gamemode.sandbox;
     }
 
-    @Schedule(delay = 1, fixedDelay = 5, unit = TimeUnit.MINUTES)
+    @Schedule(delay = 1, fixedDelay = 1, unit = TimeUnit.MINUTES)
     public void checkUpdate() {
         var needUpdate = false;
 

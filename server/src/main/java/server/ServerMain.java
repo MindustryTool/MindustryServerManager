@@ -64,6 +64,10 @@ public class ServerMain {
         Javalin app = Javalin.create(config -> {
             config.showJavalinBanner = false;
             config.router.contextPath = "/";
+            config.jetty.modifyWebSocketServletFactory(factory -> {
+                factory.setMaxTextMessageSize(50 * 1024 * 1024);
+                factory.setMaxBinaryMessageSize(50 * 1024 * 1024);
+            });
             config.jsonMapper(new JavalinJackson().updateMapper(mapper -> {
                 mapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
             }));

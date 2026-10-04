@@ -31,6 +31,7 @@ import arc.util.Log;
 import server.utils.HttpClients;
 import lombok.Getter;
 import lombok.experimental.Accessors;
+import dto.PluginQueryDto;
 import dto.LoginDto;
 import dto.LoginRequestDto;
 import dto.PlayerInfoPageDto;
@@ -64,18 +65,24 @@ public class GatewayService {
     private final EnvConfig envConfig;
     private final NodeManager nodeManager;
     private final TranslationService translationService;
+    private final PluginProxyService pluginProxyService;
     private final ConcurrentHashMap<UUID, GatewayClient> clients = new ConcurrentHashMap<>();
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
     public GatewayService(EventBus eventBus, EnvConfig envConfig, NodeManager nodeManager) {
-        this(eventBus, envConfig, nodeManager, new TranslationService());
+        this(eventBus, envConfig, nodeManager, new TranslationService(), new PluginProxyService());
     }
 
     public GatewayService(EventBus eventBus, EnvConfig envConfig, NodeManager nodeManager, TranslationService translationService) {
+        this(eventBus, envConfig, nodeManager, translationService, new PluginProxyService());
+    }
+
+    public GatewayService(EventBus eventBus, EnvConfig envConfig, NodeManager nodeManager, TranslationService translationService, PluginProxyService pluginProxyService) {
         this.eventBus = eventBus;
         this.envConfig = envConfig;
         this.nodeManager = nodeManager;
         this.translationService = translationService;
+        this.pluginProxyService = pluginProxyService;
 
         nodeManager.onKilled(serverId -> this.terminate(serverId, NodeRemoveReason.PROCESS_KILLED));
 
@@ -182,6 +189,12 @@ public class GatewayService {
                     Log.warn("Translation error: @", e.getMessage());
                     return null;
                 }
+            });
+            this.registerMessageHandler("get-plugin-version", PluginQueryDto.class, query -> {
+                return pluginProxyService.getPluginVersion(query);
+            });
+            this.registerMessageHandler("download-plugin", PluginQueryDto.class, query -> {
+                return pluginProxyService.downloadPlugin(query);
             });
             this.registerMessageHandler("event", JsonNode.class, event -> {
                 var name = event.get("name").asText(null);
@@ -430,10 +443,6 @@ public class GatewayService {
 
             public CompletableFuture<JsonNode> getJson() {
                 return sendRequest("get-json", null, JsonNode.class);
-            }
-
-            public CompletableFuture<String> getPluginVersion() {
-                return sendRequest("get-plugin-version", null, String.class);
             }
 
             public CompletableFuture<Void> updatePlayer(String uuid, LoginDto request) {

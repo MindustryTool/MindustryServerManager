@@ -120,7 +120,6 @@ public class ApiGateway {
     public void init() {
         connectAsync();
         this.registerMessageHandler("get-json", Void.class, (request) -> getJson());
-        this.registerMessageHandler("get-plugin-version", Void.class, (request) -> Cfg.PLUGIN_VERSION);
         this.registerMessageHandler("update-player", LoginDto.class, this::updatePlayer);
         this.registerMessageHandler("pause", Void.class, (request) -> tooglePause());
         this.registerMessageHandler("get-state", Void.class, (request) -> Utils.getState());
@@ -231,6 +230,7 @@ public class ApiGateway {
             Log.info("[sky]Connecting to server manager");
             webSocket = new WebSocketFactory()
                     .createSocket(GATEWAY_URL)
+                    .setMaxPayloadSize(50 * 1024 * 1024)
                     .addHeader("Authorization", Cfg.webSocketAuthToken())
                     .addHeader("X-SERVER-ID", Cfg.serverId())
                     .addListener(wsHandler)
