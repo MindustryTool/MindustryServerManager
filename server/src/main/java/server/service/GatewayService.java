@@ -62,19 +62,19 @@ public class GatewayService {
     private final EventBus eventBus;
     private final EnvConfig envConfig;
     private final NodeManager nodeManager;
-    private final GoogleTranslationService googleTranslationService;
+    private final TranslationService translationService;
     private final ConcurrentHashMap<UUID, GatewayClient> clients = new ConcurrentHashMap<>();
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
     public GatewayService(EventBus eventBus, EnvConfig envConfig, NodeManager nodeManager) {
-        this(eventBus, envConfig, nodeManager, new GoogleTranslationService());
+        this(eventBus, envConfig, nodeManager, new TranslationService());
     }
 
-    public GatewayService(EventBus eventBus, EnvConfig envConfig, NodeManager nodeManager, GoogleTranslationService googleTranslationService) {
+    public GatewayService(EventBus eventBus, EnvConfig envConfig, NodeManager nodeManager, TranslationService translationService) {
         this.eventBus = eventBus;
         this.envConfig = envConfig;
         this.nodeManager = nodeManager;
-        this.googleTranslationService = googleTranslationService;
+        this.translationService = translationService;
 
         nodeManager.onKilled(serverId -> this.terminate(serverId, NodeRemoveReason.PROCESS_KILLED));
 
@@ -133,6 +133,10 @@ public class GatewayService {
         return true;
     }
 
+    public TranslationService getTranslationService() {
+        return translationService;
+    }
+
     @Accessors(fluent = true)
     public class GatewayClient {
         private static enum ClientState {
@@ -168,10 +172,14 @@ public class GatewayService {
             this.registerMessageHandler("login", LoginRequestDto.class, body -> backend.login(id, body));
             this.registerMessageHandler("host", UUID.class, serverId -> backend.host(serverId));
             this.registerMessageHandler("translate", TranslationRequestDto.class, req -> {
+                if (req == null) {
+                    return null;
+                }
                 try {
-                    return googleTranslationService.translate(req.getText(), req.getTargetLang());
+                    return translationService.translate(req.getText(), req.getTargetLang());
                 } catch (Exception e) {
-                    throw new RuntimeException("Translation error: " + e.getMessage(), e);
+                    Log.warn("Translation error: @", e.getMessage());
+                    return null;
                 }
             });
             this.registerMessageHandler("event", JsonNode.class, event -> {

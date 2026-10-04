@@ -1,8 +1,9 @@
-package plugin.chat;
+package server.service;
+
+import dto.TranslationResponseDto;
 
 /**
- * Interface representing a translation service provider.
- * Implementations can be ordered and managed with fallback capabilities.
+ * Interface representing a translation service provider on the server manager.
  */
 public interface TranslationProvider {
 
@@ -26,12 +27,12 @@ public interface TranslationProvider {
     }
 
     /**
-     * Translates the given plain text to the target language.
+     * Translates plain text into the target language.
      *
-     * @param text       Plain text to translate (colors stripped).
+     * @param text       Plain text to translate.
      * @param targetLang Target language code (e.g., "en", "vi").
-     * @return TranslationResult containing translated text and detected source language.
+     * @return TranslationResponseDto containing translated text and detected source language.
      * @throws Exception If translation fails or the service is unreachable.
      */
-    TranslationResult translate(String text, String targetLang) throws Exception;
+    TranslationResponseDto translate(String text, String targetLang) throws Exception;
 }

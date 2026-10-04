@@ -8,21 +8,17 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Locale;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
 
 import arc.util.Log;
 import dto.TranslationResponseDto;
 
-public class GoogleTranslationService {
+public class GoogleWebProvider implements TranslationProvider {
     private static final String ENDPOINT = "https://translate.googleapis.com/translate_a/single";
     private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
     private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(8);
@@ -33,26 +29,32 @@ public class GoogleTranslationService {
 
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
-    private final Cache<String, TranslationResponseDto> cache;
     private final AtomicInteger failureCount = new AtomicInteger(0);
     private volatile Instant cooldownUntil = Instant.MIN;
 
-    public GoogleTranslationService() {
+    public GoogleWebProvider() {
         this(HttpClient.newBuilder()
                 .connectTimeout(CONNECT_TIMEOUT)
                 .followRedirects(HttpClient.Redirect.NORMAL)
-                .build(), new ObjectMapper(), Caffeine.newBuilder()
-                .maximumSize(5000)
-                .expireAfterWrite(2, TimeUnit.HOURS)
-                .build());
+                .build(), new ObjectMapper());
     }
 
-    public GoogleTranslationService(HttpClient httpClient, ObjectMapper objectMapper, Cache<String, TranslationResponseDto> cache) {
+    public GoogleWebProvider(HttpClient httpClient, ObjectMapper objectMapper) {
         this.httpClient = httpClient;
         this.objectMapper = objectMapper;
-        this.cache = cache;
     }
 
+    @Override
+    public String name() {
+        return "google-web";
+    }
+
+    @Override
+    public int getOrder() {
+        return 100;
+    }
+
+    @Override
     public boolean isAvailable() {
         return Instant.now().isAfter(cooldownUntil);
     }
@@ -62,7 +64,7 @@ public class GoogleTranslationService {
         long multiplier = 1L << Math.min(failures - 1, 6);
         long seconds = Math.min(MAX_COOLDOWN.toSeconds(), BASE_COOLDOWN.toSeconds() * multiplier);
         this.cooldownUntil = Instant.now().plusSeconds(seconds);
-        Log.warn("GoogleTranslationService placed in cooldown for @s (failures: @) until @", seconds, failures, cooldownUntil);
+        Log.warn("GoogleWebProvider placed in cooldown for @s (failures: @) until @", seconds, failures, cooldownUntil);
     }
 
     public void resetCooldown() {
@@ -74,20 +76,18 @@ public class GoogleTranslationService {
         return failureCount.get();
     }
 
+    public Instant getCooldownUntil() {
+        return cooldownUntil;
+    }
+
+    @Override
     public TranslationResponseDto translate(String text, String targetLang) throws Exception {
         if (text == null || text.isBlank() || targetLang == null || targetLang.isBlank()) {
             return null;
         }
 
-        String cacheKey = targetLang.toLowerCase(Locale.ROOT) + ":" + text.trim();
-        TranslationResponseDto cached = cache.getIfPresent(cacheKey);
-        if (cached != null) {
-            Log.debug("Server translation cache hit for [@]: '@'", targetLang, text);
-            return cached;
-        }
-
         if (!isAvailable()) {
-            throw new IllegalStateException("GoogleTranslationService is currently in cooldown until " + cooldownUntil);
+            throw new IllegalStateException("GoogleWebProvider is currently in cooldown until " + cooldownUntil);
         }
 
         String url = String.format("%s?client=gtx&sl=auto&tl=%s&dt=t&q=%s",
@@ -112,24 +112,19 @@ public class GoogleTranslationService {
 
         if (response.statusCode() == 429) {
             triggerCooldown();
-            throw new RuntimeException("GoogleTranslationService received HTTP 429 Too Many Requests");
+            throw new RuntimeException("GoogleWebProvider received HTTP 429 Too Many Requests");
         }
 
         if (response.statusCode() != 200) {
             if (response.statusCode() >= 500) {
                 triggerCooldown();
             }
-            throw new RuntimeException("GoogleTranslationService failed with HTTP " + response.statusCode() + ": " + response.body());
+            throw new RuntimeException("GoogleWebProvider failed with HTTP " + response.statusCode() + ": " + response.body());
         }
 
         failureCount.set(0);
 
-        TranslationResponseDto result = parseResponse(response.body());
-        if (result != null && result.getTranslatedText() != null && !result.getTranslatedText().isBlank()) {
-            cache.put(cacheKey, result);
-        }
-
-        return result;
+        return parseResponse(response.body());
     }
 
     public TranslationResponseDto parseResponse(String jsonBody) throws Exception {

@@ -7,11 +7,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 import arc.Core;
 import arc.Events;
 import arc.util.Log;
 import arc.util.Strings;
+import dto.TranslationRequestDto;
+import dto.TranslationResponseDto;
 import lombok.RequiredArgsConstructor;
 import mindustry.Vars;
 import mindustry.game.EventType.PlayerChatEvent;
@@ -19,13 +22,14 @@ import mindustry.gen.Groups;
 import mindustry.gen.Player;
 import plugin.annotations.Component;
 import plugin.annotations.Init;
+import plugin.gateway.ApiGateway;
 import plugin.utils.Utils;
 
 @Component
-@RequiredArgsConstructor
+@RequiredArgsConstructor 
 public class ChatTranslation {
 
-    private final TranslationService translationService;
+    private final ApiGateway apiGateway;
 
     @Init
     private void init() {
@@ -75,14 +79,25 @@ public class ChatTranslation {
             String cleanText = Strings.stripColors(message).trim();
             Map<String, TranslationResult> translations = new HashMap<>();
 
+            if (apiGateway == null || !apiGateway.isConnected()) {
+                Log.debug("ApiGateway disconnected, bypassing chat translation");
+                dispatchMessages(sender, message, cleanText, targetPlayers, translations);
+                return;
+            }
+
             if (!cleanText.isEmpty()) {
                 Log.debug("Chat translation processing for neededLangs: @, message: '@'", neededLangs, cleanText);
                 for (String lang : neededLangs) {
                     try {
-                        TranslationResult res = translationService.translate(cleanText, lang);
-                        if (res != null) {
-                            translations.put(lang, res);
-                            Log.debug("Chat translation mapped for lang '@': '@'", lang, res.translatedText());
+                        TranslationResponseDto res = apiGateway.sendRequest(
+                                "translate",
+                                new TranslationRequestDto(cleanText, lang),
+                                TranslationResponseDto.class
+                        ).get(8, TimeUnit.SECONDS);
+
+                        if (res != null && res.getTranslatedText() != null && !res.getTranslatedText().isBlank()) {
+                            translations.put(lang, new TranslationResult(res.getTranslatedText(), res.getSourceLanguage()));
+                            Log.debug("Chat translation mapped for lang '@': '@'", lang, res.getTranslatedText());
                         } else {
                             Log.debug("Chat translation returned null for lang '@'", lang);
                         }
@@ -92,20 +107,7 @@ public class ChatTranslation {
                 }
             }
 
-            // Dispatch formatted messages to players on the main thread
-            Core.app.post(() -> {
-                for (Player recipient : targetPlayers) {
-                    if (!recipient.isAdded() || recipient.con == null) {
-                        continue;
-                    }
-
-                    String lang = Utils.parseLocale(recipient.locale()).getLanguage();
-                    TranslationResult res = translations.get(lang);
-
-                    String formatted = formatMessage(sender.name, message, cleanText, lang, res);
-                    recipient.sendMessage(formatted, sender, Strings.stripColors(formatted));
-                }
-            });
+            dispatchMessages(sender, message, cleanText, targetPlayers, translations);
         } catch (Exception e) {
             Log.err("Error in chat translation worker", e);
             // Fallback: send original message directly on main thread
@@ -118,6 +120,22 @@ public class ChatTranslation {
                 }
             });
         }
+    }
+
+    private void dispatchMessages(Player sender, String message, String cleanText, List<Player> targetPlayers, Map<String, TranslationResult> translations) {
+        Core.app.post(() -> {
+            for (Player recipient : targetPlayers) {
+                if (!recipient.isAdded() || recipient.con == null) {
+                    continue;
+                }
+
+                String lang = Utils.parseLocale(recipient.locale()).getLanguage();
+                TranslationResult res = translations.get(lang);
+
+                String formatted = formatMessage(sender.name, message, cleanText, lang, res);
+                recipient.sendMessage(formatted, sender, Strings.stripColors(formatted));
+            }
+        });
     }
 
     public static String formatMessage(String originalMessage, String cleanText, String recipientLang, TranslationResult result) {
