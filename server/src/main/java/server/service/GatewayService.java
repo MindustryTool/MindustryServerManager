@@ -37,6 +37,7 @@ import dto.RecentPlayerDto;
 import dto.ServerCommandDto;
 import dto.ServerStateDto;
 import dto.StartServerDto;
+import dto.TranslationRequestDto;
 import dto.WsMessage;
 import enums.NodeRemoveReason;
 import dto.MessageHandler;
@@ -61,13 +62,19 @@ public class GatewayService {
     private final EventBus eventBus;
     private final EnvConfig envConfig;
     private final NodeManager nodeManager;
+    private final GoogleTranslationService googleTranslationService;
     private final ConcurrentHashMap<UUID, GatewayClient> clients = new ConcurrentHashMap<>();
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
     public GatewayService(EventBus eventBus, EnvConfig envConfig, NodeManager nodeManager) {
+        this(eventBus, envConfig, nodeManager, new GoogleTranslationService());
+    }
+
+    public GatewayService(EventBus eventBus, EnvConfig envConfig, NodeManager nodeManager, GoogleTranslationService googleTranslationService) {
         this.eventBus = eventBus;
         this.envConfig = envConfig;
         this.nodeManager = nodeManager;
+        this.googleTranslationService = googleTranslationService;
 
         nodeManager.onKilled(serverId -> this.terminate(serverId, NodeRemoveReason.PROCESS_KILLED));
 
@@ -126,6 +133,10 @@ public class GatewayService {
         return true;
     }
 
+    public GoogleTranslationService getTranslationService() {
+        return googleTranslationService;
+    }
+
     @Accessors(fluent = true)
     public class GatewayClient {
         private static enum ClientState {
@@ -160,6 +171,13 @@ public class GatewayService {
             this.registerMessageHandler("get-total-player", Void.class, (_res) -> 0L);
             this.registerMessageHandler("login", LoginRequestDto.class, body -> backend.login(id, body));
             this.registerMessageHandler("host", UUID.class, serverId -> backend.host(serverId));
+            this.registerMessageHandler("translate", TranslationRequestDto.class, req -> {
+                try {
+                    return googleTranslationService.translate(req.getText(), req.getTargetLang());
+                } catch (Exception e) {
+                    throw new RuntimeException("Translation error: " + e.getMessage(), e);
+                }
+            });
             this.registerMessageHandler("event", JsonNode.class, event -> {
                 var name = event.get("name").asText(null);
 

@@ -39,14 +39,20 @@ public class ChatTranslation {
                 return message;
             }
 
-            // Snapshot online players and their locales on the main thread
+            // Immediately send back to sender without translation, resetting color with [white]
+            String senderFormatted = formatMessage(player.name, message, Strings.stripColors(message).trim(), null, null);
+            player.sendMessage(senderFormatted, player, Strings.stripColors(senderFormatted));
+
+            // Snapshot other online players and their locales on the main thread
             List<Player> targetPlayers = new ArrayList<>();
             Set<String> neededLangs = new HashSet<>();
             Groups.player.forEach(p -> {
-                targetPlayers.add(p);
-                String lang = Utils.parseLocale(p.locale()).getLanguage();
-                if (!lang.isBlank()) {
-                    neededLangs.add(lang);
+                if (p != player) {
+                    targetPlayers.add(p);
+                    String lang = Utils.parseLocale(p.locale()).getLanguage();
+                    if (!lang.isBlank()) {
+                        neededLangs.add(lang);
+                    }
                 }
             });
 
@@ -54,8 +60,10 @@ public class ChatTranslation {
             Log.info("<Chat> @: @", Strings.stripColors(player.name), Strings.stripColors(message));
             Events.fire(new PlayerChatEvent(player, message));
 
-            // Execute translation asynchronously to prevent blocking the game thread
-            CompletableFuture.runAsync(() -> handleAsyncTranslation(player, message, targetPlayers, neededLangs));
+            if (!targetPlayers.isEmpty()) {
+                // Execute translation asynchronously to prevent blocking the game thread
+                CompletableFuture.runAsync(() -> handleAsyncTranslation(player, message, targetPlayers, neededLangs));
+            }
 
             // Return null to suppress default synchronous broadcast
             return null;
@@ -104,7 +112,7 @@ public class ChatTranslation {
             Core.app.post(() -> {
                 for (Player recipient : targetPlayers) {
                     if (recipient.isAdded() && recipient.con != null) {
-                        String fallback = (sender.name == null || sender.name.isBlank()) ? message : sender.name + ": " + message;
+                        String fallback = (sender.name == null || sender.name.isBlank()) ? message : sender.name + "[white]: " + message;
                         recipient.sendMessage(fallback, sender, Strings.stripColors(fallback));
                     }
                 }
@@ -117,7 +125,7 @@ public class ChatTranslation {
     }
 
     public static String formatMessage(String senderName, String originalMessage, String cleanText, String recipientLang, TranslationResult result) {
-        String baseMessage = (senderName == null || senderName.isBlank()) ? originalMessage : senderName + ": " + originalMessage;
+        String baseMessage = (senderName == null || senderName.isBlank()) ? originalMessage : senderName + "[white]: " + originalMessage;
 
         if (result == null || result.translatedText() == null || result.translatedText().isBlank()) {
             return baseMessage;

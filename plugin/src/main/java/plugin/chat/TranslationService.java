@@ -62,10 +62,6 @@ public class TranslationService {
         return List.copyOf(providers);
     }
 
-    public Cache<String, TranslationResult> getCache() {
-        return cache;
-    }
-
     /**
      * Translates the given plain text into the target language.
      * Checks in-memory cache first, then attempts registered providers in order.

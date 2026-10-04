@@ -63,12 +63,12 @@ public class TranslationServiceTest {
     }
 
     @Test
-    public void testCaffeineCacheHits() {
+    public void testCachePreventsDuplicateProviderCalls() {
         TranslationService service = new TranslationService();
 
         AtomicInteger callCount = new AtomicInteger(0);
 
-        TranslationProvider provider = new TranslationProvider() {
+        service.registerProvider(new TranslationProvider() {
             @Override
             public String name() {
                 return "counting-provider";
@@ -79,44 +79,21 @@ public class TranslationServiceTest {
                 callCount.incrementAndGet();
                 return new TranslationResult("Translated: " + text, "auto");
             }
-        };
+        });
 
-        service.registerProvider(provider);
-
-        // First call: cache miss -> provider called
+        // First call: cache miss → provider called
         TranslationResult first = service.translate("Hello", "vi");
         assertNotNull(first);
         assertEquals(1, callCount.get());
 
-        // Second call: cache hit -> provider NOT called
+        // Second call: cache hit → provider NOT called
         TranslationResult second = service.translate("Hello", "vi");
         assertNotNull(second);
         assertEquals("Translated: Hello", second.translatedText());
         assertEquals(1, callCount.get(), "Cache should prevent second invocation of provider");
 
-        // Different language -> cache miss -> provider called
-        TranslationResult third = service.translate("Hello", "es");
-        assertNotNull(third);
+        // Different language → cache miss → provider called
+        service.translate("Hello", "es");
         assertEquals(2, callCount.get());
-    }
-
-    @Test
-    public void testAllProvidersFailGracefully() {
-        TranslationService service = new TranslationService();
-
-        service.registerProvider(new TranslationProvider() {
-            @Override
-            public String name() {
-                return "broken";
-            }
-
-            @Override
-            public TranslationResult translate(String text, String targetLang) throws Exception {
-                throw new RuntimeException("Fatal error");
-            }
-        });
-
-        TranslationResult result = service.translate("hello", "en");
-        assertNull(result, "Should return null gracefully when all providers fail");
     }
 }

@@ -362,7 +362,7 @@ public class ApiGateway {
         }
     }
 
-    private boolean isConnected() {
+    public boolean isConnected() {
         return webSocket != null && webSocket.isOpen();
     }
 

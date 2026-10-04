@@ -1,46 +1,34 @@
 package plugin.chat;
 
-import java.net.URI;
-import java.net.URLEncoder;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import arc.util.Log;
+import dto.TranslationRequestDto;
+import dto.TranslationResponseDto;
 import plugin.annotations.Component;
 import plugin.annotations.Init;
 import plugin.core.Registry;
+import plugin.gateway.ApiGateway;
 
 @Component
 public class GoogleWebProvider implements TranslationProvider {
-    private static final String ENDPOINT = "https://translate.googleapis.com/translate_a/single";
-    private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
-    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(4);
-    private static final Duration COOLDOWN_DURATION = Duration.ofMinutes(2);
-    private static final Pattern HTML_ENTITY_PATTERN = Pattern.compile("&#(\\d+);|&#x([0-9a-fA-F]+);");
 
-    private final HttpClient httpClient;
-    private final ObjectMapper objectMapper;
+    private static final Duration BASE_COOLDOWN = Duration.ofSeconds(5);
+    private static final Duration MAX_COOLDOWN = Duration.ofMinutes(5);
+
+    private final ApiGateway apiGateway;
+    private final AtomicInteger failureCount = new AtomicInteger(0);
     private volatile Instant cooldownUntil = Instant.MIN;
 
     public GoogleWebProvider() {
-        this(HttpClient.newBuilder()
-                .connectTimeout(REQUEST_TIMEOUT)
-                .followRedirects(HttpClient.Redirect.NORMAL)
-                .build(), new ObjectMapper());
+        this(Registry.getOrNull(ApiGateway.class));
     }
 
-    public GoogleWebProvider(HttpClient httpClient, ObjectMapper objectMapper) {
-        this.httpClient = httpClient;
-        this.objectMapper = objectMapper;
+    public GoogleWebProvider(ApiGateway apiGateway) {
+        this.apiGateway = apiGateway;
     }
 
     @Init
@@ -63,113 +51,76 @@ public class GoogleWebProvider implements TranslationProvider {
 
     @Override
     public boolean isAvailable() {
-        return Instant.now().isAfter(cooldownUntil);
+        if (isCooldownActive()) {
+            return false;
+        }
+        return isGatewayConnected();
+    }
+
+    public boolean isCooldownActive() {
+        return Instant.now().isBefore(cooldownUntil);
     }
 
     public void triggerCooldown() {
-        this.cooldownUntil = Instant.now().plus(COOLDOWN_DURATION);
-        Log.warn("GoogleWebProvider placed in cooldown for @ until @", COOLDOWN_DURATION, cooldownUntil);
+        int failures = failureCount.incrementAndGet();
+        long multiplier = 1L << Math.min(failures - 1, 6);
+        long seconds = Math.min(MAX_COOLDOWN.toSeconds(), BASE_COOLDOWN.toSeconds() * multiplier);
+        this.cooldownUntil = Instant.now().plusSeconds(seconds);
+        Log.warn("GoogleWebProvider placed in cooldown for @s (failures: @) until @", seconds, failures, cooldownUntil);
     }
 
     public void resetCooldown() {
+        this.failureCount.set(0);
         this.cooldownUntil = Instant.MIN;
+    }
+
+    public int getFailureCount() {
+        return failureCount.get();
+    }
+
+    public Instant getCooldownUntil() {
+        return cooldownUntil;
+    }
+
+    protected boolean isGatewayConnected() {
+        ApiGateway gw = getGateway();
+        return gw != null && gw.isConnected();
+    }
+
+    private ApiGateway getGateway() {
+        if (apiGateway != null) {
+            return apiGateway;
+        }
+        return Registry.getOrNull(ApiGateway.class);
     }
 
     @Override
     public TranslationResult translate(String text, String targetLang) throws Exception {
-        if (!isAvailable()) {
+        if (isCooldownActive()) {
             throw new IllegalStateException("GoogleWebProvider is currently in cooldown until " + cooldownUntil);
         }
 
-        String url = String.format("%s?client=gtx&sl=auto&tl=%s&dt=t&q=%s",
-                ENDPOINT,
-                URLEncoder.encode(targetLang, StandardCharsets.UTF_8),
-                URLEncoder.encode(text, StandardCharsets.UTF_8));
+        ApiGateway gw = getGateway();
+        if (gw == null || !isGatewayConnected()) {
+            throw new IllegalStateException("ApiGateway is disconnected from server manager");
+        }
 
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(url))
-                .header("User-Agent", USER_AGENT)
-                .timeout(REQUEST_TIMEOUT)
-                .GET()
-                .build();
-
-        HttpResponse<String> response;
         try {
-            response = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            TranslationResponseDto response = gw.sendRequest(
+                    "translate",
+                    new TranslationRequestDto(text, targetLang),
+                    TranslationResponseDto.class
+            ).get(8, TimeUnit.SECONDS);
+
+            if (response == null || response.getTranslatedText() == null || response.getTranslatedText().isBlank()) {
+                return null;
+            }
+
+            failureCount.set(0);
+            return new TranslationResult(response.getTranslatedText(), response.getSourceLanguage());
         } catch (Exception e) {
             triggerCooldown();
             throw e;
         }
-
-        if (response.statusCode() == 429) {
-            triggerCooldown();
-            throw new RuntimeException("GoogleWebProvider received HTTP 429 Too Many Requests");
-        }
-
-        if (response.statusCode() != 200) {
-            if (response.statusCode() >= 500) {
-                triggerCooldown();
-            }
-            throw new RuntimeException("GoogleWebProvider failed with HTTP " + response.statusCode() + ": " + response.body());
-        }
-
-        return parseResponse(response.body());
-    }
-
-    public TranslationResult parseResponse(String jsonBody) throws Exception {
-        JsonNode root = objectMapper.readTree(jsonBody);
-        if (root == null || !root.isArray() || root.isEmpty()) {
-            throw new IllegalArgumentException("Invalid response format from Google Web Translate: " + jsonBody);
-        }
-
-        StringBuilder translatedText = new StringBuilder();
-        JsonNode sentences = root.get(0);
-        if (sentences != null && sentences.isArray()) {
-            for (JsonNode sentence : sentences) {
-                if (sentence.isArray() && !sentence.isEmpty() && !sentence.get(0).isNull()) {
-                    translatedText.append(sentence.get(0).asText());
-                }
-            }
-        }
-
-        String sourceLanguage = null;
-        if (root.size() > 2 && !root.get(2).isNull()) {
-            sourceLanguage = root.get(2).asText();
-        }
-
-        String decodedText = unescapeHtml(translatedText.toString());
-        return new TranslationResult(decodedText, sourceLanguage);
-    }
-
-    public static String unescapeHtml(String text) {
-        if (text == null || !text.contains("&")) {
-            return text;
-        }
-        String result = text
-                .replace("&quot;", "\"")
-                .replace("&apos;", "'")
-                .replace("&#39;", "'")
-                .replace("&amp;", "&")
-                .replace("&lt;", "<")
-                .replace("&gt;", ">")
-                .replace("&nbsp;", " ");
-
-        Matcher matcher = HTML_ENTITY_PATTERN.matcher(result);
-        if (!matcher.find()) {
-            return result;
-        }
-
-        StringBuilder sb = new StringBuilder();
-        do {
-            if (matcher.group(1) != null) {
-                int code = Integer.parseInt(matcher.group(1));
-                matcher.appendReplacement(sb, Matcher.quoteReplacement(Character.toString((char) code)));
-            } else if (matcher.group(2) != null) {
-                int code = Integer.parseInt(matcher.group(2), 16);
-                matcher.appendReplacement(sb, Matcher.quoteReplacement(Character.toString((char) code)));
-            }
-        } while (matcher.find());
-        matcher.appendTail(sb);
-        return sb.toString();
     }
 }
