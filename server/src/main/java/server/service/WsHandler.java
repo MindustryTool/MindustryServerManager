@@ -63,7 +63,7 @@ public class WsHandler {
             if (error != null && error instanceof ClosedChannelException) {
                 return; // Ignore closed channel exceptions
             }
-            Log.err("WebSocket error", error != null ? error.getMessage() : "Unknown error");
+            Log.err("WebSocket error", error);
         });
     }
 
