@@ -33,9 +33,17 @@ public class TranslationService {
 
     @Init
     private void init() {
-        List<TranslationProvider> discovered = Registry.getAll(TranslationProvider.class);
-        for (TranslationProvider provider : discovered) {
-            registerProvider(provider);
+        discoverProviders();
+    }
+
+    public synchronized void discoverProviders() {
+        try {
+            List<TranslationProvider> discovered = Registry.getAll(TranslationProvider.class);
+            for (TranslationProvider provider : discovered) {
+                registerProvider(provider);
+            }
+        } catch (Exception e) {
+            Log.warn("Failed discovering translation providers from Registry: @", e.getMessage());
         }
     }
 
@@ -48,6 +56,9 @@ public class TranslationService {
     }
 
     public List<TranslationProvider> getProviders() {
+        if (providers.isEmpty()) {
+            discoverProviders();
+        }
         return List.copyOf(providers);
     }
 
@@ -68,14 +79,25 @@ public class TranslationService {
             return null;
         }
 
+        if (providers.isEmpty()) {
+            discoverProviders();
+        }
+
+        if (providers.isEmpty()) {
+            Log.warn("No translation providers registered or available in TranslationService");
+            return null;
+        }
+
         String cacheKey = targetLang.toLowerCase(Locale.ROOT) + ":" + text;
         TranslationResult cached = cache.getIfPresent(cacheKey);
         if (cached != null) {
+            Log.debug("Translation cache hit for [@]: '@'", targetLang, text);
             return cached;
         }
 
         for (TranslationProvider provider : providers) {
             if (!provider.isAvailable()) {
+                Log.debug("Translation provider '@' is currently unavailable/cooling down", provider.name());
                 continue;
             }
 
@@ -83,6 +105,7 @@ public class TranslationService {
                 TranslationResult result = provider.translate(text, targetLang);
                 if (result != null && result.translatedText() != null && !result.translatedText().isBlank()) {
                     cache.put(cacheKey, result);
+                    Log.debug("Translated via '@' [@ -> @]: '@' -> '@'", provider.name(), result.sourceLanguage(), targetLang, text, result.translatedText());
                     return result;
                 }
             } catch (Exception e) {
@@ -90,6 +113,7 @@ public class TranslationService {
             }
         }
 
+        Log.warn("All translation providers failed for text '@' (targetLang: '@')", text, targetLang);
         return null;
     }
 }

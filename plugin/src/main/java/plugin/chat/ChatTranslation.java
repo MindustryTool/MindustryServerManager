@@ -68,11 +68,15 @@ public class ChatTranslation {
             Map<String, TranslationResult> translations = new HashMap<>();
 
             if (!cleanText.isEmpty()) {
+                Log.debug("Chat translation processing for neededLangs: @, message: '@'", neededLangs, cleanText);
                 for (String lang : neededLangs) {
                     try {
                         TranslationResult res = translationService.translate(cleanText, lang);
                         if (res != null) {
                             translations.put(lang, res);
+                            Log.debug("Chat translation mapped for lang '@': '@'", lang, res.translatedText());
+                        } else {
+                            Log.debug("Chat translation returned null for lang '@'", lang);
                         }
                     } catch (Exception e) {
                         Log.warn("Failed translating for lang '@': @", lang, e.getMessage());
@@ -90,7 +94,7 @@ public class ChatTranslation {
                     String lang = Utils.parseLocale(recipient.locale()).getLanguage();
                     TranslationResult res = translations.get(lang);
 
-                    String formatted = formatMessage(message, cleanText, lang, res);
+                    String formatted = formatMessage(sender.name, message, cleanText, lang, res);
                     recipient.sendMessage(formatted, sender, Strings.stripColors(formatted));
                 }
             });
@@ -100,7 +104,8 @@ public class ChatTranslation {
             Core.app.post(() -> {
                 for (Player recipient : targetPlayers) {
                     if (recipient.isAdded() && recipient.con != null) {
-                        recipient.sendMessage(message, sender, Strings.stripColors(message));
+                        String fallback = (sender.name == null || sender.name.isBlank()) ? message : sender.name + ": " + message;
+                        recipient.sendMessage(fallback, sender, Strings.stripColors(fallback));
                     }
                 }
             });
@@ -108,22 +113,28 @@ public class ChatTranslation {
     }
 
     public static String formatMessage(String originalMessage, String cleanText, String recipientLang, TranslationResult result) {
+        return formatMessage(null, originalMessage, cleanText, recipientLang, result);
+    }
+
+    public static String formatMessage(String senderName, String originalMessage, String cleanText, String recipientLang, TranslationResult result) {
+        String baseMessage = (senderName == null || senderName.isBlank()) ? originalMessage : senderName + ": " + originalMessage;
+
         if (result == null || result.translatedText() == null || result.translatedText().isBlank()) {
-            return originalMessage;
+            return baseMessage;
         }
 
         // If detected source language is already the recipient's language, no translation needed
         if (result.sourceLanguage() != null && result.sourceLanguage().equalsIgnoreCase(recipientLang)) {
-            return originalMessage;
+            return baseMessage;
         }
 
         // If translated text is identical to cleaned original, no translation needed
         if (result.translatedText().equalsIgnoreCase(cleanText)) {
-            return originalMessage;
+            return baseMessage;
         }
 
-        // Format as: <original> ([#00ff00]<translated>)
+        // Format as: <sender>: <original> ([#00ff00]<translated>)
         // In Mindustry, '([' renders as a literal '(', and '[#00ff00]' colors the translated text
-        return originalMessage + " ([#00ff00]" + result.translatedText() + "])";
+        return baseMessage + " ([#00ff00]" + result.translatedText() + "])";
     }
 }

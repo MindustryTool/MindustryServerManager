@@ -4,7 +4,7 @@
 TBD - created by archiving change add-chat-translation. Update Purpose after archive.
 ## Requirements
 ### Requirement: Multi-Provider Ordered Fallback Interface
-The plugin SHALL define a `TranslationProvider` interface with ordering and availability methods, and a `TranslationService` that tries providers in ascending order until one succeeds or all fail.
+The plugin SHALL define a `TranslationProvider` interface with ordering and availability methods, and a `TranslationService` that tries providers in ascending order until one succeeds or all fail. `TranslationService` SHALL dynamically resolve all available `TranslationProvider` components registered in the system so that providers are available regardless of component initialization order.
 
 #### Scenario: Primary provider succeeds
 - **WHEN** a translation request is initiated and the primary provider succeeds
@@ -17,6 +17,10 @@ The plugin SHALL define a `TranslationProvider` interface with ordering and avai
 #### Scenario: All providers fail
 - **WHEN** all registered translation providers fail or are unavailable
 - **THEN** the system gracefully falls back to returning the original message without crashing
+
+#### Scenario: Lazy provider resolution
+- **WHEN** translation is requested and providers have not yet been populated into the service
+- **THEN** the service dynamically discovers registered `TranslationProvider` instances from `Registry`
 
 ### Requirement: Google Web Translation Provider
 The plugin SHALL provide a `GoogleWebProvider` using Google's free web endpoint (`client=gtx`), parsing multi-segment JSON responses and unescaping HTML entities.
@@ -48,15 +52,15 @@ The plugin SHALL strip all Mindustry color tags (`Strings.stripColors`) from the
 - **THEN** only the stripped plain text is passed to the translation API
 
 ### Requirement: Per-Recipient Locale Delivery & Formatting
-The plugin SHALL group connected players by their game locale using `Utils.forEachPlayerLocale`. For each recipient group, if the target language differs from the detected source language, the message SHALL be delivered as `<original> [[#00ff00]<translated>]`.
+The plugin SHALL deliver chat messages to recipients with the sender's player name and a colon `:` prepended to the message. If the recipient's language differs from the detected source language, the message SHALL append the translated text formatted as ` ([#00ff00]<translated>])`.
 
 #### Scenario: Recipient language differs from source
-- **WHEN** the detected source language is different from the recipient player group's language
-- **THEN** the players in that group receive the original message followed by ` [[#00ff00]<translated>]`
+- **WHEN** the detected source language is different from the recipient player's language
+- **THEN** the recipient receives `<sender.name>: <original> ([#00ff00]<translated>])`
 
 #### Scenario: Recipient language matches source
-- **WHEN** the detected source language matches the recipient player group's language
-- **THEN** the players in that group receive only the original message without a translation bracket
+- **WHEN** the detected source language matches the recipient player's language
+- **THEN** the recipient receives `<sender.name>: <original>` without a translation bracket
 
 ### Requirement: Translation In-Memory Caching
 The plugin SHALL maintain a Caffeine in-memory cache for translations keyed by cleaned text and target language code.

@@ -16,6 +16,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import arc.util.Log;
 import plugin.annotations.Component;
+import plugin.annotations.Init;
+import plugin.core.Registry;
 
 @Component
 public class GoogleWebProvider implements TranslationProvider {
@@ -39,6 +41,14 @@ public class GoogleWebProvider implements TranslationProvider {
     public GoogleWebProvider(HttpClient httpClient, ObjectMapper objectMapper) {
         this.httpClient = httpClient;
         this.objectMapper = objectMapper;
+    }
+
+    @Init
+    private void init() {
+        TranslationService service = Registry.getOrNull(TranslationService.class);
+        if (service != null) {
+            service.registerProvider(this);
+        }
     }
 
     @Override
