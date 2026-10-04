@@ -9,6 +9,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import server.utils.HttpClients;
 
 public class ProxyScrapeSource implements ProxySource {
     public static final String URL =
@@ -18,7 +19,7 @@ public class ProxyScrapeSource implements ProxySource {
     private final HttpClient httpClient;
 
     public ProxyScrapeSource() {
-        this(server.utils.HttpClients.shared());
+        this(HttpClients.shared());
     }
 
     public ProxyScrapeSource(HttpClient httpClient) {

@@ -15,6 +15,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import arc.util.Log;
 import dto.TranslationResponseDto;
+import server.utils.HttpClients;
 
 public class LingvaProvider implements TranslationProvider {
     private static final String BASE_ENDPOINT = "https://lingva-api.onrender.com/api/v1/auto";
@@ -30,7 +31,7 @@ public class LingvaProvider implements TranslationProvider {
     private volatile Instant cooldownUntil = Instant.MIN;
 
     public LingvaProvider() {
-        this(server.utils.HttpClients.shared(), new ObjectMapper());
+        this(HttpClients.shared(), new ObjectMapper());
     }
 
     public LingvaProvider(HttpClient httpClient, ObjectMapper objectMapper) {

@@ -39,15 +39,15 @@ The server manager SHALL provide a `LingvaProvider` implementing `TranslationPro
 - **THEN** the provider activates a progressive backoff cooldown starting at 5 seconds and exponentially increasing up to 5 minutes
 
 ### Requirement: Google Web Translation Provider
-The server manager SHALL provide a `GoogleWebProvider` implementing `TranslationProvider` using Google's free web endpoint (`client=gtx`), parsing multi-segment JSON responses, unescaping HTML entities, managing progressive backoff cooldown, and supporting optional injection of `MultiSourceProxyPool` for proxied execution.
+The server manager SHALL provide a `GoogleWebProvider` implementing `TranslationProvider` using Google's free web endpoint (`client=gtx`), parsing multi-segment JSON responses, unescaping HTML entities, managing progressive backoff cooldown, and supporting optional injection of `MultiSourceProxyPool` via a long-lived HTTP client with a dynamic `ProxySelector`.
 
 #### Scenario: Direct execution when no proxy pool injected
 - **WHEN** `GoogleWebProvider` is configured without a proxy pool
-- **THEN** requests are dispatched directly via standard `HttpClient`
+- **THEN** requests are dispatched via the shared long-lived HTTP client
 
-#### Scenario: Proxied execution when proxy pool injected
+#### Scenario: Proxied execution using long-lived client with dynamic proxy selector
 - **WHEN** `GoogleWebProvider` is configured with a `MultiSourceProxyPool`
-- **THEN** requests are tunneled through rotated proxies from the pool with automatic candidate retry and dead proxy eviction
+- **THEN** requests are dispatched through a single long-lived proxied HTTP client backed by the pool's dynamic `ProxySelector` without allocating new HTTP client instances per request or retry attempt
 
 #### Scenario: Translate multi-segment message
 - **WHEN** a multi-sentence message is sent to Google Web translation

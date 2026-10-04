@@ -18,6 +18,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import arc.util.Log;
 import dto.TranslationResponseDto;
+import server.utils.HttpClients;
 
 public class GoogleWebProvider implements TranslationProvider {
     private static final String ENDPOINT = "https://translate.googleapis.com/translate_a/single";
@@ -47,8 +48,8 @@ public class GoogleWebProvider implements TranslationProvider {
 
     public GoogleWebProvider(String name, MultiSourceProxyPool proxyPool) {
         this(name, proxyPool, proxyPool != null
-                ? server.utils.HttpClients.createProxied(proxyPool.asProxySelector(), PROXY_CONNECT_TIMEOUT)
-                : server.utils.HttpClients.shared(), new ObjectMapper());
+                ? HttpClients.createProxied(proxyPool.asProxySelector(), PROXY_CONNECT_TIMEOUT)
+                : HttpClients.shared(), new ObjectMapper());
     }
 
     public GoogleWebProvider(String name, MultiSourceProxyPool proxyPool, HttpClient httpClient, ObjectMapper objectMapper) {

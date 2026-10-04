@@ -12,12 +12,13 @@ import arc.util.Log;
 import lombok.RequiredArgsConstructor;
 import server.EnvConfig;
 import server.utils.ApiError;
+import server.utils.HttpClients;
 
 @RequiredArgsConstructor
 public class ApiService {
 
     private final EnvConfig envConfig;
-    private final HttpClient httpClient = server.utils.HttpClients.shared();
+    private final HttpClient httpClient = HttpClients.shared();
 
     private static final String BASE_URL = "https://api.mindustry-tool.com/api/v4/";
 

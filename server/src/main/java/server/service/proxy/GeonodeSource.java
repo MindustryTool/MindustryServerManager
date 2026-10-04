@@ -12,6 +12,7 @@ import java.util.List;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import server.utils.HttpClients;
 
 public class GeonodeSource implements ProxySource {
     public static final String URL =
@@ -22,7 +23,7 @@ public class GeonodeSource implements ProxySource {
     private final ObjectMapper objectMapper;
 
     public GeonodeSource() {
-        this(server.utils.HttpClients.shared(), new ObjectMapper());
+        this(HttpClients.shared(), new ObjectMapper());
     }
 
     public GeonodeSource(HttpClient httpClient, ObjectMapper objectMapper) {

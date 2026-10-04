@@ -7,6 +7,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.List;
+import server.utils.HttpClients;
 
 public class HProxySource implements ProxySource {
     public static final String URL =
@@ -16,7 +17,7 @@ public class HProxySource implements ProxySource {
     private final HttpClient httpClient;
 
     public HProxySource() {
-        this(server.utils.HttpClients.shared());
+        this(HttpClients.shared());
     }
 
     public HProxySource(HttpClient httpClient) {
