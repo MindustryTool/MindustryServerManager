@@ -10,14 +10,12 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 import arc.Core;
-import arc.Events;
 import arc.util.Log;
 import arc.util.Strings;
 import dto.TranslationRequestDto;
 import dto.TranslationResponseDto;
 import lombok.RequiredArgsConstructor;
 import mindustry.Vars;
-import mindustry.game.EventType.PlayerChatEvent;
 import mindustry.gen.Groups;
 import mindustry.gen.Player;
 import plugin.annotations.Component;
@@ -59,10 +57,6 @@ public class ChatTranslation {
                     }
                 }
             });
-
-            // Log chat and fire PlayerChatEvent for other event listeners (e.g. Discord bridges)
-            Log.info("<Chat> @: @", Strings.stripColors(player.name), Strings.stripColors(message));
-            Events.fire(new PlayerChatEvent(player, message));
 
             if (!targetPlayers.isEmpty()) {
                 // Execute translation asynchronously to prevent blocking the game thread
