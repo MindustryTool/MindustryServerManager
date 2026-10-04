@@ -159,8 +159,6 @@ public class ChatTranslation {
             return baseMessage;
         }
 
-        // Format as: <sender>: <original> ([#00d47e]<translated>)
-        // In Mindustry, '([' renders as a literal '(', and '[#00d47e]' colors the translated text
         return baseMessage + " [#00d47e](" + result.translatedText() + ")";
     }
 }
