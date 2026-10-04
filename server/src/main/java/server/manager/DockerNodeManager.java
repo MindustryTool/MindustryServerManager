@@ -158,6 +158,7 @@ public class DockerNodeManager implements NodeManager {
                     eventBus.emit(LogEvent.error(serverId,
                             "Container " + server.getNames()[0] + " port: " + config.getPort()
                                     + " is running, cannot create new container on same port"));
+                    return;
                 } else {
                     eventBus.emit(LogEvent.error(serverId, "Remove container " + server.getNames()[0] + " port: "
                             + config.getPort() + " to create new container on same port"));
@@ -166,7 +167,6 @@ public class DockerNodeManager implements NodeManager {
                             .withForce(true)
                             .exec();
                 }
-                return;
             }
         }
 
