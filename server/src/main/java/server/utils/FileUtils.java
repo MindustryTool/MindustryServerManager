@@ -1,5 +1,7 @@
 package server.utils;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import arc.files.Fi;
 import arc.util.ArcRuntimeException;
@@ -14,17 +16,50 @@ public class FileUtils {
     }
 
     public static Fi getFile(String basePath, String path) {
-        if (path.contains("..") || path.contains("./")) {
+        if (path == null) {
+            throw new ApiError(400, "Invalid file path: path cannot be null");
+        }
+
+        if (path.contains("..") || path.contains("./") || path.contains(".\\")) {
             throw new ApiError(400, "Invalid file path");
         }
 
         Fi baseFile = new Fi(basePath);
         String relative = path.replace(baseFile.absolutePath(), "");
+        while (relative.startsWith("/") || relative.startsWith("\\")) {
+            relative = relative.substring(1);
+        }
         Fi newFile = baseFile.child(relative);
 
-        if (!Path.of(newFile.absolutePath()).normalize().startsWith(Path.of(baseFile.absolutePath()).normalize())) {
+        Path basePathObj = Path.of(baseFile.absolutePath()).toAbsolutePath().normalize();
+        Path realBase = basePathObj;
+        try {
+            if (Files.exists(basePathObj)) {
+                realBase = basePathObj.toRealPath();
+            }
+        } catch (IOException ignored) {
+        }
+
+        Path newPath = Path.of(newFile.absolutePath()).toAbsolutePath().normalize();
+
+        if (!newPath.startsWith(basePathObj) && !newPath.startsWith(realBase)) {
             throw new ApiError(403,
                     "Path is not in server folder: " + relative + ":" + newFile.absolutePath());
+        }
+
+        Path current = newPath;
+        while (current != null && !Files.exists(current)) {
+            current = current.getParent();
+        }
+        if (current != null) {
+            try {
+                Path realCurrent = current.toRealPath();
+                if (!realCurrent.startsWith(realBase) && !realCurrent.startsWith(basePathObj)) {
+                    throw new ApiError(403, "Symlink target is outside server folder: " + realCurrent);
+                }
+            } catch (IOException e) {
+                throw new ApiError(403, "Failed to resolve real path: " + current);
+            }
         }
 
         return newFile;
@@ -41,7 +76,7 @@ public class FileUtils {
             return file.seq()
                     .map(child -> new ServerFileDto()
                             .path(toRelativeToServer(child.absolutePath()))
-                            .items(child.isDirectory() ? child.file().list().length : 0)
+                            .items(child.isDirectory() && child.file().list() != null ? child.file().list().length : 0)
                             .size(child.length())
                             .directory(child.isDirectory()))
                     .list();

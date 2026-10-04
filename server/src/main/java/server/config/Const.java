@@ -64,7 +64,7 @@ public class Const {
         JavaTimeModule module = new JavaTimeModule();
 
         return new ObjectMapper(new JsonFactoryBuilder()
-                .streamReadConstraints(StreamReadConstraints.builder().maxStringLength(Integer.MAX_VALUE).build())
+                .streamReadConstraints(StreamReadConstraints.builder().maxStringLength(100 * 1024 * 1024).build())
                 .configure(StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION, false).build())
                 .configure(DeserializationFeature.FAIL_ON_UNRESOLVED_OBJECT_IDS, false)
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
