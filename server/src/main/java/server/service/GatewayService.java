@@ -133,10 +133,6 @@ public class GatewayService {
         return true;
     }
 
-    public GoogleTranslationService getTranslationService() {
-        return googleTranslationService;
-    }
-
     @Accessors(fluent = true)
     public class GatewayClient {
         private static enum ClientState {
