@@ -1,5 +1,7 @@
 package server.service;
 
+import java.net.InetSocketAddress;
+import java.net.ProxySelector;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
@@ -21,37 +23,55 @@ import dto.TranslationResponseDto;
 public class GoogleWebProvider implements TranslationProvider {
     private static final String ENDPOINT = "https://translate.googleapis.com/translate_a/single";
     private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
-    private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(8);
-    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(8);
+    private static final Duration DIRECT_CONNECT_TIMEOUT = Duration.ofSeconds(8);
+    private static final Duration DIRECT_REQUEST_TIMEOUT = Duration.ofSeconds(8);
+    private static final Duration PROXY_CONNECT_TIMEOUT = Duration.ofSeconds(4);
+    private static final Duration PROXY_REQUEST_TIMEOUT = Duration.ofSeconds(5);
     private static final Duration BASE_COOLDOWN = Duration.ofSeconds(5);
     private static final Duration MAX_COOLDOWN = Duration.ofMinutes(5);
+    private static final int MAX_PROXY_ATTEMPTS = 3;
     private static final Pattern HTML_ENTITY_PATTERN = Pattern.compile("&#(\\d+);|&#x([0-9a-fA-F]+);");
 
-    private final HttpClient httpClient;
+    private final String name;
+    private final MultiSourceProxyPool proxyPool;
+    private final HttpClient directHttpClient;
     private final ObjectMapper objectMapper;
     private final AtomicInteger failureCount = new AtomicInteger(0);
     private volatile Instant cooldownUntil = Instant.MIN;
 
     public GoogleWebProvider() {
-        this(HttpClient.newBuilder()
-                .connectTimeout(CONNECT_TIMEOUT)
+        this("google-web", null);
+    }
+
+    public GoogleWebProvider(MultiSourceProxyPool proxyPool) {
+        this("google-web-proxy", proxyPool);
+    }
+
+    public GoogleWebProvider(String name, MultiSourceProxyPool proxyPool) {
+        this(name, proxyPool, HttpClient.newBuilder()
+                .connectTimeout(DIRECT_CONNECT_TIMEOUT)
                 .followRedirects(HttpClient.Redirect.NORMAL)
                 .build(), new ObjectMapper());
     }
 
-    public GoogleWebProvider(HttpClient httpClient, ObjectMapper objectMapper) {
-        this.httpClient = httpClient;
+    public GoogleWebProvider(String name, MultiSourceProxyPool proxyPool, HttpClient directHttpClient, ObjectMapper objectMapper) {
+        this.name = name != null ? name : "google-web";
+        this.proxyPool = proxyPool;
+        this.directHttpClient = directHttpClient;
         this.objectMapper = objectMapper;
     }
 
     @Override
     public String name() {
-        return "google-web";
+        return name;
     }
 
-    @Override
-    public int getOrder() {
-        return 100;
+    public boolean isProxied() {
+        return proxyPool != null;
+    }
+
+    public MultiSourceProxyPool getProxyPool() {
+        return proxyPool;
     }
 
     @Override
@@ -64,7 +84,8 @@ public class GoogleWebProvider implements TranslationProvider {
         long multiplier = 1L << Math.min(failures - 1, 6);
         long seconds = Math.min(MAX_COOLDOWN.toSeconds(), BASE_COOLDOWN.toSeconds() * multiplier);
         this.cooldownUntil = Instant.now().plusSeconds(seconds);
-        Log.warn("GoogleWebProvider placed in cooldown for @s (failures: @) until @", seconds, failures, cooldownUntil);
+        Log.info("Translation provider '@' is in cooldown for @s (failures: @) until @", name, seconds, failures, cooldownUntil);
+        Log.warn("GoogleWebProvider (@) placed in cooldown for @s (failures: @) until @", name, seconds, failures, cooldownUntil);
     }
 
     public void resetCooldown() {
@@ -87,24 +108,32 @@ public class GoogleWebProvider implements TranslationProvider {
         }
 
         if (!isAvailable()) {
-            throw new IllegalStateException("GoogleWebProvider is currently in cooldown until " + cooldownUntil);
+            throw new IllegalStateException("GoogleWebProvider (" + name + ") is currently in cooldown until " + cooldownUntil);
         }
 
         String url = String.format("%s?client=gtx&sl=auto&tl=%s&dt=t&q=%s",
                 ENDPOINT,
-                URLEncoder.encode(targetLang, StandardCharsets.UTF_8),
-                URLEncoder.encode(text, StandardCharsets.UTF_8));
+                URLEncoder.encode(targetLang.trim(), StandardCharsets.UTF_8),
+                URLEncoder.encode(text.trim(), StandardCharsets.UTF_8));
 
+        if (proxyPool != null) {
+            return executeProxiedRequest(url);
+        } else {
+            return executeDirectRequest(url);
+        }
+    }
+
+    private TranslationResponseDto executeDirectRequest(String url) throws Exception {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(url))
                 .header("User-Agent", USER_AGENT)
-                .timeout(REQUEST_TIMEOUT)
+                .timeout(DIRECT_REQUEST_TIMEOUT)
                 .GET()
                 .build();
 
         HttpResponse<String> response;
         try {
-            response = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            response = directHttpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
         } catch (Exception e) {
             triggerCooldown();
             throw e;
@@ -123,8 +152,55 @@ public class GoogleWebProvider implements TranslationProvider {
         }
 
         failureCount.set(0);
-
         return parseResponse(response.body());
+    }
+
+    private TranslationResponseDto executeProxiedRequest(String url) throws Exception {
+        Exception lastException = null;
+
+        for (int attempt = 1; attempt <= MAX_PROXY_ATTEMPTS; attempt++) {
+            InetSocketAddress proxyAddress = proxyPool.getNextCandidate();
+            if (proxyAddress == null) {
+                triggerCooldown();
+                throw new IllegalStateException("No proxies available in MultiSourceProxyPool");
+            }
+
+            try {
+                HttpClient proxiedClient = HttpClient.newBuilder()
+                        .connectTimeout(PROXY_CONNECT_TIMEOUT)
+                        .proxy(ProxySelector.of(proxyAddress))
+                        .followRedirects(HttpClient.Redirect.NORMAL)
+                        .build();
+
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(URI.create(url))
+                        .header("User-Agent", USER_AGENT)
+                        .timeout(PROXY_REQUEST_TIMEOUT)
+                        .GET()
+                        .build();
+
+                HttpResponse<String> response = proxiedClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+
+                if (response.statusCode() == 200) {
+                    failureCount.set(0);
+                    return parseResponse(response.body());
+                }
+
+                Log.debug("Proxy @:@ returned HTTP @, evicting candidate",
+                        proxyAddress.getHostString(), proxyAddress.getPort(), response.statusCode());
+                proxyPool.evict(proxyAddress);
+                lastException = new RuntimeException("Proxy " + proxyAddress + " returned HTTP " + response.statusCode());
+            } catch (Exception e) {
+                Log.debug("Proxy @:@ failed with @, evicting candidate",
+                        proxyAddress.getHostString(), proxyAddress.getPort(), e.getMessage());
+                proxyPool.evict(proxyAddress);
+                lastException = e;
+            }
+        }
+
+        triggerCooldown();
+        throw new RuntimeException("All " + MAX_PROXY_ATTEMPTS + " proxied attempts failed: " +
+                (lastException != null ? lastException.getMessage() : "unknown error"), lastException);
     }
 
     public TranslationResponseDto parseResponse(String jsonBody) throws Exception {

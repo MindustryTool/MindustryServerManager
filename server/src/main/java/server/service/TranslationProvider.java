@@ -3,7 +3,8 @@ package server.service;
 import dto.TranslationResponseDto;
 
 /**
- * Interface representing a translation service provider on the server manager.
+ * Functional contract for a translation provider backend.
+ * Priority, tiering, and scheduling are managed externally by the service registration.
  */
 public interface TranslationProvider {
 
@@ -11,13 +12,6 @@ public interface TranslationProvider {
      * @return Unique human-readable name of the provider.
      */
     String name();
-
-    /**
-     * @return Execution priority order. Lower values indicate higher priority.
-     */
-    default int getOrder() {
-        return 0;
-    }
 
     /**
      * @return Whether this provider is currently available to process requests (e.g. not in circuit breaker cooldown).

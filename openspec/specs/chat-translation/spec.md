@@ -5,26 +5,49 @@ Translates in-game chat messages across player locales using server-side transla
 
 ## Requirements
 ### Requirement: Multi-Provider Ordered Fallback Interface
-The server manager SHALL define a `TranslationProvider` interface with ordering and availability methods, and a `TranslationService` that evaluates registered providers in ascending order. If an available provider throws an exception during translation, the system SHALL fail immediately without attempting subsequent providers.
+The server manager SHALL define a `TranslationProvider` interface with name, availability, and translation execution methods, and a `TranslationService` that allows registering providers with explicit tier and order parameters. The service SHALL organize registered providers into tiers and balance requests within each tier using round-robin rotation. If an available provider throws an exception during translation, the system SHALL fail immediately without attempting subsequent providers.
 
-#### Scenario: Primary provider succeeds
-- **WHEN** a translation request is initiated and the primary provider succeeds
-- **THEN** the translated result from the primary provider is returned
+#### Scenario: Round-robin rotation within tier
+- **WHEN** multiple providers in the same tier are available
+- **THEN** successive cache-miss translation requests alternate between the available providers in round-robin order
 
-#### Scenario: Primary provider in cooldown, next available provider used
-- **WHEN** the primary provider is currently unavailable or in cooldown and a backup provider is available
-- **THEN** the system attempts translation using the next available provider
+#### Scenario: Provider in cooldown bypassed in round-robin
+- **WHEN** one provider in a tier is in cooldown and another provider in the same tier is available
+- **THEN** translation requests route exclusively to the available provider
+
+#### Scenario: All providers in tier in cooldown falls back to next tier
+- **WHEN** all providers in a lower tier are unavailable or in cooldown
+- **THEN** the system evaluates available providers in the next tier
 
 #### Scenario: Active provider fails during translation
 - **WHEN** an active provider is selected and throws an exception during translation
 - **THEN** the system fails immediately without attempting remaining providers, logs the error, and returns null
 
 #### Scenario: All providers unavailable
-- **WHEN** all registered translation providers are in cooldown or unavailable
+- **WHEN** all registered translation providers across all tiers are in cooldown or unavailable
 - **THEN** the system returns null gracefully without crashing
 
+### Requirement: Lingva Translation Provider
+The server manager SHALL provide a `LingvaProvider` implementing `TranslationProvider` using the Lingva API endpoint (`https://lingva-api.onrender.com/api/v1/auto/{target}/{query}`), parsing JSON responses into `TranslationResponseDto`, and managing progressive backoff cooldown on failure.
+
+#### Scenario: Translate plain text query
+- **WHEN** a plain text message is sent to `LingvaProvider`
+- **THEN** the provider encodes the query, sends a GET request to `/api/v1/auto/{target}/{query}`, and extracts the `translation` text and detected source language from `info.detectedSource`
+
+#### Scenario: Progressive cooldown on error
+- **WHEN** an HTTP 429, 5xx, or network error occurs during a Lingva request
+- **THEN** the provider activates a progressive backoff cooldown starting at 5 seconds and exponentially increasing up to 5 minutes
+
 ### Requirement: Google Web Translation Provider
-The server manager SHALL provide a `GoogleWebProvider` implementing `TranslationProvider` using Google's free web endpoint (`client=gtx`), parsing multi-segment JSON responses, unescaping HTML entities, and managing progressive backoff cooldown.
+The server manager SHALL provide a `GoogleWebProvider` implementing `TranslationProvider` using Google's free web endpoint (`client=gtx`), parsing multi-segment JSON responses, unescaping HTML entities, managing progressive backoff cooldown, and supporting optional injection of `MultiSourceProxyPool` for proxied execution.
+
+#### Scenario: Direct execution when no proxy pool injected
+- **WHEN** `GoogleWebProvider` is configured without a proxy pool
+- **THEN** requests are dispatched directly via standard `HttpClient`
+
+#### Scenario: Proxied execution when proxy pool injected
+- **WHEN** `GoogleWebProvider` is configured with a `MultiSourceProxyPool`
+- **THEN** requests are tunneled through rotated proxies from the pool with automatic candidate retry and dead proxy eviction
 
 #### Scenario: Translate multi-segment message
 - **WHEN** a multi-sentence message is sent to Google Web translation
