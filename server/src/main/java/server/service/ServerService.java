@@ -104,7 +104,7 @@ public class ServerService {
     }
 
     private void removeOldServer() {
-        int removeAfterDays = 30;
+        int removeAfterDays = 120;
 
         for (Fi file : Const.serverFolder.list()) {
             if (file.isDirectory()) {

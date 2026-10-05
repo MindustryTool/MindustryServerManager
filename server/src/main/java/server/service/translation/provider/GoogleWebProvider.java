@@ -1,4 +1,4 @@
-package server.service;
+package server.service.translation.provider;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
@@ -8,16 +8,15 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.time.Instant;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import arc.util.Log;
 import dto.TranslationResponseDto;
+import server.service.MultiSourceProxyPool;
+import server.service.TranslationProvider;
 import server.utils.HttpClients;
 
 public class GoogleWebProvider implements TranslationProvider {
@@ -26,8 +25,6 @@ public class GoogleWebProvider implements TranslationProvider {
     private static final Duration DIRECT_REQUEST_TIMEOUT = Duration.ofSeconds(8);
     private static final Duration PROXY_CONNECT_TIMEOUT = Duration.ofSeconds(4);
     private static final Duration PROXY_REQUEST_TIMEOUT = Duration.ofSeconds(5);
-    private static final Duration BASE_COOLDOWN = Duration.ofSeconds(5);
-    private static final Duration MAX_COOLDOWN = Duration.ofMinutes(5);
     private static final int MAX_PROXY_ATTEMPTS = 3;
     private static final Pattern HTML_ENTITY_PATTERN = Pattern.compile("&#(\\d+);|&#x([0-9a-fA-F]+);");
 
@@ -35,8 +32,6 @@ public class GoogleWebProvider implements TranslationProvider {
     private final MultiSourceProxyPool proxyPool;
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
-    private final AtomicInteger failureCount = new AtomicInteger(0);
-    private volatile Instant cooldownUntil = Instant.MIN;
 
     public GoogleWebProvider() {
         this("google-web", null);
@@ -73,40 +68,9 @@ public class GoogleWebProvider implements TranslationProvider {
     }
 
     @Override
-    public boolean isAvailable() {
-        return Instant.now().isAfter(cooldownUntil);
-    }
-
-    public void triggerCooldown() {
-        int failures = failureCount.incrementAndGet();
-        long multiplier = 1L << Math.min(failures - 1, 6);
-        long seconds = Math.min(MAX_COOLDOWN.toSeconds(), BASE_COOLDOWN.toSeconds() * multiplier);
-        this.cooldownUntil = Instant.now().plusSeconds(seconds);
-        Log.info("Translation provider '@' is in cooldown for @s (failures: @) until @", name, seconds, failures, cooldownUntil);
-        Log.warn("GoogleWebProvider (@) placed in cooldown for @s (failures: @) until @", name, seconds, failures, cooldownUntil);
-    }
-
-    public void resetCooldown() {
-        this.failureCount.set(0);
-        this.cooldownUntil = Instant.MIN;
-    }
-
-    public int getFailureCount() {
-        return failureCount.get();
-    }
-
-    public Instant getCooldownUntil() {
-        return cooldownUntil;
-    }
-
-    @Override
     public TranslationResponseDto translate(String text, String targetLang) throws Exception {
         if (text == null || text.isBlank() || targetLang == null || targetLang.isBlank()) {
             return null;
-        }
-
-        if (!isAvailable()) {
-            throw new IllegalStateException("GoogleWebProvider (" + name + ") is currently in cooldown until " + cooldownUntil);
         }
 
         String url = String.format("%s?client=gtx&sl=auto&tl=%s&dt=t&q=%s",
@@ -129,33 +93,21 @@ public class GoogleWebProvider implements TranslationProvider {
                 .GET()
                 .build();
 
-        HttpResponse<String> response;
-        try {
-            response = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
-        } catch (Exception e) {
-            triggerCooldown();
-            throw e;
-        }
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
 
         if (response.statusCode() == 429) {
-            triggerCooldown();
             throw new RuntimeException("GoogleWebProvider received HTTP 429 Too Many Requests");
         }
 
         if (response.statusCode() != 200) {
-            if (response.statusCode() >= 500) {
-                triggerCooldown();
-            }
             throw new RuntimeException("GoogleWebProvider failed with HTTP " + response.statusCode() + ": " + response.body());
         }
 
-        failureCount.set(0);
         return parseResponse(response.body());
     }
 
     private TranslationResponseDto executeProxiedRequest(String url) throws Exception {
         if (proxyPool.size() == 0) {
-            triggerCooldown();
             throw new IllegalStateException("No proxies available in MultiSourceProxyPool");
         }
 
@@ -179,7 +131,6 @@ public class GoogleWebProvider implements TranslationProvider {
                 HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
 
                 if (response.statusCode() == 200) {
-                    failureCount.set(0);
                     return parseResponse(response.body());
                 }
 
@@ -191,7 +142,6 @@ public class GoogleWebProvider implements TranslationProvider {
             }
         }
 
-        triggerCooldown();
         throw new RuntimeException("All " + MAX_PROXY_ATTEMPTS + " proxied attempts failed: " +
                 (lastException != null ? lastException.getMessage() : "unknown error"), lastException);
     }

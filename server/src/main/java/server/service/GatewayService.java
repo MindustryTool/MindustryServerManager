@@ -56,6 +56,7 @@ import io.javalin.websocket.WsMessageContext;
 import server.EnvConfig;
 import server.config.Const;
 import server.manager.NodeManager;
+import server.service.translation.TranslationService;
 import server.utils.ApiError;
 import server.utils.Utils;
 

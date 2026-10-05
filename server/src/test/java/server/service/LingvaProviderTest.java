@@ -2,6 +2,7 @@ package server.service;
 
 import org.junit.jupiter.api.Test;
 import dto.TranslationResponseDto;
+import server.service.translation.provider.LingvaProvider;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -45,20 +46,9 @@ public class LingvaProviderTest {
     }
 
     @Test
-    public void testCooldownHandling() {
+    public void testProviderIsAlwaysAvailableByDefault() {
         LingvaProvider provider = new LingvaProvider();
-        assertTrue(provider.isAvailable());
-        assertEquals(0, provider.getFailureCount());
-
-        provider.triggerCooldown();
-        assertFalse(provider.isAvailable());
-        assertEquals(1, provider.getFailureCount());
-
-        provider.triggerCooldown();
-        assertEquals(2, provider.getFailureCount());
-
-        provider.resetCooldown();
-        assertTrue(provider.isAvailable());
-        assertEquals(0, provider.getFailureCount());
+        // Cooldown is now managed by TranslationService.ProviderState - provider itself is always available
+        assertTrue(provider.isAvailable(), "LingvaProvider should always report available (cooldown managed centrally)");
     }
 }

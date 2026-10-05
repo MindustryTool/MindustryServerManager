@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import dto.TranslationResponseDto;
+import server.service.translation.provider.GoogleWebProvider;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -61,25 +62,14 @@ public class GoogleWebProviderTest {
     }
 
     @Test
-    public void testCooldownHandling() {
+    public void testProviderIsAlwaysAvailableByDefault() {
+        // Cooldown is now managed centrally by TranslationService.ProviderState
         GoogleWebProvider provider = new GoogleWebProvider();
-        assertTrue(provider.isAvailable());
-        assertEquals(0, provider.getFailureCount());
-
-        provider.triggerCooldown();
-        assertFalse(provider.isAvailable());
-        assertEquals(1, provider.getFailureCount());
-
-        provider.triggerCooldown();
-        assertEquals(2, provider.getFailureCount());
-
-        provider.resetCooldown();
-        assertTrue(provider.isAvailable());
-        assertEquals(0, provider.getFailureCount());
+        assertTrue(provider.isAvailable(), "Provider should always report available (cooldown managed centrally)");
     }
 
     @Test
-    public void testProxiedCooldownWhenNoProxiesAvailable() {
+    public void testProxiedThrowsWhenNoProxiesAvailable() {
         MultiSourceProxyPool emptyPool = new MultiSourceProxyPool() {
             @Override
             public void checkAndTriggerRefresh() {
@@ -92,9 +82,6 @@ public class GoogleWebProviderTest {
         assertThrows(IllegalStateException.class, () -> {
             provider.translate("hello", "vi");
         });
-
-        assertFalse(provider.isAvailable());
-        assertEquals(1, provider.getFailureCount());
     }
 
     @Test
@@ -119,6 +106,5 @@ public class GoogleWebProviderTest {
 
         // Dead proxy should have been evicted
         assertEquals(0, pool.size());
-        assertFalse(provider.isAvailable());
     }
 }
