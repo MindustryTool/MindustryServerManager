@@ -51,6 +51,10 @@ public class JsonUtils {
                     .addDeserializer(UnitType.class, new UnitTypeDeserializer()))
             .registerModule(new JavaTimeModule());
 
+    public static ObjectMapper getObjectMapper() {
+        return objectMapper;
+    }
+
     public static String toJsonString(Object data) {
         try {
             return objectMapper.writeValueAsString(data);

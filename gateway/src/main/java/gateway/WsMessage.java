@@ -1,4 +1,4 @@
-package dto;
+package gateway;
 
 import java.util.UUID;
 
@@ -6,6 +6,18 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 
+/**
+ * Canonical WebSocket RPC envelope.
+ *
+ * <p>Fields:
+ * <ul>
+ * <li>{@code id} - unique message id for correlation</li>
+ * <li>{@code type} - message / handler type</li>
+ * <li>{@code payload} - arbitrary JSON payload</li>
+ * <li>{@code responseOf} - when set, this message is a response to the request with that id</li>
+ * <li>{@code isError} - true when payload carries an error description</li>
+ * </ul>
+ */
 @Data
 @NoArgsConstructor
 @Accessors(chain = true)

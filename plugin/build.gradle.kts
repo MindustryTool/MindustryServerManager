@@ -27,6 +27,7 @@ dependencies {
     implementation(project(":dto"))
     implementation(project(":annotation"))
     implementation(project(":database"))
+    implementation(project(":gateway"))
 
     compileOnly("org.projectlombok:lombok:1.18.30")
     compileOnly("Anuken:Mindustry:${property("mindustryVersion")}")
@@ -48,7 +49,8 @@ tasks.jar {
     dependsOn(
         ":dto:classes",
         ":annotation:classes",
-        ":database:classes"
+        ":database:classes",
+        ":gateway:classes"
     )
 
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
@@ -61,6 +63,7 @@ tasks.jar {
     from(project(":dto").sourceSets.main.get().output)
     from(project(":annotation").sourceSets.main.get().output)
     from(project(":database").sourceSets.main.get().output)
+    from(project(":gateway").sourceSets.main.get().output)
 
     // External dependencies only
     configurations.runtimeClasspath.get()
@@ -68,7 +71,8 @@ tasks.jar {
             dependency.name !in listOf(
                 "dto-${project.version}.jar",
                 "annotation-${project.version}.jar",
-                "database-${project.version}.jar"
+                "database-${project.version}.jar",
+                "gateway-${project.version}.jar"
             )
         }
         .forEach { dependency ->

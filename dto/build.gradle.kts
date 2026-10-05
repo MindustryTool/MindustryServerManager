@@ -8,7 +8,6 @@ java {
 }
 
 tasks.withType<JavaCompile> {
-    options.compilerArgs.addAll(listOf("--release", "8"))
     options.encoding = "UTF-8"
 }
 

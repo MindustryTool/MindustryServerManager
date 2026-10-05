@@ -4,6 +4,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
+import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
@@ -14,7 +15,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -40,9 +40,9 @@ import dto.ServerCommandDto;
 import dto.ServerStateDto;
 import dto.StartServerDto;
 import dto.TranslationRequestDto;
-import dto.WsMessage;
+import gateway.rpc.WsRpcChannel;
+import gateway.session.WsSession;
 import enums.NodeRemoveReason;
-import dto.MessageHandler;
 import events.BaseEvent;
 import events.ServerEvents;
 import events.ServerEvents.LogEvent;
@@ -155,15 +155,47 @@ public class GatewayService {
         private static final Duration HEARTBEAT_TIMEOUT_DURATION = Duration.ofSeconds(45);
         private static final Duration TERMINATE_CONNECTION_AFTER = Duration.ofMinutes(3);
 
-        private final HashMap<String, MessageHandler<Object, Object>> messageHandlers = new HashMap<>();
-
         @Getter
         private final UUID id;
         private CompletableFuture<WsContext> context = new CompletableFuture<>();
 
         private volatile Instant lastHeartBeatAt = Instant.now();
 
-        private final Map<UUID, CompletableFuture<JsonNode>> pendingRequests = new ConcurrentHashMap<>();
+        private final WsRpcChannel rpcChannel = new WsRpcChannel();
+
+        private final WsSession javalinSession = new WsSession() {
+            @Override
+            public void sendText(String text) {
+                WsContext socket = context.getNow(null);
+                if (socket == null) {
+                    throw new IllegalStateException("No open gateway session for " + id);
+                }
+                socket.send(text);
+            }
+
+            @Override
+            public void sendBinary(ByteBuffer data) {
+                WsContext socket = context.getNow(null);
+                if (socket == null) {
+                    throw new IllegalStateException("No open gateway session for " + id);
+                }
+                socket.send(data.duplicate());
+            }
+
+            @Override
+            public void close(int code, String reason) {
+                WsContext socket = context.getNow(null);
+                if (socket != null) {
+                    socket.closeSession(code, reason);
+                }
+            }
+
+            @Override
+            public boolean isOpen() {
+                WsContext socket = context.getNow(null);
+                return socket != null && socket.session.isOpen();
+            }
+        };
 
         @Getter
         private final Backend backend = new Backend();
@@ -176,11 +208,12 @@ public class GatewayService {
 
         public GatewayClient(UUID id) {
             this.id = id;
+            this.rpcChannel.setSession(javalinSession);
 
-            this.registerMessageHandler("get-total-player", Void.class, (_res) -> 0L);
-            this.registerMessageHandler("login", LoginRequestDto.class, body -> backend.login(id, body));
-            this.registerMessageHandler("host", UUID.class, serverId -> backend.host(serverId));
-            this.registerMessageHandler("translate", TranslationRequestDto.class, req -> {
+            this.registerHandler("get-total-player", Void.class, (_res) -> 0L);
+            this.registerHandler("login", LoginRequestDto.class, body -> backend.login(id, body));
+            this.registerHandler("host", UUID.class, serverId -> backend.host(serverId));
+            this.registerHandler("translate", TranslationRequestDto.class, req -> {
                 if (req == null) {
                     return null;
                 }
@@ -191,13 +224,13 @@ public class GatewayService {
                     return null;
                 }
             });
-            this.registerMessageHandler("get-plugin-version", PluginQueryDto.class, query -> {
+            this.registerHandler("get-plugin-version", PluginQueryDto.class, query -> {
                 return pluginProxyService.getPluginVersion(query);
             });
-            this.registerMessageHandler("download-plugin", PluginQueryDto.class, query -> {
+            this.registerHandler("download-plugin", PluginQueryDto.class, query -> {
                 return pluginProxyService.downloadPlugin(query);
             });
-            this.registerMessageHandler("event", JsonNode.class, event -> {
+            this.registerHandler("event", JsonNode.class, event -> {
                 var name = event.get("name").asText(null);
 
                 if (name == null) {
@@ -235,6 +268,7 @@ public class GatewayService {
             this.context.completeExceptionally(new RuntimeException("Disconnected"));
             this.context = new CompletableFuture<WsContext>();
             state = ClientState.DISCONNECTED;
+            rpcChannel.onClose(new RuntimeException("Gateway client disconnected: " + id));
 
             Log.info("Gateway client disconnected: " + id);
         }
@@ -295,48 +329,17 @@ public class GatewayService {
         }
 
         public void onMessage(WsMessageContext context) {
-            JsonNode json = context.messageAsClass(JsonNode.class);
-            JsonNode payload = json.get("payload");
-            WsMessage<?> wsMessage = context.messageAsClass(WsMessage.class);
-
             lastHeartBeatAt = Instant.now();
-
-            if (wsMessage.getResponseOf() != null) {
-                CompletableFuture<JsonNode> future = pendingRequests.remove(wsMessage.getResponseOf());
-                if (future == null) {
-                    Log.warn("No future found for responseOf: @", wsMessage.getResponseOf());
-                    return;
-                }
-                if (wsMessage.isError()) {
-                    Log.err("Error message: " + wsMessage);
-                    future.completeExceptionally(new RuntimeException(String.valueOf(payload)));
-                } else {
-                    future.complete(payload);
-                }
-                return;
-            }
-
-            MessageHandler<Object, Object> handler = messageHandlers.get(wsMessage.getType());
-
-            if (handler != null) {
-                try {
-                    Object param = Utils.readJsonAsClass(payload, handler.getClazz());
-                    Object result = handler.getFn().apply(param);
-                    WsMessage<?> response = wsMessage.response(result);
-                    context.send(response);
-                } catch (Exception e) {
-                    Log.err("Error handling message: " + wsMessage, e);
-                    WsMessage<?> error = wsMessage.error(e.getMessage());
-                    context.send(error);
-                }
-            }
+            rpcChannel.onTextMessage(context.message());
         }
 
-        @SuppressWarnings("unchecked")
-        public <Req, Res> void registerMessageHandler(String type, Class<Req> clazz, Function<Req, Res> handler) {
-            MessageHandler<Object, Object> mh = new MessageHandler<Object, Object>((Class<Object>) clazz,
-                    (Function<Object, Object>) handler);
-            messageHandlers.put(type, mh);
+        public <Req, Res> void registerHandler(String type, Class<Req> clazz, Function<Req, Res> handler) {
+            rpcChannel.registerHandler(type, clazz, handler);
+        }
+
+        /** Exposed for tests and adapters. */
+        public WsRpcChannel rpcChannel() {
+            return rpcChannel;
         }
 
         public class Backend {
@@ -407,39 +410,11 @@ public class GatewayService {
 
         public class Server {
             private <R> CompletableFuture<R> sendRequest(String type, Object payload, Class<R> clazz) {
-                WsMessage<?> request = WsMessage.create(type).withPayload(payload);
-
-                CompletableFuture<JsonNode> future = new CompletableFuture<>();
-                pendingRequests.put(request.getId(), future);
-
-                future.orTimeout(1, TimeUnit.MINUTES);
-                future.whenComplete((_res, _err) -> pendingRequests.remove(request.getId()));
-
-                context
-                        .orTimeout(1, TimeUnit.MINUTES)
-                        .thenCompose(socket -> {
-                            try {
-                                socket.send(request);
-                                return CompletableFuture.completedFuture(null);
-                            } catch (Exception e) {
-                                return CompletableFuture.failedFuture(e);
-                            }
-                        })
-                        .whenComplete((res, err) -> {
-                            if (err != null) {
-                                pendingRequests.remove(request.getId());
-                                Throwable exception = err instanceof TimeoutException
-                                        ? new ApiError(503, "Gateway timeout", err)
-                                        : err;
-                                future.completeExceptionally(exception);
-                            }
-                        });
-
-                return future.thenApply(r -> Utils.readJsonAsClass(r, clazz));
+                return rpcChannel.sendRequest(type, payload, clazz, Duration.ofMinutes(1));
             }
 
             private CompletableFuture<Void> sendRequest(String type, Object payload) {
-                return sendRequest(type, payload, Void.class);
+                return rpcChannel.sendRequest(type, payload, Void.class, Duration.ofMinutes(1));
             }
 
             public CompletableFuture<JsonNode> getJson() {

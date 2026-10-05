@@ -6,6 +6,7 @@ import plugin.session.SessionService;
 
 import plugin.host.HostService;
 
+import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -14,10 +15,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import dto.RecentPlayerDto;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -27,6 +26,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.neovisionaries.ws.client.WebSocket;
+import gateway.WsMessage;
+import gateway.rpc.WsRpcChannel;
+import gateway.session.WsSession;
 
 import arc.struct.Seq;
 import arc.util.Log;
@@ -43,10 +45,8 @@ import plugin.utils.Utils;
 import plugin.hub.PaginationRequest;
 import dto.LoginDto;
 import dto.LoginRequestDto;
-import dto.MessageHandler;
 import dto.ServerDto;
 import dto.ServerStateDto;
-import dto.WsMessage;
 import events.BaseEvent;
 import events.ServerEvents.ServerStateEvent;
 import lombok.RequiredArgsConstructor;
@@ -100,41 +100,78 @@ public class ApiGateway {
     private final SessionService sessionService;
 
     private final Duration HEARTBEAT_DURATION = Duration.ofSeconds(5);
-    private final HashMap<String, MessageHandler<?, ?>> messageHandlers = new HashMap<>();
     private final WsHandler wsHandler = new WsHandler();
 
     private Instant lastSendEventAt = Instant.now();
     private WebSocket webSocket;
+
+    private final WsRpcChannel rpcChannel = new WsRpcChannel(JsonUtils.getObjectMapper(), null, Runnable::run);
+
+    private final WsSession nvSession = new WsSession() {
+        @Override
+        public void sendText(String text) {
+            WebSocket ws = webSocket;
+            if (ws == null || !ws.isOpen()) {
+                throw new IllegalStateException("Not connected to server manager");
+            }
+            ws.sendText(text);
+            lastSendEventAt = Instant.now();
+        }
+
+        @Override
+        public void sendBinary(ByteBuffer data) {
+            WebSocket ws = webSocket;
+            if (ws == null || !ws.isOpen()) {
+                throw new IllegalStateException("Not connected to server manager");
+            }
+            ByteBuffer dup = data.duplicate();
+            byte[] bytes = new byte[dup.remaining()];
+            dup.get(bytes);
+            ws.sendBinary(bytes);
+        }
+
+        @Override
+        public void close(int code, String reason) {
+            WebSocket ws = webSocket;
+            if (ws != null) {
+                ws.disconnect(code, reason);
+            }
+        }
+
+        @Override
+        public boolean isOpen() {
+            return isConnected();
+        }
+    };
 
     private Cache<PaginationRequest, List<ServerDto>> serverQueryCache = Caffeine.newBuilder()
             .expireAfterWrite(Duration.ofSeconds(15))
             .maximumSize(10)
             .build();
 
-    private final Map<UUID, CompletableFuture<JsonNode>> pendingRequests = new ConcurrentHashMap<>();
-
     private boolean shutdown = false;
     private boolean lastIsGame = true;
 
     @Init
     public void init() {
+        rpcChannel.setSession(nvSession);
         connectAsync();
-        this.registerMessageHandler("get-json", Void.class, (request) -> getJson());
-        this.registerMessageHandler("update-player", LoginDto.class, this::updatePlayer);
-        this.registerMessageHandler("pause", Void.class, (request) -> tooglePause());
-        this.registerMessageHandler("get-state", Void.class, (request) -> Utils.getState());
-        this.registerMessageHandler("generate-map-image", Void.class, (request) -> generateMapImage());
-        this.registerMessageHandler("send-command", String[].class, (request) -> sendCommand(request));
-        this.registerMessageHandler("say", String.class, (request) -> say(request));
-        this.registerMessageHandler("host", StartServerDto.class, (request) -> host(request));
-        this.registerMessageHandler("chat", String.class, (request) -> sendChat(request));
-        this.registerMessageHandler("is-hosting", Void.class, (request) -> isHosting());
-        this.registerMessageHandler("get-commands", Void.class, (request) -> getCommands());
-        this.registerMessageHandler("get-players-info", JsonNode.class, (request) -> getPlayersInfo(request));
-        this.registerMessageHandler("get-kicked-ips", Void.class, (request) -> getKicks());
-        this.registerMessageHandler("get-recent-players", Void.class, (request) -> getRecentPlayers());
-        this.registerMessageHandler("delete-kicked-ip", String.class, (request) -> deleteKickedIp(request));
-        this.registerMessageHandler("shutdown", Void.class, (request) -> shutdown());
+        this.registerHandler("get-json", Void.class, (request) -> getJson());
+        this.registerHandler("update-player", LoginDto.class, this::updatePlayer);
+        this.registerHandler("pause", Void.class, (request) -> tooglePause());
+        this.registerHandler("get-state", Void.class, (request) -> Utils.getState());
+        this.registerHandler("generate-map-image", Void.class, (request) -> generateMapImage());
+        this.registerHandler("send-command", String[].class, (request) -> sendCommand(request));
+        this.registerHandler("say", String.class, (request) -> say(request));
+        this.registerHandler("host", StartServerDto.class, (request) -> host(request));
+        this.registerHandler("chat", String.class, (request) -> sendChat(request));
+        this.registerHandler("is-hosting", Void.class, (request) -> isHosting());
+        this.registerHandler("get-commands", Void.class, (request) -> getCommands());
+        this.registerHandler("get-players-info", JsonNode.class, (request) -> getPlayersInfo(request));
+        this.registerHandler("get-kicked-ips", Void.class, (request) -> getKicks());
+        this.registerHandler("get-recent-players", Void.class, (request) -> getRecentPlayers());
+        this.registerHandler("delete-kicked-ip", String.class, (request) -> deleteKickedIp(request));
+        this.registerHandler("shutdown", Void.class, (request) -> shutdown());
 
     }
 
@@ -167,20 +204,7 @@ public class ApiGateway {
     }
 
     public <R> CompletableFuture<R> sendRequest(String type, Object payload, Class<R> clazz) {
-        WsMessage<?> request = WsMessage.create(type).withPayload(payload);
-
-        CompletableFuture<JsonNode> future = new CompletableFuture<>();
-        pendingRequests.put(request.getId(), future);
-
-        future.whenComplete((_res, _err) -> pendingRequests.remove(request.getId()));
-
-        try {
-            send(request);
-        } catch (Exception e) {
-            future.completeExceptionally(e);
-        }
-
-        return future.thenApply(r -> JsonUtils.readJsonAsClass(r, clazz));
+        return rpcChannel.sendRequest(type, payload, clazz);
     }
 
     public void fire(BaseEvent event) {
@@ -188,7 +212,12 @@ public class ApiGateway {
     }
 
     public CompletableFuture<Void> sendRequest(String type, Object payload) {
-        return sendRequest(type, payload, Void.class);
+        return rpcChannel.sendRequest(type, payload, Void.class);
+    }
+
+    /** Exposed for tests and adapters. */
+    public WsRpcChannel rpcChannel() {
+        return rpcChannel;
     }
 
     public Void shutdown() {
@@ -250,7 +279,7 @@ public class ApiGateway {
         public void onTextMessage(WebSocket ws, String message) {
             executor.execute(() -> {
                 try {
-                    handleMessage(ws, message);
+                    rpcChannel.onTextMessage(message);
                 } catch (Exception e) {
                     Log.err("Error processing message", e);
                 }
@@ -265,10 +294,8 @@ public class ApiGateway {
                 return;
             }
 
-            var err = new RuntimeException("WebSocket disconnected");
-            pendingRequests.forEach((id, future) -> future.completeExceptionally(err));
-            pendingRequests.clear();
-            websocket = null;
+            rpcChannel.onClose(new RuntimeException("WebSocket disconnected"));
+            webSocket = null;
 
             connectAsync();
 
@@ -295,60 +322,8 @@ public class ApiGateway {
         }
     }
 
-    private void handleMessage(WebSocket ws, String message) {
-        JsonNode json = JsonUtils.readJson(message);
-        JsonNode payload = json.get("payload");
-        WsMessage<?> wsMessage = JsonUtils.readJsonAsClass(message, WsMessage.class);
-
-        if (wsMessage.getResponseOf() != null) {
-            CompletableFuture<JsonNode> future = pendingRequests.remove(wsMessage.getResponseOf());
-            if (future == null) {
-                Log.warn("No future found for responseOf: @", wsMessage.getResponseOf());
-                return;
-            }
-            if (wsMessage.isError()) {
-                future.completeExceptionally(new RuntimeException(payload.toString()));
-            } else {
-                future.complete(payload);
-            }
-            return;
-        }
-
-        MessageHandler<?, ?> handler = messageHandlers.get(wsMessage.getType());
-
-        if (handler != null) {
-            try {
-                Object result = invokeMessageHandler(handler, payload);
-                WsMessage<?> response = wsMessage.response(result);
-                ws.sendText(JsonUtils.toJsonString(response));
-            } catch (Exception e) {
-                Log.err("Error handling message: " + wsMessage, e);
-                StringBuilder sb = new StringBuilder();
-                sb.append("Exception: ").append(e.getMessage());
-                for (StackTraceElement element : e.getStackTrace()) {
-                    sb.append("\n").append(element);
-                    if (sb.length() > 1024) {
-                        break;
-                    }
-                }
-                WsMessage<?> error = wsMessage.error(sb.toString());
-                ws.sendText(JsonUtils.toJsonString(error));
-            }
-        }
-    }
-
-    private static <Req, Res> Res invokeMessageHandler(MessageHandler<Req, Res> handler, JsonNode payload) {
-        Req param = JsonUtils.readJsonAsClass(payload, handler.getClazz());
-        return handler.getFn().apply(param);
-    }
-
-    public <Req, Res> void exposeHandler(String type, Class<Req> clazz,
-            Function<Req, Res> handler) {
-        registerMessageHandler(type, clazz, handler);
-    }
-
-    private <Req, Res> void registerMessageHandler(String type, Class<Req> clazz, Function<Req, Res> handler) {
-        messageHandlers.put(type, new MessageHandler<>(clazz, handler));
+    public <Req, Res> void registerHandler(String type, Class<Req> clazz, Function<Req, Res> handler) {
+        rpcChannel.registerHandler(type, clazz, handler);
     }
 
     @Schedule(delay = 5, fixedDelay = 5, unit = TimeUnit.SECONDS)

@@ -10,6 +10,7 @@ import java.util.function.Function;
 
 import arc.func.Boolf;
 import arc.func.Cons;
+import arc.graphics.Color;
 import arc.struct.Seq;
 import arc.util.Log;
 import arc.util.Strings;
@@ -245,6 +246,7 @@ public class SessionService {
 
             session.currentLevel = level;
         }
+        session.player.color = Color.white;
         session.player.name(getPlayerName.apply(session));
         sessionRepository.markDirty(session);
     }
@@ -333,7 +335,7 @@ public class SessionService {
         return null;
     }
 
-    public void setLogin(Session session, LoginDto login) {        
+    public void setLogin(Session session, LoginDto login) {
         if (login != null) {
             UserBanService userBanService = Registry.get(UserBanService.class);
             if (userBanService != null && userBanService.isBanned(login.getUserId())) {
