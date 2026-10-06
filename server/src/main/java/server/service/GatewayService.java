@@ -239,6 +239,8 @@ public class GatewayService {
             if (!nodeManager.isRunning(id)) {
                 terminate(NodeRemoveReason.PROCESS_KILLED);
             }
+
+            Log.info("Gateway client disconnected: " + id);
         }
 
         public boolean isTerminated() {

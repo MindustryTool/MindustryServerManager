@@ -57,6 +57,7 @@ public class BackendGateway {
         backendRpc.attach(rpcChannel);
 
         JdkWsClient wsClient = JdkWsClient.connectTo(uri, config.accessToken(), rpcChannel);
+        wsClient.onOpen(() -> Log.info("Connected to backend"));
         wsClient.onClose(err -> Log.warn("Backend connection lost: " + err.getMessage() + "; reconnect scheduled"));
 
         this.channel = rpcChannel;
