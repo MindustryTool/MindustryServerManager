@@ -218,7 +218,9 @@ public class GatewayService {
 
         public synchronized void onOpen(WsConnectContext context) {
             if (removed) {
-                context.session.close(1, "Trying to connected to a removed gateway client");
+                String message = "Trying to connected to a removed gateway client";
+                Log.err(message);
+                context.session.close(1, message);
                 return;
             }
             // Overwrite wins: a duplicate or reconnect open replaces the socket.
@@ -311,7 +313,9 @@ public class GatewayService {
 
         public void onMessage(WsMessageContext context) {
             if (removed) {
-                context.session.close(1, "Trying to send message to a removed gateway client");
+                String message = "Trying to send message to a removed gateway client";
+                Log.err(message);
+                context.session.close(1, message);
                 return;
             }
 
@@ -320,7 +324,9 @@ public class GatewayService {
 
         public void onBinary(WsBinaryMessageContext context) {
             if (removed) {
-                context.session.close(1, "Trying to send binary message to a removed gateway client");
+                String message = "Trying to send binary message to a removed gateway client";
+                Log.err(message);
+                context.session.close(1, message);
                 return;
             }
 
