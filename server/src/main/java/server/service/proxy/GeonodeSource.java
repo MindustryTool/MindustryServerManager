@@ -43,6 +43,7 @@ public class GeonodeSource implements ProxySource {
         if (res.statusCode() != 200) {
             throw new RuntimeException("Geonode returned HTTP " + res.statusCode());
         }
+        
         return parseJson(res.body(), objectMapper);
     }
 
@@ -68,6 +69,7 @@ public class GeonodeSource implements ProxySource {
                 }
             }
         } catch (Exception ignored) {}
+
         return list;
     }
 }

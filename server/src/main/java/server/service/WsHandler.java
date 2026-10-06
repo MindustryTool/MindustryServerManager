@@ -44,7 +44,6 @@ public class WsHandler {
             } catch (Exception e) {
                 Log.err("Error on connect", e);
                 handler.closeSession();
-            } finally {
             }
         });
 

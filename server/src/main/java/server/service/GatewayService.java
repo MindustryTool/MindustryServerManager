@@ -257,6 +257,7 @@ public class GatewayService {
             eventBus.emit(new StartEvent(id));
             rpcChannel.onOpen(new JavalinSession(context));
             lastDisconnectAt = null;
+            
             Log.info("Gateway client connected: " + id);
         }
 
@@ -267,8 +268,6 @@ public class GatewayService {
 
             if (!nodeManager.isRunning(id)) {
                 terminate(NodeRemoveReason.PROCESS_KILLED);
-            } else {
-                Log.info("Gateway client disconnected: " + id);
             }
         }
 

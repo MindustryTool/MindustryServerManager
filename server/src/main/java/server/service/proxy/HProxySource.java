@@ -36,6 +36,7 @@ public class HProxySource implements ProxySource {
         if (res.statusCode() != 200) {
             throw new RuntimeException("HProxy returned HTTP " + res.statusCode());
         }
+        
         return ProxyScrapeSource.parsePlainText(res.body());
     }
 }

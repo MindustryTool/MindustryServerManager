@@ -171,7 +171,6 @@ public class ServerService {
 
             // Overwrite plugin jar with the bundled controller plugin
             nodeManager.writeFile(serverId, "mods/plugin.jar", pluginBundle.downloadPlugin());
-            Log.info("Write mods/plugin.jar");
 
             eventBus.emit(LogEvent.info(serverId, "Connecting to gateway"));
             GatewayClient gatewayClient = gatewayService.of(serverId);

@@ -35,9 +35,11 @@ public class ProxyScrapeSource implements ProxySource {
     public List<InetSocketAddress> fetch() throws Exception {
         HttpRequest req = HttpRequest.newBuilder().uri(URI.create(URL)).timeout(TIMEOUT).GET().build();
         HttpResponse<String> res = httpClient.send(req, HttpResponse.BodyHandlers.ofString());
+        
         if (res.statusCode() != 200) {
             throw new RuntimeException("ProxyScrape returned HTTP " + res.statusCode());
         }
+
         return parsePlainText(res.body());
     }
 
@@ -45,8 +47,10 @@ public class ProxyScrapeSource implements ProxySource {
         if (text == null || text.isBlank()) {
             return Collections.emptyList();
         }
+
         List<InetSocketAddress> list = new ArrayList<>();
         String[] lines = text.split("\\r?\\n");
+        
         for (String line : lines) {
             String trimmed = line.trim();
             if (trimmed.isEmpty() || trimmed.startsWith("#")) continue;

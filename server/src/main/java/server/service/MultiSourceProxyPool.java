@@ -1,6 +1,10 @@
 package server.service;
 
 import java.net.InetSocketAddress;
+import java.net.Proxy;
+import java.net.ProxySelector;
+import java.net.SocketAddress;
+import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -42,7 +46,8 @@ public class MultiSourceProxyPool {
     }
 
     public synchronized void addProxies(List<InetSocketAddress> proxies) {
-        if (proxies == null) return;
+        if (proxies == null)
+            return;
         for (InetSocketAddress proxy : proxies) {
             if (proxy != null && activeSet.add(proxy)) {
                 pool.offer(proxy);
@@ -58,7 +63,7 @@ public class MultiSourceProxyPool {
         return Collections.unmodifiableList(sources);
     }
 
-    public InetSocketAddress getNextCandidate() {
+    public java.net.InetSocketAddress getNextCandidate() {
         checkAndTriggerRefresh();
 
         InetSocketAddress candidate = pool.poll();
@@ -71,26 +76,27 @@ public class MultiSourceProxyPool {
     public void evict(InetSocketAddress proxy) {
         if (proxy != null && activeSet.remove(proxy)) {
             pool.remove(proxy);
-            Log.debug("Evicted dead proxy: @:@ (remaining: @)", proxy.getHostString(), proxy.getPort(), activeSet.size());
+            Log.debug("Evicted dead proxy: @:@ (remaining: @)", proxy.getHostString(), proxy.getPort(),
+                    activeSet.size());
         }
     }
 
     /**
-     * @return Dynamic java.net.ProxySelector backed by this proxy pool.
+     * @return Dynamic ProxySelector backed by this proxy pool.
      */
-    public java.net.ProxySelector asProxySelector() {
-        return new java.net.ProxySelector() {
+    public ProxySelector asProxySelector() {
+        return new ProxySelector() {
             @Override
-            public List<java.net.Proxy> select(java.net.URI uri) {
+            public List<Proxy> select(URI uri) {
                 InetSocketAddress candidate = getNextCandidate();
                 if (candidate == null) {
-                    return List.of(java.net.Proxy.NO_PROXY);
+                    return List.of(Proxy.NO_PROXY);
                 }
-                return List.of(new java.net.Proxy(java.net.Proxy.Type.HTTP, candidate));
+                return List.of(new Proxy(Proxy.Type.HTTP, candidate));
             }
 
             @Override
-            public void connectFailed(java.net.URI uri, java.net.SocketAddress sa, java.io.IOException ioe) {
+            public void connectFailed(URI uri, SocketAddress sa, java.io.IOException ioe) {
                 if (sa instanceof InetSocketAddress inet) {
                     evict(inet);
                 }
@@ -116,6 +122,11 @@ public class MultiSourceProxyPool {
                     List<InetSocketAddress> proxies = source.fetch();
                     if (proxies != null) {
                         fetched.addAll(proxies);
+                        if (proxies.size() > 0) {
+                            Log.info("Add " + proxies.size() + " proxies from " + source.name());
+                        } else {
+                            Log.warn("No proxy added from " + source.name());
+                        }
                     }
                 } catch (Exception e) {
                     Log.warn("Failed fetching proxies from @: @", source.name(), e.getMessage());

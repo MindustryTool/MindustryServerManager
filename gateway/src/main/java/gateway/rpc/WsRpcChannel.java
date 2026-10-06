@@ -40,7 +40,7 @@ import lombok.Data;
 public class WsRpcChannel {
 
     private static final Logger LOG = Logger.getLogger(WsRpcChannel.class.getName());
-    private static final Duration DEFAULT_TIMEOUT = Duration.ofMinutes(1);
+    private static final Duration DEFAULT_TIMEOUT = Duration.ofMinutes(2);
     private static final Duration SESSION_WAIT = Duration.ofMinutes(5);
 
     /** Control type carrying stream metadata ahead of binary chunks. */
@@ -124,6 +124,12 @@ public class WsRpcChannel {
             }
 
             ready.complete(session);
+        }
+    }
+
+    public void onClose() {
+        synchronized (this) {
+            onClose(new RuntimeException("WebSocket connection closed"));
         }
     }
 
@@ -1100,12 +1106,6 @@ public class WsRpcChannel {
             s.sendText(mapper.writeValueAsString(message));
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Failed to send RPC frame", e);
-        }
-    }
-
-    public void onClose() {
-        synchronized (this) {
-            onClose(new RuntimeException("WebSocket connection closed"));
         }
     }
 
