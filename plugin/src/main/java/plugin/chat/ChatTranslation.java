@@ -45,6 +45,8 @@ public class ChatTranslation {
             String senderFormatted = formatMessage(player.name, message, Strings.stripColors(message).trim(), null, null);
             player.sendMessage(senderFormatted, player, Strings.stripColors(senderFormatted));
 
+            Log.info(senderFormatted);
+
             // Snapshot other online players and their locales on the main thread
             List<Player> targetPlayers = new ArrayList<>();
             Set<String> neededLangs = new HashSet<>();

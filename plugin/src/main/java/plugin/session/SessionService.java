@@ -347,7 +347,10 @@ public class SessionService {
 
         session.login = login;
         session.player.admin = false;
+        session.player.color = Color.white;
         session.player.name(getPlayerName.apply(session));
+
+        session.player.sendMessage("Login success as " + login.getName());
 
         if (login.getIsAdmin()) {
             session.player.sendMessage(Tr.t(session, "session.use_admin"));

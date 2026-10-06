@@ -7,12 +7,15 @@ import java.net.http.WebSocket;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadLocalRandom;
@@ -20,23 +23,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import gateway.rpc.WsRpcChannel;
 import gateway.session.WsSession;
 
-/**
- * Outbound WebSocket client on Java 17 {@link HttpClient#newWebSocketBuilder()}.
- *
- * <ul>
- * <li>Optional {@code Authorization: Bearer <token>} handshake header plus caller headers.</li>
- * <li>Forwards text frames into {@link WsRpcChannel#onTextMessage} and binary frames
- * into an optional binary handler.</li>
- * <li>20s ping keepalives, 45s pong-deadline detection, exponential backoff
- * reconnect (1s to 30s + jitter).</li>
- * </ul>
- */
 public class JdkWsClient {
 
     private static final Logger LOG = Logger.getLogger(JdkWsClient.class.getName());
@@ -44,18 +37,19 @@ public class JdkWsClient {
     public static final Duration PING_INTERVAL = Duration.ofSeconds(20);
     public static final Duration PONG_DEADLINE = Duration.ofSeconds(45);
     public static final Duration RECONNECT_MIN = Duration.ofSeconds(1);
-    public static final Duration RECONNECT_MAX = Duration.ofSeconds(30);
+    public static final Duration RECONNECT_MAX = Duration.ofSeconds(10);
+
+    private static final Duration SEND_TIMEOUT = Duration.ofSeconds(10);
+    private static final int QUEUE_WARN_DEPTH = 1000;
 
     private final URI uri;
+    private final Supplier<Map<String, String>> headersSupplier;
     private final HttpClient httpClient;
     private final ScheduledExecutorService scheduler;
-    private final boolean ownsScheduler;
+    private final Duration pingInterval;
+    private final Duration pongDeadline;
 
-    private final Map<String, String> headers = new ConcurrentHashMap<>();
-    private volatile String bearerToken;
-
-    private volatile WsRpcChannel rpcChannel;
-    private volatile Consumer<ByteBuffer> binaryHandler;
+    private final WsRpcChannel rpcChannel;
     private volatile Runnable onOpenCallback;
     private volatile Consumer<Throwable> onCloseCallback;
 
@@ -70,65 +64,139 @@ public class JdkWsClient {
     private volatile ScheduledFuture<?> pingTask;
     private volatile ScheduledFuture<?> reconnectTask;
 
-    public JdkWsClient(URI uri) {
-        this(uri, null, null);
+    private final BlockingQueue<SendOp> sendQueue = new LinkedBlockingQueue<>();
+    private volatile Thread senderThread;
+
+    private enum Kind {
+        TEXT, BINARY, PING, CLOSE, POISON
     }
 
-    public JdkWsClient(URI uri, String bearerToken) {
-        this(uri, bearerToken, null);
+    private static final class SendOp {
+        final Kind kind;
+        final String text;
+        final byte[] binary;
+        final int closeCode;
+        final String closeReason;
+        final WebSocket closeTarget;
+
+        private SendOp(Kind kind, String text, byte[] binary, int closeCode, String closeReason,
+                WebSocket closeTarget) {
+            this.kind = kind;
+            this.text = text;
+            this.binary = binary;
+            this.closeCode = closeCode;
+            this.closeReason = closeReason;
+            this.closeTarget = closeTarget;
+        }
+
+        static SendOp text(String text) {
+            return new SendOp(Kind.TEXT, text, null, 0, null, null);
+        }
+
+        static SendOp binary(byte[] bytes) {
+            return new SendOp(Kind.BINARY, null, bytes, 0, null, null);
+        }
+
+        static SendOp ping() {
+            return new SendOp(Kind.PING, null, null, 0, null, null);
+        }
+
+        static SendOp close(WebSocket target, int code, String reason) {
+            return new SendOp(Kind.CLOSE, null, null, code, reason, target);
+        }
+
+        static SendOp poison() {
+            return new SendOp(Kind.POISON, null, null, 0, null, null);
+        }
     }
 
-    public JdkWsClient(URI uri, String bearerToken, ScheduledExecutorService scheduler) {
-        this.uri = Objects.requireNonNull(uri, "uri");
-        this.bearerToken = bearerToken;
-        this.httpClient = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(10))
+    public static Builder builder(URI uri, WsRpcChannel channel) {
+        return new Builder(uri, channel);
+    }
+
+    public static final class Builder {
+        private final URI uri;
+        private final WsRpcChannel channel;
+        private Supplier<Map<String, String>> headersSupplier = Map::of;
+        private Duration pingInterval = PING_INTERVAL;
+        private Duration pongDeadline = PONG_DEADLINE;
+        private Executor executor;
+
+        private Builder(URI uri, WsRpcChannel channel) {
+            this.uri = Objects.requireNonNull(uri, "uri");
+            this.channel = Objects.requireNonNull(channel, "channel");
+        }
+
+        public Builder headersSupplier(Supplier<Map<String, String>> supplier) {
+            this.headersSupplier = Objects.requireNonNull(supplier, "headersSupplier");
+            return this;
+        }
+
+        public Builder bearerToken(String token) {
+            if (token == null || token.isBlank()) {
+                this.headersSupplier = Map::of;
+            } else {
+                this.headersSupplier = () -> Map.of("Authorization", "Bearer " + token);
+            }
+            return this;
+        }
+
+        public Builder pingInterval(Duration interval) {
+            this.pingInterval = Objects.requireNonNull(interval, "pingInterval");
+            return this;
+        }
+
+        public Builder pongDeadline(Duration deadline) {
+            this.pongDeadline = Objects.requireNonNull(deadline, "pongDeadline");
+            return this;
+        }
+
+        /** Explicit I/O executor for the underlying {@link HttpClient}. */
+        public Builder executor(Executor executor) {
+            this.executor = executor;
+            return this;
+        }
+
+        public JdkWsClient build() {
+            String scheme = uri.getScheme();
+            if (scheme == null || (!scheme.equalsIgnoreCase("ws") && !scheme.equalsIgnoreCase("wss"))) {
+                throw new IllegalArgumentException(
+                        "JdkWsClient requires a ws:// or wss:// URI, got: " + uri);
+            }
+            if (pingInterval.isZero() || pingInterval.isNegative()) {
+                throw new IllegalArgumentException("pingInterval must be positive: " + pingInterval);
+            }
+            if (pongDeadline.isZero() || pongDeadline.isNegative()) {
+                throw new IllegalArgumentException("pongDeadline must be positive: " + pongDeadline);
+            }
+            return new JdkWsClient(this);
+        }
+    }
+
+    public static JdkWsClient connectTo(URI uri, String bearerToken, WsRpcChannel channel) {
+        return builder(uri, channel)
+                .bearerToken(bearerToken)
                 .build();
-        if (scheduler != null) {
-            this.scheduler = scheduler;
-            this.ownsScheduler = false;
-        } else {
-            this.scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
-                Thread t = new Thread(r, "jdk-ws-client");
-                t.setDaemon(true);
-                return t;
-            });
-            this.ownsScheduler = true;
+    }
+
+    private JdkWsClient(Builder b) {
+        this.uri = b.uri;
+        this.headersSupplier = b.headersSupplier;
+        this.rpcChannel = b.channel;
+        this.pingInterval = b.pingInterval;
+        this.pongDeadline = b.pongDeadline;
+        var httpBuilder = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(10));
+        if (b.executor != null) {
+            httpBuilder.executor(b.executor);
         }
-    }
-
-    // ------------------------------------------------------------------
-    // Configuration
-    // ------------------------------------------------------------------
-
-    public JdkWsClient setBearerToken(String token) {
-        this.bearerToken = token;
-        return this;
-    }
-
-    public JdkWsClient putHeader(String name, String value) {
-        headers.put(name, value);
-        return this;
-    }
-
-    public JdkWsClient setHeaders(Map<String, String> map) {
-        if (map != null) {
-            headers.putAll(map);
-        }
-        return this;
-    }
-
-    public JdkWsClient setRpcChannel(WsRpcChannel channel) {
-        this.rpcChannel = channel;
-        if (channel != null) {
-            channel.setSession(sessionView);
-        }
-        return this;
-    }
-
-    public JdkWsClient setBinaryHandler(Consumer<ByteBuffer> handler) {
-        this.binaryHandler = handler;
-        return this;
+        this.httpClient = httpBuilder.build();
+        this.scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "jdk-ws-client");
+            t.setDaemon(true);
+            return t;
+        });
+        ensureSenderRunning();
     }
 
     public JdkWsClient onOpen(Runnable callback) {
@@ -145,6 +213,14 @@ public class JdkWsClient {
         return uri;
     }
 
+    public Duration getPingInterval() {
+        return pingInterval;
+    }
+
+    public Duration getPongDeadline() {
+        return pongDeadline;
+    }
+
     public WsSession session() {
         return sessionView;
     }
@@ -158,14 +234,46 @@ public class JdkWsClient {
         return reconnectAttempt.get();
     }
 
-    // ------------------------------------------------------------------
-    // Lifecycle
-    // ------------------------------------------------------------------
+    int getSendQueueDepth() {
+        return sendQueue.size();
+    }
 
-    /**
-     * Initiate (or re-initiate) the connection. Safe to call repeatedly; only
-     * one concurrent handshake runs at a time.
-     */
+    boolean isSenderAlive() {
+        Thread t = senderThread;
+        return t != null && t.isAlive();
+    }
+
+    boolean isSchedulerShutdown() {
+        return scheduler.isShutdown();
+    }
+
+    Map<String, String> resolveHeaders() {
+        Map<String, String> raw;
+        try {
+            raw = headersSupplier.get();
+        } catch (Exception e) {
+            LOG.log(Level.WARNING, "headers supplier failed, dialing without headers", e);
+            return Map.of();
+        }
+        if (raw == null || raw.isEmpty()) {
+            return Map.of();
+        }
+        Map<String, String> out = new LinkedHashMap<>();
+        raw.forEach((k, v) -> {
+            if (k != null && !k.isBlank() && v != null && !v.isBlank()) {
+                out.put(k, v);
+            }
+        });
+        return out;
+    }
+
+    void setTestWebSocket(WebSocket ws) {
+        this.webSocket = ws;
+        this.lastPongAt = Instant.now();
+        rpcChannel.onOpen(sessionView);
+        ensureSenderRunning();
+    }
+
     public CompletableFuture<Void> connect() {
         manuallyClosed.set(false);
         return doConnect();
@@ -176,18 +284,21 @@ public class JdkWsClient {
             return CompletableFuture.completedFuture(null);
         }
         cancelReconnectTask();
+        ensureSenderRunning();
 
         var builder = httpClient.newWebSocketBuilder()
                 .connectTimeout(Duration.ofSeconds(10));
-        if (bearerToken != null && !bearerToken.isBlank()) {
-            builder.header("Authorization", "Bearer " + bearerToken);
-        }
-        headers.forEach(builder::header);
+
+        resolveHeaders().forEach(builder::header);
 
         InnerListener listener = new InnerListener();
+
+        LOG.info("Connecting to WebSocket: " + uri);
+
         return builder.buildAsync(uri, listener)
                 .thenAccept(ws -> {
                     this.webSocket = ws;
+                    rpcChannel.onOpen(sessionView);
                     connecting.set(false);
                     reconnectAttempt.set(0);
                     lastPongAt = Instant.now();
@@ -205,13 +316,12 @@ public class JdkWsClient {
                 })
                 .exceptionally(err -> {
                     connecting.set(false);
-                    LOG.log(Level.WARNING, "WebSocket connect failed to " + uri + ": " + err.getMessage(), err);
+                    LOG.log(Level.INFO, "WebSocket connect failed to " + uri + ": " + err.getMessage());
                     scheduleReconnect();
                     return null;
                 });
     }
 
-    /** Stop pings, cancel reconnects, close the socket and fail pending RPC. */
     public void close() {
         close(1000, "client close");
     }
@@ -222,28 +332,132 @@ public class JdkWsClient {
         stopPingTask();
         WebSocket ws = this.webSocket;
         this.webSocket = null;
+        sendQueue.clear();
         if (ws != null && !ws.isOutputClosed()) {
-            try {
-                ws.sendClose(code, reason == null ? "" : reason);
-            } catch (Exception e) {
-                try {
-                    ws.abort();
-                } catch (Exception ignored) {
+            sendQueue.offer(SendOp.close(ws, code, reason == null ? "" : reason));
+        } else {
+            sendQueue.offer(SendOp.poison());
+        }
+        rpcChannel.onClose(new RuntimeException("JdkWsClient closed: " + reason));
+        scheduler.shutdownNow();
+    }
+
+    private synchronized void ensureSenderRunning() {
+        Thread t = senderThread;
+        if (t != null && t.isAlive()) {
+            return;
+        }
+        Thread next = new Thread(this::senderLoop, "jdk-ws-sender");
+        next.setDaemon(true);
+        senderThread = next;
+        next.start();
+    }
+
+    private void senderLoop() {
+        try {
+            while (!Thread.currentThread().isInterrupted()) {
+                SendOp op = sendQueue.take();
+                if (op.kind == Kind.POISON) {
+                    return;
+                }
+                if (op.kind == Kind.CLOSE) {
+                    sendCloseFrame(op);
+                    return;
+                }
+                if (manuallyClosed.get()) {
+                    continue;
+                }
+                WebSocket ws = webSocket;
+                if (ws == null || ws.isOutputClosed()) {
+                    continue;
+                }
+                switch (op.kind) {
+                    case TEXT -> sendTextFrame(ws, op.text);
+                    case BINARY -> sendBinaryFrame(ws, op.binary);
+                    case PING -> sendPingFrame(ws);
+                    default -> {
+                    }
                 }
             }
-        }
-        WsRpcChannel ch = rpcChannel;
-        if (ch != null) {
-            ch.onClose(new RuntimeException("JdkWsClient closed: " + reason));
-        }
-        if (ownsScheduler) {
-            scheduler.shutdownNow();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 
-    // ------------------------------------------------------------------
-    // Keepalive + reconnect
-    // ------------------------------------------------------------------
+    private void sendTextFrame(WebSocket ws, String text) {
+        try {
+            ws.sendText(text, true).get(SEND_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } catch (Exception e) {
+            LOG.log(Level.WARNING, "sendText failed", e);
+            handleDrop(rootCause(e));
+        }
+    }
+
+    private void sendBinaryFrame(WebSocket ws, byte[] bytes) {
+        try {
+            ws.sendBinary(ByteBuffer.wrap(bytes), true).get(SEND_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } catch (Exception e) {
+            LOG.log(Level.WARNING, "sendBinary failed", e);
+            handleDrop(rootCause(e));
+        }
+    }
+
+    private void sendPingFrame(WebSocket ws) {
+        try {
+            ByteBuffer ping = ByteBuffer.wrap(new byte[8]);
+            ThreadLocalRandom.current().nextBytes(ping.array());
+            ws.sendPing(ping).get(SEND_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } catch (Exception e) {
+            LOG.log(Level.FINE, "Ping failed", e);
+        }
+    }
+
+    private void sendCloseFrame(SendOp op) {
+        WebSocket target = op.closeTarget;
+        if (target == null || target.isOutputClosed()) {
+            return;
+        }
+        try {
+            target.sendClose(op.closeCode, op.closeReason == null ? "" : op.closeReason)
+                    .get(SEND_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } catch (Exception e) {
+            try {
+                target.abort();
+            } catch (Exception ignored) {
+            }
+        }
+    }
+
+    private static Throwable rootCause(Throwable e) {
+        Throwable cause = e;
+        while (cause instanceof java.util.concurrent.ExecutionException && cause.getCause() != null) {
+            cause = cause.getCause();
+        }
+        return cause;
+    }
+
+    private void enqueue(SendOp op) {
+        if (manuallyClosed.get()) {
+            throw new IllegalStateException("WebSocket is not open");
+        }
+        WebSocket ws = webSocket;
+        if (ws == null || ws.isOutputClosed()) {
+            throw new IllegalStateException("WebSocket is not open");
+        }
+        sendQueue.offer(op);
+        int depth = sendQueue.size();
+        if (depth >= QUEUE_WARN_DEPTH && depth % QUEUE_WARN_DEPTH == 0) {
+            LOG.warning("JdkWsClient send queue depth " + depth + " for " + uri);
+        }
+    }
 
     private synchronized void startPingTask() {
         stopPingTask();
@@ -256,7 +470,7 @@ public class JdkWsClient {
                 if (ws == null || ws.isOutputClosed()) {
                     return;
                 }
-                if (Instant.now().isAfter(lastPongAt.plus(PONG_DEADLINE))) {
+                if (Instant.now().isAfter(lastPongAt.plus(pongDeadline))) {
                     LOG.warning("Pong deadline exceeded, reconnecting: " + uri);
                     try {
                         ws.abort();
@@ -265,16 +479,11 @@ public class JdkWsClient {
                     handleDrop(new RuntimeException("pong timeout"));
                     return;
                 }
-                ByteBuffer ping = ByteBuffer.wrap(new byte[8]);
-                ThreadLocalRandom.current().nextBytes(ping.array());
-                ws.sendPing(ping).exceptionally(err -> {
-                    LOG.log(Level.FINE, "Ping failed", err);
-                    return null;
-                });
+                sendQueue.offer(SendOp.ping());
             } catch (Exception e) {
                 LOG.log(Level.FINE, "Ping task error", e);
             }
-        }, PING_INTERVAL.toMillis(), PING_INTERVAL.toMillis(), TimeUnit.MILLISECONDS);
+        }, pingInterval.toMillis(), pingInterval.toMillis(), TimeUnit.MILLISECONDS);
     }
 
     private synchronized void stopPingTask() {
@@ -294,10 +503,12 @@ public class JdkWsClient {
     private void handleDrop(Throwable cause) {
         this.webSocket = null;
         stopPingTask();
-        WsRpcChannel ch = rpcChannel;
-        if (ch != null) {
-            ch.onClose(cause);
+        int dropped = sendQueue.size();
+        if (dropped > 0) {
+            sendQueue.clear();
+            LOG.fine("Dropped " + dropped + " queued sends after connection drop: " + uri);
         }
+        rpcChannel.onClose(cause);
         Consumer<Throwable> cb = onCloseCallback;
         if (cb != null) {
             try {
@@ -329,15 +540,10 @@ public class JdkWsClient {
         }, delay, TimeUnit.MILLISECONDS);
     }
 
-    /** Visible for tests: backoff delay for a 0-based attempt index. */
     static long backoffDelayMillis(int attempt) {
         long exp = RECONNECT_MIN.toMillis() << Math.min(attempt, 5);
         return Math.min(exp, RECONNECT_MAX.toMillis());
     }
-
-    // ------------------------------------------------------------------
-    // Listener
-    // ------------------------------------------------------------------
 
     private class InnerListener implements WebSocket.Listener {
         private final StringBuilder textAcc = new StringBuilder();
@@ -355,13 +561,10 @@ public class JdkWsClient {
             if (last) {
                 String full = textAcc.toString();
                 textAcc.setLength(0);
-                WsRpcChannel ch = rpcChannel;
-                if (ch != null) {
-                    try {
-                        ch.onTextMessage(full);
-                    } catch (Exception e) {
-                        LOG.log(Level.WARNING, "RPC dispatch failed", e);
-                    }
+                try {
+                    rpcChannel.onTextMessage(full);
+                } catch (Exception e) {
+                    LOG.log(Level.WARNING, "RPC dispatch failed", e);
                 }
             }
             return CompletableFuture.completedFuture(null);
@@ -383,13 +586,8 @@ public class JdkWsClient {
             if (last) {
                 ByteArrayOutputStream done = binAcc;
                 binAcc = null;
-                Consumer<ByteBuffer> handler = binaryHandler;
-                if (handler != null && done != null) {
-                    try {
-                        handler.accept(ByteBuffer.wrap(done.toByteArray()));
-                    } catch (Exception e) {
-                        LOG.log(Level.WARNING, "Binary handler failed", e);
-                    }
+                if (done != null) {
+                    dispatchBinary(ByteBuffer.wrap(done.toByteArray()));
                 }
             }
             return CompletableFuture.completedFuture(null);
@@ -426,46 +624,47 @@ public class JdkWsClient {
         }
     }
 
-    // ------------------------------------------------------------------
-    // WsSession view
-    // ------------------------------------------------------------------
+    void dispatchBinary(ByteBuffer data) {
+        try {
+            rpcChannel.onBinaryMessage(data);
+        } catch (Exception e) {
+            LOG.log(Level.WARNING, "Stream ingest failed", e);
+        }
+    }
 
     private class ClientSession implements WsSession {
         @Override
         public void sendText(String text) {
-            WebSocket ws = webSocket;
-            if (ws == null || ws.isOutputClosed()) {
-                throw new IllegalStateException("WebSocket is not open");
+            Objects.requireNonNull(text, "text");
+            try {
+                enqueue(SendOp.text(text));
+            } catch (IllegalStateException e) {
+                throw e;
+            } catch (Exception e) {
+                LOG.log(Level.WARNING, "sendText failed", e);
+                throw new IllegalStateException("WebSocket send failed", e);
             }
-            ws.sendText(text, true).exceptionally(err -> {
-                LOG.log(Level.WARNING, "sendText failed", err);
-                return null;
-            });
         }
 
         @Override
         public void sendBinary(ByteBuffer data) {
-            WebSocket ws = webSocket;
-            if (ws == null || ws.isOutputClosed()) {
-                throw new IllegalStateException("WebSocket is not open");
+            Objects.requireNonNull(data, "data");
+            ByteBuffer dup = data.duplicate();
+            byte[] bytes = new byte[dup.remaining()];
+            dup.get(bytes);
+            try {
+                enqueue(SendOp.binary(bytes));
+            } catch (IllegalStateException e) {
+                throw e;
+            } catch (Exception e) {
+                LOG.log(Level.WARNING, "sendBinary failed", e);
+                throw new IllegalStateException("WebSocket send failed", e);
             }
-            ByteBuffer copy = data.duplicate();
-            ws.sendBinary(copy, true).exceptionally(err -> {
-                LOG.log(Level.WARNING, "sendBinary failed", err);
-                return null;
-            });
         }
 
         @Override
         public void close(int code, String reason) {
-            WebSocket ws = webSocket;
-            if (ws != null) {
-                try {
-                    ws.sendClose(code, reason == null ? "" : reason);
-                } catch (Exception e) {
-                    LOG.log(Level.FINE, "close failed", e);
-                }
-            }
+            JdkWsClient.this.close(code, reason);
         }
 
         @Override

@@ -2,24 +2,23 @@ package gateway.session;
 
 import java.nio.ByteBuffer;
 
-/**
- * Transport-agnostic WebSocket session.
- *
- * <p>Any underlying transport (Javalin/Jetty, nv-websocket-client,
- * {@code java.net.http.WebSocket}) adapts to this 4-method interface so that
- * {@code WsRpcChannel} stays decoupled from I/O implementations.
- */
 public interface WsSession {
 
     /**
      * Send a UTF-8 text frame (typically a JSON {@code WsMessage}).
+     *
+     * <p>Call order is delivery order: frames are transmitted in the order
+     * {@code sendText}/{@code sendBinary} are invoked, so a stream
+     * {@code start} frame is never reordered after its chunks.
      *
      * @param text JSON payload, never null
      */
     void sendText(String text);
 
     /**
-     * Send a binary frame (typically a file chunk with 20-byte header).
+     * Send a binary frame (typically a stream chunk with 20-byte header).
+     *
+     * <p>Call order is delivery order, see {@link #sendText(String)}.
      *
      * @param data buffer positioned for reading, never null
      */

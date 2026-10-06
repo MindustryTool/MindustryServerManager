@@ -14,9 +14,9 @@ public record EnvConfig(
     public record ServerConfig(
         Boolean autoPortAssign,
         String accessToken,
-        String securityKey,
         String dataFolder,
-        String serverUrl
+        String backendWsUrl,
+        String apiBaseUrl
     ) {}
 
     public static EnvConfig load() {
@@ -30,9 +30,9 @@ public record EnvConfig(
             new ServerConfig(
                 Boolean.parseBoolean(getEnv("AUTO_PORT_ASSIGN", "true")),
                 getEnv("ACCESS_TOKEN_v2", null),
-                getEnv("SECURITY_KEY_V2", null),
                 getEnv("DATA_FOLDER", null),
-                getEnv("SERVER_URL", "http://api:8080")
+                getEnv("BACKEND_WS_URL", "wss://api.mindustry-tool.com/managers/gateway"),
+                getEnv("API_BASE_URL", "https://api.mindustry-tool.com/api/v4/")
             )
         );
     }

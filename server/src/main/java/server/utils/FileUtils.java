@@ -113,7 +113,7 @@ public class FileUtils {
         try {
             file.writeBytes(data);
         } catch (ArcRuntimeException e) {
-            throw new ApiError(500, "Error writing file: " + file.absolutePath());
+            throw new ApiError(500, "Error writing file: [" + file.absolutePath() + "]");
         }
     }
 

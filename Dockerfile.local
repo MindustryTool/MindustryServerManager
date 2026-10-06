@@ -1,0 +1,37 @@
+#syntax=docker/dockerfile:1
+# Local-only fast build. Prod Dockerfile stays unchanged.
+# Use: DOCKER_BUILDKIT=1 docker build -f Dockerfile.local -t mindustry-server-manager:local .
+FROM gradle:8.7.0-jdk17 AS build
+WORKDIR /home/gradle/src
+
+COPY gradle/ /home/gradle/src/gradle/
+COPY gradlew gradlew.bat settings.gradle.kts build.gradle.kts gradle.properties /home/gradle/src/
+COPY dto/build.gradle.kts /home/gradle/src/dto/build.gradle.kts
+COPY annotation/build.gradle.kts /home/gradle/src/annotation/build.gradle.kts
+COPY database/build.gradle.kts /home/gradle/src/database/build.gradle.kts
+COPY gateway/build.gradle.kts /home/gradle/src/gateway/build.gradle.kts
+COPY plugin/build.gradle.kts plugin/gradle.properties /home/gradle/src/plugin/
+COPY server/build.gradle.kts /home/gradle/src/server/build.gradle.kts
+
+RUN --mount=type=cache,target=/home/gradle/.gradle/caches,uid=1000,gid=1000 --mount=type=cache,target=/home/gradle/.gradle/wrapper,uid=1000,gid=1000 gradle dependencies :server:dependencies :plugin:dependencies --no-daemon --parallel
+
+COPY . /home/gradle/src
+
+RUN --mount=type=cache,target=/home/gradle/.gradle/caches,uid=1000,gid=1000 --mount=type=cache,target=/home/gradle/.gradle/wrapper,uid=1000,gid=1000 gradle :server:assemble :plugin:assemble --build-cache -x test -x check -x javadoc --parallel --no-daemon --console=plain
+
+RUN sha256sum /home/gradle/src/plugin/build/libs/plugin.jar | cut -d' ' -f1 > /home/gradle/src/plugin/build/libs/plugin.sha256
+
+FROM eclipse-temurin:17-jre-alpine
+
+WORKDIR /app
+
+COPY --from=build /home/gradle/src/server/build/libs/application.jar /app/application.jar
+COPY --from=build /home/gradle/src/plugin/build/libs/plugin.jar /app/plugin.jar
+COPY --from=build /home/gradle/src/plugin/build/libs/plugin.sha256 /app/plugin.sha256
+
+# Set JVM options for minimal RAM usage
+# -XX:+UseSerialGC: Low memory footprint garbage collector
+# -XX:MaxRAMPercentage=75.0: Limits heap size to 75% of container memory
+ENV JAVA_TOOL_OPTIONS="-XX:+UseSerialGC -XX:MaxRAMPercentage=75.0"
+
+ENTRYPOINT ["java", "-jar", "/app/application.jar"]

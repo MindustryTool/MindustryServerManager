@@ -22,6 +22,6 @@
 ## Setup server
 
 -  Run setup.sh: `./setup.sh`
--  Go to mindustry-tool.com, create a new server manager, get SECURITY_KEY, ACCESS_TOKEN
--  Update docker-compose.yml with SECURITY_KEY, ACCESS_TOKEN (you should keep it secret, you can use .env or edit vps env)
+-  Go to mindustry-tool.com, create a new server manager, get ACCESS_TOKEN
+-  Update ./config/.env with ACCESS_TOKEN and BACKEND_WS_URL (you should keep the token secret, you can use .env or edit vps env). No SECURITY_KEY, port forwarding, or TLS setup is needed: the manager dials the Backend API over outbound WSS
 -  Rerun server manager: ` docker compose down` `docker compose up`

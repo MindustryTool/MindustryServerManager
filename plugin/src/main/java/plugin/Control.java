@@ -17,8 +17,8 @@ import plugin.commands.ClientCommandHandler;
 import plugin.commands.ServerCommandHandler;
 import plugin.core.PluginBootstrap;
 import plugin.core.Registry;
-import plugin.event.PluginUnloadEvent;
 import plugin.event.UnloadServerEvent;
+import plugin.gateway.ApiGateway;
 import plugin.hub.ServerUtils;
 import plugin.utils.TimeUtils;
 import plugin.event.KickEvent;
@@ -49,7 +49,7 @@ public class Control extends mindustry.mod.Plugin {
                 String uuid = matcher.group(2);
                 String reason = matcher.group(3);
 
-                if (reason != null && reason.contains("Incompatible mods")){
+                if (reason != null && reason.contains("Incompatible mods")) {
                     return;
                 }
 
@@ -64,7 +64,7 @@ public class Control extends mindustry.mod.Plugin {
 
         try {
             PluginBootstrap.initialize();
-            PluginEvents.register();    
+            PluginEvents.register();
             PluginEvents.on(UnloadServerEvent.class, this::unload);
 
             Registry.init(getClass().getPackage().getName());
@@ -113,8 +113,6 @@ public class Control extends mindustry.mod.Plugin {
             Log.info("Unloading");
 
             Tasks.destroy();
-
-            PluginEvents.fire(new PluginUnloadEvent());
             Registry.destroy();
             PluginEvents.unregister();
 
@@ -123,6 +121,8 @@ public class Control extends mindustry.mod.Plugin {
             } catch (Exception e) {
                 Log.err("Failed to save settings", e);
             }
+
+            Registry.get(ApiGateway.class).close();
 
             Log.info("Server controller unloaded after running for "
                     + TimeUtils.toString(Duration.between(start, Instant.now())));

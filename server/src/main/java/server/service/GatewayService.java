@@ -31,7 +31,6 @@ import arc.util.Log;
 import server.utils.HttpClients;
 import lombok.Getter;
 import lombok.experimental.Accessors;
-import dto.PluginQueryDto;
 import dto.LoginDto;
 import dto.LoginRequestDto;
 import dto.PlayerInfoPageDto;
@@ -52,6 +51,7 @@ import io.javalin.websocket.WsCloseContext;
 import io.javalin.websocket.WsCloseStatus;
 import io.javalin.websocket.WsConnectContext;
 import io.javalin.websocket.WsContext;
+import io.javalin.websocket.WsBinaryMessageContext;
 import io.javalin.websocket.WsMessageContext;
 import server.EnvConfig;
 import server.config.Const;
@@ -66,24 +66,26 @@ public class GatewayService {
     private final EnvConfig envConfig;
     private final NodeManager nodeManager;
     private final TranslationService translationService;
-    private final PluginProxyService pluginProxyService;
+    private final PluginBundleService pluginBundleService;
     private final ConcurrentHashMap<UUID, GatewayClient> clients = new ConcurrentHashMap<>();
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
     public GatewayService(EventBus eventBus, EnvConfig envConfig, NodeManager nodeManager) {
-        this(eventBus, envConfig, nodeManager, new TranslationService(), new PluginProxyService());
+        this(eventBus, envConfig, nodeManager, new TranslationService(), PluginBundleService.loadFromImage());
     }
 
-    public GatewayService(EventBus eventBus, EnvConfig envConfig, NodeManager nodeManager, TranslationService translationService) {
-        this(eventBus, envConfig, nodeManager, translationService, new PluginProxyService());
+    public GatewayService(EventBus eventBus, EnvConfig envConfig, NodeManager nodeManager,
+            TranslationService translationService) {
+        this(eventBus, envConfig, nodeManager, translationService, PluginBundleService.loadFromImage());
     }
 
-    public GatewayService(EventBus eventBus, EnvConfig envConfig, NodeManager nodeManager, TranslationService translationService, PluginProxyService pluginProxyService) {
+    public GatewayService(EventBus eventBus, EnvConfig envConfig, NodeManager nodeManager,
+            TranslationService translationService, PluginBundleService pluginBundleService) {
         this.eventBus = eventBus;
         this.envConfig = envConfig;
         this.nodeManager = nodeManager;
         this.translationService = translationService;
-        this.pluginProxyService = pluginProxyService;
+        this.pluginBundleService = pluginBundleService;
 
         nodeManager.onKilled(serverId -> this.terminate(serverId, NodeRemoveReason.PROCESS_KILLED));
 
@@ -98,9 +100,9 @@ public class GatewayService {
                     return false;
                 });
 
-                clients.values().forEach(GatewayClient::checkHeartbeat);
+                clients.values().forEach(GatewayClient::checkDisconnect);
             } catch (Exception e) {
-                Log.err("Error checking heartbeat", e);
+                Log.err("Error checking disconnect", e);
             }
         }, 15, 15, TimeUnit.SECONDS);
     }
@@ -113,6 +115,7 @@ public class GatewayService {
     public GatewayClient anyNode() {
         return clients.values().stream().findFirst().orElse(null);
     }
+
     public boolean isHosting(UUID serverId) {
         try {
             return clients.containsKey(serverId)
@@ -148,25 +151,26 @@ public class GatewayService {
 
     @Accessors(fluent = true)
     public class GatewayClient {
-        private static enum ClientState {
-            CONNECTING, CONNECTED, DISCONNECTED
-        }
-
-        private static final Duration HEARTBEAT_TIMEOUT_DURATION = Duration.ofSeconds(45);
+        private static final Duration DISCONNECT_WARN_AFTER = Duration.ofSeconds(60);
         private static final Duration TERMINATE_CONNECTION_AFTER = Duration.ofMinutes(3);
 
         @Getter
         private final UUID id;
-        private CompletableFuture<WsContext> context = new CompletableFuture<>();
 
-        private volatile Instant lastHeartBeatAt = Instant.now();
+        private volatile Instant lastDisconnectAt;
 
-        private final WsRpcChannel rpcChannel = new WsRpcChannel();
+        private final WsRpcChannel rpcChannel = WsRpcChannel.create();
 
-        private final WsSession javalinSession = new WsSession() {
+        /** Session bound to a single connection; a fresh one is created per open. */
+        private class JavalinSession implements WsSession {
+            private final WsContext socket;
+
+            JavalinSession(WsContext socket) {
+                this.socket = socket;
+            }
+
             @Override
             public void sendText(String text) {
-                WsContext socket = context.getNow(null);
                 if (socket == null) {
                     throw new IllegalStateException("No open gateway session for " + id);
                 }
@@ -175,7 +179,6 @@ public class GatewayService {
 
             @Override
             public void sendBinary(ByteBuffer data) {
-                WsContext socket = context.getNow(null);
                 if (socket == null) {
                     throw new IllegalStateException("No open gateway session for " + id);
                 }
@@ -184,7 +187,6 @@ public class GatewayService {
 
             @Override
             public void close(int code, String reason) {
-                WsContext socket = context.getNow(null);
                 if (socket != null) {
                     socket.closeSession(code, reason);
                 }
@@ -192,10 +194,9 @@ public class GatewayService {
 
             @Override
             public boolean isOpen() {
-                WsContext socket = context.getNow(null);
                 return socket != null && socket.session.isOpen();
             }
-        };
+        }
 
         @Getter
         private final Backend backend = new Backend();
@@ -203,12 +204,11 @@ public class GatewayService {
         private final Server server = new Server();
         public final Instant createdAt = Instant.now();
 
-        private volatile ClientState state = ClientState.CONNECTING;
         private volatile Instant terminatedAt = null;
 
         public GatewayClient(UUID id) {
             this.id = id;
-            this.rpcChannel.setSession(javalinSession);
+            this.lastDisconnectAt = createdAt;
 
             this.registerHandler("get-total-player", Void.class, (_res) -> 0L);
             this.registerHandler("login", LoginRequestDto.class, body -> backend.login(id, body));
@@ -224,12 +224,15 @@ public class GatewayService {
                     return null;
                 }
             });
-            this.registerHandler("get-plugin-version", PluginQueryDto.class, query -> {
-                return pluginProxyService.getPluginVersion(query);
+
+            this.registerHandler("get-plugin-version", Void.class, _ignore -> {
+                return pluginBundleService.getPluginVersion();
             });
-            this.registerHandler("download-plugin", PluginQueryDto.class, query -> {
-                return pluginProxyService.downloadPlugin(query);
+
+            this.registerHandler("download-plugin", Void.class, _ignore -> {
+                return new WsRpcChannel.StreamReply(pluginBundleService.downloadPlugin());
             });
+
             this.registerHandler("event", JsonNode.class, event -> {
                 var name = event.get("name").asText(null);
 
@@ -252,25 +255,23 @@ public class GatewayService {
         }
 
         public synchronized void onOpen(WsConnectContext context) {
-            if (this.context.isDone()) {
-                this.context = CompletableFuture.completedFuture(context);
-            }
-
-            state = ClientState.CONNECTED;
-            lastHeartBeatAt = Instant.now();
+            // Overwrite wins: a duplicate or reconnect open replaces the socket.
             eventBus.emit(new StartEvent(id));
-            this.context.complete(context);
+            rpcChannel.onOpen(new JavalinSession(context));
+            lastDisconnectAt = null;
             Log.info("Gateway client connected: " + id);
         }
 
         public synchronized void onClose(WsCloseContext context) {
             eventBus.emit(new StopEvent(id, NodeRemoveReason.SOCKET_DISCONNECT));
-            this.context.completeExceptionally(new RuntimeException("Disconnected"));
-            this.context = new CompletableFuture<WsContext>();
-            state = ClientState.DISCONNECTED;
+            lastDisconnectAt = Instant.now();
             rpcChannel.onClose(new RuntimeException("Gateway client disconnected: " + id));
 
-            Log.info("Gateway client disconnected: " + id);
+            if (!nodeManager.isRunning(id)) {
+                terminate(NodeRemoveReason.PROCESS_KILLED);
+            } else {
+                Log.info("Gateway client disconnected: " + id);
+            }
         }
 
         public boolean isTerminated() {
@@ -278,34 +279,38 @@ public class GatewayService {
         }
 
         public boolean shouldTerminate() {
-            return !isTerminated() && Instant.now().isAfter(lastHeartBeatAt.plus(TERMINATE_CONNECTION_AFTER));
+            return !isTerminated() && lastDisconnectAt != null
+                    && Instant.now().isAfter(lastDisconnectAt.plus(TERMINATE_CONNECTION_AFTER))
+                    && isSocketClosed();
+        }
+
+        private boolean isSocketClosed() {
+            WsSession session = rpcChannel.getSession();
+            return session == null || !session.isOpen();
         }
 
         public boolean terminate(NodeRemoveReason reason) {
             if (isTerminated()) {
                 return false;
             }
+
             terminatedAt = Instant.now();
 
             try {
-                WsContext socket = context.getNow(null);
+                WsSession session = rpcChannel.getSession();
 
-                if (socket != null) {
-                    if (socket.session.isOpen()) {
-                        try {
-                            this.server.shutdown().get(5, TimeUnit.SECONDS);
-                        } catch (Exception e) {
-                            Log.err("Error terminating client: " + id, e);
-                        }
-                        socket.closeSession(WsCloseStatus.NORMAL_CLOSURE, "Terminate by server");
+                if (session != null && session.isOpen()) {
+                    try {
+                        this.server.shutdown().get(5, TimeUnit.SECONDS);
+                    } catch (Exception e) {
+                        Log.err("Error terminating client: " + id, e);
                     }
-                } else {
-                    context.completeExceptionally(ApiError.badRequest("Server terminate"));
+                    session.close(WsCloseStatus.NORMAL_CLOSURE.getCode(), "Terminate by server");
                 }
 
                 boolean removed = nodeManager.remove(id, reason);
 
-                if (state != ClientState.CONNECTING && (removed || reason == NodeRemoveReason.PROCESS_KILLED)) {
+                if (removed || reason == NodeRemoveReason.PROCESS_KILLED) {
                     eventBus.emit(new StopEvent(id, reason));
                     Log.info("[red]Client terminated: " + id);
                 }
@@ -321,16 +326,24 @@ public class GatewayService {
             return true;
         }
 
-        public void checkHeartbeat() {
-            if (Instant.now().isAfter(lastHeartBeatAt.plus(HEARTBEAT_TIMEOUT_DURATION)) && nodeManager.isRunning(id)) {
-                eventBus.emit(LogEvent.error(id, "Heartbeat timeout"));
-                Log.err("Client heartbeat timeout: " + id);
+        public void checkDisconnect() {
+            if (isTerminated()) {
+                return;
+            }
+
+            if (lastDisconnectAt != null && Instant.now().isAfter(lastDisconnectAt.plus(DISCONNECT_WARN_AFTER))
+                    && isSocketClosed()) {
+                eventBus.emit(LogEvent.error(id, "Socket disconnected"));
+                Log.err("Client socket disconnected: " + id);
             }
         }
 
         public void onMessage(WsMessageContext context) {
-            lastHeartBeatAt = Instant.now();
             rpcChannel.onTextMessage(context.message());
+        }
+
+        public void onBinary(WsBinaryMessageContext context) {
+            rpcChannel.onBinaryMessage(ByteBuffer.wrap(context.data()));
         }
 
         public <Req, Res> void registerHandler(String type, Class<Req> clazz, Function<Req, Res> handler) {
@@ -343,7 +356,7 @@ public class GatewayService {
         }
 
         public class Backend {
-            private final HttpClient httpClient = HttpClients.shared();
+            private final HttpClient httpClient = HttpClients.forUrl(Const.API_URL);
 
             private HttpRequest.Builder createRequest(Object... segments) {
                 try {
@@ -353,10 +366,17 @@ public class GatewayService {
                         str[i] = segments[i].toString();
                     }
 
+                    String base = Const.API_URL;
+                    while (base.endsWith("/")) {
+                        base = base.substring(0, base.length() - 1);
+                    }
+
                     return HttpRequest.newBuilder()
-                            .uri(new URIBuilder(Const.API_URL + "/" + String.join("/", str)).build())
+                            .uri(new URIBuilder(base + "/" + String.join("/", str)).build())
                             .header("X-SERVER-ID", id.toString())
-                            .header("X-MANAGER-AUTH", envConfig.serverConfig().accessToken());
+                            .header("X-MANAGER-AUTH", envConfig.serverConfig().accessToken())
+                            .timeout(Duration.ofSeconds(10));
+                            
                 } catch (Exception e) {
                     throw new ApiError(500, "Internal server error", e);
                 }
@@ -439,7 +459,7 @@ public class GatewayService {
                             Fi file = nodeManager.getFile(id, "map-preview-image.png");
 
                             if (!file.exists()) {
-                                return new byte[0];
+                                return new byte[1];
                             }
 
                             return file.readBytes();

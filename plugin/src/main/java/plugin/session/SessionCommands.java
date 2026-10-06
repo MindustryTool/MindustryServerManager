@@ -3,14 +3,11 @@ package plugin.session;
 import lombok.RequiredArgsConstructor;
 import plugin.annotations.ClientCommand;
 import plugin.annotations.Component;
-import plugin.gateway.ApiGateway;
 import plugin.utils.Tr;
 
 @Component
 @RequiredArgsConstructor
 public class SessionCommands {
-
-    private final ApiGateway apiGateway;
 
     @ClientCommand(name = "admin", description = "Toogle admin permisison", admin = true)
     public void admin(Session session) {

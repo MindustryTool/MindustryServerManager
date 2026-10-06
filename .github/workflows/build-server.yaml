@@ -5,7 +5,11 @@ on:
       - 'main'
     paths:
       - 'server/**'
+      - 'plugin/**'
       - 'dto/**'
+      - 'gateway/**'
+      - 'database/**'
+      - 'annotation/**'
       - 'build.gradle.kts'
       - 'settings.gradle.kts'
       - 'Dockerfile'

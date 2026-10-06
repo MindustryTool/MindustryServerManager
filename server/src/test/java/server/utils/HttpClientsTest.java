@@ -26,6 +26,16 @@ public class HttpClientsTest {
     }
 
     @Test
+    public void testHttp11ClientSingleton() {
+        HttpClient client1 = HttpClients.http11();
+        HttpClient client2 = HttpClients.http11();
+
+        assertNotNull(client1);
+        assertSame(client1, client2, "HttpClients.http11() must return the same singleton instance");
+        assertEquals(HttpClient.Version.HTTP_1_1, client1.version());
+    }
+
+    @Test
     public void testCreateProxiedClient() {
         ProxySelector dummySelector = new ProxySelector() {
             @Override
@@ -44,5 +54,23 @@ public class HttpClientsTest {
         assertSame(dummySelector, proxied.proxy().get());
         assertTrue(proxied.connectTimeout().isPresent());
         assertEquals(Duration.ofSeconds(4), proxied.connectTimeout().get());
+    }
+
+    @Test
+    public void testForUriSchemeSelection() {
+        HttpClient httpClient = HttpClients.forUri(URI.create("http://example.com/"));
+        assertSame(HttpClients.http11(), httpClient, "http scheme must use HTTP/1.1 client");
+
+        HttpClient httpsClient = HttpClients.forUri(URI.create("https://example.com/"));
+        assertSame(HttpClients.shared(), httpsClient, "https scheme must use default client");
+    }
+
+    @Test
+    public void testForUrlSchemeSelection() {
+        HttpClient httpClient = HttpClients.forUrl("http://example.com/");
+        assertSame(HttpClients.http11(), httpClient, "http URL must use HTTP/1.1 client");
+
+        HttpClient httpsClient = HttpClients.forUrl("https://example.com/");
+        assertSame(HttpClients.shared(), httpsClient, "https URL must use default client");
     }
 }

@@ -1,58 +1,85 @@
 package server.service;
 
 import java.nio.channels.ClosedChannelException;
+import java.security.SecureRandom;
 import java.time.Duration;
+import java.util.Base64;
 import java.util.Date;
 import java.util.UUID;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
+import com.auth0.jwt.exceptions.JWTVerificationException;
+
 import arc.files.Fi;
 import arc.util.Log;
 import dto.ServerConfigDto;
 import io.javalin.websocket.WsConfig;
 import io.javalin.websocket.WsContext;
 import lombok.RequiredArgsConstructor;
-import server.EnvConfig;
 import server.config.Const;
 import server.manager.NodeManager;
-import server.utils.ApiError;
 import server.utils.Utils;
 
 @RequiredArgsConstructor
 public class WsHandler {
-    private final EnvConfig envConfig;
     private final GatewayService gatewayService;
     private final NodeManager nodeManager;
+    private final String localSigningKey = generateLocalKey();
+
+    private static String generateLocalKey() {
+        byte[] key = new byte[32];
+        new SecureRandom().nextBytes(key);
+        return Base64.getEncoder().encodeToString(key);
+    }
 
     public void configure(WsConfig ws) {
-        String securityKey = envConfig.serverConfig().securityKey();
-
         ws.onConnect(handler -> {
             try {
-                UUID serverId = parseServerJwt(handler, securityKey);
+                UUID serverId = parseServerJwt(handler);
                 gatewayService.of(serverId).onOpen(handler);
+            } catch (JWTVerificationException e) {
+                Log.err("Invalid token for server: " + UUID.fromString(handler.header("X-SERVER-ID")));
+                handler.closeSession();
             } catch (Exception e) {
                 Log.err("Error on connect", e);
                 handler.closeSession();
+            } finally {
             }
         });
 
         ws.onMessage(handler -> {
             Const.executorService.execute(() -> {
                 try {
-                    UUID serverId = parseServerJwt(handler, securityKey);
+                    UUID serverId = parseServerJwt(handler);
                     gatewayService.of(serverId).onMessage(handler);
+                } catch (JWTVerificationException e) {
+                    Log.err("Invalid token for server: " + UUID.fromString(handler.header("X-SERVER-ID")));
                 } catch (Exception e) {
                     Log.err("Error on message", e);
                 }
             });
         });
 
+        ws.onBinaryMessage(handler -> {
+            Const.executorService.execute(() -> {
+                try {
+                    UUID serverId = parseServerJwt(handler);
+                    gatewayService.of(serverId).onBinary(handler);
+                } catch (JWTVerificationException e) {
+                    Log.err("Invalid token for server: " + UUID.fromString(handler.header("X-SERVER-ID")));
+                } catch (Exception e) {
+                    Log.err("Error on binary message", e);
+                }
+            });
+        });
+
         ws.onClose(handler -> {
             try {
-                UUID serverId = parseServerJwt(handler, securityKey);
+                UUID serverId = parseServerJwt(handler);
                 gatewayService.of(serverId).onClose(handler);
+            } catch (JWTVerificationException e) {
+                Log.err("Invalid token for server: " + UUID.fromString(handler.header("X-SERVER-ID")));
             } catch (Exception e) {
                 Log.err("Error on close", e);
             }
@@ -67,23 +94,19 @@ public class WsHandler {
         });
     }
 
-    public UUID parseServerJwt(WsContext context, String securityKey) {
+    public UUID parseServerJwt(WsContext context) {
         String jwtToken = context.header("Authorization");
         UUID serverId = UUID.fromString(context.header("X-SERVER-ID"));
 
-        if (securityKey == null) {
-            throw ApiError.forbidden("Security token is not set");
-        }
-
         try {
-            var idString = JWT.require(Algorithm.HMAC256(securityKey))
+            var idString = JWT.require(Algorithm.HMAC256(localSigningKey))
                     .withIssuer("MindustryTool")
                     .build()
                     .verify(jwtToken)
                     .getSubject();
 
             return UUID.fromString(idString);
-        } catch (Exception e) {
+        } catch (JWTVerificationException e) {
             ServerConfigDto serverConfig = new ServerConfigDto();
             try {
                 Fi serverConfigFile = nodeManager.getFile(serverId, "server.json");
@@ -93,26 +116,29 @@ public class WsHandler {
             } catch (Exception ex) {
                 Log.warn("Failed to read server.json for @, creating fresh", serverId);
             }
-            serverConfig.setJwt(generateServerJwt(serverId, securityKey));
+            serverConfig.setJwt(generateServerJwt(serverId));
             try {
-                nodeManager.writeFile(serverId, "server.json", Utils.objectMapper.writeValueAsBytes(serverConfig));
+                nodeManager.writeFile(serverId, "server.json", Utils.objectMapper
+                        .writerWithDefaultPrettyPrinter()
+                        .writeValueAsBytes(serverConfig));
             } catch (Exception ex) {
                 Log.err("Failed to write server.json for " + serverId, ex);
             }
 
-            throw new RuntimeException("Token expired");
+            throw e;
+        } catch (Exception e) {
+
+            Log.err("Something is wrong with token", e);
+
+            throw new RuntimeException("Something is wrong with token");
         }
     }
 
-    public String generateServerJwt(UUID serverId, String securityKey) {
-        if (securityKey == null) {
-            throw ApiError.forbidden("Security token is not set");
-        }
-
+    public String generateServerJwt(UUID serverId) {
         return JWT.create()
                 .withSubject(serverId.toString())
                 .withIssuer("MindustryTool")
                 .withExpiresAt(new Date(System.currentTimeMillis() + Duration.ofDays(3650).toMillis()))
-                .sign(Algorithm.HMAC256(securityKey));
+                .sign(Algorithm.HMAC256(localSigningKey));
     }
 }

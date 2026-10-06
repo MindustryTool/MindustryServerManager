@@ -1,15 +1,14 @@
 package plugin.update;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.security.MessageDigest;
 import java.util.Objects;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
-import arc.Core;
 import arc.files.Fi;
-import arc.struct.Seq;
 import arc.util.Log;
+import lombok.RequiredArgsConstructor;
 import mindustry.Vars;
 import mindustry.game.EventType.GameOverEvent;
 import mindustry.game.EventType.PlayerJoin;
@@ -21,116 +20,102 @@ import plugin.annotations.Listener;
 import plugin.annotations.Schedule;
 import plugin.event.UnloadServerEvent;
 import plugin.gamemode.Gamemode;
+import plugin.gateway.ApiGateway;
 import plugin.utils.Tr;
 import plugin.utils.Utils;
 
 @Component
+@RequiredArgsConstructor
 public class PluginUpdater {
-    public static final long SANDBOX_RESTART_DELAY_MS = TimeUnit.MINUTES.toMillis(30);
+    public static final long SANDBOX_RESTART_DELAY_MS = 30 * 60 * 1000L;
 
-    private final Seq<PluginData> plugins = Seq.with(//
-            new PluginData("controller", "plugin.jar", "MindustryTool", "MindustryServerManager", "plugin")//
-    );
-
-    // Maps each plugin to the new updatedAt value to be written after a successful download
-    private final Map<PluginData, String> pendingUpdates = new LinkedHashMap<>();
+    private final ApiGateway apiGateway;
+    private final Fi jar = Vars.modDirectory.child("plugin.jar");
 
     private boolean isScheduled = false;
     private long scheduledRestartTime = -1;
     private boolean waitingForGameOver = false;
     private boolean isRestarting = false;
 
-    public boolean scheduleRestart() {
-        isScheduled = true;
-        if (isSandboxMode()) {
-            if (scheduledRestartTime <= 0) {
-                scheduledRestartTime = System.currentTimeMillis() + SANDBOX_RESTART_DELAY_MS;
+    private String pendingHash = null;
+    private String currentJarHash = null;
+
+    private synchronized String getCurrentHash() {
+        if (currentJarHash != null) {
+            return currentJarHash;
+        }
+
+        try {
+
+            if (!jar.exists()) {
+                throw new RuntimeException("plugin.jar does not exist in mods directory");
             }
-        } else {
-            waitingForGameOver = true;
+
+            byte[] bytes = jar.readBytes();
+            currentJarHash = sha256(bytes);
+
+            return currentJarHash;
+        } catch (Exception e) {
+            Log.err("Failed to compute current plugin hash", e);
+            return null;
         }
-        return true;
     }
 
-    public boolean isWaitingForGameOver() {
-        return waitingForGameOver;
-    }
-
-    public long getScheduledRestartTime() {
-        return scheduledRestartTime;
-    }
-
-    public boolean isScheduled() {
-        return isScheduled;
-    }
-
-    public boolean hasPendingUpdates() {
-        return !pendingUpdates.isEmpty();
-    }
-
-    public boolean isSandboxMode() {
-        if (Gamemode.active("sandbox")) {
-            return true;
+    private static String sha256(byte[] data) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            byte[] digest = md.digest(data);
+            StringBuilder sb = new StringBuilder();
+            for (byte b : digest) {
+                sb.append(String.format("%02x", b));
+            }
+            return sb.toString();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
-        return Vars.state != null && Vars.state.rules != null
-                && Vars.state.rules.mode() == mindustry.game.Gamemode.sandbox;
     }
 
     @Schedule(delay = 1, fixedDelay = 1, unit = TimeUnit.MINUTES)
     public void checkUpdate() {
-        var needUpdate = false;
-
-        for (PluginData pluginData : plugins) {
-            if (pendingUpdates.containsKey(pluginData)) {
-                needUpdate = true;
-                continue;
-            }
-
-            // Fix #2: catch per-plugin errors so one failure doesn't abort the whole loop
-            try {
-                PluginData.PluginVersion version = pluginData.getPluginVersion();
-
-                // Fix #7: guard against a null PluginVersion (e.g. malformed API response)
-                if (version == null) {
-                    Log.err("[red]Received null version response for plugin @", pluginData.getId());
-                    continue;
-                }
-
-                String updatedAt = version.getUpdatedAt();
-                String currentUpdatedAt = readCurrentUpdatedAt(pluginData);
-
-                if (Objects.equals(updatedAt, currentUpdatedAt)) {
-                    continue;
-                }
-
-                // Fix #3: don't persist the version here — only do so after a successful download
-                pendingUpdates.put(pluginData, updatedAt);
-                needUpdate = true;
-            } catch (Exception e) {
-                Log.err("Failed to check version for plugin @: @", pluginData.getId(), e.getMessage());
-            }
-        }
-
-        if (!needUpdate && !isScheduled) {
+        if (pendingHash != null) {
             return;
         }
 
-        // If no player is online, update immediately
-        if (Groups.player.isEmpty()) {
-            performUpdateAndRestart();
+        String bundleHash = sendGetPluginVersion();
+
+        if (bundleHash == null) {
+            Log.err("[red]Bundle hash query failed; will retry next cycle");
             return;
         }
 
-        // Otherwise, schedule restart according to gamemode
-        if (!pendingUpdates.isEmpty() && scheduledRestartTime <= 0 && !waitingForGameOver) {
-            if (isSandboxMode()) {
-                scheduledRestartTime = System.currentTimeMillis() + SANDBOX_RESTART_DELAY_MS;
-                waitingForGameOver = false;
-            } else {
-                waitingForGameOver = true;
-                scheduledRestartTime = -1;
-            }
-            broadcastRestartNotice();
+        String currentHash = getCurrentHash();
+
+        if (currentHash == null) {
+            Log.err("[red]Cannot read current plugin jar for hash comparison");
+            return;
+        }
+
+        if (Objects.equals(bundleHash, currentHash)) {
+            return;
+        }
+
+        pendingHash = bundleHash;
+        Log.info("[purple]New plugin bundle hash detected: @, scheduling restart...", bundleHash);
+        scheduleRestart();
+    }
+
+    /**
+     * Send the WS get-plugin-version request and return the hash string, or null on
+     * failure.
+     */
+    private String sendGetPluginVersion() {
+        try {
+            return apiGateway
+                    .sendRequest("get-plugin-version", null, String.class)
+                    .get(5, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            Log.err("Failed to query bundle hash from manager", e);
+            return null;
         }
     }
 
@@ -140,18 +125,16 @@ public class PluginUpdater {
             return;
         }
 
-        boolean hasUpdatesOrScheduled = !pendingUpdates.isEmpty() || isScheduled;
+        boolean hasUpdatesOrScheduled = pendingHash != null || isScheduled;
         if (!hasUpdatesOrScheduled) {
             return;
         }
 
-        // If all players left, restart immediately
         if (Groups.player.isEmpty()) {
             performUpdateAndRestart();
             return;
         }
 
-        // Sandbox countdown expired
         if (scheduledRestartTime > 0 && System.currentTimeMillis() >= scheduledRestartTime) {
             Log.info("[purple]Sandbox restart countdown expired, restarting...");
             performUpdateAndRestart();
@@ -164,7 +147,7 @@ public class PluginUpdater {
             return;
         }
 
-        if ((waitingForGameOver || isScheduled) && (!pendingUpdates.isEmpty() || isScheduled)) {
+        if ((waitingForGameOver || isScheduled) && (hasPendingUpdates() || isScheduled)) {
             Log.info("[purple]GameOverEvent received with pending restart, restarting...");
             performUpdateAndRestart();
         }
@@ -176,7 +159,7 @@ public class PluginUpdater {
             return;
         }
 
-        if (!pendingUpdates.isEmpty() || isScheduled) {
+        if (hasPendingUpdates() || isScheduled) {
             notifyPlayer(event.player);
         }
     }
@@ -229,52 +212,54 @@ public class PluginUpdater {
         }
         isRestarting = true;
 
-        Vars.modDirectory.mkdirs();
+        Log.info("[purple]Updating controller plugin hash to: @, then restarting...", pendingHash);
+        currentJarHash = null;
+        pendingHash = null;
 
-        boolean anyUpdated = false;
-
-        // Iterate over a snapshot so we can safely remove entries on success
-        for (Map.Entry<PluginData, String> entry : new ArrayList<>(pendingUpdates.entrySet())) {
-            PluginData pluginData = entry.getKey();
-            String updatedAt = entry.getValue();
-
-            Log.info("[purple]Downloading plugin: @/@/@", pluginData.getOwner(), pluginData.getRepo(),
-                    pluginData.getTag());
-
-            try {
-                byte[] data = pluginData.download();
-                Fi pluginFile = Vars.modDirectory.child(pluginData.getPath());
-
-                if (pluginFile.exists() && pluginFile.isDirectory()) {
-                    pluginFile.deleteDirectory();
-                }
-
-                if (pluginFile.exists()) {
-                    pluginFile.delete();
-                }
-
-                pluginFile.writeBytes(data);
-
-                // Fix #3: write the new version only after the file is successfully on disk
-                // Fix #5: remove from pending so it won't be re-downloaded on the next cycle
-                Core.settings.put(pluginData.getId() + "-version", updatedAt);
-                pendingUpdates.remove(pluginData);
-                anyUpdated = true;
-            } catch (Exception e) {
-                Log.err("Failed to download plugin @: @", pluginData.getId(), e.getMessage());
-            }
+        try {
+            byte[] bytes = apiGateway.sendRequest("download-plugin", null, byte[].class).get(30, TimeUnit.SECONDS);
+            jar.writeBytes(bytes);
+            Log.info(bytes.length + " bytes written to plugin.jar");
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            Log.err("Failed to update plugin bundle from manager", e);
         }
 
-        // Fix #6: one forceSave() after all puts, not one per plugin
-        if (anyUpdated) {
-            Core.settings.forceSave();
-        }
-
-        Log.info("[purple]Plugin updated, restarting...");
         PluginEvents.fire(new UnloadServerEvent(true));
     }
 
-    private String readCurrentUpdatedAt(PluginData plugin) {
-        return Core.settings.getString(plugin.getId() + "-version", null);
+    public boolean scheduleRestart() {
+        isScheduled = true;
+        if (isSandboxMode()) {
+            if (scheduledRestartTime <= 0) {
+                scheduledRestartTime = System.currentTimeMillis() + SANDBOX_RESTART_DELAY_MS;
+            }
+        } else {
+            waitingForGameOver = true;
+        }
+        return true;
+    }
+
+    public boolean isWaitingForGameOver() {
+        return waitingForGameOver;
+    }
+
+    public long getScheduledRestartTime() {
+        return scheduledRestartTime;
+    }
+
+    public boolean isScheduled() {
+        return isScheduled;
+    }
+
+    public boolean hasPendingUpdates() {
+        return pendingHash != null;
+    }
+
+    public boolean isSandboxMode() {
+        if (Gamemode.active("sandbox")) {
+            return true;
+        }
+        return Vars.state != null && Vars.state.rules != null
+                && Vars.state.rules.mode() == mindustry.game.Gamemode.sandbox;
     }
 }

@@ -2,6 +2,7 @@ package server.manager;
 
 import java.io.Closeable;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
@@ -173,7 +174,9 @@ public class DockerNodeManager implements NodeManager {
         eventBus.emit(LogEvent.info(serverId, "Creating new container on port " + request.getPort()));
 
         Volume volume = new Volume("/config");
-        Bind bind = new Bind(serverPath.toString(), volume);
+        String bindSource = bindSourceFor(serverIdString, serverPath);
+        eventBus.emit(LogEvent.info(serverId, "Container bind source: " + bindSource));
+        Bind bind = new Bind(bindSource, volume);
 
         ExposedPort tcp = ExposedPort.tcp(Const.DEFAULT_MINDUSTRY_SERVER_PORT);
         ExposedPort udp = ExposedPort.udp(Const.DEFAULT_MINDUSTRY_SERVER_PORT);
@@ -218,6 +221,7 @@ public class DockerNodeManager implements NodeManager {
         env.add("IS_HUB=" + request.getIsHub());
         env.add("IS_OFFICIAL=" + request.getIsOfficial());
         env.add("SERVER_ID=" + serverId);
+        env.add("PLUGIN_GATEWAY_URL=" + Const.resolvePluginGatewayUrl());
         env.add("JAVA_TOOL_OPTIONS=" + String.join(" ", args));
         env.addAll(request.getEnv().entrySet().stream()
                 .map(v -> (v.getKey() + "=" + v.getValue()).replaceAll("JAVA_TOOL_OPTIONS", "")).toList());
@@ -229,24 +233,32 @@ public class DockerNodeManager implements NodeManager {
             exposedPorts.add(localTcp);
         }
 
+        HostConfig hostConfig = HostConfig.newHostConfig()
+                .withPortBindings(portBindings)
+                .withNetworkMode("mindustry-server")
+                .withCpuPeriod(100000L)
+                .withCpuQuota((long) (request.getCpu() * 100000L))
+                .withMemory(request.getMemory() * 1024 * 1024L)
+                .withRestartPolicy(RestartPolicy.onFailureRestart(10))
+                .withLogConfig(new LogConfig(LogConfig.LoggingType.JSON_FILE, Map.of(
+                        "max-size", "100m",
+                        "max-file", "5")))
+                .withPidsLimit(64L)
+                .withDns("8.8.8.8", "1.1.1.1")
+                .withBinds(bind);
+
+        if (Const.IS_PRODUCTION) {
+            hostConfig.withExtraHosts("server.mindustry-tool.com:148.113.245.224",
+                    "api.mindustry-tool.com:148.113.245.224");
+        }
+
+        if (Const.IS_PRODUCTION){
+            hostConfig.withRuntime("io.containerd.kata.v2");
+        }
+
         command.withExposedPorts(exposedPorts)
                 .withEnv(env)
-                .withHostConfig(HostConfig.newHostConfig()
-                        .withPortBindings(portBindings)
-                        .withNetworkMode("mindustry-server")
-                        .withCpuPeriod(100000L)
-                        .withCpuQuota((long) (request.getCpu() * 100000L))
-                        .withMemory(request.getMemory() * 1024 * 1024L)
-                        .withRestartPolicy(RestartPolicy.onFailureRestart(10))
-                        .withLogConfig(new LogConfig(LogConfig.LoggingType.JSON_FILE, Map.of(
-                                "max-size", "100m",
-                                "max-file", "5")))
-                        .withPidsLimit(64L)
-                        .withDns("8.8.8.8", "1.1.1.1")
-                        .withExtraHosts("server.mindustry-tool.com:148.113.245.224",
-                                "api.mindustry-tool.com:148.113.245.224")
-                        .withRuntime("io.containerd.kata.v2")
-                        .withBinds(bind));
+                .withHostConfig(hostConfig);
 
         var result = command.exec();
         var containerId = result.getId();
@@ -517,6 +529,14 @@ public class DockerNodeManager implements NodeManager {
         return file;
     }
 
+    public static String bindSourceFor(String serverIdString, Path localPath) {
+        String hostBase = Const.resolveNodeDataHostPath();
+        if (hostBase.equals(Const.volumeFolderPath)) {
+            return localPath.toString();
+        }
+        return hostBase + "/servers/" + serverIdString + "/config";
+    }
+
     @Override
     public Fi getServerFolder() {
         return SERVER_FOLDER;
@@ -582,7 +602,7 @@ public class DockerNodeManager implements NodeManager {
                         .withIdFilter(List.of(containerId))
                         .exec();
 
-                if (containers.size() != 1) {
+                if (containers.size() > 1) {
                     Log.warn("Docker event with multiple containers: @", event);
                     return;
                 }

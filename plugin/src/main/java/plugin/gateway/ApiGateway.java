@@ -6,13 +6,13 @@ import plugin.session.SessionService;
 
 import plugin.host.HostService;
 
-import java.nio.ByteBuffer;
+import java.net.URI;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import dto.RecentPlayerDto;
@@ -25,10 +25,9 @@ import java.util.concurrent.TimeoutException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-import com.neovisionaries.ws.client.WebSocket;
 import gateway.WsMessage;
+import gateway.client.JdkWsClient;
 import gateway.rpc.WsRpcChannel;
-import gateway.session.WsSession;
 
 import arc.struct.Seq;
 import arc.util.Log;
@@ -56,12 +55,6 @@ import mindustry.gen.Player;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-
-import com.neovisionaries.ws.client.WebSocketAdapter;
-import com.neovisionaries.ws.client.WebSocketException;
-import com.neovisionaries.ws.client.WebSocketFactory;
-import com.neovisionaries.ws.client.WebSocketFrame;
-import com.neovisionaries.ws.client.WebSocketState;
 
 import arc.Core;
 import arc.struct.ObjectMap;
@@ -93,69 +86,36 @@ import mindustry.net.Administration.PlayerInfo;
 public class ApiGateway {
 
     private final String API_URL = "https://api.mindustry-tool.com/api/v4/";
-    private static final String GATEWAY_URL = "http://server.mindustry-tool.com:8089/gateway";
+
     private static final ExecutorService executor = Executors.newCachedThreadPool();
 
     private final HostService hostService;
     private final SessionService sessionService;
 
-    private final Duration HEARTBEAT_DURATION = Duration.ofSeconds(5);
-    private final WsHandler wsHandler = new WsHandler();
+    private volatile JdkWsClient gatewayClient;
 
-    private Instant lastSendEventAt = Instant.now();
-    private WebSocket webSocket;
-
-    private final WsRpcChannel rpcChannel = new WsRpcChannel(JsonUtils.getObjectMapper(), null, Runnable::run);
-
-    private final WsSession nvSession = new WsSession() {
-        @Override
-        public void sendText(String text) {
-            WebSocket ws = webSocket;
-            if (ws == null || !ws.isOpen()) {
-                throw new IllegalStateException("Not connected to server manager");
-            }
-            ws.sendText(text);
-            lastSendEventAt = Instant.now();
-        }
-
-        @Override
-        public void sendBinary(ByteBuffer data) {
-            WebSocket ws = webSocket;
-            if (ws == null || !ws.isOpen()) {
-                throw new IllegalStateException("Not connected to server manager");
-            }
-            ByteBuffer dup = data.duplicate();
-            byte[] bytes = new byte[dup.remaining()];
-            dup.get(bytes);
-            ws.sendBinary(bytes);
-        }
-
-        @Override
-        public void close(int code, String reason) {
-            WebSocket ws = webSocket;
-            if (ws != null) {
-                ws.disconnect(code, reason);
-            }
-        }
-
-        @Override
-        public boolean isOpen() {
-            return isConnected();
-        }
-    };
+    private final WsRpcChannel rpcChannel = WsRpcChannel.withMapper(JsonUtils.getObjectMapper(), executor);
 
     private Cache<PaginationRequest, List<ServerDto>> serverQueryCache = Caffeine.newBuilder()
             .expireAfterWrite(Duration.ofSeconds(15))
             .maximumSize(10)
             .build();
 
-    private boolean shutdown = false;
     private boolean lastIsGame = true;
+
+    static Map<String, String> gatewayHeaders(String jwt, String serverId) {
+        Map<String, String> headers = new LinkedHashMap<>();
+        if (jwt != null && !jwt.isBlank()) {
+            headers.put("Authorization", jwt);
+        }
+        if (serverId != null && !serverId.isBlank()) {
+            headers.put("X-SERVER-ID", serverId);
+        }
+        return headers;
+    }
 
     @Init
     public void init() {
-        rpcChannel.setSession(nvSession);
-        connectAsync();
         this.registerHandler("get-json", Void.class, (request) -> getJson());
         this.registerHandler("update-player", LoginDto.class, this::updatePlayer);
         this.registerHandler("pause", Void.class, (request) -> tooglePause());
@@ -173,6 +133,22 @@ public class ApiGateway {
         this.registerHandler("delete-kicked-ip", String.class, (request) -> deleteKickedIp(request));
         this.registerHandler("shutdown", Void.class, (request) -> shutdown());
 
+        String gatewayUrl = Cfg.gatewayUrl();
+        Log.info("Connecting to server manager: " + gatewayUrl);
+        final JdkWsClient client;
+        try {
+            client = JdkWsClient.builder(URI.create(gatewayUrl), rpcChannel)
+                    .headersSupplier(() -> gatewayHeaders(Cfg.webSocketAuthToken(), Cfg.serverId()))
+                    .build();
+        } catch (Exception e) {
+            Log.err("Invalid " + Cfg.PLUGIN_GATEWAY_URL_ENV + ": " + gatewayUrl, e);
+            return;
+        }
+        client.onOpen(() -> Log.info("[green]Connected to server manager"));
+        client.onClose(err -> Log.info("[red]Disconnected from server manager: " + err.getMessage()
+                + "; reconnect scheduled"));
+        this.gatewayClient = client;
+        client.connect();
     }
 
     @Schedule(fixedDelay = 5, unit = TimeUnit.MINUTES)
@@ -220,131 +196,37 @@ public class ApiGateway {
         return rpcChannel;
     }
 
+    public void close() {
+        JdkWsClient client = gatewayClient;
+        if (client != null) {
+            client.close();
+        }
+    }
+
     public Void shutdown() {
-        shutdown = true;
         Log.info("[purple]Server shutdown");
 
         PluginEvents.fire(new UnloadServerEvent(false));
         return null;
     }
 
-    private synchronized void connectAsync() {
-        if (shutdown) {
-            return;
-        }
-
-        if (webSocket != null && webSocket.isOpen()) {
-            return;
-        }
-
-        executor.submit(() -> {
-            try {
-                connect();
-            } catch (Exception e) {
-                Log.err("Error connecting to server manager", e);
-            }
-        });
-    }
-
-    private synchronized void connect() {
-        try {
-            if (shutdown) {
-                return;
-            }
-
-            if (webSocket != null && webSocket.isOpen()) {
-                return;
-            }
-
-            Log.info("[sky]Connecting to server manager");
-            webSocket = new WebSocketFactory()
-                    .createSocket(GATEWAY_URL)
-                    .setMaxPayloadSize(50 * 1024 * 1024)
-                    .addHeader("Authorization", Cfg.webSocketAuthToken())
-                    .addHeader("X-SERVER-ID", Cfg.serverId())
-                    .addListener(wsHandler)
-                    .connectAsynchronously();
-        } catch (Exception e) {
-            Log.err("Error connecting to server manager", e);
-        }
-    }
-
-    private class WsHandler extends WebSocketAdapter {
-        @Override
-        public void onConnected(WebSocket websocket, Map<String, List<String>> headers) throws Exception {
-            Log.info("[green]Connected to server manager");
-        }
-
-        @Override
-        public void onTextMessage(WebSocket ws, String message) {
-            executor.execute(() -> {
-                try {
-                    rpcChannel.onTextMessage(message);
-                } catch (Exception e) {
-                    Log.err("Error processing message", e);
-                }
-            });
-        }
-
-        @Override
-        public void onDisconnected(WebSocket websocket, WebSocketFrame serverCloseFrame,
-                WebSocketFrame clientCloseFrame, boolean closedByServer) throws Exception {
-
-            if (shutdown) {
-                return;
-            }
-
-            rpcChannel.onClose(new RuntimeException("WebSocket disconnected"));
-            webSocket = null;
-
-            connectAsync();
-
-            if (closedByServer) {
-                Log.info("[red]Server manager disconnected: " + serverCloseFrame);
-            } else {
-                Log.info("[red]Client disconnected: " + clientCloseFrame);
-            }
-        }
-
-        @Override
-        public void onConnectError(WebSocket websocket, WebSocketException exception) throws Exception {
-            if (shutdown) {
-                return;
-            }
-            Log.err("Error connecting to server manager", exception);
-        }
-    }
-
-    @Schedule(delay = 5, fixedDelay = 5, unit = TimeUnit.SECONDS)
-    private void keepAlive() {
-        if (lastSendEventAt.plus(HEARTBEAT_DURATION).isBefore(Instant.now()) && isConnected()) {
-            sendStateUpdate();
-        }
-    }
-
     public <Req, Res> void registerHandler(String type, Class<Req> clazz, Function<Req, Res> handler) {
         rpcChannel.registerHandler(type, clazz, handler);
     }
 
-    @Schedule(delay = 5, fixedDelay = 5, unit = TimeUnit.SECONDS)
-    private void autoReconnect() {
-        if (shutdown) {
-            return;
-        }
-
-        if (webSocket == null || webSocket.getState() == WebSocketState.CLOSED) {
-            connectAsync();
-        }
-    }
-
     public boolean isConnected() {
-        return webSocket != null && webSocket.isOpen();
+        JdkWsClient client = gatewayClient;
+        return client != null && client.isOpen();
     }
 
     public void send(WsMessage<?> event) {
-        if (isConnected()) {
-            webSocket.sendText(JsonUtils.toJsonString(event));
-            lastSendEventAt = Instant.now();
+        JdkWsClient client = gatewayClient;
+        if (client != null && client.isOpen()) {
+            try {
+                client.session().sendText(JsonUtils.toJsonString(event));
+            } catch (Exception e) {
+                Log.warn("Failed to send event: @", event);
+            }
         } else {
             Log.warn("Not connected, dropped event: @", event);
         }

@@ -18,7 +18,6 @@ tasks.withType<JavaCompile> {
 }
 
 dependencies {
-    implementation("com.neovisionaries:nv-websocket-client:2.14")
     implementation("com.fasterxml.jackson.core:jackson-databind:2.16.2")
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.16.2")
     implementation("com.github.ben-manes.caffeine:caffeine:2.9.3")

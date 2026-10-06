@@ -3,9 +3,6 @@ package plugin.utils;
 import java.util.HashMap;
 import java.util.Map;
 
-import plugin.PluginEvents;
-import plugin.event.PluginUnloadEvent;
-
 public final class TextWidth {
 
     public static final Map<Character, Integer> WIDTH = new HashMap<>();
@@ -121,10 +118,6 @@ public final class TextWidth {
         WIDTH.put('|', 2);
         WIDTH.put('}', 6);
         WIDTH.put('~', 8);
-
-        PluginEvents.run(PluginUnloadEvent.class, () -> {
-            WIDTH.clear();
-        });
     }
 
     public static int measure(String text) {

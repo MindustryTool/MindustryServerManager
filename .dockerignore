@@ -1,6 +1,8 @@
+.agent
 .git
 .github
 .idea
+.gradle
 .vscode
 *.iml
 **/.gradle
@@ -9,3 +11,8 @@
 **/target
 node_modules
 *.log
+*.md
+data/
+plans/
+openspec/
+plans/

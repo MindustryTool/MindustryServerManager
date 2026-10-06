@@ -11,13 +11,17 @@ RUN gradle :server:dependencies --no-daemon
 
 COPY --chown=gradle:gradle . /home/gradle/src
 
-RUN gradle :server:build --no-daemon
+RUN gradle :server:build :plugin:build --no-daemon
+
+RUN sha256sum /home/gradle/src/plugin/build/libs/plugin.jar | cut -d' ' -f1 > /home/gradle/src/plugin/build/libs/plugin.sha256
 
 FROM eclipse-temurin:17-jre-alpine
 
 WORKDIR /app
 
 COPY --from=build /home/gradle/src/server/build/libs/application.jar /app/application.jar
+COPY --from=build /home/gradle/src/plugin/build/libs/plugin.jar /app/plugin.jar
+COPY --from=build /home/gradle/src/plugin/build/libs/plugin.sha256 /app/plugin.sha256
 
 # Set JVM options for minimal RAM usage
 # -XX:+UseSerialGC: Low memory footprint garbage collector

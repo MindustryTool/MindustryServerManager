@@ -63,3 +63,8 @@ out/
 
 archive
 *.db
+
+# Local testing (never commit real tokens)
+.env.local
+config/.env
+data/

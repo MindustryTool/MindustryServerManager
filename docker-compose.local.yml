@@ -1,0 +1,53 @@
+# Local testing compose for MindustryServerManager.
+# Backend runs OUTSIDE Docker on the host (localhost:8080).
+# Manager runs INSIDE Docker and dials the host via host.docker.internal.
+#
+# Usage:
+#   1. cp .env.local.example .env.local   # then put the real JWT in it (never commit .env.local)
+#   2. docker compose -f docker-compose.local.yml up --build
+#   3. Backend AI tests against ws://host.docker.internal:8080/managers/gateway
+#      and http://host.docker.internal:8080/api/v4/ from the manager side.
+#
+# Notes:
+# - Prod docker-compose.yml is untouched. This file is local-only.
+# - Game containers resolve ws://server-manager:8088/gateway via the
+#   network alias below (or PLUGIN_GATEWAY_URL when set).
+
+services:
+  server-manager:
+    build:
+      context: .
+      dockerfile: Dockerfile.local
+    image: mindustry-server-manager:local
+    container_name: server-manager-local
+    restart: unless-stopped
+    ports:
+      - "8088:8088"
+    volumes:
+      # Docker Desktop (Win/Mac/Linux): exposes the Linux VM socket here.
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Manager data (servers/, server.json, maps/, mods/). Created on first up.
+      - ./data:/app/data
+    extra_hosts:
+      # No-op on Docker Desktop (already defined), required on Linux
+      # so host.docker.internal resolves to the host gateway.
+      - "host.docker.internal:host-gateway"
+    env_file:
+      - path: .env.local
+        required: false
+    environment:
+      BACKEND_WS_URL: "ws://host.docker.internal:8080/managers/gateway"
+      API_BASE_URL: "http://host.docker.internal:8080/api/v4/"
+      SERVER_MANAGER_DATA: "./data"
+      NODE_DATA_HOST_PATH: "E:/Codes/MindustryTool/MindustryServerManager/data"
+      AUTO_PORT_ASSIGN: "true"
+      ENV: "DEV"
+    networks:
+      mindustry-server:
+        aliases:
+          - server-manager
+
+networks:
+  mindustry-server:
+    driver: bridge
+    name: mindustry-server

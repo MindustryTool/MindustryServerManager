@@ -39,6 +39,10 @@ public class Cfg {
 
     public static final boolean IS_DEVELOPMENT = ENV != null && ENV.equals("DEV");
 
+    public static final String PLUGIN_GATEWAY_URL_ENV = "PLUGIN_GATEWAY_URL";
+    public static final String DEV_GATEWAY_URL = "ws://server-manager:8088/gateway";
+    public static final String PROD_GATEWAY_URL = "ws://server.mindustry-tool.com:8089/gateway";
+
     public static final String SERVER_IP = "103.20.96.24";
     public static final String DISCORD_INVITE_URL = "https://mindustry-tool.com/links/mindustry-tool";
     public static final String MINDUSTRY_TOOL_URL = "https://mindustry-tool.com";
@@ -52,6 +56,7 @@ public class Cfg {
 
     public static ServerConfigDto serverConfig() {
         try {
+            Log.info("Reading server.json");
             Fi file = Vars.dataDirectory.child("server.json");
             if (!file.exists()) {
                 return null;
@@ -70,5 +75,16 @@ public class Cfg {
 
     public static String serverId() {
         return System.getenv("SERVER_ID");
+    }
+
+    public static String gatewayUrl() {
+        return resolveGatewayUrl(System.getenv(PLUGIN_GATEWAY_URL_ENV), IS_DEVELOPMENT);
+    }
+
+    public static String resolveGatewayUrl(String envValue, boolean isDevelopment) {
+        if (envValue != null && !envValue.isBlank()) {
+            return envValue.trim();
+        }
+        return isDevelopment ? DEV_GATEWAY_URL : PROD_GATEWAY_URL;
     }
 }

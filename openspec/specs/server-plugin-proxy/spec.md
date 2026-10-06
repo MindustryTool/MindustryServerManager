@@ -1,28 +1,35 @@
 # server-plugin-proxy Specification
 
 ## Purpose
-Proxies plugin version queries and plugin binary downloads from game server nodes via WebSocket to upstream distribution APIs with server-side Caffeine caching.
+
+Manages plugin version queries and binary downloads from game server nodes via WebSocket, serving the manager-local bundled plugin.
 
 ## Requirements
 
 ### Requirement: Server Plugin Version Query Proxy
-The server manager SHALL expose a WebSocket message handler for `"get-plugin-version"` that receives plugin repository coordinates (`owner`, `repo`, `tag`) and returns a `PluginVersionDto` containing release metadata. The server manager SHALL cache version query results in memory with a 5-minute expiration time, returning cached values on hits and querying the upstream plugin version API on cache misses.
 
-#### Scenario: Plugin queries version with cache miss
-- **WHEN** a plugin sends `"get-plugin-version"` for owner "MindustryTool", repo "MindustryServerManager", tag "plugin" and no valid cache entry exists
-- **THEN** the server manager fetches the version from the upstream API, caches the result for 5 minutes, and responds to the plugin with the `PluginVersionDto`
+The server manager SHALL expose a WebSocket message handler for `"get-plugin-version"` that takes no meaningful input and returns the SHA-256 hash of the manager-bundled `plugin.jar` as a plain string. The manager SHALL answer from its in-memory bundle without issuing any upstream HTTP request. The `owner`/`repo`/`tag` coordinates and the `updatedAt` plumbing SHALL NOT exist.
 
-#### Scenario: Plugin queries version with cache hit
-- **WHEN** a plugin sends `"get-plugin-version"` within 5 minutes of a previous fetch for the same owner, repo, and tag
-- **THEN** the server manager returns the cached `PluginVersionDto` without issuing an upstream HTTP request
+#### Scenario: Plugin queries version
+
+- **WHEN** a plugin sends `"get-plugin-version"`
+- **THEN** the server manager responds with the bundled jar hash string, without any upstream HTTP request
+
+#### Scenario: Repeated version queries stay local
+
+- **WHEN** a plugin sends `"get-plugin-version"` multiple times
+- **THEN** the server manager returns the in-memory bundled hash every time without issuing an upstream HTTP request
 
 ### Requirement: Server Plugin Binary Download Proxy
-The server manager SHALL expose a WebSocket message handler for `"download-plugin"` that receives plugin repository coordinates (`owner`, `repo`, `tag`) and returns the plugin `.jar` binary as a byte array. The server manager SHALL cache the downloaded binary in memory with a 5-minute expiration time.
 
-#### Scenario: Plugin downloads jar with cache miss
-- **WHEN** a plugin sends `"download-plugin"` for a plugin and no valid binary cache entry exists
-- **THEN** the server manager downloads the jar binary from the upstream API, caches the byte array for 5 minutes, and responds to the plugin with the byte array
+The server manager SHALL expose a WebSocket message handler for `"download-plugin"` that takes no meaningful input and returns the manager-bundled `plugin.jar` bytes. The manager SHALL serve the bytes from its in-memory bundle without issuing any upstream HTTP request.
 
-#### Scenario: Plugin downloads jar with cache hit
-- **WHEN** multiple plugins request `"download-plugin"` for the same owner, repo, and tag within 5 minutes
-- **THEN** the server manager serves the cached byte array to all subsequent requests without re-downloading from the upstream API
+#### Scenario: Plugin downloads jar
+
+- **WHEN** a plugin sends `"download-plugin"`
+- **THEN** the server manager responds with the bundled `plugin.jar` bytes without re-downloading from any upstream API
+
+#### Scenario: Repeated downloads stay local
+
+- **WHEN** multiple plugins request `"download-plugin"`
+- **THEN** the server manager serves the in-memory bundled bytes to all requests without issuing upstream HTTP requests

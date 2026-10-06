@@ -1,18 +1,19 @@
 package server.service;
 
 import java.io.Closeable;
+
 import java.io.File;
 import java.nio.file.Files;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.ArrayList;
 import java.util.EnumSet;
-import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
@@ -31,20 +32,21 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import dto.MapDto;
 import dto.ModDto;
 import dto.PlayerDto;
+import dto.PlayerInfoPageDto;
+import dto.RecentPlayerDto;
 import dto.ServerConfig;
 import dto.ServerStateDto;
 import dto.ServerConfigDto;
 import dto.ServerStatus;
 import dto.StartServerDto;
-import events.BaseEvent;
 import events.ServerEvents.LogEvent;
+import gateway.rpc.WsRpcChannel;
 import enums.NodeRemoveReason;
 import server.types.data.NodeUsage;
 import server.types.data.ServerMisMatch;
 import dto.LoginDto;
 import dto.ManagerMapDto;
 import dto.ManagerModDto;
-import server.EnvConfig;
 import server.config.Const;
 import server.manager.NodeManager;
 import server.service.GatewayService.GatewayClient;
@@ -52,17 +54,17 @@ import server.utils.ApiError;
 import server.utils.Utils;
 
 public class ServerService {
+    private static final long RPC_TIMEOUT_SECONDS = 30L;
+
     private final GatewayService gatewayService;
     private final NodeManager nodeManager;
     private final EventBus eventBus;
     private final ApiService apiService;
     private final WsHandler wsHandler;
-    private final EnvConfig envConfig;
+    private final PluginBundleService pluginBundle;
 
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private final ConcurrentHashMap<UUID, EnumSet<ServerFlag>> serverFlags = new ConcurrentHashMap<>();
-    private final List<Consumer<BaseEvent>> eventListeners = new LinkedList<>();
-    private final ArrayList<BaseEvent> buffer = new ArrayList<>();
 
     private final LoadingCache<String, ReentrantLock> locks = Caffeine.newBuilder()
             .expireAfterAccess(Duration.ofMinutes(10))
@@ -73,33 +75,19 @@ public class ServerService {
     }
 
     public ServerService(GatewayService gatewayService, NodeManager nodeManager, EventBus eventBus,
-            ApiService apiService, WsHandler wsHandler, EnvConfig envConfig) {
+            ApiService apiService, WsHandler wsHandler, PluginBundleService pluginBundle) {
         this.gatewayService = gatewayService;
         this.nodeManager = nodeManager;
         this.eventBus = eventBus;
         this.apiService = apiService;
         this.wsHandler = wsHandler;
-        this.envConfig = envConfig;
+        this.pluginBundle = pluginBundle;
 
         init();
     }
 
     private void init() {
-        eventBus.on(event -> {
-            synchronized (buffer) {
-                if (eventListeners.isEmpty()) {
-                    buffer.add(event);
-                    if (buffer.size() > 1000) {
-                        buffer.remove(0);
-                    }
-                } else {
-                    eventListeners.forEach(listener -> listener.accept(event));
-                }
-            }
-        });
-
         scheduler.scheduleWithFixedDelay(this::autoTurnOffCron, 5, 10, TimeUnit.MINUTES);
-        scheduler.scheduleWithFixedDelay(this::requestBackendConnection, 30, 30, TimeUnit.SECONDS);
         scheduler.scheduleWithFixedDelay(this::removeOldServer, 0, 24, TimeUnit.HOURS);
     }
 
@@ -110,9 +98,10 @@ public class ServerService {
             if (file.isDirectory()) {
                 String serverId = file.name();
                 try {
-                    File previewFile = nodeManager.getFile(UUID.fromString(serverId), "map-preview-image.png").file();
+                    File previewFile = nodeManager.getFile(UUID.fromString(serverId), "server.json").file();
 
-                    Instant lastModifiedTime = previewFile.exists() ? Files.getLastModifiedTime(previewFile.toPath()).toInstant()
+                    Instant lastModifiedTime = previewFile.exists()
+                            ? Files.getLastModifiedTime(previewFile.toPath()).toInstant()
                             : LocalDateTime.of(2026, 1, 1, 0, 0).toInstant(ZoneOffset.UTC);
 
                     Instant canBeDeletedAt = lastModifiedTime.plus(Duration.ofDays(removeAfterDays));
@@ -126,27 +115,6 @@ public class ServerService {
                     Log.err("Can not remove server " + serverId, e);
                 }
             }
-        }
-    }
-
-    private void requestBackendConnection() {
-        if (eventListeners.size() == 0) {
-            apiService.requestBackendConnection();
-        }
-    }
-
-    public void addEventListener(Consumer<BaseEvent> listener) {
-        synchronized (buffer) {
-            ArrayList<BaseEvent> copy = new ArrayList<>(buffer);
-            buffer.clear();
-            copy.forEach(listener::accept);
-            eventListeners.add(listener);
-        }
-    }
-
-    public void removeEventListener(Consumer<BaseEvent> listener) {
-        synchronized (buffer) {
-            eventListeners.remove(listener);
         }
     }
 
@@ -183,19 +151,27 @@ public class ServerService {
             }
 
             eventBus.emit(LogEvent.info(serverId, "Generate server config file"));
-            String jwt = wsHandler.generateServerJwt(serverId, envConfig.serverConfig().securityKey());
+            String jwt = wsHandler.generateServerJwt(serverId);
             ServerConfigDto serverConfig = new ServerConfigDto()
                     .setJwt(jwt)
                     .setStartServer(new StartServerDto()
                             .setHostCommand(request.getHostCommand())
                             .setMode(request.getMode()));
+
             try {
-                nodeManager.writeFile(serverId, "server.json", Utils.objectMapper.writeValueAsBytes(serverConfig));
+                nodeManager.writeFile(serverId, "server.json",
+                        Utils.objectMapper
+                                .writerWithDefaultPrettyPrinter()
+                                .writeValueAsBytes(serverConfig));
             } catch (JsonProcessingException e) {
                 throw new RuntimeException("Failed to serialize server config", e);
             }
 
             nodeManager.create(request);
+
+            // Overwrite plugin jar with the bundled controller plugin
+            nodeManager.writeFile(serverId, "mods/plugin.jar", pluginBundle.downloadPlugin());
+            Log.info("Write mods/plugin.jar");
 
             eventBus.emit(LogEvent.info(serverId, "Connecting to gateway"));
             GatewayClient gatewayClient = gatewayService.of(serverId);
@@ -282,24 +258,57 @@ public class ServerService {
     }
 
     public Object getFiles(UUID serverId, String path) {
-        if (path != null && path.endsWith(".msav.png") && !isFileExists(serverId, path)) {
-            Fi mapFile = nodeManager.getFile(serverId, path.replace(".msav.png", ".msav"));
-            apiService.getMapPreview(mapFile.readBytes()).whenComplete((res, err) -> {
-                if (res != null) {
-                    nodeManager.writeFile(serverId, path, res);
-                }
+        Fi file = nodeManager.getFile(serverId, path);
+        boolean exists = file.exists();
+        boolean isMapImage = path != null && path.endsWith(".msav.png");
+        String failedPath = path != null ? path.replace(".msav.png", ".msav.failed.png") : null;
+        String mapFilePath = path != null ? path.replace(".msav.png", ".msav") : null;
 
-                if (err != null) {
-                    Log.err("Fail to generate map preview for file " + path, err);
-                }
-            });
+        Fi failedFile = nodeManager.getFile(serverId, failedPath);
+        boolean failedExists = failedFile.exists();
+
+        if (isMapImage && !exists && !failedExists) {
+            Fi mapFile = nodeManager.getFile(serverId, mapFilePath);
+            byte[] mapBytes = mapFile.readBytes();
+
+            if (mapBytes.length > 0) {
+                Log.info("Generate map preview for file " + mapFilePath + " on server " + serverId);
+
+                apiService.getMapPreview(mapBytes).whenComplete((res, err) -> {
+                    if (res != null) {
+                        try {
+                            nodeManager.writeFile(serverId, path, res.readAllBytes());
+                        } catch (Exception e) {
+                            Log.err("Fail to write map preview for file " + path + " on server " + serverId, e);
+                        }
+                    }
+
+                    if (err != null) {
+                        Throwable cause = err;
+
+                        while ((cause instanceof ExecutionException || cause instanceof CompletionException)
+                                && cause.getCause() != null) {
+                            cause = cause.getCause();
+                        }
+
+                        if (cause instanceof ApiError apiError && apiError.status < 500) {
+                            try {
+                                nodeManager.writeFile(serverId, failedPath, new byte[0]);
+                            } catch (Exception e) {
+                                Log.err("Fail to write failed map preview for file " + path + " on server " + serverId,
+                                        e);
+                            }
+                        } else {
+                            Log.err("Fail to generate map preview for file " + path + " on server " + serverId, cause);
+                        }
+                    }
+                });
+            } else {
+                Log.err("Invalid map file: [" + mapFilePath + "] on server " + serverId);
+            }
         }
 
         return nodeManager.getFiles(serverId, path);
-    }
-
-    public boolean isFileExists(UUID serverId, String path) {
-        return nodeManager.getFile(serverId, path).exists();
     }
 
     public void writeFile(UUID serverId, String path, byte[] bytes, String filename) {
@@ -307,11 +316,11 @@ public class ServerService {
         if (filename != null && filename.endsWith("msav")) {
             CompletableFuture.runAsync(() -> {
                 try {
-                    byte[] image = apiService.getMapPreview(bytes).join();
+                    byte[] image = apiService.getMapPreview(bytes).get(5, TimeUnit.MINUTES).readAllBytes();
                     byte[] preview = Utils.toByteArray(Utils.toPreviewImage(Utils.fromBytes(image)));
                     nodeManager.writeFile(serverId, path + ".png", preview);
                 } catch (Exception e) {
-                    Log.err(e);
+                    Log.err("Fail to write map preview for file " + path + " on server " + serverId, e);
                 }
             });
         }
@@ -340,16 +349,77 @@ public class ServerService {
         }
     }
 
-    public byte[] getImage(UUID serverId) {
+    public WsRpcChannel.StreamReply getImage(UUID serverId) {
         try {
             if (!nodeManager.isRunning(serverId)) {
-                return new byte[0];
+                return new WsRpcChannel.StreamReply(new byte[1]);
+            }
+
+            return new WsRpcChannel.StreamReply(gatewayService.of(serverId)
+                    .server()
+                    .getImage()
+                    .get(60, TimeUnit.SECONDS));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public Map<String, Long> getKickedIps(UUID serverId) {
+        try {
+            if (!nodeManager.isRunning(serverId)) {
+                throw new RuntimeException("Server is not running");
             }
 
             return gatewayService.of(serverId)
                     .server()
-                    .getImage()
-                    .get(60, TimeUnit.SECONDS);
+                    .getKickedIps()
+                    .get(RPC_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public List<RecentPlayerDto> getRecentPlayers(UUID serverId) {
+        try {
+            if (!nodeManager.isRunning(serverId)) {
+                throw new RuntimeException("Server is not running");
+            }
+
+            return gatewayService.of(serverId)
+                    .server()
+                    .getRecentPlayers()
+                    .get(RPC_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public boolean deleteKickedIp(UUID serverId, String ip) {
+        try {
+            if (!nodeManager.isRunning(serverId)) {
+                throw new RuntimeException("Server is not running");
+            }
+
+            return gatewayService.of(serverId)
+                    .server()
+                    .deleteKickedIp(ip)
+                    .get(RPC_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public PlayerInfoPageDto getPlayersInfo(UUID serverId, int page, int size, Boolean banned, String filter) {
+        try {
+            if (!nodeManager.isRunning(serverId)) {
+                throw new RuntimeException("Server is not running");
+            }
+
+            return gatewayService.of(serverId)
+                    .server()
+                    .getPlayersInfo(page, size, banned, filter)
+                    .get(RPC_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

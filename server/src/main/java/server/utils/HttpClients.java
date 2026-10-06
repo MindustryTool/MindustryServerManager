@@ -1,6 +1,7 @@
 package server.utils;
 
 import java.net.ProxySelector;
+import java.net.URI;
 import java.net.http.HttpClient;
 import java.time.Duration;
 
@@ -12,7 +13,13 @@ public final class HttpClients {
 
     private static final Duration DEFAULT_CONNECT_TIMEOUT = Duration.ofSeconds(5);
 
-    private static final HttpClient SHARED_CLIENT = HttpClient.newBuilder()
+    private static final HttpClient HTTP_1_1_CLIENT = HttpClient.newBuilder()
+            .connectTimeout(DEFAULT_CONNECT_TIMEOUT)
+            .followRedirects(HttpClient.Redirect.NORMAL)
+            .version(HttpClient.Version.HTTP_1_1)
+            .build();
+
+    private static final HttpClient DEFAULT_CLIENT = HttpClient.newBuilder()
             .connectTimeout(DEFAULT_CONNECT_TIMEOUT)
             .followRedirects(HttpClient.Redirect.NORMAL)
             .build();
@@ -20,10 +27,36 @@ public final class HttpClients {
     private HttpClients() {}
 
     /**
-     * @return Shared, long-lived thread-safe HttpClient singleton.
+     * @return Shared, long-lived thread-safe HttpClient singleton with default version (H2 for https, H1 for http).
      */
     public static HttpClient shared() {
-        return SHARED_CLIENT;
+        return DEFAULT_CLIENT;
+    }
+
+    /**
+     * @return HttpClient forced to HTTP/1.1. Use for cleartext HTTP endpoints that don't support H2 cleartext.
+     */
+    public static HttpClient http11() {
+        return HTTP_1_1_CLIENT;
+    }
+
+    /**
+     * Returns an HttpClient appropriate for the given URI scheme.
+     * Uses HTTP/1.1 for cleartext HTTP, default (ALPN-negotiated) for HTTPS.
+     */
+    public static HttpClient forUri(URI uri) {
+        return "http".equalsIgnoreCase(uri.getScheme()) ? HTTP_1_1_CLIENT : DEFAULT_CLIENT;
+    }
+
+    /**
+     * @return HttpClient for the given base URL string.
+     */
+    public static HttpClient forUrl(String baseUrl) {
+        try {
+            return forUri(new URI(baseUrl));
+        } catch (Exception e) {
+            return DEFAULT_CLIENT;
+        }
     }
 
     /**
