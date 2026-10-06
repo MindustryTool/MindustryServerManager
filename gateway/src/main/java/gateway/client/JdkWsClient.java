@@ -293,8 +293,6 @@ public class JdkWsClient {
 
         InnerListener listener = new InnerListener();
 
-        LOG.info("Connecting to WebSocket: " + uri);
-
         return builder.buildAsync(uri, listener)
                 .thenAccept(ws -> {
                     this.webSocket = ws;
@@ -304,7 +302,6 @@ public class JdkWsClient {
                     lastPongAt = Instant.now();
                     ws.request(1);
                     startPingTask();
-                    LOG.info("WebSocket connected: " + uri);
                     Runnable cb = onOpenCallback;
                     if (cb != null) {
                         try {

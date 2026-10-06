@@ -217,6 +217,8 @@ public class GatewayService {
         }
 
         public synchronized void onOpen(WsConnectContext context) {
+            Log.info("Gateway client connected: " + id);
+
             if (removed) {
                 String message = "Trying to connected to a removed gateway client";
                 Log.err(message);
@@ -228,10 +230,11 @@ public class GatewayService {
             rpcChannel.onOpen(new JavalinSession(context));
             lastDisconnectAt = null;
 
-            Log.info("Gateway client connected: " + id);
         }
 
         public synchronized void onClose(WsCloseContext context) {
+            Log.info("Gateway client disconnected: " + id);
+            
             eventBus.emit(new StopEvent(id, NodeRemoveReason.SOCKET_DISCONNECT));
             lastDisconnectAt = Instant.now();
             rpcChannel.onClose(new RuntimeException("Gateway client disconnected: " + id));
@@ -239,8 +242,6 @@ public class GatewayService {
             if (!nodeManager.isRunning(id)) {
                 terminate(NodeRemoveReason.PROCESS_KILLED);
             }
-
-            Log.info("Gateway client disconnected: " + id);
         }
 
         public boolean isTerminated() {
