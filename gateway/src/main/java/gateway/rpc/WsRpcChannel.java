@@ -6,6 +6,7 @@ import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -111,17 +112,19 @@ public class WsRpcChannel {
         });
     }
 
-    public synchronized void onOpen(WsSession session) {
-        java.util.Objects.requireNonNull(session, "session");
-        if (!session.isOpen()) {
-            throw new IllegalStateException("Cannot signal open for a closed session");
-        }
+    public void onOpen(WsSession session) {
+        synchronized (this) {
+            Objects.requireNonNull(session, "session");
+            if (!session.isOpen()) {
+                throw new IllegalStateException("Cannot signal open for a closed session");
+            }
 
-        if (ready.isDone()) {
-            throw new IllegalStateException("Duplicate onOpen without onClose");
-        }
+            if (ready.isDone()) {
+                throw new IllegalStateException("Duplicate onOpen without onClose");
+            }
 
-        ready.complete(session);
+            ready.complete(session);
+        }
     }
 
     public WsSession getSession() {
@@ -334,7 +337,7 @@ public class WsRpcChannel {
                     Throwable cause = err instanceof java.util.concurrent.CompletionException ce
                             && ce.getCause() != null ? ce.getCause() : err;
                     if (cause instanceof TimeoutException) {
-                        LOG.warning("Dropping notification (session wait timed out): " + type);
+                        LOG.fine("Dropping notification (session wait timed out): " + type);
                     } else {
                         LOG.info("Dropping notification (connection closed): " + type);
                     }
@@ -1101,7 +1104,9 @@ public class WsRpcChannel {
     }
 
     public void onClose() {
-        onClose(new RuntimeException("WebSocket connection closed"));
+        synchronized (this) {
+            onClose(new RuntimeException("WebSocket connection closed"));
+        }
     }
 
     public synchronized void onClose(Throwable cause) {

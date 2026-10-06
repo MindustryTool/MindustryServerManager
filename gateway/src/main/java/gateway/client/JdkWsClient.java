@@ -37,7 +37,7 @@ public class JdkWsClient {
     public static final Duration PING_INTERVAL = Duration.ofSeconds(20);
     public static final Duration PONG_DEADLINE = Duration.ofSeconds(45);
     public static final Duration RECONNECT_MIN = Duration.ofSeconds(1);
-    public static final Duration RECONNECT_MAX = Duration.ofSeconds(10);
+    public static final Duration RECONNECT_MAX = Duration.ofSeconds(60);
 
     private static final Duration SEND_TIMEOUT = Duration.ofSeconds(10);
     private static final int QUEUE_WARN_DEPTH = 1000;

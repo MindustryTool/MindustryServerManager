@@ -8,11 +8,12 @@ JSON examples are wire illustrations, not program code.
 
 ## 1. Introduction
 
-WS-RPC multiplexes three traffic kinds over one WebSocket connection:
+WS-RPC multiplexes **four** traffic kinds over one WebSocket connection:
 
 1. Request/response remote calls with typed correlation.
 2. One-way notifications.
 3. Metadata-first byte streams with integrity verification.
+4. **Subscription streams** — server-pushed event sequences per subscriber.
 
 Either peer may send requests, notifications, or streams. Either peer
 may answer them. The protocol does not define client or server roles.
@@ -279,3 +280,132 @@ connections — senders retry at the application level.
 - Enforce the cap before dispatch, on every path.
 - Apply the Section 10 constants on both sides.
 - Treat error payloads as opaque strings.
+
+## 13. Subscription Streams
+
+### 13.1 Concepts
+
+A subscription stream is a persistent, server-driven sequence of events
+sent to a single subscriber. Unlike streams (Section 7), subscription
+streams:
+
+- Carry application events as complete JSON frames (no binary chunks)
+- Have no predefined length; they run until explicitly ended
+- Are identified by the original `subscribe` request's `id`
+- Support multiple concurrent subscriptions to the same `eventType`
+  with different parameters
+
+Reserved envelope types for subscriptions (never usable as application types):
+`subscribe`, `unsubscribe`.
+
+### 13.2 Subscription lifecycle
+
+```
+1. SUBSCRIBER → PUBLISHER: {id:Q, type:"subscribe", payload:{eventType:T, data:D}}
+2. PUBLISHER → SUBSCRIBER: {id:A1, type:T, responseOf:Q, payload:E1}
+3. PUBLISHER → SUBSCRIBER: {id:A2, type:T, responseOf:Q, payload:E2}
+   ... (zero or more events)
+4. SUBSCRIBER → PUBLISHER: {id:U, type:"unsubscribe", responseOf:Q, payload:{reason:R}}
+   OR
+   PUBLISHER → SUBSCRIBER: {id:E, type:T, responseOf:Q, error:true, payload:"<detail>"}
+```
+
+### 13.3 Subscribe frame
+
+A `subscribe` request frame:
+- `id`: fresh UUID (becomes the subscription ID)
+- `type`: `"subscribe"`
+- `payload`: object with fields:
+  - `eventType` (string, required): application event type name
+  - `data` (any JSON, optional): parameters for this subscription
+
+The publisher MUST validate `eventType` and `data`. On validation failure,
+answer with `error:true`, `responseOf:Q`, and a diagnostic payload.
+No subscription is created.
+
+On success, the publisher creates a subscription and answers with the
+first event frame (or acks with an empty event if no immediate event).
+The subscription ID for all subsequent frames is `Q`.
+
+### 13.4 Event frames
+
+Each event is a standard answer frame:
+- `id`: fresh UUID per event
+- `type`: the `eventType` from the subscribe request
+- `responseOf`: the subscription ID (`Q`)
+- `payload`: application event object
+- `error`: `false` (omitted or explicit)
+
+Events are sent at the publisher's discretion. There is no protocol-level
+acknowledgment or flow control; publishers SHOULD implement application-
+level backpressure or drop-on-overflow.
+
+### 13.5 Unsubscribe frame
+
+The subscriber MAY end the subscription at any time:
+- `id`: fresh UUID
+- `type`: `"unsubscribe"`
+- `responseOf`: the subscription ID (`Q`)
+- `payload`: optional object with `reason` (string)
+
+The publisher MUST stop sending events for `Q`, clean up resources,
+and MUST NOT send a reply frame for the unsubscribe. The first party
+to end the subscription (subscriber via unsubscribe, publisher via
+error/complete, or connection loss) wins; late frames are dropped.
+
+### 13.6 Publisher-initiated termination
+
+The publisher MAY end a subscription by sending an error frame:
+- `id`: fresh UUID
+- `type`: the subscription's `eventType`
+- `responseOf`: the subscription ID (`Q`)
+- `error`: `true`
+- `payload`: diagnostic string
+
+After sending this frame, the publisher MUST NOT send further events
+for `Q`. The subscriber treats this as subscription end.
+
+### 13.7 Connection loss
+
+On connection close, all active subscriptions are implicitly terminated.
+Publishers MUST clean up subscription resources. Subscribers MUST
+re-subscribe on reconnection; there is no protocol-level resumption
+or event replay.
+
+### 13.8 Multi-subscription semantics
+
+Multiple `subscribe` requests with the same `eventType` but different
+`data` are independent subscriptions. Each receives its own event
+sequence. The publisher MAY correlate them internally but MUST treat
+them as separate on the wire.
+
+### 13.9 Timeouts
+
+Subscription streams are not subject to the operation timeout (Section 10).
+They are long-lived by design. Idle subscriptions SHOULD be monitored
+by the application (e.g., via WebSocket ping/pong); the protocol imposes
+no subscription-specific timeout.
+
+### 13.10 Example
+
+```json
+// Subscribe to usage events for server srv-123
+{"id":"sub-1","type":"subscribe","payload":{
+  "eventType":"usage","data":{"serverId":"srv-123"}
+}}
+
+// Event 1
+{"id":"evt-1","type":"usage","responseOf":"sub-1","payload":{
+  "cpu":45,"mem":"2GB","timestamp":"2026-10-06T12:00:00Z"
+}}
+
+// Event 2
+{"id":"evt-2","type":"usage","responseOf":"sub-1","payload":{
+  "cpu":47,"mem":"2GB","timestamp":"2026-10-06T12:00:01Z"
+}}
+
+// Unsubscribe
+{"id":"unsub-1","type":"unsubscribe","responseOf":"sub-1","payload":{
+  "reason":"dashboard closed"
+}}
+```
