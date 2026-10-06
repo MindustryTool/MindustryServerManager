@@ -126,7 +126,9 @@
     "trail": {
         "previous": "السابق",
         "next": "التالي",
-        "close": "إغلاق"
+        "close": "إغلاق",
+        "none": "لا شيء",
+        "removed": "تم إزالة المسار"
     },
     "tip": {
         "powered_by": "يعمل بواسطة MindustryTool",

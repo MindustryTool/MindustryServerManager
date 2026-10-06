@@ -126,7 +126,9 @@
     "trail": {
         "previous": "이전",
         "next": "다음",
-        "close": "닫기"
+        "close": "닫기",
+        "none": "없음",
+        "removed": "트레일이 제거되었습니다"
     },
     "tip": {
         "powered_by": "Powered by MindustryTool",

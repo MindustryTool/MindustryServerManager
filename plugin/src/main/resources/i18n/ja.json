@@ -126,7 +126,9 @@
     "trail": {
         "previous": "前へ",
         "next": "次へ",
-        "close": "閉じる"
+        "close": "閉じる",
+        "none": "なし",
+        "removed": "トレイルを削除しました"
     },
     "tip": {
         "powered_by": "Powered by MindustryTool",

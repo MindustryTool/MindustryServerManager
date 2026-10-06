@@ -126,7 +126,9 @@
     "trail": {
         "previous": "Назад",
         "next": "Далі",
-        "close": "Закрити"
+        "close": "Закрити",
+        "none": "Немає",
+        "removed": "Трейл видалено"
     },
     "tip": {
         "powered_by": "Працює на MindustryTool",

@@ -126,7 +126,9 @@
     "trail": {
         "previous": "Précédent",
         "next": "Suivant",
-        "close": "Fermer"
+        "close": "Fermer",
+        "none": "Aucun",
+        "removed": "Trail supprimé"
     },
     "tip": {
         "powered_by": "Propulsé par MindustryTool",

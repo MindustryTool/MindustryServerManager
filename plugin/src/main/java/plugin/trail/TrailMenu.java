@@ -3,6 +3,7 @@ package plugin.trail;
 import plugin.menus.PluginMenu;
 
 import arc.struct.Seq;
+import mindustry.gen.Call;
 import plugin.core.Registry;
 import plugin.session.SessionRepository;
 import plugin.utils.Tr;
@@ -24,6 +25,22 @@ public class TrailMenu extends PluginMenu<Integer> {
         var start = currentPage * size;
         var end = Math.min(start + size, trails.size);
 
+        var hasNoTrail = session.getData().trail == null || session.getData().trail.isEmpty();
+        var nonePrefix = hasNoTrail ? "[accent]● [green]" : "[green]";
+
+        if (currentPage == 0) {
+            option(nonePrefix + Tr.t(session, "trail.none"), (s, p) -> {
+                s.getData().trail = "";
+                var repo = Registry.get(SessionRepository.class);
+                if (repo != null) {
+                    repo.markDirty(s);
+                }
+                s.player.sendMessage(Tr.t(s, "trail.removed"));
+                Call.hideFollowUpMenu(s.player.con, this.getMenuId());
+            });
+            row();
+        }
+
         for (int i = start; i < end; i++) {
             var trail = trails.get(i);
 
@@ -31,16 +48,16 @@ public class TrailMenu extends PluginMenu<Integer> {
             var isCurrent = trail.getName().equals(session.getData().trail);
             var prefix = isCurrent ? "[accent]● [green]" : (allowed ? "[green]" : "[gray]");
 
-            option(prefix + trail.getName(), (p, s) -> {
+            option(prefix + trail.getName(), (s, p) -> {
                 if (allowed) {
-                    if (trail.getName().equals(session.getData().trail)) {
-                        session.getData().trail = "";
+                    if (trail.getName().equals(s.getData().trail)) {
+                        s.getData().trail = "";
                     } else {
-                        session.getData().trail = trail.getName();
+                        s.getData().trail = trail.getName();
                     }
                     var repo = Registry.get(SessionRepository.class);
                     if (repo != null) {
-                        repo.markDirty(session);
+                        repo.markDirty(s);
                     }
                 }
             });
@@ -51,8 +68,8 @@ public class TrailMenu extends PluginMenu<Integer> {
             row();
         }
 
-        option(Tr.t(session, "trail.previous"), (p, s) -> this.send(session, Math.max(0, currentPage - 1)));
-        option(Tr.t(session, "trail.next"), (p, s) -> this.send(session, Math.min(maxPage, currentPage + 1)));
+        option(Tr.t(session, "trail.previous"), (s, p) -> this.send(session, Math.max(0, currentPage - 1)));
+        option(Tr.t(session, "trail.next"), (s, p) -> this.send(session, Math.min(maxPage, currentPage + 1)));
         row();
         text(Tr.t(session, "trail.close"));
     }

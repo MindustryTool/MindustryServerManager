@@ -134,7 +134,6 @@ public class DockerNodeManager implements NodeManager {
 
         try {
             Files.createDirectories(serverPath);
-            eventBus.emit(LogEvent.info(serverId, "Server folder created: " + serverPath));
         } catch (Exception e) {
             eventBus.emit(LogEvent.error(serverId, "Error: " + e.getMessage()));
         }

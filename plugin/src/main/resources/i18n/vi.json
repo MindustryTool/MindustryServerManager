@@ -126,7 +126,9 @@
     "trail": {
         "previous": "Trước",
         "next": "Tiếp",
-        "close": "Đóng"
+        "close": "Đóng",
+        "none": "Không có",
+        "removed": "Đã gỡ trail"
     },
     "tip": {
         "powered_by": "Được tạo bởi MindustryTool",

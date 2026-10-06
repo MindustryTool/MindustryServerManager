@@ -126,7 +126,9 @@
     "trail": {
         "previous": "ก่อนหน้า",
         "next": "ถัดไป",
-        "close": "ปิด"
+        "close": "ปิด",
+        "none": "ไม่มี",
+        "removed": "ลบ Trail แล้ว"
     },
     "tip": {
         "powered_by": "ขับเคลื่อนโดย MindustryTool",

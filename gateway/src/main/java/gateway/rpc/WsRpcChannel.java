@@ -119,7 +119,7 @@ public class WsRpcChannel {
                 throw new IllegalStateException("Cannot signal open for a closed session");
             }
 
-            if (ready.isDone()) {
+            if (ready.isDone() && ready.getNow(null) != session) {
                 throw new IllegalStateException("Duplicate onOpen without onClose");
             }
 

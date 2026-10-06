@@ -126,7 +126,9 @@
     "trail": {
         "previous": "Sebelumnya",
         "next": "Berikutnya",
-        "close": "Tutup"
+        "close": "Tutup",
+        "none": "Tidak ada",
+        "removed": "Trail dihapus"
     },
     "tip": {
         "powered_by": "Didukung oleh MindustryTool",
