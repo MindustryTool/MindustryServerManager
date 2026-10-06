@@ -219,8 +219,9 @@ public class ServerService {
                         eventBus.emit(LogEvent.info(serverId, "Server hosting"));
                         return;
                     }
-                } catch (InterruptedException | ExecutionException | TimeoutException e) {
-                    Log.err("Can not check server status", e);
+                } catch (Exception e) {
+                    eventBus.emit(LogEvent.error(serverId, "Failed to host server"));
+                    Log.err("Can not check server status for server " + serverId, e);
                 }
             }
 

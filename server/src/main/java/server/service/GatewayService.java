@@ -276,6 +276,10 @@ public class GatewayService {
         }
 
         public boolean shouldTerminate() {
+            if (lastDisconnectAt == null && isSocketClosed()) {
+                lastDisconnectAt = Instant.now();
+            }
+
             return lastDisconnectAt != null
                     && Instant.now().isAfter(lastDisconnectAt.plus(TERMINATE_CONNECTION_AFTER))
                     && isSocketClosed();

@@ -51,9 +51,15 @@ public class WsRpcChannel {
     public static final String STREAM_DONE_TYPE = "stream-done";
     /** Control type aborting a live stream (fire-and-forget notification). */
     public static final String STREAM_ABORT_TYPE = "stream-abort";
-    /** Control type for subscription requests (reserved, never usable as application type). */
+    /**
+     * Control type for subscription requests (reserved, never usable as application
+     * type).
+     */
     public static final String SUBSCRIBE_TYPE = "subscribe";
-    /** Control type for unsubscription requests (reserved, never usable as application type). */
+    /**
+     * Control type for unsubscription requests (reserved, never usable as
+     * application type).
+     */
     public static final String UNSUBSCRIBE_TYPE = "unsubscribe";
     /** Receiver slot idle window, refreshed on every stream frame. */
     static final Duration SLOT_TIMEOUT = Duration.ofSeconds(60);
@@ -132,7 +138,7 @@ public class WsRpcChannel {
                 throw new IllegalStateException("Cannot signal open for a closed session");
             }
 
-            if (ready.isDone() && ready.getNow(null) != session) {
+            if (ready.isDone()) {
                 throw new IllegalStateException("Duplicate onOpen without onClose");
             }
 
@@ -203,8 +209,10 @@ public class WsRpcChannel {
     }
 
     /**
-     * Control handle for a single subscription. Allows pushing events to the subscriber,
-     * ending the subscription cleanly or with an error, and registering cleanup callbacks.
+     * Control handle for a single subscription. Allows pushing events to the
+     * subscriber,
+     * ending the subscription cleanly or with an error, and registering cleanup
+     * callbacks.
      */
     public interface PushHandle {
         /**
@@ -246,10 +254,11 @@ public class WsRpcChannel {
     /**
      * Register a subscription handler for an event type with async initialization.
      *
-     * @param eventType the event type name (e.g., "usage")
+     * @param eventType   the event type name (e.g., "usage")
      * @param paramsClass the class to deserialize the subscription's data payload
-     * @param onSubscribe function called once per subscription, receives SubscriptionRequest,
-     *        returns a future completing when subscription is accepted
+     * @param onSubscribe function called once per subscription, receives
+     *                    SubscriptionRequest,
+     *                    returns a future completing when subscription is accepted
      */
     public <Params> void registerSubscriptionHandler(String eventType, Class<Params> paramsClass,
             Function<SubscriptionRequest<Params>, CompletableFuture<Void>> onSubscribe) {
@@ -261,15 +270,16 @@ public class WsRpcChannel {
             throw new IllegalArgumentException("Subscription handler already registered for type: " + eventType);
         }
 
-        Function<SubscriptionRequest<Object>, CompletableFuture<Void>> adapted = req ->
-                onSubscribe.apply(new SubscriptionRequest<>(paramsClass.cast(req.params()), req.handle()));
+        Function<SubscriptionRequest<Object>, CompletableFuture<Void>> adapted = req -> onSubscribe
+                .apply(new SubscriptionRequest<>(paramsClass.cast(req.params()), req.handle()));
         subscriptionHandlers.put(eventType, new SubscriptionHandlerEntry(paramsClass, adapted));
     }
 
     /**
-     * Register a subscription handler for an event type with synchronous initialization.
+     * Register a subscription handler for an event type with synchronous
+     * initialization.
      *
-     * @param eventType the event type name
+     * @param eventType   the event type name
      * @param paramsClass the class to deserialize parameters
      * @param onSubscribe consumer called once per subscription
      */
@@ -518,7 +528,7 @@ public class WsRpcChannel {
         }
         String detail = message.getPayload() == null ? "subscription failed"
                 : message.getPayload().isTextual() ? message.getPayload().asText()
-                : message.getPayload().toString();
+                        : message.getPayload().toString();
         if (slot.ackFuture != null && !slot.ackFuture.isDone()) {
             slot.ackFuture.completeExceptionally(new RuntimeException(detail));
         }
@@ -635,9 +645,10 @@ public class WsRpcChannel {
      * Subscribe to an event type with parameters.
      *
      * @param eventType the event type to subscribe to
-     * @param data optional parameters for this subscription
-     * @param handler invoked for each event received
-     * @return future that completes when the subscription is acknowledged (first event received)
+     * @param data      optional parameters for this subscription
+     * @param handler   invoked for each event received
+     * @return future that completes when the subscription is acknowledged (first
+     *         event received)
      */
     public CompletableFuture<Void> subscribe(String eventType, Object data,
             Consumer<JsonNode> handler) {
@@ -648,10 +659,11 @@ public class WsRpcChannel {
      * Subscribe to an event type with parameters and custom timeout.
      *
      * @param eventType the event type to subscribe to
-     * @param data optional parameters for this subscription
-     * @param handler invoked for each event received
-     * @param timeout operation timeout
-     * @return future that completes when the subscription is acknowledged (first event received)
+     * @param data      optional parameters for this subscription
+     * @param handler   invoked for each event received
+     * @param timeout   operation timeout
+     * @return future that completes when the subscription is acknowledged (first
+     *         event received)
      */
     public CompletableFuture<Void> subscribe(String eventType, Object data,
             Consumer<JsonNode> handler, Duration timeout) {
@@ -662,9 +674,9 @@ public class WsRpcChannel {
      * Subscribe to an event type with explicit subscription ID and default timeout.
      *
      * @param subscriptionId the explicit subscription ID
-     * @param eventType the event type to subscribe to
-     * @param data optional parameters for this subscription
-     * @param handler invoked for each event received
+     * @param eventType      the event type to subscribe to
+     * @param data           optional parameters for this subscription
+     * @param handler        invoked for each event received
      * @return future that completes when the subscription is acknowledged
      */
     public CompletableFuture<Void> subscribe(UUID subscriptionId, String eventType, Object data,
@@ -676,10 +688,10 @@ public class WsRpcChannel {
      * Subscribe to an event type with explicit subscription ID and custom timeout.
      *
      * @param subscriptionId the explicit subscription ID
-     * @param eventType the event type to subscribe to
-     * @param data optional parameters for this subscription
-     * @param handler invoked for each event received
-     * @param timeout operation timeout
+     * @param eventType      the event type to subscribe to
+     * @param data           optional parameters for this subscription
+     * @param handler        invoked for each event received
+     * @param timeout        operation timeout
      * @return future that completes when the subscription is acknowledged
      */
     public CompletableFuture<Void> subscribe(UUID subscriptionId, String eventType, Object data,
@@ -745,7 +757,7 @@ public class WsRpcChannel {
      * If already closed, the callback runs immediately.
      *
      * @param subscriptionId the subscription ID
-     * @param callback cleanup callback
+     * @param callback       cleanup callback
      */
     public void onSubscriptionClose(UUID subscriptionId, Runnable callback) {
         Objects.requireNonNull(subscriptionId, "subscriptionId");
@@ -775,7 +787,7 @@ public class WsRpcChannel {
      * Unsubscribe from a subscription by its request ID with a reason.
      *
      * @param requestId the ID returned by the original subscribe call
-     * @param reason optional reason for unsubscribing
+     * @param reason    optional reason for unsubscribing
      */
     public void unsubscribe(UUID requestId, String reason) {
         Objects.requireNonNull(requestId, "requestId");
@@ -1751,7 +1763,7 @@ public class WsRpcChannel {
     }
 
     /** Client-side subscription slot. */
-    @Data 
+    @Data
     private static final class ClientSubscriptionSlot {
         final UUID id;
         final String eventType;
@@ -1783,7 +1795,7 @@ public class WsRpcChannel {
     }
 
     /** Server-side subscription slot. */
-    @Data 
+    @Data
     private static final class ServerSubscriptionSlot {
         final UUID subscribeId;
         final String eventType;

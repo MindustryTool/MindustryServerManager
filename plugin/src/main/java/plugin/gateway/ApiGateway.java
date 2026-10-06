@@ -134,7 +134,6 @@ public class ApiGateway {
         this.registerHandler("shutdown", Void.class, (request) -> shutdown());
 
         String gatewayUrl = Cfg.gatewayUrl();
-        Log.info("Connecting to server manager: " + gatewayUrl);
         final JdkWsClient client;
         try {
             client = JdkWsClient.builder(URI.create(gatewayUrl), rpcChannel)
