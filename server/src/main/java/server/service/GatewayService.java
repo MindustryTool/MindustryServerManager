@@ -160,7 +160,7 @@ public class GatewayService {
 
         private volatile Instant lastDisconnectAt;
 
-        private final WsRpcChannel rpcChannel = WsRpcChannel.create();
+        private final WsRpcChannel rpcChannel = WsRpcChannel.withExecutor(Const.executorService);
 
         /** Session bound to a single connection; a fresh one is created per open. */
         private class JavalinSession implements WsSession {
