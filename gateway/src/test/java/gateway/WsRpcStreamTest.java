@@ -450,6 +450,16 @@ class WsRpcStreamTest {
     }
 
     @Test
+    void subscriptionControlTypesRejected() {
+        WsRpcChannel a = WsRpcChannel.create();
+        assertThrows(IllegalArgumentException.class,
+                () -> a.registerHandler(WsRpcChannel.SUBSCRIBE_TYPE, String.class, s -> null));
+        assertThrows(IllegalArgumentException.class,
+                () -> a.registerHandler(WsRpcChannel.UNSUBSCRIBE_TYPE, String.class, s -> null));
+        a.shutdown();
+    }
+
+    @Test
     void abortControlTypeRejected() {
         WsRpcChannel a = WsRpcChannel.create();
         assertThrows(IllegalArgumentException.class,

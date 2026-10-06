@@ -122,8 +122,6 @@ public class Control extends mindustry.mod.Plugin {
                 Log.err("Failed to save settings", e);
             }
 
-            Registry.get(ApiGateway.class).close();
-
             Log.info("Server controller unloaded after running for "
                     + TimeUtils.toString(Duration.between(start, Instant.now())));
         } catch (Exception e) {
@@ -137,6 +135,11 @@ public class Control extends mindustry.mod.Plugin {
                     } catch (Exception e) {
                         Log.err("Error redirecting players before exit: @", e.getMessage());
                     }
+                }
+                try {
+                    Registry.get(ApiGateway.class).close();
+                } catch (Exception e) {
+                    Log.err(e);
                 }
                 System.exit(1);
                 // Force docker container restart

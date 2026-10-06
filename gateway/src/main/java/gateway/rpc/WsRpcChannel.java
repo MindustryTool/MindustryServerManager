@@ -10,6 +10,7 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -18,6 +19,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -49,6 +51,10 @@ public class WsRpcChannel {
     public static final String STREAM_DONE_TYPE = "stream-done";
     /** Control type aborting a live stream (fire-and-forget notification). */
     public static final String STREAM_ABORT_TYPE = "stream-abort";
+    /** Control type for subscription requests (reserved, never usable as application type). */
+    public static final String SUBSCRIBE_TYPE = "subscribe";
+    /** Control type for unsubscription requests (reserved, never usable as application type). */
+    public static final String UNSUBSCRIBE_TYPE = "unsubscribe";
     /** Receiver slot idle window, refreshed on every stream frame. */
     static final Duration SLOT_TIMEOUT = Duration.ofSeconds(60);
     /** Absolute bound on slot life from reserve. */
@@ -71,6 +77,13 @@ public class WsRpcChannel {
     private final Map<UUID, UUID> senderStreams = new ConcurrentHashMap<>();
     private final Map<UUID, ScheduledFuture<?>> streamTimeouts = new ConcurrentHashMap<>();
     private final FileChunkReceiver streamReceiver = new FileChunkReceiver();
+
+    // Subscription tracking (client-side)
+    private final Map<UUID, ClientSubscriptionSlot> clientSubscriptions = new ConcurrentHashMap<>();
+
+    // Subscription tracking (server-side)
+    private final Map<String, SubscriptionHandlerEntry> subscriptionHandlers = new ConcurrentHashMap<>();
+    private final Map<UUID, ServerSubscriptionSlot> serverSubscriptions = new ConcurrentHashMap<>();
 
     private volatile CompletableFuture<WsSession> ready = new CompletableFuture<>();
 
@@ -178,6 +191,102 @@ public class WsRpcChannel {
         return streamHandlers.containsKey(type);
     }
 
+    // ===== Subscription API (server-side) =====
+
+    /**
+     * Subscription request context holding deserialized params and the PushHandle.
+     */
+    public record SubscriptionRequest<Params>(Params params, PushHandle handle) {
+        public SubscriptionRequest {
+            Objects.requireNonNull(handle, "handle");
+        }
+    }
+
+    /**
+     * Control handle for a single subscription. Allows pushing events to the subscriber,
+     * ending the subscription cleanly or with an error, and registering cleanup callbacks.
+     */
+    public interface PushHandle {
+        /**
+         * Push an event to this subscriber.
+         *
+         * @param event the event object to send (will be serialized as JSON)
+         */
+        void push(Object event);
+
+        /**
+         * End the subscription cleanly. No frame is sent to the client.
+         * Invokes {@link #onClose(Runnable)} callbacks.
+         */
+        void complete();
+
+        /**
+         * End the subscription with an error. Sends an error frame to the client.
+         * Invokes {@link #onClose(Runnable)} callbacks.
+         *
+         * @param reason error reason sent to the client
+         */
+        void fail(String reason);
+
+        /**
+         * @return true if the subscription has been closed (by client unsubscribe,
+         *         server fail/complete, or connection loss)
+         */
+        boolean isClosed();
+
+        /**
+         * Register a callback to be invoked when the subscription ends.
+         * If already closed, the callback runs immediately.
+         *
+         * @param callback the cleanup action
+         */
+        void onClose(Runnable callback);
+    }
+
+    /**
+     * Register a subscription handler for an event type with async initialization.
+     *
+     * @param eventType the event type name (e.g., "usage")
+     * @param paramsClass the class to deserialize the subscription's data payload
+     * @param onSubscribe function called once per subscription, receives SubscriptionRequest,
+     *        returns a future completing when subscription is accepted
+     */
+    public <Params> void registerSubscriptionHandler(String eventType, Class<Params> paramsClass,
+            Function<SubscriptionRequest<Params>, CompletableFuture<Void>> onSubscribe) {
+        Objects.requireNonNull(eventType, "eventType");
+        Objects.requireNonNull(paramsClass, "paramsClass");
+        Objects.requireNonNull(onSubscribe, "onSubscribe");
+        rejectStreamControlType(eventType);
+        if (subscriptionHandlers.containsKey(eventType)) {
+            throw new IllegalArgumentException("Subscription handler already registered for type: " + eventType);
+        }
+
+        Function<SubscriptionRequest<Object>, CompletableFuture<Void>> adapted = req ->
+                onSubscribe.apply(new SubscriptionRequest<>(paramsClass.cast(req.params()), req.handle()));
+        subscriptionHandlers.put(eventType, new SubscriptionHandlerEntry(paramsClass, adapted));
+    }
+
+    /**
+     * Register a subscription handler for an event type with synchronous initialization.
+     *
+     * @param eventType the event type name
+     * @param paramsClass the class to deserialize parameters
+     * @param onSubscribe consumer called once per subscription
+     */
+    public void unregisterSubscriptionHandler(String eventType) {
+        subscriptionHandlers.remove(eventType);
+    }
+
+    /**
+     * Check if a subscription handler is registered for the given event type.
+     *
+     * @param eventType the event type to check
+     * @return true if a handler is registered
+     */
+    public boolean hasSubscriptionHandler(String eventType) {
+        return subscriptionHandlers.containsKey(eventType);
+    }
+
     public int pendingStreamCount() {
         return senderStreams.size() + streamSlots.size();
     }
@@ -255,10 +364,179 @@ public class WsRpcChannel {
         }
     }
 
+    /**
+     * Handle an inbound {@code subscribe} request (server-side).
+     */
+    private void handleSubscribe(WsMessage<JsonNode> message) {
+        UUID subscribeId = message.getId();
+        final SubscribePayload payload;
+        try {
+            payload = mapper.treeToValue(message.getPayload(), SubscribePayload.class);
+        } catch (JsonProcessingException e) {
+            LOG.log(Level.WARNING, "Dropping malformed subscribe frame: " + e.getMessage(), e);
+            sendRaw(getSession(), errorFor(message.getId(), SUBSCRIBE_TYPE,
+                    "Malformed subscribe frame: " + e.getMessage()));
+            return;
+        }
+        if (payload == null || payload.eventType() == null) {
+            LOG.warning("Dropping subscribe with missing eventType");
+            sendRaw(getSession(), errorFor(message.getId(), SUBSCRIBE_TYPE,
+                    "Subscribe is missing required field: eventType"));
+            return;
+        }
+
+        // Look up server handler
+        SubscriptionHandlerEntry entry = subscriptionHandlers.get(payload.eventType());
+        if (entry == null) {
+            LOG.info("No subscription handler for type: " + payload.eventType());
+            sendRaw(getSession(), errorFor(message.getId(), payload.eventType(),
+                    "unknown subscription type: " + payload.eventType()));
+            return;
+        }
+
+        Object params;
+        try {
+            params = convertSubscriptionParams(payload.data(), entry);
+        } catch (Exception e) {
+            LOG.log(Level.WARNING, "Failed to deserialize subscription params", e);
+            sendRaw(getSession(), errorFor(message.getId(), payload.eventType(),
+                    "Invalid subscription parameters: " + e.getMessage()));
+            return;
+        }
+
+        DefaultPushHandle handle = new DefaultPushHandle(subscribeId, payload.eventType());
+        ServerSubscriptionSlot slot = new ServerSubscriptionSlot(
+                subscribeId, payload.eventType(), params, handle);
+        if (serverSubscriptions.putIfAbsent(subscribeId, slot) != null) {
+            handle.fail("Duplicate subscription ID");
+            return;
+        }
+
+        handle.onClose(() -> serverSubscriptions.remove(subscribeId));
+
+        CompletableFuture<Void> future;
+        try {
+            future = entry.onSubscribe.apply(new SubscriptionRequest<>(params, handle));
+        } catch (Exception e) {
+            LOG.log(Level.WARNING, "onSubscribe threw exception", e);
+            serverSubscriptions.remove(subscribeId);
+            handle.fail("Subscription handler failed: " + e.getMessage());
+            return;
+        }
+
+        if (future == null) {
+            sendRaw(getSession(), WsMessage.create(payload.eventType())
+                    .setResponseOf(subscribeId)
+                    .withPayload(NullNode.getInstance()));
+            return;
+        }
+
+        future.whenComplete((v, err) -> {
+            if (err != null) {
+                serverSubscriptions.remove(subscribeId);
+                String detail = err.getMessage() != null ? err.getMessage() : err.toString();
+                handle.fail(detail);
+                return;
+            }
+            sendRaw(getSession(), WsMessage.create(payload.eventType())
+                    .setResponseOf(subscribeId)
+                    .withPayload(NullNode.getInstance()));
+        });
+    }
+
+    /**
+     * Handle an inbound {@code unsubscribe} notification (server-side).
+     */
+    private void handleUnsubscribe(WsMessage<JsonNode> message) {
+        UUID subscribeId = message.getResponseOf();
+        if (subscribeId == null) {
+            LOG.fine("Dropping unsubscribe with missing responseOf");
+            return;
+        }
+        ServerSubscriptionSlot slot = serverSubscriptions.remove(subscribeId);
+        if (slot == null) {
+            LOG.fine("Dropping unsubscribe for unknown subscription: " + subscribeId);
+            return;
+        }
+        slot.closed = true;
+        slot.handle.complete();
+        for (Runnable cb : slot.onCloseCallbacks) {
+            try {
+                cb.run();
+            } catch (Exception e) {
+                LOG.log(Level.WARNING, "Subscription onClose callback failed", e);
+            }
+        }
+    }
+
+    /**
+     * Route event frame to client subscription handler.
+     */
+    private void handleSubscriptionEvent(WsMessage<JsonNode> message) {
+        UUID subscribeId = message.getResponseOf();
+        if (subscribeId == null) {
+            LOG.fine("Dropping event frame without responseOf");
+            return;
+        }
+        ClientSubscriptionSlot slot = clientSubscriptions.get(subscribeId);
+        if (slot == null) {
+            LOG.fine("Dropping event for unknown subscription: " + subscribeId);
+            return;
+        }
+        if (slot.closed) {
+            LOG.fine("Dropping event for closed subscription: " + subscribeId);
+            return;
+        }
+        if (slot.ackFuture != null && !slot.ackFuture.isDone()) {
+            slot.ackFuture.complete(null);
+        }
+        JsonNode payload = message.getPayload();
+        if (payload != null && !payload.isNull()) {
+            try {
+                slot.handler.accept(payload);
+            } catch (Exception e) {
+                LOG.log(Level.WARNING, "Subscription handler failed for " + slot.eventType, e);
+            }
+        }
+    }
+
+    /**
+     * Handle server-initiated error frame for a subscription (client-side).
+     */
+    private void handleSubscriptionError(WsMessage<JsonNode> message) {
+        UUID subscribeId = message.getResponseOf();
+        if (subscribeId == null) {
+            return;
+        }
+        ClientSubscriptionSlot slot = clientSubscriptions.remove(subscribeId);
+        if (slot == null) {
+            return;
+        }
+        slot.closed = true;
+        if (slot.timeoutTask != null) {
+            slot.timeoutTask.cancel(false);
+        }
+        String detail = message.getPayload() == null ? "subscription failed"
+                : message.getPayload().isTextual() ? message.getPayload().asText()
+                : message.getPayload().toString();
+        if (slot.ackFuture != null && !slot.ackFuture.isDone()) {
+            slot.ackFuture.completeExceptionally(new RuntimeException(detail));
+        }
+        for (Runnable cb : slot.onCloseCallbacks) {
+            try {
+                cb.run();
+            } catch (Exception e) {
+                LOG.log(Level.WARNING, "Subscription onClose callback failed", e);
+            }
+        }
+    }
+
     private static void rejectStreamControlType(String type) {
         if (STREAM_START_TYPE.equals(type) || STREAM_DONE_TYPE.equals(type)
-                || STREAM_ABORT_TYPE.equals(type)) {
-            throw new IllegalArgumentException("type is reserved for stream control frames: " + type);
+                || STREAM_ABORT_TYPE.equals(type)
+                || SUBSCRIBE_TYPE.equals(type)
+                || UNSUBSCRIBE_TYPE.equals(type)) {
+            throw new IllegalArgumentException("type is reserved for stream/subscription control frames: " + type);
         }
     }
 
@@ -349,6 +627,191 @@ public class WsRpcChannel {
                     }
                     return null;
                 });
+    }
+
+    // ===== Subscription API (client-side) =====
+
+    /**
+     * Subscribe to an event type with parameters.
+     *
+     * @param eventType the event type to subscribe to
+     * @param data optional parameters for this subscription
+     * @param handler invoked for each event received
+     * @return future that completes when the subscription is acknowledged (first event received)
+     */
+    public CompletableFuture<Void> subscribe(String eventType, Object data,
+            Consumer<JsonNode> handler) {
+        return subscribe(UUID.randomUUID(), eventType, data, handler, DEFAULT_TIMEOUT);
+    }
+
+    /**
+     * Subscribe to an event type with parameters and custom timeout.
+     *
+     * @param eventType the event type to subscribe to
+     * @param data optional parameters for this subscription
+     * @param handler invoked for each event received
+     * @param timeout operation timeout
+     * @return future that completes when the subscription is acknowledged (first event received)
+     */
+    public CompletableFuture<Void> subscribe(String eventType, Object data,
+            Consumer<JsonNode> handler, Duration timeout) {
+        return subscribe(UUID.randomUUID(), eventType, data, handler, timeout);
+    }
+
+    /**
+     * Subscribe to an event type with explicit subscription ID and default timeout.
+     *
+     * @param subscriptionId the explicit subscription ID
+     * @param eventType the event type to subscribe to
+     * @param data optional parameters for this subscription
+     * @param handler invoked for each event received
+     * @return future that completes when the subscription is acknowledged
+     */
+    public CompletableFuture<Void> subscribe(UUID subscriptionId, String eventType, Object data,
+            Consumer<JsonNode> handler) {
+        return subscribe(subscriptionId, eventType, data, handler, DEFAULT_TIMEOUT);
+    }
+
+    /**
+     * Subscribe to an event type with explicit subscription ID and custom timeout.
+     *
+     * @param subscriptionId the explicit subscription ID
+     * @param eventType the event type to subscribe to
+     * @param data optional parameters for this subscription
+     * @param handler invoked for each event received
+     * @param timeout operation timeout
+     * @return future that completes when the subscription is acknowledged
+     */
+    public CompletableFuture<Void> subscribe(UUID subscriptionId, String eventType, Object data,
+            Consumer<JsonNode> handler, Duration timeout) {
+        Objects.requireNonNull(subscriptionId, "subscriptionId");
+        Objects.requireNonNull(eventType, "eventType");
+        Objects.requireNonNull(handler, "handler");
+        WsMessage<?> request = WsMessage.create(SUBSCRIBE_TYPE)
+                .setId(subscriptionId)
+                .withPayload(mapper.valueToTree(new SubscribePayload(eventType, data)));
+        Duration effectiveTimeout = timeout != null ? timeout : DEFAULT_TIMEOUT;
+
+        CompletableFuture<Void> ackFuture = new CompletableFuture<>();
+        ClientSubscriptionSlot slot = new ClientSubscriptionSlot(subscriptionId, eventType, handler, ackFuture);
+        clientSubscriptions.put(subscriptionId, slot);
+
+        ScheduledFuture<?> timeoutTask = scheduler.schedule(() -> {
+            ClientSubscriptionSlot removed = clientSubscriptions.remove(subscriptionId);
+            if (removed != null && !removed.ackFuture.isDone()) {
+                removed.closed = true;
+                removed.ackFuture.completeExceptionally(
+                        new TimeoutException("Subscription timed out: type=" + eventType + " id=" + subscriptionId));
+            }
+        }, effectiveTimeout.toMillis(), TimeUnit.MILLISECONDS);
+        slot.timeoutTask = timeoutTask;
+
+        ackFuture.whenComplete((res, err) -> {
+            ScheduledFuture<?> t = slot.timeoutTask;
+            if (t != null) {
+                t.cancel(false);
+            }
+        });
+
+        ready.thenApply(s -> s)
+                .orTimeout(SESSION_WAIT.toMillis(), TimeUnit.MILLISECONDS)
+                .thenAccept(s -> {
+                    if (!s.isOpen()) {
+                        clientSubscriptions.remove(subscriptionId);
+                        ackFuture.completeExceptionally(
+                                new IllegalStateException("No open WebSocket session for subscription: " + eventType));
+                        return;
+                    }
+                    try {
+                        s.sendText(mapper.writeValueAsString(request));
+                    } catch (Exception e) {
+                        clientSubscriptions.remove(subscriptionId);
+                        ackFuture.completeExceptionally(e);
+                    }
+                })
+                .exceptionally(err -> {
+                    clientSubscriptions.remove(subscriptionId);
+                    Throwable cause = err instanceof java.util.concurrent.CompletionException ce
+                            && ce.getCause() != null ? ce.getCause() : err;
+                    ackFuture.completeExceptionally(cause);
+                    return null;
+                });
+
+        return ackFuture;
+    }
+
+    /**
+     * Register a callback to be invoked when a client subscription closes.
+     * If already closed, the callback runs immediately.
+     *
+     * @param subscriptionId the subscription ID
+     * @param callback cleanup callback
+     */
+    public void onSubscriptionClose(UUID subscriptionId, Runnable callback) {
+        Objects.requireNonNull(subscriptionId, "subscriptionId");
+        Objects.requireNonNull(callback, "callback");
+        ClientSubscriptionSlot slot = clientSubscriptions.get(subscriptionId);
+        if (slot == null || slot.closed) {
+            try {
+                callback.run();
+            } catch (Exception e) {
+                LOG.log(Level.WARNING, "Subscription onClose callback failed", e);
+            }
+        } else {
+            slot.onCloseCallbacks.add(callback);
+        }
+    }
+
+    /**
+     * Unsubscribe from a subscription by its request ID.
+     *
+     * @param requestId the ID returned by the original subscribe call
+     */
+    public void unsubscribe(UUID requestId) {
+        unsubscribe(requestId, null);
+    }
+
+    /**
+     * Unsubscribe from a subscription by its request ID with a reason.
+     *
+     * @param requestId the ID returned by the original subscribe call
+     * @param reason optional reason for unsubscribing
+     */
+    public void unsubscribe(UUID requestId, String reason) {
+        Objects.requireNonNull(requestId, "requestId");
+        ClientSubscriptionSlot slot = clientSubscriptions.remove(requestId);
+        if (slot == null) {
+            return;
+        }
+        slot.closed = true;
+        if (slot.timeoutTask != null) {
+            slot.timeoutTask.cancel(false);
+        }
+        for (Runnable cb : slot.onCloseCallbacks) {
+            try {
+                cb.run();
+            } catch (Exception e) {
+                LOG.log(Level.WARNING, "Subscription onClose callback failed", e);
+            }
+        }
+
+        WsMessage<?> message = WsMessage.create(UNSUBSCRIBE_TYPE)
+                .withPayload(reason != null ? Map.of("reason", reason) : Map.of())
+                .setResponseOf(requestId);
+
+        ready.thenApply(s -> s)
+                .orTimeout(SESSION_WAIT.toMillis(), TimeUnit.MILLISECONDS)
+                .thenAccept(s -> {
+                    if (!s.isOpen()) {
+                        return;
+                    }
+                    try {
+                        s.sendText(mapper.writeValueAsString(message));
+                    } catch (Exception e) {
+                        LOG.log(Level.WARNING, "Failed to send unsubscribe", e);
+                    }
+                })
+                .exceptionally(err -> null);
     }
 
     public CompletableFuture<Void> sendStream(String type, Object metadata, ByteBuffer data) {
@@ -618,14 +1081,34 @@ public class WsRpcChannel {
             handleStreamAbort(message);
             return;
         }
+        if (SUBSCRIBE_TYPE.equals(controlType)) {
+            handleSubscribe(message);
+            return;
+        }
+        if (UNSUBSCRIBE_TYPE.equals(controlType)) {
+            handleUnsubscribe(message);
+            return;
+        }
 
         if (message.getResponseOf() != null) {
-            CompletableFuture<JsonNode> future = pending.remove(message.getResponseOf());
-            if (future == null) {
-                LOG.fine("No pending RPC for responseOf: " + message.getResponseOf() + " type: " + message.getType());
+            UUID responseOf = message.getResponseOf();
+            // Check if this is a subscription event/error frame
+            ClientSubscriptionSlot subSlot = clientSubscriptions.get(responseOf);
+            if (subSlot != null) {
+                if (message.isError()) {
+                    handleSubscriptionError(message);
+                } else {
+                    handleSubscriptionEvent(message);
+                }
                 return;
             }
-            ScheduledFuture<?> t = timeouts.remove(message.getResponseOf());
+
+            CompletableFuture<JsonNode> future = pending.remove(responseOf);
+            if (future == null) {
+                LOG.fine("No pending RPC for responseOf: " + responseOf + " type: " + message.getType());
+                return;
+            }
+            ScheduledFuture<?> t = timeouts.remove(responseOf);
             if (t != null) {
                 t.cancel(false);
             }
@@ -1121,6 +1604,40 @@ public class WsRpcChannel {
         streamSlots.clear();
         senderStreams.clear();
         streamReceiver.clear();
+
+        // Clean up client subscriptions
+        for (ClientSubscriptionSlot slot : clientSubscriptions.values()) {
+            slot.closed = true;
+            if (slot.timeoutTask != null) {
+                slot.timeoutTask.cancel(false);
+            }
+            if (slot.ackFuture != null && !slot.ackFuture.isDone()) {
+                slot.ackFuture.completeExceptionally(err);
+            }
+            for (Runnable cb : slot.onCloseCallbacks) {
+                try {
+                    cb.run();
+                } catch (Exception e) {
+                    LOG.log(Level.WARNING, "Client subscription onClose callback failed", e);
+                }
+            }
+        }
+        clientSubscriptions.clear();
+
+        // Clean up server subscriptions
+        for (ServerSubscriptionSlot slot : serverSubscriptions.values()) {
+            slot.closed = true;
+            slot.handle.complete();
+            for (Runnable cb : slot.onCloseCallbacks) {
+                try {
+                    cb.run();
+                } catch (Exception e) {
+                    LOG.log(Level.WARNING, "Server subscription onClose callback failed", e);
+                }
+            }
+        }
+        serverSubscriptions.clear();
+
         if (pending.isEmpty()) {
             return;
         }
@@ -1224,6 +1741,152 @@ public class WsRpcChannel {
             this.totalChunks = totalChunks;
             this.sha256 = sha256;
             this.replyRequestId = replyRequestId;
+        }
+    }
+
+    /** Wire payload for a subscribe request. */
+    public record SubscribePayload(
+            String eventType,
+            Object data) {
+    }
+
+    /** Client-side subscription slot. */
+    @Data 
+    private static final class ClientSubscriptionSlot {
+        final UUID id;
+        final String eventType;
+        final Consumer<JsonNode> handler;
+        final CompletableFuture<Void> ackFuture;
+        final List<Runnable> onCloseCallbacks = new CopyOnWriteArrayList<>();
+        volatile boolean closed = false;
+        volatile ScheduledFuture<?> timeoutTask;
+
+        ClientSubscriptionSlot(UUID id, String eventType, Consumer<JsonNode> handler,
+                CompletableFuture<Void> ackFuture) {
+            this.id = id;
+            this.eventType = eventType;
+            this.handler = handler;
+            this.ackFuture = ackFuture;
+        }
+    }
+
+    /** Server-side subscription handler entry. */
+    private static final class SubscriptionHandlerEntry {
+        final Class<?> paramsClass;
+        final Function<SubscriptionRequest<Object>, CompletableFuture<Void>> onSubscribe;
+
+        SubscriptionHandlerEntry(Class<?> paramsClass,
+                Function<SubscriptionRequest<Object>, CompletableFuture<Void>> onSubscribe) {
+            this.paramsClass = paramsClass;
+            this.onSubscribe = onSubscribe;
+        }
+    }
+
+    /** Server-side subscription slot. */
+    @Data 
+    private static final class ServerSubscriptionSlot {
+        final UUID subscribeId;
+        final String eventType;
+        final Object params;
+        final PushHandle handle;
+        final List<Runnable> onCloseCallbacks = new CopyOnWriteArrayList<>();
+        volatile boolean closed = false;
+
+        ServerSubscriptionSlot(UUID subscribeId, String eventType, Object params, PushHandle handle) {
+            this.subscribeId = subscribeId;
+            this.eventType = eventType;
+            this.params = params;
+            this.handle = handle;
+        }
+    }
+
+    /** Default implementation of PushHandle. */
+    private final class DefaultPushHandle implements PushHandle {
+        private final UUID subscribeId;
+        private final String eventType;
+        private final List<Runnable> closeCallbacks = new CopyOnWriteArrayList<>();
+        private volatile boolean closed = false;
+
+        DefaultPushHandle(UUID subscribeId, String eventType) {
+            this.subscribeId = subscribeId;
+            this.eventType = eventType;
+        }
+
+        @Override
+        public void push(Object event) {
+            if (closed) {
+                return;
+            }
+            WsMessage<?> message = WsMessage.create(eventType)
+                    .setResponseOf(subscribeId)
+                    .withPayload(event);
+            sendRaw(getSession(), message);
+        }
+
+        @Override
+        public void complete() {
+            if (closed) {
+                return;
+            }
+            closed = true;
+            triggerCloseCallbacks();
+        }
+
+        @Override
+        public void fail(String reason) {
+            if (closed) {
+                return;
+            }
+            closed = true;
+            sendRaw(getSession(), errorFor(subscribeId, eventType, reason));
+            triggerCloseCallbacks();
+        }
+
+        @Override
+        public boolean isClosed() {
+            return closed;
+        }
+
+        @Override
+        public void onClose(Runnable callback) {
+            Objects.requireNonNull(callback, "callback");
+            if (closed) {
+                try {
+                    callback.run();
+                } catch (Exception e) {
+                    LOG.log(Level.WARNING, "PushHandle onClose callback failed", e);
+                }
+            } else {
+                closeCallbacks.add(callback);
+            }
+        }
+
+        private void triggerCloseCallbacks() {
+            for (Runnable cb : closeCallbacks) {
+                try {
+                    cb.run();
+                } catch (Exception e) {
+                    LOG.log(Level.WARNING, "PushHandle onClose callback failed", e);
+                }
+            }
+        }
+    }
+
+    private Object convertSubscriptionParams(Object payload, SubscriptionHandlerEntry entry) {
+        Class<?> clazz = entry.paramsClass;
+        if (clazz == null || clazz == Void.class || clazz == Void.TYPE) {
+            return null;
+        }
+        if (payload == null) {
+            return null;
+        }
+        if (clazz == JsonNode.class) {
+            return mapper.valueToTree(payload);
+        }
+        try {
+            return mapper.convertValue(payload, clazz);
+        } catch (Exception e) {
+            throw new RuntimeException("Cannot deserialize subscription params to " + clazz.getName(), e);
         }
     }
 }
