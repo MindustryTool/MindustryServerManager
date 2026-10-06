@@ -139,6 +139,10 @@ public class WsRpcChannel {
             }
 
             if (ready.isDone()) {
+                if (ready.getNow(null) == session) {
+                    throw new IllegalStateException("onOpen() was called on the same session twice");
+                }
+
                 throw new IllegalStateException("Duplicate onOpen without onClose");
             }
 

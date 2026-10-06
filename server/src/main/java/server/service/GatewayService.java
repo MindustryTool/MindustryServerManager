@@ -161,43 +161,7 @@ public class GatewayService {
         private volatile Instant lastDisconnectAt;
 
         private final WsRpcChannel rpcChannel = WsRpcChannel.withExecutor(Const.executorService);
-
-        /** Session bound to a single connection; a fresh one is created per open. */
-        private class JavalinSession implements WsSession {
-            private final WsContext socket;
-
-            JavalinSession(WsContext socket) {
-                this.socket = socket;
-            }
-
-            @Override
-            public void sendText(String text) {
-                if (socket == null) {
-                    throw new IllegalStateException("No open gateway session for " + id);
-                }
-                socket.send(text);
-            }
-
-            @Override
-            public void sendBinary(ByteBuffer data) {
-                if (socket == null) {
-                    throw new IllegalStateException("No open gateway session for " + id);
-                }
-                socket.send(data.duplicate());
-            }
-
-            @Override
-            public void close(int code, String reason) {
-                if (socket != null) {
-                    socket.closeSession(code, reason);
-                }
-            }
-
-            @Override
-            public boolean isOpen() {
-                return socket != null && socket.session.isOpen();
-            }
-        }
+        private volatile boolean removed = false;
 
         @Getter
         private final Backend backend = new Backend();
@@ -253,6 +217,10 @@ public class GatewayService {
         }
 
         public synchronized void onOpen(WsConnectContext context) {
+            if (removed) {
+                context.session.close(1, "Trying to connected to a removed gateway client");
+                return;
+            }
             // Overwrite wins: a duplicate or reconnect open replaces the socket.
             eventBus.emit(new StartEvent(id));
             rpcChannel.onOpen(new JavalinSession(context));
@@ -291,6 +259,8 @@ public class GatewayService {
         }
 
         public boolean terminate(NodeRemoveReason reason) {
+            removed = true;
+
             if (isTerminated()) {
                 return false;
             }
@@ -340,10 +310,20 @@ public class GatewayService {
         }
 
         public void onMessage(WsMessageContext context) {
+            if (removed) {
+                context.session.close(1, "Trying to send message to a removed gateway client");
+                return;
+            }
+
             rpcChannel.onTextMessage(context.message());
         }
 
         public void onBinary(WsBinaryMessageContext context) {
+            if (removed) {
+                context.session.close(1, "Trying to send binary message to a removed gateway client");
+                return;
+            }
+
             rpcChannel.onBinaryMessage(ByteBuffer.wrap(context.data()));
         }
 
@@ -546,5 +526,43 @@ public class GatewayService {
                 return sendRequest("delete-kicked-ip", ip, Boolean.class);
             }
         }
+
+        /** Session bound to a single connection; a fresh one is created per open. */
+        private class JavalinSession implements WsSession {
+            private final WsContext socket;
+
+            JavalinSession(WsContext socket) {
+                this.socket = socket;
+            }
+
+            @Override
+            public void sendText(String text) {
+                if (socket == null) {
+                    throw new IllegalStateException("No open gateway session for " + id);
+                }
+                socket.send(text);
+            }
+
+            @Override
+            public void sendBinary(ByteBuffer data) {
+                if (socket == null) {
+                    throw new IllegalStateException("No open gateway session for " + id);
+                }
+                socket.send(data.duplicate());
+            }
+
+            @Override
+            public void close(int code, String reason) {
+                if (socket != null) {
+                    socket.closeSession(code, reason);
+                }
+            }
+
+            @Override
+            public boolean isOpen() {
+                return socket != null && socket.session.isOpen();
+            }
+        }
+
     }
 }
