@@ -61,7 +61,6 @@ import server.utils.ApiError;
 import server.utils.Utils;
 
 public class GatewayService {
-
     private final EventBus eventBus;
     private final EnvConfig envConfig;
     private final NodeManager nodeManager;
@@ -87,7 +86,9 @@ public class GatewayService {
         this.translationService = translationService;
         this.pluginBundleService = pluginBundleService;
 
-        nodeManager.onKilled(serverId -> this.terminate(serverId, NodeRemoveReason.PROCESS_KILLED));
+        nodeManager.onKilled(serverId -> {
+            eventBus.emit(new StopEvent(serverId, NodeRemoveReason.PROCESS_KILLED));
+        });
 
         scheduler.scheduleWithFixedDelay(() -> {
             try {
@@ -214,9 +215,6 @@ public class GatewayService {
             this.registerHandler("login", LoginRequestDto.class, body -> backend.login(id, body));
             this.registerHandler("host", UUID.class, serverId -> backend.host(serverId));
             this.registerHandler("translate", TranslationRequestDto.class, req -> {
-                if (req == null) {
-                    return null;
-                }
                 try {
                     return translationService.translate(req.getText(), req.getTargetLang());
                 } catch (Exception e) {
