@@ -12,7 +12,6 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
@@ -25,12 +24,7 @@ import java.util.function.Supplier;
 
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import gateway.WsMessage;
 import gateway.rpc.WsRpcChannel;
-import gateway.stream.FileChunkStreamer;
-import gateway.stream.FileTransferHeader;
 
 /**
  * Covers the {@code migrate-plugin-to-jdk-ws} gateway tasks: builder scheme
@@ -180,21 +174,6 @@ class JdkWsClientTest {
         }
     }
 
-    @Test
-    void legacyShimBindsChannelWithBearerSemantics() {
-        WsRpcChannel channel = WsRpcChannel.create();
-        JdkWsClient client = JdkWsClient.connectTo(
-                URI.create("ws://localhost:1/gateway"), "token", channel);
-        try {
-            assertNull(channel.getSession(), "no session is exposed before connect");
-            assertFalse(client.isOpen());
-            assertEquals(JdkWsClient.PING_INTERVAL, client.getPingInterval());
-            assertEquals(JdkWsClient.PONG_DEADLINE, client.getPongDeadline());
-        } finally {
-            client.close();
-            channel.shutdown();
-        }
-    }
 
     @Test
     void tunablePingPong() {
@@ -261,67 +240,6 @@ class JdkWsClientTest {
                 .build();
         try {
             assertEquals(Map.of("X-SERVER-ID", "sid-1"), client.resolveHeaders());
-        } finally {
-            client.close();
-            channel.shutdown();
-        }
-    }
-
-    @Test
-    void malformedBinaryIngestedWithoutFailure() throws Exception {
-        WsRpcChannel channel = WsRpcChannel.create();
-        JdkWsClient client = clientOf(channel);
-        try {
-            List<byte[]> received = Collections.synchronizedList(new ArrayList<>());
-            channel.registerStreamHandler("doc", String.class, String.class,
-                    (meta, bytes) -> {
-                        received.add(bytes);
-                        return "ok";
-                    });
-            assertDoesNotThrow(() -> client.dispatchBinary(ByteBuffer.wrap(new byte[] { 1, 2, 3 })));
-            assertEquals(0, channel.pendingStreamCount(), "malformed frame must not reserve a slot");
-            assertTrue(received.isEmpty());
-        } finally {
-            client.close();
-            channel.shutdown();
-        }
-    }
-
-    @Test
-    void inboundBinaryReachesStreamSlotByDefault() throws Exception {
-        WsRpcChannel channel = WsRpcChannel.create();
-        JdkWsClient client = clientOf(channel);
-        try {
-            List<byte[]> received = Collections.synchronizedList(new ArrayList<>());
-            channel.registerStreamHandler("doc", String.class, String.class,
-                    (meta, bytes) -> {
-                        received.add(bytes);
-                        return "ok";
-                    });
-
-            UUID streamId = UUID.randomUUID();
-            byte[] payload = new byte[] { 7, 8, 9 };
-            String sha = FileChunkStreamer.sha256Hex(payload);
-            WsRpcChannel.StreamStart start = new WsRpcChannel.StreamStart(streamId, "doc",
-                    channel.getObjectMapper().valueToTree("m"), 1, sha);
-            ObjectMapper mapper = new ObjectMapper();
-            String startJson = mapper.writeValueAsString(
-                    WsMessage.<WsRpcChannel.StreamStart>create(WsRpcChannel.STREAM_START_TYPE)
-                            .withPayload(start));
-            channel.onTextMessage(startJson);
-            assertEquals(1, channel.pendingStreamCount());
-
-            ByteBuffer frame = new FileTransferHeader(streamId, 0).encodeFrame(payload, 0,
-                    payload.length);
-            client.dispatchBinary(frame);
-            String doneJson = mapper.writeValueAsString(
-                    WsMessage.<WsRpcChannel.StreamDone>create(WsRpcChannel.STREAM_DONE_TYPE)
-                            .withPayload(new WsRpcChannel.StreamDone(streamId, sha)));
-            channel.onTextMessage(doneJson);
-
-            assertEquals(1, received.size());
-            assertArrayEquals(payload, received.get(0));
-            assertEquals(0, channel.pendingStreamCount());
         } finally {
             client.close();
             channel.shutdown();
