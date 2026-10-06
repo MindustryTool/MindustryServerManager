@@ -92,9 +92,11 @@ public class ApiGateway {
     private final HostService hostService;
     private final SessionService sessionService;
 
-    private volatile JdkWsClient gatewayClient;
 
     private final WsRpcChannel rpcChannel = WsRpcChannel.withMapper(JsonUtils.getObjectMapper(), executor);
+    private final JdkWsClient gatewayClient = JdkWsClient.builder(URI.create(Cfg.gatewayUrl()), rpcChannel)
+            .headersSupplier(() -> gatewayHeaders(Cfg.webSocketAuthToken(), Cfg.serverId()))
+            .build();
 
     private Cache<PaginationRequest, List<ServerDto>> serverQueryCache = Caffeine.newBuilder()
             .expireAfterWrite(Duration.ofSeconds(15))
@@ -133,21 +135,11 @@ public class ApiGateway {
         this.registerHandler("delete-kicked-ip", String.class, (request) -> deleteKickedIp(request));
         this.registerHandler("shutdown", Void.class, (request) -> shutdown());
 
-        String gatewayUrl = Cfg.gatewayUrl();
-        final JdkWsClient client;
-        try {
-            client = JdkWsClient.builder(URI.create(gatewayUrl), rpcChannel)
-                    .headersSupplier(() -> gatewayHeaders(Cfg.webSocketAuthToken(), Cfg.serverId()))
-                    .build();
-        } catch (Exception e) {
-            Log.err("Invalid " + Cfg.PLUGIN_GATEWAY_URL_ENV + ": " + gatewayUrl, e);
-            return;
-        }
-        client.onOpen(() -> Log.info("[green]Connected to server manager"));
-        client.onClose(err -> Log.info("[red]Disconnected from server manager: " + err.getMessage()
+      
+        gatewayClient.onOpen(() -> Log.info("[green]Connected to server manager"));
+        gatewayClient.onClose(err -> Log.info("[red]Disconnected from server manager: " + err.getMessage()
                 + "; reconnect scheduled"));
-        this.gatewayClient = client;
-        client.connect();
+        gatewayClient.connect();
     }
 
     @Schedule(fixedDelay = 5, unit = TimeUnit.MINUTES)
