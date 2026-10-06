@@ -77,10 +77,6 @@ public class PluginUpdater {
 
     @Schedule(delay = 1, fixedDelay = 1, unit = TimeUnit.MINUTES)
     public void checkUpdate() {
-        if (pendingHash != null) {
-            return;
-        }
-
         String bundleHash = sendGetPluginVersion();
 
         if (bundleHash == null) {
@@ -92,6 +88,10 @@ public class PluginUpdater {
 
         if (currentHash == null) {
             Log.err("[red]Cannot read current plugin jar for hash comparison");
+            return;
+        }
+
+        if (Objects.equals(bundleHash, pendingHash)) {
             return;
         }
 
@@ -202,6 +202,7 @@ public class PluginUpdater {
         if (scheduledRestartTime <= 0) {
             return 0;
         }
+
         long remainingMs = scheduledRestartTime - System.currentTimeMillis();
         return Math.max(1, (int) Math.ceil(remainingMs / 60000.0));
     }
@@ -227,7 +228,11 @@ public class PluginUpdater {
         PluginEvents.fire(new UnloadServerEvent(true));
     }
 
-    public boolean scheduleRestart() {
+    public void scheduleRestart() {
+        if (isScheduled) {
+            return;
+        }
+
         isScheduled = true;
         if (isSandboxMode()) {
             if (scheduledRestartTime <= 0) {
@@ -236,7 +241,6 @@ public class PluginUpdater {
         } else {
             waitingForGameOver = true;
         }
-        return true;
     }
 
     public boolean isWaitingForGameOver() {
