@@ -257,7 +257,7 @@ public class GatewayService {
             eventBus.emit(new StartEvent(id));
             rpcChannel.onOpen(new JavalinSession(context));
             lastDisconnectAt = null;
-            
+
             Log.info("Gateway client connected: " + id);
         }
 
@@ -276,7 +276,7 @@ public class GatewayService {
         }
 
         public boolean shouldTerminate() {
-            return !isTerminated() && lastDisconnectAt != null
+            return lastDisconnectAt != null
                     && Instant.now().isAfter(lastDisconnectAt.plus(TERMINATE_CONNECTION_AFTER))
                     && isSocketClosed();
         }
