@@ -332,7 +332,7 @@ public class GatewayService {
             }
 
             if (lastDisconnectAt != null && Instant.now().isAfter(lastDisconnectAt.plus(DISCONNECT_WARN_AFTER))
-                    && isSocketClosed()) {
+                    && isSocketClosed() && nodeManager.isRunning(id)) {
                 eventBus.emit(LogEvent.error(id, "Socket disconnected"));
                 Log.err("Client socket disconnected: " + id);
             }
@@ -376,7 +376,7 @@ public class GatewayService {
                             .header("X-SERVER-ID", id.toString())
                             .header("X-MANAGER-AUTH", envConfig.serverConfig().accessToken())
                             .timeout(Duration.ofSeconds(10));
-                            
+
                 } catch (Exception e) {
                     throw new ApiError(500, "Internal server error", e);
                 }
