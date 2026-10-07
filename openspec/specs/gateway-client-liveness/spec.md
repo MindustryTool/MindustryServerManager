@@ -2,7 +2,7 @@
 
 ### Requirement: Socket-closed definition
 
-The system SHALL treat a gateway client as not connected when `rpcChannel.getSession()` is `null` or the session reports not open.
+The system SHALL treat a gateway client as not connected when `rpcChannel.getSession()` is `null` or the session reports not open. A stale `onClose` for a non-current session SHALL NOT change the connected state, and an `onOpen` overwrite SHALL immediately adopt the new session.
 
 #### Scenario: Null session counts as closed
 
@@ -19,9 +19,14 @@ The system SHALL treat a gateway client as not connected when `rpcChannel.getSes
 - **WHEN** a session exists and `isOpen()` returns true
 - **THEN** the client counts as connected
 
+#### Scenario: Stale close keeps live session connected
+
+- **WHEN** `onClose` arrives for a session that is not current while a newer session is open
+- **THEN** the client still counts as connected and no disconnect clock starts
+
 ### Requirement: Disconnect-age clock lifecycle
 
-The system SHALL maintain `lastDisconnectAt` per gateway client: set to create time at build, cleared to `null` on open, set to current time on close.
+The system SHALL maintain `lastDisconnectAt` per gateway client: set to create time at build, cleared to `null` on open (including overwrite opens), set to current time only on close of the current session. Stale closes SHALL NOT touch the clock.
 
 #### Scenario: Never-linked client carries create time
 
@@ -30,13 +35,18 @@ The system SHALL maintain `lastDisconnectAt` per gateway client: set to create t
 
 #### Scenario: Open clears the clock
 
-- **WHEN** `onOpen` succeeds
+- **WHEN** `onOpen` succeeds, including an overwrite of a dead session
 - **THEN** `lastDisconnectAt` is `null`
 
 #### Scenario: Close starts the clock
 
-- **WHEN** `onClose` runs
+- **WHEN** `onClose` for the current session runs
 - **THEN** `lastDisconnectAt` is set to close time
+
+#### Scenario: Stale close leaves the clock alone
+
+- **WHEN** `onClose` arrives for a non-current session
+- **THEN** `lastDisconnectAt` is unchanged
 
 #### Scenario: Reconnect restarts grace
 

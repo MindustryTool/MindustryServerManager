@@ -1,8 +1,10 @@
 package server.utils;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.net.ProxySelector;
+import java.net.SocketAddress;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.time.Duration;
@@ -44,7 +46,7 @@ public class HttpClientsTest {
             }
 
             @Override
-            public void connectFailed(URI uri, java.net.SocketAddress sa, java.io.IOException ioe) {}
+            public void connectFailed(URI uri, SocketAddress sa, IOException ioe) {}
         };
 
         HttpClient proxied = HttpClients.createProxied(dummySelector, Duration.ofSeconds(4));

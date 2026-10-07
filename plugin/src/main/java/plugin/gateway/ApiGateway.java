@@ -25,7 +25,6 @@ import java.util.concurrent.TimeoutException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-import gateway.WsMessage;
 import gateway.client.JdkWsClient;
 import gateway.rpc.WsRpcChannel;
 
@@ -209,19 +208,6 @@ public class ApiGateway {
     public boolean isConnected() {
         JdkWsClient client = gatewayClient;
         return client != null && client.isOpen();
-    }
-
-    public void send(WsMessage<?> event) {
-        JdkWsClient client = gatewayClient;
-        if (client != null && client.isOpen()) {
-            try {
-                client.session().sendText(JsonUtils.toJsonString(event));
-            } catch (Exception e) {
-                Log.warn("Failed to send event: @", event);
-            }
-        } else {
-            Log.warn("Not connected, dropped event: @", event);
-        }
     }
 
     public static String toRelativeToServer(String path) {

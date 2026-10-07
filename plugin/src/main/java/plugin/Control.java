@@ -12,6 +12,7 @@ import arc.util.*;
 import mindustry.Vars;
 import mindustry.core.GameState.State;
 import mindustry.gen.Groups;
+import mindustry.mod.Plugin;
 import plugin.annotations.Schedule;
 import plugin.commands.ClientCommandHandler;
 import plugin.commands.ServerCommandHandler;
@@ -23,7 +24,7 @@ import plugin.hub.ServerUtils;
 import plugin.utils.TimeUtils;
 import plugin.event.KickEvent;
 
-public class Control extends mindustry.mod.Plugin {
+public class Control extends Plugin {
 
     public static final Instant start = Instant.now();
     public static final UUID SERVER_ID = UUID.fromString(System.getenv("SERVER_ID"));

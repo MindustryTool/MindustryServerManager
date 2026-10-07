@@ -2,7 +2,8 @@ package server;
 
 public record EnvConfig(
     DockerEnv docker,
-    ServerConfig serverConfig
+    ServerConfig serverConfig,
+    String gatewaySigningKey
 ) {
     public record DockerEnv(
         String mindustryServerImage,
@@ -33,8 +34,17 @@ public record EnvConfig(
                 getEnv("DATA_FOLDER", null),
                 getEnv("BACKEND_WS_URL", "wss://api.mindustry-tool.com/managers/gateway"),
                 getEnv("API_BASE_URL", "https://api.mindustry-tool.com/api/v4/")
-            )
+            ),
+            requireGatewaySigningKey(System.getenv("GATEWAY_SIGNING_KEY"))
         );
+    }
+
+    public static String requireGatewaySigningKey(String value) {
+        String key = value == null ? null : value.trim();
+        if (key == null || key.isEmpty()) {
+            throw new IllegalStateException("Missing required env var GATEWAY_SIGNING_KEY");
+        }
+        return key;
     }
 
     private static String getEnv(String key, String defaultValue) {

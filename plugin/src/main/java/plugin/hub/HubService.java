@@ -32,6 +32,7 @@ import mindustry.gen.Call;
 import mindustry.gen.Groups;
 import mindustry.gen.Iconc;
 import mindustry.net.ArcNetProvider;
+import mindustry.net.Administration;
 import mindustry.net.Net;
 import mindustry.world.blocks.logic.LogicBlock.LogicBuild;
 import plugin.Cfg;
@@ -113,8 +114,8 @@ public class HubService {
             var server = (Server) serverField.get(provider);
 
             server.setDiscoveryHandler((address, handler) -> {
-                String name = mindustry.net.Administration.Config.serverName.string();
-                String description = mindustry.net.Administration.Config.desc.string();
+                String name = Administration.Config.serverName.string();
+                String description = Administration.Config.desc.string();
                 String map = Vars.state.map.name();
 
                 ByteBuffer buffer = ByteBuffer.allocate(500);

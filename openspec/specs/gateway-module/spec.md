@@ -21,7 +21,7 @@ The `:gateway` module SHALL define a transport interface `WsSession` providing m
 - **THEN** `WsSession.sendText()` delegates to the underlying transport implementation
 
 ### Requirement: Request-Response RPC Channel Multiplexing
-The `:gateway` module SHALL provide `WsRpcChannel` capable of matching asynchronous request `id` values with subsequent response `responseOf` values using `CompletableFuture`, dispatching incoming requests to registered typed message handlers, replying with an error frame to unhandled message types, suspending outbound requests until an open session appears (up to a session-wait limit), and completing pending requests exceptionally when timeouts expire or connections close.
+The `:gateway` module SHALL provide `WsRpcChannel` capable of matching asynchronous request `id` values with subsequent response `responseOf` values using `CompletableFuture`, dispatching incoming requests to registered typed message handlers, replying with an error frame to unhandled message types, holding a volatile current session with gate-wait (no stored future) so outbound requests wait until an open session appears (up to a session-wait limit), overwriting the current session on `onOpen` (closing a different live session with code `4234`), ignoring stale closes for non-current sessions, and completing pending and waiting requests exceptionally when timeouts expire or the current connection closes.
 
 #### Scenario: Asynchronous request-response correlation
 - **WHEN** `WsRpcChannel.sendRequest()` is invoked with a message type and payload
@@ -41,15 +41,19 @@ The `:gateway` module SHALL provide `WsRpcChannel` capable of matching asynchron
 
 #### Scenario: Request suspends until session is open
 - **WHEN** `sendRequest()` is invoked while no `WsSession` is open
-- **THEN** the channel suspends the request without failing and transmits it once a session becomes open, instead of completing exceptionally with `IllegalStateException`
+- **THEN** the channel parks the request on the gate without failing and transmits it once a session becomes open, instead of completing exceptionally with `IllegalStateException`
 
 #### Scenario: Session-wait expiry
-- **WHEN** no open session appears within the session-wait limit (300 s via `orTimeout`)
+- **WHEN** no open session appears within the session-wait limit (300 s)
 - **THEN** the pending future is completed exceptionally with a `TimeoutException` and removed from memory
 
-#### Scenario: Close during session-wait
-- **WHEN** `onClose` or `shutdown` happens while requests are still waiting for a session
-- **THEN** each waiting future is completed exceptionally with the close cause and a fresh signal is installed so later requests wait for the next session
+#### Scenario: Close fails waiters and live requests
+- **WHEN** the current session closes (non-stale `onClose` or `shutdown`)
+- **THEN** each queued gate waiter and each live pending future is completed exceptionally with the close cause; sends started after the close wait fresh for the next session
+
+#### Scenario: Overwrite on open closes old with 4234
+- **WHEN** `onOpen` receives a new open session while a different session is current
+- **THEN** the old session is closed with code `4234`, the new session becomes current, and gate waiters are woken; null or non-open sessions still throw
 
 ### Requirement: WsMessage nesting guard
 The `:gateway` module SHALL reject a `WsMessage` instance used as another `WsMessage` payload at construction time by throwing `IllegalArgumentException`.
@@ -137,3 +141,22 @@ The `:gateway` module SHALL let an RPC handler answer its incoming request with 
 #### Scenario: Out-of-range index fails fast
 - **WHEN** a chunk arrives with an index at or above `totalChunks`
 - **THEN** the slot is discarded and the sender future fails
+
+### Requirement: Channel session wait access
+`WsRpcChannel` SHALL expose `awaitSession(Duration timeout)` returning a future that completes with the current open session, or completes exceptionally with a `TimeoutException` when none appears within the timeout. This SHALL be the only session-wait entry point; clients SHALL NOT wrap it.
+
+#### Scenario: Session available now
+- **WHEN** `awaitSession` is called while a session is open
+- **THEN** the future completes immediately with that session
+
+#### Scenario: Session opens within timeout
+- **WHEN** `awaitSession` is called with no open session and one opens before the timeout
+- **THEN** the future completes with the opened session
+
+#### Scenario: Timeout with no session
+- **WHEN** no session opens within the timeout
+- **THEN** the future completes exceptionally with a `TimeoutException`
+
+#### Scenario: Close fails the waiter
+- **WHEN** the current session closes while a waiter is parked
+- **THEN** the waiter completes exceptionally with the close cause

@@ -6,6 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.reflect.Method;
 import java.nio.file.Path;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -79,7 +81,7 @@ public class DailyRepositoryTest {
         assertTrue(repository.getLastLogin("u1").isPresent());
 
         var info = database.db().rawQuery("PRAGMA table_info(player_logins)").stream()
-                .collect(java.util.stream.Collectors.toMap(row -> row.getString("name"), java.util.function.Function.identity()));
+                .collect(Collectors.toMap(row -> row.getString("name"), Function.identity()));
         assertEquals(2, info.size());
         assertEquals(1, info.get("uuid").getInt("pk"));
         assertEquals("TEXT", info.get("uuid").getString("type"));

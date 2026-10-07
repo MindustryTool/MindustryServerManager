@@ -25,6 +25,8 @@ class WsRpcChannelTest {
         WsRpcChannel peer;
         final List<String> sent = new CopyOnWriteArrayList<>();
         volatile boolean open = true;
+        volatile int lastCloseCode = -1;
+        volatile String lastCloseReason;
 
         @Override
         public void sendText(String text) {
@@ -42,6 +44,8 @@ class WsRpcChannelTest {
         @Override
         public void close(int code, String reason) {
             open = false;
+            lastCloseCode = code;
+            lastCloseReason = reason;
         }
 
         @Override
@@ -168,8 +172,143 @@ class WsRpcChannelTest {
     }
 
     @Test
-    void onOpenRejectsNullAndClosed() {
+    void awaitSessionCompletesImmediatelyWhenOpen() throws Exception {
         WsRpcChannel a = WsRpcChannel.create();
+        Loopback sa = new Loopback();
+        a.onOpen(sa);
+
+        assertSame(sa, a.awaitSession(Duration.ofSeconds(5)).get(5, TimeUnit.SECONDS));
+
+        a.shutdown();
+    }
+
+    @Test
+    void awaitSessionFailsWhenCloseArrivesFirst() {
+        WsRpcChannel a = WsRpcChannel.create();
+
+        CompletableFuture<WsSession> waiting = a.awaitSession(Duration.ofMinutes(1));
+        assertFalse(waiting.isDone());
+
+        a.onClose(new RuntimeException("gone"));
+        assertTrue(waiting.isCompletedExceptionally());
+
+        a.shutdown();
+    }
+
+    @Test
+    void overwriteOnOpenClosesOldWith4234AndAdoptsNew() {
+        WsRpcChannel a = WsRpcChannel.create();
+        Loopback oldSession = new Loopback();
+        Loopback newSession = new Loopback();
+        a.onOpen(oldSession);
+        assertSame(oldSession, a.getSession());
+
+        assertDoesNotThrow(() -> a.onOpen(newSession));
+
+        assertSame(newSession, a.getSession());
+        assertFalse(oldSession.isOpen());
+        assertEquals(WsRpcChannel.REPLACED_CLOSE_CODE, oldSession.lastCloseCode);
+        assertTrue(newSession.isOpen());
+
+        a.shutdown();
+    }
+
+    @Test
+    void sameSessionOpenIsNoOp() {
+        WsRpcChannel a = WsRpcChannel.create();
+        Loopback session = new Loopback();
+        a.onOpen(session);
+
+        assertDoesNotThrow(() -> a.onOpen(session));
+
+        assertSame(session, a.getSession());
+        assertEquals(-1, session.lastCloseCode);
+
+        a.shutdown();
+    }
+
+    @Test
+    void staleCloseIsIgnored() {
+        WsRpcChannel a = WsRpcChannel.create();
+        Loopback oldSession = new Loopback();
+        Loopback newSession = new Loopback();
+        a.onOpen(oldSession);
+        a.onOpen(newSession);
+
+        assertFalse(a.onClose(oldSession, new RuntimeException("late")));
+
+        assertSame(newSession, a.getSession());
+        assertTrue(newSession.isOpen());
+
+        a.shutdown();
+    }
+
+    @Test
+    void postCloseSendWaitsFreshAndSucceedsOnReopen() throws Exception {
+        WsRpcChannel a = WsRpcChannel.create();
+        WsRpcChannel b = WsRpcChannel.create();
+        Loopback sa = new Loopback();
+        Loopback sb = new Loopback();
+        sa.peer = b;
+        sb.peer = a;
+        a.onOpen(sa);
+        b.onOpen(sb);
+        b.registerHandler("echo", String.class, s -> "hi:" + s);
+
+        CompletableFuture<String> live =
+                a.sendRequest("echo", "1", String.class, Duration.ofSeconds(5));
+        assertEquals("hi:1", live.get(5, TimeUnit.SECONDS));
+
+        a.onClose(new RuntimeException("blip"));
+        assertNull(a.getSession());
+
+        CompletableFuture<String> after =
+                a.sendRequest("echo", "2", String.class, Duration.ofSeconds(5));
+        assertFalse(after.isDone(), "post-close send must wait fresh, not fail");
+
+        Loopback sa2 = new Loopback();
+        sa2.peer = b;
+        a.onOpen(sa2);
+        assertEquals("hi:2", after.get(5, TimeUnit.SECONDS));
+
+        a.shutdown();
+        b.shutdown();
+    }
+
+    @Test
+    void dirtyReconnectWithoutCloseKeepsRequestsFlowing() throws Exception {
+        WsRpcChannel a = WsRpcChannel.create();
+        WsRpcChannel b = WsRpcChannel.create();
+        Loopback sa1 = new Loopback();
+        Loopback sb = new Loopback();
+        sa1.peer = b;
+        sb.peer = a;
+        a.onOpen(sa1);
+        b.onOpen(sb);
+        b.registerHandler("echo", String.class, s -> "v:" + s);
+
+        CompletableFuture<String> first =
+                a.sendRequest("echo", "1", String.class, Duration.ofSeconds(5));
+        assertEquals("v:1", first.get(5, TimeUnit.SECONDS));
+
+        // Dirty death: no onClose, straight reopen must not throw.
+        Loopback sa2 = new Loopback();
+        sa2.peer = b;
+        assertDoesNotThrow(() -> a.onOpen(sa2));
+
+        assertFalse(sa1.isOpen());
+        assertEquals(WsRpcChannel.REPLACED_CLOSE_CODE, sa1.lastCloseCode);
+
+        CompletableFuture<String> second =
+                a.sendRequest("echo", "2", String.class, Duration.ofSeconds(5));
+        assertEquals("v:2", second.get(5, TimeUnit.SECONDS));
+
+        a.shutdown();
+        b.shutdown();
+    }
+
+    @Test
+    void onOpenRejectsNullAndClosed() {        WsRpcChannel a = WsRpcChannel.create();
         assertThrows(NullPointerException.class, () -> a.onOpen(null));
 
         Loopback closed = new Loopback();

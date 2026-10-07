@@ -40,7 +40,7 @@ public class ServerMain {
         ApiService apiService = new ApiService();
         PluginBundleService pluginBundle = PluginBundleService.loadFromImage();
         GatewayService gatewayService = new GatewayService(eventBus, envConfig, nodeManager, new TranslationService(), pluginBundle);
-        WsHandler wsHandler = new WsHandler(gatewayService, nodeManager);
+        WsHandler wsHandler = new WsHandler(gatewayService, nodeManager, envConfig.gatewaySigningKey());
         ServerService serverService = new ServerService(gatewayService, nodeManager, eventBus, apiService, wsHandler, pluginBundle);
         BackendGatewayConfig gatewayConfig = BackendGatewayConfig.fromEnv(envConfig);
         BackendGateway backendGateway = new BackendGateway(gatewayConfig, nodeManager, serverService,

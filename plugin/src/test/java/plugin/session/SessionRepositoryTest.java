@@ -20,6 +20,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import plugin.database.Database;
+import plugin.orm.Row;
 
 public class SessionRepositoryTest {
 
@@ -59,7 +60,7 @@ public class SessionRepositoryTest {
         return method.invoke(target, args);
     }
 
-    private Map<String, plugin.orm.Row> tableInfo(String table) {
+    private Map<String, Row> tableInfo(String table) {
         return database.db().rawQuery("PRAGMA table_info(" + table + ")").stream()
                 .collect(Collectors.toMap(row -> row.getString("name"), Function.identity()));
     }

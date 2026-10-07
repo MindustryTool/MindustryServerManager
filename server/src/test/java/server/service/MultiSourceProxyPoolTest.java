@@ -1,6 +1,10 @@
 package server.service;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.Proxy;
+import java.net.ProxySelector;
+import java.net.URI;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -63,19 +67,19 @@ public class MultiSourceProxyPoolTest {
         pool.addProxies(List.of(p1));
         assertEquals(1, pool.size());
 
-        java.net.ProxySelector selector = pool.asProxySelector();
-        List<java.net.Proxy> proxies = selector.select(java.net.URI.create("https://translate.googleapis.com"));
+        ProxySelector selector = pool.asProxySelector();
+        List<Proxy> proxies = selector.select(URI.create("https://translate.googleapis.com"));
         assertEquals(1, proxies.size());
-        assertEquals(java.net.Proxy.Type.HTTP, proxies.get(0).type());
+        assertEquals(Proxy.Type.HTTP, proxies.get(0).type());
         assertEquals(p1, proxies.get(0).address());
 
         // Trigger connection failure callback
-        selector.connectFailed(java.net.URI.create("https://translate.googleapis.com"), p1, new java.io.IOException("Connection refused"));
+        selector.connectFailed(URI.create("https://translate.googleapis.com"), p1, new IOException("Connection refused"));
         assertEquals(0, pool.size(), "Proxy should be evicted after connectFailed");
 
         // When pool empty, Proxy.NO_PROXY is returned
-        List<java.net.Proxy> fallback = selector.select(java.net.URI.create("https://translate.googleapis.com"));
+        List<Proxy> fallback = selector.select(URI.create("https://translate.googleapis.com"));
         assertEquals(1, fallback.size());
-        assertEquals(java.net.Proxy.NO_PROXY, fallback.get(0));
+        assertEquals(Proxy.NO_PROXY, fallback.get(0));
     }
 }

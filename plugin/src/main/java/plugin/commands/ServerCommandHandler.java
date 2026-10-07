@@ -77,7 +77,7 @@ public class ServerCommandHandler {
         handler = null;
     }
 
-    public Seq<arc.util.CommandHandler.Command> getCommandList() {
+    public Seq<CommandHandler.Command> getCommandList() {
         return handler == null ? new Seq<>() : handler.getCommandList();
     }
 

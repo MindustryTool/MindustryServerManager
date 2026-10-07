@@ -1,6 +1,7 @@
 package plugin.utils;
 
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.time.Duration;
 import java.util.List;
 
@@ -123,7 +124,7 @@ public class JsonUtils {
         }
     }
 
-    public static Object readJson(String data, java.lang.reflect.Type type) {
+    public static Object readJson(String data, Type type) {
         try {
             return objectMapper.readValue(data, objectMapper.getTypeFactory().constructType(type));
         } catch (Exception e) {

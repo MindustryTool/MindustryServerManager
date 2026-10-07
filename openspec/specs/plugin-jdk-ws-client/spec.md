@@ -47,16 +47,16 @@ The plugin SHALL rely on `JdkWsClient` protocol ping, pong-deadline, and exponen
 #### Scenario: Silent drop reconnects with backoff
 
 - **WHEN** the pong deadline expires or the socket drops
-- **THEN** the plugin fails pending RPCs via `onClose` and reconnects with exponential backoff (1s to 30s plus jitter), re-resolving headers on the next attempt
+- **THEN** the plugin fails pending RPCs via `onClose` and reconnects with exponential backoff (1s to 60s plus jitter), re-resolving headers on the next attempt
 
 ### Requirement: No inbound binary and no nv dependency
 
-The plugin SHALL ignore inbound binary frames on southbound and SHALL NOT ship `nv-websocket-client` in `plugin.jar`.
+The plugin SHALL forward inbound binary frames to `WsRpcChannel.onBinaryMessage` for stream reassembly, dropping frames for unknown or non-stream transfers with a log, and SHALL NOT ship `nv-websocket-client` in `plugin.jar`.
 
-#### Scenario: Binary frame ignored
+#### Scenario: Binary forwarded to channel
 
 - **WHEN** a binary frame arrives on the southbound socket
-- **THEN** the client drops it without failing the connection or pending RPCs
+- **THEN** it is handed to `WsRpcChannel.onBinaryMessage` and frames for unknown or non-stream transfers are dropped with a log without failing the connection or pending RPCs
 
 #### Scenario: nv dependency absent
 

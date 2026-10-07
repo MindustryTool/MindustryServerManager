@@ -7,6 +7,7 @@ import java.net.http.WebSocket;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -14,10 +15,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
@@ -27,10 +30,9 @@ import org.junit.jupiter.api.Test;
 import gateway.rpc.WsRpcChannel;
 
 /**
- * Covers the {@code migrate-plugin-to-jdk-ws} gateway tasks: builder scheme
- * validation, per-attempt headers supplier, null-binary drop, unchanged
- * backoff, and the single-sender queue (burst serialization, FIFO order,
- * fail-fast drop, shutdown).
+ * Covers the gateway client through the injected dialer seam: builder
+ * validation, per-attempt headers, stream order, the single-sender queue,
+ * fail-fast drop, the kick signal, and the connection state machine.
  */
 class JdkWsClientTest {
 
@@ -139,8 +141,31 @@ class JdkWsClientTest {
         }
     }
 
-    private static JdkWsClient clientOf(WsRpcChannel channel) {
-        return JdkWsClient.builder(URI.create("ws://localhost:1/gateway"), channel).build();
+    static class TestDialer implements WsDialer {
+        final List<GateEnforcingFake> fakes = new CopyOnWriteArrayList<>();
+        final List<WebSocket.Listener> listeners = new CopyOnWriteArrayList<>();
+
+        @Override
+        public CompletableFuture<WebSocket> dial(WebSocket.Listener listener) {
+            GateEnforcingFake fake = new GateEnforcingFake();
+            fakes.add(fake);
+            listeners.add(listener);
+            return CompletableFuture.completedFuture(fake);
+        }
+
+        void shutdown() {
+            fakes.forEach(fake -> fake.async.shutdownNow());
+        }
+    }
+
+    private static JdkWsClient connectedClient(WsRpcChannel channel, TestDialer dialer) throws Exception {
+        JdkWsClient client = JdkWsClient
+                .builder(URI.create("ws://localhost:1/gateway"), channel)
+                .dialer(dialer)
+                .build();
+        client.connect();
+        awaitCondition(() -> client.getState() == JdkWsClient.State.OPEN, "client open");
+        return client;
     }
 
     private static void awaitCondition(Supplier<Boolean> cond, String what) throws Exception {
@@ -154,7 +179,7 @@ class JdkWsClientTest {
     }
 
     // ------------------------------------------------------------------
-    // 1.1 / 1.2: builder validation + shim
+    // Builder validation
     // ------------------------------------------------------------------
 
     @Test
@@ -174,7 +199,6 @@ class JdkWsClientTest {
         }
     }
 
-
     @Test
     void tunablePingPong() {
         WsRpcChannel channel = WsRpcChannel.create();
@@ -193,7 +217,7 @@ class JdkWsClientTest {
     }
 
     // ------------------------------------------------------------------
-    // 1.3: supplier invoked per attempt, blanks filtered
+    // Headers supplier invoked per attempt, blanks filtered
     // ------------------------------------------------------------------
 
     @Test
@@ -218,9 +242,8 @@ class JdkWsClientTest {
             assertEquals(1, calls.get());
 
             // One handshake attempt resolves the supplier synchronously.
-            CompletableFuture<Void> connect = client.connect();
-            assertEquals(2, calls.get());
-            connect.get(10, TimeUnit.SECONDS);
+            client.connect();
+            awaitCondition(() -> calls.get() == 2, "supplier resolved on dial attempt");
         } finally {
             client.close();
             channel.shutdown();
@@ -249,16 +272,16 @@ class JdkWsClientTest {
     @Test
     void streamFramesPreserveStartChunksDoneOrder() throws Exception {
         WsRpcChannel channel = WsRpcChannel.create();
-        JdkWsClient client = clientOf(channel);
-        GateEnforcingFake fake = new GateEnforcingFake();
-        client.setTestWebSocket(fake);
+        TestDialer dialer = new TestDialer();
+        JdkWsClient client = connectedClient(channel, dialer);
+        GateEnforcingFake fake = dialer.fakes.get(0);
         try {
             byte[] data = new byte[150 * 1024];
-            java.util.Arrays.fill(data, (byte) 5);
+            Arrays.fill(data, (byte) 5);
             channel.sendStream("big", "m", data, Void.class, Duration.ofSeconds(10));
 
             awaitCondition(() -> fake.texts.size() == 2 && fake.binaries.get() == 3, "start + 3 chunks + done");
-            awaitCondition(() -> client.getSendQueueDepth() == 0, "queue drained");
+            awaitCondition(() -> client.getTransportQueueDepth() == 0, "queue drained");
 
             List<String> order = new ArrayList<>(fake.order);
             assertEquals(5, order.size());
@@ -272,12 +295,12 @@ class JdkWsClientTest {
         } finally {
             client.close();
             channel.shutdown();
-            fake.async.shutdownNow();
+            dialer.shutdown();
         }
     }
 
     // ------------------------------------------------------------------
-    // 1.4: single-sender queue — burst, order, shutdown
+    // Single-sender queue — burst, order, shutdown
     // ------------------------------------------------------------------
 
     @Test
@@ -320,9 +343,9 @@ class JdkWsClientTest {
     @Test
     void concurrentBurstSerializedWithFifoAndCleanShutdown() throws Exception {
         WsRpcChannel channel = WsRpcChannel.create();
-        JdkWsClient client = clientOf(channel);
-        GateEnforcingFake fake = new GateEnforcingFake();
-        client.setTestWebSocket(fake);
+        TestDialer dialer = new TestDialer();
+        JdkWsClient client = connectedClient(channel, dialer);
+        GateEnforcingFake fake = dialer.fakes.get(0);
         int n = 50;
         int threads = 16;
         ExecutorService pool = Executors.newFixedThreadPool(threads);
@@ -340,7 +363,7 @@ class JdkWsClientTest {
                         Thread.currentThread().interrupt();
                     }
                     try {
-                        client.session().sendText(msg);
+                        channel.getSession().sendText(msg);
                     } catch (Throwable t) {
                         errors.put(msg, t);
                     }
@@ -354,65 +377,225 @@ class JdkWsClientTest {
 
             assertTrue(errors.isEmpty(), "no send should hit Send pending: " + errors);
             awaitCondition(() -> fake.texts.size() == n, "all " + n + " frames sent");
-            awaitCondition(() -> client.getSendQueueDepth() == 0, "queue drained");
+            awaitCondition(() -> client.getTransportQueueDepth() == 0, "queue drained");
             assertEquals(1, fake.maxInFlight.get(), "only one outstanding send at a time");
             assertEquals(new HashSet<>(fake.texts).size(), n, "every frame sent exactly once");
         } finally {
             pool.shutdownNow();
             client.close();
             channel.shutdown();
-            fake.async.shutdownNow();
+            dialer.shutdown();
         }
-        awaitCondition(() -> !client.isSenderAlive() && client.isSchedulerShutdown(),
-                "sender + scheduler terminated after close");
+        awaitCondition(() -> client.isSchedulerShutdown(), "scheduler terminated after close");
     }
 
     @Test
     void sequentialSendsPreserveFifoOrder() throws Exception {
         WsRpcChannel channel = WsRpcChannel.create();
-        JdkWsClient client = clientOf(channel);
-        GateEnforcingFake fake = new GateEnforcingFake();
-        client.setTestWebSocket(fake);
+        TestDialer dialer = new TestDialer();
+        JdkWsClient client = connectedClient(channel, dialer);
+        GateEnforcingFake fake = dialer.fakes.get(0);
         try {
             List<String> expected = new ArrayList<>();
             for (int i = 0; i < 20; i++) {
                 expected.add("frame-" + i);
-                client.session().sendText("frame-" + i);
+                channel.getSession().sendText("frame-" + i);
             }
             awaitCondition(() -> fake.texts.size() == expected.size(), "all frames sent");
-            awaitCondition(() -> client.getSendQueueDepth() == 0, "queue drained");
+            awaitCondition(() -> client.getTransportQueueDepth() == 0, "queue drained");
             assertEquals(expected, new ArrayList<>(fake.texts));
         } finally {
             client.close();
             channel.shutdown();
-            fake.async.shutdownNow();
+            dialer.shutdown();
         }
     }
 
     // ------------------------------------------------------------------
-    // 1.5: fail-fast drop path
+    // Fail-fast drop path
     // ------------------------------------------------------------------
 
     @Test
     void failedSendFailsPendingFast() throws Exception {
         WsRpcChannel channel = WsRpcChannel.create();
-        JdkWsClient client = clientOf(channel);
-        GateEnforcingFake fake = new GateEnforcingFake();
+        TestDialer dialer = new TestDialer();
+        JdkWsClient client = connectedClient(channel, dialer);
+        GateEnforcingFake fake = dialer.fakes.get(0);
         fake.failSends.set(true);
         CountDownLatch dropped = new CountDownLatch(1);
         client.onClose(err -> dropped.countDown());
-        client.setTestWebSocket(fake);
         try {
             var pending = channel.sendRequest("ghost", "x", String.class, Duration.ofMinutes(1));
             assertFalse(pending.isDone());
-            client.session().sendText("{\"ping\":1}");
+            channel.getSession().sendText("{\"ping\":1}");
             assertTrue(dropped.await(10, TimeUnit.SECONDS), "drop should fire onClose");
             awaitCondition(pending::isDone, "pending RPC failed fast");
             assertTrue(pending.isCompletedExceptionally());
         } finally {
             client.close();
             channel.shutdown();
-            fake.async.shutdownNow();
+            dialer.shutdown();
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // State machine: kick, stale signals, terminal close
+    // ------------------------------------------------------------------
+
+    @Test
+    void kick4234StopsReconnectAndManualConnectRevives() throws Exception {
+        WsRpcChannel channel = WsRpcChannel.create();
+        TestDialer dialer = new TestDialer();
+        JdkWsClient client = connectedClient(channel, dialer);
+        GateEnforcingFake fake = dialer.fakes.get(0);
+        WebSocket.Listener listener = dialer.listeners.get(0);
+        CountDownLatch closed = new CountDownLatch(1);
+        client.onClose(err -> closed.countDown());
+        try {
+            listener.onClose(fake, WsRpcChannel.REPLACED_CLOSE_CODE, "Replaced by new connection");
+
+            assertTrue(closed.await(10, TimeUnit.SECONDS), "kick should fire onClose");
+            assertEquals(JdkWsClient.State.KICKED, client.getState());
+            assertFalse(client.isOpen());
+            assertEquals(0, client.getReconnectAttempt(), "kick must not schedule reconnect");
+
+            client.connect();
+            awaitCondition(() -> client.getState() == JdkWsClient.State.OPEN, "manual connect revives");
+            assertNotNull(channel.getSession());
+        } finally {
+            client.close();
+            channel.shutdown();
+            dialer.shutdown();
+        }
+    }
+
+    @Test
+    void duplicateDropSignalsIgnored() throws Exception {
+        WsRpcChannel channel = WsRpcChannel.create();
+        TestDialer dialer = new TestDialer();
+        JdkWsClient client = connectedClient(channel, dialer);
+        GateEnforcingFake fake = dialer.fakes.get(0);
+        WebSocket.Listener listener = dialer.listeners.get(0);
+        AtomicInteger closes = new AtomicInteger(0);
+        client.onClose(err -> closes.incrementAndGet());
+        try {
+            listener.onClose(fake, 1000, "bye");
+            assertEquals(1, closes.get());
+            assertEquals(JdkWsClient.State.RECONNECT_WAIT, client.getState());
+
+            listener.onClose(fake, 1000, "bye again");
+            assertEquals(1, closes.get(), "duplicate drop must not refire onClose");
+            assertEquals(JdkWsClient.State.RECONNECT_WAIT, client.getState());
+        } finally {
+            client.close();
+            channel.shutdown();
+            dialer.shutdown();
+        }
+    }
+
+    @Test
+    void lateKickAfterKickIgnored() throws Exception {
+        WsRpcChannel channel = WsRpcChannel.create();
+        TestDialer dialer = new TestDialer();
+        JdkWsClient client = connectedClient(channel, dialer);
+        GateEnforcingFake fake = dialer.fakes.get(0);
+        WebSocket.Listener listener = dialer.listeners.get(0);
+        AtomicInteger closes = new AtomicInteger(0);
+        client.onClose(err -> closes.incrementAndGet());
+        try {
+            listener.onClose(fake, WsRpcChannel.REPLACED_CLOSE_CODE, "kicked");
+            assertEquals(1, closes.get());
+            assertEquals(JdkWsClient.State.KICKED, client.getState());
+
+            listener.onClose(fake, WsRpcChannel.REPLACED_CLOSE_CODE, "kicked again");
+            assertEquals(1, closes.get(), "late kick must not refire onClose");
+            assertEquals(JdkWsClient.State.KICKED, client.getState());
+            assertEquals(0, client.getReconnectAttempt());
+        } finally {
+            client.close();
+            channel.shutdown();
+            dialer.shutdown();
+        }
+    }
+
+    @Test
+    void closeIsTerminal() throws Exception {
+        WsRpcChannel channel = WsRpcChannel.create();
+        TestDialer dialer = new TestDialer();
+        JdkWsClient client = connectedClient(channel, dialer);
+        try {
+            client.close();
+
+            assertEquals(JdkWsClient.State.CLOSED, client.getState());
+            assertFalse(client.isOpen());
+
+            client.connect();
+            Thread.sleep(200);
+            assertEquals(JdkWsClient.State.CLOSED, client.getState(), "closed client never redials");
+            assertEquals(1, dialer.fakes.size(), "no second dial after close");
+        } finally {
+            channel.shutdown();
+            dialer.shutdown();
+        }
+    }
+
+    @Test
+    void dropSchedulesReconnectAndRedials() throws Exception {
+        WsRpcChannel channel = WsRpcChannel.create();
+        TestDialer dialer = new TestDialer();
+        JdkWsClient client = connectedClient(channel, dialer);
+        GateEnforcingFake fake = dialer.fakes.get(0);
+        WebSocket.Listener listener = dialer.listeners.get(0);
+        try {
+            listener.onClose(fake, 1000, "bye");
+            assertEquals(JdkWsClient.State.RECONNECT_WAIT, client.getState());
+
+            awaitCondition(() -> client.getState() == JdkWsClient.State.OPEN, "reconnect redials");
+            assertEquals(2, dialer.fakes.size(), "second dial after drop");
+            assertNotNull(channel.getSession());
+        } finally {
+            client.close();
+            channel.shutdown();
+            dialer.shutdown();
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Channel-level session wait (client exposes none)
+    // ------------------------------------------------------------------
+
+    @Test
+    void channelAwaitSessionWaitsForLateOpen() throws Exception {
+        WsRpcChannel channel = WsRpcChannel.create();
+        TestDialer dialer = new TestDialer();
+        JdkWsClient client = JdkWsClient
+                .builder(URI.create("ws://localhost:1/gateway"), channel)
+                .dialer(dialer)
+                .build();
+        try {
+            var waiting = channel.awaitSession(Duration.ofSeconds(5));
+            assertFalse(waiting.isDone(), "no session yet, must wait not fail");
+
+            client.connect();
+            assertNotNull(waiting.get(5, TimeUnit.SECONDS));
+        } finally {
+            client.close();
+            channel.shutdown();
+            dialer.shutdown();
+        }
+    }
+
+    @Test
+    void channelAwaitSessionTimesOutWithoutConnection() {
+        WsRpcChannel channel = WsRpcChannel.create();
+        try {
+            var waiting = channel.awaitSession(Duration.ofMillis(100));
+            Exception err = assertThrows(Exception.class, () -> waiting.get(5, TimeUnit.SECONDS));
+            assertTrue(err instanceof TimeoutException
+                    || err.getCause() instanceof TimeoutException,
+                    "expected TimeoutException, got: " + err);
+        } finally {
+            channel.shutdown();
         }
     }
 }

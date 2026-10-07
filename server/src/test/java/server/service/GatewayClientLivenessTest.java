@@ -2,6 +2,7 @@ package server.service;
 
 import java.io.Closeable;
 import java.lang.reflect.Field;
+import java.lang.reflect.Proxy;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.time.Instant;
@@ -17,6 +18,8 @@ import org.junit.jupiter.api.Test;
 import com.github.benmanes.caffeine.cache.Caffeine;
 
 import arc.files.Fi;
+import io.javalin.websocket.WsCloseContext;
+import io.javalin.websocket.WsConnectContext;
 import dto.ManagerMapDto;
 import dto.ManagerModDto;
 import dto.MapDto;
@@ -27,6 +30,7 @@ import enums.NodeRemoveReason;
 import events.BaseEvent;
 import events.ServerEvents.LogEvent;
 import gateway.session.WsSession;
+import org.eclipse.jetty.websocket.api.Session;
 import server.EnvConfig;
 import server.manager.NodeManager;
 import server.service.translation.TranslationService;
@@ -159,7 +163,8 @@ public class GatewayClientLivenessTest {
         bus.on(events::add);
         EnvConfig env = new EnvConfig(
                 new EnvConfig.DockerEnv("image", "/data", null, null),
-                new EnvConfig.ServerConfig(true, "token", "/data", "ws://localhost/gateway", "http://localhost/"));
+                new EnvConfig.ServerConfig(true, "token", "/data", "ws://localhost/gateway", "http://localhost/"),
+                "test-signing-key");
         TranslationService translations = new TranslationService(Caffeine.newBuilder().build());
         PluginBundleService bundles = new PluginBundleService(new byte[] { 1 }, "test");
         service = new GatewayService(bus, env, new StubNodeManager(), translations, bundles);
@@ -188,6 +193,28 @@ public class GatewayClientLivenessTest {
         Field field = client.getClass().getDeclaredField("lastDisconnectAt");
         field.setAccessible(true);
         field.set(client, Instant.now().minus(age));
+    }
+
+    private static Session jettySession(boolean open) {
+        return (Session) Proxy.newProxyInstance(
+                GatewayClientLivenessTest.class.getClassLoader(),
+                new Class<?>[] { Session.class },
+                (proxy, method, args) -> {
+                    if (method.getName().equals("isOpen")) {
+                        return open;
+                    }
+                    Class<?> rt = method.getReturnType();
+                    if (rt == boolean.class) {
+                        return false;
+                    }
+                    if (rt == int.class) {
+                        return 0;
+                    }
+                    if (rt == long.class) {
+                        return 0L;
+                    }
+                    return null;
+                });
     }
 
     private long warnCount() {
@@ -261,6 +288,31 @@ public class GatewayClientLivenessTest {
 
         client.checkDisconnect();
 
+        assertEquals(0, warnCount());
+        assertFalse(client.shouldTerminate());
+    }
+
+    @Test
+    void staleCloseKeepsConnectedAndClockUntouched() throws Exception {
+        GatewayService.GatewayClient client = client();
+        Session jettyA = jettySession(true);
+        Session jettyB = jettySession(true);
+
+        client.onOpen(new WsConnectContext("conn-A", jettyA));
+        assertNull(disconnectAt(client));
+
+        // Dirty reconnect without a close: overwrite must adopt, not throw.
+        client.onOpen(new WsConnectContext("conn-B", jettyB));
+        assertNull(disconnectAt(client));
+        WsSession adopted = client.rpcChannel().getSession();
+        assertNotNull(adopted);
+
+        // Late close of the superseded connection must be ignored.
+        client.onClose(new WsCloseContext("conn-A", jettyA, 1006, "gone"));
+        assertNull(disconnectAt(client), "stale close must not start the clock");
+        assertSame(adopted, client.rpcChannel().getSession());
+
+        client.checkDisconnect();
         assertEquals(0, warnCount());
         assertFalse(client.shouldTerminate());
     }

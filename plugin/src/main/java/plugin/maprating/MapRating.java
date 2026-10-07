@@ -1,6 +1,7 @@
 package plugin.maprating;
 
 import java.util.HashMap;
+import java.util.Locale;
 
 import arc.Core;
 import arc.util.Log;
@@ -103,7 +104,7 @@ public class MapRating {
         return String.format(avgScoreColor(score) + "%.2f" + "[gold]" + Iconc.star, score);
     }
 
-    public static String getDisplayString(java.util.Locale locale, Map map) {
+    public static String getDisplayString(Locale locale, Map map) {
         try {
             String mapId = map.file.nameWithoutExtension();
             MapRatingData data = load();
@@ -158,7 +159,7 @@ public class MapRating {
 
         } catch (Exception e) {
             Log.err("Failed to get map rating", e);
-            return Tr.t(java.util.Locale.ENGLISH, "maprating.error");
+            return Tr.t(Locale.ENGLISH, "maprating.error");
         }
     }
 

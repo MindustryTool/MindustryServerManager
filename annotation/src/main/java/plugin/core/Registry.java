@@ -11,6 +11,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 public final class Registry {
 
@@ -390,7 +391,7 @@ public final class Registry {
         }
     }
 
-    private static <T> T measure(String name, java.util.function.Supplier<T> action) {
+    private static <T> T measure(String name, Supplier<T> action) {
         long start = System.nanoTime();
         T result = action.get();
         long durationMs = (System.nanoTime() - start) / 1_000_000L;

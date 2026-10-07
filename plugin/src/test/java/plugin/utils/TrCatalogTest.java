@@ -1,5 +1,6 @@
 package plugin.utils;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -201,7 +202,7 @@ public class TrCatalogTest {
     void realEnglishCatalogLoadsCleanAndResolves() throws Exception {
         TrCatalog catalog = new TrCatalog();
         List<String> warnings = new ArrayList<>();
-        String json = new String(getClass().getResourceAsStream("/i18n/en.json").readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+        String json = new String(getClass().getResourceAsStream("/i18n/en.json").readAllBytes(), StandardCharsets.UTF_8);
         catalog.load("en", json, warnings::add);
 
         assertTrue(warnings.isEmpty(), "en.json produced validation warnings: " + warnings);
@@ -218,8 +219,8 @@ public class TrCatalogTest {
     void vietnameseCatalogOverridesEnglishPerLocale() throws Exception {
         TrCatalog catalog = new TrCatalog();
         List<String> warnings = new ArrayList<>();
-        catalog.load("en", new String(getClass().getResourceAsStream("/i18n/en.json").readAllBytes(), java.nio.charset.StandardCharsets.UTF_8), warnings::add);
-        catalog.load("vi", new String(getClass().getResourceAsStream("/i18n/vi.json").readAllBytes(), java.nio.charset.StandardCharsets.UTF_8), warnings::add);
+        catalog.load("en", new String(getClass().getResourceAsStream("/i18n/en.json").readAllBytes(), StandardCharsets.UTF_8), warnings::add);
+        catalog.load("vi", new String(getClass().getResourceAsStream("/i18n/vi.json").readAllBytes(), StandardCharsets.UTF_8), warnings::add);
 
         assertTrue(warnings.isEmpty(), "catalogs produced validation warnings: " + warnings);
         assertTrue(catalog.hasLanguage("vi"));
@@ -246,8 +247,8 @@ public class TrCatalogTest {
         for (String lang : languages) {
             List<String> warnings = new ArrayList<>();
             var stream = getClass().getResourceAsStream("/i18n/" + lang + ".json");
-            org.junit.jupiter.api.Assertions.assertNotNull(stream, "Missing resource for: " + lang);
-            String json = new String(stream.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+            assertNotNull(stream, "Missing resource for: " + lang);
+            String json = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
             catalog.load(lang, json, warnings::add);
 
             assertTrue(warnings.isEmpty(), lang + ".json produced validation warnings: " + warnings);
@@ -257,8 +258,8 @@ public class TrCatalogTest {
             String chooseServer = catalog.lookup(locale, "hub.choose_server");
             String welcomeMsg = catalog.lookup(locale, "welcome.message");
 
-            org.junit.jupiter.api.Assertions.assertNotNull(chooseServer, "hub.choose_server missing in " + lang);
-            org.junit.jupiter.api.Assertions.assertNotNull(welcomeMsg, "welcome.message missing in " + lang);
+            assertNotNull(chooseServer, "hub.choose_server missing in " + lang);
+            assertNotNull(welcomeMsg, "welcome.message missing in " + lang);
             assertFalse(chooseServer.equals("{text}"), "hub.choose_server was not translated in " + lang);
             assertFalse(welcomeMsg.equals("{text}"), "welcome.message was not translated in " + lang);
         }

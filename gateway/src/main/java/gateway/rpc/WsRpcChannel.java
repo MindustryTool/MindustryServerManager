@@ -1,14 +1,19 @@
 package gateway.rpc;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.time.Duration;
+import java.util.ArrayDeque;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
@@ -63,6 +68,8 @@ public class WsRpcChannel {
     public static final String UNSUBSCRIBE_TYPE = "unsubscribe";
     /** Receiver slot idle window, refreshed on every stream frame. */
     static final Duration SLOT_TIMEOUT = Duration.ofSeconds(60);
+    /** Close code sent to a session replaced by a newer open (private use range). */
+    public static final int REPLACED_CLOSE_CODE = 4234;
     /** Absolute bound on slot life from reserve. */
     static final Duration SLOT_CEILING = Duration.ofSeconds(300);
     /** Largest reassembled stream accepted before failing loud (32 MiB). */
@@ -91,20 +98,32 @@ public class WsRpcChannel {
     private final Map<String, SubscriptionHandlerEntry> subscriptionHandlers = new ConcurrentHashMap<>();
     private final Map<UUID, ServerSubscriptionSlot> serverSubscriptions = new ConcurrentHashMap<>();
 
-    private volatile CompletableFuture<WsSession> ready = new CompletableFuture<>();
+    private volatile WsSession current;
+    private final Set<CompletableFuture<WsSession>> sessionWaiters =
+            Collections.newSetFromMap(new ConcurrentHashMap<>());
+    private volatile boolean shutdown = false;
+
+    /**
+     * Per-channel ordered ingress: inbound text and binary frames are processed
+     * one at a time, in call order. Guards stream reassembly against an adapter
+     * that delivers frames from more than one thread (a {@code stream-start}
+     * must never be overtaken by its own chunks).
+     */
+    private final ArrayDeque<Runnable> ingressQueue = new ArrayDeque<>();
+    private boolean ingressActive = false;
 
     public static WsRpcChannel create() {
         return new WsRpcChannel(defaultMapper(), defaultScheduler(), Runnable::run);
     }
 
     public static WsRpcChannel withExecutor(Executor handlerExecutor) {
-        java.util.Objects.requireNonNull(handlerExecutor, "handlerExecutor");
+        Objects.requireNonNull(handlerExecutor, "handlerExecutor");
         return new WsRpcChannel(defaultMapper(), defaultScheduler(), handlerExecutor);
     }
 
     public static WsRpcChannel withMapper(ObjectMapper mapper, Executor handlerExecutor) {
-        java.util.Objects.requireNonNull(mapper, "mapper");
-        java.util.Objects.requireNonNull(handlerExecutor, "handlerExecutor");
+        Objects.requireNonNull(mapper, "mapper");
+        Objects.requireNonNull(handlerExecutor, "handlerExecutor");
         return new WsRpcChannel(mapper, defaultScheduler(), handlerExecutor);
     }
 
@@ -132,32 +151,98 @@ public class WsRpcChannel {
     }
 
     public void onOpen(WsSession session) {
+        WsSession toClose = null;
         synchronized (this) {
             Objects.requireNonNull(session, "session");
+            if (shutdown) {
+                throw new IllegalStateException("Channel is shut down");
+            }
             if (!session.isOpen()) {
                 throw new IllegalStateException("Cannot signal open for a closed session");
             }
 
-            if (ready.isDone()) {
-                if (ready.getNow(null) == session) {
-                    throw new IllegalStateException("onOpen() was called on the same session twice");
-                }
-
-                throw new IllegalStateException("Duplicate onOpen without onClose");
+            WsSession prev = current;
+            if (prev != null && sessionsEqual(prev, session)) {
+                return;
             }
+            current = session;
+            for (CompletableFuture<WsSession> waiter : sessionWaiters) {
+                waiter.complete(session);
+            }
+            sessionWaiters.clear();
+            if (prev != null) {
+                toClose = prev;
+            }
+        }
+        if (toClose != null) {
+            try {
+                toClose.close(REPLACED_CLOSE_CODE, "Replaced by new connection");
+            } catch (Exception e) {
+                LOG.log(Level.FINE, "Failed to close replaced session", e);
+            }
+        }
+    }
 
-            ready.complete(session);
+    private static boolean sessionsEqual(WsSession a, WsSession b) {
+        if (a == b) {
+            return true;
+        }
+        if (a == null || b == null) {
+            return false;
+        }
+        try {
+            return a.equals(b);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * Wait for the current open session, parking on the gate up to SESSION_WAIT.
+     * Never wedges: a close fails waiters, the next open wakes them.
+     */
+    private CompletableFuture<WsSession> awaitOpen() {
+        return awaitOpenUnbounded().orTimeout(SESSION_WAIT.toMillis(), TimeUnit.MILLISECONDS);
+    }
+
+    /**
+     * Wait for an open session up to the given timeout.
+     *
+     * @return future with the open session, or TimeoutException when none appears
+     */
+    public CompletableFuture<WsSession> awaitSession(Duration timeout) {
+        Duration wait = timeout != null ? timeout : SESSION_WAIT;
+        return awaitOpenUnbounded().orTimeout(wait.toMillis(), TimeUnit.MILLISECONDS);
+    }
+
+    private CompletableFuture<WsSession> awaitOpenUnbounded() {
+        WsSession s = current;
+        if (s != null && s.isOpen()) {
+            return CompletableFuture.completedFuture(s);
+        }
+        synchronized (this) {
+            s = current;
+            if (s != null && s.isOpen()) {
+                return CompletableFuture.completedFuture(s);
+            }
+            if (shutdown) {
+                CompletableFuture<WsSession> failed = new CompletableFuture<>();
+                failed.completeExceptionally(new IllegalStateException("WsRpcChannel is shut down"));
+                return failed;
+            }
+            CompletableFuture<WsSession> waiter = new CompletableFuture<>();
+            sessionWaiters.add(waiter);
+            waiter.whenComplete((v, e) -> sessionWaiters.remove(waiter));
+            return waiter;
         }
     }
 
     public void onClose() {
-        synchronized (this) {
-            onClose(new RuntimeException("WebSocket connection closed"));
-        }
+        onClose(new RuntimeException("WebSocket connection closed"));
     }
 
     public WsSession getSession() {
-        return ready.getNow(null);
+        return current;
     }
 
     public ObjectMapper getObjectMapper() {
@@ -315,7 +400,7 @@ public class WsRpcChannel {
      * @return true when a sender or receiver slot was discarded
      */
     public boolean abortStream(UUID streamId) {
-        java.util.Objects.requireNonNull(streamId, "streamId");
+        Objects.requireNonNull(streamId, "streamId");
         String reason = "Stream aborted: " + streamId;
         boolean removed = discardStream(streamId, reason);
         if (removed) {
@@ -568,8 +653,7 @@ public class WsRpcChannel {
         UUID id = request.getId();
         Duration effectiveTimeout = timeout != null ? timeout : DEFAULT_TIMEOUT;
 
-        CompletableFuture<JsonNode> sent = ready.thenApply(s -> s)
-                .orTimeout(SESSION_WAIT.toMillis(), TimeUnit.MILLISECONDS)
+        CompletableFuture<JsonNode> sent = awaitOpen()
                 .thenCompose(s -> transmit(id, request, effectiveTimeout, type, s));
 
         return sent.thenApply(node -> convert(node, responseType));
@@ -619,8 +703,7 @@ public class WsRpcChannel {
             LOG.log(Level.WARNING, "Failed to queue notification: " + type, e);
             return;
         }
-        ready.thenApply(s -> s)
-                .orTimeout(SESSION_WAIT.toMillis(), TimeUnit.MILLISECONDS)
+        awaitOpen()
                 .thenAccept(s -> {
                     if (!s.isOpen()) {
                         return;
@@ -632,7 +715,7 @@ public class WsRpcChannel {
                     }
                 })
                 .exceptionally(err -> {
-                    Throwable cause = err instanceof java.util.concurrent.CompletionException ce
+                    Throwable cause = err instanceof CompletionException ce
                             && ce.getCause() != null ? ce.getCause() : err;
                     if (cause instanceof TimeoutException) {
                         LOG.fine("Dropping notification (session wait timed out): " + type);
@@ -729,8 +812,7 @@ public class WsRpcChannel {
             }
         });
 
-        ready.thenApply(s -> s)
-                .orTimeout(SESSION_WAIT.toMillis(), TimeUnit.MILLISECONDS)
+        awaitOpen()
                 .thenAccept(s -> {
                     if (!s.isOpen()) {
                         clientSubscriptions.remove(subscriptionId);
@@ -747,7 +829,7 @@ public class WsRpcChannel {
                 })
                 .exceptionally(err -> {
                     clientSubscriptions.remove(subscriptionId);
-                    Throwable cause = err instanceof java.util.concurrent.CompletionException ce
+                    Throwable cause = err instanceof CompletionException ce
                             && ce.getCause() != null ? ce.getCause() : err;
                     ackFuture.completeExceptionally(cause);
                     return null;
@@ -815,8 +897,7 @@ public class WsRpcChannel {
                 .withPayload(reason != null ? Map.of("reason", reason) : Map.of())
                 .setResponseOf(requestId);
 
-        ready.thenApply(s -> s)
-                .orTimeout(SESSION_WAIT.toMillis(), TimeUnit.MILLISECONDS)
+        awaitOpen()
                 .thenAccept(s -> {
                     if (!s.isOpen()) {
                         return;
@@ -841,7 +922,7 @@ public class WsRpcChannel {
 
     public <Res> CompletableFuture<Res> sendStream(String type, Object metadata, ByteBuffer data,
             Class<Res> responseType, Duration timeout) {
-        java.util.Objects.requireNonNull(data, "data");
+        Objects.requireNonNull(data, "data");
         ByteBuffer dup = data.duplicate();
         byte[] bytes = new byte[dup.remaining()];
         dup.get(bytes);
@@ -859,7 +940,7 @@ public class WsRpcChannel {
 
     public <Res> CompletableFuture<Res> sendStream(String type, Object metadata, byte[] data,
             Class<Res> responseType, Duration timeout) {
-        java.util.Objects.requireNonNull(data, "data");
+        Objects.requireNonNull(data, "data");
         return sendStreamBytes(type, metadata, data, responseType, timeout);
     }
 
@@ -874,7 +955,7 @@ public class WsRpcChannel {
 
     public <Res> CompletableFuture<Res> sendStream(String type, Object metadata, InputStream data,
             Class<Res> responseType, Duration timeout) {
-        java.util.Objects.requireNonNull(data, "data");
+        Objects.requireNonNull(data, "data");
         try {
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             byte[] buf = new byte[8192];
@@ -883,15 +964,15 @@ public class WsRpcChannel {
                 out.write(buf, 0, n);
             }
             return sendStreamBytes(type, metadata, out.toByteArray(), responseType, timeout);
-        } catch (java.io.IOException e) {
+        } catch (IOException e) {
             throw new RuntimeException("Failed to read stream data for type=" + type, e);
         }
     }
 
     private <Res> CompletableFuture<Res> sendStreamBytes(String type, Object metadata, byte[] bytes,
             Class<Res> responseType, Duration timeout) {
-        java.util.Objects.requireNonNull(type, "type");
-        java.util.Objects.requireNonNull(bytes, "bytes");
+        Objects.requireNonNull(type, "type");
+        Objects.requireNonNull(bytes, "bytes");
         rejectStreamControlType(type);
         Duration effectiveTimeout = timeout != null ? timeout : DEFAULT_TIMEOUT;
         UUID streamId = UUID.randomUUID();
@@ -944,8 +1025,7 @@ public class WsRpcChannel {
             senderStreams.remove(streamId);
         });
 
-        ready.thenApply(s -> s)
-                .orTimeout(SESSION_WAIT.toMillis(), TimeUnit.MILLISECONDS)
+        awaitOpen()
                 .thenAccept(s -> emitStream(startId, type, streamId, startJson, frames, doneJson, s))
                 .exceptionally(err -> {
                     failPending(startId, unwrapCompletion(err));
@@ -977,7 +1057,7 @@ public class WsRpcChannel {
     }
 
     private static Throwable unwrapCompletion(Throwable err) {
-        if (err instanceof java.util.concurrent.CompletionException ce && ce.getCause() != null) {
+        if (err instanceof CompletionException ce && ce.getCause() != null) {
             return ce.getCause();
         }
         return err;
@@ -1043,7 +1123,7 @@ public class WsRpcChannel {
         if (responseType == byte[].class && node.isBinary()) {
             try {
                 return (Res) node.binaryValue();
-            } catch (java.io.IOException e) {
+            } catch (IOException e) {
                 throw new RuntimeException("Cannot read binary RPC payload: " + e.getMessage(), e);
             }
         }
@@ -1069,7 +1149,46 @@ public class WsRpcChannel {
         }
     }
 
+    /**
+     * Run an inbound frame's processing in per-channel arrival order.
+     *
+     * <p>
+     * When the lane is free the caller executes the task inline, so a
+     * single-threaded adapter keeps synchronous semantics. When the lane is
+     * busy the task is queued and the active runner drains it FIFO. Either way
+     * no two frames are processed concurrently on this channel.
+     */
+    private void runOrdered(Runnable task) {
+        synchronized (ingressQueue) {
+            if (ingressActive) {
+                ingressQueue.addLast(task);
+                return;
+            }
+            ingressActive = true;
+        }
+
+        Runnable current = task;
+        while (true) {
+            try {
+                current.run();
+            } catch (Throwable e) {
+                LOG.log(Level.WARNING, "Ingress frame processing failed", e);
+            }
+            synchronized (ingressQueue) {
+                current = ingressQueue.pollFirst();
+                if (current == null) {
+                    ingressActive = false;
+                    return;
+                }
+            }
+        }
+    }
+
     public void onTextMessage(String json) {
+        runOrdered(() -> handleTextMessage(json));
+    }
+
+    private void handleTextMessage(String json) {
         if (json == null || json.isBlank()) {
             return;
         }
@@ -1204,7 +1323,11 @@ public class WsRpcChannel {
      * ignored so redelivered frames stay harmless.
      */
     public void onBinaryMessage(ByteBuffer frame) {
-        java.util.Objects.requireNonNull(frame, "frame");
+        Objects.requireNonNull(frame, "frame");
+        runOrdered(() -> handleBinaryMessage(frame));
+    }
+
+    private void handleBinaryMessage(ByteBuffer frame) {
         final FileTransferHeader header;
         try {
             header = FileTransferHeader.decode(frame.duplicate());
@@ -1608,11 +1731,39 @@ public class WsRpcChannel {
         }
     }
 
+    /**
+     * Close for a known session. Stale closes for a superseded session are ignored.
+     *
+     * @return true when this close cleared the current session
+     */
+    public synchronized boolean onClose(WsSession session, Throwable cause) {
+        if (session != null && current != null && !sessionsEqual(session, current)) {
+            return false;
+        }
+        failAll(causeOf(cause));
+        return true;
+    }
+
     public synchronized void onClose(Throwable cause) {
-        RuntimeException err = cause instanceof RuntimeException re ? re : new RuntimeException(cause);
-        CompletableFuture<WsSession> prev = ready;
-        ready = new CompletableFuture<>();
-        prev.completeExceptionally(err);
+        failAll(causeOf(cause));
+    }
+
+    private static RuntimeException causeOf(Throwable cause) {
+        if (cause instanceof RuntimeException re) {
+            return re;
+        }
+        return new RuntimeException(cause);
+    }
+
+    private void failAll(RuntimeException err) {
+        synchronized (ingressQueue) {
+            ingressQueue.clear();
+        }
+        for (CompletableFuture<WsSession> waiter : sessionWaiters) {
+            waiter.completeExceptionally(err);
+        }
+        sessionWaiters.clear();
+        current = null;
         for (ScheduledFuture<?> t : streamTimeouts.values()) {
             t.cancel(false);
         }
@@ -1673,6 +1824,9 @@ public class WsRpcChannel {
     }
 
     public void shutdown() {
+        synchronized (this) {
+            shutdown = true;
+        }
         onClose(new RuntimeException("WsRpcChannel shutdown"));
         scheduler.shutdownNow();
     }
@@ -1714,7 +1868,7 @@ public class WsRpcChannel {
      */
     public record StreamReply(byte[] data, Object metadata) {
         public StreamReply {
-            java.util.Objects.requireNonNull(data, "data");
+            Objects.requireNonNull(data, "data");
         }
 
         public StreamReply(byte[] data) {

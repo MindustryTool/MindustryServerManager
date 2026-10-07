@@ -234,10 +234,20 @@ public class GatewayService {
 
         public synchronized void onClose(WsCloseContext context) {
             Log.info("Gateway client disconnected: " + id);
-            
+
+            if (context == null) {
+                rpcChannel.onClose(new RuntimeException("Gateway client disconnected: " + id));
+            } else {
+                boolean cleared = rpcChannel.onClose(new JavalinSession(context),
+                        new RuntimeException("Gateway client disconnected: " + id));
+                if (!cleared) {
+                    Log.info("Ignoring stale close for replaced session: " + id);
+                    return;
+                }
+            }
+
             eventBus.emit(new StopEvent(id, NodeRemoveReason.SOCKET_DISCONNECT));
             lastDisconnectAt = Instant.now();
-            rpcChannel.onClose(new RuntimeException("Gateway client disconnected: " + id));
         }
 
         public boolean isTerminated() {
@@ -535,9 +545,16 @@ public class GatewayService {
         /** Session bound to a single connection; a fresh one is created per open. */
         private class JavalinSession implements WsSession {
             private final WsContext socket;
+            private final String connectionId;
 
             JavalinSession(WsContext socket) {
                 this.socket = socket;
+                String id = null;
+                try {
+                    id = socket == null ? null : socket.sessionId();
+                } catch (Exception ignored) {
+                }
+                this.connectionId = id;
             }
 
             @Override
@@ -566,6 +583,25 @@ public class GatewayService {
             @Override
             public boolean isOpen() {
                 return socket != null && socket.session.isOpen();
+            }
+
+            @Override
+            public boolean equals(Object other) {
+                if (this == other) {
+                    return true;
+                }
+                if (!(other instanceof JavalinSession that)) {
+                    return false;
+                }
+                if (connectionId != null && that.connectionId != null) {
+                    return connectionId.equals(that.connectionId);
+                }
+                return false;
+            }
+
+            @Override
+            public int hashCode() {
+                return connectionId != null ? connectionId.hashCode() : System.identityHashCode(this);
             }
         }
 

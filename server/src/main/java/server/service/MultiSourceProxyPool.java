@@ -1,5 +1,6 @@
 package server.service;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.net.ProxySelector;
@@ -64,7 +65,7 @@ public class MultiSourceProxyPool {
         return Collections.unmodifiableList(sources);
     }
 
-    public java.net.InetSocketAddress getNextCandidate() {
+    public InetSocketAddress getNextCandidate() {
         checkAndTriggerRefresh();
 
         InetSocketAddress candidate = pool.poll();
@@ -97,7 +98,7 @@ public class MultiSourceProxyPool {
             }
 
             @Override
-            public void connectFailed(URI uri, SocketAddress sa, java.io.IOException ioe) {
+            public void connectFailed(URI uri, SocketAddress sa, IOException ioe) {
                 if (sa instanceof InetSocketAddress inet) {
                     evict(inet);
                 }

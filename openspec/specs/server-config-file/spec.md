@@ -80,3 +80,17 @@ The system SHALL replace `WEBSOCKET.txt` with a single JSON file `server.json` s
 #### Scenario: No duplicate hosting
 - **WHEN** `autoHost()` runs while hosting is already in progress
 - **THEN** it skips hosting entirely, matching today's `isHosting` guard
+
+### Requirement: Gateway JWT lifetime is one year
+
+`WsHandler.generateServerJwt()` SHALL issue gateway JWTs with a 1-year expiry. Expiry-driven refresh SHALL reuse the existing `server.json` rewrite path preserving `startServer`.
+
+#### Scenario: Fresh token expires in one year
+
+- **WHEN** the manager mints a gateway JWT
+- **THEN** the token expiry is 1 year from mint time
+
+#### Scenario: Yearly refresh preserves config
+
+- **WHEN** a gateway JWT expires after one year
+- **THEN** `server.json` is rewritten with a fresh JWT and the stored `startServer` value is unchanged

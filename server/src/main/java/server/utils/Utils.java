@@ -30,6 +30,7 @@ import dto.ModDto;
 import dto.ModMetaDto;
 import mindustry.core.Version;
 import mindustry.io.MapIO;
+import mindustry.maps.Map;
 import mindustry.mod.Mods.ModMeta;
 
 public class Utils {
@@ -175,12 +176,12 @@ public class Utils {
     }
 
     public static MapDto loadMap(Fi baseFolder, Fi file) {
-        mindustry.maps.Map map = null;
+        Map map = null;
         try {
             map = MapIO.createMap(file, true);
         } catch (Throwable e) {
             Log.err("Can not read map data: " + e.getMessage());
-            map = new mindustry.maps.Map(file, 0, 0, new StringMap(), true, 0, Version.build);
+            map = new Map(file, 0, 0, new StringMap(), true, 0, Version.build);
         }
 
         return new MapDto()

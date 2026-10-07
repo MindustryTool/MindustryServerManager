@@ -7,6 +7,7 @@ import plugin.utils.Tr;
 import plugin.gateway.ApiGateway;
 
 import java.time.Instant;
+import java.util.Locale;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -62,7 +63,7 @@ public class AdminService {
             if (Vars.netServer.admins.isIPBanned(connect.addressTCP)
                     || Vars.netServer.admins.isSubnetBanned(connect.addressTCP)) {
 
-                con.kick(Tr.t(java.util.Locale.ENGLISH, "grief.banned", "discord", Cfg.DISCORD_INVITE_URL));
+                con.kick(Tr.t(Locale.ENGLISH, "grief.banned", "discord", Cfg.DISCORD_INVITE_URL));
             }
         });
     }

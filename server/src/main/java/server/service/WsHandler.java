@@ -1,10 +1,9 @@
 package server.service;
 
 import java.nio.channels.ClosedChannelException;
-import java.security.SecureRandom;
 import java.time.Duration;
-import java.util.Base64;
 import java.util.Date;
+import java.util.Objects;
 import java.util.UUID;
 
 import com.auth0.jwt.JWT;
@@ -16,21 +15,22 @@ import arc.util.Log;
 import dto.ServerConfigDto;
 import io.javalin.websocket.WsConfig;
 import io.javalin.websocket.WsContext;
-import lombok.RequiredArgsConstructor;
-import server.config.Const;
 import server.manager.NodeManager;
 import server.utils.Utils;
 
-@RequiredArgsConstructor
 public class WsHandler {
     private final GatewayService gatewayService;
     private final NodeManager nodeManager;
-    private final String localSigningKey = generateLocalKey();
+    private final String localSigningKey;
 
-    private static String generateLocalKey() {
-        byte[] key = new byte[32];
-        new SecureRandom().nextBytes(key);
-        return Base64.getEncoder().encodeToString(key);
+    public WsHandler(GatewayService gatewayService, NodeManager nodeManager, String localSigningKey) {
+        this.gatewayService = Objects.requireNonNull(gatewayService, "gatewayService");
+        this.nodeManager = Objects.requireNonNull(nodeManager, "nodeManager");
+        String key = localSigningKey == null ? null : localSigningKey.trim();
+        if (key == null || key.isEmpty()) {
+            throw new IllegalArgumentException("Missing required gateway signing key");
+        }
+        this.localSigningKey = key;
     }
 
     public void configure(WsConfig ws) {
@@ -48,29 +48,25 @@ public class WsHandler {
         });
 
         ws.onMessage(handler -> {
-            Const.executorService.execute(() -> {
-                try {
-                    UUID serverId = parseServerJwt(handler);
-                    gatewayService.of(serverId).onMessage(handler);
-                } catch (JWTVerificationException e) {
-                    Log.err("Invalid token for server: " + UUID.fromString(handler.header("X-SERVER-ID")));
-                } catch (Exception e) {
-                    Log.err("Error on message", e);
-                }
-            });
+            try {
+                UUID serverId = parseServerJwt(handler);
+                gatewayService.of(serverId).onMessage(handler);
+            } catch (JWTVerificationException e) {
+                Log.err("Invalid token for server: " + UUID.fromString(handler.header("X-SERVER-ID")));
+            } catch (Exception e) {
+                Log.err("Error on message", e);
+            }
         });
 
         ws.onBinaryMessage(handler -> {
-            Const.executorService.execute(() -> {
-                try {
-                    UUID serverId = parseServerJwt(handler);
-                    gatewayService.of(serverId).onBinary(handler);
-                } catch (JWTVerificationException e) {
-                    Log.err("Invalid token for server: " + UUID.fromString(handler.header("X-SERVER-ID")));
-                } catch (Exception e) {
-                    Log.err("Error on binary message", e);
-                }
-            });
+            try {
+                UUID serverId = parseServerJwt(handler);
+                gatewayService.of(serverId).onBinary(handler);
+            } catch (JWTVerificationException e) {
+                Log.err("Invalid token for server: " + UUID.fromString(handler.header("X-SERVER-ID")));
+            } catch (Exception e) {
+                Log.err("Error on binary message", e);
+            }
         });
 
         ws.onClose(handler -> {
@@ -79,6 +75,12 @@ public class WsHandler {
                 gatewayService.of(serverId).onClose(handler);
             } catch (JWTVerificationException e) {
                 Log.err("Invalid token for server: " + UUID.fromString(handler.header("X-SERVER-ID")));
+                try {
+                    UUID serverId = UUID.fromString(handler.header("X-SERVER-ID"));
+                    gatewayService.of(serverId).onClose(handler);
+                } catch (Exception ex) {
+                    Log.err("Error on close without auth", ex);
+                }
             } catch (Exception e) {
                 Log.err("Error on close", e);
             }
@@ -137,7 +139,7 @@ public class WsHandler {
         return JWT.create()
                 .withSubject(serverId.toString())
                 .withIssuer("MindustryTool")
-                .withExpiresAt(new Date(System.currentTimeMillis() + Duration.ofDays(3650).toMillis()))
+                .withExpiresAt(new Date(System.currentTimeMillis() + Duration.ofDays(365).toMillis()))
                 .sign(Algorithm.HMAC256(localSigningKey));
     }
 }

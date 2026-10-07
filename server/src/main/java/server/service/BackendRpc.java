@@ -17,6 +17,7 @@ import gateway.stream.FileChunkStreamer;
 import lombok.RequiredArgsConstructor;
 import server.manager.NodeManager;
 import server.utils.ApiError;
+import server.utils.Utils;
 
 @RequiredArgsConstructor
 public class BackendRpc {
@@ -71,7 +72,7 @@ public class BackendRpc {
         channel.registerHandler("delete-kicked-ip", DeleteKickedIpRequest.class,
                 req -> serverService.deleteKickedIp(req.serverId(), req.ip()));
         channel.registerHandler("send-chat", ChatRequest.class, req -> {
-            await(gatewayService.of(req.serverId()).server().sendChat(server.utils.Utils.getObjectMapper()
+            await(gatewayService.of(req.serverId()).server().sendChat(Utils.getObjectMapper()
                     .valueToTree(req.message())), "send-chat");
             return null;
         });

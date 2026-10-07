@@ -16,6 +16,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 
+import org.sqlite.JDBC;
 import org.sqlite.SQLiteConfig;
 
 import plugin.orm.query.DeleteQuery;
@@ -383,7 +384,7 @@ public final class SQLiteDatabase implements QuerySource, AutoCloseable {
                 ensureOpen();
                 try {
                     Class.forName(DRIVER);
-                    DriverManager.registerDriver(new org.sqlite.JDBC());
+                    DriverManager.registerDriver(new JDBC());
                 } catch (ClassNotFoundException e) {
                     throw new OrmException("SQLite JDBC driver not found", e);
                 } catch (SQLException e) {

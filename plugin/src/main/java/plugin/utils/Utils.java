@@ -37,6 +37,7 @@ import mindustry.gen.Groups;
 import mindustry.gen.Player;
 import mindustry.io.MapIO;
 import mindustry.io.SaveIO;
+import mindustry.maps.Map;
 import plugin.Control;
 import plugin.core.Registry;
 import plugin.session.SessionService;
@@ -110,7 +111,7 @@ public class Utils {
     }
 
     public static ServerStateDto getState() {
-        mindustry.maps.Map map = Vars.state.map;
+        Map map = Vars.state.map;
         String mapName = map != null ? map.name() : "";
 
         List<ModDto> mods = new ArrayList<>();
