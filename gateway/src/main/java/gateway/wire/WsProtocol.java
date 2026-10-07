@@ -1,4 +1,4 @@
-package gateway.rpc;
+package gateway.wire;
 
 public final class WsProtocol {
 
@@ -24,17 +24,17 @@ public final class WsProtocol {
     /** Kind completing a reply-with-stream that answers a request. */
     public static final String STREAM_REPLY_DONE_TYPE = "stream-reply-done";
     /** Kind opening an event stream (SSE-like). Subject is the event name. */
-    public static final String LISTEN_TYPE = "listen";
+    public static final String SUBSCRIBE_TYPE = "listen";
     /** Kind acknowledging an opened event stream. */
-    public static final String LISTENING_TYPE = "listening";
+    public static final String SUBSCRIBED_TYPE = "listening";
     /** Kind for pushed event-stream events. */
     public static final String EVENT_TYPE = "event";
     /** Kind stopping an event stream. Answered with listen-ended. */
-    public static final String UNLISTEN_TYPE = "unlisten";
+    public static final String UNSUBSCRIBE_TYPE = "unlisten";
     /** Kind marking an event stream gracefully ended. */
-    public static final String LISTEN_ENDED_TYPE = "listen-ended";
+    public static final String SUBSCRIPTION_ENDED_TYPE = "listen-ended";
     /** Kind marking an event stream failed. Payload carries the detail. */
-    public static final String LISTEN_ERROR_TYPE = "listen-error";
+    public static final String SUBSCRIPTION_ERROR_TYPE = "listen-error";
     /** Close code sent to a session replaced by a newer open (private use range). */
     public static final int REPLACED_CLOSE_CODE = 4234;
     /** Largest reassembled stream accepted before failing loud (32 MiB). */

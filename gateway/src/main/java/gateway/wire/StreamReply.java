@@ -1,4 +1,4 @@
-package gateway.rpc;
+package gateway.wire;
 
 import java.util.Objects;
 

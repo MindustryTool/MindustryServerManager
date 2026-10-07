@@ -1,5 +1,6 @@
 package gateway.stream;
 
+
 import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.UUID;
@@ -10,17 +11,17 @@ import java.util.UUID;
  * <pre>
  * 0..15  : UUID transferId (most-significant bits, then least-significant bits, big-endian)
  * 16..19 : int chunkIndex (big-endian)
- * 20..   : raw payload bytes (max 64 KB, see {@link FileChunkStreamer#MAX_CHUNK_BYTES})
+ * 20..   : raw payload bytes (max 64 KB, see {@link ChunkWriter#MAX_CHUNK_BYTES})
  * </pre>
  */
-public final class FileTransferHeader {
+public final class ChunkHeader {
 
     public static final int HEADER_SIZE = 20;
 
     private final UUID transferId;
     private final int chunkIndex;
 
-    public FileTransferHeader(UUID transferId, int chunkIndex) {
+    public ChunkHeader(UUID transferId, int chunkIndex) {
         this.transferId = Objects.requireNonNull(transferId, "transferId");
         if (chunkIndex < 0) {
             throw new IllegalArgumentException("chunkIndex must be >= 0");
@@ -53,7 +54,7 @@ public final class FileTransferHeader {
      */
     public ByteBuffer encodeFrame(byte[] payload, int offset, int length) {
         Objects.requireNonNull(payload, "payload");
-        if (length > FileChunkStreamer.MAX_CHUNK_BYTES) {
+        if (length > ChunkWriter.MAX_CHUNK_BYTES) {
             throw new IllegalArgumentException("chunk payload exceeds 64KB: " + length);
         }
         ByteBuffer buf = ByteBuffer.allocate(HEADER_SIZE + length);
@@ -70,7 +71,7 @@ public final class FileTransferHeader {
      * @return parsed header
      * @throws IllegalArgumentException when fewer than 20 readable bytes remain
      */
-    public static FileTransferHeader decode(ByteBuffer frame) {
+    public static ChunkHeader decode(ByteBuffer frame) {
         Objects.requireNonNull(frame, "frame");
         if (frame.remaining() < HEADER_SIZE) {
             throw new IllegalArgumentException(
@@ -83,7 +84,7 @@ public final class FileTransferHeader {
         if (index < 0) {
             throw new IllegalArgumentException("Negative chunkIndex: " + index);
         }
-        return new FileTransferHeader(new UUID(msb, lsb), index);
+        return new ChunkHeader(new UUID(msb, lsb), index);
     }
 
     /**
@@ -109,8 +110,8 @@ public final class FileTransferHeader {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof FileTransferHeader)) return false;
-        FileTransferHeader that = (FileTransferHeader) o;
+        if (!(o instanceof ChunkHeader)) return false;
+        ChunkHeader that = (ChunkHeader) o;
         return chunkIndex == that.chunkIndex && transferId.equals(that.transferId);
     }
 
@@ -121,6 +122,6 @@ public final class FileTransferHeader {
 
     @Override
     public String toString() {
-        return "FileTransferHeader{transferId=" + transferId + ", chunkIndex=" + chunkIndex + '}';
+        return "ChunkHeader{transferId=" + transferId + ", chunkIndex=" + chunkIndex + '}';
     }
 }

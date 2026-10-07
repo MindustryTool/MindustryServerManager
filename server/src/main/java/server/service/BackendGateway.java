@@ -4,8 +4,8 @@ import java.net.URI;
 
 import arc.util.Log;
 import events.ServerEvents.LogEvent;
-import gateway.client.JdkWsClient;
-import gateway.rpc.WsRpcChannel;
+import gateway.client.WsClient;
+import gateway.rpc.RpcChannel;
 import lombok.Getter;
 import server.config.Const;
 import server.manager.NodeManager;
@@ -18,9 +18,9 @@ public class BackendGateway {
     private final GatewayService gatewayService;
     private final EventBus eventBus;
 
-    private volatile JdkWsClient client;
+    private volatile WsClient client;
     @Getter
-    private volatile WsRpcChannel channel;
+    private volatile RpcChannel channel;
     private volatile Runnable eventUnsubscribe;
 
     private volatile boolean started = false;
@@ -52,11 +52,11 @@ public class BackendGateway {
                     "[red]Invalid BACKEND_WS_URL '" + config.wsUrl() + "'; backend gateway connection suspended", e);
         }
 
-        WsRpcChannel rpcChannel = WsRpcChannel.withExecutor(Const.executorService);
+        RpcChannel rpcChannel = RpcChannel.withExecutor(Const.executorService);
         BackendRpc backendRpc = new BackendRpc(serverService, gatewayService, nodeManager);
         backendRpc.attach(rpcChannel);
 
-        JdkWsClient wsClient = JdkWsClient.builder(uri, rpcChannel)
+        WsClient wsClient = WsClient.builder(uri, rpcChannel)
                 .bearerToken(config.accessToken())
                 .build();
 
@@ -79,7 +79,7 @@ public class BackendGateway {
     }
 
     public boolean isConnected() {
-        JdkWsClient wsClient = this.client;
+        WsClient wsClient = this.client;
         return wsClient != null && wsClient.isOpen();
     }
 
@@ -95,7 +95,7 @@ public class BackendGateway {
                 Log.warn("Failed to unsubscribe backend event bridge", e);
             }
         }
-        JdkWsClient wsClient = this.client;
+        WsClient wsClient = this.client;
         this.client = null;
         if (wsClient != null) {
             try {
@@ -104,7 +104,7 @@ public class BackendGateway {
                 Log.warn("Error closing backend connection", e);
             }
         }
-        WsRpcChannel rpcChannel = this.channel;
+        RpcChannel rpcChannel = this.channel;
         if (rpcChannel != null) {
             rpcChannel.shutdown();
         }

@@ -18,8 +18,8 @@ import gateway.session.WsSession;
  * @param body   the parsed inbound frame
  * @param origin the session that delivered the frame
  */
-record FrameContext<T>(T body, WsSession origin) {
-    FrameContext {
+public record InboundFrame<T>(T body, WsSession origin) {
+    public InboundFrame {
         Objects.requireNonNull(body, "body");
         Objects.requireNonNull(origin, "origin");
     }

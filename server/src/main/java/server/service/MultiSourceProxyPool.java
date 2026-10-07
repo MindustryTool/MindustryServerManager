@@ -25,8 +25,6 @@ import server.service.proxy.ProxyScrapeSource;
 import server.service.proxy.ProxySource;
 
 public class MultiSourceProxyPool {
-
-    // TODO: Better rotation logic
     private static final Duration REFRESH_INTERVAL = Duration.ofHours(2);
 
     private final List<ProxySource> sources;

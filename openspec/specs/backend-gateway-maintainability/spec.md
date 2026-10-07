@@ -10,11 +10,11 @@ Structural contract for the backend gateway (factory-based construction, protoco
 The system SHALL construct `:gateway` clients and channels through explicit factory methods that require all mandatory state up front, with no nullable constructor parameters and no required setter sequencing before use.
 
 #### Scenario: Channel creation without nulls
-- **WHEN** server code creates a `WsRpcChannel` or `JdkWsClient`
+- **WHEN** server code creates a `RpcChannel` or `WsClient`
 - **THEN** no call site passes `null` for mapper, scheduler, executor, or session dependencies
 
 #### Scenario: Fully-formed client before connect
-- **WHEN** a `JdkWsClient` initiates `connect()`
+- **WHEN** a `WsClient` initiates `connect()`
 - **THEN** its RPC channel and binary handler are already bound at construction time, so no message can be dropped due to mis-ordered setters
 
 ### Requirement: Protocol-Seam Class Split

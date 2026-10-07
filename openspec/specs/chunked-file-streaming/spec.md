@@ -18,7 +18,7 @@ The Server Manager SHALL answer Backend `download-file` requests with a reply-wi
 - **THEN** Server Manager rejects the request with a `response-error` message
 
 ### Requirement: Binary Chunked File Upload
-The Server Manager SHALL accept incoming file upload streams from the Backend API over the WSS connection through a registered `WsRpcChannel` stream handler, reassemble binary chunks matching the session `streamId`, enforce contiguity, max-bytes cap, and checksum verification upon receiving `done`, and persist the file to the target container path.
+The Server Manager SHALL accept incoming file upload streams from the Backend API over the WSS connection through a registered `RpcChannel` stream handler, reassemble binary chunks matching the session `streamId`, enforce contiguity, max-bytes cap, and checksum verification upon receiving `done`, and persist the file to the target container path.
 
 #### Scenario: Successful file upload transfer
 - **WHEN** Backend transmits a `start` message followed by binary chunk frames and `done`

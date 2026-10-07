@@ -1,10 +1,10 @@
-package gateway;
+package gateway.wire;
 
 import java.util.UUID;
 
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
+import lombok.NoArgsConstructor;
 
 /**
  * Canonical WebSocket RPC envelope (v2).

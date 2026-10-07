@@ -1,15 +1,15 @@
-package gateway.rpc;
+package gateway.stream;
 
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
 import gateway.session.WsSession;
 
-final class StreamSlot {
+final class PendingStream {
     final UUID streamId;
     final UUID startId;
     final String streamType;
@@ -22,7 +22,7 @@ final class StreamSlot {
     final AtomicInteger receivedBytes = new AtomicInteger();
     long reservedAtNanos = System.nanoTime();
 
-    StreamSlot(UUID streamId, UUID startId, String streamType, JsonNode metadata, int totalChunks,
+    PendingStream(UUID streamId, UUID startId, String streamType, JsonNode metadata, int totalChunks,
             String sha256, UUID replyRequestId, WsSession origin) {
         this.streamId = streamId;
         this.startId = startId;

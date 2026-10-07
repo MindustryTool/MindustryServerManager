@@ -39,8 +39,9 @@ import dto.ServerCommandDto;
 import dto.ServerStateDto;
 import dto.StartServerDto;
 import dto.TranslationRequestDto;
-import gateway.rpc.StreamReply;
-import gateway.rpc.WsRpcChannel;
+import gateway.rpc.RequestContext;
+import gateway.wire.StreamReply;
+import gateway.rpc.RpcChannel;
 import gateway.session.WsSession;
 import enums.NodeRemoveReason;
 import events.BaseEvent;
@@ -161,7 +162,7 @@ public class GatewayService {
 
         private volatile Instant lastDisconnectAt;
 
-        private final WsRpcChannel rpcChannel = WsRpcChannel.withExecutor(Const.executorService);
+        private final RpcChannel rpcChannel = RpcChannel.withExecutor(Const.executorService);
         private volatile boolean removed = false;
 
         @Getter
@@ -176,10 +177,11 @@ public class GatewayService {
             this.id = id;
             this.lastDisconnectAt = createdAt;
 
-            this.registerHandler("get-total-player", Void.class, (_res) -> 0L);
-            this.registerHandler("login", LoginRequestDto.class, body -> backend.login(id, body));
-            this.registerHandler("host", UUID.class, serverId -> backend.host(serverId));
-            this.registerHandler("translate", TranslationRequestDto.class, req -> {
+            this.registerHandler("get-total-player", Void.class, _ctx -> 0L);
+            this.registerHandler("login", LoginRequestDto.class, ctx -> backend.login(id, ctx.body()));
+            this.registerHandler("host", UUID.class, ctx -> backend.host(ctx.body()));
+            this.registerHandler("translate", TranslationRequestDto.class, ctx -> {
+                var req = ctx.body();
                 try {
                     return translationService.translate(req.getText(), req.getTargetLang());
                 } catch (Exception e) {
@@ -188,15 +190,16 @@ public class GatewayService {
                 }
             });
 
-            this.registerHandler("get-plugin-version", Void.class, _ignore -> {
+            this.registerHandler("get-plugin-version", Void.class, _ctx -> {
                 return pluginBundleService.getPluginVersion();
             });
 
-            this.registerHandler("download-plugin", Void.class, _ignore -> {
+            this.registerHandler("download-plugin", Void.class, _ctx -> {
                 return new StreamReply(pluginBundleService.downloadPlugin());
             });
 
-            this.registerHandler("event", JsonNode.class, event -> {
+            this.registerHandler("event", JsonNode.class, ctx -> {
+                var event = ctx.body();
                 var name = event.get("name").asText(null);
 
                 if (name == null) {
@@ -266,7 +269,7 @@ public class GatewayService {
         }
 
         private boolean isSocketClosed() {
-            WsSession session = rpcChannel.getSession();
+            WsSession session = rpcChannel.current();
             return session == null || !session.isOpen();
         }
 
@@ -280,7 +283,7 @@ public class GatewayService {
             terminatedAt = Instant.now();
 
             try {
-                WsSession session = rpcChannel.getSession();
+            WsSession session = rpcChannel.current();
 
                 if (session != null && session.isOpen()) {
                     try {
@@ -343,13 +346,19 @@ public class GatewayService {
             rpcChannel.onBinaryMessage(ByteBuffer.wrap(context.data()));
         }
 
-        public <Req, Res> void registerHandler(String type, Class<Req> clazz, Function<Req, Res> handler) {
+        public <Req, Res> void registerHandler(String type, Class<Req> clazz,
+                Function<RequestContext<Req>, Res> handler) {
             rpcChannel.registerHandler(type, clazz, handler);
         }
 
         /** Exposed for tests and adapters. */
-        public WsRpcChannel rpcChannel() {
+        public RpcChannel rpcChannel() {
             return rpcChannel;
+        }
+
+        /** Wait up to the timeout for the plugin connection to open. */
+        public CompletableFuture<WsSession> awaitSession(Duration timeout) {
+            return rpcChannel.awaitSession(timeout);
         }
 
         public class Backend {

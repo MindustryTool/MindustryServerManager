@@ -7,8 +7,8 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
-import gateway.client.JdkWsClient;
-import gateway.rpc.WsRpcChannel;
+import gateway.client.WsClient;
+import gateway.rpc.RpcChannel;
 import plugin.Cfg;
 
 /**
@@ -16,7 +16,7 @@ import plugin.Cfg;
  * raw JWT plus {@code X-SERVER-ID} resolved fresh on every attempt, and dials
  * without {@code Authorization} when no JWT is available so the manager can
  * provision via {@code Token expired}. Reconnect/backoff behavior itself is
- * covered by {@code JdkWsClient} gateway tests; live provisioning smoke is
+ * covered by {@code WsClient} gateway tests; live provisioning smoke is
  * task 4.3.
  */
 class ApiGatewayHeadersTest {
@@ -65,8 +65,8 @@ class ApiGatewayHeadersTest {
     void nonWsSchemeRejectedByClientBuilder() {
         String resolved = Cfg.resolveGatewayUrl("http://manager:8088/gateway", true);
 
-        assertThrows(IllegalArgumentException.class, () -> JdkWsClient
-                .builder(URI.create(resolved), WsRpcChannel.create())
+        assertThrows(IllegalArgumentException.class, () -> WsClient
+                .builder(URI.create(resolved), RpcChannel.create())
                 .build());
     }
 }

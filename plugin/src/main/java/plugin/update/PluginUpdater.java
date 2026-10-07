@@ -222,7 +222,9 @@ public class PluginUpdater {
             jar.writeBytes(bytes);
             Log.info(bytes.length + " bytes written to plugin.jar");
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
-            Log.err("Failed to update plugin bundle from manager", e);
+            Log.err("Failed to update plugin bundle from manager; aborting restart", e);
+            isRestarting = false;
+            return;
         }
 
         PluginEvents.fire(new UnloadServerEvent(true));

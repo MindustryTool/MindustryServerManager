@@ -2,7 +2,7 @@
 
 ### Requirement: Single connection identity with idempotent teardown
 
-`JdkWsClient` SHALL track the live connection through exactly one `Transport` reference. It SHALL NOT keep parallel `webSocket`, generation, or session-identity fields. Teardown of a connection SHALL be idempotent: repeated drop, kick, or close signals for the same or a superseded transport SHALL be ignored.
+`WsClient` SHALL track the live connection through exactly one `WebSocketConnection` reference. It SHALL NOT keep parallel `webSocket`, generation, or session-identity fields. Teardown of a connection SHALL be idempotent: repeated drop, kick, or close signals for the same or a superseded transport SHALL be ignored.
 
 #### Scenario: One live transport
 
@@ -21,7 +21,7 @@
 
 ### Requirement: Connection state machine
 
-`JdkWsClient` SHALL model connection policy as a state machine over exactly `IDLE`, `CONNECTING`, `OPEN`, `RECONNECT_WAIT`, `KICKED`, `CLOSED`. All transitions SHALL run through one synchronized transition path that performs side effects (start or stop ping, schedule reconnect, notify the channel). `isOpen()` SHALL be true only in `OPEN`.
+`WsClient` SHALL model connection policy as a state machine over exactly `IDLE`, `CONNECTING`, `OPEN`, `RECONNECT_WAIT`, `KICKED`, `CLOSED`. All transitions SHALL run through one synchronized transition path that performs side effects (start or stop ping, schedule reconnect, notify the channel). `isOpen()` SHALL be true only in `OPEN`.
 
 #### Scenario: Connect from idle
 
@@ -50,7 +50,7 @@
 
 ### Requirement: Injectable transport
 
-`JdkWsClient` SHALL obtain its transport through a builder-configurable factory so substitutes can be supplied without production test seams. The client SHALL NOT expose methods whose only purpose is test manipulation of connection state.
+`WsClient` SHALL obtain its transport through a builder-configurable factory so substitutes can be supplied without production test seams. The client SHALL NOT expose methods whose only purpose is test manipulation of connection state.
 
 #### Scenario: Factory supplies transport
 
@@ -64,7 +64,7 @@
 
 ### Requirement: Channel-only session access
 
-`JdkWsClient` SHALL NOT expose a session accessor or session-wait API. Session truth and waiting SHALL be read from `WsRpcChannel` via `getSession()` and `awaitSession(timeout)`.
+`WsClient` SHALL NOT expose a session accessor or session-wait API. Session truth and waiting SHALL be read from `RpcChannel` via `getSession()` and `awaitSession(timeout)`.
 
 #### Scenario: No client session accessor
 
@@ -74,4 +74,4 @@
 #### Scenario: Caller waits on the channel
 
 - **WHEN** a caller needs an open session
-- **THEN** it calls `WsRpcChannel.awaitSession(timeout)` and receives the session or a timeout
+- **THEN** it calls `RpcChannel.awaitSession(timeout)` and receives the session or a timeout

@@ -2,38 +2,38 @@ package gateway.client;
 
 import java.net.http.WebSocket;
 import java.nio.ByteBuffer;
-import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.Objects;
 
-public sealed interface SendOp extends QueueItem
-        permits SendOp.TextOp, SendOp.BinaryOp, SendOp.PingOp, SendOp.CloseOp {
+public sealed interface SendFrame extends OutboundItem
+        permits SendFrame.TextFrame, SendFrame.BinaryFrame, SendFrame.PingFrame, SendFrame.CloseFrame {
 
     void execute(SendContext ctx) throws Exception;
 
-    static SendOp text(String text) {
+    static SendFrame text(String text) {
         Objects.requireNonNull(text, "text");
-        return new TextOp(text);
+        return new TextFrame(text);
     }
 
-    static SendOp binary(byte[] bytes) {
+    static SendFrame binary(byte[] bytes) {
         Objects.requireNonNull(bytes, "bytes");
-        return new BinaryOp(bytes);
+        return new BinaryFrame(bytes);
     }
 
-    static SendOp ping() {
+    static SendFrame ping() {
         byte[] payload = new byte[8];
         ThreadLocalRandom.current().nextBytes(payload);
-        return new PingOp(payload);
+        return new PingFrame(payload);
     }
 
-    static SendOp close(int code, String reason) {
-        return new CloseOp(code, reason == null ? "" : reason);
+    static SendFrame close(int code, String reason) {
+        return new CloseFrame(code, reason == null ? "" : reason);
     }
 
-    record TextOp(String text) implements SendOp {
+    record TextFrame(String text) implements SendFrame {
 
-        public TextOp {
+        public TextFrame {
             Objects.requireNonNull(text, "text");
         }
 
@@ -45,9 +45,9 @@ public sealed interface SendOp extends QueueItem
         }
     }
 
-    record BinaryOp(byte[] bytes) implements SendOp {
+    record BinaryFrame(byte[] bytes) implements SendFrame {
 
-        public BinaryOp {
+        public BinaryFrame {
             Objects.requireNonNull(bytes, "bytes");
         }
 
@@ -59,9 +59,9 @@ public sealed interface SendOp extends QueueItem
         }
     }
 
-    record PingOp(byte[] payload) implements SendOp {
+    record PingFrame(byte[] payload) implements SendFrame {
 
-        public PingOp {
+        public PingFrame {
             Objects.requireNonNull(payload, "payload");
         }
 
@@ -73,9 +73,9 @@ public sealed interface SendOp extends QueueItem
         }
     }
 
-    record CloseOp(int code, String reason) implements SendOp {
+    record CloseFrame(int code, String reason) implements SendFrame {
 
-        public CloseOp {
+        public CloseFrame {
             reason = reason == null ? "" : reason;
         }
 

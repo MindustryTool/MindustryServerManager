@@ -1,43 +1,51 @@
-package gateway.rpc;
+package gateway.subscription;
+
 
 import java.time.Duration;
-import java.util.Map;
-import java.util.Objects;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import gateway.WsMessage;
+import gateway.rpc.FrameWriter;
+import gateway.rpc.InboundFrame;
+import gateway.session.SessionProvider;
+import gateway.session.WsSession;
+import gateway.util.FrameFactory;
+import gateway.wire.NoSessionException;
+import gateway.wire.SubscriptionPayload;
+import gateway.wire.WsMessage;
+import gateway.wire.WsProtocol;
 
-final class SubscriptionProtocol {
+public final class SubscriptionProtocol {
 
     private static final Logger LOG = Logger.getLogger(SubscriptionProtocol.class.getName());
 
     private final ObjectMapper mapper;
     private final ScheduledExecutorService scheduler;
     private final Duration defaultTimeout;
-    private final FrameSink sink;
-    private final SessionGate sessions;
+    private final FrameWriter sink;
+    private final SessionProvider sessions;
 
-    private final Map<UUID, ClientSubscriptionSlot> clientSubscriptions = new ConcurrentHashMap<>();
-    private final Map<String, SubscriptionHandlerEntry> subscriptionHandlers = new ConcurrentHashMap<>();
-    private final Map<UUID, ServerSubscriptionSlot> serverSubscriptions = new ConcurrentHashMap<>();
+    private final Map<UUID, ClientSubscription> clientSubscriptions = new ConcurrentHashMap<>();
+    private final Map<String, RegisteredSubscription> subscriptionHandlers = new ConcurrentHashMap<>();
+    private final Map<UUID, ServerSubscription> serverSubscriptions = new ConcurrentHashMap<>();
 
-    SubscriptionProtocol(ObjectMapper mapper, ScheduledExecutorService scheduler, Duration defaultTimeout,
-            FrameSink sink, SessionGate sessions) {
+    public SubscriptionProtocol(ObjectMapper mapper, ScheduledExecutorService scheduler, Duration defaultTimeout,
+            FrameWriter sink, SessionProvider sessions) {
         this.mapper = Objects.requireNonNull(mapper, "mapper");
         this.scheduler = Objects.requireNonNull(scheduler, "scheduler");
         this.defaultTimeout = Objects.requireNonNull(defaultTimeout, "defaultTimeout");
@@ -45,32 +53,32 @@ final class SubscriptionProtocol {
         this.sessions = Objects.requireNonNull(sessions, "sessions");
     }
 
-    void handleControl(FrameContext<WsMessage<JsonNode>> ctx) {
+    public void handleControl(InboundFrame<WsMessage<JsonNode>> ctx) {
         WsMessage<JsonNode> message = ctx.body();
-        if (WsProtocol.LISTEN_TYPE.equals(message.getKind())) {
+        if (WsProtocol.SUBSCRIBE_TYPE.equals(message.getKind())) {
             handleListen(ctx);
-        } else if (WsProtocol.UNLISTEN_TYPE.equals(message.getKind())) {
+        } else if (WsProtocol.UNSUBSCRIBE_TYPE.equals(message.getKind())) {
             handleUnlisten(ctx);
         }
     }
 
-    void handleClientFrame(FrameContext<WsMessage<JsonNode>> ctx) {
+    public void handleClientFrame(InboundFrame<WsMessage<JsonNode>> ctx) {
         WsMessage<JsonNode> message = ctx.body();
         String kind = message.getKind();
-        if (WsProtocol.LISTENING_TYPE.equals(kind)) {
+        if (WsProtocol.SUBSCRIBED_TYPE.equals(kind)) {
             handleListening(message);
         } else if (WsProtocol.EVENT_TYPE.equals(kind)) {
             handleEvent(message);
-        } else if (WsProtocol.LISTEN_ENDED_TYPE.equals(kind)) {
+        } else if (WsProtocol.SUBSCRIPTION_ENDED_TYPE.equals(kind)) {
             handleListenEnded(message);
-        } else if (WsProtocol.LISTEN_ERROR_TYPE.equals(kind)) {
+        } else if (WsProtocol.SUBSCRIPTION_ERROR_TYPE.equals(kind)) {
             handleListenError(message);
         } else {
             LOG.fine("Dropping event-stream frame with unknown kind: " + kind);
         }
     }
 
-    <Params> void registerEventListener(String event, Class<Params> paramsClass,
+    public <Params> void registerEventListener(String event, Class<Params> paramsClass,
             Function<SubscriptionRequest<Params>, CompletableFuture<Void>> onListen) {
         Objects.requireNonNull(event, "event");
         Objects.requireNonNull(paramsClass, "paramsClass");
@@ -81,34 +89,38 @@ final class SubscriptionProtocol {
 
         Function<SubscriptionRequest<Object>, CompletableFuture<Void>> adapted = req -> onListen
                 .apply(new SubscriptionRequest<>(paramsClass.cast(req.params()), req.handle()));
-        subscriptionHandlers.put(event, new SubscriptionHandlerEntry(paramsClass, adapted));
+        subscriptionHandlers.put(event, new RegisteredSubscription(paramsClass, adapted));
     }
 
-    void unregisterEventListener(String event) {
+    public void unregisterEventListener(String event) {
         subscriptionHandlers.remove(event);
     }
 
-    boolean hasEventListener(String event) {
+    public boolean hasEventListener(String event) {
         return subscriptionHandlers.containsKey(event);
     }
 
-    CompletableFuture<Void> listen(UUID listenId, String event, Object data,
+    public CompletableFuture<Void> subscribe(UUID listenId, String event, Object data,
             Consumer<JsonNode> handler, Duration timeout) {
         Objects.requireNonNull(listenId, "listenId");
         Objects.requireNonNull(event, "event");
         Objects.requireNonNull(handler, "handler");
-        WsMessage<?> request = WsMessage.create(WsProtocol.LISTEN_TYPE)
+        WsSession session = sessions.current();
+        if (session == null || !session.isOpen()) {
+            return CompletableFuture.failedFuture(new NoSessionException(event));
+        }
+        WsMessage<?> request = WsMessage.create(WsProtocol.SUBSCRIBE_TYPE)
                 .setId(listenId)
                 .setEvent(event)
-                .withPayload(mapper.valueToTree(new ListenPayload(data)));
+                .withPayload(mapper.valueToTree(new SubscriptionPayload(data)));
         Duration effectiveTimeout = timeout != null ? timeout : defaultTimeout;
 
         CompletableFuture<Void> ackFuture = new CompletableFuture<>();
-        ClientSubscriptionSlot slot = new ClientSubscriptionSlot(listenId, event, handler, ackFuture);
+        ClientSubscription slot = new ClientSubscription(listenId, event, handler, ackFuture);
         clientSubscriptions.put(listenId, slot);
 
         ScheduledFuture<?> timeoutTask = scheduler.schedule(() -> {
-            ClientSubscriptionSlot removed = clientSubscriptions.remove(listenId);
+            ClientSubscription removed = clientSubscriptions.remove(listenId);
             if (removed != null && !removed.ackFuture.isDone()) {
                 removed.closed = true;
                 removed.ackFuture.completeExceptionally(
@@ -124,36 +136,20 @@ final class SubscriptionProtocol {
             }
         });
 
-        sessions.awaitOpen()
-                .thenAccept(s -> {
-                    if (!s.isOpen()) {
-                        clientSubscriptions.remove(listenId);
-                        ackFuture.completeExceptionally(
-                                new IllegalStateException("No open WebSocket session for listen: " + event));
-                        return;
-                    }
-                    try {
-                        s.sendText(mapper.writeValueAsString(request));
-                    } catch (Exception e) {
-                        clientSubscriptions.remove(listenId);
-                        ackFuture.completeExceptionally(e);
-                    }
-                })
-                .exceptionally(err -> {
-                    clientSubscriptions.remove(listenId);
-                    Throwable cause = err instanceof CompletionException ce
-                            && ce.getCause() != null ? ce.getCause() : err;
-                    ackFuture.completeExceptionally(cause);
-                    return null;
-                });
+        try {
+            session.sendText(mapper.writeValueAsString(request));
+        } catch (Exception e) {
+            clientSubscriptions.remove(listenId);
+            ackFuture.completeExceptionally(e);
+        }
 
         return ackFuture;
     }
 
-    void onListenClose(UUID listenId, Runnable callback) {
+    public void onSubscriptionClose(UUID listenId, Runnable callback) {
         Objects.requireNonNull(listenId, "listenId");
         Objects.requireNonNull(callback, "callback");
-        ClientSubscriptionSlot slot = clientSubscriptions.get(listenId);
+        ClientSubscription slot = clientSubscriptions.get(listenId);
         if (slot == null || slot.closed) {
             try {
                 callback.run();
@@ -165,34 +161,32 @@ final class SubscriptionProtocol {
         }
     }
 
-    void unlisten(UUID listenId, String reason) {
+    public void unsubscribe(UUID listenId, String reason) {
         Objects.requireNonNull(listenId, "listenId");
-        ClientSubscriptionSlot slot = clientSubscriptions.remove(listenId);
+        ClientSubscription slot = clientSubscriptions.remove(listenId);
         if (slot == null) {
             return;
         }
         closeClientSubscription(slot, null);
 
-        WsMessage<?> message = WsMessage.create(WsProtocol.UNLISTEN_TYPE)
+        WsMessage<?> message = WsMessage.create(WsProtocol.UNSUBSCRIBE_TYPE)
                 .setEvent(slot.eventType)
                 .setResponseOf(listenId)
                 .withPayload(reason != null ? Map.of("reason", reason) : Map.of());
 
-        sessions.awaitOpen()
-                .thenAccept(s -> {
-                    if (!s.isOpen()) {
-                        return;
-                    }
-                    try {
-                        s.sendText(mapper.writeValueAsString(message));
-                    } catch (Exception e) {
-                        LOG.log(Level.WARNING, "Failed to send unlisten", e);
-                    }
-                })
-                .exceptionally(err -> null);
+        WsSession session = sessions.current();
+        if (session == null || !session.isOpen()) {
+            LOG.info("Dropping unlisten, no open session for event=" + slot.eventType);
+            return;
+        }
+        try {
+            session.sendText(mapper.writeValueAsString(message));
+        } catch (Exception e) {
+            LOG.log(Level.WARNING, "Failed to send unlisten", e);
+        }
     }
 
-    private void handleListen(FrameContext<WsMessage<JsonNode>> ctx) {
+    private void handleListen(InboundFrame<WsMessage<JsonNode>> ctx) {
         WsMessage<JsonNode> message = ctx.body();
         UUID listenId = message.getId();
         String event = message.getEvent();
@@ -200,28 +194,28 @@ final class SubscriptionProtocol {
             LOG.warning("Dropping listen with missing event");
             return;
         }
-        final ListenPayload listen;
+        final SubscriptionPayload listen;
         try {
             JsonNode payload = message.getPayload();
-            listen = payload == null ? new ListenPayload(null)
-                    : mapper.treeToValue(payload, ListenPayload.class);
+            listen = payload == null ? new SubscriptionPayload(null)
+                    : mapper.treeToValue(payload, SubscriptionPayload.class);
         } catch (JsonProcessingException e) {
             LOG.log(Level.WARNING, "Dropping malformed listen frame: " + e.getMessage(), e);
-            sink.send(ctx.origin(), Frames.listenError(event, listenId,
+            sink.send(ctx.origin(), FrameFactory.subscriptionError(event, listenId,
                     "Malformed listen frame: " + e.getMessage()));
             return;
         }
         if (listen == null) {
             LOG.warning("Dropping listen with missing payload");
-            sink.send(ctx.origin(), Frames.listenError(event, listenId,
+            sink.send(ctx.origin(), FrameFactory.subscriptionError(event, listenId,
                     "Listen is missing required payload"));
             return;
         }
 
-        SubscriptionHandlerEntry entry = subscriptionHandlers.get(event);
+        RegisteredSubscription entry = subscriptionHandlers.get(event);
         if (entry == null) {
             LOG.info("No event listener for: " + event);
-            sink.send(ctx.origin(), Frames.listenError(event, listenId,
+            sink.send(ctx.origin(), FrameFactory.subscriptionError(event, listenId,
                     "unknown event: " + event));
             return;
         }
@@ -231,14 +225,14 @@ final class SubscriptionProtocol {
             params = convertSubscriptionParams(listen.data(), entry);
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Failed to deserialize listen params", e);
-            sink.send(ctx.origin(), Frames.listenError(event, listenId,
+            sink.send(ctx.origin(), FrameFactory.subscriptionError(event, listenId,
                     "Invalid listen parameters: " + e.getMessage()));
             return;
         }
 
-        DefaultPushHandle handle = new DefaultPushHandle(listenId, event, ctx.origin(), sink);
-        ServerSubscriptionSlot slot = new ServerSubscriptionSlot(
-                listenId, event, params, handle, ctx.origin());
+        SessionPushHandle handle = new SessionPushHandle(listenId, event, ctx.origin(), sink);
+        ServerSubscription slot = new ServerSubscription(
+                listenId, event, handle, ctx.origin());
         if (serverSubscriptions.putIfAbsent(listenId, slot) != null) {
             handle.fail("Duplicate event stream ID");
             return;
@@ -257,7 +251,7 @@ final class SubscriptionProtocol {
         }
 
         if (future == null) {
-            sink.send(ctx.origin(), Frames.listeningAck(event, listenId));
+            sink.send(ctx.origin(), FrameFactory.subscribedAck(event, listenId));
             return;
         }
 
@@ -268,23 +262,23 @@ final class SubscriptionProtocol {
                 handle.fail(detail);
                 return;
             }
-            sink.send(ctx.origin(), Frames.listeningAck(event, listenId));
+            sink.send(ctx.origin(), FrameFactory.subscribedAck(event, listenId));
         });
     }
 
-    private void handleUnlisten(FrameContext<WsMessage<JsonNode>> ctx) {
+    private void handleUnlisten(InboundFrame<WsMessage<JsonNode>> ctx) {
         WsMessage<JsonNode> message = ctx.body();
         UUID listenId = message.getResponseOf();
         if (listenId == null) {
             LOG.fine("Dropping unlisten with missing responseOf");
             return;
         }
-        ServerSubscriptionSlot slot = serverSubscriptions.remove(listenId);
+        ServerSubscription slot = serverSubscriptions.remove(listenId);
         if (slot == null) {
             LOG.fine("Dropping unlisten for unknown event stream: " + listenId);
             return;
         }
-        sink.send(slot.origin, Frames.listenEnded(slot.eventType, listenId));
+        sink.send(slot.origin, FrameFactory.subscriptionEnded(slot.eventType, listenId));
         closeServerSubscription(slot);
     }
 
@@ -294,7 +288,7 @@ final class SubscriptionProtocol {
             LOG.fine("Dropping listening without responseOf");
             return;
         }
-        ClientSubscriptionSlot slot = clientSubscriptions.get(listenId);
+        ClientSubscription slot = clientSubscriptions.get(listenId);
         if (slot == null) {
             LOG.fine("Dropping listening for unknown event stream: " + listenId);
             return;
@@ -314,7 +308,7 @@ final class SubscriptionProtocol {
             LOG.fine("Dropping event frame without responseOf");
             return;
         }
-        ClientSubscriptionSlot slot = clientSubscriptions.get(listenId);
+        ClientSubscription slot = clientSubscriptions.get(listenId);
         if (slot == null) {
             LOG.fine("Dropping event for unknown event stream: " + listenId);
             return;
@@ -341,7 +335,7 @@ final class SubscriptionProtocol {
         if (listenId == null) {
             return;
         }
-        ClientSubscriptionSlot slot = clientSubscriptions.remove(listenId);
+        ClientSubscription slot = clientSubscriptions.remove(listenId);
         if (slot == null) {
             return;
         }
@@ -353,7 +347,7 @@ final class SubscriptionProtocol {
         if (listenId == null) {
             return;
         }
-        ClientSubscriptionSlot slot = clientSubscriptions.remove(listenId);
+        ClientSubscription slot = clientSubscriptions.remove(listenId);
         if (slot == null) {
             return;
         }
@@ -364,7 +358,7 @@ final class SubscriptionProtocol {
         closeClientSubscription(slot, new RuntimeException(detail));
     }
 
-    private void closeClientSubscription(ClientSubscriptionSlot slot, Throwable ackError) {
+    private void closeClientSubscription(ClientSubscription slot, Throwable ackError) {
         slot.closed = true;
         if (slot.timeoutTask != null) {
             slot.timeoutTask.cancel(false);
@@ -381,7 +375,7 @@ final class SubscriptionProtocol {
         }
     }
 
-    private void closeServerSubscription(ServerSubscriptionSlot slot) {
+    private void closeServerSubscription(ServerSubscription slot) {
         slot.closed = true;
         slot.handle.complete();
         for (Runnable cb : slot.onCloseCallbacks) {
@@ -393,21 +387,21 @@ final class SubscriptionProtocol {
         }
     }
 
-    void teardownClient(RuntimeException err) {
-        for (ClientSubscriptionSlot slot : clientSubscriptions.values()) {
+    public void teardownClient(RuntimeException err) {
+        for (ClientSubscription slot : clientSubscriptions.values()) {
             closeClientSubscription(slot, err);
         }
         clientSubscriptions.clear();
     }
 
-    void teardownServer() {
-        for (ServerSubscriptionSlot slot : serverSubscriptions.values()) {
+    public void teardownServer() {
+        for (ServerSubscription slot : serverSubscriptions.values()) {
             closeServerSubscription(slot);
         }
         serverSubscriptions.clear();
     }
 
-    private Object convertSubscriptionParams(Object payload, SubscriptionHandlerEntry entry) {
+    private Object convertSubscriptionParams(Object payload, RegisteredSubscription entry) {
         Class<?> clazz = entry.paramsClass;
         if (clazz == null || clazz == Void.class || clazz == Void.TYPE) {
             return null;

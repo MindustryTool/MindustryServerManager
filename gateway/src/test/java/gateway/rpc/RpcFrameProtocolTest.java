@@ -1,39 +1,40 @@
-package gateway;
+package gateway.rpc;
+
+import java.nio.ByteBuffer;
+import java.time.Duration;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.List;
+import java.util.UUID;
+
+import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.nio.ByteBuffer;
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-
-import org.junit.jupiter.api.Test;
-
-import gateway.rpc.WsProtocol;
-import gateway.rpc.WsRpcChannel;
 import gateway.session.WsSession;
+import gateway.wire.WsProtocol;
 
 /**
  * Guards the v2 frame contract: kind is the sole discriminator, subject
  * fields are validated per kind, and notifications are never answered.
  */
-class WsRpcFrameProtocolTest {
+class RpcFrameProtocolTest {
 
     static class Loopback implements WsSession {
-        WsRpcChannel peer;
+        RpcChannel peer;
         final List<String> sent = new CopyOnWriteArrayList<>();
         volatile boolean open = true;
 
         @Override
         public void sendText(String text) {
             sent.add(text);
-            WsRpcChannel p = peer;
+            RpcChannel p = peer;
             if (p != null) {
-                p.onTextMessage(p.getSession(), text);
+                p.onTextMessage(p.current(), text);
             }
         }
 
@@ -52,25 +53,25 @@ class WsRpcFrameProtocolTest {
         }
     }
 
-    private static WsRpcChannel[] pair(Loopback sa, Loopback sb) {
-        WsRpcChannel a = WsRpcChannel.create();
-        WsRpcChannel b = WsRpcChannel.create();
+    private static RpcChannel[] pair(Loopback sa, Loopback sb) {
+        RpcChannel a = RpcChannel.create();
+        RpcChannel b = RpcChannel.create();
         sa.peer = b;
         sb.peer = a;
         a.onOpen(sa);
         b.onOpen(sb);
-        return new WsRpcChannel[] { a, b };
+        return new RpcChannel[] { a, b };
     }
 
     @Test
     void unknownKindDroppedWithNoReply() {
-        WsRpcChannel b = WsRpcChannel.create();
+        RpcChannel b = RpcChannel.create();
         Loopback sb = new Loopback();
         b.onOpen(sb);
 
         String frame = "{\"id\":\"" + UUID.randomUUID() + "\",\"kind\":\"teleport\""
                 + ",\"type\":\"x\",\"payload\":1}";
-        assertDoesNotThrow(() -> b.onTextMessage(b.getSession(), frame));
+        assertDoesNotThrow(() -> b.onTextMessage(b.current(), frame));
         assertTrue(sb.sent.isEmpty(), "unknown kind must stay silent, got: " + sb.sent);
 
         b.shutdown();
@@ -78,12 +79,12 @@ class WsRpcFrameProtocolTest {
 
     @Test
     void absentKindDroppedWithNoReply() {
-        WsRpcChannel b = WsRpcChannel.create();
+        RpcChannel b = RpcChannel.create();
         Loopback sb = new Loopback();
         b.onOpen(sb);
 
         String frame = "{\"id\":\"" + UUID.randomUUID() + "\",\"type\":\"x\",\"payload\":1}";
-        assertDoesNotThrow(() -> b.onTextMessage(b.getSession(), frame));
+        assertDoesNotThrow(() -> b.onTextMessage(b.current(), frame));
         assertTrue(sb.sent.isEmpty(), "absent kind must stay silent, got: " + sb.sent);
 
         b.shutdown();
@@ -91,13 +92,13 @@ class WsRpcFrameProtocolTest {
 
     @Test
     void requestWithoutTypeDroppedWithNoReply() {
-        WsRpcChannel b = WsRpcChannel.create();
+        RpcChannel b = RpcChannel.create();
         Loopback sb = new Loopback();
         b.onOpen(sb);
 
         String frame = "{\"id\":\"" + UUID.randomUUID() + "\",\"kind\":\"" + WsProtocol.REQUEST_TYPE + "\""
                 + ",\"payload\":1}";
-        assertDoesNotThrow(() -> b.onTextMessage(b.getSession(), frame));
+        assertDoesNotThrow(() -> b.onTextMessage(b.current(), frame));
         assertTrue(sb.sent.isEmpty(), "request without type must stay silent, got: " + sb.sent);
 
         b.shutdown();
@@ -105,13 +106,13 @@ class WsRpcFrameProtocolTest {
 
     @Test
     void requestCarryingEventFieldDropped() {
-        WsRpcChannel b = WsRpcChannel.create();
+        RpcChannel b = RpcChannel.create();
         Loopback sb = new Loopback();
         b.onOpen(sb);
 
         String frame = "{\"id\":\"" + UUID.randomUUID() + "\",\"kind\":\"" + WsProtocol.REQUEST_TYPE + "\""
                 + ",\"type\":\"x\",\"event\":\"usage\",\"payload\":1}";
-        assertDoesNotThrow(() -> b.onTextMessage(b.getSession(), frame));
+        assertDoesNotThrow(() -> b.onTextMessage(b.current(), frame));
         assertTrue(sb.sent.isEmpty(), "request carrying an event field must be dropped, got: " + sb.sent);
 
         b.shutdown();
@@ -119,13 +120,13 @@ class WsRpcFrameProtocolTest {
 
     @Test
     void eventFrameWithoutEventDropped() {
-        WsRpcChannel b = WsRpcChannel.create();
+        RpcChannel b = RpcChannel.create();
         Loopback sb = new Loopback();
         b.onOpen(sb);
 
         String frame = "{\"id\":\"" + UUID.randomUUID() + "\",\"kind\":\"" + WsProtocol.EVENT_TYPE + "\""
                 + ",\"responseOf\":\"" + UUID.randomUUID() + "\",\"payload\":1}";
-        assertDoesNotThrow(() -> b.onTextMessage(b.getSession(), frame));
+        assertDoesNotThrow(() -> b.onTextMessage(b.current(), frame));
         assertTrue(sb.sent.isEmpty(), "event frame without event must be dropped, got: " + sb.sent);
 
         b.shutdown();
@@ -133,14 +134,14 @@ class WsRpcFrameProtocolTest {
 
     @Test
     void eventFrameCarryingTypeDropped() {
-        WsRpcChannel b = WsRpcChannel.create();
+        RpcChannel b = RpcChannel.create();
         Loopback sb = new Loopback();
         b.onOpen(sb);
 
         String frame = "{\"id\":\"" + UUID.randomUUID() + "\",\"kind\":\"" + WsProtocol.EVENT_TYPE + "\""
                 + ",\"type\":\"usage\",\"event\":\"usage\",\"responseOf\":\"" + UUID.randomUUID()
                 + "\",\"payload\":1}";
-        assertDoesNotThrow(() -> b.onTextMessage(b.getSession(), frame));
+        assertDoesNotThrow(() -> b.onTextMessage(b.current(), frame));
         assertTrue(sb.sent.isEmpty(), "event frame carrying a type must be dropped, got: " + sb.sent);
 
         b.shutdown();
@@ -148,13 +149,13 @@ class WsRpcFrameProtocolTest {
 
     @Test
     void responseWithoutResponseOfDroppedWithoutCrashing() {
-        WsRpcChannel b = WsRpcChannel.create();
+        RpcChannel b = RpcChannel.create();
         Loopback sb = new Loopback();
         b.onOpen(sb);
 
         String frame = "{\"id\":\"" + UUID.randomUUID() + "\",\"kind\":\"" + WsProtocol.RESPONSE_TYPE + "\""
                 + ",\"type\":\"x\",\"payload\":1}";
-        assertDoesNotThrow(() -> b.onTextMessage(b.getSession(), frame));
+        assertDoesNotThrow(() -> b.onTextMessage(b.current(), frame));
         assertTrue(sb.sent.isEmpty(), "answer without responseOf must stay silent, got: " + sb.sent);
 
         b.shutdown();
@@ -164,12 +165,12 @@ class WsRpcFrameProtocolTest {
     void notificationKindNeverAnswered() throws Exception {
         Loopback sa = new Loopback();
         Loopback sb = new Loopback();
-        WsRpcChannel[] pair = pair(sa, sb);
-        WsRpcChannel a = pair[0];
-        WsRpcChannel b = pair[1];
+        RpcChannel[] pair = pair(sa, sb);
+        RpcChannel a = pair[0];
+        RpcChannel b = pair[1];
 
         CountDownLatch handled = new CountDownLatch(1);
-        b.registerHandler("ping", String.class, s -> {
+        b.registerHandler("ping", String.class, _ctx -> {
             handled.countDown();
             return null;
         });
@@ -191,17 +192,17 @@ class WsRpcFrameProtocolTest {
     void listenFrameRoutesByKindNotType() throws Exception {
         Loopback sa = new Loopback();
         Loopback sb = new Loopback();
-        WsRpcChannel[] pair = pair(sa, sb);
-        WsRpcChannel client = pair[0];
-        WsRpcChannel server = pair[1];
+        RpcChannel[] pair = pair(sa, sb);
+        RpcChannel client = pair[0];
+        RpcChannel server = pair[1];
 
         CountDownLatch listened = new CountDownLatch(1);
         server.registerEventListener("usage", String.class, req -> {
             listened.countDown();
-            return java.util.concurrent.CompletableFuture.completedFuture(null);
+            return CompletableFuture.completedFuture(null);
         });
 
-        var ack = client.listen("usage", null, event -> {}, java.time.Duration.ofSeconds(5));
+        var ack = client.subscribe("usage", null, event -> {}, Duration.ofSeconds(5));
         assertTrue(listened.await(5, TimeUnit.SECONDS), "listen must route to the event listener");
         ack.get(5, TimeUnit.SECONDS);
 

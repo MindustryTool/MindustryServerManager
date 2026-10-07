@@ -25,8 +25,9 @@ import java.util.concurrent.TimeoutException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-import gateway.client.JdkWsClient;
-import gateway.rpc.WsRpcChannel;
+import gateway.client.WsClient;
+import gateway.rpc.RequestContext;
+import gateway.rpc.RpcChannel;
 
 import arc.struct.Seq;
 import arc.util.Log;
@@ -91,8 +92,8 @@ public class ApiGateway {
     private final HostService hostService;
     private final SessionService sessionService;
 
-    private final WsRpcChannel rpcChannel = WsRpcChannel.withMapper(JsonUtils.getObjectMapper(), executor);
-    private final JdkWsClient gatewayClient = JdkWsClient.builder(URI.create(Cfg.gatewayUrl()), rpcChannel)
+    private final RpcChannel rpcChannel = RpcChannel.withMapper(JsonUtils.getObjectMapper(), executor);
+    private final WsClient gatewayClient = WsClient.builder(URI.create(Cfg.gatewayUrl()), rpcChannel)
             .headersSupplier(() -> gatewayHeaders(Cfg.webSocketAuthToken(), Cfg.serverId()))
             .build();
 
@@ -116,22 +117,22 @@ public class ApiGateway {
 
     @Init
     public void init() {
-        this.registerHandler("get-json", Void.class, (request) -> getJson());
-        this.registerHandler("update-player", LoginDto.class, this::updatePlayer);
-        this.registerHandler("pause", Void.class, (request) -> tooglePause());
-        this.registerHandler("get-state", Void.class, (request) -> Utils.getState());
-        this.registerHandler("generate-map-image", Void.class, (request) -> generateMapImage());
-        this.registerHandler("send-command", String[].class, (request) -> sendCommand(request));
-        this.registerHandler("say", String.class, (request) -> say(request));
-        this.registerHandler("host", StartServerDto.class, (request) -> host(request));
-        this.registerHandler("chat", String.class, (request) -> sendChat(request));
-        this.registerHandler("is-hosting", Void.class, (request) -> isHosting());
-        this.registerHandler("get-commands", Void.class, (request) -> getCommands());
-        this.registerHandler("get-players-info", JsonNode.class, (request) -> getPlayersInfo(request));
-        this.registerHandler("get-kicked-ips", Void.class, (request) -> getKicks());
-        this.registerHandler("get-recent-players", Void.class, (request) -> getRecentPlayers());
-        this.registerHandler("delete-kicked-ip", String.class, (request) -> deleteKickedIp(request));
-        this.registerHandler("shutdown", Void.class, (request) -> shutdown());
+        this.registerHandler("get-json", Void.class, _ctx -> getJson());
+        this.registerHandler("update-player", LoginDto.class, ctx -> updatePlayer(ctx.body()));
+        this.registerHandler("pause", Void.class, _ctx -> tooglePause());
+        this.registerHandler("get-state", Void.class, _ctx -> Utils.getState());
+        this.registerHandler("generate-map-image", Void.class, _ctx -> generateMapImage());
+        this.registerHandler("send-command", String[].class, ctx -> sendCommand(ctx.body()));
+        this.registerHandler("say", String.class, ctx -> say(ctx.body()));
+        this.registerHandler("host", StartServerDto.class, ctx -> host(ctx.body()));
+        this.registerHandler("chat", String.class, ctx -> sendChat(ctx.body()));
+        this.registerHandler("is-hosting", Void.class, _ctx -> isHosting());
+        this.registerHandler("get-commands", Void.class, _ctx -> getCommands());
+        this.registerHandler("get-players-info", JsonNode.class, ctx -> getPlayersInfo(ctx.body()));
+        this.registerHandler("get-kicked-ips", Void.class, _ctx -> getKicks());
+        this.registerHandler("get-recent-players", Void.class, _ctx -> getRecentPlayers());
+        this.registerHandler("delete-kicked-ip", String.class, ctx -> deleteKickedIp(ctx.body()));
+        this.registerHandler("shutdown", Void.class, _ctx -> shutdown());
 
         gatewayClient.onOpen(() -> {
             Log.info("[green]Connected to server manager");
@@ -183,12 +184,12 @@ public class ApiGateway {
     }
 
     /** Exposed for tests and adapters. */
-    public WsRpcChannel rpcChannel() {
+    public RpcChannel rpcChannel() {
         return rpcChannel;
     }
 
     public void close() {
-        JdkWsClient client = gatewayClient;
+        WsClient client = gatewayClient;
         if (client != null) {
             client.close();
         }
@@ -201,12 +202,13 @@ public class ApiGateway {
         return null;
     }
 
-    public <Req, Res> void registerHandler(String type, Class<Req> clazz, Function<Req, Res> handler) {
+    public <Req, Res> void registerHandler(String type, Class<Req> clazz,
+            Function<RequestContext<Req>, Res> handler) {
         rpcChannel.registerHandler(type, clazz, handler);
     }
 
     public boolean isConnected() {
-        JdkWsClient client = gatewayClient;
+        WsClient client = gatewayClient;
         return client != null && client.isOpen();
     }
 

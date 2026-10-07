@@ -1,11 +1,12 @@
 package gateway.client;
 
+
 import java.io.ByteArrayOutputStream;
 import java.net.http.WebSocket;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -13,12 +14,13 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.Objects;
 
-import gateway.rpc.WsRpcChannel;
+import gateway.rpc.RpcChannel;
 import gateway.session.WsSession;
+import gateway.util.Causes;
 
 /**
  * One physical socket and everything bound to it: the send queue, the
@@ -26,44 +28,44 @@ import gateway.session.WsSession;
  * channel. A transport is attached at most once and terminates at most
  * once. Late listener events after termination are dropped.
  */
-class Transport implements WsSession {
+class WebSocketConnection implements WsSession {
 
-    private static final Logger LOG = Logger.getLogger(Transport.class.getName());
+    private static final Logger LOG = Logger.getLogger(WebSocketConnection.class.getName());
 
     static final Duration DEFAULT_SEND_TIMEOUT = Duration.ofSeconds(10);
     private static final int QUEUE_WARN_DEPTH = 1000;
 
     /** Policy callbacks owned by the lifecycle. */
     interface Events {
-        void onRemoteClose(Transport transport, int statusCode, String reason);
+        void onRemoteClose(WebSocketConnection transport, int statusCode, String reason);
 
-        void onTransportError(Transport transport, Throwable error);
+        void onTransportError(WebSocketConnection transport, Throwable error);
     }
 
     private final ScheduledExecutorService scheduler;
     private final Duration pingInterval;
     private final Duration pongDeadline;
     private final Duration sendTimeout;
-    private final WsRpcChannel channel;
+    private final RpcChannel channel;
     private final Events events;
 
     private volatile WebSocket socket;
     private final AtomicBoolean terminated = new AtomicBoolean(false);
     private final AtomicBoolean readStarted = new AtomicBoolean(false);
 
-    private final BlockingQueue<QueueItem> sendQueue = new LinkedBlockingQueue<>();
+    private final BlockingQueue<OutboundItem> sendQueue = new LinkedBlockingQueue<>();
     private volatile Thread senderThread;
     private volatile ScheduledFuture<?> pingTask;
     private volatile Instant lastPongAt = Instant.now();
 
     private final WebSocket.Listener listener = new InnerListener();
 
-    Transport(
+    WebSocketConnection(
             ScheduledExecutorService scheduler,
             Duration pingInterval,
             Duration pongDeadline,
             Duration sendTimeout,
-            WsRpcChannel channel,
+            RpcChannel channel,
             Events events) {
 
         this.scheduler = Objects.requireNonNull(scheduler, "scheduler");
@@ -85,11 +87,11 @@ class Transport implements WsSession {
 
         synchronized (this) {
             if (this.socket != null) {
-                throw new IllegalStateException("Transport already attached");
+                throw new IllegalStateException("WebSocketConnection already attached");
             }
 
             if (terminated.get()) {
-                throw new IllegalStateException("Transport terminated");
+                throw new IllegalStateException("WebSocketConnection terminated");
             }
 
             this.socket = socket;
@@ -123,7 +125,7 @@ class Transport implements WsSession {
 
         stopPingTask();
         sendQueue.clear();
-        sendQueue.offer(Control.poison());
+        sendQueue.offer(PoisonPill.poison());
     }
 
     /**
@@ -137,10 +139,10 @@ class Transport implements WsSession {
         WebSocket target = socket;
 
         if (target != null && !target.isOutputClosed()) {
-            sendQueue.offer(SendOp.close(code, reason));
+            sendQueue.offer(SendFrame.close(code, reason));
         }
 
-        sendQueue.offer(Control.poison());
+        sendQueue.offer(PoisonPill.poison());
     }
 
     int queueDepth() {
@@ -152,7 +154,7 @@ class Transport implements WsSession {
         Objects.requireNonNull(text, "text");
 
         try {
-            enqueue(SendOp.text(text));
+            enqueue(SendFrame.text(text));
         } catch (IllegalStateException e) {
             throw e;
         } catch (Exception e) {
@@ -170,7 +172,7 @@ class Transport implements WsSession {
         dup.get(bytes);
 
         try {
-            enqueue(SendOp.binary(bytes));
+            enqueue(SendFrame.binary(bytes));
         } catch (IllegalStateException e) {
             throw e;
         } catch (Exception e) {
@@ -184,7 +186,7 @@ class Transport implements WsSession {
         WebSocket target = socket;
 
         if (target == null) {
-            throw new IllegalStateException("Transport has no socket");
+            throw new IllegalStateException("WebSocketConnection has no socket");
         }
 
         try {
@@ -211,9 +213,9 @@ class Transport implements WsSession {
                 && !target.isInputClosed();
     }
 
-    private void enqueue(QueueItem op) {
+    private void enqueue(OutboundItem op) {
         if (terminated.get()) {
-            throw new IllegalStateException("Transport terminated");
+            throw new IllegalStateException("WebSocketConnection terminated");
         }
 
         WebSocket target = socket;
@@ -227,7 +229,7 @@ class Transport implements WsSession {
         int depth = sendQueue.size();
 
         if (depth >= QUEUE_WARN_DEPTH && depth % QUEUE_WARN_DEPTH == 0) {
-            LOG.warning("Transport send queue depth " + depth);
+            LOG.warning("WebSocketConnection send queue depth " + depth);
         }
     }
 
@@ -247,15 +249,15 @@ class Transport implements WsSession {
     private void senderLoop() {
         try {
             while (!Thread.currentThread().isInterrupted()) {
-                QueueItem item = sendQueue.take();
+                OutboundItem item = sendQueue.take();
 
-                if (item instanceof Control) {
+                if (item instanceof PoisonPill) {
                     return;
                 }
 
-                SendOp op = (SendOp) item;
+                SendFrame op = (SendFrame) item;
 
-                if (terminated.get() && !(op instanceof SendOp.CloseOp)) {
+                if (terminated.get() && !(op instanceof SendFrame.CloseFrame)) {
                     continue;
                 }
 
@@ -274,7 +276,7 @@ class Transport implements WsSession {
                     return;
                 } catch (Exception e) {
                     LOG.log(Level.WARNING, "send failed: " + op.getClass().getSimpleName(), e);
-                    events.onTransportError(this, WsCauses.rootCause(e));
+                    events.onTransportError(this, Causes.rootCause(e));
                 }
             }
         } catch (InterruptedException e) {
@@ -307,7 +309,7 @@ class Transport implements WsSession {
 
                         if (outputDead || pongLate) {
                             String why = outputDead ? "output closed" : "pong timeout";
-                            LOG.warning("Transport dead (" + why + "), dropping transport");
+                            LOG.warning("WebSocketConnection dead (" + why + "), dropping transport");
 
                             try {
                                 ws.abort();
@@ -318,7 +320,7 @@ class Transport implements WsSession {
                             return;
                         }
 
-                        sendQueue.offer(SendOp.ping());
+                        sendQueue.offer(SendFrame.ping());
                     } catch (Exception e) {
                         LOG.log(Level.FINE, "Ping task error", e);
                     }
@@ -374,7 +376,7 @@ class Transport implements WsSession {
                 textAcc.setLength(0);
 
                 try {
-                    channel.onTextMessage(Transport.this, full);
+                    channel.onTextMessage(WebSocketConnection.this, full);
                 } catch (Exception e) {
                     LOG.log(Level.WARNING, "RPC dispatch failed", e);
                 }
@@ -463,7 +465,7 @@ class Transport implements WsSession {
                 return dropped();
             }
 
-            events.onRemoteClose(Transport.this, statusCode, reason);
+            events.onRemoteClose(WebSocketConnection.this, statusCode, reason);
 
             return CompletableFuture.completedFuture(null);
         }
@@ -481,7 +483,7 @@ class Transport implements WsSession {
             } catch (Exception ignored) {
             }
 
-            events.onTransportError(Transport.this, error);
+            events.onTransportError(WebSocketConnection.this, error);
         }
     }
 }

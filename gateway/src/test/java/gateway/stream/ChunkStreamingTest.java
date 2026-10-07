@@ -1,6 +1,4 @@
-package gateway;
-
-import static org.junit.jupiter.api.Assertions.*;
+package gateway.stream;
 
 import java.nio.ByteBuffer;
 import java.util.List;
@@ -9,19 +7,17 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 
-import gateway.stream.FileChunkReceiver;
-import gateway.stream.FileChunkStreamer;
-import gateway.stream.FileTransferHeader;
+import static org.junit.jupiter.api.Assertions.*;
 
-class FileChunkStreamingTest {
+class ChunkStreamingTest {
 
     @Test
     void headerEncodeDecodeRoundTrip() {
         UUID id = UUID.randomUUID();
-        FileTransferHeader header = new FileTransferHeader(id, 7);
+        ChunkHeader header = new ChunkHeader(id, 7);
         ByteBuffer encoded = header.encode();
         assertEquals(20, encoded.remaining());
-        FileTransferHeader decoded = FileTransferHeader.decode(encoded);
+        ChunkHeader decoded = ChunkHeader.decode(encoded);
         assertEquals(header, decoded);
         assertEquals(id, decoded.transferId());
         assertEquals(7, decoded.chunkIndex());
@@ -33,17 +29,17 @@ class FileChunkStreamingTest {
         new Random(42).nextBytes(data);
         UUID id = UUID.randomUUID();
 
-        List<ByteBuffer> frames = FileChunkStreamer.chunk(id, data);
+        List<ByteBuffer> frames = ChunkWriter.chunk(id, data);
         assertEquals(3, frames.size()); // 64k + 64k + 22k
         for (ByteBuffer f : frames) {
-            assertTrue(f.remaining() <= 20 + FileChunkStreamer.MAX_CHUNK_BYTES);
+            assertTrue(f.remaining() <= 20 + ChunkWriter.MAX_CHUNK_BYTES);
         }
 
-        FileChunkReceiver receiver = new FileChunkReceiver();
+        ChunkAssembler receiver = new ChunkAssembler();
         for (ByteBuffer f : frames) {
             receiver.receive(f.duplicate());
         }
-        String sha = FileChunkStreamer.sha256Hex(data);
+        String sha = ChunkWriter.sha256Hex(data);
         byte[] out = receiver.assemble(id, sha);
         assertArrayEquals(data, out);
     }
@@ -52,9 +48,9 @@ class FileChunkStreamingTest {
     void checksumMismatchAborts() {
         byte[] data = "hello gateway streaming".getBytes();
         UUID id = UUID.randomUUID();
-        List<ByteBuffer> frames = FileChunkStreamer.chunk(id, data);
+        List<ByteBuffer> frames = ChunkWriter.chunk(id, data);
 
-        FileChunkReceiver receiver = new FileChunkReceiver();
+        ChunkAssembler receiver = new ChunkAssembler();
         frames.forEach(f -> receiver.receive(f.duplicate()));
 
         assertThrows(SecurityException.class, () -> receiver.assemble(id, "00".repeat(32)));
@@ -66,13 +62,13 @@ class FileChunkStreamingTest {
         byte[] data = new byte[130 * 1024];
         new Random(7).nextBytes(data);
         UUID id = UUID.randomUUID();
-        List<ByteBuffer> frames = FileChunkStreamer.chunk(id, data);
+        List<ByteBuffer> frames = ChunkWriter.chunk(id, data);
 
-        FileChunkReceiver receiver = new FileChunkReceiver();
+        ChunkAssembler receiver = new ChunkAssembler();
         receiver.receive(frames.get(0).duplicate());
         receiver.receive(frames.get(2).duplicate()); // skip index 1
 
         assertThrows(IllegalStateException.class,
-                () -> receiver.assemble(id, FileChunkStreamer.sha256Hex(data)));
+                () -> receiver.assemble(id, ChunkWriter.sha256Hex(data)));
     }
 }

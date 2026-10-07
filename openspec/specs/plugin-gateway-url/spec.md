@@ -28,7 +28,7 @@ The plugin SHALL resolve its southbound gateway URI from the `PLUGIN_GATEWAY_URL
 #### Scenario: Invalid scheme fails fast
 
 - **WHEN** the resolved URL uses a non-`ws`/`wss` scheme
-- **THEN** the plugin rejects it before dialing (via `JdkWsClient` builder) and logs the bad value without blocking plugin load
+- **THEN** the plugin rejects it before dialing (via `WsClient` builder) and logs the bad value without blocking plugin load
 
 ### Requirement: Manager injects resolved gateway URL
 

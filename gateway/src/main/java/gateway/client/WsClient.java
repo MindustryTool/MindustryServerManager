@@ -1,36 +1,38 @@
 package gateway.client;
 
-import java.net.URI;
+
 import java.net.http.HttpClient;
 import java.net.http.WebSocket;
+import java.net.URI;
 import java.time.Duration;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.LinkedHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.Map;
+import java.util.Objects;
 
-import gateway.rpc.WsProtocol;
-import gateway.rpc.WsRpcChannel;
+import gateway.rpc.RpcChannel;
+import gateway.util.Causes;
+import gateway.wire.WsProtocol;
 
 /**
  * Connection policy for one logical socket: dial, backoff, kick, and
  * terminal close. The live socket and everything bound to it lives in
- * the current {@link Transport}; session truth lives in the channel.
+ * the current {@link WebSocketConnection}; session truth lives in the channel.
  * All policy transitions run through one synchronized path.
  */
-public class JdkWsClient {
+public class WsClient {
 
-    private static final Logger LOG = Logger.getLogger(JdkWsClient.class.getName());
+    private static final Logger LOG = Logger.getLogger(WsClient.class.getName());
 
     public static final Duration PING_INTERVAL = Duration.ofSeconds(20);
     public static final Duration PONG_DEADLINE = Duration.ofSeconds(45);
@@ -46,21 +48,21 @@ public class JdkWsClient {
         CLOSED
     }
 
-    public static Builder builder(URI uri, WsRpcChannel channel) {
+    public static Builder builder(URI uri, RpcChannel channel) {
         return new Builder(uri, channel);
     }
 
     public static final class Builder {
 
         private final URI uri;
-        private final WsRpcChannel channel;
+        private final RpcChannel channel;
         private Supplier<Map<String, String>> headersSupplier = Map::of;
         private Duration pingInterval = PING_INTERVAL;
         private Duration pongDeadline = PONG_DEADLINE;
         private Executor executor;
         private WsDialer dialer;
 
-        private Builder(URI uri, WsRpcChannel channel) {
+        private Builder(URI uri, RpcChannel channel) {
             this.uri = Objects.requireNonNull(uri, "uri");
             this.channel = Objects.requireNonNull(channel, "channel");
         }
@@ -101,7 +103,7 @@ public class JdkWsClient {
             return this;
         }
 
-        public JdkWsClient build() {
+        public WsClient build() {
             String scheme = uri.getScheme();
 
             if (scheme == null
@@ -109,7 +111,7 @@ public class JdkWsClient {
                     && !scheme.equalsIgnoreCase("wss"))) {
 
                 throw new IllegalArgumentException(
-                        "JdkWsClient requires a ws:// or wss:// URI, got: " + uri);
+                        "WsClient requires a ws:// or wss:// URI, got: " + uri);
             }
 
             if (pingInterval.isZero() || pingInterval.isNegative()) {
@@ -122,7 +124,7 @@ public class JdkWsClient {
                         "pongDeadline must be positive: " + pongDeadline);
             }
 
-            return new JdkWsClient(this);
+            return new WsClient(this);
         }
     }
 
@@ -134,19 +136,19 @@ public class JdkWsClient {
     private final Duration pongDeadline;
     private final WsDialer dialer;
 
-    private final WsRpcChannel rpcChannel;
+    private final RpcChannel rpcChannel;
     private volatile Runnable onOpenCallback;
     private volatile Consumer<Throwable> onCloseCallback;
 
     private volatile State state = State.IDLE;
-    private volatile Transport current;
-    private volatile Transport dialling;
+    private volatile WebSocketConnection current;
+    private volatile WebSocketConnection dialling;
     private volatile ScheduledFuture<?> reconnectTask;
     private final AtomicInteger reconnectAttempt = new AtomicInteger(0);
 
-    private final Transport.Events transportEvents = new Transport.Events() {
+    private final WebSocketConnection.Events transportEvents = new WebSocketConnection.Events() {
         @Override
-        public void onRemoteClose(Transport transport, int statusCode, String reason) {
+        public void onRemoteClose(WebSocketConnection transport, int statusCode, String reason) {
             if (statusCode == WsProtocol.REPLACED_CLOSE_CODE) {
                 onKick(transport, statusCode, reason);
                 return;
@@ -157,12 +159,12 @@ public class JdkWsClient {
         }
 
         @Override
-        public void onTransportError(Transport transport, Throwable error) {
+        public void onTransportError(WebSocketConnection transport, Throwable error) {
             onDrop(transport, error);
         }
     };
 
-    private JdkWsClient(Builder b) {
+    private WsClient(Builder b) {
         this.uri = b.uri;
         this.headersSupplier = b.headersSupplier;
         this.rpcChannel = b.channel;
@@ -196,12 +198,12 @@ public class JdkWsClient {
         });
     }
 
-    public JdkWsClient onOpen(Runnable callback) {
+    public WsClient onOpen(Runnable callback) {
         this.onOpenCallback = callback;
         return this;
     }
 
-    public JdkWsClient onClose(Consumer<Throwable> callback) {
+    public WsClient onClose(Consumer<Throwable> callback) {
         this.onCloseCallback = callback;
         return this;
     }
@@ -231,7 +233,7 @@ public class JdkWsClient {
     }
 
     int getTransportQueueDepth() {
-        Transport t = current;
+        WebSocketConnection t = current;
         return t == null ? 0 : t.queueDepth();
     }
 
@@ -266,7 +268,7 @@ public class JdkWsClient {
 
     /** Dial now from IDLE, RECONNECT_WAIT, or KICKED. Everywhere else is a no-op. */
     public void connect() {
-        Transport next = beginDial();
+        WebSocketConnection next = beginDial();
 
         if (next != null) {
             dial(next);
@@ -279,7 +281,7 @@ public class JdkWsClient {
 
     /** Terminal close from any state. A closed client never redials. */
     public void close(int code, String reason) {
-        Transport prev;
+        WebSocketConnection prev;
 
         synchronized (this) {
             if (state == State.CLOSED) {
@@ -297,18 +299,18 @@ public class JdkWsClient {
             prev.shutdownGracefully(code, reason);
         }
 
-        rpcChannel.onClose(new RuntimeException("JdkWsClient closed: " + reason));
+        rpcChannel.onClose(new RuntimeException("WsClient closed: " + reason));
 
         scheduler.shutdownNow();
     }
 
-    private synchronized Transport beginDial() {
+    private synchronized WebSocketConnection beginDial() {
         switch (state) {
             case IDLE, RECONNECT_WAIT, KICKED -> {
                 cancelReconnectTask();
 
-                Transport next = new Transport(
-                        scheduler, pingInterval, pongDeadline, Transport.DEFAULT_SEND_TIMEOUT, rpcChannel,
+                WebSocketConnection next = new WebSocketConnection(
+                        scheduler, pingInterval, pongDeadline, WebSocketConnection.DEFAULT_SEND_TIMEOUT, rpcChannel,
                         transportEvents);
                 dialling = next;
                 state = State.CONNECTING;
@@ -320,7 +322,7 @@ public class JdkWsClient {
         }
     }
 
-    private void dial(Transport transport) {
+    private void dial(WebSocketConnection transport) {
         dialer.dial(transport.listener())
                 .thenAccept(ws -> onDialSuccess(transport, ws))
                 .exceptionally(err -> {
@@ -329,7 +331,7 @@ public class JdkWsClient {
                 });
     }
 
-    private void onDialSuccess(Transport transport, WebSocket socket) {
+    private void onDialSuccess(WebSocketConnection transport, WebSocket socket) {
         synchronized (this) {
             if (state != State.CONNECTING || dialling != transport) {
                 try {
@@ -361,7 +363,7 @@ public class JdkWsClient {
         }
     }
 
-    private void onDialFailure(Transport transport, Throwable err) {
+    private void onDialFailure(WebSocketConnection transport, Throwable err) {
         synchronized (this) {
             if (state != State.CONNECTING || dialling != transport) {
                 return;
@@ -371,13 +373,13 @@ public class JdkWsClient {
             state = State.RECONNECT_WAIT;
         }
 
-        Throwable cause = WsCauses.rootCause(err);
+        Throwable cause = Causes.rootCause(err);
         LOG.log(Level.INFO, "WebSocket connect failed to " + uri + ": " + cause.getMessage());
 
         scheduleReconnect();
     }
 
-    private synchronized boolean tryRetire(Transport transport, State next) {
+    private synchronized boolean tryRetire(WebSocketConnection transport, State next) {
         if (transport != current) {
             return false;
         }
@@ -392,7 +394,7 @@ public class JdkWsClient {
         return true;
     }
 
-    private void onDrop(Transport transport, Throwable cause) {
+    private void onDrop(WebSocketConnection transport, Throwable cause) {
         if (!tryRetire(transport, State.RECONNECT_WAIT)) {
             return;
         }
@@ -403,7 +405,7 @@ public class JdkWsClient {
         scheduleReconnect();
     }
 
-    private void onKick(Transport transport, int statusCode, String reason) {
+    private void onKick(WebSocketConnection transport, int statusCode, String reason) {
         if (!tryRetire(transport, State.KICKED)) {
             return;
         }
@@ -451,9 +453,9 @@ public class JdkWsClient {
 
         reconnectTask = scheduler.schedule(
                 () -> {
-                    Transport next;
+                    WebSocketConnection next;
 
-                    synchronized (JdkWsClient.this) {
+                    synchronized (WsClient.this) {
                         reconnectTask = null;
 
                         if (state != State.RECONNECT_WAIT || scheduler.isShutdown()) {

@@ -3,21 +3,21 @@ package gateway.stream;
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Reassembles binary chunk frames produced by {@link FileChunkStreamer}.
+ * Reassembles binary chunk frames produced by {@link ChunkWriter}.
  *
  * <p>Thread-safe. Callers feed frames via {@link #receive(ByteBuffer)} then
  * finalize with {@link #assemble(UUID, String)} which verifies SHA-256 before
  * returning the concatenated bytes.
  */
-public class FileChunkReceiver {
+public class ChunkAssembler {
 
     private final Map<UUID, TreeMap<Integer, byte[]>> buffers = new ConcurrentHashMap<>();
 
@@ -28,9 +28,9 @@ public class FileChunkReceiver {
      */
     public void receive(ByteBuffer frame) {
         Objects.requireNonNull(frame, "frame");
-        FileTransferHeader header = FileTransferHeader.decode(frame);
-        byte[] payload = FileTransferHeader.payloadOf(frame);
-        if (payload.length > FileChunkStreamer.MAX_CHUNK_BYTES) {
+        ChunkHeader header = ChunkHeader.decode(frame);
+        byte[] payload = ChunkHeader.payloadOf(frame);
+        if (payload.length > ChunkWriter.MAX_CHUNK_BYTES) {
             throw new IllegalArgumentException("Chunk payload exceeds 64KB: " + payload.length);
         }
         buffers.computeIfAbsent(header.transferId(), id -> new TreeMap<>())
@@ -84,7 +84,7 @@ public class FileChunkReceiver {
         }
         byte[] assembled = out.toByteArray();
 
-        String actual = FileChunkStreamer.sha256Hex(assembled);
+        String actual = ChunkWriter.sha256Hex(assembled);
         if (!actual.equalsIgnoreCase(expectedSha256Hex)) {
             buffers.remove(transferId);
             throw new SecurityException(

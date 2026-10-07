@@ -1,8 +1,8 @@
 package gateway.rpc;
 
-import gateway.WsMessage;
 import gateway.session.WsSession;
+import gateway.wire.WsMessage;
 
-interface FrameSink {
+public interface FrameWriter {
     void send(WsSession target, WsMessage<?> message);
 }

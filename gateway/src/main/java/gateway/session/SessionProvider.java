@@ -1,11 +1,6 @@
-package gateway.rpc;
+package gateway.session;
 
-import java.util.concurrent.CompletableFuture;
-
-import gateway.session.WsSession;
-
-interface SessionGate {
-    CompletableFuture<WsSession> awaitOpen();
-
+public interface SessionProvider {
+    /** The current open session, or null when none is open. */
     WsSession current();
 }

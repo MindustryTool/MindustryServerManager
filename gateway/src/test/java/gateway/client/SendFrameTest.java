@@ -1,22 +1,22 @@
 package gateway.client;
 
+import java.net.http.WebSocket;
+import java.nio.ByteBuffer;
+import java.time.Duration;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.CompletableFuture;
+
+import org.junit.jupiter.api.Test;
+
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.net.http.WebSocket;
-import java.nio.ByteBuffer;
-import java.time.Duration;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
-
-import org.junit.jupiter.api.Test;
-
-class SendOpTest {
+class SendFrameTest {
 
     static class RecordingFake implements WebSocket {
         final AtomicReference<String> text = new AtomicReference<>();
@@ -103,34 +103,34 @@ class SendOpTest {
         return new SendContext(fake, Duration.ofSeconds(10), new StubEvents());
     }
 
-    static class StubEvents implements Transport.Events {
+    static class StubEvents implements WebSocketConnection.Events {
         @Override
-        public void onRemoteClose(Transport transport, int statusCode, String reason) {
+        public void onRemoteClose(WebSocketConnection transport, int statusCode, String reason) {
         }
 
         @Override
-        public void onTransportError(Transport transport, Throwable error) {
+        public void onTransportError(WebSocketConnection transport, Throwable error) {
         }
     }
 
     @Test
     void textDispatchesPayload() throws Exception {
         RecordingFake fake = new RecordingFake();
-        SendOp.text("hi").execute(ctx(fake));
+        SendFrame.text("hi").execute(ctx(fake));
         assertEquals("hi", fake.text.get());
     }
 
     @Test
     void binaryDispatchesOwnedBytes() throws Exception {
         RecordingFake fake = new RecordingFake();
-        SendOp.binary(new byte[]{1, 2, 3}).execute(ctx(fake));
+        SendFrame.binary(new byte[]{1, 2, 3}).execute(ctx(fake));
         assertArrayEquals(new byte[]{1, 2, 3}, fake.binary.get());
     }
 
     @Test
     void pingCarriesEightBytes() throws Exception {
         RecordingFake fake = new RecordingFake();
-        SendOp.PingOp ping = (SendOp.PingOp) SendOp.ping();
+        SendFrame.PingFrame ping = (SendFrame.PingFrame) SendFrame.ping();
         assertEquals(8, ping.payload().length);
         ping.execute(ctx(fake));
         assertTrue(fake.ping.get() != null);
@@ -139,7 +139,7 @@ class SendOpTest {
     @Test
     void closeNormalizesNullReason() throws Exception {
         RecordingFake fake = new RecordingFake();
-        SendOp.close(1000, null).execute(ctx(fake));
+        SendFrame.close(1000, null).execute(ctx(fake));
         assertEquals(1, fake.closes.get());
         assertEquals("", fake.closeReason.get());
     }
@@ -148,7 +148,7 @@ class SendOpTest {
     void closeSkipsWhenOutputClosed() throws Exception {
         RecordingFake fake = new RecordingFake();
         fake.outputClosed = true;
-        SendOp.close(1000, "bye").execute(ctx(fake));
+        SendFrame.close(1000, "bye").execute(ctx(fake));
         assertEquals(0, fake.closes.get());
     }
 
@@ -156,19 +156,19 @@ class SendOpTest {
     void failedSendThrowsForLoopMapping() {
         RecordingFake fake = new RecordingFake();
         fake.failSends.set(true);
-        assertThrows(Exception.class, () -> SendOp.text("hi").execute(ctx(fake)));
+        assertThrows(Exception.class, () -> SendFrame.text("hi").execute(ctx(fake)));
     }
 
     @Test
     void factoriesRejectNull() {
-        assertThrows(NullPointerException.class, () -> SendOp.text(null));
-        assertThrows(NullPointerException.class, () -> SendOp.binary(null));
+        assertThrows(NullPointerException.class, () -> SendFrame.text(null));
+        assertThrows(NullPointerException.class, () -> SendFrame.binary(null));
         assertThrows(NullPointerException.class, () -> new SendContext(null, Duration.ofSeconds(1), new StubEvents()));
     }
 
     @Test
     void controlIsSingleQueueSignal() {
-        assertSame(Control.POISON, Control.poison());
+        assertSame(PoisonPill.POISON, PoisonPill.poison());
     }
 
     @Test
@@ -177,6 +177,6 @@ class SendOpTest {
         Duration custom = Duration.ofMillis(250);
         SendContext context = new SendContext(fake, custom, new StubEvents());
         assertEquals(custom, context.sendTimeout());
-        assertEquals(Duration.ofSeconds(10), Transport.DEFAULT_SEND_TIMEOUT);
+        assertEquals(Duration.ofSeconds(10), WebSocketConnection.DEFAULT_SEND_TIMEOUT);
     }
 }

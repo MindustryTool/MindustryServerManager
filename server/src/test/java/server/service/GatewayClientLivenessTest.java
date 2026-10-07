@@ -304,13 +304,13 @@ public class GatewayClientLivenessTest {
         // Dirty reconnect without a close: overwrite must adopt, not throw.
         client.onOpen(new WsConnectContext("conn-B", jettyB));
         assertNull(disconnectAt(client));
-        WsSession adopted = client.rpcChannel().getSession();
+        WsSession adopted = client.rpcChannel().current();
         assertNotNull(adopted);
 
         // Late close of the superseded connection must be ignored.
         client.onClose(new WsCloseContext("conn-A", jettyA, 1006, "gone"));
         assertNull(disconnectAt(client), "stale close must not start the clock");
-        assertSame(adopted, client.rpcChannel().getSession());
+        assertSame(adopted, client.rpcChannel().current());
 
         client.checkDisconnect();
         assertEquals(0, warnCount());

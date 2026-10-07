@@ -7,7 +7,7 @@ import java.util.Objects;
 public record SendContext(
         WebSocket socket,
         Duration sendTimeout,
-        Transport.Events events) {
+        WebSocketConnection.Events events) {
 
     public SendContext {
         Objects.requireNonNull(socket, "socket");

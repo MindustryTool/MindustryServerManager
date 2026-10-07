@@ -1,30 +1,31 @@
-package gateway;
+package gateway.rpc;
 
-import static org.junit.jupiter.api.Assertions.*;
 
 import java.nio.ByteBuffer;
 import java.time.Duration;
-import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
-import org.junit.jupiter.api.Test;
+import java.util.concurrent.TimeUnit;
+import java.util.List;
+import java.util.UUID;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.Test;
 
-import gateway.rpc.WsProtocol;
-import gateway.rpc.WsRpcChannel;
+import static org.junit.jupiter.api.Assertions.*;
+
 import gateway.session.WsSession;
+import gateway.wire.NoSessionException;
+import gateway.wire.WsMessage;
+import gateway.wire.WsProtocol;
 
-class WsRpcChannelTest {
+class RpcChannelTest {
 
     static class Loopback implements WsSession {
-        WsRpcChannel peer;
+        RpcChannel peer;
         final List<String> sent = new CopyOnWriteArrayList<>();
         volatile boolean open = true;
         volatile int lastCloseCode = -1;
@@ -33,9 +34,9 @@ class WsRpcChannelTest {
         @Override
         public void sendText(String text) {
             sent.add(text);
-            WsRpcChannel p = peer;
+            RpcChannel p = peer;
             if (p != null) {
-                p.onTextMessage(p.getSession(), text);
+                p.onTextMessage(p.current(), text);
             }
         }
 
@@ -58,8 +59,8 @@ class WsRpcChannelTest {
 
     @Test
     void requestResponseCorrelation() throws Exception {
-        WsRpcChannel a = WsRpcChannel.create();
-        WsRpcChannel b = WsRpcChannel.create();
+        RpcChannel a = RpcChannel.create();
+        RpcChannel b = RpcChannel.create();
         Loopback sa = new Loopback();
         Loopback sb = new Loopback();
         sa.peer = b;
@@ -67,7 +68,7 @@ class WsRpcChannelTest {
         a.onOpen(sa);
         b.onOpen(sb);
 
-        b.registerHandler("echo", String.class, s -> "hello:" + s);
+        b.registerHandler("echo", String.class, ctx -> "hello:" + ctx.body());
 
         CompletableFuture<String> res = a.sendRequest("echo", "world", String.class, Duration.ofSeconds(5));
         assertEquals("hello:world", res.get(5, TimeUnit.SECONDS));
@@ -78,8 +79,8 @@ class WsRpcChannelTest {
 
     @Test
     void requestFrameDeclaresKindAndType() throws Exception {
-        WsRpcChannel a = WsRpcChannel.create();
-        WsRpcChannel b = WsRpcChannel.create();
+        RpcChannel a = RpcChannel.create();
+        RpcChannel b = RpcChannel.create();
         Loopback sa = new Loopback();
         Loopback sb = new Loopback();
         sa.peer = b;
@@ -87,7 +88,7 @@ class WsRpcChannelTest {
         a.onOpen(sa);
         b.onOpen(sb);
 
-        b.registerHandler("echo", String.class, s -> "hello:" + s);
+        b.registerHandler("echo", String.class, ctx -> "hello:" + ctx.body());
 
         CompletableFuture<String> res = a.sendRequest("echo", "world", String.class, Duration.ofSeconds(5));
         assertEquals("hello:world", res.get(5, TimeUnit.SECONDS));
@@ -112,7 +113,7 @@ class WsRpcChannelTest {
 
     @Test
     void timeoutCompletesExceptionally() {
-        WsRpcChannel a = WsRpcChannel.create();
+        RpcChannel a = RpcChannel.create();
         Loopback sa = new Loopback();
         a.onOpen(sa); // no peer, never responds
 
@@ -131,65 +132,60 @@ class WsRpcChannelTest {
     }
 
     @Test
-    void requestWaitsForSessionThenCorrelates() throws Exception {
-        WsRpcChannel a = WsRpcChannel.create();
-        WsRpcChannel b = WsRpcChannel.create();
+    void requestFailsFastOfflineAndDoesNotReplay() {
+        RpcChannel a = RpcChannel.create();
+        RpcChannel b = RpcChannel.create();
         Loopback sa = new Loopback();
         Loopback sb = new Loopback();
         sa.peer = b;
         sb.peer = a;
         b.onOpen(sb);
-        b.registerHandler("echo", String.class, s -> "hello:" + s);
+        b.registerHandler("echo", String.class, ctx -> "hello:" + ctx.body());
 
-        // No session on a yet: request suspends instead of failing fast.
+        // No session on a yet: request fails fast instead of parking.
         CompletableFuture<String> res =
                 a.sendRequest("echo", "world", String.class, Duration.ofSeconds(5));
-        assertFalse(res.isDone(), "request must wait for a session, not fail fast");
+        assertTrue(res.isCompletedExceptionally(), "offline request must fail fast");
+        Exception err = assertThrows(Exception.class, () -> res.get(1, TimeUnit.SECONDS));
+        assertInstanceOf(NoSessionException.class, err.getCause());
+        assertEquals("echo", ((NoSessionException) err.getCause()).requestedType());
 
+        // A later session must not transmit the abandoned request.
         a.onOpen(sa);
-        assertEquals("hello:world", res.get(5, TimeUnit.SECONDS));
+        assertTrue(sa.sent.isEmpty(), "offline request must not be replayed on a later session");
 
         a.shutdown();
         b.shutdown();
     }
 
     @Test
-    void closeDuringSessionWaitFails() {
-        WsRpcChannel a = WsRpcChannel.create();
+    void offlineFailureIsDistinctFromTimeout() {
+        RpcChannel a = RpcChannel.create();
 
-        CompletableFuture<String> res =
+        CompletableFuture<String> offline =
                 a.sendRequest("ghost", "x", String.class, Duration.ofMinutes(1));
-        assertFalse(res.isDone());
-        a.onClose(new RuntimeException("boom"));
-        assertTrue(res.isCompletedExceptionally());
-        try {
-            res.get(5, TimeUnit.SECONDS);
-            fail("expected close cause");
-        } catch (Exception e) {
-            assertTrue(e.getMessage().contains("boom")
-                    || (e.getCause() != null && e.getCause().getMessage().contains("boom")),
-                    "expected close cause, got: " + e);
-        }
+        Exception offlineErr = assertThrows(Exception.class, () -> offline.get(1, TimeUnit.SECONDS));
+        assertInstanceOf(NoSessionException.class, offlineErr.getCause());
 
         a.shutdown();
     }
 
     @Test
-    void notificationWaitsForSessionThenSends() {
-        WsRpcChannel a = WsRpcChannel.create();
-        WsRpcChannel b = WsRpcChannel.create();
+    void notificationDropsWhenNoSessionAndIsNotReplayed() {
+        RpcChannel a = RpcChannel.create();
+        RpcChannel b = RpcChannel.create();
         Loopback sa = new Loopback();
         Loopback sb = new Loopback();
         sa.peer = b;
         sb.peer = a;
         b.onOpen(sb);
-        b.registerHandler("ping", String.class, s -> null);
+        b.registerHandler("ping", String.class, _ctx -> null);
 
         a.sendNotification("ping", "x");
         assertTrue(sa.sent.isEmpty(), "nothing can be sent before a session opens");
 
         a.onOpen(sa);
-        assertFalse(sa.sent.isEmpty(), "queued notification must flush once the session opens");
+        assertTrue(sa.sent.isEmpty(), "a dropped notification must not be replayed on the new session");
 
         a.shutdown();
         b.shutdown();
@@ -197,7 +193,7 @@ class WsRpcChannelTest {
 
     @Test
     void notificationDroppedOnClose() {
-        WsRpcChannel a = WsRpcChannel.create();
+        RpcChannel a = RpcChannel.create();
         Loopback sa = new Loopback();
 
         a.sendNotification("ping", "x");
@@ -209,8 +205,8 @@ class WsRpcChannelTest {
 
     @Test
     void notificationNeverAnsweredEvenWhenUnknown() throws Exception {
-        WsRpcChannel a = WsRpcChannel.create();
-        WsRpcChannel b = WsRpcChannel.create();
+        RpcChannel a = RpcChannel.create();
+        RpcChannel b = RpcChannel.create();
         Loopback sa = new Loopback();
         Loopback sb = new Loopback();
         sa.peer = b;
@@ -219,7 +215,7 @@ class WsRpcChannelTest {
         b.onOpen(sb);
 
         CountDownLatch handled = new CountDownLatch(1);
-        b.registerHandler("ping", String.class, s -> {
+        b.registerHandler("ping", String.class, _ctx -> {
             handled.countDown();
             return null;
         });
@@ -243,7 +239,7 @@ class WsRpcChannelTest {
 
     @Test
     void awaitSessionCompletesImmediatelyWhenOpen() throws Exception {
-        WsRpcChannel a = WsRpcChannel.create();
+        RpcChannel a = RpcChannel.create();
         Loopback sa = new Loopback();
         a.onOpen(sa);
 
@@ -253,29 +249,41 @@ class WsRpcChannelTest {
     }
 
     @Test
-    void awaitSessionFailsWhenCloseArrivesFirst() {
-        WsRpcChannel a = WsRpcChannel.create();
+    void awaitSessionCompletesWhenSessionOpensLater() throws Exception {
+        RpcChannel a = RpcChannel.create();
+        Loopback sa = new Loopback();
 
-        CompletableFuture<WsSession> waiting = a.awaitSession(Duration.ofMinutes(1));
-        assertFalse(waiting.isDone());
+        CompletableFuture<WsSession> waiting = a.awaitSession(Duration.ofSeconds(5));
+        assertFalse(waiting.isDone(), "no session yet: poll must wait, not fail");
 
-        a.onClose(new RuntimeException("gone"));
-        assertTrue(waiting.isCompletedExceptionally());
+        a.onOpen(sa);
+        assertSame(sa, waiting.get(5, TimeUnit.SECONDS));
+
+        a.shutdown();
+    }
+
+    @Test
+    void awaitSessionTimesOutWithoutSession() {
+        RpcChannel a = RpcChannel.create();
+
+        CompletableFuture<WsSession> waiting = a.awaitSession(Duration.ofMillis(100));
+        Exception err = assertThrows(Exception.class, () -> waiting.get(5, TimeUnit.SECONDS));
+        assertInstanceOf(TimeoutException.class, err.getCause());
 
         a.shutdown();
     }
 
     @Test
     void overwriteOnOpenClosesOldWith4234AndAdoptsNew() {
-        WsRpcChannel a = WsRpcChannel.create();
+        RpcChannel a = RpcChannel.create();
         Loopback oldSession = new Loopback();
         Loopback newSession = new Loopback();
         a.onOpen(oldSession);
-        assertSame(oldSession, a.getSession());
+        assertSame(oldSession, a.current());
 
         assertDoesNotThrow(() -> a.onOpen(newSession));
 
-        assertSame(newSession, a.getSession());
+        assertSame(newSession, a.current());
         assertFalse(oldSession.isOpen());
         assertEquals(WsProtocol.REPLACED_CLOSE_CODE, oldSession.lastCloseCode);
         assertTrue(newSession.isOpen());
@@ -285,13 +293,13 @@ class WsRpcChannelTest {
 
     @Test
     void sameSessionOpenIsNoOp() {
-        WsRpcChannel a = WsRpcChannel.create();
+        RpcChannel a = RpcChannel.create();
         Loopback session = new Loopback();
         a.onOpen(session);
 
         assertDoesNotThrow(() -> a.onOpen(session));
 
-        assertSame(session, a.getSession());
+        assertSame(session, a.current());
         assertEquals(-1, session.lastCloseCode);
 
         a.shutdown();
@@ -299,7 +307,7 @@ class WsRpcChannelTest {
 
     @Test
     void staleCloseIsIgnored() {
-        WsRpcChannel a = WsRpcChannel.create();
+        RpcChannel a = RpcChannel.create();
         Loopback oldSession = new Loopback();
         Loopback newSession = new Loopback();
         a.onOpen(oldSession);
@@ -307,39 +315,40 @@ class WsRpcChannelTest {
 
         assertFalse(a.onClose(oldSession, new RuntimeException("late")));
 
-        assertSame(newSession, a.getSession());
+        assertSame(newSession, a.current());
         assertTrue(newSession.isOpen());
 
         a.shutdown();
     }
 
     @Test
-    void postCloseSendWaitsFreshAndSucceedsOnReopen() throws Exception {
-        WsRpcChannel a = WsRpcChannel.create();
-        WsRpcChannel b = WsRpcChannel.create();
+    void postCloseSendFailsFastWithoutReplay() throws Exception {
+        RpcChannel a = RpcChannel.create();
+        RpcChannel b = RpcChannel.create();
         Loopback sa = new Loopback();
         Loopback sb = new Loopback();
         sa.peer = b;
         sb.peer = a;
         a.onOpen(sa);
         b.onOpen(sb);
-        b.registerHandler("echo", String.class, s -> "hi:" + s);
+        b.registerHandler("echo", String.class, ctx -> "hi:" + ctx.body());
 
         CompletableFuture<String> live =
                 a.sendRequest("echo", "1", String.class, Duration.ofSeconds(5));
         assertEquals("hi:1", live.get(5, TimeUnit.SECONDS));
 
         a.onClose(new RuntimeException("blip"));
-        assertNull(a.getSession());
+        assertNull(a.current());
 
         CompletableFuture<String> after =
                 a.sendRequest("echo", "2", String.class, Duration.ofSeconds(5));
-        assertFalse(after.isDone(), "post-close send must wait fresh, not fail");
+        assertTrue(after.isCompletedExceptionally(), "post-close send must fail fast");
 
         Loopback sa2 = new Loopback();
         sa2.peer = b;
         a.onOpen(sa2);
-        assertEquals("hi:2", after.get(5, TimeUnit.SECONDS));
+        Thread.sleep(100);
+        assertTrue(sa2.sent.isEmpty(), "the failed request must not ride the new session");
 
         a.shutdown();
         b.shutdown();
@@ -347,15 +356,15 @@ class WsRpcChannelTest {
 
     @Test
     void dirtyReconnectWithoutCloseKeepsRequestsFlowing() throws Exception {
-        WsRpcChannel a = WsRpcChannel.create();
-        WsRpcChannel b = WsRpcChannel.create();
+        RpcChannel a = RpcChannel.create();
+        RpcChannel b = RpcChannel.create();
         Loopback sa1 = new Loopback();
         Loopback sb = new Loopback();
         sa1.peer = b;
         sb.peer = a;
         a.onOpen(sa1);
         b.onOpen(sb);
-        b.registerHandler("echo", String.class, s -> "v:" + s);
+        b.registerHandler("echo", String.class, ctx -> "v:" + ctx.body());
 
         CompletableFuture<String> first =
                 a.sendRequest("echo", "1", String.class, Duration.ofSeconds(5));
@@ -378,7 +387,7 @@ class WsRpcChannelTest {
     }
 
     @Test
-    void onOpenRejectsNullAndClosed() {        WsRpcChannel a = WsRpcChannel.create();
+    void onOpenRejectsNullAndClosed() {        RpcChannel a = RpcChannel.create();
         assertThrows(NullPointerException.class, () -> a.onOpen(null));
 
         Loopback closed = new Loopback();
@@ -390,7 +399,7 @@ class WsRpcChannelTest {
 
     @Test
     void onCloseFailsPending() {
-        WsRpcChannel a = WsRpcChannel.create();
+        RpcChannel a = RpcChannel.create();
         Loopback sa = new Loopback();
         a.onOpen(sa);
 
@@ -403,8 +412,8 @@ class WsRpcChannelTest {
 
     @Test
     void errorResponseCompletesExceptionally() throws Exception {
-        WsRpcChannel a = WsRpcChannel.create();
-        WsRpcChannel b = WsRpcChannel.create();
+        RpcChannel a = RpcChannel.create();
+        RpcChannel b = RpcChannel.create();
         Loopback sa = new Loopback();
         Loopback sb = new Loopback();
         sa.peer = b;
@@ -412,7 +421,7 @@ class WsRpcChannelTest {
         a.onOpen(sa);
         b.onOpen(sb);
 
-        b.registerHandler("boom", String.class, s -> {
+        b.registerHandler("boom", String.class, _ctx -> {
             throw new IllegalStateException("kaput");
         });
 
@@ -425,8 +434,8 @@ class WsRpcChannelTest {
 
     @Test
     void unknownTypeFailsFastWithNamedResponseError() throws Exception {
-        WsRpcChannel a = WsRpcChannel.create();
-        WsRpcChannel b = WsRpcChannel.create();
+        RpcChannel a = RpcChannel.create();
+        RpcChannel b = RpcChannel.create();
         Loopback sa = new Loopback();
         Loopback sb = new Loopback();
         sa.peer = b;
@@ -455,7 +464,7 @@ class WsRpcChannelTest {
 
     @Test
     void failureFrameNeverLoops() {
-        WsRpcChannel b = WsRpcChannel.create();
+        RpcChannel b = RpcChannel.create();
         Loopback sb = new Loopback();
         b.onOpen(sb); // no peer needed: stray frames are dropped, never answered
 
@@ -464,7 +473,7 @@ class WsRpcChannelTest {
                 + ",\"responseOf\":\"" + UUID.randomUUID() + "\""
                 + ",\"payload\":\"boom\"}";
         int before = sb.sent.size();
-        assertDoesNotThrow(() -> b.onTextMessage(b.getSession(), stray));
+        assertDoesNotThrow(() -> b.onTextMessage(b.current(), stray));
         assertEquals(before, sb.sent.size(), "a failure frame must never trigger a reply");
 
         b.shutdown();
@@ -484,8 +493,8 @@ class WsRpcChannelTest {
 
     @Test
     void handlerThrowYieldsResponseErrorFrame() throws Exception {
-        WsRpcChannel a = WsRpcChannel.create();
-        WsRpcChannel b = WsRpcChannel.create();
+        RpcChannel a = RpcChannel.create();
+        RpcChannel b = RpcChannel.create();
         Loopback sa = new Loopback();
         Loopback sb = new Loopback();
         sa.peer = b;
@@ -493,7 +502,7 @@ class WsRpcChannelTest {
         a.onOpen(sa);
         b.onOpen(sb);
 
-        b.registerHandler("boom-wire", String.class, s -> {
+        b.registerHandler("boom-wire", String.class, _ctx -> {
             throw new IllegalStateException("kaput-wire");
         });
 

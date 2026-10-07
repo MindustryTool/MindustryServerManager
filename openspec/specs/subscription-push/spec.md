@@ -2,12 +2,12 @@
 
 ## Purpose
 
-Server-side event-stream handling: typed listener registration, per-stream initialization, and the PushHandle event and close contract. Synced from change ws-rpc-v2.
+Server-side event-stream handling: typed listener registration, per-stream initialization, and the SubscriptionHandle event and close contract. Synced from change ws-rpc-v2.
 
 ## Requirements
 
 ### Requirement: Server registers event-stream handler with typed parameters
-The system SHALL provide `registerEventListener(event, paramsClass, onListen)` where `onListen` is a function receiving the deserialized `data` payload and returning `CompletableFuture<PushHandle>`. Event names SHALL NOT be reserved; any name, including one equal to a frame kind, SHALL be accepted.
+The system SHALL provide `registerEventListener(event, paramsClass, onListen)` where `onListen` is a function receiving the deserialized `data` payload and returning `CompletableFuture<SubscriptionHandle>`. Event names SHALL NOT be reserved; any name, including one equal to a frame kind, SHALL be accepted.
 
 #### Scenario: Handler registration succeeds
 - **WHEN** server calls `registerEventListener("usage", UsageParams.class, params -> ...)`
@@ -22,49 +22,49 @@ The system SHALL provide `registerEventListener(event, paramsClass, onListen)` w
 - **THEN** registration succeeds and matching `listen` frames dispatch to it
 
 ### Requirement: onListen called once per event stream with lazy initialization
-The system SHALL invoke `onListen(params)` exactly once per incoming `listen` request, passing the deserialized `data` payload, and SHALL await the returned `PushHandle` future before sending the `listening` acknowledgement and any events.
+The system SHALL invoke `onListen(params)` exactly once per incoming `listen` request, passing the deserialized `data` payload, and SHALL await the returned `SubscriptionHandle` future before sending the `listening` acknowledgement and any events.
 
 #### Scenario: onListen invoked per event stream
 - **WHEN** two `listen` requests arrive for `event="usage"` with different `data`
 - **THEN** `onListen` is called twice, once per stream
 
 #### Scenario: onListen async initialization supported
-- **WHEN** `onListen` returns a `CompletableFuture<PushHandle>` that completes later
+- **WHEN** `onListen` returns a `CompletableFuture<SubscriptionHandle>` that completes later
 - **THEN** the `listening` acknowledgement waits for the future to complete
 - **THEN** if the future fails, the stream is rejected with a `listen-error` frame
 
 #### Scenario: onListen failure rejects listen
 - **WHEN** the `onListen` future completes exceptionally
 - **THEN** server sends a `listen-error` frame with `responseOf=listenId` and the failure reason
-- **THEN** no `PushHandle` is created for that event stream
+- **THEN** no `SubscriptionHandle` is created for that event stream
 
-### Requirement: PushHandle controls per-subscriber event emission
-The system SHALL provide a `PushHandle` interface with methods to push events, complete cleanly, fail with error, check closure, and register cleanup callbacks.
+### Requirement: SubscriptionHandle controls per-subscriber event emission
+The system SHALL provide a `SubscriptionHandle` interface with methods to push events, complete cleanly, fail with error, check closure, and register cleanup callbacks.
 
-#### Scenario: PushHandle.push sends event frame
+#### Scenario: SubscriptionHandle.push sends event frame
 - **WHEN** server calls `handle.push(eventObject)`
 - **THEN** an `event` frame is sent with `kind="event"`, `event=eventName`, `responseOf=listenerId`, fresh `id`, and `payload=eventObject`
 
-#### Scenario: PushHandle.complete ends stream cleanly
+#### Scenario: SubscriptionHandle.complete ends stream cleanly
 - **WHEN** server calls `handle.complete()`
 - **THEN** a `listen-ended` frame is sent with `event=eventName` and `responseOf=listenerId`
 - **THEN** the stream is marked closed locally
 
-#### Scenario: PushHandle.fail sends listen-error and ends stream
+#### Scenario: SubscriptionHandle.fail sends listen-error and ends stream
 - **WHEN** server calls `handle.fail("server not found")`
 - **THEN** a `listen-error` frame is sent with `event=eventName`, `responseOf=listenerId`, and `payload="server not found"`
 - **THEN** the stream is marked closed
 
-#### Scenario: PushHandle.isClosed reflects client unlisten
+#### Scenario: SubscriptionHandle.isClosed reflects client unlisten
 - **WHEN** client sends `unlisten` for this event stream
 - **THEN** `handle.isClosed()` returns `true`
 - **THEN** further `push` calls are no-ops or throw
 
-#### Scenario: PushHandle.isClosed reflects connection loss
+#### Scenario: SubscriptionHandle.isClosed reflects connection loss
 - **WHEN** `onClose` is called on the channel
 - **THEN** `handle.isClosed()` returns `true` for all active event streams
 
-#### Scenario: PushHandle.onClose registers cleanup callback
+#### Scenario: SubscriptionHandle.onClose registers cleanup callback
 - **WHEN** server calls `handle.onClose(() -> cleanup())`
 - **THEN** `cleanup()` is invoked when the stream ends (client unlisten, server complete/fail, or connection close)
 

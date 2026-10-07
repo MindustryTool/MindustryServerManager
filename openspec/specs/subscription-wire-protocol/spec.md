@@ -14,11 +14,11 @@ The system SHALL transmit a `listen` frame to start an event stream:
 - `payload`: object with optional `data` (any JSON) parameters
 
 #### Scenario: Valid listen frame sent
-- **WHEN** client calls `listen("usage", {"serverId":"srv-123"}, handler)`
+- **WHEN** client calls `subscribe("usage", {"serverId":"srv-123"}, handler)`
 - **THEN** a frame is sent with `kind="listen"`, `event="usage"`, and `payload={"data":{"serverId":"srv-123"}}`
 
 #### Scenario: Listen with no data
-- **WHEN** client calls `listen("events", null, handler)`
+- **WHEN** client calls `subscribe("events", null, handler)`
 - **THEN** a frame is sent with `event="events"` and no `data` field
 
 ### Requirement: Listening acknowledgement frame
@@ -58,11 +58,11 @@ The listener SHALL transmit an `unlisten` frame to stop an event stream:
 - `payload`: optional object with `reason` (string)
 
 #### Scenario: Unlisten frame sent
-- **WHEN** client calls `unlisten("sub-123", "dashboard closed")`
+- **WHEN** client calls `unsubscribe("sub-123", "dashboard closed")`
 - **THEN** the frame has `kind="unlisten"`, `responseOf="sub-123"`, `payload={"reason":"dashboard closed"}`
 
 #### Scenario: Unlisten without reason
-- **WHEN** client calls `unlisten("sub-123")`
+- **WHEN** client calls `unsubscribe("sub-123")`
 - **THEN** the frame has `payload={}` or omitted
 
 ### Requirement: Listen-ended confirmation frame
@@ -112,7 +112,7 @@ The system SHALL NOT reserve any event name. An event name equal to a frame kind
 - **THEN** it dispatches to the handler registered for that event name
 
 ### Requirement: Connection close terminates event streams implicitly
-The system SHALL treat connection close as implicit event-stream termination. Publishers SHALL clean up listener resources and listeners SHALL fail pending `listen` futures and remove handlers.
+The system SHALL treat connection close as implicit event-stream termination. Publishers SHALL clean up listener resources and listeners SHALL fail pending `subscribe` futures and remove handlers.
 
 #### Scenario: Server cleans up on listener disconnect
 - **WHEN** the WebSocket connection closes
@@ -120,4 +120,4 @@ The system SHALL treat connection close as implicit event-stream termination. Pu
 
 #### Scenario: Client cleans up on publisher disconnect
 - **WHEN** the WebSocket connection closes
-- **THEN** the listener fails pending `listen` futures and removes handlers
+- **THEN** the listener fails pending `subscribe` futures and removes handlers

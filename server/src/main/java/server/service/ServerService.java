@@ -40,7 +40,7 @@ import dto.ServerConfigDto;
 import dto.ServerStatus;
 import dto.StartServerDto;
 import events.ServerEvents.LogEvent;
-import gateway.rpc.StreamReply;
+import gateway.wire.StreamReply;
 import enums.NodeRemoveReason;
 import server.types.data.NodeUsage;
 import server.types.data.ServerMisMatch;
@@ -176,6 +176,7 @@ public class ServerService {
             GatewayClient gatewayClient = gatewayService.of(serverId);
 
             try {
+                gatewayClient.awaitSession(Duration.ofSeconds(120)).get(120, TimeUnit.SECONDS);
                 gatewayClient.server().isHosting().get(120, TimeUnit.SECONDS);
             } catch (InterruptedException | ExecutionException | TimeoutException e) {
                 throw new ApiError(502, "Can not connect to gateway", e);

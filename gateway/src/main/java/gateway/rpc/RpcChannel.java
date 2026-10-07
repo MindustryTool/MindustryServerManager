@@ -1,24 +1,24 @@
 package gateway.rpc;
 
+
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.ArrayDeque;
-import java.util.Collections;
-import java.util.Objects;
-import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.Objects;
+import java.util.UUID;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -26,14 +26,19 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
-import gateway.WsMessage;
+import gateway.session.SessionProvider;
 import gateway.session.WsSession;
+import gateway.stream.StreamProtocol;
+import gateway.subscription.SubscriptionProtocol;
+import gateway.subscription.SubscriptionRequest;
+import gateway.wire.WsMessage;
+import gateway.wire.WsProtocol;
 
-public class WsRpcChannel implements SessionGate {
+public class RpcChannel implements SessionProvider {
 
-    private static final Logger LOG = Logger.getLogger(WsRpcChannel.class.getName());
+    private static final Logger LOG = Logger.getLogger(RpcChannel.class.getName());
     private static final Duration DEFAULT_TIMEOUT = Duration.ofMinutes(2);
-    private static final Duration SESSION_WAIT = Duration.ofMinutes(5);
+    private static final Duration SESSION_POLL_INTERVAL = Duration.ofMillis(50);
 
     private static final TypeReference<WsMessage<JsonNode>> MESSAGE_TYPE = new TypeReference<WsMessage<JsonNode>>() {
     };
@@ -42,8 +47,6 @@ public class WsRpcChannel implements SessionGate {
     private final ScheduledExecutorService scheduler;
 
     private volatile WsSession current;
-    private final Set<CompletableFuture<WsSession>> sessionWaiters =
-            Collections.newSetFromMap(new ConcurrentHashMap<>());
     private volatile boolean shutdown = false;
 
     /**
@@ -58,24 +61,24 @@ public class WsRpcChannel implements SessionGate {
     private final RpcProtocol rpc;
     private final StreamProtocol stream;
     private final SubscriptionProtocol subscriptions;
-    private final FrameSink frameSink = this::sendRaw;
+    private final FrameWriter frameSink = this::sendRaw;
 
-    public static WsRpcChannel create() {
-        return new WsRpcChannel(defaultMapper(), defaultScheduler(), Runnable::run);
+    public static RpcChannel create() {
+        return new RpcChannel(defaultMapper(), defaultScheduler(), Runnable::run);
     }
 
-    public static WsRpcChannel withExecutor(Executor handlerExecutor) {
+    public static RpcChannel withExecutor(Executor handlerExecutor) {
         Objects.requireNonNull(handlerExecutor, "handlerExecutor");
-        return new WsRpcChannel(defaultMapper(), defaultScheduler(), handlerExecutor);
+        return new RpcChannel(defaultMapper(), defaultScheduler(), handlerExecutor);
     }
 
-    public static WsRpcChannel withMapper(ObjectMapper mapper, Executor handlerExecutor) {
+    public static RpcChannel withMapper(ObjectMapper mapper, Executor handlerExecutor) {
         Objects.requireNonNull(mapper, "mapper");
         Objects.requireNonNull(handlerExecutor, "handlerExecutor");
-        return new WsRpcChannel(mapper, defaultScheduler(), handlerExecutor);
+        return new RpcChannel(mapper, defaultScheduler(), handlerExecutor);
     }
 
-    private WsRpcChannel(ObjectMapper mapper, ScheduledExecutorService scheduler,
+    private RpcChannel(ObjectMapper mapper, ScheduledExecutorService scheduler,
             Executor handlerExecutor) {
         this.mapper = mapper;
         this.scheduler = scheduler;
@@ -117,10 +120,6 @@ public class WsRpcChannel implements SessionGate {
                 return;
             }
             current = session;
-            for (CompletableFuture<WsSession> waiter : sessionWaiters) {
-                waiter.complete(session);
-            }
-            sessionWaiters.clear();
             if (prev != null) {
                 toClose = prev;
             }
@@ -148,49 +147,58 @@ public class WsRpcChannel implements SessionGate {
         }
     }
 
-    /**
-     * Wait for the current open session, parking on the gate up to SESSION_WAIT.
-     * Never wedges: a close fails waiters, the next open wakes them.
-     */
-    @Override
-    public CompletableFuture<WsSession> awaitOpen() {
-        return awaitOpenUnbounded().orTimeout(SESSION_WAIT.toMillis(), TimeUnit.MILLISECONDS);
-    }
-
     @Override
     public WsSession current() {
         return current;
     }
 
-    /**
-     * Wait for an open session up to the given timeout.
-     *
-     * @return future with the open session, or TimeoutException when none appears
-     */
-    public CompletableFuture<WsSession> awaitSession(Duration timeout) {
-        Duration wait = timeout != null ? timeout : SESSION_WAIT;
-        return awaitOpenUnbounded().orTimeout(wait.toMillis(), TimeUnit.MILLISECONDS);
+    public boolean isConnected() {
+        WsSession s = current;
+        return s != null && s.isOpen();
     }
 
-    private CompletableFuture<WsSession> awaitOpenUnbounded() {
+    /**
+     * Wait for an open session up to the given timeout by polling the current
+     * session. Never parks an outbound send: the send path fails fast.
+     *
+     * @return future with the open session, or TimeoutException when none
+     *         appears within the timeout
+     */
+    public CompletableFuture<WsSession> awaitSession(Duration timeout) {
         WsSession s = current;
         if (s != null && s.isOpen()) {
             return CompletableFuture.completedFuture(s);
         }
-        synchronized (this) {
-            s = current;
-            if (s != null && s.isOpen()) {
-                return CompletableFuture.completedFuture(s);
-            }
-            if (shutdown) {
-                CompletableFuture<WsSession> failed = new CompletableFuture<>();
-                failed.completeExceptionally(new IllegalStateException("WsRpcChannel is shut down"));
-                return failed;
-            }
-            CompletableFuture<WsSession> waiter = new CompletableFuture<>();
-            sessionWaiters.add(waiter);
-            waiter.whenComplete((v, e) -> sessionWaiters.remove(waiter));
-            return waiter;
+        Duration wait = timeout != null ? timeout : DEFAULT_TIMEOUT;
+        CompletableFuture<WsSession> result = new CompletableFuture<>();
+        scheduleSessionPoll(result, System.nanoTime() + wait.toNanos());
+        return result;
+    }
+
+    private void scheduleSessionPoll(CompletableFuture<WsSession> result, long deadlineNanos) {
+        if (result.isDone()) {
+            return;
+        }
+        WsSession s = current;
+        if (s != null && s.isOpen()) {
+            result.complete(s);
+            return;
+        }
+        if (shutdown) {
+            result.completeExceptionally(new IllegalStateException("RpcChannel is shut down"));
+            return;
+        }
+        long remainingNanos = deadlineNanos - System.nanoTime();
+        if (remainingNanos <= 0) {
+            result.completeExceptionally(new TimeoutException("No open WebSocket session within timeout"));
+            return;
+        }
+        long delayMillis = Math.max(1,
+                Math.min(SESSION_POLL_INTERVAL.toMillis(), TimeUnit.NANOSECONDS.toMillis(remainingNanos)));
+        try {
+            scheduler.schedule(() -> scheduleSessionPoll(result, deadlineNanos), delayMillis, TimeUnit.MILLISECONDS);
+        } catch (RejectedExecutionException e) {
+            result.completeExceptionally(new IllegalStateException("RpcChannel is shut down"));
         }
     }
 
@@ -198,15 +206,12 @@ public class WsRpcChannel implements SessionGate {
         onClose(new RuntimeException("WebSocket connection closed"));
     }
 
-    public WsSession getSession() {
-        return current();
-    }
-
     public ObjectMapper getObjectMapper() {
         return mapper;
     }
 
-    public <Req, Res> void registerHandler(String type, Class<Req> requestClass, Function<Req, Res> handler) {
+    public <Req, Res> void registerHandler(String type, Class<Req> requestClass,
+            Function<RequestContext<Req>, Res> handler) {
         rpc.registerHandler(type, requestClass, handler);
     }
 
@@ -282,39 +287,39 @@ public class WsRpcChannel implements SessionGate {
         rpc.sendNotification(type, payload);
     }
 
-    public CompletableFuture<Void> listen(String event, Object data,
+    public CompletableFuture<Void> subscribe(String event, Object data,
             Consumer<JsonNode> handler) {
-        return listen(UUID.randomUUID(), event, data, handler, DEFAULT_TIMEOUT);
+        return subscribe(UUID.randomUUID(), event, data, handler, DEFAULT_TIMEOUT);
     }
 
-    public CompletableFuture<Void> listen(String event, Object data,
+    public CompletableFuture<Void> subscribe(String event, Object data,
             Consumer<JsonNode> handler, Duration timeout) {
-        return listen(UUID.randomUUID(), event, data, handler, timeout);
+        return subscribe(UUID.randomUUID(), event, data, handler, timeout);
     }
 
-    public CompletableFuture<Void> listen(UUID listenId, String event, Object data,
+    public CompletableFuture<Void> subscribe(UUID listenId, String event, Object data,
             Consumer<JsonNode> handler) {
-        return listen(listenId, event, data, handler, DEFAULT_TIMEOUT);
+        return subscribe(listenId, event, data, handler, DEFAULT_TIMEOUT);
     }
 
-    public CompletableFuture<Void> listen(UUID listenId, String event, Object data,
+    public CompletableFuture<Void> subscribe(UUID listenId, String event, Object data,
             Consumer<JsonNode> handler, Duration timeout) {
-        return subscriptions.listen(listenId, event, data, handler, timeout);
+        return subscriptions.subscribe(listenId, event, data, handler, timeout);
     }
 
     /**
      * If the event stream is already closed, the callback runs immediately.
      */
-    public void onListenClose(UUID listenId, Runnable callback) {
-        subscriptions.onListenClose(listenId, callback);
+    public void onSubscriptionClose(UUID listenId, Runnable callback) {
+        subscriptions.onSubscriptionClose(listenId, callback);
     }
 
-    public void unlisten(UUID listenId) {
-        unlisten(listenId, null);
+    public void unsubscribe(UUID listenId) {
+        unsubscribe(listenId, null);
     }
 
-    public void unlisten(UUID listenId, String reason) {
-        subscriptions.unlisten(listenId, reason);
+    public void unsubscribe(UUID listenId, String reason) {
+        subscriptions.unsubscribe(listenId, reason);
     }
 
     public CompletableFuture<Void> sendStream(String type, Object metadata, ByteBuffer data) {
@@ -424,7 +429,7 @@ public class WsRpcChannel implements SessionGate {
             LOG.info("Dropping RPC frame without kind");
             return;
         }
-        FrameContext<WsMessage<JsonNode>> ctx = new FrameContext<>(message, from);
+        InboundFrame<WsMessage<JsonNode>> ctx = new InboundFrame<>(message, from);
         switch (kind) {
             case WsProtocol.REQUEST_TYPE:
                 if (!requireType(message)) {
@@ -455,17 +460,17 @@ public class WsRpcChannel implements SessionGate {
                 }
                 stream.handleControl(ctx);
                 return;
-            case WsProtocol.LISTEN_TYPE:
-            case WsProtocol.UNLISTEN_TYPE:
+            case WsProtocol.SUBSCRIBE_TYPE:
+            case WsProtocol.UNSUBSCRIBE_TYPE:
                 if (!requireEvent(message)) {
                     return;
                 }
                 subscriptions.handleControl(ctx);
                 return;
-            case WsProtocol.LISTENING_TYPE:
+            case WsProtocol.SUBSCRIBED_TYPE:
             case WsProtocol.EVENT_TYPE:
-            case WsProtocol.LISTEN_ENDED_TYPE:
-            case WsProtocol.LISTEN_ERROR_TYPE:
+            case WsProtocol.SUBSCRIPTION_ENDED_TYPE:
+            case WsProtocol.SUBSCRIPTION_ERROR_TYPE:
                 if (!requireEvent(message)) {
                     return;
                 }
@@ -532,10 +537,6 @@ public class WsRpcChannel implements SessionGate {
         synchronized (ingressQueue) {
             ingressQueue.clear();
         }
-        for (CompletableFuture<WsSession> waiter : sessionWaiters) {
-            waiter.completeExceptionally(err);
-        }
-        sessionWaiters.clear();
         current = null;
         stream.teardown();
         subscriptions.teardownClient(err);
@@ -547,7 +548,7 @@ public class WsRpcChannel implements SessionGate {
         synchronized (this) {
             shutdown = true;
         }
-        onClose(new RuntimeException("WsRpcChannel shutdown"));
+        onClose(new RuntimeException("RpcChannel shutdown"));
         scheduler.shutdownNow();
     }
 }

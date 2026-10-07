@@ -33,8 +33,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Caffeine;
 
 import arc.files.Fi;
-import gateway.client.JdkWsClient;
-import gateway.rpc.WsRpcChannel;
+import gateway.client.WsClient;
+import gateway.rpc.RpcChannel;
 import io.javalin.Javalin;
 import io.javalin.config.JavalinConfig;
 import io.javalin.json.JavalinJackson;
@@ -44,7 +44,7 @@ import server.service.translation.TranslationService;
 
 /**
  * Local Jetty-to-JDK loopback probe: a real Javalin gateway plus real
- * {@link JdkWsClient} instances over loopback. Covers the original wedge
+ * {@link WsClient} instances over loopback. Covers the original wedge
  * (dirty reconnect must not throw {@code Duplicate onOpen}) and the
  * {@code 4234} kick passthrough (Jetty must deliver the app-private code
  * and the kicked client must stay down).
@@ -99,16 +99,16 @@ class GatewayLoopbackProbeTest {
         UUID serverId = UUID.randomUUID();
         String token = wsHandler.generateServerJwt(serverId);
 
-        WsRpcChannel channelA = WsRpcChannel.create();
-        JdkWsClient a = clientFor(channelA, serverId, token);
+        RpcChannel channelA = RpcChannel.create();
+        WsClient a = clientFor(channelA, serverId, token);
         try {
             a.connect();
             awaitCondition(a::isOpen, "first client open");
             assertEquals("test", pluginVersion(channelA));
 
             // Second connection, same id, first socket left open: must not wedge.
-            WsRpcChannel channelB = WsRpcChannel.create();
-            JdkWsClient b = clientFor(channelB, serverId, token);
+            RpcChannel channelB = RpcChannel.create();
+            WsClient b = clientFor(channelB, serverId, token);
             try {
                 b.connect();
                 awaitCondition(b::isOpen, "second client open");
@@ -118,7 +118,7 @@ class GatewayLoopbackProbeTest {
                 Thread.sleep(2500);
                 assertFalse(a.isOpen(), "kicked client stays down past min backoff");
                 assertEquals(0, a.getReconnectAttempt(), "kick must not schedule reconnect");
-                assertNull(channelA.getSession());
+                assertNull(channelA.current());
 
                 // Second client adopted: requests flow.
                 assertEquals("test", pluginVersion(channelB));
@@ -140,8 +140,8 @@ class GatewayLoopbackProbeTest {
         UUID serverId = UUID.randomUUID();
         String token = wsHandler.generateServerJwt(serverId);
 
-        WsRpcChannel channel = WsRpcChannel.create();
-        JdkWsClient client = clientFor(channel, serverId, token);
+        RpcChannel channel = RpcChannel.create();
+        WsClient client = clientFor(channel, serverId, token);
         try {
             client.connect();
             awaitCondition(client::isOpen, "client open");
@@ -154,7 +154,7 @@ class GatewayLoopbackProbeTest {
             awaitCondition(() -> !client.isOpen(), "drop detected via pong deadline");
             awaitCondition(client::isOpen, "client reconnected");
             assertEquals("test", pluginVersion(channel));
-            assertNotNull(service.of(serverId).rpcChannel().getSession());
+            assertNotNull(service.of(serverId).rpcChannel().current());
         } finally {
             client.close();
             channel.shutdown();
@@ -175,14 +175,14 @@ class GatewayLoopbackProbeTest {
         byte[] beta = filled(2 * 1024 * 1024 + 13, (byte) 0xB2);
 
         Map<String, byte[]> received = new ConcurrentHashMap<>();
-        WsRpcChannel channel = WsRpcChannel.create();
-        JdkWsClient client = clientFor(channel, serverId, token);
+        RpcChannel channel = RpcChannel.create();
+        WsClient client = clientFor(channel, serverId, token);
         ExecutorService senders = Executors.newFixedThreadPool(2);
         try {
             client.connect();
             awaitCondition(client::isOpen, "client open");
 
-            WsRpcChannel server = service.of(serverId).rpcChannel();
+            RpcChannel server = service.of(serverId).rpcChannel();
             server.registerStreamHandler("alpha", String.class, String.class,
                     (meta, bytes) -> {
                         received.put("alpha", bytes);
@@ -223,7 +223,7 @@ class GatewayLoopbackProbeTest {
         byte[] beta = filled(3 * 1024 * 1024 + 5, (byte) 0xD4);
 
         Map<String, byte[]> received = new ConcurrentHashMap<>();
-        WsRpcChannel channel = WsRpcChannel.create();
+        RpcChannel channel = RpcChannel.create();
         channel.registerStreamHandler("alpha", String.class, String.class,
                 (meta, bytes) -> {
                     received.put("alpha", bytes);
@@ -235,13 +235,13 @@ class GatewayLoopbackProbeTest {
                     return "ok";
                 });
 
-        JdkWsClient client = clientFor(channel, serverId, token);
+        WsClient client = clientFor(channel, serverId, token);
         ExecutorService senders = Executors.newFixedThreadPool(2);
         try {
             client.connect();
             awaitCondition(client::isOpen, "client open");
 
-            WsRpcChannel server = service.of(serverId).rpcChannel();
+            RpcChannel server = service.of(serverId).rpcChannel();
 
             CountDownLatch go = new CountDownLatch(1);
             CompletableFuture<String> a = gatedSend(senders, go, server, "alpha", alpha);
@@ -271,8 +271,8 @@ class GatewayLoopbackProbeTest {
         UUID serverId = UUID.randomUUID();
         VolumeNodeManager volumes = new VolumeNodeManager(volume);
 
-        WsRpcChannel channel = WsRpcChannel.create();
-        JdkWsClient client = null;
+        RpcChannel channel = RpcChannel.create();
+        WsClient client = null;
         try {
             // Generation 1: provisioned manager with a shared volume.
             GatewayService service1 = newService(volumes);
@@ -282,14 +282,14 @@ class GatewayLoopbackProbeTest {
             writeServerJson(volumes, serverId, firstToken);
 
             ObjectMapper mapper = new ObjectMapper();
-            client = JdkWsClient
+            client = WsClient
                     .builder(URI.create("ws://localhost:" + port + "/gateway"), channel)
                     .headersSupplier(() -> readGatewayHeaders(mapper, volumes, serverId))
                     .pingInterval(Duration.ofMillis(200))
                     .pongDeadline(Duration.ofSeconds(2))
                     .build();
             client.connect();
-            final JdkWsClient connected = client;
+            final WsClient connected = client;
             awaitCondition(connected::isOpen, "client open on generation 1");
             assertEquals("test", pluginVersion(channel));
 
@@ -307,7 +307,7 @@ class GatewayLoopbackProbeTest {
             assertEquals("test", pluginVersion(channel));
 
             // Exactly one live session, clean clock, no pending backoff.
-            assertNotNull(service2.of(serverId).rpcChannel().getSession());
+            assertNotNull(service2.of(serverId).rpcChannel().current());
             assertNull(disconnectAt(service2.of(serverId)));
             assertEquals(0, connected.getReconnectAttempt());
 
@@ -409,8 +409,8 @@ class GatewayLoopbackProbeTest {
         return mapper.readTree(volumes.getFile(serverId, "server.json").readBytes()).path("jwt").asText();
     }
 
-    private JdkWsClient clientFor(WsRpcChannel channel, UUID serverId, String token) {
-        return JdkWsClient
+    private WsClient clientFor(RpcChannel channel, UUID serverId, String token) {
+        return WsClient
                 .builder(URI.create("ws://localhost:" + port + "/gateway"), channel)
                 .headersSupplier(() -> Map.of(
                         "Authorization", token,
@@ -420,7 +420,7 @@ class GatewayLoopbackProbeTest {
                 .build();
     }
 
-    private static String pluginVersion(WsRpcChannel channel) throws Exception {
+    private static String pluginVersion(RpcChannel channel) throws Exception {
         return channel
                 .sendRequest("get-plugin-version", null, String.class, Duration.ofSeconds(10))
                 .get(15, TimeUnit.SECONDS);
@@ -433,7 +433,7 @@ class GatewayLoopbackProbeTest {
     }
 
     private static CompletableFuture<String> gatedSend(
-            ExecutorService pool, CountDownLatch go, WsRpcChannel channel, String type, byte[] data) {
+            ExecutorService pool, CountDownLatch go, RpcChannel channel, String type, byte[] data) {
         CompletableFuture<String> result = new CompletableFuture<>();
         pool.submit(() -> {
             try {
@@ -448,8 +448,8 @@ class GatewayLoopbackProbeTest {
         return result;
     }
 
-    private static void abortSocket(JdkWsClient client) throws Exception {
-        Field current = JdkWsClient.class.getDeclaredField("current");
+    private static void abortSocket(WsClient client) throws Exception {
+        Field current = WsClient.class.getDeclaredField("current");
         current.setAccessible(true);
         Object transport = current.get(client);
         assertNotNull(transport, "expected a live transport");

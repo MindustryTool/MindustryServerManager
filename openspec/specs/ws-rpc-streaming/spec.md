@@ -7,7 +7,7 @@ TBD - created by syncing change add-ws-rpc-send-stream. Update Purpose after imp
 ## Requirements
 
 ### Requirement: Stream send with metadata-first framing
-The system SHALL provide `WsRpcChannel.sendStream` overloads accepting `ByteBuffer`, `byte[]`, and `InputStream` data plus an opaque metadata object, generating a fresh `streamId`, computing `totalChunks` and SHA-256, transmitting an ordered `start` text frame (type, metadata, `streamId`, `totalChunks`, `sha256`) followed by N binary chunk frames reusing the 20-byte `FileTransferHeader` (`streamId` + `chunkIndex`, payload at most 64KB) followed by a `done` text frame, and returning a `CompletableFuture` that completes with the receiver handler's typed return value.
+The system SHALL provide `RpcChannel.sendStream` overloads accepting `ByteBuffer`, `byte[]`, and `InputStream` data plus an opaque metadata object, generating a fresh `streamId`, computing `totalChunks` and SHA-256, transmitting an ordered `start` text frame (type, metadata, `streamId`, `totalChunks`, `sha256`) followed by N binary chunk frames reusing the 20-byte `ChunkHeader` (`streamId` + `chunkIndex`, payload at most 64KB) followed by a `done` text frame, and returning a `CompletableFuture` that completes with the receiver handler's typed return value.
 
 #### Scenario: ByteBuffer stream round-trip with typed ack
 - **WHEN** a sender calls `sendStream` with a type, metadata, and `ByteBuffer` payload while a session is open and the receiver registered a matching stream handler
@@ -22,7 +22,7 @@ The system SHALL provide `WsRpcChannel.sendStream` overloads accepting `ByteBuff
 - **THEN** the channel suspends without failing and transmits `start`/chunks/`done` in order once a session opens within the session-wait limit, else the future fails with `TimeoutException`
 
 ### Requirement: Stream receive, integrity, and cap
-The system SHALL reassemble inbound binary frames per `streamId` in `WsRpcChannel.onBinaryMessage`, and on `done` verify contiguous chunk indexes against `totalChunks`, enforce a max-bytes cap, and verify SHA-256 before dispatching the stream handler; any integrity, cap, contiguity, or unknown-stream failure SHALL fail the sender ack exceptionally and discard buffers without dispatching the handler.
+The system SHALL reassemble inbound binary frames per `streamId` in `RpcChannel.onBinaryMessage`, and on `done` verify contiguous chunk indexes against `totalChunks`, enforce a max-bytes cap, and verify SHA-256 before dispatching the stream handler; any integrity, cap, contiguity, or unknown-stream failure SHALL fail the sender ack exceptionally and discard buffers without dispatching the handler.
 
 #### Scenario: Successful assemble and dispatch
 - **WHEN** all chunks for a `streamId` arrive followed by a matching `done` with correct SHA-256 and size within cap

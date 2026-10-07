@@ -1,14 +1,14 @@
-package gateway.client;
+package gateway.util;
 
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 
-final class WsCauses {
+public final class Causes {
 
-    private WsCauses() {
+    private Causes() {
     }
 
-    static Throwable rootCause(Throwable e) {
+    public static Throwable rootCause(Throwable e) {
         Throwable cause = e;
 
         while (cause instanceof ExecutionException && cause.getCause() != null) {

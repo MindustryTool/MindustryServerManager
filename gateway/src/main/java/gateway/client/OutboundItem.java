@@ -1,4 +1,4 @@
 package gateway.client;
 
-public sealed interface QueueItem permits SendOp, Control {
+public sealed interface OutboundItem permits SendFrame, PoisonPill {
 }

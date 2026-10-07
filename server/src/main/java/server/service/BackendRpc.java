@@ -13,10 +13,10 @@ import arc.util.Log;
 import dto.LoginDto;
 import dto.ServerConfig;
 import enums.NodeRemoveReason;
-import gateway.rpc.StreamReply;
-import gateway.rpc.SubscriptionRequest;
-import gateway.rpc.WsRpcChannel;
-import gateway.stream.FileChunkStreamer;
+import gateway.wire.StreamReply;
+import gateway.subscription.SubscriptionRequest;
+import gateway.rpc.RpcChannel;
+import gateway.stream.ChunkWriter;
 import lombok.RequiredArgsConstructor;
 import server.manager.NodeManager;
 import server.utils.ApiError;
@@ -31,55 +31,59 @@ public class BackendRpc {
     private final GatewayService gatewayService;
     private final NodeManager nodeManager;
 
-    public void attach(WsRpcChannel channel) {
-        channel.registerHandler("host-server", ServerConfig.class, config -> {
-            serverService.host(config);
+    public void attach(RpcChannel channel) {
+        channel.registerHandler("host-server", ServerConfig.class, ctx -> {
+            serverService.host(ctx.body());
             return null;
         });
-        channel.registerHandler("remove-server", ServerRef.class, ref -> {
-            serverService.remove(ref.serverId(), NodeRemoveReason.USER_REQUEST);
+        channel.registerHandler("remove-server", ServerRef.class, ctx -> {
+            serverService.remove(ctx.body().serverId(), NodeRemoveReason.USER_REQUEST);
             return null;
         });
-        channel.registerHandler("pause", ServerRef.class, ref -> serverService.pause(ref.serverId()));
-        channel.registerHandler("send-command", SendCommandRequest.class, req -> {
+        channel.registerHandler("pause", ServerRef.class, ctx -> serverService.pause(ctx.body().serverId()));
+        channel.registerHandler("send-command", SendCommandRequest.class, ctx -> {
+            var req = ctx.body();
             await(gatewayService.of(req.serverId()).server().sendCommand(req.command()), "send-command");
             return null;
         });
-        channel.registerHandler("get-state", ServerRef.class, ref -> serverService.state(ref.serverId()));
-        channel.registerHandler("get-players", ServerRef.class, ref -> serverService.getPlayers(ref.serverId()));
-        channel.registerHandler("update-player", UpdatePlayerRequest.class, req -> {
+        channel.registerHandler("get-state", ServerRef.class, ctx -> serverService.state(ctx.body().serverId()));
+        channel.registerHandler("get-players", ServerRef.class, ctx -> serverService.getPlayers(ctx.body().serverId()));
+        channel.registerHandler("update-player", UpdatePlayerRequest.class, ctx -> {
+            var req = ctx.body();
             serverService.updatePlayer(req.serverId(), req.uuid(), req.player());
             return null;
         });
         channel.registerHandler("get-files", FilesRequest.class,
-                req -> serverService.getFiles(req.serverId(), req.path()));
+                ctx -> serverService.getFiles(ctx.body().serverId(), ctx.body().path()));
         channel.registerHandler("delete-file", FilesRequest.class,
-                req -> serverService.deleteFile(req.serverId(), req.path()));
+                ctx -> serverService.deleteFile(ctx.body().serverId(), ctx.body().path()));
         channel.registerHandler("create-folder", FilesRequest.class,
-                req -> serverService.createFolder(req.serverId(), req.path()));
-        channel.registerHandler("get-maps", ServerRef.class, ref -> serverService.getMaps(ref.serverId()));
-        channel.registerHandler("get-mods", ServerRef.class, ref -> serverService.getMods(ref.serverId()));
-        channel.registerHandler("get-manager-maps", Void.class, ignored -> serverService.getManagerMaps());
-        channel.registerHandler("get-manager-mods", Void.class, ignored -> serverService.getManagerMods());
+                ctx -> serverService.createFolder(ctx.body().serverId(), ctx.body().path()));
+        channel.registerHandler("get-maps", ServerRef.class, ctx -> serverService.getMaps(ctx.body().serverId()));
+        channel.registerHandler("get-mods", ServerRef.class, ctx -> serverService.getMods(ctx.body().serverId()));
+        channel.registerHandler("get-manager-maps", Void.class, _ctx -> serverService.getManagerMaps());
+        channel.registerHandler("get-manager-mods", Void.class, _ctx -> serverService.getManagerMods());
         channel.registerHandler("get-mismatch", MismatchRequest.class,
-                req -> serverService.getMismatch(req.serverId(), req.config()));
+                ctx -> serverService.getMismatch(ctx.body().serverId(), ctx.body().config()));
         channel.registerHandler("get-commands", ServerRef.class,
-                ref -> await(gatewayService.of(ref.serverId()).server().getCommands(), "get-commands"));
-        channel.registerHandler("get-image", ServerRef.class, ref -> serverService.getImage(ref.serverId()));
+                ctx -> await(gatewayService.of(ctx.body().serverId()).server().getCommands(), "get-commands"));
+        channel.registerHandler("get-image", ServerRef.class, ctx -> serverService.getImage(ctx.body().serverId()));
         channel.registerHandler("get-player-infos", PlayerInfoRequest.class,
-                req -> serverService.getPlayersInfo(req.serverId(), req.page(), req.size(), req.banned(),
-                        req.filter()));
+                ctx -> serverService.getPlayersInfo(ctx.body().serverId(), ctx.body().page(), ctx.body().size(),
+                        ctx.body().banned(), ctx.body().filter()));
         channel.registerHandler("get-recent-players", ServerRef.class,
-                ref -> serverService.getRecentPlayers(ref.serverId()));
-        channel.registerHandler("get-kicked-ips", ServerRef.class, ref -> serverService.getKickedIps(ref.serverId()));
+                ctx -> serverService.getRecentPlayers(ctx.body().serverId()));
+        channel.registerHandler("get-kicked-ips", ServerRef.class,
+                ctx -> serverService.getKickedIps(ctx.body().serverId()));
         channel.registerHandler("delete-kicked-ip", DeleteKickedIpRequest.class,
-                req -> serverService.deleteKickedIp(req.serverId(), req.ip()));
-        channel.registerHandler("send-chat", ChatRequest.class, req -> {
+                ctx -> serverService.deleteKickedIp(ctx.body().serverId(), ctx.body().ip()));
+        channel.registerHandler("send-chat", ChatRequest.class, ctx -> {
+            var req = ctx.body();
             await(gatewayService.of(req.serverId()).server().sendChat(Utils.getObjectMapper()
                     .valueToTree(req.message())), "send-chat");
             return null;
         });
-        channel.registerHandler("download-file", DownloadRequest.class, this::download);
+        channel.registerHandler("download-file", DownloadRequest.class, ctx -> download(ctx.body()));
         channel.registerStreamHandler("file-upload", UploadRequest.class, Map.class, (meta, bytes) -> {
             if (meta == null) {
                 throw new ApiError(400, "file-upload requires metadata");
@@ -87,7 +91,7 @@ public class BackendRpc {
             nodeManager.getFile(meta.serverId(), meta.path());
             nodeManager.writeFile(meta.serverId(), meta.path(), bytes);
             Log.info("File upload complete: " + meta.path() + " (" + bytes.length + " bytes)");
-            return Map.of("bytes", bytes.length, "sha256", FileChunkStreamer.sha256Hex(bytes));
+            return Map.of("bytes", bytes.length, "sha256", ChunkWriter.sha256Hex(bytes));
         });
         channel.registerEventListener("get-usage", ServerRef.class, this::listenUsage);
 

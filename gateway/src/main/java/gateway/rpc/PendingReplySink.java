@@ -2,6 +2,6 @@ package gateway.rpc;
 
 import java.util.UUID;
 
-interface ReplySink {
+public interface PendingReplySink {
     void failReply(UUID replyRequestId, String detail);
 }

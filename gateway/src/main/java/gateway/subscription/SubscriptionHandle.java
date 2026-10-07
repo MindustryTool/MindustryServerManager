@@ -1,6 +1,6 @@
-package gateway.rpc;
+package gateway.subscription;
 
-public interface PushHandle {
+public interface SubscriptionHandle {
     /**
      * @param event the event object to send (will be serialized as JSON)
      */

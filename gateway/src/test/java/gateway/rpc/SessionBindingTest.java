@@ -1,29 +1,28 @@
-package gateway;
+package gateway.rpc;
+
+
+import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.nio.ByteBuffer;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
-
-import org.junit.jupiter.api.Test;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import gateway.rpc.PushHandle;
-import gateway.rpc.WsProtocol;
-import gateway.rpc.WsRpcChannel;
 import gateway.session.WsSession;
-import gateway.stream.FileChunkStreamer;
-import gateway.stream.FileTransferHeader;
+import gateway.stream.ChunkHeader;
+import gateway.stream.ChunkWriter;
+import gateway.subscription.SubscriptionHandle;
+import gateway.wire.WsProtocol;
 
 /**
  * Guards Layer 2: a reply, stream ack, or pushed event is bound to the
@@ -68,15 +67,15 @@ class SessionBindingTest {
 
     private static String requestJson(String type, Object payload) throws Exception {
         return MAPPER.writeValueAsString(
-                gateway.WsMessage.<Object>create(WsProtocol.REQUEST_TYPE).setType(type).withPayload(payload));
+                gateway.wire.WsMessage.<Object>create(WsProtocol.REQUEST_TYPE).setType(type).withPayload(payload));
     }
 
     @Test
     void requestWithOpenOriginBeforeAdoptionStillGetsReply() throws Exception {
-        WsRpcChannel b = WsRpcChannel.create();
+        RpcChannel b = RpcChannel.create();
         Loopback origin = new Loopback();
         try {
-            b.registerHandler("echo", String.class, s -> "hi:" + s);
+            b.registerHandler("echo", String.class, ctx -> "hi:" + ctx.body());
 
             // No onOpen: current is null, but the delivering session is open.
             b.onTextMessage(origin, requestJson("echo", "x"));
@@ -89,14 +88,14 @@ class SessionBindingTest {
 
     @Test
     void replyIsNotReroutedToReplacementSession() throws Exception {
-        WsRpcChannel b = WsRpcChannel.create();
+        RpcChannel b = RpcChannel.create();
         Loopback genA = new Loopback();
         Loopback genB = new Loopback();
         CountDownLatch entered = new CountDownLatch(1);
         CountDownLatch release = new CountDownLatch(1);
         try {
             b.onOpen(genA);
-            b.registerHandler("slow", String.class, s -> {
+            b.registerHandler("slow", String.class, _ctx -> {
                 entered.countDown();
                 try {
                     release.await(5, TimeUnit.SECONDS);
@@ -123,13 +122,13 @@ class SessionBindingTest {
 
     @Test
     void replyDroppedWhenOriginClosed() throws Exception {
-        WsRpcChannel b = WsRpcChannel.create();
+        RpcChannel b = RpcChannel.create();
         Loopback origin = new Loopback();
         CountDownLatch entered = new CountDownLatch(1);
         CountDownLatch release = new CountDownLatch(1);
         try {
             b.onOpen(origin);
-            b.registerHandler("slow", String.class, s -> {
+            b.registerHandler("slow", String.class, _ctx -> {
                 entered.countDown();
                 try {
                     release.await(5, TimeUnit.SECONDS);
@@ -155,10 +154,10 @@ class SessionBindingTest {
 
     @Test
     void subscriptionAckAndPushBindToDeliveringSession() throws Exception {
-        WsRpcChannel b = WsRpcChannel.create();
+        RpcChannel b = RpcChannel.create();
         Loopback current = new Loopback();
         Loopback origin = new Loopback();
-        AtomicReference<PushHandle> handleRef = new AtomicReference<>();
+        AtomicReference<SubscriptionHandle> handleRef = new AtomicReference<>();
         try {
             b.onOpen(current);
             b.registerEventListener("usage", String.class, req -> {
@@ -166,16 +165,16 @@ class SessionBindingTest {
                 return CompletableFuture.completedFuture(null);
             });
 
-            gateway.WsMessage<Object> listen = gateway.WsMessage.<Object>create(WsProtocol.LISTEN_TYPE)
+            gateway.wire.WsMessage<Object> listen = gateway.wire.WsMessage.<Object>create(WsProtocol.SUBSCRIBE_TYPE)
                     .setEvent("usage")
                     .withPayload(Map.of("data", "srv"));
             b.onTextMessage(origin, MAPPER.writeValueAsString(listen));
 
-            assertTrue(origin.containsKind(WsProtocol.LISTENING_TYPE),
+            assertTrue(origin.containsKind(WsProtocol.SUBSCRIBED_TYPE),
                     "listening ack must go to the deliverer, sent: " + origin.sent);
             assertTrue(current.sent.isEmpty(), "current must not receive the ack, got: " + current.sent);
 
-            PushHandle handle = handleRef.get();
+            SubscriptionHandle handle = handleRef.get();
             assertNotNull(handle, "listener must be created");
             handle.push(Map.of("cpu", 1));
 
@@ -189,7 +188,7 @@ class SessionBindingTest {
 
     @Test
     void streamAckBindsToDeliveringSession() throws Exception {
-        WsRpcChannel b = WsRpcChannel.create();
+        RpcChannel b = RpcChannel.create();
         Loopback current = new Loopback();
         Loopback origin = new Loopback();
         try {
@@ -198,16 +197,16 @@ class SessionBindingTest {
 
             UUID streamId = UUID.randomUUID();
             byte[] payload = new byte[] { 1 };
-            String sha = FileChunkStreamer.sha256Hex(payload);
+            String sha = ChunkWriter.sha256Hex(payload);
 
-            String startJson = MAPPER.writeValueAsString(gateway.WsMessage.<Object>create(WsProtocol.STREAM_START_TYPE)
+            String startJson = MAPPER.writeValueAsString(gateway.wire.WsMessage.<Object>create(WsProtocol.STREAM_START_TYPE)
                     .setType("doc")
                     .withPayload(Map.of("streamId", streamId.toString(), "metadata", "m",
                             "totalChunks", 1, "sha256", sha)));
             b.onTextMessage(origin, startJson);
-            b.onBinaryMessage(new FileTransferHeader(streamId, 0).encodeFrame(payload, 0, payload.length));
+            b.onBinaryMessage(new ChunkHeader(streamId, 0).encodeFrame(payload, 0, payload.length));
 
-            String doneJson = MAPPER.writeValueAsString(gateway.WsMessage.<Object>create(WsProtocol.STREAM_DONE_TYPE)
+            String doneJson = MAPPER.writeValueAsString(gateway.wire.WsMessage.<Object>create(WsProtocol.STREAM_DONE_TYPE)
                     .setType("doc")
                     .withPayload(Map.of("streamId", streamId.toString(), "sha256", sha)));
             b.onTextMessage(origin, doneJson);
@@ -216,6 +215,67 @@ class SessionBindingTest {
             assertTrue(current.sent.isEmpty(), "current must not receive the ack, got: " + current.sent);
             assertEquals(0, b.pendingStreamCount());
         } finally {
+            b.shutdown();
+        }
+    }
+
+    @Test
+    void handlerContextExposesDeliveringSessionAndSendsOnIt() throws Exception {
+        RpcChannel b = RpcChannel.create();
+        Loopback current = new Loopback();
+        Loopback origin = new Loopback();
+        try {
+            b.onOpen(current);
+            b.registerHandler("ctx-echo", String.class, ctx -> {
+                ctx.send(gateway.wire.WsMessage.<Object>create(WsProtocol.NOTIFICATION_TYPE)
+                        .setType("ctx-push")
+                        .withPayload(ctx.session() == origin ? "ok" : "wrong"));
+                return ctx.body();
+            });
+
+            b.onTextMessage(origin, requestJson("ctx-echo", "zzz"));
+
+            assertTrue(origin.answered(), "reply must go to the delivering session, got: " + origin.sent);
+            assertTrue(origin.containsKind(WsProtocol.NOTIFICATION_TYPE),
+                    "context send must go to the delivering session, got: " + origin.sent);
+            assertTrue(origin.sent.stream().anyMatch(t -> t.contains("zzz")),
+                    "context body accessor must decode the request, got: " + origin.sent);
+            assertTrue(current.sent.isEmpty(), "current must not receive the context send, got: " + current.sent);
+        } finally {
+            b.shutdown();
+        }
+    }
+
+    @Test
+    void handlerServesReplacementSessionWithoutReregistration() throws Exception {
+        RpcChannel b = RpcChannel.create();
+        Loopback first = new Loopback();
+        Loopback replacement = new Loopback();
+        try {
+            b.registerHandler("echo", String.class, ctx -> "hi:" + ctx.body());
+
+            b.onOpen(first);
+            b.onTextMessage(first, requestJson("echo", "1"));
+            assertTrue(first.answered(), "first session must be served");
+
+            b.onOpen(replacement);
+            b.onTextMessage(replacement, requestJson("echo", "2"));
+            assertTrue(replacement.answered(), "replacement must be served by the same handler");
+        } finally {
+            b.shutdown();
+        }
+    }
+
+    @Test
+    void handlerRegistriesAreIndependentPerChannel() throws Exception {
+        RpcChannel a = RpcChannel.create();
+        RpcChannel b = RpcChannel.create();
+        try {
+            b.registerHandler("only-b", String.class, _ctx -> "b");
+            assertTrue(b.hasHandler("only-b"), "registration must exist on its channel");
+            assertTrue(!a.hasHandler("only-b"), "registration must not leak to another channel");
+        } finally {
+            a.shutdown();
             b.shutdown();
         }
     }

@@ -20,7 +20,7 @@ The `:gateway` module SHALL manage pending RPC and stream futures through one he
 
 ### Requirement: Single stream-failure settlement path
 
-`WsRpcChannel` SHALL settle a failed stream slot through one helper that chooses local request failure for reply streams and a wire error frame for receiver streams, so the branch is not repeated per failure cause.
+`RpcChannel` SHALL settle a failed stream slot through one helper that chooses local request failure for reply streams and a wire error frame for receiver streams, so the branch is not repeated per failure cause.
 
 #### Scenario: Every stream failure cause uses one settlement
 - **WHEN** a stream fails on checksum header mismatch, assembled checksum mismatch, incomplete chunk set, or byte cap
@@ -30,7 +30,7 @@ The `:gateway` module SHALL manage pending RPC and stream futures through one he
 
 The `:gateway` module SHALL provide one helper that unwraps `ExecutionException` and `CompletionException` to their root cause, reused by both the client lifecycle and the transport.
 
-#### Scenario: Transport and client unwrap identically
+#### Scenario: WebSocketConnection and client unwrap identically
 - **WHEN** a send or dial future fails with a wrapped cause
 - **THEN** the client and transport report the same root cause for equivalent wrapped failures
 
@@ -68,7 +68,7 @@ The refactor SHALL NOT change any observable gateway behavior.
 
 ### Requirement: Three-way protocol split with pushed-down state
 
-`WsRpcChannel` SHALL be split so RPC dispatch, stream orchestration, and subscription tracking each own the state they use, while the channel remains a facade owning the session gate, the ordered ingress lane, and `failAll` fan-out order.
+`RpcChannel` SHALL be split so RPC dispatch, stream orchestration, and subscription tracking each own the state they use, while the channel remains a facade owning the session gate, the ordered ingress lane, and `failAll` fan-out order.
 
 #### Scenario: State lives with its consumer
 - **WHEN** the split is complete
@@ -80,11 +80,11 @@ The refactor SHALL NOT change any observable gateway behavior.
 
 ### Requirement: Top-level wire types with updated call sites
 
-Public wire records (`StreamStart`, `StreamDone`, `StreamAbort`, `StreamReply`, `SubscribePayload`, `SubscriptionRequest`, `PushHandle`) and protocol constants SHALL live as top-level types rather than nested in `WsRpcChannel`, and every in-repo reference SHALL be updated; wire bytes SHALL be unchanged.
+Public wire records (`StreamStart`, `StreamDone`, `StreamAbort`, `StreamReply`, `SubscribePayload`, `SubscriptionRequest`, `SubscriptionHandle`) and protocol constants SHALL live as top-level types rather than nested in `RpcChannel`, and every in-repo reference SHALL be updated; wire bytes SHALL be unchanged.
 
 #### Scenario: No nested-type references remain
 - **WHEN** the module and its callers are compiled and searched
-- **THEN** no `WsRpcChannel.X` nested-type reference remains in production or test code
+- **THEN** no `RpcChannel.X` nested-type reference remains in production or test code
 
 #### Scenario: Wire output identical
 - **WHEN** the gateway test suite runs

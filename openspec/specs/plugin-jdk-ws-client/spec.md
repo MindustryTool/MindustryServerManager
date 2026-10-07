@@ -6,9 +6,9 @@ TBD - created by syncing change migrate-plugin-to-jdk-ws. Update Purpose after i
 
 ## Requirements
 
-### Requirement: Southbound plugin client on JdkWsClient
+### Requirement: Southbound plugin client on WsClient
 
-The plugin SHALL connect its southbound `/gateway` socket through `JdkWsClient` built with a per-attempt headers supplier, a per-attempt gateway URI supplier following the `plugin-gateway-url` resolution rule, a shared IO executor for its `WsRpcChannel`, and no `nv-websocket-client` runtime dependency.
+The plugin SHALL connect its southbound `/gateway` socket through `WsClient` built with a per-attempt headers supplier, a per-attempt gateway URI supplier following the `plugin-gateway-url` resolution rule, a shared IO executor for its `RpcChannel`, and no `nv-websocket-client` runtime dependency.
 
 #### Scenario: Handshake headers per attempt
 
@@ -23,16 +23,16 @@ The plugin SHALL connect its southbound `/gateway` socket through `JdkWsClient` 
 #### Scenario: ws scheme endpoint
 
 - **WHEN** the plugin builds its gateway URI
-- **THEN** the URI comes from the `PLUGIN_GATEWAY_URL` resolution rule (explicit env or dev/prod default), uses the `ws://` (or `wss://`) scheme including the `/gateway` path, and `JdkWsClient` rejects non-`ws`/`wss` URIs instead of dialing
+- **THEN** the URI comes from the `PLUGIN_GATEWAY_URL` resolution rule (explicit env or dev/prod default), uses the `ws://` (or `wss://`) scheme including the `/gateway` path, and `WsClient` rejects non-`ws`/`wss` URIs instead of dialing
 
 #### Scenario: Shared IO channel executor
 
 - **WHEN** southbound text frames arrive
-- **THEN** `WsRpcChannel` dispatches on the shared IO pool, never inline on the JDK listener thread and never on the ping/reconnect scheduler
+- **THEN** `RpcChannel` dispatches on the shared IO pool, never inline on the JDK listener thread and never on the ping/reconnect scheduler
 
 ### Requirement: Protocol-ping-only southbound liveness
 
-The plugin SHALL rely on `JdkWsClient` protocol ping, pong-deadline, and exponential-backoff reconnect as its only keepalive, with state updates sent on events rather than on a fixed heartbeat schedule.
+The plugin SHALL rely on `WsClient` protocol ping, pong-deadline, and exponential-backoff reconnect as its only keepalive, with state updates sent on events rather than on a fixed heartbeat schedule.
 
 #### Scenario: No fixed app heartbeat
 
@@ -51,12 +51,12 @@ The plugin SHALL rely on `JdkWsClient` protocol ping, pong-deadline, and exponen
 
 ### Requirement: No inbound binary and no nv dependency
 
-The plugin SHALL forward inbound binary frames to `WsRpcChannel.onBinaryMessage` for stream reassembly, dropping frames for unknown or non-stream transfers with a log, and SHALL NOT ship `nv-websocket-client` in `plugin.jar`.
+The plugin SHALL forward inbound binary frames to `RpcChannel.onBinaryMessage` for stream reassembly, dropping frames for unknown or non-stream transfers with a log, and SHALL NOT ship `nv-websocket-client` in `plugin.jar`.
 
 #### Scenario: Binary forwarded to channel
 
 - **WHEN** a binary frame arrives on the southbound socket
-- **THEN** it is handed to `WsRpcChannel.onBinaryMessage` and frames for unknown or non-stream transfers are dropped with a log without failing the connection or pending RPCs
+- **THEN** it is handed to `RpcChannel.onBinaryMessage` and frames for unknown or non-stream transfers are dropped with a log without failing the connection or pending RPCs
 
 #### Scenario: nv dependency absent
 

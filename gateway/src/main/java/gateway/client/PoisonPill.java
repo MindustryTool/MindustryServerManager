@@ -1,9 +1,9 @@
 package gateway.client;
 
-public enum Control implements QueueItem {
+public enum PoisonPill implements OutboundItem {
     POISON;
 
-    public static Control poison() {
+    public static PoisonPill poison() {
         return POISON;
     }
 }
