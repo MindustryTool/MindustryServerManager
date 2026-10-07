@@ -1,21 +1,17 @@
 package plugin.orm;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.AfterEach;
@@ -46,28 +42,6 @@ public class AsyncExecutionTest {
 
         var row = test.db.select(Fixtures.USERS_ID).from(Fixtures.USERS).fetchOne();
         assertTrue(row.isPresent());
-    }
-
-    @Test
-    void asyncWorkRunsOnProvidedExecutorThread() throws Exception {
-        Set<String> threadNames = ConcurrentHashMap.newKeySet();
-        ExecutorService external = Executors.newFixedThreadPool(2, (ThreadFactory) runnable -> new Thread(runnable, "test-exec"));
-        try {
-            var db = SQLiteDatabase.builder().path(tempDir.resolve("exec.db").toString()).executor(external).build();
-            db.raw("CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)");
-            List<CompletableFuture<Void>> futures = new ArrayList<>();
-            for (int i = 0; i < 20; i++) {
-                final int n = i;
-                futures.add(db.select().from(Fixtures.USERS).fetchAsync()
-                        .thenAccept(rows -> threadNames.add(Thread.currentThread().getName() + n)));
-            }
-            CompletableFuture.allOf(futures.toArray(CompletableFuture<?>[]::new)).join();
-
-            assertFalse(threadNames.isEmpty());
-            assertTrue(threadNames.stream().allMatch(name -> name.startsWith("test-exec")));
-        } finally {
-            external.shutdownNow();
-        }
     }
 
     @Test

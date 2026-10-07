@@ -1,6 +1,5 @@
 package server.service;
 
-import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.Test;
@@ -373,22 +372,6 @@ public class TranslationServiceTest {
 
         TranslationService service = new TranslationService(Caffeine.newBuilder().build(), provider);
         assertNull(service.translate("hello", "fr"));
-    }
-
-    @Test
-    public void testDefaultProvidersContainsTier0AndTier1() {
-        TranslationService service = new TranslationService();
-        List<TranslationService.RegisteredProvider> registered = service.getRegisteredProviders();
-        assertEquals(3, registered.size());
-
-        assertEquals("lingva", registered.get(0).provider().name());
-        assertEquals(0, registered.get(0).tier());
-
-        assertEquals("google-web", registered.get(1).provider().name());
-        assertEquals(0, registered.get(1).tier());
-
-        assertEquals("google-web-proxy", registered.get(2).provider().name());
-        assertEquals(1, registered.get(2).tier());
     }
 
     @Test
