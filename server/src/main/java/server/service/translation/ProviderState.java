@@ -31,11 +31,11 @@ public class ProviderState {
 
     public synchronized void recordFailure(String providerName, Throwable error) {
         if (consecutiveSuccesses > 0) {
-            Log.info("Translation provider '@' started failing after @ consecutive success(es): @",
+            Log.warn("Translation provider '@' started failing after @ consecutive success(es): @",
                     providerName, consecutiveSuccesses, error != null ? error.getMessage() : "empty/null result");
             consecutiveSuccesses = 0;
         } else if (consecutiveFailures == 0) {
-            Log.info("Translation provider '@' started failing: @",
+            Log.warn("Translation provider '@' started failing: @",
                     providerName, error != null ? error.getMessage() : "empty/null result");
         }
         consecutiveFailures++;

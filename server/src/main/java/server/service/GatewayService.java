@@ -238,10 +238,6 @@ public class GatewayService {
             eventBus.emit(new StopEvent(id, NodeRemoveReason.SOCKET_DISCONNECT));
             lastDisconnectAt = Instant.now();
             rpcChannel.onClose(new RuntimeException("Gateway client disconnected: " + id));
-
-            if (!nodeManager.isRunning(id)) {
-                terminate(NodeRemoveReason.PROCESS_KILLED);
-            }
         }
 
         public boolean isTerminated() {

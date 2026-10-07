@@ -92,7 +92,6 @@ public class ApiGateway {
     private final HostService hostService;
     private final SessionService sessionService;
 
-
     private final WsRpcChannel rpcChannel = WsRpcChannel.withMapper(JsonUtils.getObjectMapper(), executor);
     private final JdkWsClient gatewayClient = JdkWsClient.builder(URI.create(Cfg.gatewayUrl()), rpcChannel)
             .headersSupplier(() -> gatewayHeaders(Cfg.webSocketAuthToken(), Cfg.serverId()))
@@ -135,8 +134,10 @@ public class ApiGateway {
         this.registerHandler("delete-kicked-ip", String.class, (request) -> deleteKickedIp(request));
         this.registerHandler("shutdown", Void.class, (request) -> shutdown());
 
-      
-        gatewayClient.onOpen(() -> Log.info("[green]Connected to server manager"));
+        gatewayClient.onOpen(() -> {
+            Log.info("[green]Connected to server manager");
+            sendStateUpdate();
+        });
         gatewayClient.onClose(err -> Log.info("[red]Disconnected from server manager: " + err.getMessage()
                 + "; reconnect scheduled"));
         gatewayClient.connect();

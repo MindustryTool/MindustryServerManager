@@ -25,7 +25,8 @@ import server.service.proxy.ProxySource;
 
 public class MultiSourceProxyPool {
 
-    private static final Duration REFRESH_INTERVAL = Duration.ofMinutes(15);
+    // TODO: Better rotation logic
+    private static final Duration REFRESH_INTERVAL = Duration.ofHours(2);
 
     private final List<ProxySource> sources;
     private final Queue<InetSocketAddress> pool = new ConcurrentLinkedQueue<>();
