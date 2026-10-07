@@ -111,7 +111,6 @@ public class AdminService {
     @Destroy
     public void destroy() {
         reset();
-        lastGriefReportTimes.invalidateAll();
     }
 
     public boolean isGriefVoting() {

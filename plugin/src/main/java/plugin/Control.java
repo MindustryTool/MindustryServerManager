@@ -127,15 +127,24 @@ public class Control extends Plugin {
         } catch (Exception e) {
             Log.err("Failed to unload plugin", e);
         } finally {
-            if (event.exit) {
-                if (!Cfg.IS_HUB && Groups.player.size() > 0) {
-                    try {
-                        ServerUtils.redirectToHub();
-                        Thread.sleep(2500);
-                    } catch (Exception e) {
-                        Log.err("Error redirecting players before exit: @", e.getMessage());
-                    }
+            if (event.exit && !Cfg.IS_HUB && Groups.player.size() > 0) {
+                try {
+                    ServerUtils.redirectToHub();
+                    Thread.sleep(2500);
+                } catch (Exception e) {
+                    Log.err("Error redirecting players before exit: @", e.getMessage());
                 }
+            }
+
+            if (event.beforeUnload != null) {
+                try {
+                    event.beforeUnload.run();
+                } catch (Exception e) {
+                    Log.err("Failed to run beforeUnload callback", e);
+                }
+            }
+
+            if (event.exit) {
                 System.exit(1);
                 // Force docker container restart
             }

@@ -54,3 +54,27 @@ The `shutdown` handler SHALL complete the unload and return a response before th
 - **WHEN** the unload does not return within the manager's timeout
 - **THEN** the manager proceeds to close the session and remove the container
 
+### Requirement: Unload exposes a beforeUnload hook
+
+`UnloadServerEvent` SHALL carry an optional `beforeUnload` callback. `Control.unload` SHALL invoke the callback exactly once per unload, after `Registry.destroy()` and after the exit-only player redirect, and on exit unloads it SHALL be the last step before `System.exit`. A callback failure SHALL be logged and SHALL NOT prevent the process exit. The hook SHALL NOT close the gateway connection.
+
+#### Scenario: Callback runs on every unload
+
+- **WHEN** an `UnloadServerEvent` carrying a `beforeUnload` callback is handled
+- **THEN** the plugin tears down its state and the callback runs exactly once after teardown
+
+#### Scenario: Callback precedes exit after redirect
+
+- **WHEN** an exit unload occurs while non-hub players are connected
+- **THEN** players are redirected first, then the callback runs, then the process exits
+
+#### Scenario: Callback failure does not block exit
+
+- **WHEN** the `beforeUnload` callback throws during an exit unload
+- **THEN** the error is logged and the process still exits
+
+#### Scenario: Missing callback is a no-op
+
+- **WHEN** an `UnloadServerEvent` has no `beforeUnload` callback
+- **THEN** unload completes without invoking any callback and without error
+

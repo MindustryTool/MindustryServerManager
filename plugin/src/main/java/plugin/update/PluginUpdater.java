@@ -217,17 +217,23 @@ public class PluginUpdater {
         currentJarHash = null;
         pendingHash = null;
 
+        byte[] bytes;
         try {
-            byte[] bytes = apiGateway.sendRequest("download-plugin", null, byte[].class).get(30, TimeUnit.SECONDS);
-            jar.writeBytes(bytes);
-            Log.info(bytes.length + " bytes written to plugin.jar");
+            bytes = apiGateway.sendRequest("download-plugin", null, byte[].class).get(30, TimeUnit.SECONDS);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
             Log.err("Failed to update plugin bundle from manager; aborting restart", e);
             isRestarting = false;
             return;
         }
 
-        PluginEvents.fire(new UnloadServerEvent(true));
+        PluginEvents.fire(new UnloadServerEvent(true, () -> {
+            try {
+                jar.writeBytes(bytes);
+                Log.info(bytes.length + " bytes written to plugin.jar");
+            } catch (Exception e) {
+                Log.err("Failed to write plugin.jar during unload", e);
+            }
+        }));
     }
 
     public void scheduleRestart() {
