@@ -353,7 +353,7 @@ public class GatewayService {
         }
 
         public class Backend {
-            private final HttpClient httpClient = HttpClients.forUrl(Const.API_URL);
+            private final HttpClient httpClient = HttpClients.shared();
 
             private HttpRequest.Builder createRequest(Object... segments) {
                 try {
