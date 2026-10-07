@@ -14,7 +14,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
@@ -33,7 +32,7 @@ class Transport implements WsSession {
 
     private static final Logger LOG = Logger.getLogger(Transport.class.getName());
 
-    private static final Duration SEND_TIMEOUT = Duration.ofSeconds(10);
+    static final Duration DEFAULT_SEND_TIMEOUT = Duration.ofSeconds(10);
     private static final int QUEUE_WARN_DEPTH = 1000;
 
     /** Policy callbacks owned by the lifecycle. */
@@ -43,70 +42,17 @@ class Transport implements WsSession {
         void onTransportError(Transport transport, Throwable error);
     }
 
-    private enum Kind {
-        TEXT,
-        BINARY,
-        PING,
-        CLOSE,
-        POISON
-    }
-
-    private static final class SendOp {
-
-        final Kind kind;
-        final String text;
-        final byte[] binary;
-        final int closeCode;
-        final String closeReason;
-        final WebSocket closeTarget;
-
-        private SendOp(
-                Kind kind,
-                String text,
-                byte[] binary,
-                int closeCode,
-                String closeReason,
-                WebSocket closeTarget) {
-
-            this.kind = kind;
-            this.text = text;
-            this.binary = binary;
-            this.closeCode = closeCode;
-            this.closeReason = closeReason;
-            this.closeTarget = closeTarget;
-        }
-
-        static SendOp text(String text) {
-            return new SendOp(Kind.TEXT, text, null, 0, null, null);
-        }
-
-        static SendOp binary(byte[] bytes) {
-            return new SendOp(Kind.BINARY, null, bytes, 0, null, null);
-        }
-
-        static SendOp ping() {
-            return new SendOp(Kind.PING, null, null, 0, null, null);
-        }
-
-        static SendOp close(WebSocket target, int code, String reason) {
-            return new SendOp(Kind.CLOSE, null, null, code, reason, target);
-        }
-
-        static SendOp poison() {
-            return new SendOp(Kind.POISON, null, null, 0, null, null);
-        }
-    }
-
     private final ScheduledExecutorService scheduler;
     private final Duration pingInterval;
     private final Duration pongDeadline;
+    private final Duration sendTimeout;
     private final WsRpcChannel channel;
     private final Events events;
 
     private volatile WebSocket socket;
     private final AtomicBoolean terminated = new AtomicBoolean(false);
 
-    private final BlockingQueue<SendOp> sendQueue = new LinkedBlockingQueue<>();
+    private final BlockingQueue<QueueItem> sendQueue = new LinkedBlockingQueue<>();
     private volatile Thread senderThread;
     private volatile ScheduledFuture<?> pingTask;
     private volatile Instant lastPongAt = Instant.now();
@@ -119,10 +65,21 @@ class Transport implements WsSession {
             Duration pongDeadline,
             WsRpcChannel channel,
             Events events) {
+        this(scheduler, pingInterval, pongDeadline, DEFAULT_SEND_TIMEOUT, channel, events);
+    }
+
+    Transport(
+            ScheduledExecutorService scheduler,
+            Duration pingInterval,
+            Duration pongDeadline,
+            Duration sendTimeout,
+            WsRpcChannel channel,
+            Events events) {
 
         this.scheduler = Objects.requireNonNull(scheduler, "scheduler");
         this.pingInterval = Objects.requireNonNull(pingInterval, "pingInterval");
         this.pongDeadline = Objects.requireNonNull(pongDeadline, "pongDeadline");
+        this.sendTimeout = Objects.requireNonNull(sendTimeout, "sendTimeout");
         this.channel = Objects.requireNonNull(channel, "channel");
         this.events = Objects.requireNonNull(events, "events");
     }
@@ -161,7 +118,7 @@ class Transport implements WsSession {
 
         stopPingTask();
         sendQueue.clear();
-        sendQueue.offer(SendOp.poison());
+        sendQueue.offer(Control.poison());
     }
 
     /**
@@ -175,10 +132,10 @@ class Transport implements WsSession {
         WebSocket target = socket;
 
         if (target != null && !target.isOutputClosed()) {
-            sendQueue.offer(SendOp.close(target, code, reason == null ? "" : reason));
+            sendQueue.offer(SendOp.close(code, reason));
         }
 
-        sendQueue.offer(SendOp.poison());
+        sendQueue.offer(Control.poison());
     }
 
     boolean isTerminated() {
@@ -237,7 +194,7 @@ class Transport implements WsSession {
         try {
             if (!target.isOutputClosed()) {
                 target.sendClose(code, reason == null ? "" : reason)
-                        .get(SEND_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS);
+                        .get(sendTimeout.toMillis(), TimeUnit.MILLISECONDS);
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -258,7 +215,7 @@ class Transport implements WsSession {
                 && !target.isInputClosed();
     }
 
-    private void enqueue(SendOp op) {
+    private void enqueue(QueueItem op) {
         if (terminated.get()) {
             throw new IllegalStateException("Transport terminated");
         }
@@ -294,18 +251,15 @@ class Transport implements WsSession {
     private void senderLoop() {
         try {
             while (!Thread.currentThread().isInterrupted()) {
-                SendOp op = sendQueue.take();
+                QueueItem item = sendQueue.take();
 
-                if (op.kind == Kind.POISON) {
+                if (item instanceof Control) {
                     return;
                 }
 
-                if (op.kind == Kind.CLOSE) {
-                    sendCloseFrame(op);
-                    return;
-                }
+                SendOp op = (SendOp) item;
 
-                if (terminated.get()) {
+                if (terminated.get() && !(op instanceof SendOp.CloseOp)) {
                     continue;
                 }
 
@@ -315,74 +269,20 @@ class Transport implements WsSession {
                     continue;
                 }
 
-                switch (op.kind) {
-                    case TEXT -> sendTextFrame(ws, op.text);
-                    case BINARY -> sendBinaryFrame(ws, op.binary);
-                    case PING -> sendPingFrame(ws);
-                    default -> {
-                    }
+                SendContext ctx = new SendContext(ws, sendTimeout, events);
+
+                try {
+                    op.execute(ctx);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    return;
+                } catch (Exception e) {
+                    LOG.log(Level.WARNING, "send failed: " + op.getClass().getSimpleName(), e);
+                    events.onTransportError(this, rootCause(e));
                 }
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-        }
-    }
-
-    private void sendTextFrame(WebSocket ws, String text) {
-        try {
-            ws.sendText(text, true).get(SEND_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        } catch (Exception e) {
-            LOG.log(Level.WARNING, "sendText failed", e);
-            events.onTransportError(this, rootCause(e));
-        }
-    }
-
-    private void sendBinaryFrame(WebSocket ws, byte[] bytes) {
-        try {
-            ws.sendBinary(ByteBuffer.wrap(bytes), true).get(SEND_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        } catch (Exception e) {
-            LOG.log(Level.WARNING, "sendBinary failed", e);
-            events.onTransportError(this, rootCause(e));
-        }
-    }
-
-    private void sendPingFrame(WebSocket ws) {
-        try {
-            ByteBuffer ping = ByteBuffer.wrap(new byte[8]);
-            ThreadLocalRandom.current().nextBytes(ping.array());
-
-            ws.sendPing(ping).get(SEND_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        } catch (Exception e) {
-            LOG.log(Level.FINE, "Ping failed", e);
-            events.onTransportError(this, rootCause(e));
-        }
-    }
-
-    private void sendCloseFrame(SendOp op) {
-        WebSocket target = op.closeTarget;
-
-        if (target == null || target.isOutputClosed()) {
-            return;
-        }
-
-        try {
-            target.sendClose(
-                    op.closeCode,
-                    op.closeReason == null ? "" : op.closeReason)
-                    .get(SEND_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        } catch (Exception e) {
-            try {
-                target.abort();
-            } catch (Exception ignored) {
-            }
         }
     }
 
