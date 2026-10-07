@@ -154,7 +154,7 @@ public class WsClient {
                 return;
             }
 
-            LOG.info("WebSocket closed: " + statusCode + " " + reason);
+            LOG.warning("WebSocket closed: " + statusCode + ", reason: " + reason);
             onDrop(transport, new RuntimeException("remote close " + statusCode + ": " + reason));
         }
 

@@ -70,7 +70,10 @@ public class BackendGateway {
             if (event instanceof LogEvent logEvent && logEvent.getData().startsWith("Picked up JAVA_TOOL_OPTIONS")) {
                 return;
             }
-            rpcChannel.sendNotification("event", event);
+            
+            if (rpcChannel.isConnected()) {
+                rpcChannel.sendNotification("event", event);
+            }
         });
         this.started = true;
 
