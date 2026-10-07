@@ -286,12 +286,12 @@ class JdkWsClientTest {
 
             List<String> order = new ArrayList<>(fake.order);
             assertEquals(5, order.size());
-            assertTrue(order.get(0).contains("\"type\":\"" + WsProtocol.STREAM_START_TYPE + "\""),
+            assertTrue(order.get(0).contains("\"kind\":\"" + WsProtocol.STREAM_START_TYPE + "\""),
                     "start first, got: " + order.get(0));
             assertEquals("binary", order.get(1));
             assertEquals("binary", order.get(2));
             assertEquals("binary", order.get(3));
-            assertTrue(order.get(4).contains("\"type\":\"" + WsProtocol.STREAM_DONE_TYPE + "\""),
+            assertTrue(order.get(4).contains("\"kind\":\"" + WsProtocol.STREAM_DONE_TYPE + "\""),
                     "done last, got: " + order.get(4));
         } finally {
             client.close();

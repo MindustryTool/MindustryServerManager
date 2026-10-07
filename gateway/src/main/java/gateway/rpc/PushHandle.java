@@ -7,13 +7,13 @@ public interface PushHandle {
     void push(Object event);
 
     /**
-     * End the subscription cleanly. No frame is sent to the client.
+     * End the event stream cleanly. Sends a {@code listen-ended} frame.
      * Invokes {@link #onClose(Runnable)} callbacks.
      */
     void complete();
 
     /**
-     * End the subscription with an error. Sends an error frame to the client.
+     * End the event stream with an error. Sends a {@code listen-error} frame.
      * Invokes {@link #onClose(Runnable)} callbacks.
      *
      * @param reason error reason sent to the client
@@ -21,13 +21,13 @@ public interface PushHandle {
     void fail(String reason);
 
     /**
-     * @return true if the subscription has been closed (by client unsubscribe,
+     * @return true if the event stream has been closed (by client unlisten,
      *         server fail/complete, or connection loss)
      */
     boolean isClosed();
 
     /**
-     * Register a callback to be invoked when the subscription ends.
+     * Register a callback to be invoked when the event stream ends.
      * If already closed, the callback runs immediately.
      *
      * @param callback the cleanup action

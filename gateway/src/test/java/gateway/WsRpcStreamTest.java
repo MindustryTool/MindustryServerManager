@@ -47,7 +47,8 @@ class WsRpcStreamTest {
         @Override
         public void sendText(String text) {
             sent.add(text);
-            if (dropDone && text.contains("\"type\":\"" + WsProtocol.STREAM_DONE_TYPE + "\"")) {
+            if (dropDone && (text.contains("\"kind\":\"" + WsProtocol.STREAM_DONE_TYPE + "\"")
+                    || text.contains("\"kind\":\"" + WsProtocol.STREAM_REPLY_DONE_TYPE + "\""))) {
                 return;
             }
             WsRpcChannel p = peer;
@@ -111,6 +112,37 @@ class WsRpcStreamTest {
         CompletableFuture<String> ack = a.sendStream("doc", new DocMeta("n1"), ByteBuffer.wrap(payload),
                 String.class, Duration.ofSeconds(5));
         assertEquals("n1:hello-stream", ack.get(5, TimeUnit.SECONDS));
+
+        a.shutdown();
+        b.shutdown();
+    }
+
+    @Test
+    void streamStartCarriesKindAndType() throws Exception {
+        Loopback sa = new Loopback();
+        Loopback sb = new Loopback();
+        WsRpcChannel[] pair = pair(sa, sb);
+        WsRpcChannel a = pair[0];
+        WsRpcChannel b = pair[1];
+
+        b.registerStreamHandler("doc", String.class, String.class, (meta, bytes) -> "ok");
+
+        byte[] payload = "x".getBytes(StandardCharsets.UTF_8);
+        CompletableFuture<String> ack = a.sendStream("doc", "m", payload, String.class,
+                Duration.ofSeconds(5));
+        assertEquals("ok", ack.get(5, TimeUnit.SECONDS));
+
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode start = mapper.readTree(sa.sent.get(0));
+        assertEquals(WsProtocol.STREAM_START_TYPE, start.get("kind").asText());
+        assertEquals("doc", start.get("type").asText());
+        assertTrue(start.get("event").isNull(), "stream frame must not carry an event field");
+        assertFalse(start.get("payload").has("streamType"),
+                "handler name must not be duplicated in the payload");
+
+        JsonNode done = firstSentOfKind(sa.sent, WsProtocol.STREAM_DONE_TYPE);
+        assertNotNull(done);
+        assertEquals("doc", done.get("type").asText(), "done must echo the handler type");
 
         a.shutdown();
         b.shutdown();
@@ -267,16 +299,16 @@ class WsRpcStreamTest {
 
         UUID streamId = UUID.randomUUID();
         byte[] payload = "x".getBytes(StandardCharsets.UTF_8);
-        StreamStart start = new StreamStart(streamId, "doc",
+        StreamStart start = new StreamStart(streamId,
                 b.getObjectMapper().valueToTree("m"), 1, FileChunkStreamer.sha256Hex(payload));
         String startJson = new ObjectMapper().writeValueAsString(
-                WsMessage.<StreamStart>create(WsProtocol.STREAM_START_TYPE).withPayload(start));
+                WsMessage.<StreamStart>create(WsProtocol.STREAM_START_TYPE).setType("doc").withPayload(start));
         b.onTextMessage(startJson);
         assertEquals(1, b.pendingStreamCount());
 
-        assertTrue(b.abortStream(streamId));
+        assertTrue(b.abortStream(streamId, "doc"));
         assertEquals(0, b.pendingStreamCount());
-        assertFalse(b.abortStream(streamId));
+        assertFalse(b.abortStream(streamId, "doc"));
 
         b.shutdown();
     }
@@ -302,10 +334,10 @@ class WsRpcStreamTest {
         b.registerStreamHandler("doc", String.class, String.class, (meta, bytes) -> "ok");
 
         UUID streamId = UUID.randomUUID();
-        StreamStart start = new StreamStart(streamId, "doc",
+        StreamStart start = new StreamStart(streamId,
                 b.getObjectMapper().valueToTree("m"), 1, FileChunkStreamer.sha256Hex(new byte[] { 1 }));
         String startJson = new ObjectMapper().writeValueAsString(
-                WsMessage.<StreamStart>create(WsProtocol.STREAM_START_TYPE).withPayload(start));
+                WsMessage.<StreamStart>create(WsProtocol.STREAM_START_TYPE).setType("doc").withPayload(start));
         b.onTextMessage(startJson);
         assertEquals(1, b.pendingStreamCount());
 
@@ -361,6 +393,35 @@ class WsRpcStreamTest {
     }
 
     @Test
+    void replyStreamUsesDedicatedKinds() throws Exception {
+        Loopback sa = new Loopback();
+        Loopback sb = new Loopback();
+        WsRpcChannel[] pair = pair(sa, sb);
+        WsRpcChannel a = pair[0];
+        WsRpcChannel b = pair[1];
+
+        byte[] payload = new byte[] { 1, 2, 3 };
+        b.registerHandler("get-file", String.class, name -> new StreamReply(payload, null));
+
+        CompletableFuture<byte[]> res = a.sendRequest("get-file", "x", byte[].class,
+                Duration.ofSeconds(10));
+        assertArrayEquals(payload, res.get(10, TimeUnit.SECONDS));
+
+        JsonNode start = firstSentOfKind(sb.sent, WsProtocol.STREAM_REPLY_START_TYPE);
+        assertNotNull(start, "reply stream must start with a dedicated kind, sent: " + sb.sent);
+        assertEquals("get-file", start.get("type").asText());
+        JsonNode request = firstSentOfType(sa.sent, "get-file");
+        assertEquals(request.get("id").asText(), start.get("responseOf").asText());
+
+        JsonNode done = firstSentOfKind(sb.sent, WsProtocol.STREAM_REPLY_DONE_TYPE);
+        assertNotNull(done, "reply stream must complete with a dedicated kind");
+        assertEquals("get-file", done.get("type").asText());
+
+        a.shutdown();
+        b.shutdown();
+    }
+
+    @Test
     void replyStreamHandlerThrowFailsRequest() {
         Loopback sa = new Loopback();
         Loopback sb = new Loopback();
@@ -409,10 +470,10 @@ class WsRpcStreamTest {
 
         UUID streamId = UUID.randomUUID();
         byte[] payload = new byte[] { 1 };
-        StreamStart start = new StreamStart(streamId, "get-file",
+        StreamStart start = new StreamStart(streamId,
                 b.getObjectMapper().valueToTree("m"), 1, FileChunkStreamer.sha256Hex(payload));
         WsMessage<StreamStart> msg = WsMessage
-                .<StreamStart>create(WsProtocol.STREAM_START_TYPE).withPayload(start);
+                .<StreamStart>create(WsProtocol.STREAM_REPLY_START_TYPE).setType("get-file").withPayload(start);
         msg.setResponseOf(UUID.randomUUID());
         b.onTextMessage(new ObjectMapper().writeValueAsString(msg));
 
@@ -421,15 +482,44 @@ class WsRpcStreamTest {
     }
 
     @Test
-    void streamControlTypesRejected() {
+    void noApplicationNameIsReserved() throws Exception {
         WsRpcChannel a = WsRpcChannel.create();
-        assertThrows(IllegalArgumentException.class,
-                () -> a.registerHandler(WsProtocol.STREAM_START_TYPE, String.class, s -> null));
-        assertThrows(IllegalArgumentException.class,
-                () -> a.registerStreamHandler(WsProtocol.STREAM_DONE_TYPE, String.class, String.class,
-                        (meta, bytes) -> "x"));
-        assertThrows(NullPointerException.class, () -> a.abortStream(null));
+        WsRpcChannel b = WsRpcChannel.create();
+        Loopback sa = new Loopback();
+        Loopback sb = new Loopback();
+        sa.peer = b;
+        sb.peer = a;
+        a.onOpen(sa);
+        b.onOpen(sb);
+
+        // A handler may be named exactly like a frame kind.
+        b.registerHandler(WsProtocol.STREAM_START_TYPE, String.class, s -> "k:" + s);
+        CompletableFuture<String> res = a.sendRequest(WsProtocol.STREAM_START_TYPE, "x", String.class,
+                Duration.ofSeconds(5));
+        assertEquals("k:x", res.get(5, TimeUnit.SECONDS));
+
+        // A stream handler may also use a kind value as its name.
+        b.registerStreamHandler(WsProtocol.STREAM_DONE_TYPE, String.class, String.class,
+                (meta, bytes) -> "s");
+        CompletableFuture<String> ack = a.sendStream(WsProtocol.STREAM_DONE_TYPE, "m", new byte[] { 1 },
+                String.class, Duration.ofSeconds(5));
+        assertEquals("s", ack.get(5, TimeUnit.SECONDS));
+
+        assertThrows(NullPointerException.class, () -> a.abortStream(null, "doc"));
+        assertThrows(NullPointerException.class, () -> a.abortStream(UUID.randomUUID(), null));
+
         a.shutdown();
+        b.shutdown();
+    }
+
+    private static JsonNode firstSentOfKind(List<String> sent, String kind) throws Exception {
+        ObjectMapper mapper = new ObjectMapper();
+        for (String text : sent) {
+            if (text.contains("\"kind\":\"" + kind + "\"")) {
+                return mapper.readTree(text);
+            }
+        }
+        return null;
     }
 
     private static JsonNode firstSentOfType(List<String> sent, String type) throws Exception {
@@ -457,27 +547,6 @@ class WsRpcStreamTest {
     }
 
     @Test
-    void subscriptionControlTypesRejected() {
-        WsRpcChannel a = WsRpcChannel.create();
-        assertThrows(IllegalArgumentException.class,
-                () -> a.registerHandler(WsProtocol.SUBSCRIBE_TYPE, String.class, s -> null));
-        assertThrows(IllegalArgumentException.class,
-                () -> a.registerHandler(WsProtocol.UNSUBSCRIBE_TYPE, String.class, s -> null));
-        a.shutdown();
-    }
-
-    @Test
-    void abortControlTypeRejected() {
-        WsRpcChannel a = WsRpcChannel.create();
-        assertThrows(IllegalArgumentException.class,
-                () -> a.registerHandler(WsProtocol.STREAM_ABORT_TYPE, String.class, s -> null));
-        assertThrows(IllegalArgumentException.class,
-                () -> a.registerStreamHandler(WsProtocol.STREAM_ABORT_TYPE, String.class, String.class,
-                        (meta, bytes) -> "x"));
-        a.shutdown();
-    }
-
-    @Test
     void inboundAbortDiscardsSlotWithNoReply() throws Exception {
         Loopback sa = new Loopback();
         Loopback sb = new Loopback();
@@ -491,17 +560,44 @@ class WsRpcStreamTest {
         CompletableFuture<String> ack = a.sendStream("doc", "m", payload, String.class,
                 Duration.ofSeconds(10));
         assertEquals(1, b.pendingStreamCount());
-        UUID streamId = UUID.fromString(firstSentOfType(sa.sent,
+        UUID streamId = UUID.fromString(firstSentOfKind(sa.sent,
                 WsProtocol.STREAM_START_TYPE).get("payload").get("streamId").asText());
 
         String abortJson = new ObjectMapper().writeValueAsString(
-                WsMessage.<StreamAbort>create(WsProtocol.STREAM_ABORT_TYPE)
+                WsMessage.<StreamAbort>create(WsProtocol.STREAM_ABORT_TYPE).setType("doc")
                         .withPayload(new StreamAbort(streamId, "stop")));
         b.onTextMessage(abortJson);
 
         assertEquals(0, b.pendingStreamCount());
         assertTrue(sb.sent.isEmpty(), "abort must never be answered, got: " + sb.sent);
         assertFalse(ack.isDone(), "sender waiter is untouched by the receiver-side abort");
+
+        a.shutdown();
+        b.shutdown();
+    }
+
+    @Test
+    void abortWithMismatchedTypeDropped() throws Exception {
+        Loopback sa = new Loopback();
+        Loopback sb = new Loopback();
+        sa.dropDone = true;
+        WsRpcChannel[] pair = pair(sa, sb);
+        WsRpcChannel a = pair[0];
+        WsRpcChannel b = pair[1];
+
+        b.registerStreamHandler("doc", String.class, String.class, (meta, bytes) -> "ok");
+        byte[] payload = "abort-me".getBytes(StandardCharsets.UTF_8);
+        a.sendStream("doc", "m", payload, String.class, Duration.ofSeconds(10));
+        assertEquals(1, b.pendingStreamCount());
+        UUID streamId = UUID.fromString(firstSentOfKind(sa.sent,
+                WsProtocol.STREAM_START_TYPE).get("payload").get("streamId").asText());
+
+        String abortJson = new ObjectMapper().writeValueAsString(
+                WsMessage.<StreamAbort>create(WsProtocol.STREAM_ABORT_TYPE).setType("other")
+                        .withPayload(new StreamAbort(streamId, "stop")));
+        b.onTextMessage(abortJson);
+
+        assertEquals(1, b.pendingStreamCount(), "mismatched abort must not touch the slot");
 
         a.shutdown();
         b.shutdown();
@@ -515,7 +611,7 @@ class WsRpcStreamTest {
         b.registerStreamHandler("doc", String.class, String.class, (meta, bytes) -> "ok");
 
         String abortJson = new ObjectMapper().writeValueAsString(
-                WsMessage.<StreamAbort>create(WsProtocol.STREAM_ABORT_TYPE)
+                WsMessage.<StreamAbort>create(WsProtocol.STREAM_ABORT_TYPE).setType("doc")
                         .withPayload(new StreamAbort(UUID.randomUUID(), "stop")));
         assertDoesNotThrow(() -> b.onTextMessage(abortJson));
 
@@ -539,16 +635,17 @@ class WsRpcStreamTest {
         CompletableFuture<String> ack = a.sendStream("doc", "m", payload, String.class,
                 Duration.ofSeconds(10));
         assertEquals(1, b.pendingStreamCount());
-        UUID streamId = UUID.fromString(firstSentOfType(sa.sent,
+        UUID streamId = UUID.fromString(firstSentOfKind(sa.sent,
                 WsProtocol.STREAM_START_TYPE).get("payload").get("streamId").asText());
 
-        assertTrue(a.abortStream(streamId));
+        assertTrue(a.abortStream(streamId, "doc"));
         Exception err = assertThrows(Exception.class, () -> ack.get(5, TimeUnit.SECONDS));
         assertTrue(err.getCause() != null && err.getCause().getMessage().contains("aborted"));
 
         assertEquals(0, b.pendingStreamCount(), "peer discards its slot on the abort notify");
-        JsonNode abort = firstSentOfType(sa.sent, WsProtocol.STREAM_ABORT_TYPE);
+        JsonNode abort = firstSentOfKind(sa.sent, WsProtocol.STREAM_ABORT_TYPE);
         assertNotNull(abort, "abort notify must be emitted, sent: " + sa.sent);
+        assertEquals("doc", abort.get("type").asText(), "abort must echo the handler type");
         assertEquals(streamId.toString(), abort.get("payload").get("streamId").asText());
 
         a.shutdown();
@@ -567,13 +664,13 @@ class WsRpcStreamTest {
         b.registerStreamHandler("doc", String.class, String.class, (meta, bytes) -> "ok");
         CompletableFuture<String> ack = a.sendStream("doc", "m", new byte[] { 1 }, String.class,
                 Duration.ofSeconds(10));
-        UUID streamId = UUID.fromString(firstSentOfType(sa.sent,
+        UUID streamId = UUID.fromString(firstSentOfKind(sa.sent,
                 WsProtocol.STREAM_START_TYPE).get("payload").get("streamId").asText());
 
-        assertTrue(a.abortStream(streamId));
-        assertFalse(a.abortStream(streamId));
+        assertTrue(a.abortStream(streamId, "doc"));
+        assertFalse(a.abortStream(streamId, "doc"));
         long aborts = sa.sent.stream()
-                .filter(t -> t.contains("\"type\":\"" + WsProtocol.STREAM_ABORT_TYPE + "\""))
+                .filter(t -> t.contains("\"kind\":\"" + WsProtocol.STREAM_ABORT_TYPE + "\""))
                 .count();
         assertEquals(1, aborts);
         assertTrue(ack.isCompletedExceptionally());
@@ -596,7 +693,7 @@ class WsRpcStreamTest {
         CompletableFuture<String> ack = a.sendStream("slow", "m", payload, String.class,
                 Duration.ofSeconds(20));
         assertEquals(1, b.pendingStreamCount());
-        UUID streamId = UUID.fromString(firstSentOfType(sa.sent,
+        UUID streamId = UUID.fromString(firstSentOfKind(sa.sent,
                 WsProtocol.STREAM_START_TYPE).get("payload").get("streamId").asText());
 
         backdateSlotReserve(b, Duration.ofSeconds(59).toNanos());
@@ -604,7 +701,7 @@ class WsRpcStreamTest {
         Thread.sleep(1500);
         assertEquals(1, b.pendingStreamCount(), "progress must refresh the slot past its first deadline");
 
-        String doneJson = firstSentOfType(sa.sent, WsProtocol.STREAM_DONE_TYPE).toString();
+        String doneJson = firstSentOfKind(sa.sent, WsProtocol.STREAM_DONE_TYPE).toString();
         b.onTextMessage(doneJson);
         assertEquals("ok", ack.get(5, TimeUnit.SECONDS));
 
@@ -634,10 +731,10 @@ class WsRpcStreamTest {
 
         UUID streamId = UUID.randomUUID();
         byte[] payload = new byte[] { 1 };
-        StreamStart start = new StreamStart(streamId, "doc",
+        StreamStart start = new StreamStart(streamId,
                 b.getObjectMapper().valueToTree("m"), 1, FileChunkStreamer.sha256Hex(payload));
         b.onTextMessage(new ObjectMapper().writeValueAsString(
-                WsMessage.<StreamStart>create(WsProtocol.STREAM_START_TYPE)
+                WsMessage.<StreamStart>create(WsProtocol.STREAM_START_TYPE).setType("doc")
                         .withPayload(start)));
         assertEquals(1, b.pendingStreamCount());
 
@@ -665,10 +762,10 @@ class WsRpcStreamTest {
 
         UUID streamId = UUID.randomUUID();
         byte[] payload = new byte[] { 1 };
-        StreamStart start = new StreamStart(streamId, "doc",
+        StreamStart start = new StreamStart(streamId,
                 b.getObjectMapper().valueToTree("m"), 1, FileChunkStreamer.sha256Hex(payload));
         b.onTextMessage(new ObjectMapper().writeValueAsString(
-                WsMessage.<StreamStart>create(WsProtocol.STREAM_START_TYPE)
+                WsMessage.<StreamStart>create(WsProtocol.STREAM_START_TYPE).setType("doc")
                         .withPayload(start)));
         assertEquals(1, b.pendingStreamCount());
 
@@ -700,7 +797,7 @@ class WsRpcStreamTest {
         CompletableFuture<String> ack = a.sendStream("doc", "m", payload, String.class,
                 Duration.ofSeconds(10));
         assertEquals(1, b.pendingStreamCount());
-        UUID streamId = UUID.fromString(firstSentOfType(sa.sent,
+        UUID streamId = UUID.fromString(firstSentOfKind(sa.sent,
                 WsProtocol.STREAM_START_TYPE).get("payload").get("streamId").asText());
 
         b.onBinaryMessage(new FileTransferHeader(streamId, 1).encodeFrame(payload, 0, payload.length));
@@ -710,8 +807,9 @@ class WsRpcStreamTest {
                 "bounds failure must name the range, got: " + err.getCause());
         assertTrue(err.getCause().getMessage().contains(streamId.toString()));
         assertFalse(ran[0], "handler must not run on bounds failure");
-        assertTrue(sb.sent.stream().anyMatch(t -> t.contains("\"error\":true")),
-                "normal stream bounds failure must answer with an error, sent: " + sb.sent);
+        assertTrue(sb.sent.stream().anyMatch(t -> t.contains("\"kind\":\""
+                + WsProtocol.RESPONSE_ERROR_TYPE + "\"")),
+                "normal stream bounds failure must answer with a response-error, sent: " + sb.sent);
 
         a.shutdown();
         b.shutdown();
@@ -732,7 +830,7 @@ class WsRpcStreamTest {
 
         CompletableFuture<byte[]> res = a.sendRequest("get-file", "x", byte[].class,
                 Duration.ofSeconds(10));
-        JsonNode start = firstSentOfType(sb.sent, WsProtocol.STREAM_START_TYPE);
+        JsonNode start = firstSentOfKind(sb.sent, WsProtocol.STREAM_REPLY_START_TYPE);
         assertNotNull(start, "reply stream must start, sent: " + sb.sent);
         UUID streamId = UUID.fromString(start.get("payload").get("streamId").asText());
 
@@ -741,7 +839,8 @@ class WsRpcStreamTest {
         Exception err = assertThrows(Exception.class, () -> res.get(5, TimeUnit.SECONDS));
         assertTrue(err.getCause() != null && err.getCause().getMessage().contains("outside 0..0"),
                 "reply bounds failure must fail the request, got: " + err.getCause());
-        assertTrue(sa.sent.stream().noneMatch(t -> t.contains("\"error\":true")),
+        assertTrue(sa.sent.stream().noneMatch(t -> t.contains("\"kind\":\""
+                + WsProtocol.RESPONSE_ERROR_TYPE + "\"")),
                 "reply failure must stay local with no frame, sent: " + sa.sent);
 
         a.shutdown();
@@ -773,7 +872,8 @@ class WsRpcStreamTest {
         assertTrue(entered.await(5, TimeUnit.SECONDS));
         UUID requestId = UUID.fromString(firstSentOfType(sa.sent, "get-file").get("id").asText());
 
-        WsMessage<String> malformed = WsMessage.<String>create(WsProtocol.STREAM_START_TYPE)
+        WsMessage<String> malformed = WsMessage.<String>create(WsProtocol.STREAM_REPLY_START_TYPE)
+                .setType("get-file")
                 .withPayload("oops");
         malformed.setResponseOf(requestId);
         a.onTextMessage(new ObjectMapper().writeValueAsString(malformed));

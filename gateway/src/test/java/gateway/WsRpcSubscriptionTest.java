@@ -21,8 +21,10 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.Test;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import gateway.rpc.WsProtocol;
 import gateway.rpc.WsRpcChannel;
 import gateway.rpc.PushHandle;
 import gateway.session.WsSession;
@@ -39,11 +41,11 @@ class WsRpcSubscriptionTest {
         WsRpcChannel peer;
         final List<String> sent = new CopyOnWriteArrayList<>();
         volatile boolean open = true;
-        volatile boolean dropSubscribe = false;
+        volatile boolean dropListen = false;
 
         @Override
         public void sendText(String text) {
-            if (dropSubscribe && text.contains("\"type\":\"subscribe\"")) {
+            if (dropListen && text.contains("\"kind\":\"" + WsProtocol.LISTEN_TYPE + "\"")) {
                 return;
             }
             sent.add(text);
@@ -78,27 +80,37 @@ class WsRpcSubscriptionTest {
         return new WsRpcChannel[] { a, b };
     }
 
+    private static JsonNode firstSentOfKind(List<String> sent, String kind) throws Exception {
+        ObjectMapper mapper = new ObjectMapper();
+        for (String text : sent) {
+            if (text.contains("\"kind\":\"" + kind + "\"")) {
+                return mapper.readTree(text);
+            }
+        }
+        return null;
+    }
+
     @Test
-    void subscribeRoundTripWithEvent() throws Exception {
+    void listenRoundTripWithEvent() throws Exception {
         Loopback sa = new Loopback();
         Loopback sb = new Loopback();
         WsRpcChannel[] pair = pair(sa, sb);
         WsRpcChannel client = pair[0];
         WsRpcChannel server = pair[1];
 
-        CountDownLatch subscribeLatch = new CountDownLatch(1);
+        CountDownLatch listenLatch = new CountDownLatch(1);
         CountDownLatch eventLatch = new CountDownLatch(1);
         AtomicReference<PushHandle> handleRef = new AtomicReference<>();
         final UsageEvent[] receivedEvent = new UsageEvent[1];
 
-        server.registerSubscriptionHandler("usage", UsageParams.class, req -> {
+        server.registerEventListener("usage", UsageParams.class, req -> {
             assertEquals("srv-123", req.params().serverId());
             handleRef.set(req.handle());
-            subscribeLatch.countDown();
+            listenLatch.countDown();
             return CompletableFuture.completedFuture(null);
         });
 
-        CompletableFuture<Void> ack = client.subscribe("usage", new UsageParams("srv-123"), event -> {
+        CompletableFuture<Void> ack = client.listen("usage", new UsageParams("srv-123"), event -> {
             try {
                 receivedEvent[0] = new ObjectMapper().treeToValue(event, UsageEvent.class);
             } catch (Exception e) {
@@ -107,7 +119,7 @@ class WsRpcSubscriptionTest {
             eventLatch.countDown();
         }, Duration.ofSeconds(5));
 
-        assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS), "server onSubscribe not called");
+        assertTrue(listenLatch.await(5, TimeUnit.SECONDS), "server onListen not called");
         ack.get(5, TimeUnit.SECONDS);
 
         assertNotNull(handleRef.get());
@@ -122,7 +134,31 @@ class WsRpcSubscriptionTest {
     }
 
     @Test
-    void multipleSubscriptionsSameEventTypeDifferentParams() throws Exception {
+    void listeningAckArrivesBeforeEvents() throws Exception {
+        Loopback sa = new Loopback();
+        Loopback sb = new Loopback();
+        WsRpcChannel[] pair = pair(sa, sb);
+        WsRpcChannel client = pair[0];
+        WsRpcChannel server = pair[1];
+
+        server.registerEventListener("usage", UsageParams.class,
+                req -> CompletableFuture.completedFuture(null));
+
+        CompletableFuture<Void> ack = client.listen("usage", new UsageParams("srv-123"), event -> {},
+                Duration.ofSeconds(5));
+        ack.get(5, TimeUnit.SECONDS);
+
+        JsonNode listening = firstSentOfKind(sb.sent, WsProtocol.LISTENING_TYPE);
+        assertNotNull(listening, "a dedicated listening ack must be sent, sent: " + sb.sent);
+        assertEquals("usage", listening.get("event").asText());
+        assertTrue(listening.get("type").isNull(), "event frames must not carry a type field");
+
+        client.shutdown();
+        server.shutdown();
+    }
+
+    @Test
+    void multipleListenersSameEventDifferentParams() throws Exception {
         Loopback sa = new Loopback();
         Loopback sb = new Loopback();
         WsRpcChannel[] pair = pair(sa, sb);
@@ -130,19 +166,19 @@ class WsRpcSubscriptionTest {
         WsRpcChannel server = pair[1];
 
         ConcurrentHashMap<String, PushHandle> handles = new ConcurrentHashMap<>();
-        CountDownLatch subscribeLatch = new CountDownLatch(2);
+        CountDownLatch listenLatch = new CountDownLatch(2);
         CountDownLatch eventLatch1 = new CountDownLatch(1);
         CountDownLatch eventLatch2 = new CountDownLatch(1);
         final UsageEvent[] receivedEvent1 = new UsageEvent[1];
         final UsageEvent[] receivedEvent2 = new UsageEvent[1];
 
-        server.registerSubscriptionHandler("usage", UsageParams.class, req -> {
+        server.registerEventListener("usage", UsageParams.class, req -> {
             handles.put(req.params().serverId(), req.handle());
-            subscribeLatch.countDown();
+            listenLatch.countDown();
             return CompletableFuture.completedFuture(null);
         });
 
-        CompletableFuture<Void> ack1 = client.subscribe("usage", new UsageParams("srv-1"), event -> {
+        CompletableFuture<Void> ack1 = client.listen("usage", new UsageParams("srv-1"), event -> {
             try {
                 receivedEvent1[0] = new ObjectMapper().treeToValue(event, UsageEvent.class);
             } catch (Exception e) {
@@ -151,7 +187,7 @@ class WsRpcSubscriptionTest {
             eventLatch1.countDown();
         }, Duration.ofSeconds(5));
 
-        CompletableFuture<Void> ack2 = client.subscribe("usage", new UsageParams("srv-2"), event -> {
+        CompletableFuture<Void> ack2 = client.listen("usage", new UsageParams("srv-2"), event -> {
             try {
                 receivedEvent2[0] = new ObjectMapper().treeToValue(event, UsageEvent.class);
             } catch (Exception e) {
@@ -160,7 +196,7 @@ class WsRpcSubscriptionTest {
             eventLatch2.countDown();
         }, Duration.ofSeconds(5));
 
-        assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(listenLatch.await(5, TimeUnit.SECONDS));
         ack1.get(5, TimeUnit.SECONDS);
         ack2.get(5, TimeUnit.SECONDS);
 
@@ -177,7 +213,7 @@ class WsRpcSubscriptionTest {
     }
 
     @Test
-    void clientUnsubscribeStopsEvents() throws Exception {
+    void clientUnlistenStopsEvents() throws Exception {
         Loopback sa = new Loopback();
         Loopback sb = new Loopback();
         WsRpcChannel[] pair = pair(sa, sb);
@@ -185,36 +221,68 @@ class WsRpcSubscriptionTest {
         WsRpcChannel server = pair[1];
 
         AtomicReference<PushHandle> handleRef = new AtomicReference<>();
-        CountDownLatch subscribeLatch = new CountDownLatch(1);
-        AtomicBoolean receivedAfterUnsubscribe = new AtomicBoolean(false);
+        CountDownLatch listenLatch = new CountDownLatch(1);
+        AtomicBoolean receivedAfterUnlisten = new AtomicBoolean(false);
 
-        server.registerSubscriptionHandler("usage", UsageParams.class, req -> {
+        server.registerEventListener("usage", UsageParams.class, req -> {
             handleRef.set(req.handle());
-            subscribeLatch.countDown();
+            listenLatch.countDown();
             return CompletableFuture.completedFuture(null);
         });
 
-        UUID subId = UUID.randomUUID();
-        CompletableFuture<Void> ack = client.subscribe(subId, "usage", new UsageParams("srv-123"), event -> {
-            receivedAfterUnsubscribe.set(true);
+        UUID listenId = UUID.randomUUID();
+        CompletableFuture<Void> ack = client.listen(listenId, "usage", new UsageParams("srv-123"), event -> {
+            receivedAfterUnlisten.set(true);
         }, Duration.ofSeconds(5));
 
-        assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(listenLatch.await(5, TimeUnit.SECONDS));
         ack.get(5, TimeUnit.SECONDS);
 
-        client.unsubscribe(subId, "test reason");
+        client.unlisten(listenId, "test reason");
 
         handleRef.get().push(new UsageEvent(45, "2GB", "2026-10-06T12:00:00Z"));
         Thread.sleep(100);
 
-        assertFalse(receivedAfterUnsubscribe.get());
+        assertFalse(receivedAfterUnlisten.get());
 
         client.shutdown();
         server.shutdown();
     }
 
     @Test
-    void serverFailClosesSubscription() throws Exception {
+    void unlistenConfirmedByListenEnded() throws Exception {
+        Loopback sa = new Loopback();
+        Loopback sb = new Loopback();
+        WsRpcChannel[] pair = pair(sa, sb);
+        WsRpcChannel client = pair[0];
+        WsRpcChannel server = pair[1];
+
+        server.registerEventListener("usage", UsageParams.class,
+                req -> CompletableFuture.completedFuture(null));
+
+        UUID listenId = UUID.randomUUID();
+        CompletableFuture<Void> ack = client.listen(listenId, "usage", new UsageParams("srv-123"), event -> {},
+                Duration.ofSeconds(5));
+        ack.get(5, TimeUnit.SECONDS);
+
+        client.unlisten(listenId);
+
+        JsonNode ended = firstSentOfKind(sb.sent, WsProtocol.LISTEN_ENDED_TYPE);
+        long deadline = System.currentTimeMillis() + 5000;
+        while (ended == null && System.currentTimeMillis() < deadline) {
+            Thread.sleep(50);
+            ended = firstSentOfKind(sb.sent, WsProtocol.LISTEN_ENDED_TYPE);
+        }
+        assertNotNull(ended, "unlisten must be confirmed with listen-ended, sent: " + sb.sent);
+        assertEquals(listenId.toString(), ended.get("responseOf").asText());
+        assertEquals("usage", ended.get("event").asText());
+
+        client.shutdown();
+        server.shutdown();
+    }
+
+    @Test
+    void serverFailClosesEventStream() throws Exception {
         Loopback sa = new Loopback();
         Loopback sb = new Loopback();
         WsRpcChannel[] pair = pair(sa, sb);
@@ -222,22 +290,22 @@ class WsRpcSubscriptionTest {
         WsRpcChannel server = pair[1];
 
         AtomicReference<PushHandle> handleRef = new AtomicReference<>();
-        CountDownLatch subscribeLatch = new CountDownLatch(1);
+        CountDownLatch listenLatch = new CountDownLatch(1);
         CountDownLatch clientCloseLatch = new CountDownLatch(1);
 
-        server.registerSubscriptionHandler("usage", UsageParams.class, req -> {
+        server.registerEventListener("usage", UsageParams.class, req -> {
             handleRef.set(req.handle());
-            subscribeLatch.countDown();
+            listenLatch.countDown();
             return CompletableFuture.completedFuture(null);
         });
 
-        UUID subId = UUID.randomUUID();
-        client.onSubscriptionClose(subId, clientCloseLatch::countDown);
+        UUID listenId = UUID.randomUUID();
+        client.onListenClose(listenId, clientCloseLatch::countDown);
 
-        CompletableFuture<Void> ack = client.subscribe(subId, "usage", new UsageParams("srv-123"), event -> {},
+        CompletableFuture<Void> ack = client.listen(listenId, "usage", new UsageParams("srv-123"), event -> {},
                 Duration.ofSeconds(5));
 
-        assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(listenLatch.await(5, TimeUnit.SECONDS));
         ack.get(5, TimeUnit.SECONDS);
 
         handleRef.get().fail("server not found: srv-123");
@@ -245,12 +313,16 @@ class WsRpcSubscriptionTest {
         assertTrue(clientCloseLatch.await(5, TimeUnit.SECONDS), "client onClose callback should trigger on server fail");
         assertTrue(handleRef.get().isClosed());
 
+        JsonNode error = firstSentOfKind(sb.sent, WsProtocol.LISTEN_ERROR_TYPE);
+        assertNotNull(error, "failure must be a listen-error kind, sent: " + sb.sent);
+        assertEquals(listenId.toString(), error.get("responseOf").asText());
+
         client.shutdown();
         server.shutdown();
     }
 
     @Test
-    void serverCompleteClosesSubscription() throws Exception {
+    void serverCompleteEndsStreamAndNotifiesClient() throws Exception {
         Loopback sa = new Loopback();
         Loopback sb = new Loopback();
         WsRpcChannel[] pair = pair(sa, sb);
@@ -258,33 +330,40 @@ class WsRpcSubscriptionTest {
         WsRpcChannel server = pair[1];
 
         AtomicReference<PushHandle> handleRef = new AtomicReference<>();
-        CountDownLatch subscribeLatch = new CountDownLatch(1);
+        CountDownLatch listenLatch = new CountDownLatch(1);
         CountDownLatch serverCloseLatch = new CountDownLatch(1);
+        CountDownLatch clientCloseLatch = new CountDownLatch(1);
 
-        server.registerSubscriptionHandler("usage", UsageParams.class, req -> {
+        server.registerEventListener("usage", UsageParams.class, req -> {
             req.handle().onClose(serverCloseLatch::countDown);
             handleRef.set(req.handle());
-            subscribeLatch.countDown();
+            listenLatch.countDown();
             return CompletableFuture.completedFuture(null);
         });
 
-        CompletableFuture<Void> ack = client.subscribe("usage", new UsageParams("srv-123"), event -> {},
+        UUID listenId = UUID.randomUUID();
+        client.onListenClose(listenId, clientCloseLatch::countDown);
+        CompletableFuture<Void> ack = client.listen(listenId, "usage", new UsageParams("srv-123"), event -> {},
                 Duration.ofSeconds(5));
 
-        assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(listenLatch.await(5, TimeUnit.SECONDS));
         ack.get(5, TimeUnit.SECONDS);
 
         handleRef.get().complete();
 
         assertTrue(handleRef.get().isClosed());
         assertTrue(serverCloseLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(clientCloseLatch.await(5, TimeUnit.SECONDS),
+                "client must observe the server-side complete");
+        assertNotNull(firstSentOfKind(sb.sent, WsProtocol.LISTEN_ENDED_TYPE),
+                "complete must send listen-ended, sent: " + sb.sent);
 
         client.shutdown();
         server.shutdown();
     }
 
     @Test
-    void connectionCloseCleansUpSubscriptions() throws Exception {
+    void connectionCloseCleansUpEventStreams() throws Exception {
         Loopback sa = new Loopback();
         Loopback sb = new Loopback();
         WsRpcChannel[] pair = pair(sa, sb);
@@ -294,15 +373,15 @@ class WsRpcSubscriptionTest {
         CountDownLatch clientCloseLatch = new CountDownLatch(1);
         CountDownLatch serverCloseLatch = new CountDownLatch(1);
 
-        server.registerSubscriptionHandler("usage", UsageParams.class, req -> {
+        server.registerEventListener("usage", UsageParams.class, req -> {
             req.handle().onClose(serverCloseLatch::countDown);
             return CompletableFuture.completedFuture(null);
         });
 
-        UUID subId = UUID.randomUUID();
-        client.onSubscriptionClose(subId, clientCloseLatch::countDown);
+        UUID listenId = UUID.randomUUID();
+        client.onListenClose(listenId, clientCloseLatch::countDown);
 
-        CompletableFuture<Void> ack = client.subscribe(subId, "usage", new UsageParams("srv-123"), event -> {},
+        CompletableFuture<Void> ack = client.listen(listenId, "usage", new UsageParams("srv-123"), event -> {},
                 Duration.ofSeconds(5));
         ack.get(5, TimeUnit.SECONDS);
 
@@ -317,7 +396,7 @@ class WsRpcSubscriptionTest {
     }
 
     @Test
-    void subscribeWaitsForSession() throws Exception {
+    void listenWaitsForSession() throws Exception {
         WsRpcChannel client = WsRpcChannel.create();
         WsRpcChannel server = WsRpcChannel.create();
         Loopback sa = new Loopback();
@@ -325,12 +404,12 @@ class WsRpcSubscriptionTest {
         sb.peer = client;
         server.onOpen(sb);
 
-        server.registerSubscriptionHandler("usage", UsageParams.class, req -> CompletableFuture.completedFuture(null));
+        server.registerEventListener("usage", UsageParams.class, req -> CompletableFuture.completedFuture(null));
 
-        CompletableFuture<Void> ack = client.subscribe("usage", new UsageParams("srv-123"), event -> {},
+        CompletableFuture<Void> ack = client.listen("usage", new UsageParams("srv-123"), event -> {},
                 Duration.ofSeconds(5));
 
-        assertFalse(ack.isDone(), "subscribe should wait for session");
+        assertFalse(ack.isDone(), "listen should wait for session");
 
         sa.peer = server;
         client.onOpen(sa);
@@ -342,13 +421,13 @@ class WsRpcSubscriptionTest {
     }
 
     @Test
-    void subscribeTimeoutFailsFuture() {
+    void listenTimeoutFailsFuture() {
         WsRpcChannel client = WsRpcChannel.create();
         Loopback sa = new Loopback();
-        sa.dropSubscribe = true;
+        sa.dropListen = true;
         client.onOpen(sa);
 
-        CompletableFuture<Void> ack = client.subscribe("usage", new UsageParams("srv-123"), event -> {},
+        CompletableFuture<Void> ack = client.listen("usage", new UsageParams("srv-123"), event -> {},
                 Duration.ofMillis(50));
 
         Exception ex = assertThrows(Exception.class, () -> ack.get(2, TimeUnit.SECONDS));
@@ -358,32 +437,33 @@ class WsRpcSubscriptionTest {
     }
 
     @Test
-    void subscribeRejectedByServer() {
+    void listenRejectedForUnknownEvent() {
         Loopback sa = new Loopback();
         Loopback sb = new Loopback();
         WsRpcChannel[] pair = pair(sa, sb);
         WsRpcChannel client = pair[0];
         WsRpcChannel server = pair[1];
 
-        CompletableFuture<Void> ack = client.subscribe("ghost", new UsageParams("srv-123"), event -> {},
+        CompletableFuture<Void> ack = client.listen("ghost", new UsageParams("srv-123"), event -> {},
                 Duration.ofSeconds(5));
 
         Exception err = assertThrows(Exception.class, () -> ack.get(5, TimeUnit.SECONDS));
         assertNotNull(err.getCause());
-        assertTrue(err.getCause().getMessage().contains("unknown subscription type"));
+        assertTrue(err.getCause().getMessage().contains("unknown event"));
 
         client.shutdown();
         server.shutdown();
     }
 
     @Test
-    void eventForUnknownSubscriptionDropped() {
+    void eventForUnknownListenerDropped() {
         WsRpcChannel server = WsRpcChannel.create();
         Loopback sb = new Loopback();
         server.onOpen(sb);
 
-        String eventJson = "{\"id\":\"" + UUID.randomUUID() + "\",\"type\":\"usage\",\"responseOf\":\""
-                + UUID.randomUUID() + "\",\"payload\":{\"cpu\":1}}";
+        String eventJson = "{\"id\":\"" + UUID.randomUUID() + "\",\"kind\":\"" + WsProtocol.EVENT_TYPE + "\""
+                + ",\"event\":\"usage\",\"responseOf\":\"" + UUID.randomUUID()
+                + "\",\"payload\":{\"cpu\":1}}";
 
         server.onTextMessage(eventJson);
 
@@ -391,78 +471,68 @@ class WsRpcSubscriptionTest {
     }
 
     @Test
-    void unsubscribeFireAndForgetNoReply() throws Exception {
-        Loopback sa = new Loopback();
-        Loopback sb = new Loopback();
-        WsRpcChannel[] pair = pair(sa, sb);
-        WsRpcChannel client = pair[0];
-        WsRpcChannel server = pair[1];
-
-        server.registerSubscriptionHandler("usage", UsageParams.class, req -> CompletableFuture.completedFuture(null));
-
-        UUID subId = UUID.randomUUID();
-        CompletableFuture<Void> ack = client.subscribe(subId, "usage", new UsageParams("srv-123"), event -> {},
-                Duration.ofSeconds(5));
-        ack.get(5, TimeUnit.SECONDS);
-
-        int sentBefore = sa.sent.size();
-        client.unsubscribe(subId);
-
-        assertEquals(sentBefore + 1, sa.sent.size(), "only client unsubscribe frame sent, no server reply");
-
-        client.shutdown();
-        server.shutdown();
-    }
-
-    @Test
-    void unsubscribeUnknownIdIsNoOp() {
+    void unlistenUnknownIdIsNoOp() {
         Loopback sa = new Loopback();
         Loopback sb = new Loopback();
         WsRpcChannel[] pair = pair(sa, sb);
         WsRpcChannel client = pair[0];
 
         int sentBefore = sa.sent.size();
-        client.unsubscribe(UUID.randomUUID());
+        client.unlisten(UUID.randomUUID());
 
-        assertEquals(sentBefore, sa.sent.size(), "no frame sent for unknown unsubscribe ID");
+        assertEquals(sentBefore, sa.sent.size(), "no frame sent for unknown unlisten ID");
 
         pair[0].shutdown();
         pair[1].shutdown();
     }
 
     @Test
-    void reservedTypesRejectedForSubscriptionHandlers() {
+    void anyEventNameAcceptedIncludingKindValues() throws Exception {
+        WsRpcChannel client = WsRpcChannel.create();
+        WsRpcChannel server = WsRpcChannel.create();
+        Loopback sa = new Loopback();
+        Loopback sb = new Loopback();
+        sa.peer = server;
+        sb.peer = client;
+        client.onOpen(sa);
+        server.onOpen(sb);
+
+        server.registerEventListener(WsProtocol.LISTEN_TYPE, String.class,
+                req -> CompletableFuture.completedFuture(null));
+        assertTrue(server.hasEventListener(WsProtocol.LISTEN_TYPE));
+
+        CompletableFuture<Void> ack = client.listen(WsProtocol.LISTEN_TYPE, "params", event -> {},
+                Duration.ofSeconds(5));
+        ack.get(5, TimeUnit.SECONDS);
+
+        server.unregisterEventListener(WsProtocol.LISTEN_TYPE);
+        assertFalse(server.hasEventListener(WsProtocol.LISTEN_TYPE));
+
+        client.shutdown();
+        server.shutdown();
+    }
+
+    @Test
+    void duplicateEventListenerRegistrationRejected() {
         WsRpcChannel server = WsRpcChannel.create();
 
+        server.registerEventListener("usage", String.class, req -> CompletableFuture.completedFuture(null));
+        assertTrue(server.hasEventListener("usage"));
+
         assertThrows(IllegalArgumentException.class,
-                () -> server.registerSubscriptionHandler("subscribe", String.class, req -> CompletableFuture.completedFuture(null)));
-        assertThrows(IllegalArgumentException.class,
-                () -> server.registerSubscriptionHandler("unsubscribe", String.class, req -> CompletableFuture.completedFuture(null)));
+                () -> server.registerEventListener("usage", String.class, req -> CompletableFuture.completedFuture(null)));
+
+        server.unregisterEventListener("usage");
+        assertFalse(server.hasEventListener("usage"));
+
+        server.registerEventListener("usage", String.class, req -> CompletableFuture.completedFuture(null));
+        assertTrue(server.hasEventListener("usage"));
 
         server.shutdown();
     }
 
     @Test
-    void duplicateSubscriptionHandlerRegistrationRejected() {
-        WsRpcChannel server = WsRpcChannel.create();
-
-        server.registerSubscriptionHandler("usage", String.class, req -> CompletableFuture.completedFuture(null));
-        assertTrue(server.hasSubscriptionHandler("usage"));
-
-        assertThrows(IllegalArgumentException.class,
-                () -> server.registerSubscriptionHandler("usage", String.class, req -> CompletableFuture.completedFuture(null)));
-
-        server.unregisterSubscriptionHandler("usage");
-        assertFalse(server.hasSubscriptionHandler("usage"));
-
-        server.registerSubscriptionHandler("usage", String.class, req -> CompletableFuture.completedFuture(null));
-        assertTrue(server.hasSubscriptionHandler("usage"));
-
-        server.shutdown();
-    }
-
-    @Test
-    void onCloseCallbacksInvokedOnUnsubscribe() throws Exception {
+    void onCloseCallbacksInvokedOnUnlisten() throws Exception {
         Loopback sa = new Loopback();
         Loopback sb = new Loopback();
         WsRpcChannel[] pair = pair(sa, sb);
@@ -470,19 +540,19 @@ class WsRpcSubscriptionTest {
         WsRpcChannel server = pair[1];
 
         CountDownLatch closeLatch = new CountDownLatch(1);
-        server.registerSubscriptionHandler("usage", UsageParams.class, req -> {
+        server.registerEventListener("usage", UsageParams.class, req -> {
             req.handle().onClose(closeLatch::countDown);
             return CompletableFuture.completedFuture(null);
         });
 
-        UUID subId = UUID.randomUUID();
-        CompletableFuture<Void> ack = client.subscribe(subId, "usage", new UsageParams("srv-123"), event -> {},
+        UUID listenId = UUID.randomUUID();
+        CompletableFuture<Void> ack = client.listen(listenId, "usage", new UsageParams("srv-123"), event -> {},
                 Duration.ofSeconds(5));
         ack.get(5, TimeUnit.SECONDS);
 
-        client.unsubscribe(subId);
+        client.unlisten(listenId);
 
-        assertTrue(closeLatch.await(5, TimeUnit.SECONDS), "onClose callback not invoked on unsubscribe");
+        assertTrue(closeLatch.await(5, TimeUnit.SECONDS), "onClose callback not invoked on unlisten");
 
         client.shutdown();
         server.shutdown();
@@ -498,13 +568,13 @@ class WsRpcSubscriptionTest {
 
         CountDownLatch closeLatch = new CountDownLatch(1);
         AtomicReference<PushHandle> handleRef = new AtomicReference<>();
-        server.registerSubscriptionHandler("usage", UsageParams.class, req -> {
+        server.registerEventListener("usage", UsageParams.class, req -> {
             req.handle().onClose(closeLatch::countDown);
             handleRef.set(req.handle());
             return CompletableFuture.completedFuture(null);
         });
 
-        CompletableFuture<Void> ack = client.subscribe("usage", new UsageParams("srv-123"), event -> {},
+        CompletableFuture<Void> ack = client.listen("usage", new UsageParams("srv-123"), event -> {},
                 Duration.ofSeconds(5));
         ack.get(5, TimeUnit.SECONDS);
 
@@ -526,13 +596,13 @@ class WsRpcSubscriptionTest {
 
         CountDownLatch closeLatch = new CountDownLatch(1);
         AtomicReference<PushHandle> handleRef = new AtomicReference<>();
-        server.registerSubscriptionHandler("usage", UsageParams.class, req -> {
+        server.registerEventListener("usage", UsageParams.class, req -> {
             req.handle().onClose(closeLatch::countDown);
             handleRef.set(req.handle());
             return CompletableFuture.completedFuture(null);
         });
 
-        CompletableFuture<Void> ack = client.subscribe("usage", new UsageParams("srv-123"), event -> {},
+        CompletableFuture<Void> ack = client.listen("usage", new UsageParams("srv-123"), event -> {},
                 Duration.ofSeconds(5));
         ack.get(5, TimeUnit.SECONDS);
 
@@ -553,12 +623,12 @@ class WsRpcSubscriptionTest {
         WsRpcChannel server = pair[1];
 
         AtomicReference<PushHandle> handleRef = new AtomicReference<>();
-        server.registerSubscriptionHandler("usage", UsageParams.class, req -> {
+        server.registerEventListener("usage", UsageParams.class, req -> {
             handleRef.set(req.handle());
             return CompletableFuture.completedFuture(null);
         });
 
-        CompletableFuture<Void> ack = client.subscribe("usage", new UsageParams("srv-123"), event -> {},
+        CompletableFuture<Void> ack = client.listen("usage", new UsageParams("srv-123"), event -> {},
                 Duration.ofSeconds(5));
         ack.get(5, TimeUnit.SECONDS);
 
@@ -574,10 +644,10 @@ class WsRpcSubscriptionTest {
     }
 
     @Test
-    void closeDuringSessionWaitFailsSubscribe() {
+    void closeDuringSessionWaitFailsListen() {
         WsRpcChannel client = WsRpcChannel.create();
 
-        CompletableFuture<Void> ack = client.subscribe("usage", new UsageParams("srv-123"), event -> {},
+        CompletableFuture<Void> ack = client.listen("usage", new UsageParams("srv-123"), event -> {},
                 Duration.ofSeconds(5));
 
         client.onClose(new RuntimeException("failed to open session"));
@@ -589,23 +659,23 @@ class WsRpcSubscriptionTest {
     }
 
     @Test
-    void onSubscribeHandlerFailureRejectsSubscribe() {
+    void onListenHandlerFailureRejectsListen() {
         Loopback sa = new Loopback();
         Loopback sb = new Loopback();
         WsRpcChannel[] pair = pair(sa, sb);
         WsRpcChannel client = pair[0];
         WsRpcChannel server = pair[1];
 
-        server.registerSubscriptionHandler("usage", UsageParams.class, req -> {
-            throw new RuntimeException("cannot initialize subscription");
+        server.registerEventListener("usage", UsageParams.class, req -> {
+            throw new RuntimeException("cannot initialize event stream");
         });
 
-        CompletableFuture<Void> ack = client.subscribe("usage", new UsageParams("srv-123"), event -> {},
+        CompletableFuture<Void> ack = client.listen("usage", new UsageParams("srv-123"), event -> {},
                 Duration.ofSeconds(5));
 
         Exception err = assertThrows(Exception.class, () -> ack.get(5, TimeUnit.SECONDS));
         assertNotNull(err.getCause());
-        assertTrue(err.getCause().getMessage().contains("Subscription handler failed"));
+        assertTrue(err.getCause().getMessage().contains("Event listener failed"));
 
         client.shutdown();
         server.shutdown();

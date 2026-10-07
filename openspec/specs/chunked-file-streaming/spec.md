@@ -7,15 +7,15 @@ Binary frame chunked file transfer protocol over WebSocket for uploading and dow
 ## Requirements
 
 ### Requirement: Binary Chunked File Download
-The Server Manager SHALL answer Backend `download-file` requests with a reply-with-stream: the `stream-start`/`stream-done` envelopes carry `responseOf` equal to the request `id`, binary chunks are no larger than 64KB prefixed with a 20-byte binary header containing the 16-byte UUID `streamId` and 4-byte integer `chunkIndex`, and the requester's future resolves with the file bytes after SHA-256 verification instead of a separate summary.
+The Server Manager SHALL answer Backend `download-file` requests with a reply-with-stream: the `stream-reply-start`/`stream-reply-done` envelopes carry `responseOf` equal to the request `id` and `type` naming the stream handler, binary chunks are no larger than 64KB prefixed with a 20-byte binary header containing the 16-byte UUID `streamId` and 4-byte integer `chunkIndex`, and the requester's future resolves with the file bytes after SHA-256 verification instead of a separate summary.
 
 #### Scenario: Successful file download transfer
 - **WHEN** Backend requests a file download via RPC `download-file`
-- **THEN** Server Manager streams a `start` message, binary chunk frames, and a `done` message as the request reply, and the request resolves with the file bytes
+- **THEN** Server Manager streams a `stream-reply-start` frame, binary chunk frames, and a `stream-reply-done` frame as the request reply, and the request resolves with the file bytes
 
 #### Scenario: Non-existent file download request
 - **WHEN** Backend requests a non-existent file path
-- **THEN** Server Manager rejects the request with an RPC error message
+- **THEN** Server Manager rejects the request with a `response-error` message
 
 ### Requirement: Binary Chunked File Upload
 The Server Manager SHALL accept incoming file upload streams from the Backend API over the WSS connection through a registered `WsRpcChannel` stream handler, reassemble binary chunks matching the session `streamId`, enforce contiguity, max-bytes cap, and checksum verification upon receiving `done`, and persist the file to the target container path.

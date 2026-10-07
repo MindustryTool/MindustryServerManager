@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -70,6 +71,40 @@ class WsRpcChannelTest {
 
         CompletableFuture<String> res = a.sendRequest("echo", "world", String.class, Duration.ofSeconds(5));
         assertEquals("hello:world", res.get(5, TimeUnit.SECONDS));
+
+        a.shutdown();
+        b.shutdown();
+    }
+
+    @Test
+    void requestFrameDeclaresKindAndType() throws Exception {
+        WsRpcChannel a = WsRpcChannel.create();
+        WsRpcChannel b = WsRpcChannel.create();
+        Loopback sa = new Loopback();
+        Loopback sb = new Loopback();
+        sa.peer = b;
+        sb.peer = a;
+        a.onOpen(sa);
+        b.onOpen(sb);
+
+        b.registerHandler("echo", String.class, s -> "hello:" + s);
+
+        CompletableFuture<String> res = a.sendRequest("echo", "world", String.class, Duration.ofSeconds(5));
+        assertEquals("hello:world", res.get(5, TimeUnit.SECONDS));
+
+        assertFalse(sa.sent.isEmpty(), "expected a request frame");
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode request = mapper.readTree(sa.sent.get(sa.sent.size() - 1));
+        assertEquals(WsProtocol.REQUEST_TYPE, request.get("kind").asText());
+        assertEquals("echo", request.get("type").asText());
+        assertTrue(request.get("event").isNull(), "request must not carry an event field");
+        assertTrue(request.get("responseOf").isNull(), "request must not carry responseOf");
+
+        assertFalse(sb.sent.isEmpty(), "expected a response frame");
+        JsonNode answer = mapper.readTree(sb.sent.get(sb.sent.size() - 1));
+        assertEquals(WsProtocol.RESPONSE_TYPE, answer.get("kind").asText());
+        assertEquals("echo", answer.get("type").asText());
+        assertEquals(request.get("id").asText(), answer.get("responseOf").asText());
 
         a.shutdown();
         b.shutdown();
@@ -170,6 +205,40 @@ class WsRpcChannelTest {
         assertTrue(sa.sent.isEmpty(), "closed channel must not send");
 
         a.shutdown();
+    }
+
+    @Test
+    void notificationNeverAnsweredEvenWhenUnknown() throws Exception {
+        WsRpcChannel a = WsRpcChannel.create();
+        WsRpcChannel b = WsRpcChannel.create();
+        Loopback sa = new Loopback();
+        Loopback sb = new Loopback();
+        sa.peer = b;
+        sb.peer = a;
+        a.onOpen(sa);
+        b.onOpen(sb);
+
+        CountDownLatch handled = new CountDownLatch(1);
+        b.registerHandler("ping", String.class, s -> {
+            handled.countDown();
+            return null;
+        });
+
+        a.sendNotification("ping", "x");
+        assertTrue(handled.await(5, TimeUnit.SECONDS), "notification handler must run");
+        assertTrue(sb.sent.isEmpty(), "a handled notification must never be answered");
+
+        int sentBefore = sb.sent.size();
+        a.sendNotification("ghost-notification", "x");
+        Thread.sleep(200);
+        assertEquals(sentBefore, sb.sent.size(), "an unknown notification must never be answered");
+
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode notification = mapper.readTree(sa.sent.get(sa.sent.size() - 1));
+        assertEquals(WsProtocol.NOTIFICATION_TYPE, notification.get("kind").asText());
+
+        a.shutdown();
+        b.shutdown();
     }
 
     @Test
@@ -355,7 +424,7 @@ class WsRpcChannelTest {
     }
 
     @Test
-    void unknownTypeFailsFastWithNamedError() throws Exception {
+    void unknownTypeFailsFastWithNamedResponseError() throws Exception {
         WsRpcChannel a = WsRpcChannel.create();
         WsRpcChannel b = WsRpcChannel.create();
         Loopback sa = new Loopback();
@@ -370,45 +439,51 @@ class WsRpcChannelTest {
         assertTrue(err.getCause() != null
                 && err.getCause().getMessage().contains("unknown RPC type: ghost-type"));
 
-        assertFalse(sb.sent.isEmpty(), "expected an error frame back");
+        assertFalse(sb.sent.isEmpty(), "expected a failure frame back");
         ObjectMapper mapper = new ObjectMapper();
         JsonNode frame = mapper.readTree(sb.sent.get(sb.sent.size() - 1));
-        assertTrue(frame.get("error").asBoolean(), "error frame must carry the error flag");
-        assertTrue(frame.get("responseOf").isTextual(), "error frame must correlate the request");
+        assertEquals(WsProtocol.RESPONSE_ERROR_TYPE, frame.get("kind").asText(),
+                "failure must be a response-error kind");
+        assertEquals("ghost-type", frame.get("type").asText(), "failure must echo the type");
+        assertTrue(frame.get("responseOf").isTextual(), "failure frame must correlate the request");
         assertTrue(frame.get("payload").asText().contains("unknown RPC type: ghost-type"));
+        assertFalse(frame.has("error"), "no error boolean may exist");
 
         a.shutdown();
         b.shutdown();
     }
 
     @Test
-    void errorFrameNeverLoops() {
+    void failureFrameNeverLoops() {
         WsRpcChannel b = WsRpcChannel.create();
         Loopback sb = new Loopback();
         b.onOpen(sb); // no peer needed: stray frames are dropped, never answered
 
-        String stray = "{\"id\":\"" + UUID.randomUUID() + "\",\"type\":\"ghost\""
+        String stray = "{\"id\":\"" + UUID.randomUUID() + "\",\"kind\":\"" + WsProtocol.RESPONSE_ERROR_TYPE + "\""
+                + ",\"type\":\"ghost\""
                 + ",\"responseOf\":\"" + UUID.randomUUID() + "\""
-                + ",\"error\":true,\"payload\":\"boom\"}";
+                + ",\"payload\":\"boom\"}";
         int before = sb.sent.size();
         assertDoesNotThrow(() -> b.onTextMessage(stray));
-        assertEquals(before, sb.sent.size(), "an error frame must never trigger a reply");
+        assertEquals(before, sb.sent.size(), "a failure frame must never trigger a reply");
 
         b.shutdown();
     }
 
     @Test
     void nestedPayloadRejected() {
-        WsMessage<?> inner = WsMessage.create("inner").withPayload("data");
+        WsMessage<?> inner = WsMessage.create(WsProtocol.REQUEST_TYPE).withPayload("data");
 
-        assertThrows(IllegalArgumentException.class, () -> WsMessage.create("outer").withPayload(inner));
-        assertThrows(IllegalArgumentException.class, () -> WsMessage.create("outer").setPayload(inner));
-        assertThrows(IllegalArgumentException.class, () -> WsMessage.create("outer").response(inner));
-        assertThrows(IllegalArgumentException.class, () -> WsMessage.create("outer").error(inner));
+        assertThrows(IllegalArgumentException.class,
+                () -> WsMessage.create(WsProtocol.REQUEST_TYPE).withPayload(inner));
+        assertThrows(IllegalArgumentException.class,
+                () -> WsMessage.create(WsProtocol.REQUEST_TYPE).setPayload(inner));
+        assertThrows(IllegalArgumentException.class,
+                () -> WsMessage.create(WsProtocol.REQUEST_TYPE).reply(WsProtocol.RESPONSE_TYPE, inner));
     }
 
     @Test
-    void handlerThrowYieldsWireErrorFrame() throws Exception {
+    void handlerThrowYieldsResponseErrorFrame() throws Exception {
         WsRpcChannel a = WsRpcChannel.create();
         WsRpcChannel b = WsRpcChannel.create();
         Loopback sa = new Loopback();
@@ -427,13 +502,14 @@ class WsRpcChannelTest {
         assertNotNull(err);
 
         assertFalse(sa.sent.isEmpty(), "expected request frame");
-        assertFalse(sb.sent.isEmpty(), "expected an error frame back");
+        assertFalse(sb.sent.isEmpty(), "expected a failure frame back");
         ObjectMapper mapper = new ObjectMapper();
         JsonNode request = mapper.readTree(sa.sent.get(sa.sent.size() - 1));
         JsonNode frame = mapper.readTree(sb.sent.get(sb.sent.size() - 1));
-        assertTrue(frame.get("error").asBoolean(), "error frame must carry the error flag");
+        assertEquals(WsProtocol.RESPONSE_ERROR_TYPE, frame.get("kind").asText(),
+                "failure must be a response-error kind");
         assertEquals(request.get("id").asText(), frame.get("responseOf").asText(),
-                "error frame must correlate the request");
+                "failure frame must correlate the request");
         assertTrue(frame.get("payload").asText().contains("kaput-wire"));
 
         a.shutdown();

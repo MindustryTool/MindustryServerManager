@@ -67,19 +67,17 @@ final class StreamProtocol {
         this.rpc = Objects.requireNonNull(rpc, "rpc");
     }
 
-    static boolean handlesControl(String type) {
-        return WsProtocol.STREAM_START_TYPE.equals(type)
-                || WsProtocol.STREAM_DONE_TYPE.equals(type)
-                || WsProtocol.STREAM_ABORT_TYPE.equals(type);
-    }
-
     void handleControl(WsMessage<JsonNode> message) {
-        String type = message.getType();
-        if (WsProtocol.STREAM_START_TYPE.equals(type)) {
+        String kind = message.getKind();
+        if (WsProtocol.STREAM_START_TYPE.equals(kind)) {
             handleStreamStart(message);
-        } else if (WsProtocol.STREAM_DONE_TYPE.equals(type)) {
+        } else if (WsProtocol.STREAM_DONE_TYPE.equals(kind)) {
             handleStreamDone(message);
-        } else if (WsProtocol.STREAM_ABORT_TYPE.equals(type)) {
+        } else if (WsProtocol.STREAM_REPLY_START_TYPE.equals(kind)) {
+            handleReplyStreamStart(message);
+        } else if (WsProtocol.STREAM_REPLY_DONE_TYPE.equals(kind)) {
+            handleReplyStreamDone(message);
+        } else if (WsProtocol.STREAM_ABORT_TYPE.equals(kind)) {
             handleStreamAbort(message);
         }
     }
@@ -89,7 +87,6 @@ final class StreamProtocol {
         if (type == null || handler == null) {
             throw new IllegalArgumentException("type and handler must not be null");
         }
-        WsProtocol.rejectStreamControlType(type);
         streamHandlers.put(type, new StreamHandlerEntry<>(metaClass, responseType, handler));
     }
 
@@ -105,13 +102,18 @@ final class StreamProtocol {
         return senderStreams.size() + streamSlots.size();
     }
 
-    boolean abortStream(UUID streamId) {
+    boolean abortStream(UUID streamId, String type) {
         Objects.requireNonNull(streamId, "streamId");
+        Objects.requireNonNull(type, "type");
+        StreamSlot slot = streamSlots.get(streamId);
+        if (slot != null && slot.replyRequestId != null) {
+            return false;
+        }
         String reason = "Stream aborted: " + streamId;
         boolean removed = discardStream(streamId, reason);
         if (removed) {
             try {
-                sink.send(Frames.streamEnvelope(WsProtocol.STREAM_ABORT_TYPE, null,
+                sink.send(Frames.streamEnvelope(WsProtocol.STREAM_ABORT_TYPE, type, null,
                         new StreamAbort(streamId, reason)));
             } catch (RuntimeException e) {
                 LOG.log(Level.FINE, "Failed to emit stream abort for " + streamId, e);
@@ -161,6 +163,11 @@ final class StreamProtocol {
             LOG.warning("Dropping stream abort with missing streamId");
             return;
         }
+        StreamSlot slot = streamSlots.get(abort.streamId());
+        if (slot != null && !message.getType().equals(slot.streamType)) {
+            LOG.warning("Dropping stream abort with mismatched type for stream: " + abort.streamId());
+            return;
+        }
         String reason = abort.reason() != null ? abort.reason() : "Peer aborted stream " + abort.streamId();
         boolean removed = discardStream(abort.streamId(), reason);
         if (!removed) {
@@ -203,18 +210,17 @@ final class StreamProtocol {
             Class<Res> responseType, Duration timeout) {
         Objects.requireNonNull(type, "type");
         Objects.requireNonNull(bytes, "bytes");
-        WsProtocol.rejectStreamControlType(type);
         Duration effectiveTimeout = timeout != null ? timeout : defaultTimeout;
         UUID streamId = UUID.randomUUID();
         String sha256 = FileChunkStreamer.sha256Hex(bytes);
         List<ByteBuffer> chunks = FileChunkStreamer.chunk(streamId, bytes);
         JsonNode metaNode = metadata == null ? NullNode.getInstance() : mapper.valueToTree(metadata);
-        StreamStart start = new StreamStart(streamId, type, metaNode, chunks.size(), sha256);
+        StreamStart start = new StreamStart(streamId, metaNode, chunks.size(), sha256);
         WsMessage<StreamStart> startMessage;
         WsMessage<StreamDone> doneMessage;
         try {
-            startMessage = Frames.streamEnvelope(WsProtocol.STREAM_START_TYPE, null, start);
-            doneMessage = Frames.streamEnvelope(WsProtocol.STREAM_DONE_TYPE, null,
+            startMessage = Frames.streamEnvelope(WsProtocol.STREAM_START_TYPE, type, null, start);
+            doneMessage = Frames.streamEnvelope(WsProtocol.STREAM_DONE_TYPE, type, null,
                     new StreamDone(streamId, sha256));
         } catch (RuntimeException e) {
             CompletableFuture<Res> failed = new CompletableFuture<>();
@@ -413,61 +419,77 @@ final class StreamProtocol {
     }
 
     private void handleStreamStart(WsMessage<JsonNode> message) {
-        UUID replyTo = message.getResponseOf();
+        if (message.getResponseOf() != null) {
+            LOG.warning("Dropping stream start with unexpected responseOf");
+            return;
+        }
         final StreamStart start;
         try {
             start = mapper.treeToValue(message.getPayload(), StreamStart.class);
         } catch (JsonProcessingException e) {
             LOG.log(Level.WARNING, "Dropping malformed stream start frame: " + e.getMessage(), e);
-            if (replyTo != null) {
-                rpc.failPending(replyTo,
-                        new RuntimeException("Malformed reply stream start frame: " + e.getMessage()));
-                return;
-            }
-            sink.send(Frames.errorFor(message.getId(), message.getType(),
+            sink.send(Frames.responseError(message.getId(), message.getType(),
                     "Malformed stream start frame: " + e.getMessage()));
             return;
         }
-        if (start == null || start.streamId() == null || start.streamType() == null || start.sha256() == null
+        String streamType = message.getType();
+        if (start == null || start.streamId() == null || start.sha256() == null
                 || start.totalChunks() < 1) {
-            LOG.warning("Dropping stream start with missing fields for type: " + message.getType());
-            if (replyTo != null) {
-                rpc.failPending(replyTo, new RuntimeException("Reply stream start is missing required fields"));
-                return;
-            }
-            sink.send(Frames.errorFor(message.getId(), message.getType(),
+            LOG.warning("Dropping stream start with missing fields for type: " + streamType);
+            sink.send(Frames.responseError(message.getId(), streamType,
                     "Stream start is missing required fields"));
             return;
         }
-        if (replyTo != null) {
-            if (!rpc.hasPending(replyTo)) {
-                LOG.fine("No pending request for reply stream: " + start.streamId());
-                return;
-            }
-            StreamSlot slot = new StreamSlot(start.streamId(), message.getId(), start.streamType(),
-                    start.metadata(), start.totalChunks(), start.sha256(), replyTo);
-            if (streamSlots.putIfAbsent(start.streamId(), slot) != null) {
-                LOG.warning("Dropping duplicate reply stream start: " + start.streamId());
-                sink.send(Frames.errorFor(replyTo, start.streamType(),
-                        "duplicate reply stream start: " + start.streamId()));
-                return;
-            }
-            armStreamTimeout(start.streamId());
-            return;
-        }
-        StreamHandlerEntry<?, ?> entry = streamHandlers.get(start.streamType());
+        StreamHandlerEntry<?, ?> entry = streamHandlers.get(streamType);
         if (entry == null) {
-            LOG.info("No stream handler for type: " + start.streamType());
-            sink.send(Frames.errorFor(message.getId(), start.streamType(),
-                    "unknown stream type: " + start.streamType()));
+            LOG.info("No stream handler for type: " + streamType);
+            sink.send(Frames.responseError(message.getId(), streamType,
+                    "unknown stream type: " + streamType));
             return;
         }
-        StreamSlot slot = new StreamSlot(start.streamId(), message.getId(), start.streamType(),
+        StreamSlot slot = new StreamSlot(start.streamId(), message.getId(), streamType,
                 start.metadata(), start.totalChunks(), start.sha256(), null);
         if (streamSlots.putIfAbsent(start.streamId(), slot) != null) {
             LOG.warning("Dropping duplicate stream start: " + start.streamId());
-            sink.send(Frames.errorFor(message.getId(), start.streamType(),
+            sink.send(Frames.responseError(message.getId(), streamType,
                     "duplicate stream start: " + start.streamId()));
+            return;
+        }
+        armStreamTimeout(start.streamId());
+    }
+
+    private void handleReplyStreamStart(WsMessage<JsonNode> message) {
+        UUID replyTo = message.getResponseOf();
+        if (replyTo == null) {
+            LOG.warning("Dropping reply stream start without responseOf");
+            return;
+        }
+        final StreamStart start;
+        try {
+            start = mapper.treeToValue(message.getPayload(), StreamStart.class);
+        } catch (JsonProcessingException e) {
+            LOG.log(Level.WARNING, "Dropping malformed reply stream start frame: " + e.getMessage(), e);
+            rpc.failPending(replyTo,
+                    new RuntimeException("Malformed reply stream start frame: " + e.getMessage()));
+            return;
+        }
+        String streamType = message.getType();
+        if (start == null || start.streamId() == null || start.sha256() == null
+                || start.totalChunks() < 1) {
+            LOG.warning("Dropping reply stream start with missing fields for type: " + streamType);
+            rpc.failPending(replyTo, new RuntimeException("Reply stream start is missing required fields"));
+            return;
+        }
+        if (!rpc.hasPending(replyTo)) {
+            LOG.fine("No pending request for reply stream: " + start.streamId());
+            return;
+        }
+        StreamSlot slot = new StreamSlot(start.streamId(), message.getId(), streamType,
+                start.metadata(), start.totalChunks(), start.sha256(), replyTo);
+        if (streamSlots.putIfAbsent(start.streamId(), slot) != null) {
+            LOG.warning("Dropping duplicate reply stream start: " + start.streamId());
+            rpc.failPending(replyTo,
+                    new RuntimeException("duplicate reply stream start: " + start.streamId()));
             return;
         }
         armStreamTimeout(start.streamId());
@@ -549,15 +571,8 @@ final class StreamProtocol {
     }
 
     private void handleStreamDone(WsMessage<JsonNode> message) {
-        final StreamDone done;
-        try {
-            done = mapper.treeToValue(message.getPayload(), StreamDone.class);
-        } catch (JsonProcessingException e) {
-            LOG.log(Level.WARNING, "Dropping malformed stream done frame: " + e.getMessage(), e);
-            return;
-        }
-        if (done == null || done.streamId() == null || done.sha256() == null) {
-            LOG.warning("Dropping stream done with missing fields");
+        final StreamDone done = parseStreamDone(message);
+        if (done == null) {
             return;
         }
         StreamSlot slot = streamSlots.remove(done.streamId());
@@ -565,7 +580,54 @@ final class StreamProtocol {
             LOG.fine("No pending stream for done: " + done.streamId());
             return;
         }
+        if (slot.replyRequestId != null) {
+            LOG.warning("Dropping stream done for a reply stream: " + done.streamId());
+            streamReceiver.abort(done.streamId());
+            return;
+        }
         cancelStreamTimeout(done.streamId());
+        completeSlot(slot, done);
+    }
+
+    private void handleReplyStreamDone(WsMessage<JsonNode> message) {
+        final StreamDone done = parseStreamDone(message);
+        if (done == null) {
+            return;
+        }
+        if (message.getResponseOf() == null) {
+            LOG.warning("Dropping reply stream done without responseOf");
+            return;
+        }
+        StreamSlot slot = streamSlots.remove(done.streamId());
+        if (slot == null) {
+            LOG.fine("No pending reply stream for done: " + done.streamId());
+            return;
+        }
+        if (slot.replyRequestId == null) {
+            LOG.warning("Dropping reply stream done for an initiating stream: " + done.streamId());
+            streamReceiver.abort(done.streamId());
+            return;
+        }
+        cancelStreamTimeout(done.streamId());
+        completeSlot(slot, done);
+    }
+
+    private StreamDone parseStreamDone(WsMessage<JsonNode> message) {
+        final StreamDone done;
+        try {
+            done = mapper.treeToValue(message.getPayload(), StreamDone.class);
+        } catch (JsonProcessingException e) {
+            LOG.log(Level.WARNING, "Dropping malformed stream done frame: " + e.getMessage(), e);
+            return null;
+        }
+        if (done == null || done.streamId() == null || done.sha256() == null) {
+            LOG.warning("Dropping stream done with missing fields");
+            return null;
+        }
+        return done;
+    }
+
+    private void completeSlot(StreamSlot slot, StreamDone done) {
         boolean isReply = slot.replyRequestId != null;
         if (!done.sha256().equalsIgnoreCase(slot.sha256)) {
             streamReceiver.abort(done.streamId());
@@ -622,7 +684,7 @@ final class StreamProtocol {
     }
 
     private void sendStreamError(StreamSlot slot, String detail) {
-        sink.send(Frames.errorFor(slot.startId, slot.streamType, detail));
+        sink.send(Frames.responseError(slot.startId, slot.streamType, detail));
     }
 
     private void cancelStreamTimeout(UUID streamId) {

@@ -7,7 +7,7 @@ import arc.util.Log;
 public class ProviderState {
 
     private static final long BASE_COOLDOWN_SECONDS = 5;
-    private static final long MAX_COOLDOWN_SECONDS = 300; // 5 minutes
+    private static final long MAX_COOLDOWN_SECONDS = 600; // 10 minutes
 
     private int consecutiveSuccesses = 0;
     private int consecutiveFailures = 0;
@@ -40,7 +40,7 @@ public class ProviderState {
         }
         consecutiveFailures++;
 
-        // Exponential backoff: 5s, 10s, 20s, 40s, 80s, 160s, 300s (capped)
+        // Exponential backoff: 5s, 10s, 20s, 40s, 80s, 160s, 320s 600s (capped)
         long multiplier = 1L << Math.min(consecutiveFailures - 1, 6);
         long seconds = Math.min(MAX_COOLDOWN_SECONDS, BASE_COOLDOWN_SECONDS * multiplier);
         this.cooldownUntil = Instant.now().plusSeconds(seconds);

@@ -40,7 +40,6 @@ public class WsRpcChannel implements SessionGate {
 
     private final ObjectMapper mapper;
     private final ScheduledExecutorService scheduler;
-    private final Executor handlerExecutor;
 
     private volatile WsSession current;
     private final Set<CompletableFuture<WsSession>> sessionWaiters =
@@ -80,7 +79,6 @@ public class WsRpcChannel implements SessionGate {
             Executor handlerExecutor) {
         this.mapper = mapper;
         this.scheduler = scheduler;
-        this.handlerExecutor = handlerExecutor;
         this.rpc = new RpcProtocol(mapper, scheduler, handlerExecutor, DEFAULT_TIMEOUT, frameSink, this);
         this.stream = new StreamProtocol(mapper, scheduler, handlerExecutor, DEFAULT_TIMEOUT, frameSink, this,
                 rpc, rpc);
@@ -237,17 +235,17 @@ public class WsRpcChannel implements SessionGate {
         return stream.hasStreamHandler(type);
     }
 
-    public <Params> void registerSubscriptionHandler(String eventType, Class<Params> paramsClass,
-            Function<SubscriptionRequest<Params>, CompletableFuture<Void>> onSubscribe) {
-        subscriptions.registerSubscriptionHandler(eventType, paramsClass, onSubscribe);
+    public <Params> void registerEventListener(String event, Class<Params> paramsClass,
+            Function<SubscriptionRequest<Params>, CompletableFuture<Void>> onListen) {
+        subscriptions.registerEventListener(event, paramsClass, onListen);
     }
 
-    public void unregisterSubscriptionHandler(String eventType) {
-        subscriptions.unregisterSubscriptionHandler(eventType);
+    public void unregisterEventListener(String event) {
+        subscriptions.unregisterEventListener(event);
     }
 
-    public boolean hasSubscriptionHandler(String eventType) {
-        return subscriptions.hasSubscriptionHandler(eventType);
+    public boolean hasEventListener(String event) {
+        return subscriptions.hasEventListener(event);
     }
 
     public int pendingStreamCount() {
@@ -263,8 +261,8 @@ public class WsRpcChannel implements SessionGate {
      *
      * @return true when a sender or receiver slot was discarded
      */
-    public boolean abortStream(UUID streamId) {
-        return stream.abortStream(streamId);
+    public boolean abortStream(UUID streamId, String type) {
+        return stream.abortStream(streamId, type);
     }
 
     public CompletableFuture<Void> sendRequest(String type, Object payload) {
@@ -284,39 +282,39 @@ public class WsRpcChannel implements SessionGate {
         rpc.sendNotification(type, payload);
     }
 
-    public CompletableFuture<Void> subscribe(String eventType, Object data,
+    public CompletableFuture<Void> listen(String event, Object data,
             Consumer<JsonNode> handler) {
-        return subscribe(UUID.randomUUID(), eventType, data, handler, DEFAULT_TIMEOUT);
+        return listen(UUID.randomUUID(), event, data, handler, DEFAULT_TIMEOUT);
     }
 
-    public CompletableFuture<Void> subscribe(String eventType, Object data,
+    public CompletableFuture<Void> listen(String event, Object data,
             Consumer<JsonNode> handler, Duration timeout) {
-        return subscribe(UUID.randomUUID(), eventType, data, handler, timeout);
+        return listen(UUID.randomUUID(), event, data, handler, timeout);
     }
 
-    public CompletableFuture<Void> subscribe(UUID subscriptionId, String eventType, Object data,
+    public CompletableFuture<Void> listen(UUID listenId, String event, Object data,
             Consumer<JsonNode> handler) {
-        return subscribe(subscriptionId, eventType, data, handler, DEFAULT_TIMEOUT);
+        return listen(listenId, event, data, handler, DEFAULT_TIMEOUT);
     }
 
-    public CompletableFuture<Void> subscribe(UUID subscriptionId, String eventType, Object data,
+    public CompletableFuture<Void> listen(UUID listenId, String event, Object data,
             Consumer<JsonNode> handler, Duration timeout) {
-        return subscriptions.subscribe(subscriptionId, eventType, data, handler, timeout);
+        return subscriptions.listen(listenId, event, data, handler, timeout);
     }
 
     /**
-     * If the subscription is already closed, the callback runs immediately.
+     * If the event stream is already closed, the callback runs immediately.
      */
-    public void onSubscriptionClose(UUID subscriptionId, Runnable callback) {
-        subscriptions.onSubscriptionClose(subscriptionId, callback);
+    public void onListenClose(UUID listenId, Runnable callback) {
+        subscriptions.onListenClose(listenId, callback);
     }
 
-    public void unsubscribe(UUID requestId) {
-        unsubscribe(requestId, null);
+    public void unlisten(UUID listenId) {
+        unlisten(listenId, null);
     }
 
-    public void unsubscribe(UUID requestId, String reason) {
-        subscriptions.unsubscribe(requestId, reason);
+    public void unlisten(UUID listenId, String reason) {
+        subscriptions.unlisten(listenId, reason);
     }
 
     public CompletableFuture<Void> sendStream(String type, Object metadata, ByteBuffer data) {
@@ -420,27 +418,76 @@ public class WsRpcChannel implements SessionGate {
             return;
         }
 
-        String controlType = message.getType();
-        if (controlType != null) {
-            if (StreamProtocol.handlesControl(controlType)) {
-                stream.handleControl(message);
-                return;
-            }
-            if (SubscriptionProtocol.handlesControl(controlType)) {
-                subscriptions.handleControl(message);
-                return;
-            }
-        }
-
-        if (message.getResponseOf() != null) {
-            if (subscriptions.tryConsumeResponse(message)) {
-                return;
-            }
-            rpc.settleResponse(message);
+        String kind = message.getKind();
+        if (kind == null) {
+            LOG.info("Dropping RPC frame without kind");
             return;
         }
+        switch (kind) {
+            case WsProtocol.REQUEST_TYPE:
+                if (!requireType(message)) {
+                    return;
+                }
+                rpc.dispatchRequest(message);
+                return;
+            case WsProtocol.NOTIFICATION_TYPE:
+                if (!requireType(message)) {
+                    return;
+                }
+                rpc.dispatchNotification(message);
+                return;
+            case WsProtocol.RESPONSE_TYPE:
+            case WsProtocol.RESPONSE_ERROR_TYPE:
+                if (!requireType(message)) {
+                    return;
+                }
+                rpc.settleResponse(message);
+                return;
+            case WsProtocol.STREAM_START_TYPE:
+            case WsProtocol.STREAM_DONE_TYPE:
+            case WsProtocol.STREAM_ABORT_TYPE:
+            case WsProtocol.STREAM_REPLY_START_TYPE:
+            case WsProtocol.STREAM_REPLY_DONE_TYPE:
+                if (!requireType(message)) {
+                    return;
+                }
+                stream.handleControl(message);
+                return;
+            case WsProtocol.LISTEN_TYPE:
+            case WsProtocol.UNLISTEN_TYPE:
+                if (!requireEvent(message)) {
+                    return;
+                }
+                subscriptions.handleControl(message);
+                return;
+            case WsProtocol.LISTENING_TYPE:
+            case WsProtocol.EVENT_TYPE:
+            case WsProtocol.LISTEN_ENDED_TYPE:
+            case WsProtocol.LISTEN_ERROR_TYPE:
+                if (!requireEvent(message)) {
+                    return;
+                }
+                subscriptions.handleClientFrame(message);
+                return;
+            default:
+                LOG.info("Dropping RPC frame with unknown kind: " + kind);
+        }
+    }
 
-        rpc.dispatchRequest(message);
+    private static boolean requireType(WsMessage<JsonNode> message) {
+        if (message.getType() == null || message.getEvent() != null) {
+            LOG.info("Dropping " + message.getKind() + " frame with missing or misplaced subject");
+            return false;
+        }
+        return true;
+    }
+
+    private static boolean requireEvent(WsMessage<JsonNode> message) {
+        if (message.getEvent() == null || message.getType() != null) {
+            LOG.info("Dropping " + message.getKind() + " frame with missing or misplaced subject");
+            return false;
+        }
+        return true;
     }
 
     private void sendToSession(WsMessage<?> message) {

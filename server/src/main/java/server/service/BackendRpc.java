@@ -1,5 +1,6 @@
 package server.service;
 
+import java.io.Closeable;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -13,6 +14,7 @@ import dto.LoginDto;
 import dto.ServerConfig;
 import enums.NodeRemoveReason;
 import gateway.rpc.StreamReply;
+import gateway.rpc.SubscriptionRequest;
 import gateway.rpc.WsRpcChannel;
 import gateway.stream.FileChunkStreamer;
 import lombok.RequiredArgsConstructor;
@@ -87,6 +89,7 @@ public class BackendRpc {
             Log.info("File upload complete: " + meta.path() + " (" + bytes.length + " bytes)");
             return Map.of("bytes", bytes.length, "sha256", FileChunkStreamer.sha256Hex(bytes));
         });
+        channel.registerEventListener("get-usage", ServerRef.class, this::listenUsage);
 
         Log.info("Backend RPC handlers registered");
     }
@@ -110,6 +113,29 @@ public class BackendRpc {
         return new StreamReply(data, Map.of("fileName", file.name(), "size", data.length));
     }
 
+    private CompletableFuture<Void> listenUsage(SubscriptionRequest<ServerRef> req) {
+        var handle = req.handle();
+        var params = req.params();
+        if (params == null) {
+            return CompletableFuture.failedFuture(new ApiError(400, "get-usage requires serverId"));
+        }
+        try {
+            Closeable stream = serverService.getUsage(params.serverId(), usage -> {
+                if (!handle.isClosed()) {
+                    handle.push(usage);
+                }
+            }, err -> {
+                if (!handle.isClosed()) {
+                    handle.fail(shortReason(err));
+                }
+            });
+            handle.onClose(() -> closeQuietly(stream));
+            return CompletableFuture.completedFuture(null);
+        } catch (Exception e) {
+            return CompletableFuture.failedFuture(e);
+        }
+    }
+
     // ------------------------------------------------------------------
     // Helpers
     // ------------------------------------------------------------------
@@ -119,6 +145,19 @@ public class BackendRpc {
             return future.get(RPC_TIMEOUT_SECONDS, TimeUnit.SECONDS);
         } catch (Exception e) {
             throw new ApiError(503, "Backend RPC '" + op + "' failed", e);
+        }
+    }
+
+    private static String shortReason(Throwable err) {
+        String msg = err.getMessage();
+        return msg != null ? msg : err.toString();
+    }
+
+    private static void closeQuietly(Closeable stream) {
+        try {
+            stream.close();
+        } catch (Exception e) {
+            Log.warn("Failed to close usage stream: " + e.getMessage());
         }
     }
 

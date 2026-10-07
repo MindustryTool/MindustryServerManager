@@ -7,8 +7,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import gateway.WsMessage;
-
 final class DefaultPushHandle implements PushHandle {
 
     private static final Logger LOG = Logger.getLogger(DefaultPushHandle.class.getName());
@@ -30,10 +28,7 @@ final class DefaultPushHandle implements PushHandle {
         if (closed) {
             return;
         }
-        WsMessage<?> message = WsMessage.create(eventType)
-                .setResponseOf(subscribeId)
-                .withPayload(event);
-        sink.send(message);
+        sink.send(Frames.eventFrame(eventType, subscribeId, event));
     }
 
     @Override
@@ -42,6 +37,7 @@ final class DefaultPushHandle implements PushHandle {
             return;
         }
         closed = true;
+        sink.send(Frames.listenEnded(eventType, subscribeId));
         triggerCloseCallbacks();
     }
 
@@ -51,7 +47,7 @@ final class DefaultPushHandle implements PushHandle {
             return;
         }
         closed = true;
-        sink.send(Frames.errorFor(subscribeId, eventType, reason));
+        sink.send(Frames.listenError(eventType, subscribeId, reason));
         triggerCloseCallbacks();
     }
 

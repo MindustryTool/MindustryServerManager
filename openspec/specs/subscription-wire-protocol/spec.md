@@ -2,102 +2,122 @@
 
 ## Purpose
 
-Wire format for subscription streams: subscribe, event, unsubscribe, and termination frames, plus reserved types and correlation rules. Synced from change add-subscription-streams.
+Wire format for event streams: listen, listening, event, unlisten, and termination frames, plus kind-based correlation rules. Synced from change ws-rpc-v2.
 
 ## Requirements
 
-### Requirement: Subscribe frame wire format
-The system SHALL transmit `subscribe` frames with the following structure:
-- `id`: fresh UUID (becomes the subscription ID)
-- `type`: `"subscribe"`
-- `payload`: object with `eventType` (string, required) and `data` (any JSON, optional)
+### Requirement: Listen frame wire format
+The system SHALL transmit a `listen` frame to start an event stream:
+- `id`: fresh UUID (becomes the event-stream ID)
+- `kind`: `"listen"`
+- `event`: application event name
+- `payload`: object with optional `data` (any JSON) parameters
 
-#### Scenario: Valid subscribe frame sent
-- **WHEN** client calls `subscribe("usage", {"serverId":"srv-123"}, handler)`
-- **THEN** a frame is sent with `type="subscribe"` and `payload={"eventType":"usage","data":{"serverId":"srv-123"}}`
+#### Scenario: Valid listen frame sent
+- **WHEN** client calls `listen("usage", {"serverId":"srv-123"}, handler)`
+- **THEN** a frame is sent with `kind="listen"`, `event="usage"`, and `payload={"data":{"serverId":"srv-123"}}`
 
-#### Scenario: Subscribe with no data payload
-- **WHEN** client calls `subscribe("events", null, handler)`
-- **THEN** a frame is sent with `payload={"eventType":"events"}` (no `data` field)
+#### Scenario: Listen with no data
+- **WHEN** client calls `listen("events", null, handler)`
+- **THEN** a frame is sent with `event="events"` and no `data` field
 
-### Requirement: Event frame wire format
-The system SHALL transmit event frames as standard answer frames:
+### Requirement: Listening acknowledgement frame
+The publisher SHALL answer a valid `listen` with a `listening` frame:
+- `id`: fresh UUID
+- `kind`: `"listening"`
+- `event`: the event name
+- `responseOf`: the `listen` request `id`
+- `payload`: JSON null
+
+#### Scenario: Listen acknowledged
+- **WHEN** the publisher creates a listener
+- **THEN** it sends a `listening` frame with `responseOf` equal to the `listen` `id` before any `event`
+
+### Requirement: Event push frame wire format
+The publisher SHALL push each event as an `event` frame:
 - `id`: fresh UUID per event
-- `type`: the `eventType` from the subscribe request
-- `responseOf`: the subscription ID (original `subscribe` frame `id`)
+- `kind`: `"event"`
+- `event`: the event name from the `listen` request
+- `responseOf`: the event-stream ID
 - `payload`: application event object
-- `error`: `false` (omitted or explicit)
 
-#### Scenario: Event frame correlates to subscription
-- **WHEN** server pushes event for subscription `sub-123`
-- **THEN** frame has `responseOf="sub-123"` and `type="usage"`
+#### Scenario: Event correlates to event stream
+- **WHEN** the publisher pushes an event for event-stream `sub-123`
+- **THEN** the frame has `kind="event"`, `responseOf="sub-123"`, and `event="usage"`
 
 #### Scenario: Each event has unique ID
-- **WHEN** two events are pushed for the same subscription
+- **WHEN** two events are pushed for the same event stream
 - **THEN** each has a different `id`
 
-### Requirement: Unsubscribe frame wire format
-The system SHALL transmit `unsubscribe` frames:
+### Requirement: Unlisten frame wire format
+The listener SHALL transmit an `unlisten` frame to stop an event stream:
 - `id`: fresh UUID
-- `type`: `"unsubscribe"`
-- `responseOf`: the subscription ID
+- `kind`: `"unlisten"`
+- `event`: the event name
+- `responseOf`: the event-stream ID
 - `payload`: optional object with `reason` (string)
 
-#### Scenario: Unsubscribe frame sent
-- **WHEN** client calls `unsubscribe("sub-123", "dashboard closed")`
-- **THEN** frame has `type="unsubscribe"`, `responseOf="sub-123"`, `payload={"reason":"dashboard closed"}`
+#### Scenario: Unlisten frame sent
+- **WHEN** client calls `unlisten("sub-123", "dashboard closed")`
+- **THEN** the frame has `kind="unlisten"`, `responseOf="sub-123"`, `payload={"reason":"dashboard closed"}`
 
-#### Scenario: Unsubscribe without reason
-- **WHEN** client calls `unsubscribe("sub-123")`
-- **THEN** frame has `payload={}` or omitted
+#### Scenario: Unlisten without reason
+- **WHEN** client calls `unlisten("sub-123")`
+- **THEN** the frame has `payload={}` or omitted
 
-### Requirement: Server-initiated termination wire format
-The system SHALL transmit error frames to end subscriptions:
+### Requirement: Listen-ended confirmation frame
+The publisher SHALL answer an `unlisten` with a `listen-ended` frame, and MAY send `listen-ended` at any time after `listening` to end the stream gracefully:
 - `id`: fresh UUID
-- `type`: the subscription's `eventType`
-- `responseOf`: the subscription ID
-- `error`: `true`
+- `kind`: `"listen-ended"`
+- `event`: the event name
+- `responseOf`: the event-stream ID
+- `payload`: JSON null
+
+#### Scenario: Unlisten confirmed
+- **WHEN** the publisher receives `unlisten` for an active stream
+- **THEN** it sends a `listen-ended` frame with the same `responseOf` and sends no further `event`
+
+#### Scenario: Publisher ends gracefully
+- **WHEN** the publisher decides to end an active event stream
+- **THEN** it sends `listen-ended` and sends no further `event`
+
+### Requirement: Listen-error termination frame
+The publisher SHALL signal a rejected `listen` or a failed active stream with a `listen-error` frame:
+- `id`: fresh UUID
+- `kind`: `"listen-error"`
+- `event`: the event name
+- `responseOf`: the event-stream ID
 - `payload`: diagnostic string
 
-#### Scenario: Server fail sends error frame
-- **WHEN** server calls `handle.fail("server not found")`
-- **THEN** frame has `type="usage"`, `responseOf="sub-123"`, `error=true`, `payload="server not found"`
+#### Scenario: Rejected listen
+- **WHEN** the publisher cannot create the listener
+- **THEN** it answers the `listen` with `listen-error` and creates no listener
 
-### Requirement: Reserved types cannot be registered as handlers
-The system SHALL reject handler registration for types `"subscribe"` and `"unsubscribe"` with `IllegalArgumentException`.
+#### Scenario: Active stream fails
+- **WHEN** an active event stream fails after `listening`
+- **THEN** the publisher sends `listen-error` and sends no further `event`
 
-#### Scenario: Registering subscribe handler throws
-- **WHEN** server calls `registerHandler("subscribe", ...)` or `registerSubscriptionHandler("subscribe", ...)`
-- **THEN** `IllegalArgumentException` is thrown
+### Requirement: Event-stream ID equals listen request ID
+The system SHALL use the original `listen` request's `id` as the `responseOf` value for all subsequent frames (`listening`, `event`, `unlisten`, `listen-ended`, `listen-error`).
 
-#### Scenario: Registering unsubscribe handler throws
-- **WHEN** server calls `registerHandler("unsubscribe", ...)` or `registerSubscriptionHandler("unsubscribe", ...)`
-- **THEN** `IllegalArgumentException` is thrown
+#### Scenario: All frames correlate to listen ID
+- **WHEN** an event stream is created with request ID `sub-123`
+- **THEN** `listening`, `event`, `unlisten`, and termination frames all have `responseOf="sub-123"`
 
-### Requirement: Subscription ID equals subscribe request ID
-The system SHALL use the original `subscribe` request's `id` as the `responseOf` value for all subsequent frames (events, error, unsubscribe ack).
+### Requirement: Any event name is legal
+The system SHALL NOT reserve any event name. An event name equal to a frame kind SHALL be accepted.
 
-#### Scenario: All frames correlate to subscribe ID
-- **WHEN** subscription created with request ID `sub-123`
-- **THEN** event frames have `responseOf="sub-123"`
-- **THEN** error frame has `responseOf="sub-123"`
-- **THEN** unsubscribe frame has `responseOf="sub-123"`
+#### Scenario: Event named like a kind
+- **WHEN** a `listen` frame arrives with `event="event"` or `event="listen"`
+- **THEN** it dispatches to the handler registered for that event name
 
-### Requirement: No reply for unsubscribe frame
-The system SHALL NOT send a reply frame for `unsubscribe` notifications (fire-and-forget per WS-RPC 13.5).
+### Requirement: Connection close terminates event streams implicitly
+The system SHALL treat connection close as implicit event-stream termination. Publishers SHALL clean up listener resources and listeners SHALL fail pending `listen` futures and remove handlers.
 
-#### Scenario: Unsubscribe received by server
-- **WHEN** server receives `unsubscribe` frame
-- **THEN** server cleans up subscription
-- **THEN** server does NOT send any frame in response
+#### Scenario: Server cleans up on listener disconnect
+- **WHEN** the WebSocket connection closes
+- **THEN** the publisher cleans up all listener resources for that connection
 
-### Requirement: Connection close terminates subscriptions implicitly
-The system SHALL treat connection close as implicit subscription termination per WS-RPC 13.7.
-
-#### Scenario: Server cleans up on client disconnect
-- **WHEN** WebSocket connection closes
-- **THEN** server cleans up all subscription resources for that connection
-
-#### Scenario: Client cleans up on server disconnect
-- **WHEN** WebSocket connection closes
-- **THEN** client fails pending subscribe futures and removes handlers
+#### Scenario: Client cleans up on publisher disconnect
+- **WHEN** the WebSocket connection closes
+- **THEN** the listener fails pending `listen` futures and removes handlers

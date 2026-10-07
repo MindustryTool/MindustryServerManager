@@ -48,9 +48,9 @@ public class TranslationService {
                 .expireAfterWrite(2, TimeUnit.HOURS)
                 .build());
 
-        registerProvider(0, 50, new LingvaProvider());
-        registerProvider(0, 100, new GoogleWebProvider());
-        registerProvider(1, 100, new GoogleWebProvider(new MultiSourceProxyPool()));
+        registerProvider(0, 0, new GoogleWebProvider(new MultiSourceProxyPool()));
+        registerProvider(1, 50, new LingvaProvider());
+        registerProvider(1, 100, new GoogleWebProvider());
     }
 
     public TranslationService(Cache<String, TranslationResponseDto> cache, TranslationProvider... initialProviders) {

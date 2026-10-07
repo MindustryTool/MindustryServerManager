@@ -2,74 +2,74 @@
 
 ## Purpose
 
-Server-side subscription handling: typed handler registration, per-subscription initialization, and the PushHandle event and close contract. Synced from change add-subscription-streams.
+Server-side event-stream handling: typed listener registration, per-stream initialization, and the PushHandle event and close contract. Synced from change ws-rpc-v2.
 
 ## Requirements
 
-### Requirement: Server registers subscription handler with typed parameters
-The system SHALL provide `registerSubscriptionHandler(eventType, paramsClass, onSubscribe)` where `onSubscribe` is a function receiving deserialized `data` payload and returning `CompletableFuture<PushHandle>`.
+### Requirement: Server registers event-stream handler with typed parameters
+The system SHALL provide `registerEventListener(event, paramsClass, onListen)` where `onListen` is a function receiving the deserialized `data` payload and returning `CompletableFuture<PushHandle>`. Event names SHALL NOT be reserved; any name, including one equal to a frame kind, SHALL be accepted.
 
 #### Scenario: Handler registration succeeds
-- **WHEN** server calls `registerSubscriptionHandler("usage", UsageParams.class, params -> ...)`
-- **THEN** subsequent `subscribe` frames with `eventType="usage"` are routed to this handler
+- **WHEN** server calls `registerEventListener("usage", UsageParams.class, params -> ...)`
+- **THEN** subsequent `listen` frames with `event="usage"` are routed to this handler
 
 #### Scenario: Duplicate registration throws
-- **WHEN** server registers two handlers for the same `eventType`
+- **WHEN** server registers two handlers for the same event name
 - **THEN** the second registration throws `IllegalArgumentException`
 
-#### Scenario: Reserved type rejected
-- **WHEN** server registers handler with type `"subscribe"` or `"unsubscribe"`
-- **THEN** the call throws `IllegalArgumentException`
+#### Scenario: Event name equal to a kind accepted
+- **WHEN** server registers a handler for an event name such as `"event"` or `"listen"`
+- **THEN** registration succeeds and matching `listen` frames dispatch to it
 
-### Requirement: onSubscribe called once per subscription with lazy initialization
-The system SHALL invoke `onSubscribe(params)` exactly once per incoming `subscribe` request, passing the deserialized `data` payload, and await the returned `PushHandle` future before sending events.
+### Requirement: onListen called once per event stream with lazy initialization
+The system SHALL invoke `onListen(params)` exactly once per incoming `listen` request, passing the deserialized `data` payload, and SHALL await the returned `PushHandle` future before sending the `listening` acknowledgement and any events.
 
-#### Scenario: onSubscribe invoked per subscription
-- **WHEN** two `subscribe` requests arrive for `eventType="usage"` with different `data`
-- **THEN** `onSubscribe` is called twice, once per subscription
+#### Scenario: onListen invoked per event stream
+- **WHEN** two `listen` requests arrive for `event="usage"` with different `data`
+- **THEN** `onListen` is called twice, once per stream
 
-#### Scenario: onSubscribe async initialization supported
-- **WHEN** `onSubscribe` returns a `CompletableFuture<PushHandle>` that completes later
-- **THEN** the subscription acknowledgment (first event) waits for the future to complete
-- **THEN** if the future fails, the subscription is rejected with an error frame
+#### Scenario: onListen async initialization supported
+- **WHEN** `onListen` returns a `CompletableFuture<PushHandle>` that completes later
+- **THEN** the `listening` acknowledgement waits for the future to complete
+- **THEN** if the future fails, the stream is rejected with a `listen-error` frame
 
-#### Scenario: onSubscribe failure rejects subscription
-- **WHEN** `onSubscribe` future completes exceptionally
-- **THEN** server sends an error frame with `error=true`, `responseOf=subscribeId`, and the failure reason
-- **THEN** no `PushHandle` is created for that subscription
+#### Scenario: onListen failure rejects listen
+- **WHEN** the `onListen` future completes exceptionally
+- **THEN** server sends a `listen-error` frame with `responseOf=listenId` and the failure reason
+- **THEN** no `PushHandle` is created for that event stream
 
 ### Requirement: PushHandle controls per-subscriber event emission
 The system SHALL provide a `PushHandle` interface with methods to push events, complete cleanly, fail with error, check closure, and register cleanup callbacks.
 
 #### Scenario: PushHandle.push sends event frame
 - **WHEN** server calls `handle.push(eventObject)`
-- **THEN** an event frame is sent with `type=eventType`, `responseOf=subscriptionId`, fresh `id`, `payload=eventObject`, `error=false`
+- **THEN** an `event` frame is sent with `kind="event"`, `event=eventName`, `responseOf=listenerId`, fresh `id`, and `payload=eventObject`
 
-#### Scenario: PushHandle.complete ends subscription cleanly
+#### Scenario: PushHandle.complete ends stream cleanly
 - **WHEN** server calls `handle.complete()`
-- **THEN** the subscription is marked closed locally
-- **THEN** no frame is sent (clean end per WS-RPC 13.6 uses error frame; complete = stop pushing)
+- **THEN** a `listen-ended` frame is sent with `event=eventName` and `responseOf=listenerId`
+- **THEN** the stream is marked closed locally
 
-#### Scenario: PushHandle.fail sends error frame and ends subscription
+#### Scenario: PushHandle.fail sends listen-error and ends stream
 - **WHEN** server calls `handle.fail("server not found")`
-- **THEN** an error frame is sent with `type=eventType`, `responseOf=subscriptionId`, `error=true`, `payload="server not found"`
-- **THEN** the subscription is marked closed
+- **THEN** a `listen-error` frame is sent with `event=eventName`, `responseOf=listenerId`, and `payload="server not found"`
+- **THEN** the stream is marked closed
 
-#### Scenario: PushHandle.isClosed reflects client unsubscribe
-- **WHEN** client sends `unsubscribe` for this subscription
+#### Scenario: PushHandle.isClosed reflects client unlisten
+- **WHEN** client sends `unlisten` for this event stream
 - **THEN** `handle.isClosed()` returns `true`
 - **THEN** further `push` calls are no-ops or throw
 
 #### Scenario: PushHandle.isClosed reflects connection loss
 - **WHEN** `onClose` is called on the channel
-- **THEN** `handle.isClosed()` returns `true` for all active subscriptions
+- **THEN** `handle.isClosed()` returns `true` for all active event streams
 
 #### Scenario: PushHandle.onClose registers cleanup callback
 - **WHEN** server calls `handle.onClose(() -> cleanup())`
-- **THEN** `cleanup()` is invoked when subscription ends (client unsubscribe, server fail/complete, or connection close)
+- **THEN** `cleanup()` is invoked when the stream ends (client unlisten, server complete/fail, or connection close)
 
-#### Scenario: onClose callback invoked on client unsubscribe
-- **WHEN** client sends `unsubscribe` frame
+#### Scenario: onClose callback invoked on client unlisten
+- **WHEN** client sends an `unlisten` frame
 - **THEN** the registered `onClose` callback is invoked
 
 #### Scenario: onClose callback invoked on server fail

@@ -1,7 +1,12 @@
-## ADDED Requirements
+# ws-rpc-frame-protocol
+
+## Purpose
+
+v2 text envelope for WS-RPC frames: explicit kind discriminator, per-family subject fields, kind-based routing, kind-encoded failures, and notification semantics. Synced from change ws-rpc-v2.
+
+## Requirements
 
 ### Requirement: Text frame envelope with explicit kind
-
 Every WS-RPC text frame SHALL be one JSON object containing `id` (UUID string) and `kind` (string). A payload and `responseOf` MAY be present. RPC and byte-stream frames SHALL name their application subject in `type` and SHALL NOT carry `event`. Event-stream frames SHALL name their subject in `event` and SHALL NOT carry `type`. The envelope SHALL NOT contain an `error` boolean.
 
 #### Scenario: RPC frame carries type, not event
@@ -17,7 +22,6 @@ Every WS-RPC text frame SHALL be one JSON object containing `id` (UUID string) a
 - **THEN** it contains no `error` field, and failure is expressed through the frame `kind`
 
 ### Requirement: Kind-based routing
-
 The receiver SHALL dispatch each text frame on `kind` alone, and each known kind SHALL map to exactly one receiver table. The receiver SHALL NOT infer the frame sort from `type`, `event`, or `responseOf` presence, and SHALL NOT probe more than one table to route a frame.
 
 #### Scenario: Response routes to the pending-call table
@@ -33,7 +37,6 @@ The receiver SHALL dispatch each text frame on `kind` alone, and each known kind
 - **THEN** exactly one receiver table is consulted for it
 
 ### Requirement: Kind-encoded failure
-
 A failed RPC answer SHALL be a `response-error` frame whose payload is a diagnostic string. A failed or terminated event stream SHALL be a `listen-error` frame whose payload is a diagnostic string. Neither frame SHALL trigger a reply. Peers SHALL match on `kind` and `responseOf`, never on payload text.
 
 #### Scenario: RPC handler failure
@@ -50,7 +53,6 @@ A failed RPC answer SHALL be a `response-error` frame whose payload is a diagnos
 - **THEN** it is processed and no frame is transmitted back
 
 ### Requirement: Notifications are never answered
-
 A `notification` frame SHALL declare that no answer is expected. The receiver SHALL process it and SHALL NOT transmit any answer, including when its `type` has no registered handler.
 
 #### Scenario: Registered notification processed
@@ -62,7 +64,6 @@ A `notification` frame SHALL declare that no answer is expected. The receiver SH
 - **THEN** the frame is dropped with a log and no frame is transmitted back
 
 ### Requirement: Absent or unknown kind is dropped
-
 A text frame whose `kind` field is absent or is not a known kind SHALL be dropped with a log and no reply. An unparsable text frame SHALL likewise be dropped with a log and no reply.
 
 #### Scenario: Missing kind dropped
@@ -78,7 +79,6 @@ A text frame whose `kind` field is absent or is not a known kind SHALL be droppe
 - **THEN** it is dropped with a log and no reply is sent
 
 ### Requirement: No reserved application names
-
 The protocol SHALL NOT reserve any application name. A handler, stream type, or event name equal to any `kind` value SHALL be legal. Requests, notifications, and byte streams SHALL be answered with `response-error` when their `type` has no registered handler, and event streams with `listen-error` when their `event` has no registered handler.
 
 #### Scenario: Handler may be named like a kind
