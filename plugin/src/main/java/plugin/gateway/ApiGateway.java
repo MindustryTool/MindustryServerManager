@@ -188,13 +188,6 @@ public class ApiGateway {
         return rpcChannel;
     }
 
-    public void close() {
-        WsClient client = gatewayClient;
-        if (client != null) {
-            client.close();
-        }
-    }
-
     public Void shutdown() {
         Log.info("[purple]Server shutdown");
 

@@ -282,6 +282,33 @@ class SubscriptionProtocolTest {
     }
 
     @Test
+    void remoteUnlistenProducesExactlyOneListenEnded() throws Exception {
+        Loopback sa = new Loopback();
+        Loopback sb = new Loopback();
+        RpcChannel[] pair = pair(sa, sb);
+        RpcChannel client = pair[0];
+        RpcChannel server = pair[1];
+
+        server.registerEventListener("usage", UsageParams.class,
+                req -> CompletableFuture.completedFuture(null));
+
+        UUID listenId = UUID.randomUUID();
+        CompletableFuture<Void> ack = client.subscribe(listenId, "usage", new UsageParams("srv-123"), event -> {},
+                Duration.ofSeconds(5));
+        ack.get(5, TimeUnit.SECONDS);
+
+        client.unsubscribe(listenId);
+
+        long ended = sb.sent.stream()
+                .filter(t -> t.contains("\"kind\":\"" + WsProtocol.SUBSCRIPTION_ENDED_TYPE + "\""))
+                .count();
+        assertEquals(1, ended, "exactly one listen-ended per unlisten, sent: " + sb.sent);
+
+        client.shutdown();
+        server.shutdown();
+    }
+
+    @Test
     void serverFailClosesEventStream() throws Exception {
         Loopback sa = new Loopback();
         Loopback sb = new Loopback();

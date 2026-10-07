@@ -278,7 +278,6 @@ public final class SubscriptionProtocol {
             LOG.fine("Dropping unlisten for unknown event stream: " + listenId);
             return;
         }
-        sink.send(slot.origin, FrameFactory.subscriptionEnded(slot.eventType, listenId));
         closeServerSubscription(slot);
     }
 

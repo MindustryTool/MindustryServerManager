@@ -6,8 +6,12 @@ import java.lang.reflect.Proxy;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
@@ -18,18 +22,19 @@ import org.junit.jupiter.api.Test;
 import com.github.benmanes.caffeine.cache.Caffeine;
 
 import arc.files.Fi;
-import io.javalin.websocket.WsCloseContext;
-import io.javalin.websocket.WsConnectContext;
 import dto.ManagerMapDto;
 import dto.ManagerModDto;
 import dto.MapDto;
 import dto.ModDto;
 import dto.ServerConfig;
+import dto.ServerMetadata;
 import dto.ServerStateDto;
 import enums.NodeRemoveReason;
 import events.BaseEvent;
-import events.ServerEvents.LogEvent;
+import events.ServerEvents.StopEvent;
 import gateway.session.WsSession;
+import io.javalin.websocket.WsCloseContext;
+import io.javalin.websocket.WsConnectContext;
 import org.eclipse.jetty.websocket.api.Session;
 import server.EnvConfig;
 import server.manager.NodeManager;
@@ -127,8 +132,40 @@ public class GatewayClientLivenessTest {
         }
     }
 
+    /** Node manager with a configurable running set and call/removal recording. */
+    static class RunningNodeManager extends StubNodeManager {
+        private final Set<UUID> running = new HashSet<>();
+        final List<UUID> removed = new CopyOnWriteArrayList<>();
+        int listCalls = 0;
+
+        void setRunning(UUID... ids) {
+            running.clear();
+            running.addAll(List.of(ids));
+        }
+
+        @Override
+        public List<ServerState> list() {
+            listCalls++;
+            List<ServerState> states = new ArrayList<>();
+            for (UUID id : running) {
+                states.add(new ServerState()
+                        .running(true)
+                        .meta(Optional.of(new ServerMetadata().setConfig(new ServerConfig().setId(id)))));
+            }
+            return states;
+        }
+
+        @Override
+        public boolean remove(UUID id, NodeRemoveReason reason) {
+            removed.add(id);
+            return true;
+        }
+    }
+
     static class FakeSession implements WsSession {
         private final boolean open;
+        volatile int closeCode = -1;
+        volatile String closeReason;
 
         FakeSession(boolean open) {
             this.open = open;
@@ -144,6 +181,8 @@ public class GatewayClientLivenessTest {
 
         @Override
         public void close(int code, String reason) {
+            this.closeCode = code;
+            this.closeReason = reason;
         }
 
         @Override
@@ -168,6 +207,19 @@ public class GatewayClientLivenessTest {
         TranslationService translations = new TranslationService(Caffeine.newBuilder().build());
         PluginBundleService bundles = new PluginBundleService(new byte[] { 1 }, "test");
         service = new GatewayService(bus, env, new StubNodeManager(), translations, bundles);
+    }
+
+    private void setUp(RunningNodeManager nodes) {
+        bus = new EventBus();
+        events = new CopyOnWriteArrayList<>();
+        bus.on(events::add);
+        EnvConfig env = new EnvConfig(
+                new EnvConfig.DockerEnv("image", "/data", null, null),
+                new EnvConfig.ServerConfig(true, "token", "/data", "ws://localhost/gateway", "http://localhost/"),
+                "test-signing-key");
+        TranslationService translations = new TranslationService(Caffeine.newBuilder().build());
+        PluginBundleService bundles = new PluginBundleService(new byte[] { 1 }, "test");
+        service = new GatewayService(bus, env, nodes, translations, bundles);
     }
 
     private GatewayService.GatewayClient client() {
@@ -195,6 +247,10 @@ public class GatewayClientLivenessTest {
         field.set(client, Instant.now().minus(age));
     }
 
+    private long stopCount() {
+        return events.stream().filter(StopEvent.class::isInstance).count();
+    }
+
     private static Session jettySession(boolean open) {
         return (Session) Proxy.newProxyInstance(
                 GatewayClientLivenessTest.class.getClassLoader(),
@@ -217,10 +273,6 @@ public class GatewayClientLivenessTest {
                 });
     }
 
-    private long warnCount() {
-        return events.stream().filter(LogEvent.class::isInstance).count();
-    }
-
     @Test
     void initClockEqualsCreateTime() throws Exception {
         GatewayService.GatewayClient client = client();
@@ -241,26 +293,15 @@ public class GatewayClientLivenessTest {
     }
 
     @Test
-    void openSocketNeverWarnsOrTerminates() throws Exception {
+    void openSocketNeverTerminates() throws Exception {
         GatewayService.GatewayClient client = client();
         emulateOpen(client);
 
-        client.checkDisconnect();
-
-        assertEquals(0, warnCount());
         assertFalse(client.shouldTerminate());
     }
 
     @Test
-    void closedSocketWarnsAt60sAndTerminatesAt3min() throws Exception {
-        GatewayService.GatewayClient freshWarn = client();
-        ageClock(freshWarn, Duration.ofSeconds(61));
-
-        freshWarn.checkDisconnect();
-
-        assertEquals(1, warnCount());
-        assertFalse(freshWarn.shouldTerminate());
-
+    void closedSocketTerminatesAt3min() throws Exception {
         GatewayService.GatewayClient freshKill = client();
         ageClock(freshKill, Duration.ofMinutes(3).plusSeconds(1));
 
@@ -272,9 +313,6 @@ public class GatewayClientLivenessTest {
         GatewayService.GatewayClient client = client();
         ageClock(client, Duration.ofSeconds(10));
 
-        client.checkDisconnect();
-
-        assertEquals(0, warnCount());
         assertFalse(client.shouldTerminate());
     }
 
@@ -286,9 +324,6 @@ public class GatewayClientLivenessTest {
 
         emulateOpen(client);
 
-        client.checkDisconnect();
-
-        assertEquals(0, warnCount());
         assertFalse(client.shouldTerminate());
     }
 
@@ -312,8 +347,101 @@ public class GatewayClientLivenessTest {
         assertNull(disconnectAt(client), "stale close must not start the clock");
         assertSame(adopted, client.rpcChannel().current());
 
-        client.checkDisconnect();
-        assertEquals(0, warnCount());
         assertFalse(client.shouldTerminate());
+    }
+
+    // ------------------------------------------------------------------
+    // Batched eviction sweep
+    // ------------------------------------------------------------------
+
+    @Test
+    void sweepEvictsClosedSocketWithContainerGone() throws Exception {
+        RunningNodeManager nodes = new RunningNodeManager();
+        setUp(nodes);
+
+        UUID id = UUID.randomUUID();
+        GatewayService.GatewayClient before = service.of(id);
+        service.of(UUID.randomUUID());
+
+        service.sweep();
+
+        GatewayService.GatewayClient after = service.of(id);
+        assertNotSame(before, after, "container-gone client must be evicted from the cache");
+        assertTrue(nodes.removed.isEmpty(), "eviction must not terminate or remove a container");
+        assertEquals(0, stopCount());
+    }
+
+    @Test
+    void sweepKeepsClosedSocketWithRunningContainerWithinGrace() throws Exception {
+        RunningNodeManager nodes = new RunningNodeManager();
+        UUID id = UUID.randomUUID();
+        nodes.setRunning(id);
+        setUp(nodes);
+
+        GatewayService.GatewayClient before = service.of(id);
+        ageClock(before, Duration.ofSeconds(10));
+
+        service.sweep();
+
+        assertSame(before, service.of(id), "running container keeps the handle within grace");
+        assertTrue(nodes.removed.isEmpty());
+        assertEquals(0, stopCount());
+    }
+
+    @Test
+    void sweepKillsOrphanedRunningContainerPastGrace() throws Exception {
+        RunningNodeManager nodes = new RunningNodeManager();
+        UUID id = UUID.randomUUID();
+        nodes.setRunning(id);
+        setUp(nodes);
+
+        GatewayService.GatewayClient client = service.of(id);
+        ageClock(client, Duration.ofMinutes(3).plusSeconds(1));
+
+        service.sweep();
+
+        assertEquals(List.of(id), nodes.removed, "orphaned running container must be terminated");
+        assertEquals(1, stopCount());
+        assertEquals(NodeRemoveReason.NOT_CONNECTED.name(),
+                ((StopEvent) events.stream().filter(StopEvent.class::isInstance).findFirst().orElseThrow()).getReason());
+    }
+
+    @Test
+    void sweepListsContainersOncePerCycle() throws Exception {
+        RunningNodeManager nodes = new RunningNodeManager();
+        setUp(nodes);
+
+        service.of(UUID.randomUUID());
+        service.of(UUID.randomUUID());
+        service.of(UUID.randomUUID());
+
+        service.sweep();
+
+        assertEquals(1, nodes.listCalls, "one container list serves the whole sweep");
+    }
+
+    // ------------------------------------------------------------------
+    // Termination
+    // ------------------------------------------------------------------
+
+    @Test
+    void terminateCloses4234RemovesContainerEmitsReasonAndKeepsEntry() throws Exception {
+        RunningNodeManager nodes = new RunningNodeManager();
+        setUp(nodes);
+
+        UUID id = UUID.randomUUID();
+        GatewayService.GatewayClient client = service.of(id);
+        FakeSession session = new FakeSession(true);
+        client.rpcChannel().onOpen(session);
+
+        boolean result = service.terminate(id, NodeRemoveReason.NO_PLAYER);
+
+        assertTrue(result);
+        assertEquals(4234, session.closeCode, "termination close must use the terminal code");
+        assertEquals(List.of(id), nodes.removed);
+        assertEquals(1, stopCount());
+        assertEquals(NodeRemoveReason.NO_PLAYER.name(),
+                ((StopEvent) events.stream().filter(StopEvent.class::isInstance).findFirst().orElseThrow()).getReason());
+        assertSame(client, service.of(id), "terminate must not drop the cache entry");
     }
 }

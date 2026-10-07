@@ -22,6 +22,7 @@ import gateway.session.WsSession;
 import gateway.stream.ChunkHeader;
 import gateway.stream.ChunkWriter;
 import gateway.subscription.SubscriptionHandle;
+import gateway.wire.WsMessage;
 import gateway.wire.WsProtocol;
 
 /**
@@ -67,7 +68,7 @@ class SessionBindingTest {
 
     private static String requestJson(String type, Object payload) throws Exception {
         return MAPPER.writeValueAsString(
-                gateway.wire.WsMessage.<Object>create(WsProtocol.REQUEST_TYPE).setType(type).withPayload(payload));
+                WsMessage.<Object>create(WsProtocol.REQUEST_TYPE).setType(type).withPayload(payload));
     }
 
     @Test
@@ -165,7 +166,7 @@ class SessionBindingTest {
                 return CompletableFuture.completedFuture(null);
             });
 
-            gateway.wire.WsMessage<Object> listen = gateway.wire.WsMessage.<Object>create(WsProtocol.SUBSCRIBE_TYPE)
+            WsMessage<Object> listen = WsMessage.<Object>create(WsProtocol.SUBSCRIBE_TYPE)
                     .setEvent("usage")
                     .withPayload(Map.of("data", "srv"));
             b.onTextMessage(origin, MAPPER.writeValueAsString(listen));
@@ -199,14 +200,14 @@ class SessionBindingTest {
             byte[] payload = new byte[] { 1 };
             String sha = ChunkWriter.sha256Hex(payload);
 
-            String startJson = MAPPER.writeValueAsString(gateway.wire.WsMessage.<Object>create(WsProtocol.STREAM_START_TYPE)
+            String startJson = MAPPER.writeValueAsString(WsMessage.<Object>create(WsProtocol.STREAM_START_TYPE)
                     .setType("doc")
                     .withPayload(Map.of("streamId", streamId.toString(), "metadata", "m",
                             "totalChunks", 1, "sha256", sha)));
             b.onTextMessage(origin, startJson);
             b.onBinaryMessage(new ChunkHeader(streamId, 0).encodeFrame(payload, 0, payload.length));
 
-            String doneJson = MAPPER.writeValueAsString(gateway.wire.WsMessage.<Object>create(WsProtocol.STREAM_DONE_TYPE)
+            String doneJson = MAPPER.writeValueAsString(WsMessage.<Object>create(WsProtocol.STREAM_DONE_TYPE)
                     .setType("doc")
                     .withPayload(Map.of("streamId", streamId.toString(), "sha256", sha)));
             b.onTextMessage(origin, doneJson);
@@ -227,7 +228,7 @@ class SessionBindingTest {
         try {
             b.onOpen(current);
             b.registerHandler("ctx-echo", String.class, ctx -> {
-                ctx.send(gateway.wire.WsMessage.<Object>create(WsProtocol.NOTIFICATION_TYPE)
+                ctx.send(WsMessage.<Object>create(WsProtocol.NOTIFICATION_TYPE)
                         .setType("ctx-push")
                         .withPayload(ctx.session() == origin ? "ok" : "wrong"));
                 return ctx.body();

@@ -15,7 +15,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
@@ -43,14 +45,13 @@ import gateway.rpc.RequestContext;
 import gateway.wire.StreamReply;
 import gateway.rpc.RpcChannel;
 import gateway.session.WsSession;
+import gateway.wire.WsProtocol;
 import enums.NodeRemoveReason;
 import events.BaseEvent;
 import events.ServerEvents;
-import events.ServerEvents.LogEvent;
 import events.ServerEvents.StartEvent;
 import events.ServerEvents.StopEvent;
 import io.javalin.websocket.WsCloseContext;
-import io.javalin.websocket.WsCloseStatus;
 import io.javalin.websocket.WsConnectContext;
 import io.javalin.websocket.WsContext;
 import io.javalin.websocket.WsBinaryMessageContext;
@@ -59,6 +60,7 @@ import server.EnvConfig;
 import server.config.Const;
 import server.manager.NodeManager;
 import server.service.translation.TranslationService;
+import server.types.data.ServerState;
 import server.utils.ApiError;
 import server.utils.Utils;
 
@@ -94,29 +96,45 @@ public class GatewayService {
 
         scheduler.scheduleWithFixedDelay(() -> {
             try {
-                clients.values().removeIf(client -> {
-                    if (client.shouldTerminate()) {
-                        client.terminate(NodeRemoveReason.NOT_CONNECTED);
-                        return true;
-                    }
-
-                    return false;
-                });
-
-                clients.values().forEach(GatewayClient::checkDisconnect);
+                sweep();
             } catch (Exception e) {
-                Log.err("Error checking disconnect", e);
+                Log.err("Error sweeping gateway clients", e);
             }
         }, 15, 15, TimeUnit.SECONDS);
     }
 
-    public GatewayClient of(UUID serverId) {
-        return clients.computeIfAbsent(serverId, _ignore -> new GatewayClient(serverId));
+    /**
+     * Evict cached clients that can no longer be used (socket closed and no
+     * running container) and kill orphaned containers whose socket has been
+     * closed past the grace window. One container list serves the whole sweep.
+     */
+    void sweep() {
+        Set<UUID> runningIds = new HashSet<>();
+
+        for (ServerState state : nodeManager.list()) {
+            if (state.running() && state.meta().isPresent()) {
+                runningIds.add(state.meta().get().getConfig().getId());
+            }
+        }
+
+        clients.forEach((serverId, client) -> {
+            if (!client.isSocketClosed()) {
+                return;
+            }
+
+            if (!runningIds.contains(serverId)) {
+                clients.remove(serverId);
+                return;
+            }
+
+            if (client.shouldTerminate()) {
+                client.terminate(NodeRemoveReason.NOT_CONNECTED);
+            }
+        });
     }
 
-    /** First live plugin connection, or null when none are hosted. */
-    public GatewayClient anyNode() {
-        return clients.values().stream().findFirst().orElse(null);
+    public GatewayClient of(UUID serverId) {
+        return clients.computeIfAbsent(serverId, _ignore -> new GatewayClient(serverId));
     }
 
     public boolean isHosting(UUID serverId) {
@@ -139,11 +157,7 @@ public class GatewayService {
             return nodeManager.remove(serverId, reason);
         }
 
-        boolean handled = client.terminate(reason);
-
-        if (handled) {
-            clients.remove(serverId);
-        }
+        client.terminate(reason);
 
         return true;
     }
@@ -154,7 +168,6 @@ public class GatewayService {
 
     @Accessors(fluent = true)
     public class GatewayClient {
-        private static final Duration DISCONNECT_WARN_AFTER = Duration.ofSeconds(60);
         private static final Duration TERMINATE_CONNECTION_AFTER = Duration.ofMinutes(3);
 
         @Getter
@@ -163,15 +176,12 @@ public class GatewayService {
         private volatile Instant lastDisconnectAt;
 
         private final RpcChannel rpcChannel = RpcChannel.withExecutor(Const.executorService);
-        private volatile boolean removed = false;
 
         @Getter
         private final Backend backend = new Backend();
         @Getter
         private final Server server = new Server();
         public final Instant createdAt = Instant.now();
-
-        private volatile Instant terminatedAt = null;
 
         public GatewayClient(UUID id) {
             this.id = id;
@@ -223,17 +233,10 @@ public class GatewayService {
         public synchronized void onOpen(WsConnectContext context) {
             Log.info("Gateway client connected: " + id);
 
-            if (removed) {
-                String message = "Trying to connected to a removed gateway client";
-                Log.err(message);
-                context.session.close(1, message);
-                return;
-            }
             // Overwrite wins: a duplicate or reconnect open replaces the socket.
             eventBus.emit(new StartEvent(id));
             rpcChannel.onOpen(new JavalinSession(context));
             lastDisconnectAt = null;
-
         }
 
         public synchronized void onClose(WsCloseContext context) {
@@ -254,10 +257,6 @@ public class GatewayService {
             lastDisconnectAt = Instant.now();
         }
 
-        public boolean isTerminated() {
-            return terminatedAt != null;
-        }
-
         public boolean shouldTerminate() {
             if (lastDisconnectAt == null && isSocketClosed()) {
                 lastDisconnectAt = Instant.now();
@@ -274,75 +273,39 @@ public class GatewayService {
         }
 
         public boolean terminate(NodeRemoveReason reason) {
-            removed = true;
-
-            if (isTerminated()) {
-                return false;
-            }
-
-            terminatedAt = Instant.now();
-
-            try {
             WsSession session = rpcChannel.current();
 
-                if (session != null && session.isOpen()) {
-                    try {
-                        this.server.shutdown().get(5, TimeUnit.SECONDS);
-                    } catch (Exception e) {
-                        Log.err("Error terminating client: " + id, e);
-                    }
-                    session.close(WsCloseStatus.NORMAL_CLOSURE.getCode(), "Terminate by server");
-                }
-
-                boolean removed = nodeManager.remove(id, reason);
-
-                if (removed || reason == NodeRemoveReason.PROCESS_KILLED) {
-                    eventBus.emit(new StopEvent(id, reason));
-                    Log.info("[red]Client terminated: " + id);
-                }
-            } catch (Exception e) {
-                Log.err("Error terminating client: " + id, e);
+            if (session != null && session.isOpen()) {
                 try {
-                    nodeManager.remove(id, reason);
-                } catch (Exception e2) {
-                    Log.err("Error removing node: " + id, e2);
+                    this.server.shutdown().get(5, TimeUnit.SECONDS);
+                } catch (Exception e) {
+                    Log.err("Shutdown request failed for client " + id + ", continuing termination", e);
+                }
+
+                try {
+                    session.close(WsProtocol.REPLACED_CLOSE_CODE, "Terminate by server");
+                } catch (Exception e) {
+                    Log.err("Error closing session for client " + id, e);
                 }
             }
+
+            try {
+                nodeManager.remove(id, reason);
+            } catch (Exception e) {
+                Log.err("Error removing node: " + id, e);
+            }
+
+            eventBus.emit(new StopEvent(id, reason));
+            Log.info("[red]Client terminated: " + id + " reason: " + reason);
 
             return true;
         }
 
-        public void checkDisconnect() {
-            if (isTerminated()) {
-                return;
-            }
-
-            if (lastDisconnectAt != null && Instant.now().isAfter(lastDisconnectAt.plus(DISCONNECT_WARN_AFTER))
-                    && isSocketClosed() && nodeManager.isRunning(id)) {
-                eventBus.emit(LogEvent.error(id, "Socket disconnected"));
-                Log.err("Client socket disconnected: " + id);
-            }
-        }
-
         public void onMessage(WsMessageContext context) {
-            if (removed) {
-                String message = "Trying to send message to a removed gateway client";
-                Log.err(message);
-                context.session.close(1, message);
-                return;
-            }
-
             rpcChannel.onTextMessage(new JavalinSession(context), context.message());
         }
 
         public void onBinary(WsBinaryMessageContext context) {
-            if (removed) {
-                String message = "Trying to send binary message to a removed gateway client";
-                Log.err(message);
-                context.session.close(1, message);
-                return;
-            }
-
             rpcChannel.onBinaryMessage(ByteBuffer.wrap(context.data()));
         }
 

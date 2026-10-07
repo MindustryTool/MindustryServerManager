@@ -39,4 +39,6 @@ public final class WsProtocol {
     public static final int REPLACED_CLOSE_CODE = 4234;
     /** Largest reassembled stream accepted before failing loud (32 MiB). */
     public static final int MAX_STREAM_BYTES = 32 * 1024 * 1024;
+    /** Maximum concurrent open streams per connection (senders + receiver slots). */
+    public static final int MAX_CONCURRENT_STREAMS = 8;
 }

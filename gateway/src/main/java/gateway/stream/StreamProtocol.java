@@ -37,6 +37,7 @@ import gateway.wire.NoSessionException;
 import gateway.wire.StreamAbort;
 import gateway.wire.StreamDone;
 import gateway.wire.StreamStart;
+import gateway.wire.TooManyStreamsException;
 import gateway.wire.WsMessage;
 import gateway.wire.WsProtocol;
 
@@ -227,6 +228,9 @@ public final class StreamProtocol {
         WsSession session = sessions.current();
         if (session == null || !session.isOpen()) {
             return CompletableFuture.failedFuture(new NoSessionException(type));
+        }
+        if (pendingStreamCount() >= WsProtocol.MAX_CONCURRENT_STREAMS) {
+            return CompletableFuture.failedFuture(new TooManyStreamsException(type));
         }
         Duration effectiveTimeout = timeout != null ? timeout : defaultTimeout;
         UUID streamId = UUID.randomUUID();
@@ -427,8 +431,23 @@ public final class StreamProtocol {
                     "unknown stream type: " + streamType));
             return;
         }
+        if (pendingStreamCount() >= WsProtocol.MAX_CONCURRENT_STREAMS) {
+            LOG.warning("Rejecting stream start over cap: " + start.streamId());
+            sink.send(ctx.origin(), FrameFactory.responseError(message.getId(), streamType,
+                    "Too many concurrent streams (max " + WsProtocol.MAX_CONCURRENT_STREAMS + ")"));
+            return;
+        }
+        final Object validatedMetadata;
+        try {
+            validatedMetadata = JsonCodec.deserialize(mapper, start.metadata(), entry.metaClass, "stream metadata");
+        } catch (RuntimeException e) {
+            LOG.log(Level.WARNING, "Rejecting stream start with invalid metadata: " + start.streamId(), e);
+            sink.send(ctx.origin(), FrameFactory.responseError(message.getId(), streamType,
+                    "Invalid stream metadata: " + e.getMessage()));
+            return;
+        }
         PendingStream slot = new PendingStream(start.streamId(), message.getId(), streamType,
-                start.metadata(), start.totalChunks(), start.sha256(), null, ctx.origin());
+                validatedMetadata, start.totalChunks(), start.sha256(), null, ctx.origin());
         if (streamSlots.putIfAbsent(start.streamId(), slot) != null) {
             LOG.warning("Dropping duplicate stream start: " + start.streamId());
             sink.send(ctx.origin(), FrameFactory.responseError(message.getId(), streamType,
@@ -463,6 +482,11 @@ public final class StreamProtocol {
         }
         if (!pendingRequests.hasPending(replyTo)) {
             LOG.fine("No pending request for reply stream: " + start.streamId());
+            return;
+        }
+        if (pendingStreamCount() >= WsProtocol.MAX_CONCURRENT_STREAMS) {
+            LOG.warning("Failing reply stream over cap: " + start.streamId());
+            pendingRequests.failPending(replyTo, new TooManyStreamsException(streamType));
             return;
         }
         PendingStream slot = new PendingStream(start.streamId(), message.getId(), streamType,
@@ -650,7 +674,7 @@ public final class StreamProtocol {
     @SuppressWarnings({ "unchecked" })
     private void invokeStreamHandler(PendingStream slot, RegisteredStreamHandler<?, ?> entry, byte[] assembled) {
         try {
-            Object meta = convertStreamMeta(slot.metadata, (RegisteredStreamHandler<Object, Object>) entry);
+            Object meta = slot.metadata;
             Object result = ((RegisteredStreamHandler<Object, Object>) entry).fn.apply(meta, assembled);
             sink.send(slot.origin, FrameFactory.ackFor(slot.startId, slot.streamType, result));
         } catch (Exception e) {
@@ -658,10 +682,6 @@ public final class StreamProtocol {
             String detail = e.getMessage() != null ? e.getMessage() : e.toString();
             sendStreamError(slot, detail);
         }
-    }
-
-    private Object convertStreamMeta(JsonNode payload, RegisteredStreamHandler<?, ?> entry) {
-        return JsonCodec.deserialize(mapper, payload, entry.metaClass, "stream metadata");
     }
 
     private void sendStreamError(PendingStream slot, String detail) {

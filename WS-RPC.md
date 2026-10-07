@@ -69,7 +69,8 @@ MUST NOT re-route it to another connection. This binds `response`,
 `response-error`, the `stream-reply-start`/`stream-reply-done`
 envelopes, and unsolicited pushes (`event`, `listen-ended`,
 `listen-error`). Calls a peer itself initiates are unaffected: they
-wait for an open session (Section 6.5) and transmit on the current one.
+fail fast with no open session (Section 6.5) and otherwise transmit on
+the current one.
 
 ## 4. Text envelope
 
@@ -146,11 +147,11 @@ with a `response-error` frame naming the unknown type, e.g.
 resolves it with the payload.
 
 6.5. Unanswered calls fail after the operation timeout (Section 11).
-Calls made with no open session wait for one up to the session-wait
-limit, then fail. This wait governs the sender's own outbound call
-only; answering an already-received request is bound to its delivering
-connection (Section 3.5). Connection loss fails all pending calls with
-the close cause.
+A call made with no open session fails fast with a no-session error;
+it MUST NOT wait for a session. This governs the sender's own outbound
+call only; answering an already-received request is bound to its
+delivering connection (Section 3.5). Connection loss fails all pending
+calls with the close cause.
 
 ## 7. Notifications
 
@@ -162,8 +163,8 @@ registered handler. When the type is unknown the frame is processed as a
 no-op and logged. This differs from a request, which is answered when
 its type is unknown.
 
-7.3. Notifications wait for an open session up to the session-wait
-limit, then are dropped with a log. Connection loss drops them
+7.3. A notification with no open session is dropped with a log at
+once; it MUST NOT wait for a session. Connection loss drops them
 silently. No exception reaches the sender.
 
 ## 8. Byte streams
@@ -191,6 +192,9 @@ The sender MUST emit, in this order:
 
 The sender then waits for exactly one answer (Section 8.5).
 
+A `stream-done` carrying `responseOf` is malformed and MUST be dropped
+with a log; only `stream-reply-done` may carry `responseOf` (Section 9).
+
 ### 8.3 Envelopes
 
 `stream-start` payload fields:
@@ -211,7 +215,10 @@ payload.
 Rules: empty data still sends exactly one zero-length chunk with
 `totalChunks` 1. Validation failures of `start` (unparseable, missing
 fields, `totalChunks` < 1) are answered with a `response-error` and
-`responseOf` set to the start frame's own `id`; no slot is reserved. A
+`responseOf` set to the start frame's own `id`; no slot is reserved. The
+receiver validates `metadata` against the registered stream handler's
+metadata class at `stream-start`; on failure it answers `response-error`
+(`responseOf` = start frame `id`) and reserves no slot. A
 `start` for an unregistered `type` is answered `response-error`
 (`"unknown stream type: T"`); no slot is reserved. A duplicate `start`
 for a live stream is answered `response-error`; the original slot is
@@ -256,7 +263,8 @@ On a valid `done` for a live slot, the receiver MUST, in order:
    else error `"Stream exceeds max bytes…"`.
 5. Run the handler for T with `(metadata, bytes)`; answer with its
    return value, or on handler failure answer `response-error` with the
-   detail.
+   detail. The slot's `metadata` was already validated against the
+   handler's metadata class at `stream-start` (Section 8.3).
 
 Buffers are discarded on every terminal failure. A slot whose `done`
 never arrives is discarded after the slot timeout; the sender is
@@ -269,7 +277,9 @@ bounded by an absolute ceiling of 300 s from slot reserve.
 Either peer MAY abort a live stream with a fire-and-forget notification
 `{id:X, kind:"stream-abort", type:T, payload:{streamId, reason}}`. The
 aborter supplies `type` at the abort call site. Reply streams are not
-abortable.
+abortable. When a sender's own operation timeout fires on a live stream,
+the sender MAY emit `stream-abort` for that stream before failing the
+call locally.
 
 The receiver discards the slot and buffered chunks and settles local
 waiters with the reason; no reply is ever sent for an abort, and aborts
@@ -299,6 +309,9 @@ resolves the request future with the assembled bytes. Integrity, cap,
 and contiguity failures fail the request future locally with an error;
 no separate answer frame is sent (the envelopes were the answer). A
 `stream-reply-start` naming no pending request is dropped with a log.
+`stream-reply-done.responseOf` MUST equal the request `id`; a missing or
+mismatched `responseOf` is malformed and the envelope is dropped with a
+log.
 
 ## 10. Event streams
 
@@ -340,6 +353,10 @@ Reserved envelope kinds for event streams:
 The publisher MAY also send `listen-ended` or `listen-error` at any time
 after `listening`, without waiting for an `unlisten`.
 
+The publisher MUST send `listening` before any `event`. The listener
+treats `listening` as the acknowledgment of the `listen` request and
+MUST NOT treat a first `event` as one.
+
 ### 10.3 Listen frame
 
 A `listen` request frame:
@@ -376,7 +393,8 @@ The listener MAY stop the stream at any time:
 - `kind`: `"unlisten"`
 - `event`: the event name
 - `responseOf`: the event-stream ID (`Q`)
-- `payload`: optional object with `reason` (string)
+- `payload`: optional; an object with `reason` (string), or absent, or
+  JSON null when no reason is given
 
 The publisher MUST reply with `listen-ended` for `Q`, stop sending
 events, and clean up resources. The first party to end the stream
@@ -453,14 +471,14 @@ event-stream-specific timeout.
 
 ## 11. Timeouts and limits
 
-| Constant          | Value      | Meaning                                      |
-|-------------------|------------|----------------------------------------------|
-| Operation timeout | 60 s       | unanswered request/stream send fails         |
-| Slot timeout      | 60 s       | sliding window, refreshed per stream frame   |
-| Slot ceiling      | 300 s      | absolute bound on slot life from reserve     |
-| Session wait      | 300 s      | sender waits for an open session             |
-| Chunk max         | 65536 B    | largest binary payload per frame             |
-| Stream max        | 33554432 B | largest reassembled stream (32 MiB), enforced incrementally and finally |
+| Constant            | Value      | Meaning                                      |
+|---------------------|------------|----------------------------------------------|
+| Operation timeout   | 120 s      | unanswered request/stream send fails         |
+| Slot timeout        | 60 s       | sliding window, refreshed per stream frame   |
+| Slot ceiling        | 300 s      | absolute bound on slot life from reserve     |
+| Concurrent streams  | 8          | max open streams per connection (senders + receiver slots) |
+| Chunk max           | 65536 B    | largest binary payload per frame             |
+| Stream max          | 33554432 B | largest reassembled stream (32 MiB), enforced incrementally and finally |
 
 ## 12. Connection loss
 

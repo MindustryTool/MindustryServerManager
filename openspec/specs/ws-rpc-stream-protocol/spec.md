@@ -3,9 +3,7 @@
 ## Purpose
 
 Versioned peer wire protocol for streams (control envelopes, chunk framing, integrity, ack/error correlation, lifecycle constants, file-upload / download-file flows).
-
 ## Requirements
-
 ### Requirement: Stream control envelopes
 The system SHALL frame every stream as one `stream-start` text frame, N binary chunk frames, and one `stream-done` text frame on the same WebSocket in emission order. `stream-start` and `stream-done` SHALL carry `kind` set to their frame kind and SHALL name the stream handler in the frame `type`. `stream-start` payload SHALL contain `streamId` (UUID string), `metadata` (any JSON, nullable), `totalChunks` (integer ≥ 1), and `sha256` (lowercase hex). `stream-done` payload SHALL contain `streamId` and `sha256`, with `type` echoing the start `type`. The stream handler name SHALL NOT be duplicated in the payload.
 
@@ -59,11 +57,15 @@ Every stream SHALL be answered exactly once: success frames SHALL carry `kind="r
 - **THEN** the sender receives a `response-error` frame naming the unknown type and no slot is reserved
 
 ### Requirement: Stream lifecycle constants
-Senders SHALL bound streams by a 60 s op timeout, receivers SHALL bound open slots by a 60 s timer, senders SHALL wait up to 300 s for a session, and connection close SHALL fail pending senders and clear receiver slots.
+Senders SHALL bound streams by a 120 s operation timeout and SHALL fail fast with no session wait when there is no open session; receivers SHALL bound open slots by a 60 s sliding timer refreshed on every stream frame, with an absolute ceiling of 300 s from reserve; connection close SHALL fail pending senders and clear receiver slots.
 
 #### Scenario: Stream timeout
-- **WHEN** a stream does not complete within the op timeout
+- **WHEN** a stream does not complete within the operation timeout
 - **THEN** the sender future fails and both sides discard stream state
+
+#### Scenario: Stream send with no open session fails fast
+- **WHEN** a sender emits a stream while no session is open
+- **THEN** it fails immediately with a no-session error instead of waiting for a session
 
 #### Scenario: Close clears streams
 - **WHEN** the connection closes with streams in flight
@@ -131,3 +133,26 @@ A chunk with index outside `0..totalChunks-1` SHALL be treated as a stream failu
 #### Scenario: High index rejected at ingest
 - **WHEN** a chunk arrives with `chunkIndex` equal to or above `totalChunks`
 - **THEN** the slot is discarded and the sender fails with an error without waiting for `done`
+
+### Requirement: Concurrent stream cap
+The gateway SHALL enforce a maximum of 8 concurrent open streams per connection, counting outbound senders and inbound receiver slots together. The 9th concurrent outbound stream SHALL fail locally before any `stream-start` is emitted; a 9th inbound `stream-start` SHALL be answered with a `response-error` frame and reserve no slot.
+
+#### Scenario: Ninth outbound stream rejected
+- **WHEN** 8 streams are open and a sender starts a 9th stream
+- **THEN** the send fails locally with a too-many-concurrent-streams error and no `stream-start` frame is emitted
+
+#### Scenario: Ninth inbound stream start rejected
+- **WHEN** a 9th `stream-start` arrives while 8 streams are open
+- **THEN** the gateway answers it with a `response-error` frame and reserves no slot
+
+### Requirement: Inbound stream metadata validation at start
+On receiving a `stream-start` for a registered stream type, the gateway SHALL validate the payload `metadata` against the handler's registered metadata class immediately, before reserving any slot. On validation failure it SHALL answer the start frame with a `response-error` (with `responseOf` equal to the start frame `id`) and reserve no slot; no binary chunks are buffered.
+
+#### Scenario: Invalid metadata rejected at start
+- **WHEN** a `stream-start` arrives whose `metadata` cannot be deserialized to the handler's metadata class
+- **THEN** the gateway answers a `response-error` naming invalid metadata, reserves no slot, and buffers no chunks
+
+#### Scenario: Valid metadata reserves the slot
+- **WHEN** a `stream-start` arrives whose `metadata` deserializes to the handler's metadata class
+- **THEN** the slot is reserved and chunk ingest proceeds as before
+

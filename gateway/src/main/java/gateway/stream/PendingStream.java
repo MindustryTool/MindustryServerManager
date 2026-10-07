@@ -5,15 +5,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import com.fasterxml.jackson.databind.JsonNode;
-
 import gateway.session.WsSession;
 
 final class PendingStream {
     final UUID streamId;
     final UUID startId;
     final String streamType;
-    final JsonNode metadata;
+    final Object metadata;
     final int totalChunks;
     final String sha256;
     final UUID replyRequestId;
@@ -22,7 +20,7 @@ final class PendingStream {
     final AtomicInteger receivedBytes = new AtomicInteger();
     long reservedAtNanos = System.nanoTime();
 
-    PendingStream(UUID streamId, UUID startId, String streamType, JsonNode metadata, int totalChunks,
+    PendingStream(UUID streamId, UUID startId, String streamType, Object metadata, int totalChunks,
             String sha256, UUID replyRequestId, WsSession origin) {
         this.streamId = streamId;
         this.startId = startId;

@@ -19,7 +19,6 @@ import plugin.commands.ServerCommandHandler;
 import plugin.core.PluginBootstrap;
 import plugin.core.Registry;
 import plugin.event.UnloadServerEvent;
-import plugin.gateway.ApiGateway;
 import plugin.hub.ServerUtils;
 import plugin.utils.TimeUtils;
 import plugin.event.KickEvent;
@@ -136,11 +135,6 @@ public class Control extends Plugin {
                     } catch (Exception e) {
                         Log.err("Error redirecting players before exit: @", e.getMessage());
                     }
-                }
-                try {
-                    Registry.get(ApiGateway.class).close();
-                } catch (Exception e) {
-                    Log.err(e);
                 }
                 System.exit(1);
                 // Force docker container restart

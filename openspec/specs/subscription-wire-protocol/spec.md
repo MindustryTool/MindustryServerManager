@@ -3,9 +3,7 @@
 ## Purpose
 
 Wire format for event streams: listen, listening, event, unlisten, and termination frames, plus kind-based correlation rules. Synced from change ws-rpc-v2.
-
 ## Requirements
-
 ### Requirement: Listen frame wire format
 The system SHALL transmit a `listen` frame to start an event stream:
 - `id`: fresh UUID (becomes the event-stream ID)
@@ -66,16 +64,16 @@ The listener SHALL transmit an `unlisten` frame to stop an event stream:
 - **THEN** the frame has `payload={}` or omitted
 
 ### Requirement: Listen-ended confirmation frame
-The publisher SHALL answer an `unlisten` with a `listen-ended` frame, and MAY send `listen-ended` at any time after `listening` to end the stream gracefully:
+The publisher SHALL answer an `unlisten` with exactly one `listen-ended` frame, and MAY send `listen-ended` at any time after `listening` to end the stream gracefully:
 - `id`: fresh UUID
 - `kind`: `"listen-ended"`
 - `event`: the event name
 - `responseOf`: the event-stream ID
 - `payload`: JSON null
 
-#### Scenario: Unlisten confirmed
+#### Scenario: Unlisten confirmed exactly once
 - **WHEN** the publisher receives `unlisten` for an active stream
-- **THEN** it sends a `listen-ended` frame with the same `responseOf` and sends no further `event`
+- **THEN** it sends exactly one `listen-ended` frame with the same `responseOf`, sends no further `event`, and emits no second `listen-ended` or `listen-error` for that stream
 
 #### Scenario: Publisher ends gracefully
 - **WHEN** the publisher decides to end an active event stream
@@ -121,3 +119,4 @@ The system SHALL treat connection close as implicit event-stream termination. Pu
 #### Scenario: Client cleans up on publisher disconnect
 - **WHEN** the WebSocket connection closes
 - **THEN** the listener fails pending `subscribe` futures and removes handlers
+

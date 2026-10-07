@@ -26,8 +26,10 @@ import gateway.rpc.RpcChannel;
 import gateway.session.WsSession;
 import gateway.wire.NoSessionException;
 import gateway.wire.StreamAbort;
+import gateway.wire.StreamDone;
 import gateway.wire.StreamReply;
 import gateway.wire.StreamStart;
+import gateway.wire.TooManyStreamsException;
 import gateway.wire.WsMessage;
 import gateway.wire.WsProtocol;
 
@@ -516,6 +518,119 @@ class StreamProtocolTest {
         assertThrows(NullPointerException.class, () -> a.abortStream(UUID.randomUUID(), null));
 
         a.shutdown();
+        b.shutdown();
+    }
+
+    @Test
+    void ninthOutboundStreamRejectedLocally() throws Exception {
+        Loopback sa = new Loopback();
+        Loopback sb = new Loopback();
+        sa.dropDone = true;
+        RpcChannel[] pair = pair(sa, sb);
+        RpcChannel a = pair[0];
+        RpcChannel b = pair[1];
+
+        b.registerStreamHandler("doc", String.class, String.class, (meta, bytes) -> "ok");
+
+        for (int i = 0; i < WsProtocol.MAX_CONCURRENT_STREAMS; i++) {
+            a.sendStream("doc", "m", new byte[] { (byte) i }, String.class, Duration.ofSeconds(30));
+        }
+        assertEquals(WsProtocol.MAX_CONCURRENT_STREAMS, a.pendingStreamCount());
+
+        CompletableFuture<String> ninth = a.sendStream("doc", "m", new byte[] { 9 }, String.class,
+                Duration.ofSeconds(5));
+        assertTrue(ninth.isCompletedExceptionally(), "9th outbound stream must fail fast");
+        Exception err = assertThrows(Exception.class, () -> ninth.get(1, TimeUnit.SECONDS));
+        assertInstanceOf(TooManyStreamsException.class, err.getCause());
+
+        long starts = sa.sent.stream()
+                .filter(t -> t.contains("\"kind\":\"" + WsProtocol.STREAM_START_TYPE + "\""))
+                .count();
+        assertEquals(WsProtocol.MAX_CONCURRENT_STREAMS, starts,
+                "no stream-start may be emitted for the rejected 9th stream");
+
+        a.shutdown();
+        b.shutdown();
+    }
+
+    @Test
+    void ninthInboundStreamStartRejectedWithNoSlot() throws Exception {
+        RpcChannel b = RpcChannel.create();
+        Loopback sb = new Loopback();
+        b.onOpen(sb);
+        b.registerStreamHandler("doc", String.class, String.class, (meta, bytes) -> "ok");
+
+        ObjectMapper mapper = new ObjectMapper();
+        for (int i = 0; i < WsProtocol.MAX_CONCURRENT_STREAMS; i++) {
+            StreamStart start = new StreamStart(UUID.randomUUID(),
+                    b.getObjectMapper().valueToTree("m"), 1, ChunkWriter.sha256Hex(new byte[] { (byte) i }));
+            b.onTextMessage(b.current(), mapper.writeValueAsString(
+                    WsMessage.<StreamStart>create(WsProtocol.STREAM_START_TYPE).setType("doc").withPayload(start)));
+        }
+        assertEquals(WsProtocol.MAX_CONCURRENT_STREAMS, b.pendingStreamCount());
+
+        UUID rejectedStartId = UUID.randomUUID();
+        StreamStart ninth = new StreamStart(UUID.randomUUID(),
+                b.getObjectMapper().valueToTree("m"), 1, ChunkWriter.sha256Hex(new byte[] { 9 }));
+        WsMessage<StreamStart> ninthMsg = WsMessage
+                .<StreamStart>create(WsProtocol.STREAM_START_TYPE).setType("doc").withPayload(ninth);
+        ninthMsg.setId(rejectedStartId);
+        b.onTextMessage(b.current(), mapper.writeValueAsString(ninthMsg));
+
+        assertEquals(WsProtocol.MAX_CONCURRENT_STREAMS, b.pendingStreamCount(),
+                "rejected 9th start must reserve no slot");
+        JsonNode error = firstSentOfKind(sb.sent, WsProtocol.RESPONSE_ERROR_TYPE);
+        assertNotNull(error, "9th inbound start must be answered with a response-error, sent: " + sb.sent);
+        assertEquals(rejectedStartId.toString(), error.get("responseOf").asText());
+
+        b.shutdown();
+    }
+
+    @Test
+    void invalidMetadataRejectedAtStartAndValidMetadataCompletes() throws Exception {
+        RpcChannel b = RpcChannel.create();
+        Loopback sb = new Loopback();
+        b.onOpen(sb);
+        b.registerStreamHandler("doc", DocMeta.class, String.class,
+                (meta, bytes) -> meta.name() + ":" + new String(bytes, StandardCharsets.UTF_8));
+
+        ObjectMapper mapper = new ObjectMapper();
+        byte[] payload = "bad".getBytes(StandardCharsets.UTF_8);
+        UUID streamId = UUID.randomUUID();
+        StreamStart bad = new StreamStart(streamId, b.getObjectMapper().valueToTree("not-an-object"), 1,
+                ChunkWriter.sha256Hex(payload));
+        WsMessage<StreamStart> badMsg = WsMessage
+                .<StreamStart>create(WsProtocol.STREAM_START_TYPE).setType("doc").withPayload(bad);
+        b.onTextMessage(b.current(), mapper.writeValueAsString(badMsg));
+
+        assertEquals(0, b.pendingStreamCount(), "invalid metadata must not reserve a slot");
+        JsonNode error = firstSentOfKind(sb.sent, WsProtocol.RESPONSE_ERROR_TYPE);
+        assertNotNull(error, "invalid metadata must be answered with response-error, sent: " + sb.sent);
+        assertEquals(badMsg.getId().toString(), error.get("responseOf").asText());
+        assertTrue(error.get("payload").asText().contains("metadata"),
+                "error must name the metadata, got: " + error);
+
+        b.onBinaryMessage(new ChunkHeader(streamId, 0).encodeFrame(payload, 0, payload.length));
+        assertEquals(0, b.pendingStreamCount(), "no chunks may be buffered for a rejected start");
+
+        UUID goodStreamId = UUID.randomUUID();
+        StreamStart good = new StreamStart(goodStreamId, b.getObjectMapper().valueToTree(new DocMeta("n1")), 1,
+                ChunkWriter.sha256Hex(payload));
+        b.onTextMessage(b.current(), mapper.writeValueAsString(
+                WsMessage.<StreamStart>create(WsProtocol.STREAM_START_TYPE).setType("doc").withPayload(good)));
+        assertEquals(1, b.pendingStreamCount(), "valid metadata must reserve the slot");
+
+        b.onBinaryMessage(new ChunkHeader(goodStreamId, 0).encodeFrame(payload, 0, payload.length));
+        b.onTextMessage(b.current(), mapper.writeValueAsString(
+                WsMessage.<StreamDone>create(WsProtocol.STREAM_DONE_TYPE).setType("doc")
+                        .withPayload(new StreamDone(goodStreamId, ChunkWriter.sha256Hex(payload)))));
+
+        assertEquals(0, b.pendingStreamCount());
+        JsonNode response = firstSentOfKind(sb.sent, WsProtocol.RESPONSE_TYPE);
+        assertNotNull(response, "valid metadata stream must complete, sent: " + sb.sent);
+        assertTrue(response.get("payload").asText().contains("n1:"),
+                "handler must receive the converted metadata, got: " + response);
+
         b.shutdown();
     }
 
