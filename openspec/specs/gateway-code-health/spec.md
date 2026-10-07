@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Internal structural requirements for the `:gateway` module produced by the cleanup pass: single helpers for pending-request lifecycle, stream-failure settlement, and close-cause unwrapping; no unreferenced internal members; reused message and hash builders. Synced from change cleanup-gateway-module.
+Internal structural requirements for the `:gateway` module produced by the cleanup pass: single helpers for pending-request lifecycle, stream-failure settlement, and close-cause unwrapping; no unreferenced internal members; reused message and hash builders. Synced from change cleanup-gateway-module. Extended by the channel split: RPC/stream/subscription areas own their state behind narrow bridges, wire types are top-level, and comments are contract-only. Synced from change split-ws-rpc-channel.
 
 ## Requirements
 
@@ -65,3 +65,59 @@ The refactor SHALL NOT change any observable gateway behavior.
 #### Scenario: Public API unchanged
 - **WHEN** external modules compile against the cleaned module
 - **THEN** no public type, method, or parameter signature used by callers has changed
+
+### Requirement: Three-way protocol split with pushed-down state
+
+`WsRpcChannel` SHALL be split so RPC dispatch, stream orchestration, and subscription tracking each own the state they use, while the channel remains a facade owning the session gate, the ordered ingress lane, and `failAll` fan-out order.
+
+#### Scenario: State lives with its consumer
+- **WHEN** the split is complete
+- **THEN** pending-request maps live with RPC dispatch, slot and timeout maps live with stream orchestration, and subscription maps live with subscription tracking — with no shared grab-bag context object
+
+#### Scenario: Lane and fan-out stay on the facade
+- **WHEN** text and binary frames arrive, or the session closes
+- **THEN** all inbound frames still serialize through the single channel ingress lane, and close teardown still fans out in the existing order
+
+### Requirement: Top-level wire types with updated call sites
+
+Public wire records (`StreamStart`, `StreamDone`, `StreamAbort`, `StreamReply`, `SubscribePayload`, `SubscriptionRequest`, `PushHandle`) and protocol constants SHALL live as top-level types rather than nested in `WsRpcChannel`, and every in-repo reference SHALL be updated; wire bytes SHALL be unchanged.
+
+#### Scenario: No nested-type references remain
+- **WHEN** the module and its callers are compiled and searched
+- **THEN** no `WsRpcChannel.X` nested-type reference remains in production or test code
+
+#### Scenario: Wire output identical
+- **WHEN** the gateway test suite runs
+- **THEN** all wire-shape assertions pass with only import and reference updates
+
+### Requirement: Narrow bridges instead of shared fields
+
+Cross-area coordination SHALL go through explicit single-purpose seams: a reply sink failing RPC pending futures from stream settlement, and a frame sink sending messages with the session-open check.
+
+#### Scenario: Reply-stream bridge is explicit
+- **WHEN** a stream failure must fail the request it was answering
+- **THEN** settlement calls the reply sink rather than touching a shared pending map
+
+#### Scenario: Error emission is injected
+- **WHEN** any area emits an error or reply frame
+- **THEN** it uses the injected frame sink with the same open-session guard as before
+
+### Requirement: Contract-only comments
+
+`gateway` split code SHALL keep only comments that state what the code does not: threading and ordering contracts, timeout semantics, fail-loud rules, and `@param`/`@throws` obligations. Restatements and obsolete section banners SHALL be removed, including in public Javadoc.
+
+#### Scenario: No echo comments
+- **WHEN** the split code is reviewed
+- **THEN** no comment merely restates the adjacent statement or signature
+
+#### Scenario: Contracts preserved
+- **WHEN** the split code is reviewed
+- **THEN** ordering, timeout, fail-loud, and exception obligations remain documented where they are non-obvious
+
+### Requirement: Test edits limited to shape, not assertions
+
+Test changes for this split SHALL be limited to imports, moved-type references, and reflection targets; no behavior assertion, timeout value, or wire-shape expectation SHALL change.
+
+#### Scenario: Suite guards the refactor
+- **WHEN** the full `:gateway:test` suite runs after the split
+- **THEN** every test passes with identical assertions, proving behavior and I/O unchanged

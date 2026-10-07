@@ -27,6 +27,7 @@ import java.util.function.Supplier;
 
 import org.junit.jupiter.api.Test;
 
+import gateway.rpc.WsProtocol;
 import gateway.rpc.WsRpcChannel;
 
 /**
@@ -285,12 +286,12 @@ class JdkWsClientTest {
 
             List<String> order = new ArrayList<>(fake.order);
             assertEquals(5, order.size());
-            assertTrue(order.get(0).contains("\"type\":\"" + WsRpcChannel.STREAM_START_TYPE + "\""),
+            assertTrue(order.get(0).contains("\"type\":\"" + WsProtocol.STREAM_START_TYPE + "\""),
                     "start first, got: " + order.get(0));
             assertEquals("binary", order.get(1));
             assertEquals("binary", order.get(2));
             assertEquals("binary", order.get(3));
-            assertTrue(order.get(4).contains("\"type\":\"" + WsRpcChannel.STREAM_DONE_TYPE + "\""),
+            assertTrue(order.get(4).contains("\"type\":\"" + WsProtocol.STREAM_DONE_TYPE + "\""),
                     "done last, got: " + order.get(4));
         } finally {
             client.close();
@@ -452,7 +453,7 @@ class JdkWsClientTest {
         CountDownLatch closed = new CountDownLatch(1);
         client.onClose(err -> closed.countDown());
         try {
-            listener.onClose(fake, WsRpcChannel.REPLACED_CLOSE_CODE, "Replaced by new connection");
+            listener.onClose(fake, WsProtocol.REPLACED_CLOSE_CODE, "Replaced by new connection");
 
             assertTrue(closed.await(10, TimeUnit.SECONDS), "kick should fire onClose");
             assertEquals(JdkWsClient.State.KICKED, client.getState());
@@ -503,11 +504,11 @@ class JdkWsClientTest {
         AtomicInteger closes = new AtomicInteger(0);
         client.onClose(err -> closes.incrementAndGet());
         try {
-            listener.onClose(fake, WsRpcChannel.REPLACED_CLOSE_CODE, "kicked");
+            listener.onClose(fake, WsProtocol.REPLACED_CLOSE_CODE, "kicked");
             assertEquals(1, closes.get());
             assertEquals(JdkWsClient.State.KICKED, client.getState());
 
-            listener.onClose(fake, WsRpcChannel.REPLACED_CLOSE_CODE, "kicked again");
+            listener.onClose(fake, WsProtocol.REPLACED_CLOSE_CODE, "kicked again");
             assertEquals(1, closes.get(), "late kick must not refire onClose");
             assertEquals(JdkWsClient.State.KICKED, client.getState());
             assertEquals(0, client.getReconnectAttempt());

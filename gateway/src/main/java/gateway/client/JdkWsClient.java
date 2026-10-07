@@ -19,6 +19,7 @@ import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import gateway.rpc.WsProtocol;
 import gateway.rpc.WsRpcChannel;
 
 /**
@@ -146,7 +147,7 @@ public class JdkWsClient {
     private final Transport.Events transportEvents = new Transport.Events() {
         @Override
         public void onRemoteClose(Transport transport, int statusCode, String reason) {
-            if (statusCode == WsRpcChannel.REPLACED_CLOSE_CODE) {
+            if (statusCode == WsProtocol.REPLACED_CLOSE_CODE) {
                 onKick(transport, statusCode, reason);
                 return;
             }

@@ -40,7 +40,7 @@ import dto.ServerConfigDto;
 import dto.ServerStatus;
 import dto.StartServerDto;
 import events.ServerEvents.LogEvent;
-import gateway.rpc.WsRpcChannel;
+import gateway.rpc.StreamReply;
 import enums.NodeRemoveReason;
 import server.types.data.NodeUsage;
 import server.types.data.ServerMisMatch;
@@ -349,13 +349,13 @@ public class ServerService {
         }
     }
 
-    public WsRpcChannel.StreamReply getImage(UUID serverId) {
+    public StreamReply getImage(UUID serverId) {
         try {
             if (!nodeManager.isRunning(serverId)) {
-                return new WsRpcChannel.StreamReply(new byte[1]);
+                return new StreamReply(new byte[1]);
             }
 
-            return new WsRpcChannel.StreamReply(gatewayService.of(serverId)
+            return new StreamReply(gatewayService.of(serverId)
                     .server()
                     .getImage()
                     .get(60, TimeUnit.SECONDS));

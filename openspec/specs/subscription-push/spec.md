@@ -1,4 +1,10 @@
-## ADDED Requirements
+# subscription-push
+
+## Purpose
+
+Server-side subscription handling: typed handler registration, per-subscription initialization, and the PushHandle event and close contract. Synced from change add-subscription-streams.
+
+## Requirements
 
 ### Requirement: Server registers subscription handler with typed parameters
 The system SHALL provide `registerSubscriptionHandler(eventType, paramsClass, onSubscribe)` where `onSubscribe` is a function receiving deserialized `data` payload and returning `CompletableFuture<PushHandle>`.

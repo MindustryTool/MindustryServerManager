@@ -39,6 +39,7 @@ import dto.ServerCommandDto;
 import dto.ServerStateDto;
 import dto.StartServerDto;
 import dto.TranslationRequestDto;
+import gateway.rpc.StreamReply;
 import gateway.rpc.WsRpcChannel;
 import gateway.session.WsSession;
 import enums.NodeRemoveReason;
@@ -192,7 +193,7 @@ public class GatewayService {
             });
 
             this.registerHandler("download-plugin", Void.class, _ignore -> {
-                return new WsRpcChannel.StreamReply(pluginBundleService.downloadPlugin());
+                return new StreamReply(pluginBundleService.downloadPlugin());
             });
 
             this.registerHandler("event", JsonNode.class, event -> {

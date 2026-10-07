@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import gateway.rpc.WsProtocol;
 import gateway.rpc.WsRpcChannel;
 import gateway.session.WsSession;
 
@@ -207,7 +208,7 @@ class WsRpcChannelTest {
 
         assertSame(newSession, a.getSession());
         assertFalse(oldSession.isOpen());
-        assertEquals(WsRpcChannel.REPLACED_CLOSE_CODE, oldSession.lastCloseCode);
+        assertEquals(WsProtocol.REPLACED_CLOSE_CODE, oldSession.lastCloseCode);
         assertTrue(newSession.isOpen());
 
         a.shutdown();
@@ -297,7 +298,7 @@ class WsRpcChannelTest {
         assertDoesNotThrow(() -> a.onOpen(sa2));
 
         assertFalse(sa1.isOpen());
-        assertEquals(WsRpcChannel.REPLACED_CLOSE_CODE, sa1.lastCloseCode);
+        assertEquals(WsProtocol.REPLACED_CLOSE_CODE, sa1.lastCloseCode);
 
         CompletableFuture<String> second =
                 a.sendRequest("echo", "2", String.class, Duration.ofSeconds(5));

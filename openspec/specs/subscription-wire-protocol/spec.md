@@ -1,4 +1,10 @@
-## ADDED Requirements
+# subscription-wire-protocol
+
+## Purpose
+
+Wire format for subscription streams: subscribe, event, unsubscribe, and termination frames, plus reserved types and correlation rules. Synced from change add-subscription-streams.
+
+## Requirements
 
 ### Requirement: Subscribe frame wire format
 The system SHALL transmit `subscribe` frames with the following structure:

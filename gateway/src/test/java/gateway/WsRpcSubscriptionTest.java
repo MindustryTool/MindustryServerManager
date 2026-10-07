@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import gateway.rpc.WsRpcChannel;
-import gateway.rpc.WsRpcChannel.PushHandle;
+import gateway.rpc.PushHandle;
 import gateway.session.WsSession;
 
 class WsRpcSubscriptionTest {

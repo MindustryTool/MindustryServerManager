@@ -12,6 +12,7 @@ import arc.util.Log;
 import dto.LoginDto;
 import dto.ServerConfig;
 import enums.NodeRemoveReason;
+import gateway.rpc.StreamReply;
 import gateway.rpc.WsRpcChannel;
 import gateway.stream.FileChunkStreamer;
 import lombok.RequiredArgsConstructor;
@@ -91,7 +92,7 @@ public class BackendRpc {
     }
 
     /** Answer a download with a reply stream; the request resolves with the file bytes. */
-    public WsRpcChannel.StreamReply download(DownloadRequest request) {
+    public StreamReply download(DownloadRequest request) {
         if (request == null) {
             throw new ApiError(400, "download-file requires a payload");
         }
@@ -106,7 +107,7 @@ public class BackendRpc {
         }
 
         byte[] data = file.readBytes();
-        return new WsRpcChannel.StreamReply(data, Map.of("fileName", file.name(), "size", data.length));
+        return new StreamReply(data, Map.of("fileName", file.name(), "size", data.length));
     }
 
     // ------------------------------------------------------------------

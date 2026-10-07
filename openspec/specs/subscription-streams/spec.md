@@ -1,4 +1,10 @@
-## ADDED Requirements
+# subscription-streams
+
+## Purpose
+
+Client-side subscription streams: subscribing with parameters, unsubscribing, event routing to handlers, and lifecycle cleanup. Synced from change add-subscription-streams.
+
+## Requirements
 
 ### Requirement: Client subscribes to event type with parameters
 The system SHALL provide a `subscribe(eventType, data, handler)` method that sends a `subscribe` frame with the given `eventType` and `data` payload, registers the handler for incoming events, and returns a `CompletableFuture<Void>` that completes when the first event (acknowledgment) is received or fails if the subscription is rejected.
