@@ -329,7 +329,7 @@ public class GatewayService {
                 return;
             }
 
-            rpcChannel.onTextMessage(context.message());
+            rpcChannel.onTextMessage(new JavalinSession(context), context.message());
         }
 
         public void onBinary(WsBinaryMessageContext context) {

@@ -35,7 +35,7 @@ class WsRpcChannelTest {
             sent.add(text);
             WsRpcChannel p = peer;
             if (p != null) {
-                p.onTextMessage(text);
+                p.onTextMessage(p.getSession(), text);
             }
         }
 
@@ -464,7 +464,7 @@ class WsRpcChannelTest {
                 + ",\"responseOf\":\"" + UUID.randomUUID() + "\""
                 + ",\"payload\":\"boom\"}";
         int before = sb.sent.size();
-        assertDoesNotThrow(() -> b.onTextMessage(stray));
+        assertDoesNotThrow(() -> b.onTextMessage(b.getSession(), stray));
         assertEquals(before, sb.sent.size(), "a failure frame must never trigger a reply");
 
         b.shutdown();

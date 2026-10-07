@@ -348,6 +348,7 @@ public class JdkWsClient {
         }
 
         rpcChannel.onOpen(transport);
+        transport.beginRead();
 
         Runnable cb = onOpenCallback;
 

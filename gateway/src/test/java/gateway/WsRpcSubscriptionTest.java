@@ -51,7 +51,7 @@ class WsRpcSubscriptionTest {
             sent.add(text);
             WsRpcChannel p = peer;
             if (p != null) {
-                p.onTextMessage(text);
+                p.onTextMessage(p.getSession(), text);
             }
         }
 
@@ -465,7 +465,7 @@ class WsRpcSubscriptionTest {
                 + ",\"event\":\"usage\",\"responseOf\":\"" + UUID.randomUUID()
                 + "\",\"payload\":{\"cpu\":1}}";
 
-        server.onTextMessage(eventJson);
+        server.onTextMessage(server.getSession(), eventJson);
 
         server.shutdown();
     }

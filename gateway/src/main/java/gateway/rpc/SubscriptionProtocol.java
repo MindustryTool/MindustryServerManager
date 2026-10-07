@@ -45,15 +45,17 @@ final class SubscriptionProtocol {
         this.sessions = Objects.requireNonNull(sessions, "sessions");
     }
 
-    void handleControl(WsMessage<JsonNode> message) {
+    void handleControl(FrameContext<WsMessage<JsonNode>> ctx) {
+        WsMessage<JsonNode> message = ctx.body();
         if (WsProtocol.LISTEN_TYPE.equals(message.getKind())) {
-            handleListen(message);
+            handleListen(ctx);
         } else if (WsProtocol.UNLISTEN_TYPE.equals(message.getKind())) {
-            handleUnlisten(message);
+            handleUnlisten(ctx);
         }
     }
 
-    void handleClientFrame(WsMessage<JsonNode> message) {
+    void handleClientFrame(FrameContext<WsMessage<JsonNode>> ctx) {
+        WsMessage<JsonNode> message = ctx.body();
         String kind = message.getKind();
         if (WsProtocol.LISTENING_TYPE.equals(kind)) {
             handleListening(message);
@@ -190,7 +192,8 @@ final class SubscriptionProtocol {
                 .exceptionally(err -> null);
     }
 
-    private void handleListen(WsMessage<JsonNode> message) {
+    private void handleListen(FrameContext<WsMessage<JsonNode>> ctx) {
+        WsMessage<JsonNode> message = ctx.body();
         UUID listenId = message.getId();
         String event = message.getEvent();
         if (event == null) {
@@ -204,13 +207,13 @@ final class SubscriptionProtocol {
                     : mapper.treeToValue(payload, ListenPayload.class);
         } catch (JsonProcessingException e) {
             LOG.log(Level.WARNING, "Dropping malformed listen frame: " + e.getMessage(), e);
-            sink.send(Frames.listenError(event, listenId,
+            sink.send(ctx.origin(), Frames.listenError(event, listenId,
                     "Malformed listen frame: " + e.getMessage()));
             return;
         }
         if (listen == null) {
             LOG.warning("Dropping listen with missing payload");
-            sink.send(Frames.listenError(event, listenId,
+            sink.send(ctx.origin(), Frames.listenError(event, listenId,
                     "Listen is missing required payload"));
             return;
         }
@@ -218,7 +221,7 @@ final class SubscriptionProtocol {
         SubscriptionHandlerEntry entry = subscriptionHandlers.get(event);
         if (entry == null) {
             LOG.info("No event listener for: " + event);
-            sink.send(Frames.listenError(event, listenId,
+            sink.send(ctx.origin(), Frames.listenError(event, listenId,
                     "unknown event: " + event));
             return;
         }
@@ -228,14 +231,14 @@ final class SubscriptionProtocol {
             params = convertSubscriptionParams(listen.data(), entry);
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Failed to deserialize listen params", e);
-            sink.send(Frames.listenError(event, listenId,
+            sink.send(ctx.origin(), Frames.listenError(event, listenId,
                     "Invalid listen parameters: " + e.getMessage()));
             return;
         }
 
-        DefaultPushHandle handle = new DefaultPushHandle(listenId, event, sink);
+        DefaultPushHandle handle = new DefaultPushHandle(listenId, event, ctx.origin(), sink);
         ServerSubscriptionSlot slot = new ServerSubscriptionSlot(
-                listenId, event, params, handle);
+                listenId, event, params, handle, ctx.origin());
         if (serverSubscriptions.putIfAbsent(listenId, slot) != null) {
             handle.fail("Duplicate event stream ID");
             return;
@@ -254,7 +257,7 @@ final class SubscriptionProtocol {
         }
 
         if (future == null) {
-            sink.send(Frames.listeningAck(event, listenId));
+            sink.send(ctx.origin(), Frames.listeningAck(event, listenId));
             return;
         }
 
@@ -265,11 +268,12 @@ final class SubscriptionProtocol {
                 handle.fail(detail);
                 return;
             }
-            sink.send(Frames.listeningAck(event, listenId));
+            sink.send(ctx.origin(), Frames.listeningAck(event, listenId));
         });
     }
 
-    private void handleUnlisten(WsMessage<JsonNode> message) {
+    private void handleUnlisten(FrameContext<WsMessage<JsonNode>> ctx) {
+        WsMessage<JsonNode> message = ctx.body();
         UUID listenId = message.getResponseOf();
         if (listenId == null) {
             LOG.fine("Dropping unlisten with missing responseOf");
@@ -280,7 +284,7 @@ final class SubscriptionProtocol {
             LOG.fine("Dropping unlisten for unknown event stream: " + listenId);
             return;
         }
-        sink.send(Frames.listenEnded(slot.eventType, listenId));
+        sink.send(slot.origin, Frames.listenEnded(slot.eventType, listenId));
         closeServerSubscription(slot);
     }
 

@@ -58,7 +58,7 @@ public class WsRpcChannel implements SessionGate {
     private final RpcProtocol rpc;
     private final StreamProtocol stream;
     private final SubscriptionProtocol subscriptions;
-    private final FrameSink frameSink = this::sendToSession;
+    private final FrameSink frameSink = this::sendRaw;
 
     public static WsRpcChannel create() {
         return new WsRpcChannel(defaultMapper(), defaultScheduler(), Runnable::run);
@@ -394,8 +394,9 @@ public class WsRpcChannel implements SessionGate {
         }
     }
 
-    public void onTextMessage(String json) {
-        runOrdered(() -> dispatchText(json));
+    public void onTextMessage(WsSession from, String json) {
+        Objects.requireNonNull(from, "from");
+        runOrdered(() -> dispatchText(from, json));
     }
 
     public void onBinaryMessage(ByteBuffer frame) {
@@ -403,7 +404,7 @@ public class WsRpcChannel implements SessionGate {
         runOrdered(() -> stream.handleBinaryMessage(frame));
     }
 
-    private void dispatchText(String json) {
+    private void dispatchText(WsSession from, String json) {
         if (json == null || json.isBlank()) {
             return;
         }
@@ -423,25 +424,26 @@ public class WsRpcChannel implements SessionGate {
             LOG.info("Dropping RPC frame without kind");
             return;
         }
+        FrameContext<WsMessage<JsonNode>> ctx = new FrameContext<>(message, from);
         switch (kind) {
             case WsProtocol.REQUEST_TYPE:
                 if (!requireType(message)) {
                     return;
                 }
-                rpc.dispatchRequest(message);
+                rpc.dispatchRequest(ctx);
                 return;
             case WsProtocol.NOTIFICATION_TYPE:
                 if (!requireType(message)) {
                     return;
                 }
-                rpc.dispatchNotification(message);
+                rpc.dispatchNotification(ctx);
                 return;
             case WsProtocol.RESPONSE_TYPE:
             case WsProtocol.RESPONSE_ERROR_TYPE:
                 if (!requireType(message)) {
                     return;
                 }
-                rpc.settleResponse(message);
+                rpc.settleResponse(ctx);
                 return;
             case WsProtocol.STREAM_START_TYPE:
             case WsProtocol.STREAM_DONE_TYPE:
@@ -451,14 +453,14 @@ public class WsRpcChannel implements SessionGate {
                 if (!requireType(message)) {
                     return;
                 }
-                stream.handleControl(message);
+                stream.handleControl(ctx);
                 return;
             case WsProtocol.LISTEN_TYPE:
             case WsProtocol.UNLISTEN_TYPE:
                 if (!requireEvent(message)) {
                     return;
                 }
-                subscriptions.handleControl(message);
+                subscriptions.handleControl(ctx);
                 return;
             case WsProtocol.LISTENING_TYPE:
             case WsProtocol.EVENT_TYPE:
@@ -467,7 +469,7 @@ public class WsRpcChannel implements SessionGate {
                 if (!requireEvent(message)) {
                     return;
                 }
-                subscriptions.handleClientFrame(message);
+                subscriptions.handleClientFrame(ctx);
                 return;
             default:
                 LOG.info("Dropping RPC frame with unknown kind: " + kind);
@@ -488,10 +490,6 @@ public class WsRpcChannel implements SessionGate {
             return false;
         }
         return true;
-    }
-
-    private void sendToSession(WsMessage<?> message) {
-        sendRaw(getSession(), message);
     }
 
     private void sendRaw(WsSession s, WsMessage<?> message) {

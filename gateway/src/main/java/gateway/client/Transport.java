@@ -49,6 +49,7 @@ class Transport implements WsSession {
 
     private volatile WebSocket socket;
     private final AtomicBoolean terminated = new AtomicBoolean(false);
+    private final AtomicBoolean readStarted = new AtomicBoolean(false);
 
     private final BlockingQueue<QueueItem> sendQueue = new LinkedBlockingQueue<>();
     private volatile Thread senderThread;
@@ -96,7 +97,22 @@ class Transport implements WsSession {
 
         ensureSenderRunning();
         startPingTask();
-        socket.request(1);
+    }
+
+    /**
+     * Grant the first inbound read. Called only after the channel has adopted
+     * this transport as its session, so no frame can reach dispatch before
+     * adoption. Idempotent.
+     */
+    void beginRead() {
+        if (!readStarted.compareAndSet(false, true)) {
+            return;
+        }
+        WebSocket target = socket;
+
+        if (target != null && !terminated.get()) {
+            target.request(1);
+        }
     }
 
     /** Idempotent teardown: stop ping, drop queued sends, kill the sender. */
@@ -334,15 +350,10 @@ class Transport implements WsSession {
 
         @Override
         public void onOpen(WebSocket webSocket) {
-            if (isDropped()) {
-                return;
-            }
-
-            WebSocket target = socket;
-
-            if (target != null) {
-                target.request(1);
-            }
+            // Intentionally no request(n): the JDK default onOpen would grant a
+            // read here, before the channel adopts this transport. This
+            // override must stay to suppress that. Reads are granted by
+            // beginRead() after adoption.
         }
 
         @Override
@@ -363,7 +374,7 @@ class Transport implements WsSession {
                 textAcc.setLength(0);
 
                 try {
-                    channel.onTextMessage(full);
+                    channel.onTextMessage(Transport.this, full);
                 } catch (Exception e) {
                     LOG.log(Level.WARNING, "RPC dispatch failed", e);
                 }

@@ -53,7 +53,7 @@ class WsRpcStreamTest {
             }
             WsRpcChannel p = peer;
             if (p != null) {
-                p.onTextMessage(text);
+                p.onTextMessage(p.getSession(), text);
             }
         }
 
@@ -303,7 +303,7 @@ class WsRpcStreamTest {
                 b.getObjectMapper().valueToTree("m"), 1, FileChunkStreamer.sha256Hex(payload));
         String startJson = new ObjectMapper().writeValueAsString(
                 WsMessage.<StreamStart>create(WsProtocol.STREAM_START_TYPE).setType("doc").withPayload(start));
-        b.onTextMessage(startJson);
+        b.onTextMessage(b.getSession(), startJson);
         assertEquals(1, b.pendingStreamCount());
 
         assertTrue(b.abortStream(streamId, "doc"));
@@ -338,7 +338,7 @@ class WsRpcStreamTest {
                 b.getObjectMapper().valueToTree("m"), 1, FileChunkStreamer.sha256Hex(new byte[] { 1 }));
         String startJson = new ObjectMapper().writeValueAsString(
                 WsMessage.<StreamStart>create(WsProtocol.STREAM_START_TYPE).setType("doc").withPayload(start));
-        b.onTextMessage(startJson);
+        b.onTextMessage(b.getSession(), startJson);
         assertEquals(1, b.pendingStreamCount());
 
         b.onClose(new RuntimeException("gone"));
@@ -475,7 +475,7 @@ class WsRpcStreamTest {
         WsMessage<StreamStart> msg = WsMessage
                 .<StreamStart>create(WsProtocol.STREAM_REPLY_START_TYPE).setType("get-file").withPayload(start);
         msg.setResponseOf(UUID.randomUUID());
-        b.onTextMessage(new ObjectMapper().writeValueAsString(msg));
+        b.onTextMessage(b.getSession(), new ObjectMapper().writeValueAsString(msg));
 
         assertEquals(0, b.pendingStreamCount());
         b.shutdown();
@@ -566,7 +566,7 @@ class WsRpcStreamTest {
         String abortJson = new ObjectMapper().writeValueAsString(
                 WsMessage.<StreamAbort>create(WsProtocol.STREAM_ABORT_TYPE).setType("doc")
                         .withPayload(new StreamAbort(streamId, "stop")));
-        b.onTextMessage(abortJson);
+        b.onTextMessage(b.getSession(), abortJson);
 
         assertEquals(0, b.pendingStreamCount());
         assertTrue(sb.sent.isEmpty(), "abort must never be answered, got: " + sb.sent);
@@ -595,7 +595,7 @@ class WsRpcStreamTest {
         String abortJson = new ObjectMapper().writeValueAsString(
                 WsMessage.<StreamAbort>create(WsProtocol.STREAM_ABORT_TYPE).setType("other")
                         .withPayload(new StreamAbort(streamId, "stop")));
-        b.onTextMessage(abortJson);
+        b.onTextMessage(b.getSession(), abortJson);
 
         assertEquals(1, b.pendingStreamCount(), "mismatched abort must not touch the slot");
 
@@ -613,7 +613,7 @@ class WsRpcStreamTest {
         String abortJson = new ObjectMapper().writeValueAsString(
                 WsMessage.<StreamAbort>create(WsProtocol.STREAM_ABORT_TYPE).setType("doc")
                         .withPayload(new StreamAbort(UUID.randomUUID(), "stop")));
-        assertDoesNotThrow(() -> b.onTextMessage(abortJson));
+        assertDoesNotThrow(() -> b.onTextMessage(b.getSession(), abortJson));
 
         assertEquals(0, b.pendingStreamCount());
         assertTrue(sb.sent.isEmpty(), "abort for unknown stream must stay silent, got: " + sb.sent);
@@ -702,7 +702,7 @@ class WsRpcStreamTest {
         assertEquals(1, b.pendingStreamCount(), "progress must refresh the slot past its first deadline");
 
         String doneJson = firstSentOfKind(sa.sent, WsProtocol.STREAM_DONE_TYPE).toString();
-        b.onTextMessage(doneJson);
+        b.onTextMessage(b.getSession(), doneJson);
         assertEquals("ok", ack.get(5, TimeUnit.SECONDS));
 
         a.shutdown();
@@ -733,7 +733,7 @@ class WsRpcStreamTest {
         byte[] payload = new byte[] { 1 };
         StreamStart start = new StreamStart(streamId,
                 b.getObjectMapper().valueToTree("m"), 1, FileChunkStreamer.sha256Hex(payload));
-        b.onTextMessage(new ObjectMapper().writeValueAsString(
+        b.onTextMessage(b.getSession(), new ObjectMapper().writeValueAsString(
                 WsMessage.<StreamStart>create(WsProtocol.STREAM_START_TYPE).setType("doc")
                         .withPayload(start)));
         assertEquals(1, b.pendingStreamCount());
@@ -764,7 +764,7 @@ class WsRpcStreamTest {
         byte[] payload = new byte[] { 1 };
         StreamStart start = new StreamStart(streamId,
                 b.getObjectMapper().valueToTree("m"), 1, FileChunkStreamer.sha256Hex(payload));
-        b.onTextMessage(new ObjectMapper().writeValueAsString(
+        b.onTextMessage(b.getSession(), new ObjectMapper().writeValueAsString(
                 WsMessage.<StreamStart>create(WsProtocol.STREAM_START_TYPE).setType("doc")
                         .withPayload(start)));
         assertEquals(1, b.pendingStreamCount());
@@ -876,7 +876,7 @@ class WsRpcStreamTest {
                 .setType("get-file")
                 .withPayload("oops");
         malformed.setResponseOf(requestId);
-        a.onTextMessage(new ObjectMapper().writeValueAsString(malformed));
+        a.onTextMessage(a.getSession(), new ObjectMapper().writeValueAsString(malformed));
 
         assertEquals(1, sa.sent.size(), "no error frame may answer a reply start, sent: " + sa.sent);
         release.countDown();

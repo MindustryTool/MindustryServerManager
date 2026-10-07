@@ -46,6 +46,7 @@ class JdkWsClientTest {
         final List<String> order = Collections.synchronizedList(new ArrayList<>());
         final AtomicInteger binaries = new AtomicInteger(0);
         final AtomicInteger pings = new AtomicInteger(0);
+        final AtomicInteger requests = new AtomicInteger(0);
         final AtomicInteger closes = new AtomicInteger(0);
         final AtomicBoolean sendPending = new AtomicBoolean(false);
         final AtomicInteger inFlight = new AtomicInteger(0);
@@ -119,6 +120,7 @@ class JdkWsClientTest {
 
         @Override
         public void request(long n) {
+            requests.incrementAndGet();
         }
 
         @Override
@@ -293,6 +295,24 @@ class JdkWsClientTest {
             assertEquals("binary", order.get(3));
             assertTrue(order.get(4).contains("\"kind\":\"" + WsProtocol.STREAM_DONE_TYPE + "\""),
                     "done last, got: " + order.get(4));
+        } finally {
+            client.close();
+            channel.shutdown();
+            dialer.shutdown();
+        }
+    }
+
+    @Test
+    void noReadGrantedBeforeAdoptionAndOnOpenDoesNotSelfRequest() throws Exception {
+        WsRpcChannel channel = WsRpcChannel.create();
+        TestDialer dialer = new TestDialer();
+        JdkWsClient client = connectedClient(channel, dialer);
+        GateEnforcingFake fake = dialer.fakes.get(0);
+        WebSocket.Listener listener = dialer.listeners.get(0);
+        try {
+            awaitCondition(() -> fake.requests.get() == 1, "exactly one read granted once adopted");
+            listener.onOpen(fake);
+            assertEquals(1, fake.requests.get(), "listener onOpen must not grant another read");
         } finally {
             client.close();
             channel.shutdown();

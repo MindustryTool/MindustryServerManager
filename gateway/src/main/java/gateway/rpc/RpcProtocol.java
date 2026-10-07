@@ -194,7 +194,8 @@ final class RpcProtocol implements ReplySink {
                 });
     }
 
-    void settleResponse(WsMessage<JsonNode> message) {
+    void settleResponse(FrameContext<WsMessage<JsonNode>> ctx) {
+        WsMessage<JsonNode> message = ctx.body();
         UUID responseOf = message.getResponseOf();
         if (responseOf == null) {
             LOG.fine("Dropping RPC answer without responseOf, kind: " + message.getKind());
@@ -214,16 +215,17 @@ final class RpcProtocol implements ReplySink {
         }
     }
 
-    void dispatchRequest(WsMessage<JsonNode> message) {
+    void dispatchRequest(FrameContext<WsMessage<JsonNode>> ctx) {
+        WsMessage<JsonNode> message = ctx.body();
         String type = message.getType();
         HandlerEntry<?, ?> entry = handlers.get(type);
         if (entry == null) {
             LOG.info("No RPC handler for type: " + type);
-            sink.send(Frames.responseError(message.getId(), type, "unknown RPC type: " + type));
+            sink.send(ctx.origin(), Frames.responseError(message.getId(), type, "unknown RPC type: " + type));
             return;
         }
 
-        handlerExecutor.execute(() -> invokeHandler(message, entry));
+        handlerExecutor.execute(() -> invokeHandler(ctx, entry));
     }
 
     /**
@@ -231,19 +233,20 @@ final class RpcProtocol implements ReplySink {
      * expected, so unknown types are dropped with a log and handler
      * failures are logged without any reply.
      */
-    void dispatchNotification(WsMessage<JsonNode> message) {
-        String type = message.getType();
+    void dispatchNotification(FrameContext<WsMessage<JsonNode>> ctx) {
+        String type = ctx.body().getType();
         HandlerEntry<?, ?> entry = handlers.get(type);
         if (entry == null) {
             LOG.fine("Dropping notification for unregistered type: " + type);
             return;
         }
 
-        handlerExecutor.execute(() -> invokeNotification(message, entry));
+        handlerExecutor.execute(() -> invokeNotification(ctx, entry));
     }
 
     @SuppressWarnings({ "unchecked" })
-    private void invokeNotification(WsMessage<JsonNode> message, HandlerEntry<?, ?> entry) {
+    private void invokeNotification(FrameContext<WsMessage<JsonNode>> ctx, HandlerEntry<?, ?> entry) {
+        WsMessage<JsonNode> message = ctx.body();
         try {
             Object param = convertParam(message.getPayload(), (HandlerEntry<Object, Object>) entry);
             Object result = ((HandlerEntry<Object, Object>) entry).fn.apply(param);
@@ -256,23 +259,24 @@ final class RpcProtocol implements ReplySink {
     }
 
     @SuppressWarnings({ "unchecked" })
-    private void invokeHandler(WsMessage<JsonNode> message, HandlerEntry<?, ?> entry) {
-        WsSession s = sessions.current();
+    private void invokeHandler(FrameContext<WsMessage<JsonNode>> ctx, HandlerEntry<?, ?> entry) {
+        WsMessage<JsonNode> message = ctx.body();
+        WsSession origin = ctx.origin();
         try {
             Object param = convertParam(message.getPayload(), (HandlerEntry<Object, Object>) entry);
             Object result = ((HandlerEntry<Object, Object>) entry).fn.apply(param);
             if (result instanceof StreamReply reply) {
-                emitReplyStream(message, reply);
+                emitReplyStream(ctx, reply);
                 return;
             }
             WsMessage<?> response = message.reply(WsProtocol.RESPONSE_TYPE, result);
-            sendTo(s, response);
+            sendTo(origin, response);
         } catch (Exception e) {
             LOG.log(Level.WARNING, "RPC handler failed for type=" + message.getType(), e);
             try {
                 String detail = e.getMessage() != null ? e.getMessage() : e.toString();
                 WsMessage<?> error = message.reply(WsProtocol.RESPONSE_ERROR_TYPE, detail);
-                sendTo(s, error);
+                sendTo(origin, error);
             } catch (Exception sendError) {
                 LOG.log(Level.WARNING, "Failed to send RPC error frame", sendError);
             }
@@ -286,15 +290,16 @@ final class RpcProtocol implements ReplySink {
      * The requester's pending future resolves with the assembled bytes once
      * its peer processes the reply's {@code done} envelope.
      */
-    private void emitReplyStream(WsMessage<JsonNode> request, StreamReply reply) {
+    private void emitReplyStream(FrameContext<WsMessage<JsonNode>> ctx, StreamReply reply) {
+        WsMessage<JsonNode> request = ctx.body();
         byte[] bytes = reply.data();
         UUID streamId = UUID.randomUUID();
         String sha256 = FileChunkStreamer.sha256Hex(bytes);
         List<ByteBuffer> chunks = FileChunkStreamer.chunk(streamId, bytes);
         JsonNode metaNode = reply.metadata() == null ? NullNode.getInstance()
                 : mapper.valueToTree(reply.metadata());
-        WsSession s = sessions.current();
-        if (s == null || !s.isOpen()) {
+        WsSession s = ctx.origin();
+        if (!s.isOpen()) {
             LOG.info("Dropping stream reply, no open session for type=" + request.getType());
             return;
         }
@@ -317,7 +322,7 @@ final class RpcProtocol implements ReplySink {
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Failed to send stream reply", e);
             String detail = e.getMessage() != null ? e.getMessage() : e.toString();
-            sink.send(Frames.responseError(request.getId(), request.getType(), detail));
+            sink.send(ctx.origin(), Frames.responseError(request.getId(), request.getType(), detail));
         }
     }
 

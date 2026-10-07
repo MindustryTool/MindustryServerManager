@@ -7,19 +7,23 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import gateway.session.WsSession;
+
 final class DefaultPushHandle implements PushHandle {
 
     private static final Logger LOG = Logger.getLogger(DefaultPushHandle.class.getName());
 
     private final UUID subscribeId;
     private final String eventType;
+    private final WsSession origin;
     private final FrameSink sink;
     private final List<Runnable> closeCallbacks = new CopyOnWriteArrayList<>();
     private volatile boolean closed = false;
 
-    DefaultPushHandle(UUID subscribeId, String eventType, FrameSink sink) {
+    DefaultPushHandle(UUID subscribeId, String eventType, WsSession origin, FrameSink sink) {
         this.subscribeId = subscribeId;
         this.eventType = eventType;
+        this.origin = origin;
         this.sink = sink;
     }
 
@@ -28,7 +32,7 @@ final class DefaultPushHandle implements PushHandle {
         if (closed) {
             return;
         }
-        sink.send(Frames.eventFrame(eventType, subscribeId, event));
+        sink.send(origin, Frames.eventFrame(eventType, subscribeId, event));
     }
 
     @Override
@@ -37,7 +41,7 @@ final class DefaultPushHandle implements PushHandle {
             return;
         }
         closed = true;
-        sink.send(Frames.listenEnded(eventType, subscribeId));
+        sink.send(origin, Frames.listenEnded(eventType, subscribeId));
         triggerCloseCallbacks();
     }
 
@@ -47,7 +51,7 @@ final class DefaultPushHandle implements PushHandle {
             return;
         }
         closed = true;
-        sink.send(Frames.listenError(eventType, subscribeId, reason));
+        sink.send(origin, Frames.listenError(eventType, subscribeId, reason));
         triggerCloseCallbacks();
     }
 

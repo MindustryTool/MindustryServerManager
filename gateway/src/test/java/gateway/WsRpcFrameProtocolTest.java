@@ -33,7 +33,7 @@ class WsRpcFrameProtocolTest {
             sent.add(text);
             WsRpcChannel p = peer;
             if (p != null) {
-                p.onTextMessage(text);
+                p.onTextMessage(p.getSession(), text);
             }
         }
 
@@ -70,7 +70,7 @@ class WsRpcFrameProtocolTest {
 
         String frame = "{\"id\":\"" + UUID.randomUUID() + "\",\"kind\":\"teleport\""
                 + ",\"type\":\"x\",\"payload\":1}";
-        assertDoesNotThrow(() -> b.onTextMessage(frame));
+        assertDoesNotThrow(() -> b.onTextMessage(b.getSession(), frame));
         assertTrue(sb.sent.isEmpty(), "unknown kind must stay silent, got: " + sb.sent);
 
         b.shutdown();
@@ -83,7 +83,7 @@ class WsRpcFrameProtocolTest {
         b.onOpen(sb);
 
         String frame = "{\"id\":\"" + UUID.randomUUID() + "\",\"type\":\"x\",\"payload\":1}";
-        assertDoesNotThrow(() -> b.onTextMessage(frame));
+        assertDoesNotThrow(() -> b.onTextMessage(b.getSession(), frame));
         assertTrue(sb.sent.isEmpty(), "absent kind must stay silent, got: " + sb.sent);
 
         b.shutdown();
@@ -97,7 +97,7 @@ class WsRpcFrameProtocolTest {
 
         String frame = "{\"id\":\"" + UUID.randomUUID() + "\",\"kind\":\"" + WsProtocol.REQUEST_TYPE + "\""
                 + ",\"payload\":1}";
-        assertDoesNotThrow(() -> b.onTextMessage(frame));
+        assertDoesNotThrow(() -> b.onTextMessage(b.getSession(), frame));
         assertTrue(sb.sent.isEmpty(), "request without type must stay silent, got: " + sb.sent);
 
         b.shutdown();
@@ -111,7 +111,7 @@ class WsRpcFrameProtocolTest {
 
         String frame = "{\"id\":\"" + UUID.randomUUID() + "\",\"kind\":\"" + WsProtocol.REQUEST_TYPE + "\""
                 + ",\"type\":\"x\",\"event\":\"usage\",\"payload\":1}";
-        assertDoesNotThrow(() -> b.onTextMessage(frame));
+        assertDoesNotThrow(() -> b.onTextMessage(b.getSession(), frame));
         assertTrue(sb.sent.isEmpty(), "request carrying an event field must be dropped, got: " + sb.sent);
 
         b.shutdown();
@@ -125,7 +125,7 @@ class WsRpcFrameProtocolTest {
 
         String frame = "{\"id\":\"" + UUID.randomUUID() + "\",\"kind\":\"" + WsProtocol.EVENT_TYPE + "\""
                 + ",\"responseOf\":\"" + UUID.randomUUID() + "\",\"payload\":1}";
-        assertDoesNotThrow(() -> b.onTextMessage(frame));
+        assertDoesNotThrow(() -> b.onTextMessage(b.getSession(), frame));
         assertTrue(sb.sent.isEmpty(), "event frame without event must be dropped, got: " + sb.sent);
 
         b.shutdown();
@@ -140,7 +140,7 @@ class WsRpcFrameProtocolTest {
         String frame = "{\"id\":\"" + UUID.randomUUID() + "\",\"kind\":\"" + WsProtocol.EVENT_TYPE + "\""
                 + ",\"type\":\"usage\",\"event\":\"usage\",\"responseOf\":\"" + UUID.randomUUID()
                 + "\",\"payload\":1}";
-        assertDoesNotThrow(() -> b.onTextMessage(frame));
+        assertDoesNotThrow(() -> b.onTextMessage(b.getSession(), frame));
         assertTrue(sb.sent.isEmpty(), "event frame carrying a type must be dropped, got: " + sb.sent);
 
         b.shutdown();
@@ -154,7 +154,7 @@ class WsRpcFrameProtocolTest {
 
         String frame = "{\"id\":\"" + UUID.randomUUID() + "\",\"kind\":\"" + WsProtocol.RESPONSE_TYPE + "\""
                 + ",\"type\":\"x\",\"payload\":1}";
-        assertDoesNotThrow(() -> b.onTextMessage(frame));
+        assertDoesNotThrow(() -> b.onTextMessage(b.getSession(), frame));
         assertTrue(sb.sent.isEmpty(), "answer without responseOf must stay silent, got: " + sb.sent);
 
         b.shutdown();
