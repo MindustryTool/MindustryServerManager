@@ -152,6 +152,7 @@ public class ServerService {
 
             eventBus.emit(LogEvent.info(serverId, "Generate server config file"));
             String jwt = wsHandler.generateServerJwt(serverId);
+
             ServerConfigDto serverConfig = new ServerConfigDto()
                     .setJwt(jwt)
                     .setStartServer(new StartServerDto()
@@ -167,10 +168,9 @@ public class ServerService {
                 throw new RuntimeException("Failed to serialize server config", e);
             }
 
-            nodeManager.create(request);
-
             // Overwrite plugin jar with the bundled controller plugin
             nodeManager.writeFile(serverId, "mods/plugin.jar", pluginBundle.downloadPlugin());
+            nodeManager.create(request);
 
             eventBus.emit(LogEvent.info(serverId, "Connecting to gateway"));
             GatewayClient gatewayClient = gatewayService.of(serverId);

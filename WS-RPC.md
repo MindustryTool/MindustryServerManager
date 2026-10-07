@@ -56,6 +56,21 @@ practice is a ping every 20 seconds, declare the peer dead after
 45 seconds without a pong, and reconnect with capped exponential
 backoff. Keepalive policy never changes framing.
 
+3.4. Session adoption. A peer MUST register a connection as its current
+session before it processes any frame received on that connection. It
+MUST NOT enable inbound delivery (read demand) until adoption is
+complete, and a frame delivered before adoption MUST NOT be dispatched.
+
+3.5. Answer binding. An answer to a received frame MUST be sent on the
+connection that delivered that frame, never on a subsequently adopted
+connection. If the delivering connection is no longer open when the
+answer is produced, the answer MUST be dropped with a log; the peer
+MUST NOT re-route it to another connection. This binds `response`,
+`response-error`, the `stream-reply-start`/`stream-reply-done`
+envelopes, and unsolicited pushes (`event`, `listen-ended`,
+`listen-error`). Calls a peer itself initiates are unaffected: they
+wait for an open session (Section 6.5) and transmit on the current one.
+
 ## 4. Text envelope
 
 Every control frame is one JSON object with these fields:
@@ -132,8 +147,10 @@ resolves it with the payload.
 
 6.5. Unanswered calls fail after the operation timeout (Section 11).
 Calls made with no open session wait for one up to the session-wait
-limit, then fail. Connection loss fails all pending calls with the
-close cause.
+limit, then fail. This wait governs the sender's own outbound call
+only; answering an already-received request is bound to its delivering
+connection (Section 3.5). Connection loss fails all pending calls with
+the close cause.
 
 ## 7. Notifications
 
@@ -451,10 +468,17 @@ On close, both sides MUST fail all pending sends with the close
 cause and discard all receiver slots, listeners, and buffered chunks. A
 fresh session starts with empty state; streams and event streams never
 resume across connections — senders retry at the application level.
+An answer produced after its delivering connection closed is dropped
+with a log and MUST NOT be re-routed to a replacement connection
+(Section 3.5).
 
 ## 13. Interoperation checklist
 
 - Route on `kind` alone; never on payload text.
+- Adopt a connection before processing frames from it; do not enable
+  inbound delivery before adoption (Section 3.4).
+- Answer on the connection that delivered the request; never re-route
+  an answer to a replacement connection (Section 3.5).
 - Validate the subject field for the kind: `type` for RPC and byte
   streams, `event` for event streams; reject a frame that carries the
   wrong one.

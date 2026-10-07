@@ -111,7 +111,7 @@ public class Control extends Plugin {
 
             state = PluginState.UNLOADED;
 
-            Log.info("Unloading");
+            Log.info("Unloading with exist: " + event.exit);
 
             Tasks.destroy();
             Registry.destroy();
