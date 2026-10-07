@@ -26,58 +26,56 @@ public class WsHandler {
     public WsHandler(GatewayService gatewayService, NodeManager nodeManager, String localSigningKey) {
         this.gatewayService = Objects.requireNonNull(gatewayService, "gatewayService");
         this.nodeManager = Objects.requireNonNull(nodeManager, "nodeManager");
-        String key = localSigningKey == null ? null : localSigningKey.trim();
-        if (key == null || key.isEmpty()) {
-            throw new IllegalArgumentException("Missing required gateway signing key");
-        }
-        this.localSigningKey = key;
+        this.localSigningKey = localSigningKey;
     }
 
     public void configure(WsConfig ws) {
-        ws.onConnect(handler -> {
+        ws.onConnect(context -> {
             try {
-                UUID serverId = parseServerJwt(handler);
-                gatewayService.of(serverId).onOpen(handler);
+                UUID serverId = parseServerJwt(context);
+                gatewayService.of(serverId).onOpen(context);
             } catch (JWTVerificationException e) {
-                Log.err("Invalid token for server: " + UUID.fromString(handler.header("X-SERVER-ID")));
-                handler.closeSession();
+                Log.err("Invalid token for server: " + UUID.fromString(context.header("X-SERVER-ID")));
+                UUID serverId = UUID.fromString(context.header("X-SERVER-ID"));
+                rewiteJwt(serverId);
+                context.closeSession();
             } catch (Exception e) {
                 Log.err("Error on connect", e);
-                handler.closeSession();
+                context.closeSession();
             }
         });
 
-        ws.onMessage(handler -> {
+        ws.onMessage(context -> {
             try {
-                UUID serverId = parseServerJwt(handler);
-                gatewayService.of(serverId).onMessage(handler);
+                UUID serverId = parseServerJwt(context);
+                gatewayService.of(serverId).onMessage(context);
             } catch (JWTVerificationException e) {
-                Log.err("Invalid token for server: " + UUID.fromString(handler.header("X-SERVER-ID")));
+                Log.err("Invalid token for server: " + UUID.fromString(context.header("X-SERVER-ID")));
             } catch (Exception e) {
                 Log.err("Error on message", e);
             }
         });
 
-        ws.onBinaryMessage(handler -> {
+        ws.onBinaryMessage(context -> {
             try {
-                UUID serverId = parseServerJwt(handler);
-                gatewayService.of(serverId).onBinary(handler);
+                UUID serverId = parseServerJwt(context);
+                gatewayService.of(serverId).onBinary(context);
             } catch (JWTVerificationException e) {
-                Log.err("Invalid token for server: " + UUID.fromString(handler.header("X-SERVER-ID")));
+                Log.err("Invalid token for server: " + UUID.fromString(context.header("X-SERVER-ID")));
             } catch (Exception e) {
                 Log.err("Error on binary message", e);
             }
         });
 
-        ws.onClose(handler -> {
+        ws.onClose(context -> {
             try {
-                UUID serverId = parseServerJwt(handler);
-                gatewayService.of(serverId).onClose(handler);
+                UUID serverId = parseServerJwt(context);
+                gatewayService.of(serverId).onClose(context);
             } catch (JWTVerificationException e) {
-                Log.err("Invalid token for server: " + UUID.fromString(handler.header("X-SERVER-ID")));
+                Log.err("Invalid token for server: " + UUID.fromString(context.header("X-SERVER-ID")));
                 try {
-                    UUID serverId = UUID.fromString(handler.header("X-SERVER-ID"));
-                    gatewayService.of(serverId).onClose(handler);
+                    UUID serverId = UUID.fromString(context.header("X-SERVER-ID"));
+                    gatewayService.of(serverId).onClose(context);
                 } catch (Exception ex) {
                     Log.err("Error on close without auth", ex);
                 }
@@ -86,8 +84,8 @@ public class WsHandler {
             }
         });
 
-        ws.onError(handler -> {
-            Throwable error = handler.error();
+        ws.onError(context -> {
+            Throwable error = context.error();
             if (error != null && error instanceof ClosedChannelException) {
                 return; // Ignore closed channel exceptions
             }
@@ -97,7 +95,6 @@ public class WsHandler {
 
     public UUID parseServerJwt(WsContext context) {
         String jwtToken = context.header("Authorization");
-        UUID serverId = UUID.fromString(context.header("X-SERVER-ID"));
 
         try {
             var idString = JWT.require(Algorithm.HMAC256(localSigningKey))
@@ -108,30 +105,34 @@ public class WsHandler {
 
             return UUID.fromString(idString);
         } catch (JWTVerificationException e) {
-            ServerConfigDto serverConfig = new ServerConfigDto();
-            try {
-                Fi serverConfigFile = nodeManager.getFile(serverId, "server.json");
-                if (serverConfigFile.exists()) {
-                    serverConfig = Utils.objectMapper.readValue(serverConfigFile.readBytes(), ServerConfigDto.class);
-                }
-            } catch (Exception ex) {
-                Log.warn("Failed to read server.json for @, creating fresh", serverId);
-            }
-            serverConfig.setJwt(generateServerJwt(serverId));
-            try {
-                nodeManager.writeFile(serverId, "server.json", Utils.objectMapper
-                        .writerWithDefaultPrettyPrinter()
-                        .writeValueAsBytes(serverConfig));
-            } catch (Exception ex) {
-                Log.err("Failed to write server.json for " + serverId, ex);
-            }
-
             throw e;
         } catch (Exception e) {
-
             Log.err("Something is wrong with token", e);
 
             throw new RuntimeException("Something is wrong with token");
+        }
+    }
+
+    public void rewiteJwt(UUID serverId) {
+        ServerConfigDto serverConfig = new ServerConfigDto();
+
+        try {
+            Fi serverConfigFile = nodeManager.getFile(serverId, "server.json");
+            if (serverConfigFile.exists()) {
+                serverConfig = Utils.objectMapper.readValue(serverConfigFile.readBytes(), ServerConfigDto.class);
+            }
+        } catch (Exception ex) {
+            Log.warn("Failed to read server.json for @, creating fresh", serverId);
+        }
+
+        serverConfig.setJwt(generateServerJwt(serverId));
+
+        try {
+            nodeManager.writeFile(serverId, "server.json", Utils.objectMapper
+                    .writerWithDefaultPrettyPrinter()
+                    .writeValueAsBytes(serverConfig));
+        } catch (Exception ex) {
+            Log.err("Failed to write server.json for " + serverId, ex);
         }
     }
 

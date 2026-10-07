@@ -1,4 +1,10 @@
-## ADDED Requirements
+# gateway-code-health
+
+## Purpose
+
+Internal structural requirements for the `:gateway` module produced by the cleanup pass: single helpers for pending-request lifecycle, stream-failure settlement, and close-cause unwrapping; no unreferenced internal members; reused message and hash builders. Synced from change cleanup-gateway-module.
+
+## Requirements
 
 ### Requirement: Single pending-request lifecycle helper
 

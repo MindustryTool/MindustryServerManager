@@ -434,7 +434,7 @@ public class WsRpcChannel {
             cancelStreamTimeout(streamId);
             streamReceiver.abort(streamId);
             if (slot.replyRequestId != null) {
-                failReplyRequest(slot, reason);
+                failPending(slot.replyRequestId, new RuntimeException(reason));
             }
         }
         return removed;
@@ -543,6 +543,18 @@ public class WsRpcChannel {
         });
     }
 
+    private void closeServerSubscription(ServerSubscriptionSlot slot) {
+        slot.closed = true;
+        slot.handle.complete();
+        for (Runnable cb : slot.onCloseCallbacks) {
+            try {
+                cb.run();
+            } catch (Exception e) {
+                LOG.log(Level.WARNING, "Subscription onClose callback failed", e);
+            }
+        }
+    }
+
     /**
      * Handle an inbound {@code unsubscribe} notification (server-side).
      */
@@ -557,15 +569,7 @@ public class WsRpcChannel {
             LOG.fine("Dropping unsubscribe for unknown subscription: " + subscribeId);
             return;
         }
-        slot.closed = true;
-        slot.handle.complete();
-        for (Runnable cb : slot.onCloseCallbacks) {
-            try {
-                cb.run();
-            } catch (Exception e) {
-                LOG.log(Level.WARNING, "Subscription onClose callback failed", e);
-            }
-        }
+        closeServerSubscription(slot);
     }
 
     /**
@@ -599,6 +603,23 @@ public class WsRpcChannel {
         }
     }
 
+    private void closeClientSubscription(ClientSubscriptionSlot slot, Throwable ackError) {
+        slot.closed = true;
+        if (slot.timeoutTask != null) {
+            slot.timeoutTask.cancel(false);
+        }
+        if (ackError != null && slot.ackFuture != null && !slot.ackFuture.isDone()) {
+            slot.ackFuture.completeExceptionally(ackError);
+        }
+        for (Runnable cb : slot.onCloseCallbacks) {
+            try {
+                cb.run();
+            } catch (Exception e) {
+                LOG.log(Level.WARNING, "Subscription onClose callback failed", e);
+            }
+        }
+    }
+
     /**
      * Handle server-initiated error frame for a subscription (client-side).
      */
@@ -611,23 +632,10 @@ public class WsRpcChannel {
         if (slot == null) {
             return;
         }
-        slot.closed = true;
-        if (slot.timeoutTask != null) {
-            slot.timeoutTask.cancel(false);
-        }
         String detail = message.getPayload() == null ? "subscription failed"
                 : message.getPayload().isTextual() ? message.getPayload().asText()
                         : message.getPayload().toString();
-        if (slot.ackFuture != null && !slot.ackFuture.isDone()) {
-            slot.ackFuture.completeExceptionally(new RuntimeException(detail));
-        }
-        for (Runnable cb : slot.onCloseCallbacks) {
-            try {
-                cb.run();
-            } catch (Exception e) {
-                LOG.log(Level.WARNING, "Subscription onClose callback failed", e);
-            }
-        }
+        closeClientSubscription(slot, new RuntimeException(detail));
     }
 
     private static void rejectStreamControlType(String type) {
@@ -664,14 +672,9 @@ public class WsRpcChannel {
         CompletableFuture<JsonNode> raw = new CompletableFuture<>();
         pending.put(id, raw);
 
-        ScheduledFuture<?> timeoutTask = scheduler.schedule(() -> {
-            CompletableFuture<JsonNode> removed = pending.remove(id);
-            timeouts.remove(id);
-            if (removed != null && !removed.isDone()) {
-                removed.completeExceptionally(
-                        new TimeoutException("RPC request timed out: type=" + type + " id=" + id));
-            }
-        }, effectiveTimeout.toMillis(), TimeUnit.MILLISECONDS);
+        ScheduledFuture<?> timeoutTask = scheduler.schedule(() -> failPending(id,
+                new TimeoutException("RPC request timed out: type=" + type + " id=" + id)),
+                effectiveTimeout.toMillis(), TimeUnit.MILLISECONDS);
         timeouts.put(id, timeoutTask);
         raw.whenComplete((res, err) -> {
             ScheduledFuture<?> t = timeouts.remove(id);
@@ -881,17 +884,7 @@ public class WsRpcChannel {
         if (slot == null) {
             return;
         }
-        slot.closed = true;
-        if (slot.timeoutTask != null) {
-            slot.timeoutTask.cancel(false);
-        }
-        for (Runnable cb : slot.onCloseCallbacks) {
-            try {
-                cb.run();
-            } catch (Exception e) {
-                LOG.log(Level.WARNING, "Subscription onClose callback failed", e);
-            }
-        }
+        closeClientSubscription(slot, null);
 
         WsMessage<?> message = WsMessage.create(UNSUBSCRIBE_TYPE)
                 .withPayload(reason != null ? Map.of("reason", reason) : Map.of())
@@ -983,9 +976,8 @@ public class WsRpcChannel {
         WsMessage<StreamStart> startMessage;
         WsMessage<StreamDone> doneMessage;
         try {
-            startMessage = WsMessage.<StreamStart>create(STREAM_START_TYPE).withPayload(start);
-            doneMessage = WsMessage.<StreamDone>create(STREAM_DONE_TYPE)
-                    .withPayload(new StreamDone(streamId, sha256));
+            startMessage = streamEnvelope(STREAM_START_TYPE, null, start);
+            doneMessage = streamEnvelope(STREAM_DONE_TYPE, null, new StreamDone(streamId, sha256));
         } catch (RuntimeException e) {
             CompletableFuture<Res> failed = new CompletableFuture<>();
             failed.completeExceptionally(e);
@@ -1008,12 +1000,8 @@ public class WsRpcChannel {
         senderStreams.put(streamId, startId);
         ScheduledFuture<?> timeoutTask = scheduler.schedule(() -> {
             senderStreams.remove(streamId);
-            CompletableFuture<JsonNode> removed = pending.remove(startId);
-            timeouts.remove(startId);
-            if (removed != null && !removed.isDone()) {
-                removed.completeExceptionally(
-                        new TimeoutException("RPC stream timed out: type=" + type + " stream=" + streamId));
-            }
+            failPending(startId,
+                    new TimeoutException("RPC stream timed out: type=" + type + " stream=" + streamId));
         }, effectiveTimeout.toMillis(), TimeUnit.MILLISECONDS);
         timeouts.put(startId, timeoutTask);
         raw.whenComplete((res, err) -> {
@@ -1083,11 +1071,8 @@ public class WsRpcChannel {
             return;
         }
         try {
-            WsMessage<StreamStart> start = new WsMessage<>();
-            start.setId(UUID.randomUUID())
-                    .setType(STREAM_START_TYPE)
-                    .setResponseOf(request.getId())
-                    .setPayload(new StreamStart(streamId, request.getType(), metaNode, frames.size(), sha256));
+            WsMessage<StreamStart> start = streamEnvelope(STREAM_START_TYPE, request.getId(),
+                    new StreamStart(streamId, request.getType(), metaNode, frames.size(), sha256));
             s.sendText(mapper.writeValueAsString(start));
             for (ByteBuffer frame : frames) {
                 if (!s.isOpen()) {
@@ -1096,11 +1081,8 @@ public class WsRpcChannel {
                 }
                 s.sendBinary(frame);
             }
-            WsMessage<StreamDone> done = new WsMessage<>();
-            done.setId(UUID.randomUUID())
-                    .setType(STREAM_DONE_TYPE)
-                    .setResponseOf(request.getId())
-                    .setPayload(new StreamDone(streamId, sha256));
+            WsMessage<StreamDone> done = streamEnvelope(STREAM_DONE_TYPE, request.getId(),
+                    new StreamDone(streamId, sha256));
             s.sendText(mapper.writeValueAsString(done));
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Failed to send stream reply", e);
@@ -1138,14 +1120,19 @@ public class WsRpcChannel {
         }
     }
 
-    private void failPending(UUID id, Throwable err) {
-        CompletableFuture<JsonNode> f = pending.remove(id);
-        ScheduledFuture<?> t = timeouts.remove(id);
-        if (t != null) {
-            t.cancel(false);
+    private CompletableFuture<JsonNode> takePending(UUID id) {
+        CompletableFuture<JsonNode> future = pending.remove(id);
+        ScheduledFuture<?> timeout = timeouts.remove(id);
+        if (timeout != null) {
+            timeout.cancel(false);
         }
-        if (f != null && !f.isDone()) {
-            f.completeExceptionally(err);
+        return future;
+    }
+
+    private void failPending(UUID id, Throwable err) {
+        CompletableFuture<JsonNode> future = takePending(id);
+        if (future != null && !future.isDone()) {
+            future.completeExceptionally(err);
         }
     }
 
@@ -1238,14 +1225,10 @@ public class WsRpcChannel {
                 return;
             }
 
-            CompletableFuture<JsonNode> future = pending.remove(responseOf);
+            CompletableFuture<JsonNode> future = takePending(responseOf);
             if (future == null) {
                 LOG.fine("No pending RPC for responseOf: " + responseOf + " type: " + message.getType());
                 return;
-            }
-            ScheduledFuture<?> t = timeouts.remove(responseOf);
-            if (t != null) {
-                t.cancel(false);
             }
             if (message.isError()) {
                 JsonNode payload = message.getPayload();
@@ -1296,9 +1279,7 @@ public class WsRpcChannel {
         }
     }
 
-    @SuppressWarnings("unchecked")
-    private Object convertParam(JsonNode payload, HandlerEntry<?, ?> entry) {
-        Class<?> clazz = entry.requestClass;
+    private Object deserialize(JsonNode payload, Class<?> clazz, String what) {
         if (clazz == null || clazz == Void.class || clazz == Void.TYPE) {
             return null;
         }
@@ -1309,10 +1290,14 @@ public class WsRpcChannel {
             return payload;
         }
         try {
-            return mapper.treeToValue(payload, (Class<Object>) clazz);
+            return mapper.treeToValue(payload, clazz);
         } catch (JsonProcessingException e) {
-            throw new RuntimeException("Cannot deserialize RPC param to " + clazz.getName(), e);
+            throw new RuntimeException("Cannot deserialize " + what + " to " + clazz.getName(), e);
         }
+    }
+
+    private Object convertParam(JsonNode payload, HandlerEntry<?, ?> entry) {
+        return deserialize(payload, entry.requestClass, "RPC param");
     }
 
     /**
@@ -1368,11 +1353,7 @@ public class WsRpcChannel {
                 streamSlots.remove(streamId);
                 cancelStreamTimeout(streamId);
                 streamReceiver.abort(streamId);
-                if (slot.replyRequestId != null) {
-                    failReplyRequest(slot, "Stream exceeds max bytes (" + MAX_STREAM_BYTES + "): " + streamId);
-                } else {
-                    sendStreamError(slot, "Stream exceeds max bytes (" + MAX_STREAM_BYTES + "): " + streamId);
-                }
+                settleStreamFailure(slot, "Stream exceeds max bytes (" + MAX_STREAM_BYTES + "): " + streamId);
                 return;
             }
             try {
@@ -1382,12 +1363,8 @@ public class WsRpcChannel {
                 cancelStreamTimeout(streamId);
                 streamReceiver.abort(streamId);
                 LOG.log(Level.WARNING, "Failed to buffer chunk for stream " + streamId, e);
-                if (slot.replyRequestId != null) {
-                    failReplyRequest(slot,
-                            "Failed to buffer chunk for stream " + streamId + ": " + e.getMessage());
-                } else {
-                    sendStreamError(slot, "Failed to buffer chunk for stream " + streamId + ": " + e.getMessage());
-                }
+                settleStreamFailure(slot,
+                        "Failed to buffer chunk for stream " + streamId + ": " + e.getMessage());
             }
         }
     }
@@ -1402,11 +1379,7 @@ public class WsRpcChannel {
         }
         cancelStreamTimeout(streamId);
         streamReceiver.abort(streamId);
-        if (slot.replyRequestId != null) {
-            failReplyRequest(slot, detail);
-        } else {
-            sendStreamError(slot, detail);
-        }
+        settleStreamFailure(slot, detail);
     }
 
     /**
@@ -1559,22 +1532,14 @@ public class WsRpcChannel {
         }
         streamReceiver.abort(streamId);
         LOG.warning(detail);
-        if (removed.replyRequestId != null) {
-            failReplyRequest(removed, detail);
-        } else {
-            sendStreamError(removed, detail);
-        }
+        settleStreamFailure(removed, detail);
     }
 
-    /** Fail the request a reply stream was answering, without sending any frame. */
-    private void failReplyRequest(StreamSlot slot, String detail) {
-        CompletableFuture<JsonNode> future = pending.remove(slot.replyRequestId);
-        ScheduledFuture<?> t = timeouts.remove(slot.replyRequestId);
-        if (t != null) {
-            t.cancel(false);
-        }
-        if (future != null && !future.isDone()) {
-            future.completeExceptionally(new RuntimeException(detail));
+    private void settleStreamFailure(StreamSlot slot, String detail) {
+        if (slot.replyRequestId != null) {
+            failPending(slot.replyRequestId, new RuntimeException(detail));
+        } else {
+            sendStreamError(slot, detail);
         }
     }
 
@@ -1599,11 +1564,7 @@ public class WsRpcChannel {
         boolean isReply = slot.replyRequestId != null;
         if (!done.sha256().equalsIgnoreCase(slot.sha256)) {
             streamReceiver.abort(done.streamId());
-            if (isReply) {
-                failReplyRequest(slot, "Stream checksum header mismatch for stream " + done.streamId());
-            } else {
-                sendStreamError(slot, "Stream checksum header mismatch for stream " + done.streamId());
-            }
+            settleStreamFailure(slot, "Stream checksum header mismatch for stream " + done.streamId());
             return;
         }
         final byte[] assembled;
@@ -1611,36 +1572,20 @@ public class WsRpcChannel {
             assembled = streamReceiver.assemble(done.streamId(), slot.totalChunks, slot.sha256);
         } catch (SecurityException e) {
             streamReceiver.abort(done.streamId());
-            if (isReply) {
-                failReplyRequest(slot, "Checksum mismatch for stream " + done.streamId());
-            } else {
-                sendStreamError(slot, "Checksum mismatch for stream " + done.streamId());
-            }
+            settleStreamFailure(slot, "Checksum mismatch for stream " + done.streamId());
             return;
         } catch (IllegalStateException e) {
             streamReceiver.abort(done.streamId());
-            if (isReply) {
-                failReplyRequest(slot, "Incomplete stream " + done.streamId() + ": " + e.getMessage());
-            } else {
-                sendStreamError(slot, "Incomplete stream " + done.streamId() + ": " + e.getMessage());
-            }
+            settleStreamFailure(slot, "Incomplete stream " + done.streamId() + ": " + e.getMessage());
             return;
         }
         if (assembled.length > MAX_STREAM_BYTES) {
-            if (isReply) {
-                failReplyRequest(slot,
-                        "Stream exceeds max bytes (" + MAX_STREAM_BYTES + "): " + done.streamId());
-            } else {
-                sendStreamError(slot, "Stream exceeds max bytes (" + MAX_STREAM_BYTES + "): " + done.streamId());
-            }
+            settleStreamFailure(slot,
+                    "Stream exceeds max bytes (" + MAX_STREAM_BYTES + "): " + done.streamId());
             return;
         }
         if (isReply) {
-            CompletableFuture<JsonNode> future = pending.remove(slot.replyRequestId);
-            ScheduledFuture<?> t = timeouts.remove(slot.replyRequestId);
-            if (t != null) {
-                t.cancel(false);
-            }
+            CompletableFuture<JsonNode> future = takePending(slot.replyRequestId);
             if (future != null && !future.isDone()) {
                 future.complete(mapper.getNodeFactory().binaryNode(assembled));
             }
@@ -1667,35 +1612,33 @@ public class WsRpcChannel {
         }
     }
 
-    @SuppressWarnings("unchecked")
     private Object convertStreamMeta(JsonNode payload, StreamHandlerEntry<?, ?> entry) {
-        Class<?> clazz = entry.metaClass;
-        if (clazz == null || clazz == Void.class || clazz == Void.TYPE) {
-            return null;
+        return deserialize(payload, entry.metaClass, "stream metadata");
+    }
+
+    private static <P> WsMessage<P> streamEnvelope(String type, UUID responseOf, P payload) {
+        WsMessage<P> message = WsMessage.<P>create(type).setPayload(payload);
+        if (responseOf != null) {
+            message.setResponseOf(responseOf);
         }
-        if (payload == null || payload.isNull() || payload.isMissingNode()) {
-            return null;
-        }
-        if (clazz == JsonNode.class) {
-            return payload;
-        }
-        try {
-            return mapper.treeToValue(payload, (Class<Object>) clazz);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException("Cannot deserialize stream metadata to " + clazz.getName(), e);
-        }
+        return message;
+    }
+
+    private static WsMessage<?> reply(UUID responseOf, String type, Object payload, boolean error) {
+        WsMessage<Object> message = new WsMessage<>();
+        message.setId(UUID.randomUUID())
+                .setType(type)
+                .setResponseOf(responseOf)
+                .setPayload(payload)
+                .setError(error);
+        return message;
     }
 
     private WsMessage<?> ackFor(StreamSlot slot, Object result) {
         if (result instanceof WsMessage) {
             throw new IllegalArgumentException("Stream result must not be a WsMessage");
         }
-        WsMessage<Object> ack = new WsMessage<>();
-        ack.setId(UUID.randomUUID())
-                .setType(slot.streamType)
-                .setResponseOf(slot.startId)
-                .setPayload(result);
-        return ack;
+        return reply(slot.startId, slot.streamType, result, false);
     }
 
     private void sendStreamError(StreamSlot slot, String detail) {
@@ -1703,13 +1646,7 @@ public class WsRpcChannel {
     }
 
     private static WsMessage<?> errorFor(UUID responseOf, String type, String detail) {
-        WsMessage<Object> error = new WsMessage<>();
-        error.setId(UUID.randomUUID())
-                .setType(type)
-                .setResponseOf(responseOf)
-                .setPayload(detail)
-                .setError(true);
-        return error;
+        return reply(responseOf, type, detail, true);
     }
 
     private void cancelStreamTimeout(UUID streamId) {
@@ -1774,34 +1711,13 @@ public class WsRpcChannel {
 
         // Clean up client subscriptions
         for (ClientSubscriptionSlot slot : clientSubscriptions.values()) {
-            slot.closed = true;
-            if (slot.timeoutTask != null) {
-                slot.timeoutTask.cancel(false);
-            }
-            if (slot.ackFuture != null && !slot.ackFuture.isDone()) {
-                slot.ackFuture.completeExceptionally(err);
-            }
-            for (Runnable cb : slot.onCloseCallbacks) {
-                try {
-                    cb.run();
-                } catch (Exception e) {
-                    LOG.log(Level.WARNING, "Client subscription onClose callback failed", e);
-                }
-            }
+            closeClientSubscription(slot, err);
         }
         clientSubscriptions.clear();
 
         // Clean up server subscriptions
         for (ServerSubscriptionSlot slot : serverSubscriptions.values()) {
-            slot.closed = true;
-            slot.handle.complete();
-            for (Runnable cb : slot.onCloseCallbacks) {
-                try {
-                    cb.run();
-                } catch (Exception e) {
-                    LOG.log(Level.WARNING, "Server subscription onClose callback failed", e);
-                }
-            }
+            closeServerSubscription(slot);
         }
         serverSubscriptions.clear();
 
@@ -1876,15 +1792,12 @@ public class WsRpcChannel {
         }
     }
 
-    @Data
     private static final class StreamHandlerEntry<Meta, Res> {
         final Class<Meta> metaClass;
-        final Class<Res> responseType;
         final BiFunction<Meta, byte[], Res> fn;
 
         StreamHandlerEntry(Class<Meta> metaClass, Class<Res> responseType, BiFunction<Meta, byte[], Res> fn) {
             this.metaClass = metaClass;
-            this.responseType = responseType;
             this.fn = fn;
         }
     }

@@ -7,8 +7,6 @@ import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -309,7 +307,8 @@ public class JdkWsClient {
                 cancelReconnectTask();
 
                 Transport next = new Transport(
-                        scheduler, pingInterval, pongDeadline, rpcChannel, transportEvents);
+                        scheduler, pingInterval, pongDeadline, Transport.DEFAULT_SEND_TIMEOUT, rpcChannel,
+                        transportEvents);
                 dialling = next;
                 state = State.CONNECTING;
                 return next;
@@ -370,25 +369,30 @@ public class JdkWsClient {
             state = State.RECONNECT_WAIT;
         }
 
-        Throwable cause = rootCause(err);
+        Throwable cause = WsCauses.rootCause(err);
         LOG.log(Level.INFO, "WebSocket connect failed to " + uri + ": " + cause.getMessage());
 
         scheduleReconnect();
     }
 
+    private synchronized boolean tryRetire(Transport transport, State next) {
+        if (transport != current) {
+            return false;
+        }
+
+        current = null;
+
+        if (state == State.CLOSED) {
+            return false;
+        }
+
+        state = next;
+        return true;
+    }
+
     private void onDrop(Transport transport, Throwable cause) {
-        synchronized (this) {
-            if (transport != current) {
-                return;
-            }
-
-            current = null;
-
-            if (state == State.CLOSED) {
-                return;
-            }
-
-            state = State.RECONNECT_WAIT;
+        if (!tryRetire(transport, State.RECONNECT_WAIT)) {
+            return;
         }
 
         transport.terminate();
@@ -398,18 +402,8 @@ public class JdkWsClient {
     }
 
     private void onKick(Transport transport, int statusCode, String reason) {
-        synchronized (this) {
-            if (transport != current) {
-                return;
-            }
-
-            current = null;
-
-            if (state == State.CLOSED) {
-                return;
-            }
-
-            state = State.KICKED;
+        if (!tryRetire(transport, State.KICKED)) {
+            return;
         }
 
         RuntimeException kick = new RuntimeException(
@@ -482,22 +476,4 @@ public class JdkWsClient {
         }
     }
 
-    private static Throwable rootCause(Throwable e) {
-        Throwable cause = e;
-
-        while (cause instanceof ExecutionException && cause.getCause() != null) {
-            cause = cause.getCause();
-        }
-
-        while (cause instanceof CompletionException && cause.getCause() != null) {
-            cause = cause.getCause();
-        }
-
-        return cause;
-    }
-
-    static long backoffDelayMillis(int attempt) {
-        long exp = RECONNECT_MIN.toMillis() << Math.min(attempt, 5);
-        return Math.min(exp, RECONNECT_MAX.toMillis());
-    }
 }

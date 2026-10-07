@@ -2,9 +2,7 @@ package gateway.stream;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
-import java.security.MessageDigest;
 import java.util.ArrayList;
-import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -37,12 +35,6 @@ public class FileChunkReceiver {
         }
         buffers.computeIfAbsent(header.transferId(), id -> new TreeMap<>())
                 .put(header.chunkIndex(), payload);
-    }
-
-    /** Number of buffered chunks for a transfer (0 when unknown). */
-    public int chunkCount(UUID transferId) {
-        TreeMap<Integer, byte[]> map = buffers.get(transferId);
-        return map == null ? 0 : map.size();
     }
 
     public boolean hasTransfer(UUID transferId) {
@@ -92,7 +84,7 @@ public class FileChunkReceiver {
         }
         byte[] assembled = out.toByteArray();
 
-        String actual = sha256Hex(assembled);
+        String actual = FileChunkStreamer.sha256Hex(assembled);
         if (!actual.equalsIgnoreCase(expectedSha256Hex)) {
             buffers.remove(transferId);
             throw new SecurityException(
@@ -115,14 +107,5 @@ public class FileChunkReceiver {
                     "Expected " + expectedChunks + " chunks but buffered " + have + " for " + transferId);
         }
         return assemble(transferId, expectedSha256Hex);
-    }
-
-    public static String sha256Hex(byte[] data) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            return HexFormat.of().formatHex(digest.digest(data));
-        } catch (Exception e) {
-            throw new IllegalStateException("SHA-256 not available", e);
-        }
     }
 }

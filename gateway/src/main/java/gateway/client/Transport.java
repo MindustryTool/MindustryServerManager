@@ -9,8 +9,6 @@ import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -58,15 +56,6 @@ class Transport implements WsSession {
     private volatile Instant lastPongAt = Instant.now();
 
     private final WebSocket.Listener listener = new InnerListener();
-
-    Transport(
-            ScheduledExecutorService scheduler,
-            Duration pingInterval,
-            Duration pongDeadline,
-            WsRpcChannel channel,
-            Events events) {
-        this(scheduler, pingInterval, pongDeadline, DEFAULT_SEND_TIMEOUT, channel, events);
-    }
 
     Transport(
             ScheduledExecutorService scheduler,
@@ -138,17 +127,8 @@ class Transport implements WsSession {
         sendQueue.offer(Control.poison());
     }
 
-    boolean isTerminated() {
-        return terminated.get();
-    }
-
     int queueDepth() {
         return sendQueue.size();
-    }
-
-    boolean isSenderAlive() {
-        Thread t = senderThread;
-        return t != null && t.isAlive();
     }
 
     @Override
@@ -278,26 +258,12 @@ class Transport implements WsSession {
                     return;
                 } catch (Exception e) {
                     LOG.log(Level.WARNING, "send failed: " + op.getClass().getSimpleName(), e);
-                    events.onTransportError(this, rootCause(e));
+                    events.onTransportError(this, WsCauses.rootCause(e));
                 }
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
-    }
-
-    private static Throwable rootCause(Throwable e) {
-        Throwable cause = e;
-
-        while (cause instanceof ExecutionException && cause.getCause() != null) {
-            cause = cause.getCause();
-        }
-
-        while (cause instanceof CompletionException && cause.getCause() != null) {
-            cause = cause.getCause();
-        }
-
-        return cause;
     }
 
     private synchronized void startPingTask() {
@@ -358,9 +324,17 @@ class Transport implements WsSession {
         private final StringBuilder textAcc = new StringBuilder();
         private ByteArrayOutputStream binAcc;
 
+        private boolean isDropped() {
+            return terminated.get();
+        }
+
+        private static CompletionStage<?> dropped() {
+            return CompletableFuture.completedFuture(null);
+        }
+
         @Override
         public void onOpen(WebSocket webSocket) {
-            if (terminated.get()) {
+            if (isDropped()) {
                 return;
             }
 
@@ -377,8 +351,8 @@ class Transport implements WsSession {
                 CharSequence data,
                 boolean last) {
 
-            if (terminated.get()) {
-                return CompletableFuture.completedFuture(null);
+            if (isDropped()) {
+                return dropped();
             }
 
             textAcc.append(data);
@@ -404,8 +378,8 @@ class Transport implements WsSession {
                 ByteBuffer data,
                 boolean last) {
 
-            if (terminated.get()) {
-                return CompletableFuture.completedFuture(null);
+            if (isDropped()) {
+                return dropped();
             }
 
             try {
@@ -444,8 +418,8 @@ class Transport implements WsSession {
                 WebSocket webSocket,
                 ByteBuffer message) {
 
-            if (terminated.get()) {
-                return CompletableFuture.completedFuture(null);
+            if (isDropped()) {
+                return dropped();
             }
 
             webSocket.request(1);
@@ -458,8 +432,8 @@ class Transport implements WsSession {
                 WebSocket webSocket,
                 ByteBuffer message) {
 
-            if (terminated.get()) {
-                return CompletableFuture.completedFuture(null);
+            if (isDropped()) {
+                return dropped();
             }
 
             lastPongAt = Instant.now();
@@ -474,8 +448,8 @@ class Transport implements WsSession {
                 int statusCode,
                 String reason) {
 
-            if (terminated.get()) {
-                return CompletableFuture.completedFuture(null);
+            if (isDropped()) {
+                return dropped();
             }
 
             events.onRemoteClose(Transport.this, statusCode, reason);
@@ -485,7 +459,7 @@ class Transport implements WsSession {
 
         @Override
         public void onError(WebSocket webSocket, Throwable error) {
-            if (terminated.get()) {
+            if (isDropped()) {
                 return;
             }
 

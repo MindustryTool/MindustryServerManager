@@ -57,9 +57,7 @@ public final class FileTransferHeader {
             throw new IllegalArgumentException("chunk payload exceeds 64KB: " + length);
         }
         ByteBuffer buf = ByteBuffer.allocate(HEADER_SIZE + length);
-        buf.putLong(transferId.getMostSignificantBits());
-        buf.putLong(transferId.getLeastSignificantBits());
-        buf.putInt(chunkIndex);
+        buf.put(encode());
         buf.put(payload, offset, length);
         buf.flip();
         return buf;

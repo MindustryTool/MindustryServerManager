@@ -36,30 +36,26 @@ public class WsMessage<T> {
     }
 
     public <TT> WsMessage<TT> response(TT payload) {
-        rejectNestedPayload(payload);
-        WsMessage<TT> response = new WsMessage<>();
-        response.setId(UUID.randomUUID())
-                .setType(type)
-                .setResponseOf(id)
-                .setPayload(payload);
-        return response;
+        return reply(payload, false);
     }
 
     public WsMessage<?> error(Object payload) {
+        return reply(payload, true);
+    }
+
+    private <TT> WsMessage<TT> reply(TT payload, boolean error) {
         rejectNestedPayload(payload);
-        WsMessage<Object> error = new WsMessage<>();
-        error.setId(UUID.randomUUID())
+        WsMessage<TT> message = new WsMessage<>();
+        message.setId(UUID.randomUUID())
                 .setType(type)
                 .setResponseOf(id)
                 .setPayload(payload)
-                .setError(true);
-        return error;
+                .setError(error);
+        return message;
     }
 
     public WsMessage<T> withPayload(T payload) {
-        rejectNestedPayload(payload);
-        this.payload = payload;
-        return this;
+        return setPayload(payload);
     }
 
     public WsMessage<T> setPayload(T payload) {
