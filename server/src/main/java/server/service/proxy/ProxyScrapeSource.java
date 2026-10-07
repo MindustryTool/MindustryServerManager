@@ -9,6 +9,8 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
+import arc.util.Log;
 import server.utils.HttpClients;
 
 public class ProxyScrapeSource implements ProxySource {
@@ -44,26 +46,42 @@ public class ProxyScrapeSource implements ProxySource {
     }
 
     public static List<InetSocketAddress> parsePlainText(String text) {
+        return parsePlainText(text, "ProxyScrape");
+    }
+
+    public static List<InetSocketAddress> parsePlainText(String text, String sourceName) {
         if (text == null || text.isBlank()) {
             return Collections.emptyList();
         }
 
         List<InetSocketAddress> list = new ArrayList<>();
         String[] lines = text.split("\\r?\\n");
-        
+
         for (String line : lines) {
             String trimmed = line.trim();
             if (trimmed.isEmpty() || trimmed.startsWith("#")) continue;
             String[] parts = trimmed.split(":");
-            if (parts.length >= 2) {
-                try {
-                    String host = parts[0].trim();
-                    int port = Integer.parseInt(parts[1].trim());
-                    if (port > 0 && port <= 65535) {
-                        list.add(new InetSocketAddress(host, port));
-                    }
-                } catch (NumberFormatException ignored) {}
+            if (parts.length < 2) {
+                Log.warn("@: ignoring malformed line '@'", sourceName, trimmed);
+                continue;
             }
+            String host = parts[0].trim();
+            if (host.isEmpty()) {
+                Log.warn("@: ignoring line with empty host '@'", sourceName, trimmed);
+                continue;
+            }
+            int port;
+            try {
+                port = Integer.parseInt(parts[1].trim());
+            } catch (NumberFormatException e) {
+                Log.warn("@: ignoring line with invalid port '@': @", sourceName, trimmed, e.getMessage());
+                continue;
+            }
+            if (port <= 0 || port > 65535) {
+                Log.warn("@: ignoring line with out-of-range port '@'", sourceName, trimmed);
+                continue;
+            }
+            list.add(new InetSocketAddress(host, port));
         }
         return list;
     }

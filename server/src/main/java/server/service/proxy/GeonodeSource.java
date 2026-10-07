@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import arc.util.Log;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import server.utils.HttpClients;
@@ -52,23 +53,39 @@ public class GeonodeSource implements ProxySource {
             return Collections.emptyList();
         }
         List<InetSocketAddress> list = new ArrayList<>();
+        JsonNode root;
         try {
-            JsonNode root = mapper.readTree(json);
-            JsonNode data = root.get("data");
-            if (data != null && data.isArray()) {
-                for (JsonNode node : data) {
-                    JsonNode ipNode = node.get("ip");
-                    JsonNode portNode = node.get("port");
-                    if (ipNode != null && portNode != null) {
-                        String ip = ipNode.asText().trim();
-                        int port = portNode.asInt();
-                        if (port > 0 && port <= 65535) {
-                            list.add(new InetSocketAddress(ip, port));
-                        }
-                    }
-                }
+            root = mapper.readTree(json);
+        } catch (Exception e) {
+            Log.warn("Geonode: failed to parse response JSON: @", e.getMessage());
+            return list;
+        }
+
+        JsonNode data = root.get("data");
+        if (data == null || !data.isArray()) {
+            Log.warn("Geonode: response missing 'data' array");
+            return list;
+        }
+
+        for (JsonNode node : data) {
+            JsonNode ipNode = node.get("ip");
+            JsonNode portNode = node.get("port");
+            if (ipNode == null || portNode == null) {
+                Log.warn("Geonode: ignoring entry missing ip/port: @", node);
+                continue;
             }
-        } catch (Exception ignored) {}
+            String ip = ipNode.asText().trim();
+            if (ip.isEmpty()) {
+                Log.warn("Geonode: ignoring entry with empty ip: @", node);
+                continue;
+            }
+            int port = portNode.asInt();
+            if (port <= 0 || port > 65535) {
+                Log.warn("Geonode: ignoring entry with out-of-range port: @", node);
+                continue;
+            }
+            list.add(new InetSocketAddress(ip, port));
+        }
 
         return list;
     }
