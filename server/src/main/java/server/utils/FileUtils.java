@@ -1,8 +1,11 @@
 package server.utils;
 
 import java.io.IOException;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+
 import arc.files.Fi;
 import arc.util.ArcRuntimeException;
 import arc.util.Log;
@@ -97,10 +100,6 @@ public class FileUtils {
             throw new ApiError(400, "Path is a directory: " + path);
         }
 
-        if (file.exists()) {
-            deleteFile(file);
-        }
-
         if (data.length == 0) {
             try {
                 file.file().createNewFile();
@@ -110,9 +109,31 @@ public class FileUtils {
             return;
         }
 
+        writeFileAtomic(file, data);
+    }
+
+    private static void writeFileAtomic(Fi file, byte[] data) {
         try {
-            file.writeBytes(data);
+            Path target = file.file().toPath().toAbsolutePath().normalize();
+            Path parent = target.getParent();
+            if (parent != null) {
+                Files.createDirectories(parent);
+            }
+            Path temp = Files.createTempFile(parent, ".tmp-", ".tmp");
+            try {
+                Files.write(temp, data);
+                try {
+                    Files.move(temp, target, StandardCopyOption.ATOMIC_MOVE,
+                            StandardCopyOption.REPLACE_EXISTING);
+                } catch (AtomicMoveNotSupportedException e) {
+                    Files.move(temp, target, StandardCopyOption.REPLACE_EXISTING);
+                }
+            } finally {
+                Files.deleteIfExists(temp);
+            }
         } catch (ArcRuntimeException e) {
+            throw new ApiError(500, "Error writing file: [" + file.absolutePath() + "]");
+        } catch (IOException e) {
             throw new ApiError(500, "Error writing file: [" + file.absolutePath() + "]");
         }
     }

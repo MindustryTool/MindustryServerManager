@@ -65,6 +65,11 @@ public class BackendRpc {
         channel.registerHandler("get-manager-mods", Void.class, _ctx -> serverService.getManagerMods());
         channel.registerHandler("get-mismatch", MismatchRequest.class,
                 ctx -> serverService.getMismatch(ctx.body().serverId(), ctx.body().config()));
+        channel.registerHandler("update-config", UpdateConfigRequest.class, ctx -> {
+            var req = ctx.body();
+            serverService.updateConfig(req.serverId(), req.config());
+            return null;
+        });
         channel.registerHandler("get-commands", ServerRef.class,
                 ctx -> await(gatewayService.of(ctx.body().serverId()).server().getCommands(), "get-commands"));
         channel.registerHandler("get-image", ServerRef.class, ctx -> serverService.getImage(ctx.body().serverId()));
@@ -220,6 +225,16 @@ public class BackendRpc {
         public MismatchRequest {
             serverId = Objects.requireNonNull(serverId, "MismatchRequest.serverId");
             config = Objects.requireNonNull(config, "MismatchRequest.config");
+        }
+    }
+
+    public record UpdateConfigRequest(
+            UUID serverId,
+            ServerConfig config) {
+
+        public UpdateConfigRequest {
+            serverId = Objects.requireNonNull(serverId, "UpdateConfigRequest.serverId");
+            config = Objects.requireNonNull(config, "UpdateConfigRequest.config");
         }
     }
 

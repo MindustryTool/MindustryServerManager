@@ -38,3 +38,14 @@ The Server Manager SHALL NOT expose the `/api/v2/*` HTTP endpoints on Javalin po
 #### Scenario: Local plugin gateway remains operational
 - **WHEN** a local Mindustry game container connects to `ws://server-manager:8088/gateway`
 - **THEN** Javalin establishes the WebSocket connection and routes it to `WsHandler`
+
+### Requirement: update-config request dispatch
+The manager SHALL accept `update-config` request frames carrying `{serverId, config}` and route them to the store-only handler, answering success with a `response` frame or validation failures with a `response-error` frame containing the same correlation ID in `responseOf`.
+
+#### Scenario: update-config command execution
+- **WHEN** the backend sends an `update-config` request with server configuration
+- **THEN** the manager persists the config without touching the process and returns a `response` frame with `responseOf` set to the request ID
+
+#### Scenario: update-config execution failure
+- **WHEN** an error or exception occurs while handling `update-config`
+- **THEN** the manager returns a `response-error` frame with the error message in the payload and stores nothing

@@ -11,6 +11,7 @@ import java.time.ZoneOffset;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -138,6 +139,8 @@ public class ServerService {
         try {
             UUID serverId = request.getId();
 
+            storeDesiredConfig(serverId, request);
+
             if (gatewayService.isHosting(serverId)) {
                 return;
             }
@@ -237,9 +240,50 @@ public class ServerService {
     }
 
     public List<ServerMisMatch> getMismatch(UUID serverId, ServerConfig config) {
+        storeDesiredConfig(serverId, config);
         var state = state(serverId);
         var mods = getMods(serverId).stream().filter(mod -> !mod.getName().equals("PluginLoader")).toList();
         return nodeManager.getMismatch(serverId, config, state, mods);
+    }
+
+    public void updateConfig(UUID serverId, ServerConfig config) {
+        storeDesiredConfig(serverId, config);
+    }
+
+    private void storeDesiredConfig(UUID serverId, ServerConfig config) {
+        Objects.requireNonNull(serverId, "serverId");
+        Objects.requireNonNull(config, "config");
+
+        String jwt = null;
+        try {
+            Fi existing = nodeManager.getFile(serverId, "server.json");
+            if (existing.exists()) {
+                ServerConfigMessage current = Utils.objectMapper.readValue(
+                        existing.readBytes(), ServerConfigMessage.class);
+                jwt = current.getJwt();
+            }
+        } catch (Exception e) {
+            Log.warn("Failed to read server.json for @, overwriting", serverId);
+        }
+
+        if (jwt == null || jwt.isBlank()) {
+            jwt = wsHandler.generateServerJwt(serverId);
+        }
+
+        ServerConfigMessage next = new ServerConfigMessage()
+                .setJwt(jwt)
+                .setStartServer(new StartServer()
+                        .setHostCommand(config.getHostCommand())
+                        .setMode(config.getMode()));
+
+        try {
+            nodeManager.writeFile(serverId, "server.json",
+                    Utils.objectMapper
+                            .writerWithDefaultPrettyPrinter()
+                            .writeValueAsBytes(next));
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to serialize server config", e);
+        }
     }
 
     public List<ManagerMap> getManagerMaps() {

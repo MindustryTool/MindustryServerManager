@@ -94,3 +94,15 @@ The system SHALL replace `WEBSOCKET.txt` with a single JSON file `server.json` s
 
 - **WHEN** a gateway JWT expires after one year
 - **THEN** `server.json` is rewritten with a fresh JWT and the stored `startServer` value is unchanged
+
+### Requirement: Stored config refreshed on update-config
+
+The per-server stored configuration SHALL additionally be written on every valid `update-config` call, reusing the same file location and schema as the host path. Storing SHALL NOT start hosting or alter the running process.
+
+#### Scenario: File refreshed on update-config
+- **WHEN** a valid `update-config` arrives and a stored config already exists
+- **THEN** the file is overwritten so the stored config matches the received one and no hosting action occurs
+
+#### Scenario: File created on first update-config
+- **WHEN** a valid `update-config` arrives and no stored config exists
+- **THEN** a stored config is created from the received config and no hosting action occurs
