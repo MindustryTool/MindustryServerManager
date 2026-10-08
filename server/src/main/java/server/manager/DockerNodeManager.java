@@ -27,15 +27,15 @@ import server.service.EventBus;
 import server.types.data.NodeUsage;
 import server.types.data.ServerState;
 import server.types.data.ServerMisMatch;
-import dto.ManagerMapDto;
-import dto.ManagerModDto;
-import dto.MapDto;
-import dto.ModDto;
-import dto.ServerConfig;
-import dto.ServerMetadata;
-import dto.ServerStateDto;
-import events.ServerEvents.LogEvent;
-import enums.NodeRemoveReason;
+import common.content.ManagerMap;
+import common.content.ManagerMod;
+import common.content.MapMetadata;
+import common.content.Mod;
+import common.server.ServerConfig;
+import common.server.ServerMetadata;
+import common.server.ServerSnapshot;
+import common.event.ServerEvents.LogEvent;
+import common.network.NodeRemoveReason;
 import server.utils.ApiError;
 import server.utils.FileUtils;
 import server.utils.Utils;
@@ -336,7 +336,7 @@ public class DockerNodeManager implements NodeManager {
     }
 
     @Override
-    public List<ServerMisMatch> getMismatch(UUID id, ServerConfig config, ServerStateDto state, List<ModDto> mods) {
+    public List<ServerMisMatch> getMismatch(UUID id, ServerConfig config, ServerSnapshot state, List<Mod> mods) {
         var optional = findContainerByServerId(id);
 
         if (optional.isEmpty()) {
@@ -451,7 +451,7 @@ public class DockerNodeManager implements NodeManager {
     }
 
     @Override
-    public List<ManagerMapDto> getManagerMaps() {
+    public List<ManagerMap> getManagerMaps() {
         var result = new HashMap<String, List<UUID>>();
         for (var serverFolder : SERVER_FOLDER.list()) {
             var mapFolder = serverFolder.child("config").child("maps");
@@ -464,17 +464,17 @@ public class DockerNodeManager implements NodeManager {
             }
         }
 
-        List<ManagerMapDto> maps = new ArrayList<>();
+        List<ManagerMap> maps = new ArrayList<>();
         for (var entry : result.entrySet()) {
             var map = Utils.loadMap(getBaseFile(entry.getValue().get(0)), SERVER_FOLDER
                     .child(entry.getValue().get(0).toString()).child("config").child("maps").child(entry.getKey()));
-            maps.add(new ManagerMapDto().setServers(entry.getValue()).setMetadata(map));
+            maps.add(new ManagerMap().setServers(entry.getValue()).setMetadata(map));
         }
         return maps;
     }
 
     @Override
-    public List<ManagerModDto> getManagerMods() {
+    public List<ManagerMod> getManagerMods() {
         var result = new HashMap<String, List<UUID>>();
         for (var serverFolder : SERVER_FOLDER.list()) {
             var modFolder = serverFolder.child("config").child("mods");
@@ -487,21 +487,21 @@ public class DockerNodeManager implements NodeManager {
             }
         }
 
-        List<ManagerModDto> mods = new ArrayList<>();
+        List<ManagerMod> mods = new ArrayList<>();
         for (var entry : result.entrySet()) {
             var meta = Utils.loadMod(SERVER_FOLDER.child(entry.getValue().get(0).toString()).child("config")
                     .child("mods").child(entry.getKey()));
-            mods.add(new ManagerModDto().setData(meta).setServers(entry.getValue()));
+            mods.add(new ManagerMod().setData(meta).setServers(entry.getValue()));
         }
         return mods;
     }
 
     @Override
-    public List<MapDto> getMaps(UUID serverId) {
+    public List<MapMetadata> getMaps(UUID serverId) {
         Fi folder = getFile(serverId, "maps");
         if (!folder.exists())
             return List.of();
-        List<MapDto> maps = new ArrayList<>();
+        List<MapMetadata> maps = new ArrayList<>();
         for (Fi file : folder.findAll(Utils::isMapFile)) {
             maps.add(Utils.loadMap(getBaseFile(serverId), file));
         }
@@ -509,11 +509,11 @@ public class DockerNodeManager implements NodeManager {
     }
 
     @Override
-    public List<ModDto> getMods(UUID serverId) {
+    public List<Mod> getMods(UUID serverId) {
         Fi folder = getFile(serverId, "mods");
         if (!folder.exists())
             return List.of();
-        List<ModDto> mods = new ArrayList<>();
+        List<Mod> mods = new ArrayList<>();
         for (Fi file : folder.findAll(Utils::isModFile)) {
             mods.add(Utils.loadMod(file));
         }

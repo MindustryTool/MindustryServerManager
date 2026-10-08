@@ -26,7 +26,6 @@ dependencies {
 
     implementation("com.auth0:java-jwt:4.4.0")
     implementation("org.modelmapper:modelmapper:3.1.0")
-    implementation(project(":dto"))
     implementation(project(":gateway"))
     implementation(project(":common"))
 
@@ -55,11 +54,6 @@ configurations.all {
     exclude(group = "commons-logging", module = "commons-logging")
 }
 
-tasks.named("jar") {
-    dependsOn(":dto:jar")
-    enabled = false
-}
-
 tasks.named<Jar>("shadowJar") {
     archiveFileName.set("application.jar")
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
@@ -76,7 +70,7 @@ tasks.named<Jar>("shadowJar") {
         attributes("Main-Class" to application.mainClass.get())
     }
 
-    dependsOn(":dto:jar")
+    dependsOn(":common:jar")
 }
 
 tasks.named("build") {

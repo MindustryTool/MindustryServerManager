@@ -1,4 +1,4 @@
-package dto;
+package common.player;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -9,7 +9,7 @@ import lombok.experimental.Accessors;
 @NoArgsConstructor
 @AllArgsConstructor
 @Accessors(chain = true)
-public class RecentPlayerDto {
+public class RecentPlayer {
     private String name;
     private String uuid;
     private String ip;

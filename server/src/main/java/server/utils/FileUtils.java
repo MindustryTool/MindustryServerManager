@@ -6,7 +6,7 @@ import java.nio.file.Path;
 import arc.files.Fi;
 import arc.util.ArcRuntimeException;
 import arc.util.Log;
-import dto.ServerFileDto;
+import common.server.ServerFile;
 import server.config.Const;
 
 public class FileUtils {
@@ -74,7 +74,7 @@ public class FileUtils {
 
         if (file.isDirectory()) {
             return file.seq()
-                    .map(child -> new ServerFileDto()
+                    .map(child -> new ServerFile()
                             .path(toRelativeToServer(child.absolutePath()))
                             .items(child.isDirectory() && child.file().list() != null ? child.file().list().length : 0)
                             .size(child.length())

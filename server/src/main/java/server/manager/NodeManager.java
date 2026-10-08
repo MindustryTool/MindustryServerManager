@@ -9,13 +9,13 @@ import arc.files.Fi;
 import server.types.data.NodeUsage;
 import server.types.data.ServerState;
 import server.types.data.ServerMisMatch;
-import dto.ManagerMapDto;
-import dto.ManagerModDto;
-import dto.MapDto;
-import dto.ModDto;
-import dto.ServerConfig;
-import dto.ServerStateDto;
-import enums.NodeRemoveReason;
+import common.content.ManagerMap;
+import common.content.ManagerMod;
+import common.content.MapMetadata;
+import common.content.Mod;
+import common.server.ServerConfig;
+import common.server.ServerSnapshot;
+import common.network.NodeRemoveReason;
 
 public interface NodeManager {
 
@@ -28,18 +28,18 @@ public interface NodeManager {
     List<ServerMisMatch> getMismatch(
             UUID id,
             ServerConfig config,
-            ServerStateDto state,
-            List<ModDto> mods);
+            ServerSnapshot state,
+            List<Mod> mods);
 
     Closeable getNodeUsage(UUID serverId, Consumer<NodeUsage> onUsage, Consumer<Throwable> onError);
 
-    List<ManagerMapDto> getManagerMaps();
+    List<ManagerMap> getManagerMaps();
 
-    List<ManagerModDto> getManagerMods();
+    List<ManagerMod> getManagerMods();
 
-    List<MapDto> getMaps(UUID serverId);
+    List<MapMetadata> getMaps(UUID serverId);
 
-    List<ModDto> getMods(UUID serverId);
+    List<Mod> getMods(UUID serverId);
 
     Object getFiles(UUID serverId, String path);
 

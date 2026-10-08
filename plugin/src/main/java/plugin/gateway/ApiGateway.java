@@ -15,7 +15,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import dto.RecentPlayerDto;
+import common.player.RecentPlayer;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -42,12 +42,12 @@ import plugin.utils.JsonUtils;
 import plugin.utils.Tr;
 import plugin.utils.Utils;
 import plugin.hub.PaginationRequest;
-import dto.LoginDto;
-import dto.LoginRequestDto;
-import dto.ServerDto;
-import dto.ServerStateDto;
-import events.BaseEvent;
-import events.ServerEvents.ServerStateEvent;
+import common.player.Login;
+import common.player.LoginRequest;
+import common.server.Server;
+import common.server.ServerSnapshot;
+import common.event.BaseEvent;
+import common.event.ServerEvents.ServerStateEvent;
 import lombok.RequiredArgsConstructor;
 import mindustry.game.EventType.PlayEvent;
 import mindustry.game.EventType.StateChangeEvent;
@@ -69,12 +69,12 @@ import plugin.Cfg;
 import plugin.PluginState;
 import plugin.core.Registry;
 import plugin.event.UnloadServerEvent;
-import dto.CommandParamDto;
-import dto.PlayerInfoDto;
-import dto.PlayerInfoPageDto;
-import dto.ServerCommandDto;
-import dto.ServerConfigDto;
-import dto.StartServerDto;
+import common.server.CommandParam;
+import common.player.PlayerRecord;
+import common.player.PlayerRecordPage;
+import common.server.ServerCommand;
+import common.server.ServerConfigMessage;
+import common.server.StartServer;
 import mindustry.Vars;
 import mindustry.core.GameState.State;
 import mindustry.gen.Call;
@@ -97,7 +97,7 @@ public class ApiGateway {
             .headersSupplier(() -> gatewayHeaders(Cfg.webSocketAuthToken(), Cfg.serverId()))
             .build();
 
-    private Cache<PaginationRequest, List<ServerDto>> serverQueryCache = Caffeine.newBuilder()
+    private Cache<PaginationRequest, List<Server>> serverQueryCache = Caffeine.newBuilder()
             .expireAfterWrite(Duration.ofSeconds(15))
             .maximumSize(10)
             .build();
@@ -118,13 +118,13 @@ public class ApiGateway {
     @Init
     public void init() {
         this.registerHandler("get-json", Void.class, _ctx -> getJson());
-        this.registerHandler("update-player", LoginDto.class, ctx -> updatePlayer(ctx.body()));
+        this.registerHandler("update-player", Login.class, ctx -> updatePlayer(ctx.body()));
         this.registerHandler("pause", Void.class, _ctx -> tooglePause());
         this.registerHandler("get-state", Void.class, _ctx -> Utils.getState());
         this.registerHandler("generate-map-image", Void.class, _ctx -> generateMapImage());
         this.registerHandler("send-command", String[].class, ctx -> sendCommand(ctx.body()));
         this.registerHandler("say", String.class, ctx -> say(ctx.body()));
-        this.registerHandler("host", StartServerDto.class, ctx -> host(ctx.body()));
+        this.registerHandler("host", StartServer.class, ctx -> host(ctx.body()));
         this.registerHandler("chat", String.class, ctx -> sendChat(ctx.body()));
         this.registerHandler("is-hosting", Void.class, _ctx -> isHosting());
         this.registerHandler("get-commands", Void.class, _ctx -> getCommands());
@@ -157,7 +157,7 @@ public class ApiGateway {
 
             if (lastIsGame == false && isGame == false) {
                 Log.info("[sky]Server not hosting, auto host");
-                ServerConfigDto serverConfig = Cfg.serverConfig();
+                ServerConfigMessage serverConfig = Cfg.serverConfig();
                 if (serverConfig != null && serverConfig.getStartServer() != null) {
                     host(serverConfig.getStartServer());
                 } else {
@@ -297,7 +297,7 @@ public class ApiGateway {
         return res;
     }
 
-    private Void updatePlayer(LoginDto request) {
+    private Void updatePlayer(Login request) {
         String uuid = request.getUuid();
         SessionService sessionService = Registry.get(SessionService.class);
         Player player = Groups.player.find(p -> p.uuid().equals(uuid));
@@ -360,7 +360,7 @@ public class ApiGateway {
         return null;
     }
 
-    private synchronized Void host(StartServerDto request) {
+    private synchronized Void host(StartServer request) {
         String mapName = request.getMapName();
         String gameMode = request.getMode();
         String commands = request.getHostCommand();
@@ -391,18 +391,18 @@ public class ApiGateway {
         }
     }
 
-    private List<ServerCommandDto> getCommands() {
+    private List<ServerCommand> getCommands() {
         var handler = Registry.get(ServerCommandHandler.class);
-        List<ServerCommandDto> commands = handler.getHandler() == null
+        List<ServerCommand> commands = handler.getHandler() == null
                 ? Arrays.asList()
                 : handler.getHandler()//
                         .getCommandList()
-                        .map(command -> new ServerCommandDto()
+                        .map(command -> new ServerCommand()
                                 .setText(command.text)
                                 .setDescription(command.description)
                                 .setParamText(command.paramText)
                                 .setParams(new Seq<>(command.params)
-                                        .map(param -> new CommandParamDto()//
+                                        .map(param -> new CommandParam()//
                                                 .setName(param.name)//
                                                 .setOptional(param.optional)
                                                 .setVariadic(param.variadic))//
@@ -427,7 +427,7 @@ public class ApiGateway {
         return null;
     }
 
-    private PlayerInfoPageDto getPlayersInfo(JsonNode node) {
+    private PlayerRecordPage getPlayersInfo(JsonNode node) {
         String pageString = node.get("page").asText();
         String sizeString = node.get("size").asText();
         String filter = node.path("filter").asText(null);
@@ -458,10 +458,10 @@ public class ApiGateway {
                     .filter(info -> conditions.stream().allMatch(condition -> condition.test(info)))//
                     .collect(Collectors.toList());
 
-            List<PlayerInfoDto> data = filtered.stream()//
+            List<PlayerRecord> data = filtered.stream()//
                     .skip(offset)//
                     .limit(size)//
-                    .map(ban -> new PlayerInfoDto()
+                    .map(ban -> new PlayerRecord()
                             .setId(ban.id)
                             .setLastName(ban.lastName)
                             .setLastIP(ban.lastIP)
@@ -475,7 +475,7 @@ public class ApiGateway {
                             .setLastKicked(ban.lastKicked))
                     .collect(Collectors.toList());
 
-            return new PlayerInfoPageDto()
+            return new PlayerRecordPage()
                     .setItems(filtered.size())
                     .setPage(page)
                     .setData(data);
@@ -496,7 +496,7 @@ public class ApiGateway {
         return result;
     }
 
-    private List<RecentPlayerDto> getRecentPlayers() {
+    private List<RecentPlayer> getRecentPlayers() {
         if (sessionService == null) {
             return Collections.emptyList();
         }
@@ -533,14 +533,14 @@ public class ApiGateway {
         return Vars.state.isGame() && Control.state == PluginState.LOADED;
     }
 
-    public LoginDto login(Player player) {
-        var body = new LoginRequestDto()
+    public Login login(Player player) {
+        var body = new LoginRequest()
                 .setUuid(player.uuid())
                 .setName(player.name())
                 .setIp(player.ip());
 
         try {
-            return sendRequest("login", body, LoginDto.class).get(5, TimeUnit.SECONDS);
+            return sendRequest("login", body, Login.class).get(5, TimeUnit.SECONDS);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
             throw new RuntimeException("Login failed", e);
         }
@@ -557,12 +557,12 @@ public class ApiGateway {
         }
     }
 
-    public synchronized List<ServerDto> getServers(PaginationRequest request) {
+    public synchronized List<Server> getServers(PaginationRequest request) {
         return serverQueryCache.get(request, _ignore -> {
             try {
                 String query = String.format("servers?page=%s&size=%s", request.getPage(), request.getSize());
 
-                return HttpUtils.sendList(HttpUtils.get(API_URL, query), Duration.ofSeconds(5), ServerDto.class);
+                return HttpUtils.sendList(HttpUtils.get(API_URL, query), Duration.ofSeconds(5), Server.class);
             } catch (Exception e) {
                 Log.err("Failed to fetch server list: " + e.getMessage());
                 return new ArrayList<>();
@@ -598,7 +598,7 @@ public class ApiGateway {
 
     private void sendStateUpdate() {
         try {
-            ServerStateDto state = Utils.getState();
+            ServerSnapshot state = Utils.getState();
             ServerStateEvent event = new ServerStateEvent(Control.SERVER_ID, Arrays.asList(state));
 
             fire(event);

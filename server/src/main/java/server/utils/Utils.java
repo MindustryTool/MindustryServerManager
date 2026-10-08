@@ -25,9 +25,9 @@ import arc.util.Log;
 import arc.util.serialization.Json;
 import arc.util.serialization.Jval;
 import arc.util.serialization.Jval.Jformat;
-import dto.MapDto;
-import dto.ModDto;
-import dto.ModMetaDto;
+import common.content.MapMetadata;
+import common.content.Mod;
+import common.content.ModMetadata;
 import mindustry.core.Version;
 import mindustry.io.MapIO;
 import mindustry.maps.Map;
@@ -113,7 +113,7 @@ public class Utils {
         return meta;
     }
 
-    public static ModDto loadMod(Fi sourceFile) {
+    public static Mod loadMod(Fi sourceFile) {
         try {
             ZipFi rootZip = null;
             try {
@@ -129,10 +129,10 @@ public class Utils {
                     throw new ApiError(422, "Invalid file: No mod.json found.");
                 }
 
-                return new ModDto()
+                return new Mod()
                         .setFilename(FileUtils.toRelativeToServer(sourceFile.absolutePath()))
                         .setName(meta.name)
-                        .setMeta(new ModMetaDto()
+                        .setMeta(new ModMetadata()
                                 .setAuthor(meta.author)
                                 .setDependencies(meta.dependencies.list())
                                 .setDescription(meta.description)
@@ -157,10 +157,10 @@ public class Utils {
         } catch (Exception error) {
             Log.err("Can not load mod from: " + sourceFile.name() + ", " + error.getMessage());
 
-            return new ModDto()
+            return new Mod()
                     .setFilename(FileUtils.toRelativeToServer(sourceFile.absolutePath()))
                     .setName("Error")
-                    .setMeta(new ModMetaDto()
+                    .setMeta(new ModMetadata()
                             .setAuthor("Error")
                             .setName("Error")
                             .setDisplayName("Error"));
@@ -175,7 +175,7 @@ public class Utils {
         return file.extension().equalsIgnoreCase("msav");
     }
 
-    public static MapDto loadMap(Fi baseFolder, Fi file) {
+    public static MapMetadata loadMap(Fi baseFolder, Fi file) {
         Map map = null;
         try {
             map = MapIO.createMap(file, true);
@@ -184,7 +184,7 @@ public class Utils {
             map = new Map(file, 0, 0, new StringMap(), true, 0, Version.build);
         }
 
-        return new MapDto()
+        return new MapMetadata()
                 .setName(map.name())
                 .setFilename(FileUtils.toRelativeToServer(map.file.absolutePath()))
                 .setCustom(map.custom)

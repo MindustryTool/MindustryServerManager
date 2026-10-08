@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import arc.util.Log;
-import events.BaseEvent;
+import common.event.BaseEvent;
 
 public class EventBus {
 

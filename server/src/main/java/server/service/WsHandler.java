@@ -12,7 +12,7 @@ import com.auth0.jwt.exceptions.JWTVerificationException;
 
 import arc.files.Fi;
 import arc.util.Log;
-import dto.ServerConfigDto;
+import common.server.ServerConfigMessage;
 import io.javalin.websocket.WsConfig;
 import io.javalin.websocket.WsContext;
 import server.manager.NodeManager;
@@ -114,12 +114,12 @@ public class WsHandler {
     }
 
     public void rewiteJwt(UUID serverId) {
-        ServerConfigDto serverConfig = new ServerConfigDto();
+        ServerConfigMessage serverConfig = new ServerConfigMessage();
 
         try {
             Fi serverConfigFile = nodeManager.getFile(serverId, "server.json");
             if (serverConfigFile.exists()) {
-                serverConfig = Utils.objectMapper.readValue(serverConfigFile.readBytes(), ServerConfigDto.class);
+                serverConfig = Utils.objectMapper.readValue(serverConfigFile.readBytes(), ServerConfigMessage.class);
             }
         } catch (Exception ex) {
             Log.warn("Failed to read server.json for @, creating fresh", serverId);

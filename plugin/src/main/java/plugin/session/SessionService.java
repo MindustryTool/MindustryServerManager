@@ -14,8 +14,8 @@ import arc.graphics.Color;
 import arc.struct.Seq;
 import arc.util.Log;
 import arc.util.Strings;
-import dto.LoginDto;
-import dto.RecentPlayerDto;
+import common.player.Login;
+import common.player.RecentPlayer;
 import lombok.RequiredArgsConstructor;
 import mindustry.Vars;
 import mindustry.game.EventType.PlayerJoin;
@@ -39,10 +39,10 @@ import plugin.utils.Utils;
 @RequiredArgsConstructor
 public class SessionService {
     private static class RecentPlayerEntry {
-        final RecentPlayerDto dto;
+        final RecentPlayer dto;
         volatile long leftAt;
 
-        RecentPlayerEntry(RecentPlayerDto dto, long leftAt) {
+        RecentPlayerEntry(RecentPlayer dto, long leftAt) {
             this.dto = dto;
             this.leftAt = leftAt;
         }
@@ -115,7 +115,7 @@ public class SessionService {
     public void onPlayerJoin(PlayerJoin event) {
         if (event.player != null) {
             recentPlayers.put(event.player.uuid(), new RecentPlayerEntry(
-                    new RecentPlayerDto()
+                    new RecentPlayer()
                             .setName(event.player.name)
                             .setIp(event.player.ip())
                             .setUuid(event.player.uuid())
@@ -135,7 +135,7 @@ public class SessionService {
                 recent.dto.setIp(event.player.ip());
             } else {
                 recentPlayers.put(event.player.uuid(), new RecentPlayerEntry(
-                        new RecentPlayerDto()
+                        new RecentPlayer()
                                 .setName(event.player.name)
                                 .setIp(event.player.ip())
                                 .setUuid(event.player.uuid())
@@ -150,9 +150,9 @@ public class SessionService {
         return data;
     }
 
-    public List<RecentPlayerDto> getRecentPlayers() {
+    public List<RecentPlayer> getRecentPlayers() {
         cleanupRecentPlayers();
-        List<RecentPlayerDto> list = new ArrayList<>(recentPlayers.size());
+        List<RecentPlayer> list = new ArrayList<>(recentPlayers.size());
         for (RecentPlayerEntry entry : recentPlayers.values()) {
             list.add(entry.dto);
         }
@@ -335,7 +335,7 @@ public class SessionService {
         return null;
     }
 
-    public void setLogin(Session session, LoginDto login) {
+    public void setLogin(Session session, Login login) {
         if (login != null) {
             UserBanService userBanService = Registry.get(UserBanService.class);
             if (userBanService != null && userBanService.isBanned(login.getUserId())) {

@@ -3,7 +3,6 @@ WORKDIR /home/gradle/src
 
 COPY --chown=gradle:gradle gradle/ /home/gradle/src/gradle/
 COPY --chown=gradle:gradle gradlew gradlew.bat settings.gradle.kts build.gradle.kts gradle.properties /home/gradle/src/
-COPY --chown=gradle:gradle dto/build.gradle.kts /home/gradle/src/dto/build.gradle.kts
 COPY --chown=gradle:gradle plugin/build.gradle.kts plugin/gradle.properties /home/gradle/src/plugin/
 COPY --chown=gradle:gradle server/build.gradle.kts /home/gradle/src/server/build.gradle.kts
 

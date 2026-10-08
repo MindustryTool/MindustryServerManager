@@ -13,7 +13,7 @@ import java.util.regex.Pattern;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import dto.TranslationResponseDto;
+import common.translation.TranslationResponse;
 import server.service.MultiSourceProxyPool;
 import server.service.TrackedProxy;
 import server.service.TranslationProvider;
@@ -68,7 +68,7 @@ public class GoogleWebProvider implements TranslationProvider {
     }
 
     @Override
-    public TranslationResponseDto translate(String text, String targetLang) throws Exception {
+    public TranslationResponse translate(String text, String targetLang) throws Exception {
         if (text == null || text.isBlank() || targetLang == null || targetLang.isBlank()) {
             return null;
         }
@@ -85,7 +85,7 @@ public class GoogleWebProvider implements TranslationProvider {
         }
     }
 
-    private TranslationResponseDto executeDirectRequest(String url) throws Exception {
+    private TranslationResponse executeDirectRequest(String url) throws Exception {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(url))
                 .header("User-Agent", USER_AGENT)
@@ -106,7 +106,7 @@ public class GoogleWebProvider implements TranslationProvider {
         return parseResponse(response.body());
     }
 
-    private TranslationResponseDto executeProxiedRequest(String url) throws Exception {
+    private TranslationResponse executeProxiedRequest(String url) throws Exception {
         Exception lastException = null;
 
         for (int attempt = 1; attempt <= MAX_PROXY_ATTEMPTS; attempt++) {
@@ -150,7 +150,7 @@ public class GoogleWebProvider implements TranslationProvider {
                 lastException.getMessage(), lastException);
     }
 
-    public TranslationResponseDto parseResponse(String jsonBody) throws Exception {
+    public TranslationResponse parseResponse(String jsonBody) throws Exception {
         JsonNode root = objectMapper.readTree(jsonBody);
         if (root == null || !root.isArray() || root.isEmpty()) {
             throw new IllegalArgumentException("Invalid response format from Google Web Translate: " + jsonBody);
@@ -172,7 +172,7 @@ public class GoogleWebProvider implements TranslationProvider {
         }
 
         String decodedText = unescapeHtml(translatedText.toString());
-        return new TranslationResponseDto(decodedText, sourceLanguage);
+        return new TranslationResponse(decodedText, sourceLanguage);
     }
 
     public static String unescapeHtml(String text) {

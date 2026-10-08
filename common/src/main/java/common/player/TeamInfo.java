@@ -1,11 +1,11 @@
-package dto;
+package common.player;
 
 import lombok.Data;
 import lombok.experimental.Accessors;
 
 @Data
 @Accessors(chain = true)
-public class TeamDto {
+public class TeamInfo {
     private String name;
     private String color;
 }

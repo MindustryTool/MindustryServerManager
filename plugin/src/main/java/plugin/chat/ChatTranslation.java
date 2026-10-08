@@ -14,8 +14,8 @@ import arc.Core;
 import arc.util.Log;
 import arc.util.Strings;
 import common.ratelimit.KeyedRateLimiter;
-import dto.TranslationRequestDto;
-import dto.TranslationResponseDto;
+import common.translation.TranslationRequest;
+import common.translation.TranslationResponse;
 import lombok.RequiredArgsConstructor;
 import mindustry.Vars;
 import mindustry.gen.Groups;
@@ -101,10 +101,10 @@ public class ChatTranslation {
                 Log.debug("Chat translation processing for neededLangs: @, message: '@'", neededLangs, cleanText);
                 for (String lang : neededLangs) {
                     try {
-                        TranslationResponseDto res = apiGateway.sendRequest(
+                        TranslationResponse res = apiGateway.sendRequest(
                                 "translate",
-                                new TranslationRequestDto(cleanText, lang),
-                                TranslationResponseDto.class
+                                new TranslationRequest(cleanText, lang),
+                                TranslationResponse.class
                         ).get(8, TimeUnit.SECONDS);
 
                         if (res != null && res.getTranslatedText() != null && !res.getTranslatedText().isBlank()) {

@@ -1,4 +1,4 @@
-package enums;
+package common.network;
 
 public enum NodeRemoveReason {
     NO_PLAYER,

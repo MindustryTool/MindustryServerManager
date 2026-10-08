@@ -7,7 +7,7 @@ import plugin.core.Registry;
 import plugin.gateway.ApiGateway;
 import plugin.utils.Tr;
 import plugin.session.Session;
-import dto.ServerDto;
+import common.server.Server;
 
 import java.util.Comparator;
 import java.util.List;
@@ -23,12 +23,12 @@ public class ServerListMenu extends PluginMenu<Integer> {
             int size = 4;
 
             PaginationRequest request = new PaginationRequest().setPage(page).setSize(size);
-            List<ServerDto> servers = Registry.get(ApiGateway.class).getServers(request);
+            List<Server> servers = Registry.get(ApiGateway.class).getServers(request);
 
             this.title = Tr.t(session.locale, "hub.list.title");
             this.description = Tr.t(session.locale, "hub.choose_server");
 
-            servers.stream().sorted(Comparator.comparing(ServerDto::getPlayers).reversed()).forEach(server -> {
+            servers.stream().sorted(Comparator.comparing(Server::getPlayers).reversed()).forEach(server -> {
                 row();
                 var mods = server.getMods();
 

@@ -11,11 +11,10 @@ import java.util.concurrent.TimeUnit;
 
 import arc.Core;
 import arc.graphics.Color;
-import arc.net.Server;
 import arc.struct.Seq;
 import arc.util.Log;
 import arc.util.Strings;
-import dto.ServerDto;
+import common.server.Server;
 import lombok.RequiredArgsConstructor;
 import mindustry.Vars;
 import mindustry.content.Blocks;
@@ -50,7 +49,7 @@ import plugin.Tasks;
 public class HubService {
 
     private final Seq<ServerCore> serverCores = new Seq<>();
-    private Seq<ServerDto> servers = new Seq<>();
+    private Seq<Server> servers = new Seq<>();
 
     private final SessionService sessionService;
     private final ApiGateway apiGateway;
@@ -111,7 +110,7 @@ public class HubService {
             var provider = (ArcNetProvider) providerField.get(Vars.net);
             var serverField = ArcNetProvider.class.getDeclaredField("server");
             serverField.setAccessible(true);
-            var server = (Server) serverField.get(provider);
+            var server = (arc.net.Server) serverField.get(provider);
 
             server.setDiscoveryHandler((address, handler) -> {
                 String name = Administration.Config.serverName.string();
@@ -264,7 +263,7 @@ public class HubService {
         switch (type) {
             case WorldLabel: {
                 for (var core : serverCores) {
-                    ServerDto server = core.getServer();
+                    Server server = core.getServer();
                     if (server == null) {
                         continue;
                     }
@@ -330,7 +329,7 @@ public class HubService {
     }
 
     private TextMarker createServerMarker(ServerCore core) {
-        ServerDto server = core.getServer();
+        Server server = core.getServer();
 
         if (server == null) {
             return null;
@@ -344,7 +343,7 @@ public class HubService {
         return new TextMarker(message, x, y);
     }
 
-    private String createServerString(ServerDto server) {
+    private String createServerString(Server server) {
         var mods = new ArrayList<>(server.getMods());
 
         mods.removeIf(m -> m.contains("Controller") || m.contains("PluginLoader"));

@@ -6,7 +6,6 @@ WORKDIR /home/gradle/src
 
 COPY gradle/ /home/gradle/src/gradle/
 COPY gradlew gradlew.bat settings.gradle.kts build.gradle.kts gradle.properties /home/gradle/src/
-COPY dto/build.gradle.kts /home/gradle/src/dto/build.gradle.kts
 COPY annotation/build.gradle.kts /home/gradle/src/annotation/build.gradle.kts
 COPY database/build.gradle.kts /home/gradle/src/database/build.gradle.kts
 COPY gateway/build.gradle.kts /home/gradle/src/gateway/build.gradle.kts

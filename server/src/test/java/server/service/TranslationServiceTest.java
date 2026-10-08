@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
 
-import dto.TranslationResponseDto;
+import common.translation.TranslationResponse;
 import server.service.translation.ProviderState;
 import server.service.translation.TranslationService;
 
@@ -25,22 +25,22 @@ public class TranslationServiceTest {
             }
 
             @Override
-            public TranslationResponseDto translate(String text, String targetLang) {
+            public TranslationResponse translate(String text, String targetLang) {
                 callCount.incrementAndGet();
-                return new TranslationResponseDto("Translated: " + text, "auto");
+                return new TranslationResponse("Translated: " + text, "auto");
             }
         };
 
         TranslationService service = new TranslationService(Caffeine.newBuilder().build(), provider);
 
         // First call: cache miss -> provider called
-        TranslationResponseDto first = service.translate("Hello", "vi");
+        TranslationResponse first = service.translate("Hello", "vi");
         assertNotNull(first);
         assertEquals("Translated: Hello", first.getTranslatedText());
         assertEquals(1, callCount.get());
 
         // Second call: cache hit -> provider not called
-        TranslationResponseDto second = service.translate("Hello", "vi");
+        TranslationResponse second = service.translate("Hello", "vi");
         assertNotNull(second);
         assertEquals("Translated: Hello", second.getTranslatedText());
         assertEquals(1, callCount.get());
@@ -58,9 +58,9 @@ public class TranslationServiceTest {
             }
 
             @Override
-            public TranslationResponseDto translate(String text, String targetLang) {
+            public TranslationResponse translate(String text, String targetLang) {
                 p1Calls.incrementAndGet();
-                return new TranslationResponseDto("P1: " + text, "en");
+                return new TranslationResponse("P1: " + text, "en");
             }
         };
 
@@ -71,9 +71,9 @@ public class TranslationServiceTest {
             }
 
             @Override
-            public TranslationResponseDto translate(String text, String targetLang) {
+            public TranslationResponse translate(String text, String targetLang) {
                 p2Calls.incrementAndGet();
-                return new TranslationResponseDto("P2: " + text, "en");
+                return new TranslationResponse("P2: " + text, "en");
             }
         };
 
@@ -81,10 +81,10 @@ public class TranslationServiceTest {
         service.registerProvider(0, 10, p1);
         service.registerProvider(0, 20, p2);
 
-        TranslationResponseDto res1 = service.translate("msg1", "vi");
-        TranslationResponseDto res2 = service.translate("msg2", "vi");
-        TranslationResponseDto res3 = service.translate("msg3", "vi");
-        TranslationResponseDto res4 = service.translate("msg4", "vi");
+        TranslationResponse res1 = service.translate("msg1", "vi");
+        TranslationResponse res2 = service.translate("msg2", "vi");
+        TranslationResponse res3 = service.translate("msg3", "vi");
+        TranslationResponse res4 = service.translate("msg4", "vi");
 
         assertEquals(2, p1Calls.get(), "P1 should be called twice in round-robin");
         assertEquals(2, p2Calls.get(), "P2 should be called twice in round-robin");
@@ -111,9 +111,9 @@ public class TranslationServiceTest {
             }
 
             @Override
-            public TranslationResponseDto translate(String text, String targetLang) {
+            public TranslationResponse translate(String text, String targetLang) {
                 p1Calls.incrementAndGet();
-                return new TranslationResponseDto("P1: " + text, "en");
+                return new TranslationResponse("P1: " + text, "en");
             }
         };
 
@@ -129,9 +129,9 @@ public class TranslationServiceTest {
             }
 
             @Override
-            public TranslationResponseDto translate(String text, String targetLang) {
+            public TranslationResponse translate(String text, String targetLang) {
                 p2Calls.incrementAndGet();
-                return new TranslationResponseDto("P2: " + text, "en");
+                return new TranslationResponse("P2: " + text, "en");
             }
         };
 
@@ -139,8 +139,8 @@ public class TranslationServiceTest {
         service.registerProvider(0, 10, coolingDownP1);
         service.registerProvider(0, 20, activeP2);
 
-        TranslationResponseDto res1 = service.translate("msg1", "vi");
-        TranslationResponseDto res2 = service.translate("msg2", "vi");
+        TranslationResponse res1 = service.translate("msg1", "vi");
+        TranslationResponse res2 = service.translate("msg2", "vi");
 
         assertEquals(0, p1Calls.get(), "Cooling down provider should not be called");
         assertEquals(2, p2Calls.get(), "Active provider should handle all requests");
@@ -162,7 +162,7 @@ public class TranslationServiceTest {
             }
 
             @Override
-            public TranslationResponseDto translate(String text, String targetLang) {
+            public TranslationResponse translate(String text, String targetLang) {
                 throw new UnsupportedOperationException("Should not be called");
             }
         };
@@ -180,9 +180,9 @@ public class TranslationServiceTest {
             }
 
             @Override
-            public TranslationResponseDto translate(String text, String targetLang) {
+            public TranslationResponse translate(String text, String targetLang) {
                 tier1Calls.incrementAndGet();
-                return new TranslationResponseDto("Tier1: " + text, "en");
+                return new TranslationResponse("Tier1: " + text, "en");
             }
         };
 
@@ -190,7 +190,7 @@ public class TranslationServiceTest {
         service.registerProvider(0, 10, tier0Unavailable);
         service.registerProvider(1, 10, tier1Available);
 
-        TranslationResponseDto result = service.translate("test", "vi");
+        TranslationResponse result = service.translate("test", "vi");
         assertNotNull(result);
         assertEquals("Tier1: test", result.getTranslatedText());
         assertEquals(1, tier1Calls.get());
@@ -208,7 +208,7 @@ public class TranslationServiceTest {
             }
 
             @Override
-            public TranslationResponseDto translate(String text, String targetLang) throws Exception {
+            public TranslationResponse translate(String text, String targetLang) throws Exception {
                 primaryCalls.incrementAndGet();
                 throw new RuntimeException("Simulated API failure");
             }
@@ -221,9 +221,9 @@ public class TranslationServiceTest {
             }
 
             @Override
-            public TranslationResponseDto translate(String text, String targetLang) {
+            public TranslationResponse translate(String text, String targetLang) {
                 backupCalls.incrementAndGet();
-                return new TranslationResponseDto("Backup text", "en");
+                return new TranslationResponse("Backup text", "en");
             }
         };
 
@@ -231,7 +231,7 @@ public class TranslationServiceTest {
         service.registerProvider(0, 10, failingPrimary);
         service.registerProvider(0, 20, backup);
 
-        TranslationResponseDto result = service.translate("test", "vi");
+        TranslationResponse result = service.translate("test", "vi");
         assertNotNull(result, "Should succeed using the backup provider");
         assertEquals("Backup text", result.getTranslatedText());
         assertEquals(1, primaryCalls.get(), "Primary should be attempted once");
@@ -250,7 +250,7 @@ public class TranslationServiceTest {
             }
 
             @Override
-            public TranslationResponseDto translate(String text, String targetLang) throws Exception {
+            public TranslationResponse translate(String text, String targetLang) throws Exception {
                 tier0Calls.incrementAndGet();
                 throw new RuntimeException("Tier 0 down");
             }
@@ -263,9 +263,9 @@ public class TranslationServiceTest {
             }
 
             @Override
-            public TranslationResponseDto translate(String text, String targetLang) {
+            public TranslationResponse translate(String text, String targetLang) {
                 tier1Calls.incrementAndGet();
-                return new TranslationResponseDto("Tier1: " + text, "en");
+                return new TranslationResponse("Tier1: " + text, "en");
             }
         };
 
@@ -273,7 +273,7 @@ public class TranslationServiceTest {
         service.registerProvider(0, 10, tier0Failing);
         service.registerProvider(1, 10, tier1Available);
 
-        TranslationResponseDto result = service.translate("escalation-test", "vi");
+        TranslationResponse result = service.translate("escalation-test", "vi");
         assertNotNull(result, "Should fall back to tier 1");
         assertEquals("Tier1: escalation-test", result.getTranslatedText());
         assertEquals(1, tier0Calls.get(), "Tier 0 should have been tried once");
@@ -291,7 +291,7 @@ public class TranslationServiceTest {
             }
 
             @Override
-            public TranslationResponseDto translate(String text, String targetLang) throws Exception {
+            public TranslationResponse translate(String text, String targetLang) throws Exception {
                 callCount.incrementAndGet();
                 throw new RuntimeException("Simulated failure #" + callCount.get());
             }
@@ -310,7 +310,7 @@ public class TranslationServiceTest {
             }
 
             @Override
-            public TranslationResponseDto translate(String text, String targetLang) throws Exception {
+            public TranslationResponse translate(String text, String targetLang) throws Exception {
                 p1.incrementAndGet();
                 throw new RuntimeException("fail");
             }
@@ -322,7 +322,7 @@ public class TranslationServiceTest {
             }
 
             @Override
-            public TranslationResponseDto translate(String text, String targetLang) throws Exception {
+            public TranslationResponse translate(String text, String targetLang) throws Exception {
                 p2.incrementAndGet();
                 throw new RuntimeException("fail");
             }
@@ -334,7 +334,7 @@ public class TranslationServiceTest {
             }
 
             @Override
-            public TranslationResponseDto translate(String text, String targetLang) throws Exception {
+            public TranslationResponse translate(String text, String targetLang) throws Exception {
                 p3.incrementAndGet();
                 throw new RuntimeException("fail");
             }
@@ -345,7 +345,7 @@ public class TranslationServiceTest {
         service.registerProvider(0, 20, fp2);
         service.registerProvider(0, 30, fp3);
 
-        TranslationResponseDto result = service.translate("test", "vi");
+        TranslationResponse result = service.translate("test", "vi");
         assertNull(result, "Should return null after 3 failed attempts");
         int totalAttempts = p1.get() + p2.get() + p3.get();
         assertEquals(3, totalAttempts, "Exactly 3 total attempts should have been made");
@@ -365,7 +365,7 @@ public class TranslationServiceTest {
             }
 
             @Override
-            public TranslationResponseDto translate(String text, String targetLang) {
+            public TranslationResponse translate(String text, String targetLang) {
                 return null;
             }
         };
@@ -385,12 +385,12 @@ public class TranslationServiceTest {
             }
 
             @Override
-            public TranslationResponseDto translate(String text, String targetLang) throws Exception {
+            public TranslationResponse translate(String text, String targetLang) throws Exception {
                 if (failNext.get() > 0) {
                     failNext.decrementAndGet();
                     throw new RuntimeException("Simulated failure");
                 }
-                return new TranslationResponseDto("ok: " + text, "en");
+                return new TranslationResponse("ok: " + text, "en");
             }
         };
 
@@ -422,10 +422,10 @@ public class TranslationServiceTest {
             }
 
             @Override
-            public TranslationResponseDto translate(String text, String targetLang) throws Exception {
+            public TranslationResponse translate(String text, String targetLang) throws Exception {
                 if (successNext.get() > 0) {
                     successNext.decrementAndGet();
-                    return new TranslationResponseDto("recovered: " + text, "en");
+                    return new TranslationResponse("recovered: " + text, "en");
                 }
                 throw new RuntimeException("Simulated failure");
             }

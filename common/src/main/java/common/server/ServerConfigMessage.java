@@ -1,11 +1,11 @@
-package dto;
+package common.server;
 
 import lombok.Data;
 import lombok.experimental.Accessors;
 
 @Data
 @Accessors(chain = true)
-public class ServerConfigDto {
+public class ServerConfigMessage {
     String jwt;
-    StartServerDto startServer;
+    StartServer startServer;
 }

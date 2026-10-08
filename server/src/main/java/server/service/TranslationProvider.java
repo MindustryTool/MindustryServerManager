@@ -1,6 +1,6 @@
 package server.service;
 
-import dto.TranslationResponseDto;
+import common.translation.TranslationResponse;
 
 /**
  * Functional contract for a translation provider backend.
@@ -25,8 +25,8 @@ public interface TranslationProvider {
      *
      * @param text       Plain text to translate.
      * @param targetLang Target language code (e.g., "en", "vi").
-     * @return TranslationResponseDto containing translated text and detected source language.
+     * @return TranslationResponse containing translated text and detected source language.
      * @throws Exception If translation fails or the service is unreachable.
      */
-    TranslationResponseDto translate(String text, String targetLang) throws Exception;
+    TranslationResponse translate(String text, String targetLang) throws Exception;
 }

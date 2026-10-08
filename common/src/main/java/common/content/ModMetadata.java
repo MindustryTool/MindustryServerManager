@@ -1,4 +1,4 @@
-package dto;
+package common.content;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,7 +9,7 @@ import mindustry.mod.Mods.ModMeta;
 
 @Data
 @Accessors(chain = true)
-public class ModMetaDto {
+public class ModMetadata {
     private String name;
     private String internalName;
     private String minGameVersion = "0";
@@ -18,8 +18,8 @@ public class ModMetaDto {
     private boolean hidden;
     private boolean java;
 
-    public static ModMetaDto from(ModMeta meta) {
-        return new ModMetaDto()//
+    public static ModMetadata from(ModMeta meta) {
+        return new ModMetadata()//
                 .setAuthor(meta.author)//
                 .setDependencies(meta.dependencies.list())
                 .setDescription(meta.description)

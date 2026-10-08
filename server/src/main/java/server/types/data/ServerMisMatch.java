@@ -9,11 +9,11 @@ import com.github.dockerjava.api.exception.BadRequestException;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.Accessors;
-import dto.ModDto;
-import dto.ServerConfig;
-import dto.ServerMetadata;
-import dto.ServerStateDto;
-import dto.ServerStatus;
+import common.content.Mod;
+import common.server.ServerConfig;
+import common.server.ServerMetadata;
+import common.server.ServerSnapshot;
+import common.server.ServerStatus;
 
 @Data
 @Accessors(chain = true)
@@ -26,8 +26,8 @@ public class ServerMisMatch {
 	public static List<ServerMisMatch> from(
 			ServerMetadata meta,
 			ServerConfig expectedConfig,
-			ServerStateDto state,
-			List<ModDto> mods//
+			ServerSnapshot state,
+			List<Mod> mods//
 	) {
 		if (state.getStatus().equals(ServerStatus.NOT_RESPONSE)) {
 			throw new BadRequestException("Server not response");

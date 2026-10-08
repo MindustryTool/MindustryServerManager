@@ -34,24 +34,24 @@ import common.ratelimit.KeyedRateLimiter;
 import server.utils.HttpClients;
 import lombok.Getter;
 import lombok.experimental.Accessors;
-import dto.LoginDto;
-import dto.LoginRequestDto;
-import dto.PlayerInfoPageDto;
-import dto.RecentPlayerDto;
-import dto.ServerCommandDto;
-import dto.ServerStateDto;
-import dto.StartServerDto;
-import dto.TranslationRequestDto;
+import common.player.Login;
+import common.player.LoginRequest;
+import common.player.PlayerRecordPage;
+import common.player.RecentPlayer;
+import common.server.ServerCommand;
+import common.server.ServerSnapshot;
+import common.server.StartServer;
+import common.translation.TranslationRequest;
 import gateway.rpc.RequestContext;
 import gateway.wire.StreamReply;
 import gateway.rpc.RpcChannel;
 import gateway.session.WsSession;
 import gateway.wire.WsProtocol;
-import enums.NodeRemoveReason;
-import events.BaseEvent;
-import events.ServerEvents;
-import events.ServerEvents.StartEvent;
-import events.ServerEvents.StopEvent;
+import common.network.NodeRemoveReason;
+import common.event.BaseEvent;
+import common.event.ServerEvents;
+import common.event.ServerEvents.StartEvent;
+import common.event.ServerEvents.StopEvent;
 import io.javalin.websocket.WsCloseContext;
 import io.javalin.websocket.WsConnectContext;
 import io.javalin.websocket.WsContext;
@@ -194,9 +194,9 @@ public class GatewayService {
             this.lastDisconnectAt = createdAt;
 
             this.registerHandler("get-total-player", Void.class, _ctx -> 0L);
-            this.registerHandler("login", LoginRequestDto.class, ctx -> backend.login(id, ctx.body()));
+            this.registerHandler("login", LoginRequest.class, ctx -> backend.login(id, ctx.body()));
             this.registerHandler("host", UUID.class, ctx -> backend.host(ctx.body()));
-            this.registerHandler("translate", TranslationRequestDto.class, ctx -> {
+            this.registerHandler("translate", TranslationRequest.class, ctx -> {
                 if (!translationRateLimiter.tryAcquire(id)) {
                     Log.debug("Translation rate limited for server @", id);
                     return null;
@@ -362,7 +362,7 @@ public class GatewayService {
                 }
             }
 
-            public LoginDto login(UUID id, LoginRequestDto body) {
+            public Login login(UUID id, LoginRequest body) {
                 try {
                     HttpRequest request = createRequest("servers", id, "login")
                             .POST(HttpRequest.BodyPublishers.ofString(Utils.toJsonString(body)))
@@ -375,7 +375,7 @@ public class GatewayService {
                         throw new ApiError(result.statusCode(), "Failed to login server: " + result.body());
                     }
 
-                    return Utils.readJsonAsClass(result.body(), LoginDto.class);
+                    return Utils.readJsonAsClass(result.body(), Login.class);
                 } catch (Exception e) {
                     if (e instanceof ApiError apiError) {
                         throw apiError;
@@ -421,7 +421,7 @@ public class GatewayService {
                 return sendRequest("get-json", null, JsonNode.class);
             }
 
-            public CompletableFuture<Void> updatePlayer(String uuid, LoginDto request) {
+            public CompletableFuture<Void> updatePlayer(String uuid, Login request) {
                 return sendRequest("update-player", request);
             }
 
@@ -429,8 +429,8 @@ public class GatewayService {
                 return sendRequest("pause", null, Boolean.class);
             }
 
-            public CompletableFuture<ServerStateDto> getState() {
-                return sendRequest("get-state", null, ServerStateDto.class);
+            public CompletableFuture<ServerSnapshot> getState() {
+                return sendRequest("get-state", null, ServerSnapshot.class);
             }
 
             public CompletableFuture<byte[]> getImage() {
@@ -454,7 +454,7 @@ public class GatewayService {
                 return sendRequest("say", message);
             }
 
-            public CompletableFuture<Void> host(StartServerDto request) {
+            public CompletableFuture<Void> host(StartServer request) {
                 return sendRequest("host", request);
             }
 
@@ -470,17 +470,17 @@ public class GatewayService {
                 return sendRequest("is-hosting", null, Boolean.class);
             }
 
-            public CompletableFuture<List<ServerCommandDto>> getCommands() {
+            public CompletableFuture<List<ServerCommand>> getCommands() {
                 return sendRequest("get-commands", null, JsonNode.class).thenApply(n -> {
                     try {
-                        return Utils.getObjectMapper().readerForListOf(ServerCommandDto.class).readValue(n);
+                        return Utils.getObjectMapper().readerForListOf(ServerCommand.class).readValue(n);
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }
                 });
             }
 
-            public CompletableFuture<PlayerInfoPageDto> getPlayersInfo(int page, int size,
+            public CompletableFuture<PlayerRecordPage> getPlayersInfo(int page, int size,
                     Boolean banned, String filter//
             ) {
                 ObjectNode payload = Utils.getObjectMapper().createObjectNode();
@@ -497,7 +497,7 @@ public class GatewayService {
                     payload.put("filter", filter);
                 }
 
-                return sendRequest("get-players-info", payload, PlayerInfoPageDto.class);
+                return sendRequest("get-players-info", payload, PlayerRecordPage.class);
             }
 
             public CompletableFuture<Map<String, Long>> getKickedIps() {
@@ -511,10 +511,10 @@ public class GatewayService {
                         });
             }
 
-            public CompletableFuture<List<RecentPlayerDto>> getRecentPlayers() {
+            public CompletableFuture<List<RecentPlayer>> getRecentPlayers() {
                 return sendRequest("get-recent-players", null, JsonNode.class).thenApply(n -> {
                     try {
-                        return Utils.getObjectMapper().readerForListOf(RecentPlayerDto.class).readValue(n);
+                        return Utils.getObjectMapper().readerForListOf(RecentPlayer.class).readValue(n);
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }

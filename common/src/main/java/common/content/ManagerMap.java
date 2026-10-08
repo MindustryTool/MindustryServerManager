@@ -1,4 +1,4 @@
-package dto;
+package common.content;
 
 import java.util.List;
 import java.util.UUID;
@@ -8,7 +8,7 @@ import lombok.experimental.Accessors;
 
 @Data
 @Accessors(chain = true)
-public class ManagerMapDto {
-    private MapDto metadata;
+public class ManagerMap {
+    private MapMetadata metadata;
     private List<UUID> servers;
 }

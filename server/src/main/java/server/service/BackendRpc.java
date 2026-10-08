@@ -10,9 +10,9 @@ import java.util.Objects;
 
 import arc.files.Fi;
 import arc.util.Log;
-import dto.LoginDto;
-import dto.ServerConfig;
-import enums.NodeRemoveReason;
+import common.player.Login;
+import common.server.ServerConfig;
+import common.network.NodeRemoveReason;
 import gateway.wire.StreamReply;
 import gateway.subscription.SubscriptionRequest;
 import gateway.rpc.RpcChannel;
@@ -194,7 +194,7 @@ public class BackendRpc {
     public record UpdatePlayerRequest(
             UUID serverId,
             String uuid,
-            LoginDto player) {
+            Login player) {
 
         public UpdatePlayerRequest {
             serverId = Objects.requireNonNull(serverId, "UpdatePlayerRequest.serverId");

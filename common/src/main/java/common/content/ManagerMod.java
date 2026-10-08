@@ -1,4 +1,4 @@
-package dto;
+package common.content;
 
 import java.util.List;
 import java.util.UUID;
@@ -8,7 +8,7 @@ import lombok.experimental.Accessors;
 
 @Data
 @Accessors(chain = true)
-public class ManagerModDto {
-    private ModDto data;
+public class ManagerMod {
+    private Mod data;
     private List<UUID> servers;
 }

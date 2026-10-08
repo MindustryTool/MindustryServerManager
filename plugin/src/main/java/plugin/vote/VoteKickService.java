@@ -12,7 +12,7 @@ import java.util.function.BiConsumer;
 
 import arc.util.Log;
 import arc.util.Strings;
-import events.ServerEvents;
+import common.event.ServerEvents;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import mindustry.Vars;

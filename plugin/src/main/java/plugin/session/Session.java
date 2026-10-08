@@ -3,7 +3,7 @@ package plugin.session;
 import java.time.Instant;
 import java.util.Locale;
 
-import dto.LoginDto;
+import common.player.Login;
 import mindustry.gen.Player;
 
 public class Session {
@@ -12,7 +12,7 @@ public class Session {
     public final Long joinedAt = Instant.now().toEpochMilli();
     private final SessionData data;
 
-    public LoginDto login;
+    public Login login;
     public boolean votedVNW = false;
     public boolean votedGrief = false;
     

@@ -1,6 +1,9 @@
+import org.gradle.jvm.toolchain.JavaLanguageVersion
+
 java {
-    targetCompatibility = JavaVersion.VERSION_17
-    sourceCompatibility = JavaVersion.VERSION_17
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
 }
 
 dependencies {

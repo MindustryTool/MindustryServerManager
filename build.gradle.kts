@@ -92,7 +92,7 @@ subprojects {
                 }
                 return out.toString()
             }
-            val fqn = Regex("(?<!\\w)(java|javax|jakarta|org|com|net|io|mindustry|arc|dto|plugin|server|gateway|enums|events)(\\.[a-z0-9_]+)+\\.([A-Z][\\w$]*)")
+            val fqn = Regex("(?<!\\w)(java|javax|jakarta|org|com|net|io|mindustry|arc|common|plugin|server|gateway)(\\.[a-z0-9_]+)+\\.([A-Z][\\w$]*)")
             val importDecl = Regex("(?m)^\\s*import\\s+(?:static\\s+)?([\\w.]+);")
             val failures = mutableListOf<String>()
             val javaFiles = projectDir.walkTopDown()

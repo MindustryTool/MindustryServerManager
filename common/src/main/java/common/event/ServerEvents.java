@@ -1,12 +1,12 @@
-package events;
+package common.event;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 
-import dto.PlayerDto;
-import dto.ServerStateDto;
-import enums.NodeRemoveReason;
+import common.network.NodeRemoveReason;
+import common.player.PlayerInfo;
+import common.server.ServerSnapshot;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -44,9 +44,9 @@ public class ServerEvents {
     @NoArgsConstructor
     public static class ServerStateEvent extends BaseEvent {
 
-        public List<ServerStateDto> state;
+        public List<ServerSnapshot> state;
 
-        public ServerStateEvent(UUID serverId, List<ServerStateDto> state) {
+        public ServerStateEvent(UUID serverId, List<ServerSnapshot> state) {
             super(serverId, "server-state");
             this.state = state;
         }
@@ -137,9 +137,9 @@ public class ServerEvents {
     @EqualsAndHashCode(callSuper = false)
     @NoArgsConstructor
     public static class PlayerJoinEvent extends BaseEvent {
-        private PlayerDto player;
+        private PlayerInfo player;
 
-        public PlayerJoinEvent(UUID serverId, PlayerDto player) {
+        public PlayerJoinEvent(UUID serverId, PlayerInfo player) {
             super(serverId, "player-join");
             this.player = player;
         }
@@ -150,9 +150,9 @@ public class ServerEvents {
     @EqualsAndHashCode(callSuper = false)
     @NoArgsConstructor
     public static class PlayerLeaveEvent extends BaseEvent {
-        private PlayerDto player;
+        private PlayerInfo player;
 
-        public PlayerLeaveEvent(UUID serverId, PlayerDto player) {
+        public PlayerLeaveEvent(UUID serverId, PlayerInfo player) {
             super(serverId, "player-leave");
             this.player = player;
         }

@@ -22,16 +22,16 @@ import org.junit.jupiter.api.Test;
 import com.github.benmanes.caffeine.cache.Caffeine;
 
 import arc.files.Fi;
-import dto.ManagerMapDto;
-import dto.ManagerModDto;
-import dto.MapDto;
-import dto.ModDto;
-import dto.ServerConfig;
-import dto.ServerMetadata;
-import dto.ServerStateDto;
-import enums.NodeRemoveReason;
-import events.BaseEvent;
-import events.ServerEvents.StopEvent;
+import common.content.ManagerMap;
+import common.content.ManagerMod;
+import common.content.MapMetadata;
+import common.content.Mod;
+import common.server.ServerConfig;
+import common.server.ServerMetadata;
+import common.server.ServerSnapshot;
+import common.network.NodeRemoveReason;
+import common.event.BaseEvent;
+import common.event.ServerEvents.StopEvent;
 import gateway.session.WsSession;
 import io.javalin.websocket.WsCloseContext;
 import io.javalin.websocket.WsConnectContext;
@@ -63,7 +63,7 @@ public class GatewayClientLivenessTest {
         }
 
         @Override
-        public List<ServerMisMatch> getMismatch(UUID id, ServerConfig config, ServerStateDto state, List<ModDto> mods) {
+        public List<ServerMisMatch> getMismatch(UUID id, ServerConfig config, ServerSnapshot state, List<Mod> mods) {
             return Collections.emptyList();
         }
 
@@ -74,22 +74,22 @@ public class GatewayClientLivenessTest {
         }
 
         @Override
-        public List<ManagerMapDto> getManagerMaps() {
+        public List<ManagerMap> getManagerMaps() {
             return Collections.emptyList();
         }
 
         @Override
-        public List<ManagerModDto> getManagerMods() {
+        public List<ManagerMod> getManagerMods() {
             return Collections.emptyList();
         }
 
         @Override
-        public List<MapDto> getMaps(UUID serverId) {
+        public List<MapMetadata> getMaps(UUID serverId) {
             return Collections.emptyList();
         }
 
         @Override
-        public List<ModDto> getMods(UUID serverId) {
+        public List<Mod> getMods(UUID serverId) {
             return Collections.emptyList();
         }
 

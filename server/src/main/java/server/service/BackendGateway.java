@@ -3,7 +3,7 @@ package server.service;
 import java.net.URI;
 
 import arc.util.Log;
-import events.ServerEvents.LogEvent;
+import common.event.ServerEvents.LogEvent;
 import gateway.client.WsClient;
 import gateway.rpc.RpcChannel;
 import lombok.Getter;

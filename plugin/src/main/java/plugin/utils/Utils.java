@@ -26,11 +26,11 @@ import arc.util.Log;
 import arc.util.Strings;
 import arc.util.Time;
 import arc.util.Http.HttpStatusException;
-import dto.ModDto;
-import dto.ModMetaDto;
-import dto.PlayerDto;
-import dto.ServerStateDto;
-import dto.ServerStatus;
+import common.content.Mod;
+import common.content.ModMetadata;
+import common.player.PlayerInfo;
+import common.server.ServerSnapshot;
+import common.server.ServerStatus;
 import mindustry.Vars;
 import mindustry.core.Version;
 import mindustry.gen.Groups;
@@ -110,25 +110,25 @@ public class Utils {
         }
     }
 
-    public static ServerStateDto getState() {
+    public static ServerSnapshot getState() {
         Map map = Vars.state.map;
         String mapName = map != null ? map.name() : "";
 
-        List<ModDto> mods = new ArrayList<>();
+        List<Mod> mods = new ArrayList<>();
 
         if (Vars.mods != null) {
             for (var mod : Vars.mods.list()) {
-                mods.add(new ModDto()//
+                mods.add(new Mod()//
                         .setFilename(mod.file.absolutePath())//
                         .setName(mod.meta.name)
-                        .setMeta(ModMetaDto.from(mod.meta)));
+                        .setMeta(ModMetadata.from(mod.meta)));
             }
         }
 
-        List<PlayerDto> players = Registry.get(SessionService.class).get()
+        List<PlayerInfo> players = Registry.get(SessionService.class).get()
                 .values()
                 .stream()
-                .map(session -> PlayerDto.from(session.player, session.login).setJoinedAt(session.joinedAt))
+                .map(session -> PlayerInfo.from(session.player, session.login).setJoinedAt(session.joinedAt))
                 .collect(Collectors.toList());
 
         int kicks = 0;
@@ -142,7 +142,7 @@ public class Utils {
             Log.err(e);
         }
 
-        return new ServerStateDto()//
+        return new ServerSnapshot()//
                 .setPlayers(players)//
                 .setMods(mods)//
                 .setKicks(kicks)//

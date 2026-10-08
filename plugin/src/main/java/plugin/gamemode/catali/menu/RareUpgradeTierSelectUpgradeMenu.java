@@ -1,6 +1,6 @@
 package plugin.gamemode.catali.menu;
 
-import dto.Pair;
+import common.util.Pair;
 import lombok.RequiredArgsConstructor;
 import mindustry.gen.Unit;
 import plugin.PluginEvents;

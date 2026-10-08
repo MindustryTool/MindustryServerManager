@@ -15,15 +15,15 @@ import java.net.InetAddress;
 
 import arc.util.Log;
 import arc.util.Timer;
-import dto.ServerDto;
+import common.server.Server;
 
-public class ServerRedirectMenu extends PluginMenu<ServerDto> {
+public class ServerRedirectMenu extends PluginMenu<Server> {
 
     public ServerRedirectMenu() {
     }
 
     @Override
-    public void build(Session session, ServerDto serverData) {
+    public void build(Session session, Server serverData) {
         this.title = Tr.t(session.locale, "hub.redirect.title");
         this.description = Tr.t(session.locale, "hub.redirect.confirm", "server", serverData.getName());
 

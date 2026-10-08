@@ -29,24 +29,24 @@ import com.github.benmanes.caffeine.cache.LoadingCache;
 import arc.files.Fi;
 import arc.util.Log;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import dto.MapDto;
-import dto.ModDto;
-import dto.PlayerDto;
-import dto.PlayerInfoPageDto;
-import dto.RecentPlayerDto;
-import dto.ServerConfig;
-import dto.ServerStateDto;
-import dto.ServerConfigDto;
-import dto.ServerStatus;
-import dto.StartServerDto;
-import events.ServerEvents.LogEvent;
+import common.content.MapMetadata;
+import common.content.Mod;
+import common.player.PlayerInfo;
+import common.player.PlayerRecordPage;
+import common.player.RecentPlayer;
+import common.server.ServerConfig;
+import common.server.ServerSnapshot;
+import common.server.ServerConfigMessage;
+import common.server.ServerStatus;
+import common.server.StartServer;
+import common.event.ServerEvents.LogEvent;
+import common.network.NodeRemoveReason;
 import gateway.wire.StreamReply;
-import enums.NodeRemoveReason;
 import server.types.data.NodeUsage;
 import server.types.data.ServerMisMatch;
-import dto.LoginDto;
-import dto.ManagerMapDto;
-import dto.ManagerModDto;
+import common.player.Login;
+import common.content.ManagerMap;
+import common.content.ManagerMod;
 import server.config.Const;
 import server.manager.NodeManager;
 import server.service.GatewayService.GatewayClient;
@@ -153,9 +153,9 @@ public class ServerService {
             eventBus.emit(LogEvent.info(serverId, "Generate server config file"));
             String jwt = wsHandler.generateServerJwt(serverId);
 
-            ServerConfigDto serverConfig = new ServerConfigDto()
+            ServerConfigMessage serverConfig = new ServerConfigMessage()
                     .setJwt(jwt)
-                    .setStartServer(new StartServerDto()
+                    .setStartServer(new StartServer()
                             .setHostCommand(request.getHostCommand())
                             .setMode(request.getMode()));
 
@@ -204,7 +204,7 @@ public class ServerService {
                 eventBus.emit(LogEvent.info(serverId, "Host server"));
 
                 gatewayClient.server()
-                        .host(new StartServerDto()
+                        .host(new StartServer()
                                 .setHostCommand(request.getHostCommand())
                                 .setMode(request.getMode()))
                         .get(15, TimeUnit.SECONDS);
@@ -242,19 +242,19 @@ public class ServerService {
         return nodeManager.getMismatch(serverId, config, state, mods);
     }
 
-    public List<ManagerMapDto> getManagerMaps() {
+    public List<ManagerMap> getManagerMaps() {
         return nodeManager.getManagerMaps();
     }
 
-    public List<ManagerModDto> getManagerMods() {
+    public List<ManagerMod> getManagerMods() {
         return nodeManager.getManagerMods();
     }
 
-    public List<MapDto> getMaps(UUID serverId) {
+    public List<MapMetadata> getMaps(UUID serverId) {
         return nodeManager.getMaps(serverId);
     }
 
-    public List<ModDto> getMods(UUID serverId) {
+    public List<Mod> getMods(UUID serverId) {
         return nodeManager.getMods(serverId);
     }
 
@@ -339,14 +339,14 @@ public class ServerService {
         return nodeManager.getNodeUsage(serverId, onUsage, onError);
     }
 
-    public ServerStateDto state(UUID serverId) {
+    public ServerSnapshot state(UUID serverId) {
         try {
             return gatewayService.of(serverId)
                     .server()
                     .getState()
                     .get(2, TimeUnit.SECONDS);
         } catch (Exception e) {
-            return new ServerStateDto().setServerId(serverId).setStatus(ServerStatus.DISCONNECT);
+            return new ServerSnapshot().setServerId(serverId).setStatus(ServerStatus.DISCONNECT);
         }
     }
 
@@ -380,7 +380,7 @@ public class ServerService {
         }
     }
 
-    public List<RecentPlayerDto> getRecentPlayers(UUID serverId) {
+    public List<RecentPlayer> getRecentPlayers(UUID serverId) {
         try {
             if (!nodeManager.isRunning(serverId)) {
                 throw new RuntimeException("Server is not running");
@@ -410,7 +410,7 @@ public class ServerService {
         }
     }
 
-    public PlayerInfoPageDto getPlayersInfo(UUID serverId, int page, int size, Boolean banned, String filter) {
+    public PlayerRecordPage getPlayersInfo(UUID serverId, int page, int size, Boolean banned, String filter) {
         try {
             if (!nodeManager.isRunning(serverId)) {
                 throw new RuntimeException("Server is not running");
@@ -426,11 +426,11 @@ public class ServerService {
         }
     }
 
-    public List<PlayerDto> getPlayers(UUID serverId) {
+    public List<PlayerInfo> getPlayers(UUID serverId) {
         return state(serverId).getPlayers();
     }
 
-    public void updatePlayer(UUID serverId, String uuid, LoginDto payload) {
+    public void updatePlayer(UUID serverId, String uuid, Login payload) {
         gatewayService.of(serverId)
                 .server()
                 .updatePlayer(uuid, payload)
@@ -463,7 +463,7 @@ public class ServerService {
             return;
         }
 
-        ServerStateDto state = state(serverId);
+        ServerSnapshot state = state(serverId);
 
         boolean shouldKill = state.getPlayers().isEmpty();
 

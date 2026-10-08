@@ -1,4 +1,4 @@
-package dto;
+package common.player;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -8,7 +8,7 @@ import lombok.experimental.Accessors;
 
 @Data
 @Accessors(chain = true)
-public class LoginDto {
+public class Login {
     String userId;
     String uuid;
     Boolean isAdmin = false;

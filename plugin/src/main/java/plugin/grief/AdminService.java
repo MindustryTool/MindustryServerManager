@@ -17,7 +17,7 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import arc.Events;
 import arc.math.Mathf;
 import arc.util.Strings;
-import events.ServerEvents;
+import common.event.ServerEvents;
 import lombok.RequiredArgsConstructor;
 import mindustry.Vars;
 import mindustry.game.Team;

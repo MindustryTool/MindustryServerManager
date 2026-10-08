@@ -5,7 +5,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
-import dto.TranslationResponseDto;
+import common.translation.TranslationResponse;
 import server.service.translation.provider.GoogleWebProvider;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -34,7 +34,7 @@ public class GoogleWebProviderTest {
         GoogleWebProvider provider = new GoogleWebProvider();
         String json = "[[[\"Xin chào\", \"Hello\", null, null, 10]], null, \"en\"]";
 
-        TranslationResponseDto result = provider.parseResponse(json);
+        TranslationResponse result = provider.parseResponse(json);
 
         assertNotNull(result);
         assertEquals("Xin chào", result.getTranslatedText());
@@ -46,7 +46,7 @@ public class GoogleWebProviderTest {
         GoogleWebProvider provider = new GoogleWebProvider();
         String json = "[[[\"Hello.\", \"Xin chào.\", null, null, 10], [\" How are you?\", \" Bạn khỏe không?\", null, null, 10]], null, \"vi\"]";
 
-        TranslationResponseDto result = provider.parseResponse(json);
+        TranslationResponse result = provider.parseResponse(json);
 
         assertNotNull(result);
         assertEquals("Hello. How are you?", result.getTranslatedText());

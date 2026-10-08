@@ -1,4 +1,4 @@
-package dto;
+package common.server;
 
 import java.util.List;
 
@@ -7,9 +7,9 @@ import lombok.experimental.Accessors;
 
 @Data
 @Accessors(chain = true)
-public class ServerCommandDto {
+public class ServerCommand {
     public String text;
     public String paramText;
     public String description;
-    public List<CommandParamDto> params;
+    public List<CommandParam> params;
 }

@@ -1,7 +1,7 @@
 package server.service;
 
 import org.junit.jupiter.api.Test;
-import dto.TranslationResponseDto;
+import common.translation.TranslationResponse;
 import server.service.translation.provider.LingvaProvider;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -13,7 +13,7 @@ public class LingvaProviderTest {
         LingvaProvider provider = new LingvaProvider();
         String json = "{\"translation\":\"Hello\",\"info\":{\"detectedSource\":\"vi\",\"pronunciation\":{\"query\":null,\"translation\":null}}}";
 
-        TranslationResponseDto result = provider.parseResponse(json);
+        TranslationResponse result = provider.parseResponse(json);
 
         assertNotNull(result);
         assertEquals("Hello", result.getTranslatedText());
@@ -25,7 +25,7 @@ public class LingvaProviderTest {
         LingvaProvider provider = new LingvaProvider();
         String json = "{\"translation\":\"Bonjour\"}";
 
-        TranslationResponseDto result = provider.parseResponse(json);
+        TranslationResponse result = provider.parseResponse(json);
 
         assertNotNull(result);
         assertEquals("Bonjour", result.getTranslatedText());

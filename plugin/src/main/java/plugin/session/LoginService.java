@@ -4,7 +4,7 @@ import java.time.Instant;
 import java.util.concurrent.ConcurrentHashMap;
 
 import arc.util.Log;
-import dto.LoginDto;
+import common.player.Login;
 import lombok.RequiredArgsConstructor;
 import mindustry.gen.Player;
 import plugin.annotations.Component;
@@ -45,7 +45,7 @@ public class LoginService {
         }
 
         try {
-            LoginDto login = apiGateway.login(player);
+            Login login = apiGateway.login(player);
             String url = login != null ? login.getLoginLink() : null;
             LoginLink newLink = new LoginLink(url);
             links.put(player.uuid(), newLink);

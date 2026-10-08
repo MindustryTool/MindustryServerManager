@@ -7,7 +7,7 @@ import plugin.annotations.Configuration;
 import plugin.utils.JsonUtils;
 import arc.files.Fi;
 import arc.util.Log;
-import dto.ServerConfigDto;
+import common.server.ServerConfigMessage;
 
 @Configuration("config.json")
 @NoArgsConstructor
@@ -54,14 +54,14 @@ public class Cfg {
     public static final int COLOR_NAME_LEVEL = 10;
     public static final int GRIEF_REPORT_COOLDOWN = 60;
 
-    public static ServerConfigDto serverConfig() {
+    public static ServerConfigMessage serverConfig() {
         try {
             Log.info("Reading server.json");
             Fi file = Vars.dataDirectory.child("server.json");
             if (!file.exists()) {
                 return null;
             }
-            return JsonUtils.readJsonAsClass(file.readString(), ServerConfigDto.class);
+            return JsonUtils.readJsonAsClass(file.readString(), ServerConfigMessage.class);
         } catch (Exception e) {
             Log.warn("Failed to read server.json", e);
             return null;
@@ -69,7 +69,7 @@ public class Cfg {
     }
 
     public static String webSocketAuthToken() {
-        ServerConfigDto serverConfig = serverConfig();
+        ServerConfigMessage serverConfig = serverConfig();
         return serverConfig != null ? serverConfig.getJwt() : null;
     }
 

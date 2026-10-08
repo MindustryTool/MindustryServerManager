@@ -1,4 +1,4 @@
-package dto;
+package common.server;
 
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -11,7 +11,7 @@ import java.util.UUID;
 
 @Data
 @Accessors(chain = true)
-public class ServerDto {
+public class Server {
     private UUID id;
     private UUID userId;
     private String name;

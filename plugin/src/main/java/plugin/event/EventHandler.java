@@ -25,14 +25,13 @@ import plugin.session.SessionCreatedEvent;
 import plugin.session.SessionRemovedEvent;
 import plugin.maprating.RateMapMenu;
 import plugin.welcome.WelcomeMenu;
-import dto.PlayerDto;
+import common.event.ServerEvents;
+import common.player.PlayerInfo;
 import plugin.utils.Utils;
 import plugin.Tasks;
 import plugin.annotations.Component;
 import plugin.annotations.Listener;
 import java.time.Instant;
-
-import events.ServerEvents;
 
 @Component
 public class EventHandler {
@@ -118,7 +117,7 @@ public class EventHandler {
     @Listener
     private void onRemovedEvent(SessionRemovedEvent event) {
         try {
-            var request = PlayerDto.from(event.session.player, event.session.login)
+            var request = PlayerInfo.from(event.session.player, event.session.login)
                     .setJoinedAt(event.session.joinedAt);
             apiGateway.fire(new ServerEvents.PlayerLeaveEvent(Control.SERVER_ID, request));
         } catch (Exception e) {
@@ -151,7 +150,7 @@ public class EventHandler {
             var session = event.session;
 
             apiGateway.fire(new ServerEvents.PlayerJoinEvent(Control.SERVER_ID,
-                    PlayerDto.from(session.player, session.login).setJoinedAt(Instant.now().toEpochMilli())));
+                    PlayerInfo.from(session.player, session.login).setJoinedAt(Instant.now().toEpochMilli())));
 
             String playerName = session.player != null ? session.player.plainName() : "Unknown";
             String chat = Strings.format("@ joined the server, current players: @", playerName, Groups.player.size());

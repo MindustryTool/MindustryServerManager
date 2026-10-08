@@ -1,4 +1,4 @@
-package dto;
+package common.player;
 
 import java.util.List;
 
@@ -7,8 +7,8 @@ import lombok.experimental.Accessors;
 
 @Data
 @Accessors(chain = true)
-public class PlayerInfoPageDto {
+public class PlayerRecordPage {
     public int items;
     public int page;
-    public List<PlayerInfoDto> data;
+    public List<PlayerRecord> data;
 }

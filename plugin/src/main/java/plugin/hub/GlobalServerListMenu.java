@@ -8,7 +8,7 @@ import plugin.core.Registry;
 import plugin.gateway.ApiGateway;
 import plugin.utils.Tr;
 import plugin.session.Session;
-import dto.ServerDto;
+import common.server.Server;
 import java.util.List;
 
 public class GlobalServerListMenu extends PluginMenu<Integer> {
@@ -21,7 +21,7 @@ public class GlobalServerListMenu extends PluginMenu<Integer> {
         try {
             int size = 8;
             PaginationRequest request = new PaginationRequest().setPage(page).setSize(size);
-            List<ServerDto> servers = Registry.get(ApiGateway.class).getServers(request);
+            List<Server> servers = Registry.get(ApiGateway.class).getServers(request);
 
             this.title = Tr.t(session.locale, "hub.global.title");
             this.description = "";

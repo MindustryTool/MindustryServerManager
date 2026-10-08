@@ -1,4 +1,4 @@
-package dto;
+package common.player;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -8,7 +8,7 @@ import lombok.experimental.Accessors;
 
 @Data
 @Accessors(chain = true)
-public class PlayerInfoDto {
+public class PlayerRecord {
     public String id;
     public String lastName = "<unknown>", lastIP = "<unknown>";
     public List<String> ips = new ArrayList<>();

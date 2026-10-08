@@ -1,7 +1,10 @@
 
+import org.gradle.jvm.toolchain.JavaLanguageVersion
+
 java {
-    targetCompatibility = JavaVersion.VERSION_17
-    sourceCompatibility = JavaVersion.VERSION_17
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
 }
 
 sourceSets {
@@ -23,7 +26,6 @@ dependencies {
     implementation("com.github.ben-manes.caffeine:caffeine:2.9.3")
     implementation("org.xerial:sqlite-jdbc:3.43.2.0")
 
-    implementation(project(":dto"))
     implementation(project(":annotation"))
     implementation(project(":database"))
     implementation(project(":gateway"))
@@ -45,9 +47,10 @@ dependencies {
 tasks.test {
     useJUnitPlatform()
 }
-tasks.jar {
+
+// Thin jar stays default for IDE use. Fat pack runs only at pack time.
+tasks.register<Jar>("pluginFatJar") {
     dependsOn(
-        ":dto:classes",
         ":annotation:classes",
         ":database:classes",
         ":gateway:classes",
@@ -55,13 +58,12 @@ tasks.jar {
     )
 
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    archiveFileName.set("${project.name}.jar")
+    archiveFileName.set("plugin.jar")
 
     // Current project
     from(sourceSets.main.get().output)
 
     // Internal modules
-    from(project(":dto").sourceSets.main.get().output)
     from(project(":annotation").sourceSets.main.get().output)
     from(project(":database").sourceSets.main.get().output)
     from(project(":gateway").sourceSets.main.get().output)
@@ -71,7 +73,6 @@ tasks.jar {
     configurations.runtimeClasspath.get()
         .filter { dependency ->
             dependency.name !in listOf(
-                "dto-${project.version}.jar",
                 "annotation-${project.version}.jar",
                 "database-${project.version}.jar",
                 "gateway-${project.version}.jar",
@@ -97,4 +98,12 @@ tasks.jar {
     from(project.projectDir) {
         include("plugin.json")
     }
+}
+
+tasks.named("assemble") {
+    dependsOn("pluginFatJar")
+}
+
+tasks.named("build") {
+    dependsOn("pluginFatJar")
 }

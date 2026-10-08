@@ -15,7 +15,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Caffeine;
 
-import dto.TranslationResponseDto;
+import common.translation.TranslationResponse;
 import gateway.session.WsSession;
 import server.EnvConfig;
 import server.service.translation.TranslationService;
@@ -32,9 +32,9 @@ class TranslationRateLimitTest {
         }
 
         @Override
-        public TranslationResponseDto translate(String text, String targetLang) {
+        public TranslationResponse translate(String text, String targetLang) {
             calls.incrementAndGet();
-            return new TranslationResponseDto("tr:" + text, "en");
+            return new TranslationResponse("tr:" + text, "en");
         }
     }
 

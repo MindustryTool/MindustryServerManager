@@ -369,7 +369,8 @@ public class TowerDefenseGamemode {
             String ownerUuid = turretOwners.get(pos);
             if (ownerUuid != null) {
                 sessionService.getByUuid(ownerUuid).ifPresent(session -> {
-                    float expGained = event.unit.maxHealth / 100f;
+                    float expGained = event.unit.maxHealth / 300f;
+
                     if (expGained > 0) {
                         PluginEvents.fire(new ExpGainEvent(session, expGained));
                     }

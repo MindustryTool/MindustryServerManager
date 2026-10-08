@@ -3,7 +3,7 @@ package plugin.core;
 import arc.files.Fi;
 import arc.struct.Seq;
 import arc.util.Log;
-import dto.Pair;
+import common.util.Pair;
 import mindustry.Vars;
 import plugin.annotations.Destroy;
 import plugin.annotations.Persistence;

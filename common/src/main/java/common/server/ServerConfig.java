@@ -1,4 +1,4 @@
-package dto;
+package common.server;
 
 import java.util.Map;
 import java.util.UUID;

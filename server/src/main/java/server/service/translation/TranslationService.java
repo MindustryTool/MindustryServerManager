@@ -17,7 +17,7 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 
 import arc.util.Log;
-import dto.TranslationResponseDto;
+import common.translation.TranslationResponse;
 import server.service.MultiSourceProxyPool;
 import server.service.TranslationProvider;
 import server.service.translation.provider.GoogleWebProvider;
@@ -40,7 +40,7 @@ public class TranslationService {
 
     private final List<RegisteredProvider> registeredProviders = new CopyOnWriteArrayList<>();
     private final Map<Integer, Integer> tierRoundRobinIndices = new ConcurrentHashMap<>();
-    private final Cache<String, TranslationResponseDto> cache;
+    private final Cache<String, TranslationResponse> cache;
 
     public TranslationService() {
         this(Caffeine.newBuilder()
@@ -53,7 +53,7 @@ public class TranslationService {
         registerProvider(1, 100, new GoogleWebProvider());
     }
 
-    public TranslationService(Cache<String, TranslationResponseDto> cache, TranslationProvider... initialProviders) {
+    public TranslationService(Cache<String, TranslationResponse> cache, TranslationProvider... initialProviders) {
         this.cache = cache;
         if (initialProviders != null) {
             for (int i = 0; i < initialProviders.length; i++) {
@@ -122,15 +122,15 @@ public class TranslationService {
      *
      * @param text       Plain text to translate.
      * @param targetLang Target language code (e.g., "en", "vi").
-     * @return TranslationResponseDto or null if no provider succeeded within MAX_ATTEMPTS.
+     * @return TranslationResponse or null if no provider succeeded within MAX_ATTEMPTS.
      */
-    public TranslationResponseDto translate(String text, String targetLang) {
+    public TranslationResponse translate(String text, String targetLang) {
         if (text == null || text.isBlank() || targetLang == null || targetLang.isBlank()) {
             return null;
         }
 
         String cacheKey = targetLang.toLowerCase(Locale.ROOT) + ":" + text.trim();
-        TranslationResponseDto cached = cache.getIfPresent(cacheKey);
+        TranslationResponse cached = cache.getIfPresent(cacheKey);
         if (cached != null) {
             Log.debug("Server translation cache hit for [@]: '@'", targetLang, text);
             return cached;
@@ -184,7 +184,7 @@ public class TranslationService {
             totalAttempts++;
 
             try {
-                TranslationResponseDto result = provider.translate(text, targetLang);
+                TranslationResponse result = provider.translate(text, targetLang);
 
                 if (result != null && result.getTranslatedText() != null && !result.getTranslatedText().isBlank()) {
                     candidate.state().recordSuccess(provider.name());

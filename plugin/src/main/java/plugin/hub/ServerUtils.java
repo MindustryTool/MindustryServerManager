@@ -6,7 +6,7 @@ import java.net.InetAddress;
 
 import arc.util.Log;
 import arc.util.Timer;
-import dto.ServerDto;
+import common.server.Server;
 import mindustry.gen.Call;
 import mindustry.gen.Groups;
 import mindustry.gen.Player;
@@ -20,7 +20,7 @@ public class ServerUtils {
     public static final String HUB_HOST = "server.mindustry-tool.com";
     public static final int HUB_PORT = 10002;
 
-    public static void redirectAll(ServerDto server) {
+    public static void redirectAll(Server server) {
         Groups.player.each(player -> redirect(player, server));
     }
 
@@ -51,7 +51,7 @@ public class ServerUtils {
         }
     }
 
-    public static void redirect(Player player, ServerDto server) {
+    public static void redirect(Player player, Server server) {
         String id = server.getId().toString();
         String name = server.getName();
 

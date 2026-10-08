@@ -11,7 +11,7 @@ import java.time.Duration;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import dto.TranslationResponseDto;
+import common.translation.TranslationResponse;
 import server.service.TranslationProvider;
 import server.utils.HttpClients;
 
@@ -39,7 +39,7 @@ public class LingvaProvider implements TranslationProvider {
     }
 
     @Override
-    public TranslationResponseDto translate(String text, String targetLang) throws Exception {
+    public TranslationResponse translate(String text, String targetLang) throws Exception {
         if (text == null || text.isBlank() || targetLang == null || targetLang.isBlank()) {
             return null;
         }
@@ -68,7 +68,7 @@ public class LingvaProvider implements TranslationProvider {
         return parseResponse(response.body());
     }
 
-    public TranslationResponseDto parseResponse(String jsonBody) throws Exception {
+    public TranslationResponse parseResponse(String jsonBody) throws Exception {
         JsonNode root = objectMapper.readTree(jsonBody);
         if (root == null || !root.isObject()) {
             throw new IllegalArgumentException("Invalid response format from Lingva API: " + jsonBody);
@@ -90,6 +90,6 @@ public class LingvaProvider implements TranslationProvider {
             }
         }
 
-        return new TranslationResponseDto(translatedText, sourceLanguage);
+        return new TranslationResponse(translatedText, sourceLanguage);
     }
 }

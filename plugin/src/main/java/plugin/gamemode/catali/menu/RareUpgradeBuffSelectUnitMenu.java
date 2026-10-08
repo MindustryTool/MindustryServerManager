@@ -1,6 +1,6 @@
 package plugin.gamemode.catali.menu;
 
-import dto.Pair;
+import common.util.Pair;
 import plugin.core.Registry;
 import plugin.gamemode.catali.data.CataliTeamData;
 import plugin.menus.PluginMenu;

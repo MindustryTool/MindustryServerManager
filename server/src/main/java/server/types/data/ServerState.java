@@ -2,7 +2,7 @@ package server.types.data;
 
 import java.util.Optional;
 
-import dto.ServerMetadata;
+import common.server.ServerMetadata;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
