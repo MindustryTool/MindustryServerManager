@@ -30,6 +30,7 @@ import common.content.ManagerMod;
 import common.content.MapMetadata;
 import common.content.Mod;
 import common.network.NodeRemoveReason;
+import common.player.PlayerInfo;
 import common.server.ServerConfig;
 import common.server.ServerMetadata;
 import common.server.ServerSnapshot;
@@ -245,9 +246,9 @@ class ServerServiceReconcileTest {
         f.set(entry, Instant.now().minus(ago));
     }
 
-    private static common.player.PlayerInfo player() {
+    private static PlayerInfo player() {
         try {
-            var ctor = common.player.PlayerInfo.class.getDeclaredConstructor();
+            var ctor = PlayerInfo.class.getDeclaredConstructor();
             ctor.setAccessible(true);
             return ctor.newInstance();
         } catch (Exception e) {

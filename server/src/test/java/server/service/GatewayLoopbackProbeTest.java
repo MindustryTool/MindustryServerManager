@@ -241,6 +241,7 @@ class GatewayLoopbackProbeTest {
             awaitCondition(client::isOpen, "client open");
 
             RpcChannel server = service.of(serverId).rpcChannel();
+            server.awaitSession(Duration.ofSeconds(10)).join();
 
             CountDownLatch go = new CountDownLatch(1);
             CompletableFuture<String> a = gatedSend(senders, go, server, "alpha", alpha);
