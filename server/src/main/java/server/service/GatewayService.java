@@ -331,7 +331,6 @@ public class GatewayService {
                             .uri(new URIBuilder(base + "/" + String.join("/", str)).build())
                             .header("X-SERVER-ID", id.toString())
                             .header("X-MANAGER-AUTH", envConfig.serverConfig().accessToken())
-                            .header("Connection", "close")
                             .timeout(Duration.ofMinutes(2));
 
                 } catch (Exception e) {
