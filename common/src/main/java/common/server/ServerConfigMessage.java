@@ -8,4 +8,5 @@ import lombok.experimental.Accessors;
 public class ServerConfigMessage {
     String jwt;
     StartServer startServer;
+    ServerConfig config;
 }

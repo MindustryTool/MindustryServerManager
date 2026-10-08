@@ -8,7 +8,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.EnumSet;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -44,6 +44,7 @@ import common.event.ServerEvents.LogEvent;
 import common.network.NodeRemoveReason;
 import gateway.wire.StreamReply;
 import server.types.data.NodeUsage;
+import server.types.data.MisMatchType;
 import server.types.data.ServerMisMatch;
 import common.player.Login;
 import common.content.ManagerMap;
@@ -65,14 +66,23 @@ public class ServerService {
     private final PluginBundleService pluginBundle;
 
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-    private final ConcurrentHashMap<UUID, EnumSet<ServerFlag>> serverFlags = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<UUID, ReconcileStatus> reconcileStates = new ConcurrentHashMap<>();
 
     private final LoadingCache<String, ReentrantLock> locks = Caffeine.newBuilder()
             .expireAfterAccess(Duration.ofMinutes(10))
             .build(key -> new ReentrantLock());
 
-    private enum ServerFlag {
-        KILL, NOT_RESPONSE, RESTART
+    static final Duration EMPTY_REMOVE_AFTER = Duration.ofMinutes(20);
+    static final Duration UNREACHABLE_REMOVE_AFTER = Duration.ofMinutes(5);
+
+    enum Phase {
+        IDLE, PENDING, ACTING, REMOVING
+    }
+
+    static final class ReconcileStatus {
+        Phase phase = Phase.IDLE;
+        Instant since;
+        Instant failingSince;
     }
 
     public ServerService(GatewayService gatewayService, NodeManager nodeManager, EventBus eventBus,
@@ -88,7 +98,7 @@ public class ServerService {
     }
 
     private void init() {
-        scheduler.scheduleWithFixedDelay(this::autoTurnOffCron, 5, 10, TimeUnit.MINUTES);
+        scheduler.scheduleWithFixedDelay(this::reconcileTick, 1, 1, TimeUnit.MINUTES);
         scheduler.scheduleWithFixedDelay(this::removeOldServer, 0, 24, TimeUnit.HOURS);
     }
 
@@ -132,16 +142,32 @@ public class ServerService {
     }
 
     public void host(ServerConfig request) {
-        ReentrantLock lock = locks.get(request.getId().toString());
+        lockedWith(request.getId(), () -> hostLocked(request));
+    }
 
+    void lockedRecreate(ServerConfig request) {
+        lockedWith(request.getId(), () -> {
+            remove(request.getId(), NodeRemoveReason.CONFIG_DRIFT);
+            hostLocked(request);
+        });
+    }
+
+    private void lockedWith(UUID serverId, Runnable action) {
+        ReentrantLock lock = locks.get(serverId.toString());
         lock.lock();
-
         try {
+            action.run();
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    void hostLocked(ServerConfig request) {
+        {
             UUID serverId = request.getId();
 
-            storeDesiredConfig(serverId, request);
-
             if (gatewayService.isHosting(serverId)) {
+                storeDesiredConfig(serverId, request);
                 return;
             }
 
@@ -156,20 +182,7 @@ public class ServerService {
             eventBus.emit(LogEvent.info(serverId, "Generate server config file"));
             String jwt = wsHandler.generateServerJwt(serverId);
 
-            ServerConfigMessage serverConfig = new ServerConfigMessage()
-                    .setJwt(jwt)
-                    .setStartServer(new StartServer()
-                            .setHostCommand(request.getHostCommand())
-                            .setMode(request.getMode()));
-
-            try {
-                nodeManager.writeFile(serverId, "server.json",
-                        Utils.objectMapper
-                                .writerWithDefaultPrettyPrinter()
-                                .writeValueAsBytes(serverConfig));
-            } catch (JsonProcessingException e) {
-                throw new RuntimeException("Failed to serialize server config", e);
-            }
+            nodeManager.writeFile(serverId, "server.json", toDesiredBytes(jwt, request));
 
             // Overwrite plugin jar with the bundled controller plugin
             nodeManager.writeFile(serverId, "mods/plugin.jar", pluginBundle.downloadPlugin());
@@ -234,8 +247,6 @@ public class ServerService {
             throw new ApiError(503,
                     "Server waiting for hosting status timeout, make sure host command is valid, current host command: "
                             + request.getHostCommand());
-        } finally {
-            lock.unlock();
         }
     }
 
@@ -270,19 +281,39 @@ public class ServerService {
             jwt = wsHandler.generateServerJwt(serverId);
         }
 
+        nodeManager.writeFile(serverId, "server.json", toDesiredBytes(jwt, config));
+    }
+
+    private static byte[] toDesiredBytes(String jwt, ServerConfig config) {
         ServerConfigMessage next = new ServerConfigMessage()
                 .setJwt(jwt)
+                .setConfig(config)
                 .setStartServer(new StartServer()
                         .setHostCommand(config.getHostCommand())
                         .setMode(config.getMode()));
-
         try {
-            nodeManager.writeFile(serverId, "server.json",
-                    Utils.objectMapper
-                            .writerWithDefaultPrettyPrinter()
-                            .writeValueAsBytes(next));
+            return Utils.objectMapper
+                    .writerWithDefaultPrettyPrinter()
+                    .writeValueAsBytes(next);
         } catch (JsonProcessingException e) {
             throw new RuntimeException("Failed to serialize server config", e);
+        }
+    }
+
+    ServerConfig loadDesiredConfig(UUID serverId) {
+        Objects.requireNonNull(serverId, "serverId");
+        try {
+            Fi existing = nodeManager.getFile(serverId, "server.json");
+            if (!existing.exists()) {
+                return null;
+            }
+            ServerConfigMessage current = Utils.objectMapper.readValue(
+                    existing.readBytes(), ServerConfigMessage.class);
+                    
+            return current.getConfig();
+        } catch (Exception e) {
+            Log.warn("Failed to read desired config for @", serverId);
+            return null;
         }
     }
 
@@ -481,47 +512,151 @@ public class ServerService {
                 .join();
     }
 
-    private void autoTurnOffCron() {
-        List<ServerConfig> servers = nodeManager.list().stream()
+    void reconcileTick() {
+        var running = nodeManager.list().stream()
                 .filter(s -> s.meta().isPresent() && s.running())
                 .map(s -> s.meta().get().getConfig())
                 .toList();
 
-        var serversId = servers.stream().map(ServerConfig::getId).toList();
-        serverFlags.entrySet().removeIf(entry -> entry.getValue().isEmpty() || !serversId.contains(entry.getKey()));
+        var runningIds = running.stream().map(ServerConfig::getId).toList();
+        reconcileStates.keySet().removeIf(id -> !runningIds.contains(id));
 
-        servers.forEach(config -> {
+        for (ServerConfig live : running) {
             try {
-                checkRunningServer(config, true);
+                reconcileServer(live);
             } catch (Exception e) {
-                Log.err("Fail to check running server " + config.getId(), e);
+                Log.err("Fail to reconcile server " + live.getId(), e);
             }
-        });
+        }
     }
 
-    private void checkRunningServer(ServerConfig config, boolean shouldAutoTurnOff) {
-        var serverId = config.getId();
-        var flag = serverFlags.computeIfAbsent(serverId, (_ignore) -> EnumSet.noneOf(ServerFlag.class));
+    void reconcileServer(ServerConfig live) {
+        UUID serverId = live.getId();
+        ReconcileStatus status = reconcileStates.computeIfAbsent(serverId, _ignore -> new ReconcileStatus());
 
-        if (!config.getIsAutoTurnOff()) {
+        ServerSnapshot snapshot = state(serverId);
+
+        if (isUnreachable(snapshot)) {
+            handleFailure(status, live, serverId);
             return;
         }
 
-        ServerSnapshot state = state(serverId);
+        status.failingSince = null;
 
-        boolean shouldKill = state.getPlayers().isEmpty();
-
-        if (shouldKill && shouldAutoTurnOff) {
-            if (flag.contains(ServerFlag.KILL)) {
-                flag.remove(ServerFlag.KILL);
-                eventBus.emit(LogEvent.info(serverId, "[red][Orchestrator] Auto shut down server"));
-                remove(serverId, NodeRemoveReason.NO_PLAYER);
-            } else {
-                flag.add(ServerFlag.KILL);
-                eventBus.emit(LogEvent.info(serverId, "[red][Orchestrator] No players, flag to kill"));
-            }
-        } else {
-            flag.remove(ServerFlag.KILL);
+        if (!snapshot.getPlayers().isEmpty()) {
+            status.since = null;
+            status.phase = Phase.IDLE;
+            return;
         }
+
+        if (status.since == null) {
+            status.since = Instant.now();
+        }
+
+        ServerConfig wish = loadDesiredConfig(serverId);
+
+        List<ServerMisMatch> mismatches;
+        try {
+            mismatches = computeMismatches(serverId, wish, snapshot);
+        } catch (Exception e) {
+            handleFailure(status, live, serverId);
+            return;
+        }
+
+        if (wish != null && !mismatches.isEmpty()) {
+            status.phase = Phase.ACTING;
+            eventBus.emit(LogEvent.info(serverId, "Reconcile drift, recreating"));
+            try {
+                lockedRecreate(wish);
+            } catch (Exception e) {
+                handleFailure(status, live, serverId);
+                return;
+            }
+            status.since = Instant.now();
+            status.phase = Phase.IDLE;
+            eventBus.emit(LogEvent.info(serverId, "Reconcile done"));
+            return;
+        }
+
+        status.phase = Phase.IDLE;
+
+        if (!resolveAutoTurnOff(live, wish)) {
+            return;
+        }
+
+        if (Duration.between(status.since, Instant.now()).compareTo(EMPTY_REMOVE_AFTER) >= 0) {
+            status.phase = Phase.REMOVING;
+            eventBus.emit(LogEvent.info(serverId, "[red][Orchestrator] Auto shut down server"));
+            remove(serverId, NodeRemoveReason.NO_PLAYER);
+            reconcileStates.remove(serverId);
+        }
+    }
+
+    private void handleFailure(ReconcileStatus status, ServerConfig live, UUID serverId) {
+        if (status.failingSince == null) {
+            status.failingSince = Instant.now();
+            Log.warn("Reconcile unreachable for " + serverId + ", arming reclaim");
+        }
+
+        if (Duration.between(status.failingSince, Instant.now())
+                .compareTo(UNREACHABLE_REMOVE_AFTER) < 0) {
+            status.phase = Phase.PENDING;
+            return;
+        }
+
+        ServerConfig wish = loadDesiredConfig(serverId);
+        boolean revive = Boolean.FALSE.equals(live.getIsAutoTurnOff()) && wish != null;
+
+        status.phase = Phase.REMOVING;
+        try {
+            if (revive) {
+                eventBus.emit(LogEvent.info(serverId, "Reconcile reclaim, reviving"));
+                lockedRecreate(wish);
+            } else {
+                eventBus.emit(LogEvent.info(serverId, "Reconcile reclaim, removing"));
+                remove(serverId, NodeRemoveReason.NOT_RESPONSE);
+            }
+        } catch (Exception e) {
+            Log.err("Reconcile reclaim failed for " + serverId, e);
+            return;
+        }
+        reconcileStates.remove(serverId);
+    }
+
+    private List<ServerMisMatch> computeMismatches(UUID serverId, ServerConfig wish, ServerSnapshot snapshot) {
+        if (wish == null) {
+            return List.of();
+        }
+
+        var mods = getMods(serverId).stream()
+                .filter(mod -> !mod.getName().equals("PluginLoader")).toList();
+        List<ServerMisMatch> mismatches = new ArrayList<>(
+                nodeManager.getMismatch(serverId, wish, snapshot, mods));
+
+        String liveHash = snapshot.getPluginHash();
+        String wantHash = pluginBundle.getPluginVersion();
+        if (liveHash != null && wantHash != null && !Objects.equals(liveHash, wantHash)) {
+            mismatches.add(new ServerMisMatch()
+                    .setType(MisMatchType.PLUGIN_JAR)
+                    .setField("Plugin jar mismatch")
+                    .setCurrent(liveHash)
+                    .setExpected(wantHash));
+        }
+
+        return mismatches;
+    }
+
+    private static boolean isUnreachable(ServerSnapshot snapshot) {
+        ServerStatus status = snapshot.getStatus();
+        return status == ServerStatus.DISCONNECT
+                || status == ServerStatus.NOT_RESPONSE
+                || status == ServerStatus.UNSET;
+    }
+
+    private static boolean resolveAutoTurnOff(ServerConfig live, ServerConfig wish) {
+        if (wish != null && wish.getIsAutoTurnOff() != null) {
+            return wish.getIsAutoTurnOff();
+        }
+        return live.getIsAutoTurnOff() != null && live.getIsAutoTurnOff();
     }
 }

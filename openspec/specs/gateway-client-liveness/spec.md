@@ -28,59 +28,6 @@ The system SHALL treat a gateway client as not connected when `rpcChannel.getSes
 - **WHEN** `onClose` arrives for a session that is not current while a newer session is open
 - **THEN** the client still counts as connected and no disconnect clock starts
 
-### Requirement: Disconnect-age clock lifecycle
-
-The system SHALL maintain `lastDisconnectAt` per gateway client: set to create time at build, cleared to `null` on open (including overwrite opens), set to current time only on close of the current session. Stale closes SHALL NOT touch the clock.
-
-#### Scenario: Never-linked client carries create time
-
-- **WHEN** a client is created via `of(id)` and no open has occurred
-- **THEN** `lastDisconnectAt` equals create time
-
-#### Scenario: Open clears the clock
-
-- **WHEN** `onOpen` succeeds, including an overwrite of a dead session
-- **THEN** `lastDisconnectAt` is `null`
-
-#### Scenario: Close starts the clock
-
-- **WHEN** `onClose` for the current session runs
-- **THEN** `lastDisconnectAt` is set to close time
-
-#### Scenario: Stale close leaves the clock alone
-
-- **WHEN** `onClose` arrives for a non-current session
-- **THEN** `lastDisconnectAt` is unchanged
-
-#### Scenario: Reconnect restarts grace
-
-- **WHEN** a client reopens after a disconnect
-- **THEN** the prior disconnect time is discarded and the orphan kill uses the new cycle
-
-### Requirement: Disconnect terminate
-
-The system SHALL terminate a gateway client with reason `NOT_CONNECTED` when `lastDisconnectAt != null`, current time is after `lastDisconnectAt` plus 3 minutes, the socket is still closed, and the container is still running. Container presence SHALL be taken from the batched running set of the sweep. Termination SHALL NOT remove the entry from the client map; the sweep evicts it once the container is gone.
-
-#### Scenario: Closed past 3min with running container terminates
-
-- **WHEN** a client stays socket-closed for more than 3 minutes while its container still runs
-- **THEN** the system terminates it with `NOT_CONNECTED`
-
-#### Scenario: Connected never terminates
-
-- **WHEN** the socket is open at check time
-- **THEN** no termination occurs, even if no app messages arrived for more than 3 minutes
-
-#### Scenario: Never-linked client terminates after 3min
-
-- **WHEN** a client never opened, its create time is more than 3 minutes ago, and its container still runs
-- **THEN** the system terminates it with `NOT_CONNECTED`
-
-#### Scenario: Reconnected client survives old clock
-
-- **WHEN** a client disconnected, reconnected, and the new session is still open at 3min past the old close
-- **THEN** no termination occurs
-
 ### Requirement: Reusable client handle
 
 `GatewayService.of(serverId)` SHALL return a cached, reusable per-server handle. The handle SHALL NOT carry lifecycle state that gates behavior: there SHALL be no `removed` flag and no `terminatedAt` field, `onOpen` SHALL always adopt the incoming session, and `onMessage`/`onBinary` SHALL NOT be rejected based on prior termination.
@@ -102,7 +49,7 @@ The system SHALL terminate a gateway client with reason `NOT_CONNECTED` when `la
 
 ### Requirement: Batched eviction sweep
 
-The scheduler SHALL evict a cached `GatewayClient` when its socket is closed and its container is not running, using a single batched container list per sweep. The eviction branch SHALL run before the orphan-kill branch within the same sweep. Eviction SHALL be treated as memory hygiene only and SHALL NOT represent a lifecycle transition.
+The scheduler SHALL evict a cached `GatewayClient` when its socket is closed and its container is not running, using a single batched container list per sweep. The sweep SHALL be memory hygiene only and SHALL NOT remove containers, SHALL NOT terminate clients, and SHALL NOT represent a lifecycle transition.
 
 #### Scenario: Socket closed and container gone evicts
 
@@ -112,17 +59,17 @@ The scheduler SHALL evict a cached `GatewayClient` when its socket is closed and
 #### Scenario: Running container keeps the handle
 
 - **WHEN** a cached handle's container is present in the batched running set
-- **THEN** it is not evicted by the container-gone branch
+- **THEN** it is not evicted
 
 #### Scenario: One container list per sweep
 
 - **WHEN** a sweep runs
 - **THEN** at most one container-listing call is made for all cached handles
 
-#### Scenario: Eviction precedes orphan kill
+#### Scenario: Sweep never removes containers
 
-- **WHEN** a handle's container was removed by a prior terminate
-- **THEN** the sweep evicts it instead of terminating it again
+- **WHEN** a cached handle's socket is closed while its container still runs
+- **THEN** the sweep leaves the container untouched and removes no container
 
 ### Requirement: Termination close and signals
 

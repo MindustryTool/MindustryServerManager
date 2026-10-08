@@ -4,10 +4,10 @@ import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
 public class UnloadServerEvent {
-    public final boolean exit;
+    public final boolean restart;
     public final Runnable beforeUnload;
 
-    public UnloadServerEvent(boolean exit) {
-        this(exit, null);
+    public UnloadServerEvent(boolean restart) {
+        this(restart, null);
     }
 }

@@ -10,7 +10,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
@@ -123,8 +122,8 @@ class GatewayLoopbackProbeTest {
                 // Second client adopted: requests flow.
                 assertEquals("test", pluginVersion(channelB));
 
-                // Server clock clean: overwrite cleared it, stale close ignored.
-                assertNull(disconnectAt(service.of(serverId)));
+                // Server adopted the second session.
+                assertNotNull(service.of(serverId).rpcChannel().current());
             } finally {
                 b.close();
                 channelB.shutdown();
@@ -306,9 +305,8 @@ class GatewayLoopbackProbeTest {
             awaitCondition(connected::isOpen, "reconnected to recreated manager");
             assertEquals("test", pluginVersion(channel));
 
-            // Exactly one live session, clean clock, no pending backoff.
+            // Exactly one live session, no pending backoff.
             assertNotNull(service2.of(serverId).rpcChannel().current());
-            assertNull(disconnectAt(service2.of(serverId)));
             assertEquals(0, connected.getReconnectAttempt());
 
             // Stable key: the token in the shared volume is unchanged.
@@ -456,12 +454,6 @@ class GatewayLoopbackProbeTest {
         Field socket = transport.getClass().getDeclaredField("socket");
         socket.setAccessible(true);
         ((WebSocket) socket.get(transport)).abort();
-    }
-
-    private static Instant disconnectAt(GatewayService.GatewayClient client) throws Exception {
-        Field field = client.getClass().getDeclaredField("lastDisconnectAt");
-        field.setAccessible(true);
-        return (Instant) field.get(client);
     }
 
     private static void awaitCondition(Supplier<Boolean> cond, String what) throws Exception {

@@ -21,4 +21,5 @@ public class ServerSnapshot {
     private int kicks = 0;
     private String version = "custom";
     private Long startedAt = Instant.now().toEpochMilli();
+    private String pluginHash;
 }

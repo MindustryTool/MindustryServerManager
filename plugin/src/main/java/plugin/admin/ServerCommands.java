@@ -13,11 +13,12 @@ import mindustry.gen.Groups;
 import mindustry.gen.Player;
 import mindustry.net.Administration.PlayerInfo;
 import mindustry.net.Packets.KickReason;
-import plugin.update.PluginUpdater;
+import plugin.PluginEvents;
 import plugin.annotations.Component;
 import plugin.annotations.Param;
 import plugin.annotations.ServerCommand;
 import plugin.database.Database;
+import plugin.event.UnloadServerEvent;
 import plugin.gamemode.Gamemode;
 import plugin.security.UserBanService;
 import plugin.session.ExpUtils;
@@ -85,14 +86,14 @@ public class ServerCommands {
     }
 
     @ServerCommand(name = "restart", description = "Restart the server")
-    private void restart(PluginUpdater updater) {
+    private void restart() {
         Utils.forEachPlayerLocale((locale, players) -> {
             String msg = Tr.t(locale, "admin.restart_scheduled");
             for (var p : players) {
                 p.sendMessage(msg);
             }
         });
-        updater.scheduleRestart();
+        PluginEvents.fire(new UnloadServerEvent(true));
     }
 
     @ServerCommand(name = "say", description = "Send a message to all players")

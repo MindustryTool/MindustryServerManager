@@ -7,7 +7,7 @@ TBD - created by archiving change feature-based-refactor. Update Purpose after a
 
 The plugin SHALL organize `plugin/src/main/java/plugin/**` by business feature so that each feature owns its feature-specific classes, and only genuinely shared infrastructure remains centralized.
 
-The feature packages SHALL be: `session`, `vote`, `grief`, `host`, `maprating`, `hub`, `security`, `trail`, `tip`, `welcome`, `update`, `gateway`, `admin`. The `gamemode` package tree SHALL remain unchanged.
+The feature packages SHALL be: `session`, `vote`, `grief`, `host`, `maprating`, `hub`, `security`, `trail`, `tip`, `welcome`, `gateway`, `admin`. The `gamemode` package tree SHALL remain unchanged.
 
 Each feature package SHALL contain the feature's own classes regardless of their previous technical-layer origin:
 
@@ -21,9 +21,8 @@ Each feature package SHALL contain the feature's own classes regardless of their
 - `trail` SHALL contain `TrailService`, `TrailMenu`, and the client command `trail`.
 - `tip` SHALL contain `TipService`.
 - `welcome` SHALL contain `WelcomeMenu`, and the client commands `discord`, `website`.
-- `update` SHALL contain `PluginData`, `PluginUpdater`, and the client command `restart`.
 - `gateway` SHALL contain `ApiGateway`.
-- `admin` SHALL contain `ServerCommands` (the server commands `gamemode`, `js`, `kickWithReason`, `restart`, `say`, `setting`, `sql`) and the client command `js`.
+- `admin` SHALL contain `ServerCommands` (the server commands `gamemode`, `js`, `kickWithReason`, `restart`, `say`, `setting`, `sql`), the client commands `js` and `restart`, and the class hosting the client `restart` command.
 
 The shared infrastructure SHALL remain centralized and SHALL NOT contain feature-specific logic:
 
@@ -38,6 +37,7 @@ The shared infrastructure SHALL remain centralized and SHALL NOT contain feature
 - **WHEN** the plugin source tree is inspected after the refactor
 - **THEN** every feature-specific class resides under its feature package listed above
 - **AND** no feature-specific class remains under `plugin.commands`, `plugin.menus`, `plugin.event`, `plugin.type`, `plugin.service`, or `plugin.utils`
+- **AND** no `plugin.update` package exists
 
 #### Scenario: Shared infrastructure is generic only
 - **WHEN** inspecting `plugin.commands`, `plugin.menus`, `plugin.event`, and `plugin.utils`

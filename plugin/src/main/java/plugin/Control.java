@@ -110,7 +110,7 @@ public class Control extends Plugin {
 
             state = PluginState.UNLOADED;
 
-            Log.info("Unloading with exist: " + event.exit);
+            Log.info("Unloading with exist: " + event.restart);
 
             Tasks.destroy();
             Registry.destroy();
@@ -127,7 +127,7 @@ public class Control extends Plugin {
         } catch (Exception e) {
             Log.err("Failed to unload plugin", e);
         } finally {
-            if (event.exit && !Cfg.IS_HUB && Groups.player.size() > 0) {
+            if (!Cfg.IS_HUB && Groups.player.size() > 0) {
                 try {
                     ServerUtils.redirectToHub();
                     Thread.sleep(2500);
@@ -144,9 +144,12 @@ public class Control extends Plugin {
                 }
             }
 
-            if (event.exit) {
-                System.exit(1);
+            if (event.restart) {
                 // Force docker container restart
+                System.exit(1);
+            } else {
+                // Status 0 container will not restart because of restart policy
+                System.exit(0);
             }
         }
     }

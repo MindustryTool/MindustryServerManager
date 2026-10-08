@@ -1,11 +1,7 @@
 package server.service;
 
 import java.io.Closeable;
-import java.lang.reflect.Field;
-import java.lang.reflect.Proxy;
 import java.nio.ByteBuffer;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -33,9 +29,6 @@ import common.network.NodeRemoveReason;
 import common.event.BaseEvent;
 import common.event.ServerEvents.StopEvent;
 import gateway.session.WsSession;
-import io.javalin.websocket.WsCloseContext;
-import io.javalin.websocket.WsConnectContext;
-import org.eclipse.jetty.websocket.api.Session;
 import server.EnvConfig;
 import server.manager.NodeManager;
 import server.service.translation.TranslationService;
@@ -197,19 +190,10 @@ public class GatewayClientLivenessTest {
 
     @BeforeEach
     void setUp() {
-        bus = new EventBus();
-        events = new CopyOnWriteArrayList<>();
-        bus.on(events::add);
-        EnvConfig env = new EnvConfig(
-                new EnvConfig.DockerEnv("image", "/data", null, null),
-                new EnvConfig.ServerConfig(true, "token", "/data", "ws://localhost/gateway", "http://localhost/"),
-                "test-signing-key");
-        TranslationService translations = new TranslationService(Caffeine.newBuilder().build());
-        PluginBundleService bundles = new PluginBundleService(new byte[] { 1 }, "test");
-        service = new GatewayService(bus, env, new StubNodeManager(), translations, bundles);
+        setUp(new StubNodeManager());
     }
 
-    private void setUp(RunningNodeManager nodes) {
+    private void setUp(NodeManager nodes) {
         bus = new EventBus();
         events = new CopyOnWriteArrayList<>();
         bus.on(events::add);
@@ -226,128 +210,28 @@ public class GatewayClientLivenessTest {
         return service.of(UUID.randomUUID());
     }
 
-    private Instant disconnectAt(GatewayService.GatewayClient client) throws Exception {
-        Field field = client.getClass().getDeclaredField("lastDisconnectAt");
-        field.setAccessible(true);
-        return (Instant) field.get(client);
-    }
-
-    // Javalin connect context is not available in unit tests, so post-open state
-    // (cleared clock plus open channel) is arranged directly.
-    private void emulateOpen(GatewayService.GatewayClient client) throws Exception {
-        client.rpcChannel().onOpen(new FakeSession(true));
-        Field field = client.getClass().getDeclaredField("lastDisconnectAt");
-        field.setAccessible(true);
-        field.set(client, null);
-    }
-
-    private void ageClock(GatewayService.GatewayClient client, Duration age) throws Exception {
-        Field field = client.getClass().getDeclaredField("lastDisconnectAt");
-        field.setAccessible(true);
-        field.set(client, Instant.now().minus(age));
-    }
-
     private long stopCount() {
         return events.stream().filter(StopEvent.class::isInstance).count();
     }
 
-    private static Session jettySession(boolean open) {
-        return (Session) Proxy.newProxyInstance(
-                GatewayClientLivenessTest.class.getClassLoader(),
-                new Class<?>[] { Session.class },
-                (proxy, method, args) -> {
-                    if (method.getName().equals("isOpen")) {
-                        return open;
-                    }
-                    Class<?> rt = method.getReturnType();
-                    if (rt == boolean.class) {
-                        return false;
-                    }
-                    if (rt == int.class) {
-                        return 0;
-                    }
-                    if (rt == long.class) {
-                        return 0L;
-                    }
-                    return null;
-                });
+    // ------------------------------------------------------------------
+    // Reusable client handle
+    // ------------------------------------------------------------------
+
+    @Test
+    void openAdoptsSessionOnCachedHandle() {
+        GatewayService.GatewayClient handle = client();
+        handle.rpcChannel().onOpen(new FakeSession(true));
+
+        assertNotNull(handle.rpcChannel().current(), "open adopts the incoming session");
     }
 
     @Test
-    void initClockEqualsCreateTime() throws Exception {
-        GatewayService.GatewayClient client = client();
-        assertEquals(client.createdAt, disconnectAt(client));
-    }
+    void cacheMissBuildsReusableHandle() {
+        UUID id = UUID.randomUUID();
+        GatewayService.GatewayClient first = service.of(id);
 
-    @Test
-    void closeStartsClock() throws Exception {
-        GatewayService.GatewayClient client = client();
-        emulateOpen(client);
-        assertNull(disconnectAt(client));
-
-        client.onClose(null);
-
-        Instant disconnected = disconnectAt(client);
-        assertNotNull(disconnected);
-        assertFalse(Instant.now().plusSeconds(5).isBefore(disconnected));
-    }
-
-    @Test
-    void openSocketNeverTerminates() throws Exception {
-        GatewayService.GatewayClient client = client();
-        emulateOpen(client);
-
-        assertFalse(client.shouldTerminate());
-    }
-
-    @Test
-    void closedSocketTerminatesAt3min() throws Exception {
-        GatewayService.GatewayClient freshKill = client();
-        ageClock(freshKill, Duration.ofMinutes(3).plusSeconds(1));
-
-        assertTrue(freshKill.shouldTerminate());
-    }
-
-    @Test
-    void freshDisconnectStaysQuiet() throws Exception {
-        GatewayService.GatewayClient client = client();
-        ageClock(client, Duration.ofSeconds(10));
-
-        assertFalse(client.shouldTerminate());
-    }
-
-    @Test
-    void reconnectGrantsFreshGrace() throws Exception {
-        GatewayService.GatewayClient client = client();
-        ageClock(client, Duration.ofMinutes(10));
-        assertTrue(client.shouldTerminate());
-
-        emulateOpen(client);
-
-        assertFalse(client.shouldTerminate());
-    }
-
-    @Test
-    void staleCloseKeepsConnectedAndClockUntouched() throws Exception {
-        GatewayService.GatewayClient client = client();
-        Session jettyA = jettySession(true);
-        Session jettyB = jettySession(true);
-
-        client.onOpen(new WsConnectContext("conn-A", jettyA));
-        assertNull(disconnectAt(client));
-
-        // Dirty reconnect without a close: overwrite must adopt, not throw.
-        client.onOpen(new WsConnectContext("conn-B", jettyB));
-        assertNull(disconnectAt(client));
-        WsSession adopted = client.rpcChannel().current();
-        assertNotNull(adopted);
-
-        // Late close of the superseded connection must be ignored.
-        client.onClose(new WsCloseContext("conn-A", jettyA, 1006, "gone"));
-        assertNull(disconnectAt(client), "stale close must not start the clock");
-        assertSame(adopted, client.rpcChannel().current());
-
-        assertFalse(client.shouldTerminate());
+        assertSame(first, service.of(id), "of() returns the cached handle");
     }
 
     // ------------------------------------------------------------------
@@ -372,38 +256,33 @@ public class GatewayClientLivenessTest {
     }
 
     @Test
-    void sweepKeepsClosedSocketWithRunningContainerWithinGrace() throws Exception {
+    void sweepKeepsClosedSocketWithRunningContainer() throws Exception {
         RunningNodeManager nodes = new RunningNodeManager();
         UUID id = UUID.randomUUID();
         nodes.setRunning(id);
         setUp(nodes);
 
         GatewayService.GatewayClient before = service.of(id);
-        ageClock(before, Duration.ofSeconds(10));
 
         service.sweep();
 
-        assertSame(before, service.of(id), "running container keeps the handle within grace");
-        assertTrue(nodes.removed.isEmpty());
+        assertSame(before, service.of(id), "running container keeps the handle");
+        assertTrue(nodes.removed.isEmpty(), "sweep must never remove a container");
         assertEquals(0, stopCount());
     }
 
     @Test
-    void sweepKillsOrphanedRunningContainerPastGrace() throws Exception {
+    void sweepNeverRemovesContainer() throws Exception {
         RunningNodeManager nodes = new RunningNodeManager();
         UUID id = UUID.randomUUID();
         nodes.setRunning(id);
         setUp(nodes);
 
-        GatewayService.GatewayClient client = service.of(id);
-        ageClock(client, Duration.ofMinutes(3).plusSeconds(1));
-
+        service.of(id).rpcChannel().onOpen(new FakeSession(true));
         service.sweep();
 
-        assertEquals(List.of(id), nodes.removed, "orphaned running container must be terminated");
-        assertEquals(1, stopCount());
-        assertEquals(NodeRemoveReason.NOT_CONNECTED.name(),
-                ((StopEvent) events.stream().filter(StopEvent.class::isInstance).findFirst().orElseThrow()).getReason());
+        assertTrue(nodes.removed.isEmpty(), "a live container is never removed by the sweep");
+        assertEquals(0, stopCount());
     }
 
     @Test

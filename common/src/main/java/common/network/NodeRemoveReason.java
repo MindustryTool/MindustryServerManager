@@ -8,5 +8,6 @@ public enum NodeRemoveReason {
     SOCKET_DISCONNECT,
     PROCESS_KILLED,
     OLD,
+    CONFIG_DRIFT,
     UNKNOWN,
 }

@@ -78,6 +78,7 @@ public class GatewayService {
     private final ConcurrentHashMap<UUID, GatewayClient> clients = new ConcurrentHashMap<>();
     private final KeyedRateLimiter<UUID> translationRateLimiter = new KeyedRateLimiter<>(TRANSLATION_RATE_LIMIT_BURST,
             TRANSLATION_RATE_LIMIT_REFILL_PER_SECOND, TRANSLATION_RATE_LIMIT_IDLE_TTL);
+            
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
     public GatewayService(EventBus eventBus, EnvConfig envConfig, NodeManager nodeManager) {
@@ -110,11 +111,6 @@ public class GatewayService {
         }, 15, 15, TimeUnit.SECONDS);
     }
 
-    /**
-     * Evict cached clients that can no longer be used (socket closed and no
-     * running container) and kill orphaned containers whose socket has been
-     * closed past the grace window. One container list serves the whole sweep.
-     */
     void sweep() {
         Set<UUID> runningIds = new HashSet<>();
 
@@ -131,11 +127,6 @@ public class GatewayService {
 
             if (!runningIds.contains(serverId)) {
                 clients.remove(serverId);
-                return;
-            }
-
-            if (client.shouldTerminate()) {
-                client.terminate(NodeRemoveReason.NOT_CONNECTED);
             }
         });
     }
@@ -174,12 +165,8 @@ public class GatewayService {
 
     @Accessors(fluent = true)
     public class GatewayClient {
-        private static final Duration TERMINATE_CONNECTION_AFTER = Duration.ofMinutes(3);
-
         @Getter
         private final UUID id;
-
-        private volatile Instant lastDisconnectAt;
 
         private final RpcChannel rpcChannel = RpcChannel.withExecutor(Const.executorService);
 
@@ -191,7 +178,6 @@ public class GatewayService {
 
         public GatewayClient(UUID id) {
             this.id = id;
-            this.lastDisconnectAt = createdAt;
 
             this.registerHandler("get-total-player", Void.class, _ctx -> 0L);
             this.registerHandler("login", LoginRequest.class, ctx -> backend.login(id, ctx.body()));
@@ -247,7 +233,6 @@ public class GatewayService {
             // Overwrite wins: a duplicate or reconnect open replaces the socket.
             eventBus.emit(new StartEvent(id));
             rpcChannel.onOpen(new JavalinSession(context));
-            lastDisconnectAt = null;
         }
 
         public synchronized void onClose(WsCloseContext context) {
@@ -265,17 +250,6 @@ public class GatewayService {
             }
 
             eventBus.emit(new StopEvent(id, NodeRemoveReason.SOCKET_DISCONNECT));
-            lastDisconnectAt = Instant.now();
-        }
-
-        public boolean shouldTerminate() {
-            if (lastDisconnectAt == null && isSocketClosed()) {
-                lastDisconnectAt = Instant.now();
-            }
-
-            return lastDisconnectAt != null
-                    && Instant.now().isAfter(lastDisconnectAt.plus(TERMINATE_CONNECTION_AFTER))
-                    && isSocketClosed();
         }
 
         private boolean isSocketClosed() {

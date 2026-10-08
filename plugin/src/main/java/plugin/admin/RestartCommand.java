@@ -1,17 +1,15 @@
-package plugin.update;
+package plugin.admin;
 
-import lombok.RequiredArgsConstructor;
+import plugin.PluginEvents;
 import plugin.annotations.ClientCommand;
 import plugin.annotations.Component;
+import plugin.event.UnloadServerEvent;
 import plugin.session.Session;
 import plugin.utils.Tr;
 import plugin.utils.Utils;
 
 @Component
-@RequiredArgsConstructor
-public class UpdateCommands {
-
-    private final PluginUpdater updater;
+public class RestartCommand {
 
     @ClientCommand(name = "restart", description = "Restart the server")
     public void restart(Session session) {
@@ -21,6 +19,6 @@ public class UpdateCommands {
                 p.sendMessage(msg);
             }
         });
-        updater.scheduleRestart();
+        PluginEvents.fire(new UnloadServerEvent(true));
     }
 }

@@ -238,6 +238,9 @@ class ServerServiceUpdateConfigTest {
         assertNotNull(stored.getStartServer());
         assertEquals("host cmd one", stored.getStartServer().getHostCommand());
         assertEquals("sandbox", stored.getStartServer().getMode());
+        assertNotNull(stored.getConfig(), "full desired config stored for reconcile");
+        assertEquals("host cmd one", stored.getConfig().getHostCommand());
+        assertEquals(6567, stored.getConfig().getPort());
 
         assertTrue(nodes.isRunning(serverId), "running state untouched");
         assertTrue(nodes.removed.isEmpty(), "no remove triggered");
@@ -270,6 +273,8 @@ class ServerServiceUpdateConfigTest {
         ServerConfigMessage healed = readStored(serverId);
         assertEquals("cmd-b", healed.getStartServer().getHostCommand());
         assertEquals("survival", healed.getStartServer().getMode());
+        assertNotNull(healed.getConfig(), "heal must persist full config");
+        assertEquals("cmd-b", healed.getConfig().getHostCommand());
     }
 
     @Test

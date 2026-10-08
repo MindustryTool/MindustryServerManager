@@ -26,6 +26,7 @@ import server.config.Const;
 import server.service.EventBus;
 import server.types.data.NodeUsage;
 import server.types.data.ServerState;
+import server.types.data.MisMatchType;
 import server.types.data.ServerMisMatch;
 import common.content.ManagerMap;
 import common.content.ManagerMod;
@@ -347,9 +348,14 @@ public class DockerNodeManager implements NodeManager {
         var meta = readMetadataFromContainer(container).orElseThrow();
         List<ServerMisMatch> result = ServerMisMatch.from(meta, config, state, mods);
 
-        var serverImage = dockerClient.inspectImageCmd(meta.getConfig().getImage()).exec();
+        String imageToInspect = config.getImage() == null || config.getImage().isBlank()
+                ? meta.getConfig().getImage()
+                : config.getImage();
+        var serverImage = dockerClient.inspectImageCmd(imageToInspect).exec();
+        
         if (!meta.getServerImageHash().equals(serverImage.getId())) {
             result.add(new ServerMisMatch()
+                    .setType(MisMatchType.IMAGE)
                     .setField("Server image mismatch")
                     .setExpected(serverImage.getId())
                     .setCurrent(meta.getServerImageHash()));

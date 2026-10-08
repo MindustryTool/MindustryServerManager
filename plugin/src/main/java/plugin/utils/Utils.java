@@ -26,6 +26,7 @@ import arc.util.Log;
 import arc.util.Strings;
 import arc.util.Time;
 import arc.util.Http.HttpStatusException;
+import java.security.MessageDigest;
 import common.content.Mod;
 import common.content.ModMetadata;
 import common.player.PlayerInfo;
@@ -150,11 +151,38 @@ public class Utils {
                 .setVersion(Version.combined())
                 .setStartedAt(Core.settings.getLong("startedAt", System.currentTimeMillis()))
                 .setServerId(Control.SERVER_ID)
+                .setPluginHash(currentPluginHash())
                 .setStatus(Vars.state.isGame() //
                         ? Vars.state.isPaused()//
                                 ? ServerStatus.PAUSED
                                 : ServerStatus.ONLINE
                         : ServerStatus.STOP);
+    }
+
+    private static String cachedPluginHash;
+
+    public static synchronized String currentPluginHash() {
+        if (cachedPluginHash != null) {
+            return cachedPluginHash;
+        }
+
+        try {
+            Fi jar = Vars.modDirectory.child("plugin.jar");
+            if (!jar.exists()) {
+                return null;
+            }
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            byte[] digest = md.digest(jar.readBytes());
+            StringBuilder sb = new StringBuilder();
+            for (byte b : digest) {
+                sb.append(String.format("%02x", b));
+            }
+            cachedPluginHash = sb.toString();
+            return cachedPluginHash;
+        } catch (Exception e) {
+            Log.warn("Failed to hash plugin.jar", e);
+            return null;
+        }
     }
 
     public static byte[] mapPreview2() {
