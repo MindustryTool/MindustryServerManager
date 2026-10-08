@@ -163,91 +163,94 @@ public class ServerService {
     }
 
     void hostLocked(ServerConfig request) {
-        {
-            UUID serverId = request.getId();
+        UUID serverId = request.getId();
 
-            if (gatewayService.isHosting(serverId)) {
-                storeDesiredConfig(serverId, request);
-                return;
-            }
-
-            var unusedFiles = List.of("mindustry-tool-plugins", "mods/loader.jar", "WEBSOCKET.txt");
-
-            for (String file : unusedFiles) {
-                if (nodeManager.deleteFile(serverId, file)) {
-                    Log.info("Delete old file: " + file);
-                }
-            }
-
-            eventBus.emit(LogEvent.info(serverId, "Generate server config file"));
-            String jwt = wsHandler.generateServerJwt(serverId);
-
-            nodeManager.writeFile(serverId, "server.json", toDesiredBytes(jwt, request));
-
-            // Overwrite plugin jar with the bundled controller plugin
-            nodeManager.writeFile(serverId, "mods/plugin.jar", pluginBundle.downloadPlugin());
-            nodeManager.create(request);
-
-            eventBus.emit(LogEvent.info(serverId, "Connecting to gateway"));
-            GatewayClient gatewayClient = gatewayService.of(serverId);
-
-            try {
-                gatewayClient.awaitSession(Duration.ofSeconds(120)).get(120, TimeUnit.SECONDS);
-                gatewayClient.server().isHosting().get(5, TimeUnit.SECONDS);
-            } catch (InterruptedException | ExecutionException | TimeoutException e) {
-                throw new ApiError(502, "Can not connect to gateway", e);
-            }
-
-            eventBus.emit(LogEvent.info(serverId, "Waiting for server to start"));
-
-            String gamemode = request.getGamemode();
-
-            if (gamemode == null || gamemode.isEmpty()) {
-                gamemode = request.getMode();
-            }
-
-            String[] preHostCommand = {
-                    "config name %s".formatted(request.getName()),
-                    request.getDescription().isEmpty() ? "" : "config desc %s".formatted(request.getDescription()),
-                    "config port 6567",
-                    "gamemode " + gamemode,
-                    "version"
-            };
-
-            try {
-                gatewayClient.server().sendCommand(preHostCommand).get(5, TimeUnit.SECONDS);
-
-                eventBus.emit(LogEvent.info(serverId, "Host server"));
-
-                gatewayClient.server()
-                        .host(new StartServer()
-                                .setHostCommand(request.getHostCommand())
-                                .setMode(request.getMode()))
-                        .get(15, TimeUnit.SECONDS);
-
-                eventBus.emit(LogEvent.info(serverId, "Wait for server status"));
-            } catch (Exception e) {
-                throw new ApiError(500, "Fail to send host command", e);
-            }
-
-            for (int i = 0; i < 120; i++) {
-                try {
-                    if (gatewayClient.server().isHosting().get(1000, TimeUnit.MILLISECONDS)) {
-                        eventBus.emit(LogEvent.info(serverId, "Server hosting"));
-                        return;
-                    }
-                } catch (Exception e) {
-                    eventBus.emit(LogEvent.error(serverId, "Failed to host server"));
-                    Log.err("Can not check server status for server " + serverId, e);
-                }
-            }
-
-            Log.err("Server waiting for hosting status timeout, serverId " + serverId);
-
-            throw new ApiError(503,
-                    "Server waiting for hosting status timeout, make sure host command is valid, current host command: "
-                            + request.getHostCommand());
+        if (gatewayService.isHosting(serverId)) {
+            storeDesiredConfig(serverId, request);
+            return;
         }
+
+        var unusedFiles = List.of("mindustry-tool-plugins", "mods/loader.jar", "WEBSOCKET.txt");
+
+        for (String file : unusedFiles) {
+            if (nodeManager.deleteFile(serverId, file)) {
+                Log.info("Delete old file: " + file);
+            }
+        }
+
+        eventBus.emit(LogEvent.info(serverId, "Generate server config file"));
+        String jwt = wsHandler.generateServerJwt(serverId);
+
+        nodeManager.writeFile(serverId, "server.json", toDesiredBytes(jwt, request));
+
+        // Overwrite plugin jar with the bundled controller plugin
+        nodeManager.writeFile(serverId, "mods/plugin.jar", pluginBundle.downloadPlugin());
+        nodeManager.create(request);
+
+        eventBus.emit(LogEvent.info(serverId, "Connecting to gateway"));
+        GatewayClient gatewayClient = gatewayService.of(serverId);
+
+        try {
+            gatewayClient.awaitSession(Duration.ofSeconds(120)).get(120, TimeUnit.SECONDS);
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            throw new ApiError(502, "Can not connect to gateway");
+        }
+
+        try {
+            gatewayClient.server().isHosting().get(5, TimeUnit.SECONDS);
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            throw new ApiError(502, "Can not check for hosting");
+        }
+
+        eventBus.emit(LogEvent.info(serverId, "Waiting for server to start"));
+
+        String gamemode = request.getGamemode();
+
+        if (gamemode == null || gamemode.isEmpty()) {
+            gamemode = request.getMode();
+        }
+
+        String[] preHostCommand = {
+                "config name %s".formatted(request.getName()),
+                request.getDescription().isEmpty() ? "" : "config desc %s".formatted(request.getDescription()),
+                "config port 6567",
+                "gamemode " + gamemode,
+                "version"
+        };
+
+        try {
+            gatewayClient.server().sendCommand(preHostCommand).get(5, TimeUnit.SECONDS);
+
+            eventBus.emit(LogEvent.info(serverId, "Host server"));
+
+            gatewayClient.server()
+                    .host(new StartServer()
+                            .setHostCommand(request.getHostCommand())
+                            .setMode(request.getMode()))
+                    .get(15, TimeUnit.SECONDS);
+
+            eventBus.emit(LogEvent.info(serverId, "Wait for server status"));
+        } catch (Exception e) {
+            throw new ApiError(500, "Fail to send host command", e);
+        }
+
+        for (int i = 0; i < 120; i++) {
+            try {
+                if (gatewayClient.server().isHosting().get(1000, TimeUnit.MILLISECONDS)) {
+                    eventBus.emit(LogEvent.info(serverId, "Server hosting"));
+                    return;
+                }
+            } catch (Exception e) {
+                eventBus.emit(LogEvent.error(serverId, "Failed to host server"));
+                Log.err("Can not check server status for server " + serverId, e);
+            }
+        }
+
+        Log.err("Server waiting for hosting status timeout, serverId " + serverId);
+
+        throw new ApiError(503,
+                "Server waiting for hosting status timeout, make sure host command is valid, current host command: "
+                        + request.getHostCommand());
     }
 
     public List<ServerMisMatch> getMismatch(UUID serverId, ServerConfig config) {
@@ -309,7 +312,7 @@ public class ServerService {
             }
             ServerConfigMessage current = Utils.objectMapper.readValue(
                     existing.readBytes(), ServerConfigMessage.class);
-                    
+
             return current.getConfig();
         } catch (Exception e) {
             Log.warn("Failed to read desired config for @", serverId);

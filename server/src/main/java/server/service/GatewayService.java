@@ -78,7 +78,7 @@ public class GatewayService {
     private final ConcurrentHashMap<UUID, GatewayClient> clients = new ConcurrentHashMap<>();
     private final KeyedRateLimiter<UUID> translationRateLimiter = new KeyedRateLimiter<>(TRANSLATION_RATE_LIMIT_BURST,
             TRANSLATION_RATE_LIMIT_REFILL_PER_SECOND, TRANSLATION_RATE_LIMIT_IDLE_TTL);
-            
+
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
     public GatewayService(EventBus eventBus, EnvConfig envConfig, NodeManager nodeManager) {
@@ -261,7 +261,7 @@ public class GatewayService {
         public boolean terminate(NodeRemoveReason reason) {
             WsSession session = rpcChannel.current();
 
-            if (session != null && session.isOpen()) {
+            if (rpcChannel.isConnected()) {
                 try {
                     this.server.shutdown().get(5, TimeUnit.SECONDS);
                 } catch (Exception e) {
@@ -330,7 +330,8 @@ public class GatewayService {
                             .uri(new URIBuilder(base + "/" + String.join("/", str)).build())
                             .header("X-SERVER-ID", id.toString())
                             .header("X-MANAGER-AUTH", envConfig.serverConfig().accessToken())
-                            .timeout(Duration.ofSeconds(10));
+                            .header("Connection", "close")
+                            .timeout(Duration.ofMinutes(2));
 
                 } catch (Exception e) {
                     throw new ApiError(500, "Internal server error", e);
@@ -342,6 +343,7 @@ public class GatewayService {
                     HttpRequest request = createRequest("servers", id, "login")
                             .POST(HttpRequest.BodyPublishers.ofString(Utils.toJsonString(body)))
                             .header("Content-Type", "application/json")
+                            .timeout(Duration.ofSeconds(5))
                             .build();
 
                     HttpResponse<String> result = httpClient.send(request, BodyHandlers.ofString());

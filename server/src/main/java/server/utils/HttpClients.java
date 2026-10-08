@@ -10,12 +10,11 @@ import java.time.Duration;
  */
 public final class HttpClients {
 
-    private static final Duration DEFAULT_CONNECT_TIMEOUT = Duration.ofSeconds(10);
+    private static final Duration DEFAULT_CONNECT_TIMEOUT = Duration.ofMinutes(2);
 
     private static final HttpClient DEFAULT_CLIENT = HttpClient.newBuilder()
             .connectTimeout(DEFAULT_CONNECT_TIMEOUT)
             .followRedirects(HttpClient.Redirect.NORMAL)
-            .version(HttpClient.Version.HTTP_1_1)
             .build();
 
     private HttpClients() {}

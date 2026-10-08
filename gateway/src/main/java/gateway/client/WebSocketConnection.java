@@ -476,7 +476,7 @@ class WebSocketConnection implements WsSession {
                 return;
             }
 
-            LOG.log(Level.WARNING, "WebSocket error: " + error.getMessage(), error);
+            LOG.log(Level.WARNING, "WebSocket error: " + error.getMessage());
 
             try {
                 webSocket.abort();
