@@ -239,6 +239,7 @@ public class GatewayService {
             Log.info("Gateway client disconnected: " + id);
 
             if (context == null) {
+                // TODO: Proper exception + print message only
                 rpcChannel.onClose(new RuntimeException("Gateway client disconnected: " + id));
             } else {
                 boolean cleared = rpcChannel.onClose(new JavalinSession(context),

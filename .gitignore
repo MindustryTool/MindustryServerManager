@@ -67,4 +67,4 @@ archive
 # Local testing (never commit real tokens)
 .env.local
 config/.env
-data/
+/data
