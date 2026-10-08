@@ -426,7 +426,7 @@ public class RpcChannel implements SessionProvider {
 
         String kind = message.getKind();
         if (kind == null) {
-            LOG.info("Dropping RPC frame without kind");
+            LOG.info("Dropping RPC frame without kind: " + message);
             return;
         }
         InboundFrame<WsMessage<JsonNode>> ctx = new InboundFrame<>(message, from);

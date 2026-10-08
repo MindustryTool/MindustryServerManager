@@ -1,5 +1,8 @@
-## ADDED Requirements
+# ide-project-deps Specification
 
+## Purpose
+TBD - created by archiving change fix-ide-stale-project-deps. Update Purpose after archive.
+## Requirements
 ### Requirement: Cross-module edits visible without clean
 
 The build model SHALL expose inter-module deps as source project refs so an edit in `common`, `gateway`, `database`, or `annotation` is visible to `plugin` and `server` after save and auto-build, without `Clean Java Language Server Workspace`.
@@ -31,3 +34,4 @@ The pack step SHALL still produce `plugin/build/libs/plugin.jar` with `plugin.js
 
 - **WHEN** the Gradle build stage finishes
 - **THEN** `server/build/libs/application.jar` and `plugin/build/libs/plugin.jar` plus sha exist for the runtime stage copy
+
