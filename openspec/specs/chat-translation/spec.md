@@ -153,3 +153,33 @@ The server manager SHALL maintain a Caffeine in-memory cache for translations ke
 #### Scenario: Repeated chat message hits cache
 - **WHEN** a message has already been translated to a specific target language within the cache TTL
 - **THEN** the translation is resolved directly from cache without querying any provider
+
+### Requirement: Per-User Translation Rate Limiting
+The plugin `ChatTranslation` chat filter SHALL gate translation per player using a keyed token bucket (capacity 5, refill 1 token per second) keyed by the sender's player UUID, consuming one token per chat message before language fan-out. When a message is denied, the plugin SHALL skip translation for that message but SHALL still deliver the original untranslated message to the sender and recipients.
+
+#### Scenario: Under-limit message is translated
+- **WHEN** a player sends a chat message while their token bucket has tokens available
+- **THEN** translation proceeds as before and translated messages are delivered per recipient locale
+
+#### Scenario: Burst exhaustion skips translation but delivers original
+- **WHEN** a player sends more messages than the burst capacity within the refill window
+- **THEN** the denied messages are delivered untranslated to all recipients and no translate requests are sent for them
+
+#### Scenario: Bucket refills over time
+- **WHEN** a throttled player waits long enough for a token to refill
+- **THEN** their next message is translated again
+
+### Requirement: Per-Server Translation Rate Limiting
+The backend `translate` RPC handler SHALL gate translation per server using a keyed token bucket (capacity 50, refill 10 tokens per second) keyed by the connecting server UUID, consuming one token per translate RPC call. When a call is denied, the handler SHALL return null without invoking `TranslationService`.
+
+#### Scenario: Under-limit call is served
+- **WHEN** a server sends a translate call while its token bucket has tokens available
+- **THEN** the handler delegates to `TranslationService` and returns its result
+
+#### Scenario: Over-limit call is rejected cheaply
+- **WHEN** a server exceeds its burst capacity within the refill window
+- **THEN** the handler returns null and `TranslationService.translate` is not called for that request
+
+#### Scenario: Per-server buckets are independent
+- **WHEN** one server exhausts its translation budget
+- **THEN** another server's translate calls continue to be served

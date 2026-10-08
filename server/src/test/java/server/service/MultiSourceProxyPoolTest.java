@@ -7,6 +7,7 @@ import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BooleanSupplier;
 
 import org.junit.jupiter.api.Test;
 import server.service.proxy.ProxySource;
@@ -172,7 +173,7 @@ public class MultiSourceProxyPoolTest {
                 "Refill must be debounced even when the pool is empty");
     }
 
-    private static void await(java.util.function.BooleanSupplier condition) throws InterruptedException {
+    private static void await(BooleanSupplier condition) throws InterruptedException {
         long deadline = System.currentTimeMillis() + 3000;
         while (System.currentTimeMillis() < deadline) {
             if (condition.getAsBoolean()) {

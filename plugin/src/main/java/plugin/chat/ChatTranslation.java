@@ -1,5 +1,6 @@
 package plugin.chat;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -12,6 +13,7 @@ import java.util.concurrent.TimeUnit;
 import arc.Core;
 import arc.util.Log;
 import arc.util.Strings;
+import common.ratelimit.KeyedRateLimiter;
 import dto.TranslationRequestDto;
 import dto.TranslationResponseDto;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +29,13 @@ import plugin.utils.Utils;
 @RequiredArgsConstructor 
 public class ChatTranslation {
 
+    private static final double RATE_LIMIT_BURST = 5;
+    private static final double RATE_LIMIT_REFILL_PER_SECOND = 1;
+    private static final Duration RATE_LIMIT_IDLE_TTL = Duration.ofMinutes(5);
+
     private final ApiGateway apiGateway;
+    private final KeyedRateLimiter<String> userRateLimiter = new KeyedRateLimiter<>(RATE_LIMIT_BURST,
+            RATE_LIMIT_REFILL_PER_SECOND, RATE_LIMIT_IDLE_TTL);
 
     @Init
     private void init() {
@@ -41,8 +49,11 @@ public class ChatTranslation {
                 return message;
             }
 
+            String cleanText = Strings.stripColors(message).trim();
+            boolean translationAllowed = userRateLimiter.tryAcquire(player.uuid());
+
             // Immediately send back to sender without translation, resetting color with [white]
-            String senderFormatted = formatMessage(player.name, message, Strings.stripColors(message).trim(), null, null);
+            String senderFormatted = formatMessage(player.name, message, cleanText, null, null);
             player.sendMessage(senderFormatted, player, Strings.stripColors(senderFormatted));
 
             Log.info(senderFormatted);
@@ -61,8 +72,13 @@ public class ChatTranslation {
             });
 
             if (!targetPlayers.isEmpty()) {
-                // Execute translation asynchronously to prevent blocking the game thread
-                CompletableFuture.runAsync(() -> handleAsyncTranslation(player, message, targetPlayers, neededLangs));
+                if (translationAllowed) {
+                    // Execute translation asynchronously to prevent blocking the game thread
+                    CompletableFuture.runAsync(() -> handleAsyncTranslation(player, message, targetPlayers, neededLangs));
+                } else {
+                    Log.debug("Chat translation rate limited for player '@'", player.name);
+                    dispatchMessages(player, message, cleanText, targetPlayers, Map.of());
+                }
             }
 
             // Return null to suppress default synchronous broadcast

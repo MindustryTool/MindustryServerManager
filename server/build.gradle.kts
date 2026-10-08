@@ -28,6 +28,7 @@ dependencies {
     implementation("org.modelmapper:modelmapper:3.1.0")
     implementation(project(":dto"))
     implementation(project(":gateway"))
+    implementation(project(":common"))
 
     implementation("Anuken:Mindustry:${property("mindustryVersion")}")
 

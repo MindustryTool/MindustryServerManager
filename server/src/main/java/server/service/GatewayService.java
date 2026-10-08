@@ -30,6 +30,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 
 import arc.files.Fi;
 import arc.util.Log;
+import common.ratelimit.KeyedRateLimiter;
 import server.utils.HttpClients;
 import lombok.Getter;
 import lombok.experimental.Accessors;
@@ -65,12 +66,18 @@ import server.utils.ApiError;
 import server.utils.Utils;
 
 public class GatewayService {
+    private static final double TRANSLATION_RATE_LIMIT_BURST = 50;
+    private static final double TRANSLATION_RATE_LIMIT_REFILL_PER_SECOND = 10;
+    private static final Duration TRANSLATION_RATE_LIMIT_IDLE_TTL = Duration.ofMinutes(5);
+
     private final EventBus eventBus;
     private final EnvConfig envConfig;
     private final NodeManager nodeManager;
     private final TranslationService translationService;
     private final PluginBundleService pluginBundleService;
     private final ConcurrentHashMap<UUID, GatewayClient> clients = new ConcurrentHashMap<>();
+    private final KeyedRateLimiter<UUID> translationRateLimiter = new KeyedRateLimiter<>(TRANSLATION_RATE_LIMIT_BURST,
+            TRANSLATION_RATE_LIMIT_REFILL_PER_SECOND, TRANSLATION_RATE_LIMIT_IDLE_TTL);
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
     public GatewayService(EventBus eventBus, EnvConfig envConfig, NodeManager nodeManager) {
@@ -190,6 +197,11 @@ public class GatewayService {
             this.registerHandler("login", LoginRequestDto.class, ctx -> backend.login(id, ctx.body()));
             this.registerHandler("host", UUID.class, ctx -> backend.host(ctx.body()));
             this.registerHandler("translate", TranslationRequestDto.class, ctx -> {
+                if (!translationRateLimiter.tryAcquire(id)) {
+                    Log.debug("Translation rate limited for server @", id);
+                    return null;
+                }
+
                 var req = ctx.body();
                 try {
                     return translationService.translate(req.getText(), req.getTargetLang());
