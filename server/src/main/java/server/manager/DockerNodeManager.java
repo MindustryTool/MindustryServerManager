@@ -164,9 +164,7 @@ public class DockerNodeManager implements NodeManager {
                     eventBus.emit(LogEvent.error(serverId, "Remove container " + server.getNames()[0] + " port: "
                             + config.getPort() + " to create new container on same port"));
 
-                    dockerClient.removeContainerCmd(server.getId())
-                            .withForce(true)
-                            .exec();
+                    removeContainer(server.getId());
                 }
             }
         }
@@ -252,7 +250,7 @@ public class DockerNodeManager implements NodeManager {
                     "api.mindustry-tool.com:148.113.245.224");
         }
 
-        if (Const.IS_PRODUCTION){
+        if (Const.IS_PRODUCTION) {
             hostConfig.withRuntime("io.containerd.kata.v2");
         }
 
@@ -296,6 +294,10 @@ public class DockerNodeManager implements NodeManager {
 
     private synchronized boolean removeContainer(String id) {
         try {
+            dockerClient.stopContainerCmd(id)
+                    .withTimeout(30)
+                    .exec();
+
             dockerClient.removeContainerCmd(id)
                     .withForce(true)
                     .exec();
@@ -352,7 +354,7 @@ public class DockerNodeManager implements NodeManager {
                 ? meta.getConfig().getImage()
                 : config.getImage();
         var serverImage = dockerClient.inspectImageCmd(imageToInspect).exec();
-        
+
         if (!meta.getServerImageHash().equals(serverImage.getId())) {
             result.add(new ServerMisMatch()
                     .setType(MisMatchType.IMAGE)

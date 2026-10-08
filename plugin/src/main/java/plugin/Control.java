@@ -145,11 +145,7 @@ public class Control extends Plugin {
             }
 
             if (event.restart) {
-                // Force docker container restart
                 System.exit(1);
-            } else {
-                // Status 0 container will not restart because of restart policy
-                System.exit(0);
             }
         }
     }

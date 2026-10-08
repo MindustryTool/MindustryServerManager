@@ -259,8 +259,6 @@ public class GatewayService {
         }
 
         public boolean terminate(NodeRemoveReason reason) {
-            WsSession session = rpcChannel.current();
-
             if (rpcChannel.isConnected()) {
                 try {
                     this.server.shutdown().get(5, TimeUnit.SECONDS);
@@ -268,10 +266,13 @@ public class GatewayService {
                     Log.err("Shutdown request failed for client " + id + ", continuing termination", e);
                 }
 
-                try {
-                    session.close(WsProtocol.REPLACED_CLOSE_CODE, "Terminate by server");
-                } catch (Exception e) {
-                    Log.err("Error closing session for client " + id, e);
+                WsSession session = rpcChannel.current();
+                if (session != null) {
+                    try {
+                        session.close(WsProtocol.REPLACED_CLOSE_CODE, "Terminate by server");
+                    } catch (Exception e) {
+                        Log.err("Error closing session for client " + id, e);
+                    }
                 }
             }
 
