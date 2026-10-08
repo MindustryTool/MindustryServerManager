@@ -62,7 +62,7 @@ The server manager SHALL provide a `LingvaProvider` implementing `TranslationPro
 - **THEN** the provider encodes the query, sends a GET request to `/api/v1/auto/{target}/{query}`, and extracts the `translation` text and detected source language from `info.detectedSource`
 
 ### Requirement: Google Web Translation Provider
-The server manager SHALL provide a `GoogleWebProvider` implementing `TranslationProvider` using Google's free web endpoint (`client=gtx`), parsing multi-segment JSON responses, unescaping HTML entities, and supporting optional injection of `MultiSourceProxyPool` via a long-lived HTTP client with a dynamic `ProxySelector`.
+The server manager SHALL provide a `GoogleWebProvider` implementing `TranslationProvider` using Google's free web endpoint (`client=gtx`), parsing multi-segment JSON responses, unescaping HTML entities, and supporting optional injection of `MultiSourceProxyPool` via a long-lived HTTP client with a dynamic `ProxySelector`. When a proxy pool is injected, the system SHALL route each attempt to the usable proxy with the smallest sent count (tie by first in list order), SHALL track consecutive failures per proxy and evict after 3 consecutive failures, SHALL reset a proxy's failure count on success, SHALL refill asynchronously when usable proxies drop to 3 or fewer with debounce, SHALL fetch once asynchronously after pool creation, and SHALL fail fast to the next provider when no usable proxy exists without blocking on fetch.
 
 #### Scenario: Direct execution when no proxy pool injected
 - **WHEN** `GoogleWebProvider` is configured without a proxy pool
@@ -71,6 +71,36 @@ The server manager SHALL provide a `GoogleWebProvider` implementing `Translation
 #### Scenario: Proxied execution using long-lived client with dynamic proxy selector
 - **WHEN** `GoogleWebProvider` is configured with a `MultiSourceProxyPool`
 - **THEN** requests are dispatched through a single long-lived proxied HTTP client backed by the pool's dynamic `ProxySelector` without allocating new HTTP client instances per request or retry attempt
+- **AND** the proxy actually used for the request equals the pool-picked proxy tracked for stats
+
+#### Scenario: Least-sent proxy selection
+- **WHEN** a proxied translation attempt starts with multiple usable proxies
+- **THEN** the system picks the usable proxy with the smallest sent count, breaking ties by first in list order, and increments its sent count
+
+#### Scenario: Consecutive failure eviction and retry
+- **WHEN** a proxied attempt fails by timeout, connect error, or non-200 response
+- **THEN** the system increments that proxy's consecutive failure count and retries with the next least-sent usable proxy up to 3 attempts per translation
+- **AND** a proxy reaching 3 consecutive failures is evicted
+
+#### Scenario: Success resets failure count
+- **WHEN** a proxied attempt succeeds with HTTP 200 and valid body
+- **THEN** that proxy's consecutive failure count resets to 0 and the proxy stays usable
+
+#### Scenario: New proxies start at zero
+- **WHEN** a refill fetch adds new proxies
+- **THEN** new proxies start with sent count 0 while existing proxies keep their counts
+
+#### Scenario: Low-watermark async refill with debounce
+- **WHEN** usable proxy count drops to 3 or fewer
+- **THEN** the system triggers one async refill guarded by a strict 2-minute debounce including when count is 0
+
+#### Scenario: Eager async fetch after creation
+- **WHEN** a `MultiSourceProxyPool` is created
+- **THEN** the system triggers one async fetch without blocking the creator
+
+#### Scenario: Fail fast when no usable proxy
+- **WHEN** a proxied translation starts with zero usable proxies
+- **THEN** the provider throws at once so `TranslationService` cascades to the next provider without waiting for fetch
 
 #### Scenario: Translate multi-segment message
 - **WHEN** a multi-sentence message is sent to Google Web translation

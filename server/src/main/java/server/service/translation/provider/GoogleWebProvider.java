@@ -1,6 +1,5 @@
 package server.service.translation.provider;
 
-import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
@@ -16,6 +15,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import dto.TranslationResponseDto;
 import server.service.MultiSourceProxyPool;
+import server.service.TrackedProxy;
 import server.service.TranslationProvider;
 import server.utils.HttpClients;
 
@@ -107,14 +107,10 @@ public class GoogleWebProvider implements TranslationProvider {
     }
 
     private TranslationResponseDto executeProxiedRequest(String url) throws Exception {
-        if (proxyPool.size() == 0) {
-            throw new IllegalStateException("No proxies available in MultiSourceProxyPool");
-        }
-
         Exception lastException = null;
 
         for (int attempt = 1; attempt <= MAX_PROXY_ATTEMPTS; attempt++) {
-            InetSocketAddress candidate = proxyPool.getNextCandidate();
+            TrackedProxy candidate = proxyPool.acquire();
             if (candidate == null) {
                 break;
             }
@@ -127,23 +123,31 @@ public class GoogleWebProvider implements TranslationProvider {
                     .build();
 
             try {
-                // Uses the single long-lived proxied client backed by proxyPool.asProxySelector()
+                // Uses the single long-lived proxied client; the selector resolves to the
+                // proxy bound by acquire() on this thread, so tracked == actually used.
                 HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
 
                 if (response.statusCode() == 200) {
+                    proxyPool.recordSuccess(candidate);
                     return parseResponse(response.body());
                 }
 
-                proxyPool.evict(candidate);
+                proxyPool.recordFailure(candidate);
                 lastException = new RuntimeException("Proxied request returned HTTP " + response.statusCode());
             } catch (Exception e) {
-                proxyPool.evict(candidate);
+                proxyPool.recordFailure(candidate);
                 lastException = e;
+            } finally {
+                proxyPool.release();
             }
         }
 
+        if (lastException == null) {
+            throw new IllegalStateException("No proxies available in MultiSourceProxyPool");
+        }
+
         throw new RuntimeException("All " + MAX_PROXY_ATTEMPTS + " proxied attempts failed: " +
-                (lastException != null ? lastException.getMessage() : "unknown error"), lastException);
+                lastException.getMessage(), lastException);
     }
 
     public TranslationResponseDto parseResponse(String jsonBody) throws Exception {

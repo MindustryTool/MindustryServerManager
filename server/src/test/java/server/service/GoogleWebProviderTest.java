@@ -1,6 +1,7 @@
 package server.service;
 
 import java.net.InetSocketAddress;
+import java.util.Collections;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -21,7 +22,7 @@ public class GoogleWebProviderTest {
 
     @Test
     public void testProxiedProviderMetadata() {
-        MultiSourceProxyPool pool = new MultiSourceProxyPool();
+        MultiSourceProxyPool pool = new MultiSourceProxyPool(Collections.emptyList());
         GoogleWebProvider provider = new GoogleWebProvider(pool);
         assertEquals("google-web-proxy", provider.name());
         assertTrue(provider.isProxied());
@@ -69,42 +70,25 @@ public class GoogleWebProviderTest {
     }
 
     @Test
-    public void testProxiedThrowsWhenNoProxiesAvailable() {
-        MultiSourceProxyPool emptyPool = new MultiSourceProxyPool() {
-            @Override
-            public void checkAndTriggerRefresh() {
-                // Do not auto-refresh
-            }
-        };
-
+    public void testProxiedFailsFastWhenNoProxiesAvailable() {
+        MultiSourceProxyPool emptyPool = new MultiSourceProxyPool(Collections.emptyList());
         GoogleWebProvider provider = new GoogleWebProvider(emptyPool);
 
-        assertThrows(IllegalStateException.class, () -> {
-            provider.translate("hello", "vi");
-        });
+        assertThrows(IllegalStateException.class, () -> provider.translate("hello", "vi"));
     }
 
     @Test
-    public void testProxiedEvictionOnDeadProxy() {
-        MultiSourceProxyPool pool = new MultiSourceProxyPool() {
-            @Override
-            public void checkAndTriggerRefresh() {
-                // Do not auto-refresh
-            }
-        };
+    public void testProxiedEvictionAfterRepeatedFailures() {
+        MultiSourceProxyPool pool = new MultiSourceProxyPool(Collections.emptyList());
 
-        // Add dummy unreachable proxy
         InetSocketAddress deadProxy = new InetSocketAddress("127.0.0.1", 59999);
         pool.addProxies(List.of(deadProxy));
         assertEquals(1, pool.size());
 
         GoogleWebProvider provider = new GoogleWebProvider(pool);
 
-        assertThrows(Exception.class, () -> {
-            provider.translate("test", "en");
-        });
+        assertThrows(Exception.class, () -> provider.translate("test", "en"));
 
-        // Dead proxy should have been evicted
         assertEquals(0, pool.size());
     }
 }
