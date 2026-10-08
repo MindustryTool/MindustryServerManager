@@ -121,7 +121,7 @@ public class GatewayService {
         }
 
         clients.forEach((serverId, client) -> {
-            if (!client.isSocketClosed()) {
+            if (client.isSocketOpen()) {
                 return;
             }
 
@@ -159,8 +159,12 @@ public class GatewayService {
         return true;
     }
 
-    public TranslationService getTranslationService() {
-        return translationService;
+    public void sendSyncState() {
+        for (var client : clients.values()) {
+            if (client.isSocketOpen()) {
+                client.server.syncState().orTimeout(2, TimeUnit.SECONDS);
+            }
+        }
     }
 
     @Accessors(fluent = true)
@@ -253,9 +257,9 @@ public class GatewayService {
             eventBus.emit(new StopEvent(id, NodeRemoveReason.SOCKET_DISCONNECT));
         }
 
-        private boolean isSocketClosed() {
+        public boolean isSocketOpen() {
             WsSession session = rpcChannel.current();
-            return session == null || !session.isOpen();
+            return session != null && session.isOpen();
         }
 
         public boolean terminate(NodeRemoveReason reason) {
@@ -408,6 +412,10 @@ public class GatewayService {
 
             public CompletableFuture<ServerSnapshot> getState() {
                 return sendRequest("get-state", null, ServerSnapshot.class);
+            }
+
+            public CompletableFuture<Void> syncState() {
+                return sendRequest("sync-state", null);
             }
 
             public CompletableFuture<byte[]> getImage() {

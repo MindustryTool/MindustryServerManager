@@ -121,6 +121,7 @@ public class ApiGateway {
         this.registerHandler("update-player", Login.class, ctx -> updatePlayer(ctx.body()));
         this.registerHandler("pause", Void.class, _ctx -> tooglePause());
         this.registerHandler("get-state", Void.class, _ctx -> Utils.getState());
+        this.registerHandler("sync-state", Void.class, _ctx -> sendStateUpdate());
         this.registerHandler("generate-map-image", Void.class, _ctx -> generateMapImage());
         this.registerHandler("send-command", String[].class, ctx -> sendCommand(ctx.body()));
         this.registerHandler("say", String.class, ctx -> say(ctx.body()));
@@ -139,7 +140,7 @@ public class ApiGateway {
             sendStateUpdate();
         });
         gatewayClient.onClose(err -> Log.info("[red]Disconnected from server manager: " + err.getMessage()
-                + "; reconnect scheduled"));
+                + ", reconnect scheduled"));
         gatewayClient.connect();
     }
 
@@ -596,7 +597,7 @@ public class ApiGateway {
         generateMapImage();
     }
 
-    private void sendStateUpdate() {
+    private Void sendStateUpdate() {
         try {
             ServerSnapshot state = Utils.getState();
             ServerStateEvent event = new ServerStateEvent(Control.SERVER_ID, Arrays.asList(state));
@@ -605,5 +606,7 @@ public class ApiGateway {
         } catch (Exception error) {
             Log.err("Failed to send state update", error);
         }
+
+        return null;
     }
 }

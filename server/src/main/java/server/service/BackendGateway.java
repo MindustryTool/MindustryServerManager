@@ -60,8 +60,11 @@ public class BackendGateway {
                 .bearerToken(config.accessToken())
                 .build();
 
-        wsClient.onOpen(() -> Log.info("Connected to backend"));
-        wsClient.onClose(err -> Log.warn("Backend connection lost: " + err.getMessage() + "; reconnect scheduled"));
+        wsClient.onOpen(() -> {
+            Log.info("Connected to backend");
+            gatewayService.sendSyncState();
+        });
+        wsClient.onClose(err -> Log.warn("Backend connection lost: " + err.getMessage() + ", reconnect scheduled"));
 
         this.channel = rpcChannel;
         this.client = wsClient;
@@ -70,7 +73,7 @@ public class BackendGateway {
             if (event instanceof LogEvent logEvent && logEvent.getData().startsWith("Picked up JAVA_TOOL_OPTIONS")) {
                 return;
             }
-            
+
             if (rpcChannel.isConnected()) {
                 rpcChannel.sendNotification("event", event);
             }
