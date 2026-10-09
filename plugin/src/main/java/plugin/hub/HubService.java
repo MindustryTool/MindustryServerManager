@@ -32,6 +32,7 @@ import mindustry.game.Team;
 import mindustry.gen.Call;
 import mindustry.gen.Groups;
 import mindustry.gen.Player;
+import mindustry.gen.WorldLabel;
 import mindustry.net.ArcNetProvider;
 import mindustry.net.Administration;
 import mindustry.net.Net;
@@ -353,14 +354,16 @@ public class HubService {
 
         switch (type) {
             case WorldLabel: {
-                for (var core : serverCores) {
+                int flags = WorldLabel.flagBackground | WorldLabel.flagOutline;
+                for (int i = 0; i < serverCores.size; i++) {
+                    var core = serverCores.get(i);
                     HubEntry entry = core.getEntry();
                     if (entry == null) {
                         continue;
                     }
 
                     String message = entry.renderLabel();
-                    Call.label(message, 5.1f, core.getX(), core.getY());
+                    Call.label(message, i + 1, 5.1f, core.getX(), core.getY(), flags);
                 }
                 break;
             }
