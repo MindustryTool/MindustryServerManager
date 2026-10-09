@@ -183,14 +183,16 @@ public class TranslationService {
             attemptedProviders.add(provider);
             totalAttempts++;
 
+            long startTime = System.currentTimeMillis();
             try {
                 TranslationResponse result = provider.translate(text, targetLang);
+                long durationMillis = System.currentTimeMillis() - startTime;
 
                 if (result != null && result.getTranslatedText() != null && !result.getTranslatedText().isBlank()) {
-                    candidate.state().recordSuccess(provider.name());
+                    candidate.state().recordSuccess(provider.name(), durationMillis);
                     cache.put(cacheKey, result);
-                    Log.debug("Translated via '@' [tier: @, @ -> @]: '@' -> '@'",
-                            provider.name(), candidateTier, result.getSourceLanguage(), targetLang, text, result.getTranslatedText());
+                    Log.debug("Translated via '@' [tier: @, @ -> @]: '@' -> '@' (@ms)",
+                            provider.name(), candidateTier, result.getSourceLanguage(), targetLang, text, result.getTranslatedText(), durationMillis);
                     return result;
                 }
 

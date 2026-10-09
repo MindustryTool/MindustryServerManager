@@ -1,4 +1,9 @@
-## ADDED Requirements
+# translation-provider-metrics Specification
+
+## Purpose
+Tracks rolling p95 latency and rolling/lifetime success rates for translation providers via `ProviderState`.
+
+## Requirements
 
 ### Requirement: Rolling p95 latency tracking
 `ProviderState` SHALL track the response latency in milliseconds for up to the last 100 successful requests using a fixed-size ring buffer, and provide a method to calculate the 95th percentile (p95) latency.

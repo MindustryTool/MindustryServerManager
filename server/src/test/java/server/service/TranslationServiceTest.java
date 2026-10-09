@@ -449,4 +449,35 @@ public class TranslationServiceTest {
         assertEquals(0, state.getConsecutiveFailures(), "Failure streak should reset on recovery");
         assertEquals(1, state.getConsecutiveSuccesses());
     }
+
+    @Test
+    public void testLatencyAndMetricsRecordedOnTranslation() {
+        TranslationProvider provider = new TranslationProvider() {
+            @Override
+            public String name() {
+                return "metric-provider";
+            }
+
+            @Override
+            public TranslationResponse translate(String text, String targetLang) {
+                try {
+                    Thread.sleep(10);
+                } catch (InterruptedException ignored) {
+                }
+                return new TranslationResponse("ok: " + text, "en");
+            }
+        };
+
+        TranslationService service = new TranslationService(Caffeine.newBuilder().build(), provider);
+        ProviderState state = service.getProviderState(provider);
+        assertNotNull(state);
+
+        service.translate("msg1", "vi");
+        assertEquals(1, state.getTotalRequests());
+        assertEquals(1, state.getTotalSuccesses());
+        assertEquals(0, state.getTotalFailures());
+        assertEquals(100.0, state.getRecentSuccessRate());
+        assertEquals(100.0, state.getLifetimeSuccessRate());
+        assertTrue(state.getP95LatencyMillis() >= 10, "P95 latency should reflect measured duration");
+    }
 }
