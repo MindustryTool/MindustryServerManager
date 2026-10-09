@@ -41,7 +41,8 @@
             "starting": "[green]Đang khởi động máy chủ [white]{server}, [white]việc này có thể mất đến 1 phút, xin hãy chờ",
             "redirecting": "[green]Đang chuyển hướng",
             "announce": "{player} [green]đang chuyển hướng đến máy chủ [white]{server}, [white]dùng [accent]/servers[white] để theo dõi",
-            "error": "[scarlet]Lỗi: Không thể tải máy chủ"
+            "error": "[scarlet]Lỗi: Không thể tải máy chủ",
+            "require_mod": "[scarlet]Ph?ng n?y y?u c?u mod [gold]Mindustry Tool c? t?nh n?ng Player Connect[scarlet] ?? tham gia."
         }
     },
     "vote": {

@@ -1,12 +1,14 @@
 package plugin.hub;
 
 import plugin.session.SessionService;
-
 import plugin.gateway.ApiGateway;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 import arc.Core;
@@ -29,7 +31,7 @@ import mindustry.game.MapObjectives.TextMarker;
 import mindustry.game.Team;
 import mindustry.gen.Call;
 import mindustry.gen.Groups;
-import mindustry.gen.Iconc;
+import mindustry.gen.Player;
 import mindustry.net.ArcNetProvider;
 import mindustry.net.Administration;
 import mindustry.net.Net;
@@ -40,6 +42,7 @@ import plugin.annotations.ConditionOn;
 import plugin.annotations.Init;
 import plugin.annotations.Listener;
 import plugin.annotations.Schedule;
+import plugin.core.Scheduler;
 import plugin.Control;
 import plugin.Tasks;
 
@@ -47,12 +50,15 @@ import plugin.Tasks;
 @RequiredArgsConstructor
 @ConditionOn(Cfg.OnHub.class)
 public class HubService {
-
     private final Seq<ServerCore> serverCores = new Seq<>();
     private Seq<Server> servers = new Seq<>();
 
     private final SessionService sessionService;
     private final ApiGateway apiGateway;
+    private final Scheduler scheduler;
+    private final PlayerConnectService playerConnectService;
+
+    private final HashMap<Player, CompletableFuture<Boolean>> futureMap = new HashMap<>();
 
     private enum LabelType {
         WorldLabel,
@@ -75,6 +81,42 @@ public class HubService {
         setupCustomServerDiscovery();
         loadCores();
         refreshServerList();
+        setupCustomPacketHandler();
+    }
+
+    private void setupCustomPacketHandler() {
+        Vars.netServer.addPacketHandler("has-player-connect", (player, result) -> {
+            CompletableFuture<Boolean> future = futureMap.get(player);
+
+            if (future == null) {
+                return;
+            }
+
+            if (future.isDone()) {
+                futureMap.remove(player);
+                return;
+            }
+
+            future.complete(true);
+            futureMap.remove(player);
+        });
+    }
+
+    public CompletableFuture<Boolean> hasPlayerConnect(Player player) {
+        CompletableFuture<Boolean> result = futureMap.computeIfAbsent(player, key -> new CompletableFuture<>());
+        
+        scheduler.schedule(() -> {
+            result.complete(false);
+            futureMap.remove(player);
+        }, 3, TimeUnit.SECONDS);
+
+        Call.clientPacketReliable(player.con, "has-player-connect", "true");
+
+        return result;
+    }
+
+    public void sendConnectPlayerConnect(Player player, String roomLink) {
+        Call.clientPacketReliable(player.con, "connect-player-connect", roomLink);
     }
 
     @Listener(WorldLoadEvent.class)
@@ -103,6 +145,69 @@ public class HubService {
         renderServerLabels();
     }
 
+    private static class DiscoverySnapshot {
+        final String name;
+        final String description;
+        final String map;
+        final int totalPlayers;
+        final long timestamp;
+
+        DiscoverySnapshot(String name, String description, String map, int totalPlayers) {
+            this.name = name;
+            this.description = description;
+            this.map = map;
+            this.totalPlayers = totalPlayers;
+            this.timestamp = System.currentTimeMillis();
+        }
+
+        boolean isExpired() {
+            return System.currentTimeMillis() - timestamp > 30_000;
+        }
+    }
+
+    private DiscoverySnapshot discoverySnapshot;
+
+    private synchronized DiscoverySnapshot getDiscoverySnapshot() {
+        if (discoverySnapshot != null && !discoverySnapshot.isExpired()) {
+            return discoverySnapshot;
+        }
+
+        String name = Administration.Config.serverName.string();
+        String description = Administration.Config.desc.string();
+        String map = Vars.state.map != null ? Vars.state.map.name() : "";
+        int players = Groups.player.size();
+
+        try {
+            var fetchedServers = Seq.with(apiGateway.getServers(new PaginationRequest().setPage(0).setSize(20)));
+            int dedicatedServerPlayers = 0;
+
+            if (fetchedServers.size > 0) {
+                var serverData = fetchedServers
+                        .select(s -> s.getPlayers() > 0)
+                        .random();
+
+                dedicatedServerPlayers = fetchedServers.sum(s -> (int) s.getPlayers());
+
+                if (serverData != null) {
+                    name = serverData.getName() + " [lime][HUB]";
+                    description = serverData.getDescription();
+                    map = serverData.getMapName() == null ? "" : serverData.getMapName();
+                }
+            }
+
+            int playerConnectPlayers = playerConnectService != null ? playerConnectService.getTotalPlayerCount() : 0;
+            int totalPlayers = dedicatedServerPlayers + playerConnectPlayers;
+            if (totalPlayers > 0) {
+                players = totalPlayers;
+            }
+        } catch (Exception e) {
+            Log.err("Failed to refresh discovery snapshot: " + e.getMessage());
+        }
+
+        discoverySnapshot = new DiscoverySnapshot(name, description, map, players);
+        return discoverySnapshot;
+    }
+
     private void setupCustomServerDiscovery() {
         try {
             var providerField = Net.class.getDeclaredField("provider");
@@ -113,39 +218,14 @@ public class HubService {
             var server = (arc.net.Server) serverField.get(provider);
 
             server.setDiscoveryHandler((address, handler) -> {
-                String name = Administration.Config.serverName.string();
-                String description = Administration.Config.desc.string();
-                String map = Vars.state.map.name();
+                DiscoverySnapshot snapshot = getDiscoverySnapshot();
 
                 ByteBuffer buffer = ByteBuffer.allocate(500);
 
-                int players = Groups.player.size();
+                writeString(buffer, snapshot.name, 100);
+                writeString(buffer, snapshot.map, 64);
 
-                var servers = Seq.with(apiGateway.getServers(new PaginationRequest().setPage(0).setSize(20)));
-
-                if (servers.size > 0) {
-                    try {
-                        var serverData = servers
-                                .select(s -> s.getPlayers() > 0)
-                                .random();
-
-                        var totalPlayers = servers.sum(s -> (int) s.getPlayers());
-
-                        if (serverData != null) {
-                            name = serverData.getName() + " [lime][HUB]";
-                            description = serverData.getDescription();
-                            map = serverData.getMapName() == null ? "" : serverData.getMapName();
-                            players = totalPlayers;
-                        }
-                    } catch (Exception e) {
-                        Log.err("Failed to get server data: " + e.getMessage());
-                    }
-                }
-
-                writeString(buffer, name, 100);
-                writeString(buffer, map, 64);
-
-                buffer.putInt(Core.settings.getInt("totalPlayers", players));
+                buffer.putInt(Core.settings.getInt("totalPlayers", snapshot.totalPlayers));
                 buffer.putInt(Vars.state.wave);
                 buffer.putInt(Version.build);
                 writeString(buffer, Version.type);
@@ -153,7 +233,7 @@ public class HubService {
                 buffer.put((byte) Vars.state.rules.mode().ordinal());
                 buffer.putInt(Vars.netServer.admins.getPlayerLimit());
 
-                writeString(buffer, description, 100);
+                writeString(buffer, snapshot.description, 100);
                 if (Vars.state.rules.modeName != null) {
                     writeString(buffer, Vars.state.rules.modeName, 50);
                 }
@@ -202,17 +282,15 @@ public class HubService {
         for (var core : serverCores) {
             var tapSize = core.getSize();
 
-            if (tapX >= core.getX() - tapSize //
-                    && tapX <= core.getX() + tapSize //
+            if (tapX >= core.getX() - tapSize
+                    && tapX <= core.getX() + tapSize
                     && tapY >= core.getY() - tapSize
-                    && tapY <= core.getY() + tapSize//
-            ) {
-                if (core.getServer() == null) {
+                    && tapY <= core.getY() + tapSize) {
+                if (core.getEntry() == null) {
                     continue;
                 }
 
-                sessionService.get(event.player)
-                        .ifPresent(session -> new ServerRedirectMenu().send(session, core.getServer()));
+                core.getEntry().onInteract(event.player, sessionService, this);
                 break;
             }
         }
@@ -232,14 +310,27 @@ public class HubService {
             servers = Seq.with(apiGateway.getServers(request))
                     .select(server -> !server.getId().equals(Control.SERVER_ID));
 
+            List<HubEntry> entries = new ArrayList<>();
+            for (var server : servers) {
+                entries.add(new ServerHubEntry(server));
+            }
+
+            if (playerConnectService != null) {
+                for (var room : playerConnectService.getActiveRooms()) {
+                    entries.add(new PlayerConnectHubEntry(room));
+                }
+            }
+
+            entries.sort((a, b) -> Integer.compare(b.getPlayers(), a.getPlayers()));
+
             for (int i = 0; i < serverCores.size; i++) {
                 var core = serverCores.get(i);
 
-                if (i < servers.size) {
-                    var data = servers.get(i);
-                    core.setServer(data);
+                if (i < entries.size()) {
+                    var data = entries.get(i);
+                    core.setEntry(data);
                 } else {
-                    core.setServer(null);
+                    core.setEntry(null);
                 }
             }
 
@@ -263,12 +354,12 @@ public class HubService {
         switch (type) {
             case WorldLabel: {
                 for (var core : serverCores) {
-                    Server server = core.getServer();
-                    if (server == null) {
+                    HubEntry entry = core.getEntry();
+                    if (entry == null) {
                         continue;
                     }
 
-                    String message = createServerString(server);
+                    String message = entry.renderLabel();
                     Call.label(message, 5.1f, core.getX(), core.getY());
                 }
                 break;
@@ -286,7 +377,7 @@ public class HubService {
                 } else {
                     if (tile.build instanceof LogicBuild logic) {
                         logic.updateCode("");
-                    }   
+                    }
                 }
 
                 break;
@@ -329,43 +420,21 @@ public class HubService {
     }
 
     private TextMarker createServerMarker(ServerCore core) {
-        Server server = core.getServer();
+        HubEntry entry = core.getEntry();
 
-        if (server == null) {
+        if (entry == null) {
             return null;
         }
 
         float x = core.getX();
         float y = core.getY();
 
-        String message = createServerString(server);
+        String message = entry.renderLabel();
 
         return new TextMarker(message, x, y);
     }
 
-    private String createServerString(Server server) {
-        var mods = new ArrayList<>(server.getMods());
-
-        mods.removeIf(m -> m.contains("Controller") || m.contains("PluginLoader"));
-
-        var name = server.getName();
-        var description = server.getDescription();
-
-        String message = (server.getIsOfficial() ? "[gold]" + Iconc.star + "[white] " : "") + newLine(name)
-                + "[white]\n" +
-                newLine(description) + "[white]\n\n" +
-                "[#E3F2FD]Players: [white]" + server.getPlayers() + "\n" +
-                "[#BBDEFB]Map: [white]" + newLine(server.getMapName()) + "[white]\n" +
-                "[#90CAF9]Mode: [white]" + server.getModeIcon() + " " + server.getMode() + "[white]\n" +
-                "[#405AF9]Version: [white]" + server.getGameVersion() + "[white]\n" +
-                (mods.isEmpty() ? "" : "[#4FC3F7]Mods:[white] " + mods) + "[white]\n\n" +
-                (server.getStatus().isOnline() ? "[accent]" : "[sky]") + "@Tap to join server"
-                + "\n";
-
-        return message;
-    }
-
-    public String newLine(String text) {
+    public static String newLine(String text) {
         if (text == null) {
             return "";
         }

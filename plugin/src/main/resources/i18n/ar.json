@@ -41,7 +41,8 @@
             "starting": "[green]جارٍ تشغيل الخادم [white]{server}, [white]قد يستغرق ذلك حتى دقيقة واحدة، يرجى الانتظار",
             "redirecting": "[green]جارٍ إعادة التوجيه",
             "announce": "{player} [green]يتم إعادة توجيهه إلى الخادم [white]{server}, [white]استخدم [accent]/servers[white] للمتابعة",
-            "error": "[scarlet]خطأ: لا يمكن تحميل الخادم"
+            "error": "[scarlet]خطأ: لا يمكن تحميل الخادم",
+            "require_mod": "[scarlet]????? ??? ?????? ????? [gold]Mindustry Tool ?? ???? Player Connect[scarlet] ????????."
         }
     },
     "vote": {

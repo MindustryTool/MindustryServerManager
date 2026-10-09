@@ -41,7 +41,8 @@
             "starting": "[green]กำลังเริ่มเซิร์ฟเวอร์ [white]{server}, [white]อาจใช้เวลาถึง 1 นาที โปรดรอ",
             "redirecting": "[green]กำลังเปลี่ยนเส้นทาง",
             "announce": "{player} [green]กำลังเปลี่ยนเส้นทางไปยังเซิร์ฟเวอร์ [white]{server}, [white]ใช้ [accent]/servers[white] เพื่อติดตาม",
-            "error": "[scarlet]ข้อผิดพลาด: ไม่สามารถโหลดเซิร์ฟเวอร์ได้"
+            "error": "[scarlet]ข้อผิดพลาด: ไม่สามารถโหลดเซิร์ฟเวอร์ได้",
+            "require_mod": "[scarlet]?????????????????? [gold]Mindustry Tool ???????????? Player Connect[scarlet] ?????????????"
         }
     },
     "vote": {

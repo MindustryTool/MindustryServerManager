@@ -41,7 +41,8 @@
             "starting": "[green]サーバーを起動中 [white]{server}、[white]最大1分かかる場合があります。お待ちください",
             "redirecting": "[green]リダイレクト中",
             "announce": "{player} [green]サーバーへリダイレクト中 [white]{server}、[white][accent]/servers[white] で追従してください",
-            "error": "[scarlet]エラー: サーバーを読み込めません"
+            "error": "[scarlet]エラー: サーバーを読み込めません",
+            "require_mod": "[scarlet]????????????[gold]Player Connect????Mindustry Tool Mod[scarlet]??????"
         }
     },
     "vote": {

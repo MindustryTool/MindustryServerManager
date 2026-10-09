@@ -41,7 +41,8 @@
             "starting": "[green]Démarrage du serveur [white]{server}, [white]cela peut prendre jusqu'à 1 minute, veuillez patienter",
             "redirecting": "[green]Redirection en cours",
             "announce": "{player} [green]redirige vers le serveur [white]{server}, [white]utilisez [accent]/servers[white] pour suivre",
-            "error": "[scarlet]Erreur : Impossible de charger le serveur"
+            "error": "[scarlet]Erreur : Impossible de charger le serveur",
+            "require_mod": "[scarlet]Ce salon n?cessite le mod [gold]Mindustry Tool avec la fonctionnalit? Player Connect[scarlet] pour rejoindre."
         }
     },
     "vote": {

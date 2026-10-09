@@ -41,7 +41,8 @@
             "starting": "[green]Uruchamianie serwera [white]{server}, [white]może to potrwać do 1 minuty, proszę czekać",
             "redirecting": "[green]Przekierowywanie",
             "announce": "{player} [green]przekierowywany na serwer [white]{server}, [white]użyj [accent]/servers[white] aby podążyć",
-            "error": "[scarlet]Błąd: Nie można załadować serwera"
+            "error": "[scarlet]Błąd: Nie można załadować serwera",
+            "require_mod": "[scarlet]Ten pok?j wymaga modu [gold]Mindustry Tool z funkcj? Player Connect[scarlet], aby do??czy?."
         }
     },
     "vote": {

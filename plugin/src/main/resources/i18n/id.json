@@ -41,7 +41,8 @@
             "starting": "[green]Memulai server [white]{server}, [white]ini dapat memakan waktu hingga 1 menit, mohon tunggu",
             "redirecting": "[green]Mengalihkan",
             "announce": "{player} [green]mengalihkan ke server [white]{server}, [white]gunakan [accent]/servers[white] untuk mengikuti",
-            "error": "[scarlet]Error: Tidak dapat memuat server"
+            "error": "[scarlet]Error: Tidak dapat memuat server",
+            "require_mod": "[scarlet]Ruangan ini memerlukan mod [gold]Mindustry Tool v?i fitur Player Connect[scarlet] untuk bergabung."
         }
     },
     "vote": {

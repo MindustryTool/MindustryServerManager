@@ -41,7 +41,8 @@
             "starting": "[green]Starting server [white]{server}, [white]this can take up to 1 minutes, please wait",
             "redirecting": "[green]Redirecting",
             "announce": "{player} [green]redirecting to server [white]{server}, [white]use [accent]/servers[white] to follow",
-            "error": "[scarlet]Error: Can not load server"
+            "error": "[scarlet]Error: Can not load server",
+            "require_mod": "[scarlet]This room requires the [gold]Mindustry Tool mod with Player Connect[scarlet] feature to join."
         }
     },
     "vote": {

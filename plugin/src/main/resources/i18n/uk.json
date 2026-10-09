@@ -41,7 +41,8 @@
             "starting": "[green]Запуск сервера [white]{server}, [white]це може зайняти до 1 хвилини, будь ласка, зачекайте",
             "redirecting": "[green]Перенаправлення",
             "announce": "{player} [green]переходить на сервер [white]{server}, [white]використовуйте [accent]/servers[white], щоб приєднатися",
-            "error": "[scarlet]Помилка: не вдалося завантажити сервер"
+            "error": "[scarlet]Помилка: не вдалося завантажити сервер",
+            "require_mod": "[scarlet]??? ????? ? ?? ??????? ???????? ??? [gold]Mindustry Tool ? ???????? Player Connect[scarlet]."
         }
     },
     "vote": {

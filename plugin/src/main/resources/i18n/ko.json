@@ -41,7 +41,8 @@
             "starting": "[green]서버 시작 중 [white]{server}, [white]최대 1분이 걸릴 수 있습니다. 잠시만 기다려 주세요",
             "redirecting": "[green]이동 중",
             "announce": "{player} [green]님이 [white]{server} [green]서버로 이동 중입니다. [white]따라가려면 [accent]/servers[white]를 사용하세요",
-            "error": "[scarlet]오류: 서버를 불러올 수 없습니다"
+            "error": "[scarlet]오류: 서버를 불러올 수 없습니다",
+            "require_mod": "[scarlet]? ?? ????? [gold]Player Connect ??? ?? Mindustry Tool ??[scarlet]? ?????."
         }
     },
     "vote": {

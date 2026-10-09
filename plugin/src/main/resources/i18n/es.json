@@ -41,7 +41,8 @@
             "starting": "[green]Iniciando servidor [white]{server}, [white]esto puede tardar hasta 1 minuto, por favor espera",
             "redirecting": "[green]Redirigiendo",
             "announce": "{player} [green]se está redirigiendo al servidor [white]{server}, [white]usa [accent]/servers[white] para seguirlo",
-            "error": "[scarlet]Error: No se pudo cargar el servidor"
+            "error": "[scarlet]Error: No se pudo cargar el servidor",
+            "require_mod": "[scarlet]Esta sala requiere el mod [gold]Mindustry Tool con la funci?n Player Connect[scarlet] para unirse."
         }
     },
     "vote": {

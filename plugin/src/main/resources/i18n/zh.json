@@ -41,7 +41,8 @@
             "starting": "[green]正在启动服务器 [white]{server}，[white]这可能需要 1 分钟，请稍候",
             "redirecting": "[green]正在跳转",
             "announce": "{player} [green]正在跳转到服务器 [white]{server}，[white]使用 [accent]/servers[white] 跟随",
-            "error": "[scarlet]错误：无法加载服务器"
+            "error": "[scarlet]错误：无法加载服务器",
+            "require_mod": "[scarlet]????????? [gold]Player Connect[scarlet] ??? [gold]Mindustry Tool ??[scarlet]?????"
         }
     },
     "vote": {
