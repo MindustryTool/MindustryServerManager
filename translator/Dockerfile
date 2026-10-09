@@ -1,4 +1,4 @@
-FROM ghcr.io/ggerganov/llama.cpp:server AS upstream
+FROM ghcr.io/ggml-org/llama.cpp:server AS upstream
 
 FROM debian:bookworm-slim
 

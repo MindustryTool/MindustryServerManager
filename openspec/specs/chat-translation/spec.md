@@ -202,3 +202,18 @@ The server manager SHALL provide a `BingWebProvider` implementing `TranslationPr
 #### Scenario: Invalid response format or Bing failure
 - **WHEN** Bing returns an unexpected status code or response format
 - **THEN** the provider throws a descriptive exception allowing the translation service to trigger cooldown and fallback
+
+### Requirement: Llama Local Translation Provider
+The server manager SHALL provide a `LlamaTranslationProvider` implementing `TranslationProvider`. It SHALL format translation requests for the local `llama-server` container `/completion` endpoint, parse the generated content into a `TranslationResponse`, and allow configuring the target endpoint URL. It SHALL be registered in tier 2 as the final fallback provider.
+
+#### Scenario: Successful translation request
+- **WHEN** valid text and target language are requested
+- **THEN** the provider sends a prompt to `/completion` and returns the trimmed translation
+
+#### Scenario: Endpoint unreachable or error response
+- **WHEN** the translation container is offline or returns an HTTP error
+- **THEN** the provider throws an exception allowing `TranslationService` to trigger cooldown and fallback
+
+#### Scenario: Final fallback tier registration
+- **WHEN** `TranslationService` initializes
+- **THEN** `LlamaTranslationProvider` is registered in tier 2 as the final fallback provider
