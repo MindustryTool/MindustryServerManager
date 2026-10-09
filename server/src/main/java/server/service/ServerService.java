@@ -439,14 +439,18 @@ public class ServerService {
                     .getImage()
                     .get(60, TimeUnit.SECONDS));
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            if (e instanceof ApiError apiError) {
+                throw apiError;
+            }
+
+            throw ApiError.internal(e);
         }
     }
 
     public Map<String, Long> getKickedIps(UUID serverId) {
         try {
             if (!nodeManager.isRunning(serverId)) {
-                throw new RuntimeException("Server is not running");
+                throw ApiError.badRequest("Server is not running");
             }
 
             return gatewayService.of(serverId)
@@ -454,14 +458,18 @@ public class ServerService {
                     .getKickedIps()
                     .get(RPC_TIMEOUT_SECONDS, TimeUnit.SECONDS);
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            if (e instanceof ApiError apiError) {
+                throw apiError;
+            }
+
+            throw ApiError.internal(e);
         }
     }
 
     public List<RecentPlayer> getRecentPlayers(UUID serverId) {
         try {
             if (!nodeManager.isRunning(serverId)) {
-                throw new RuntimeException("Server is not running");
+                throw ApiError.badRequest("Server is not running");
             }
 
             return gatewayService.of(serverId)
@@ -469,14 +477,18 @@ public class ServerService {
                     .getRecentPlayers()
                     .get(RPC_TIMEOUT_SECONDS, TimeUnit.SECONDS);
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            if (e instanceof ApiError apiError) {
+                throw apiError;
+            }
+
+            throw ApiError.internal(e);
         }
     }
 
     public boolean deleteKickedIp(UUID serverId, String ip) {
         try {
             if (!nodeManager.isRunning(serverId)) {
-                throw new RuntimeException("Server is not running");
+                throw ApiError.badRequest("Server is not running");
             }
 
             return gatewayService.of(serverId)
@@ -484,14 +496,18 @@ public class ServerService {
                     .deleteKickedIp(ip)
                     .get(RPC_TIMEOUT_SECONDS, TimeUnit.SECONDS);
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            if (e instanceof ApiError apiError) {
+                throw apiError;
+            }
+
+            throw ApiError.internal(e);
         }
     }
 
     public PlayerRecordPage getPlayersInfo(UUID serverId, int page, int size, Boolean banned, String filter) {
         try {
             if (!nodeManager.isRunning(serverId)) {
-                throw new RuntimeException("Server is not running");
+                throw ApiError.badRequest("Server is not running");
             }
 
             return gatewayService.of(serverId)
@@ -500,7 +516,11 @@ public class ServerService {
                     .get(RPC_TIMEOUT_SECONDS, TimeUnit.SECONDS);
 
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            if (e instanceof ApiError apiError) {
+                throw apiError;
+            }
+
+            throw ApiError.internal(e);
         }
     }
 
