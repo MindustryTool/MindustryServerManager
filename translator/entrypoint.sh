@@ -32,6 +32,6 @@ exec /app/llama-server \
     --port "$PORT" \
     -c "$CTX_SIZE" \
     -t "$THREADS" \
-    --slots "$SLOTS" \
-    --ctx-shift \
+    --parallel "$SLOTS" \
+    --context-shift \
     "$@"

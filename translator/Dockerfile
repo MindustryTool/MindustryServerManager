@@ -1,19 +1,6 @@
-FROM ghcr.io/ggml-org/llama.cpp:server AS upstream
-
-FROM debian:bookworm-slim
-
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-        curl \
-        ca-certificates \
-        libgomp1 \
-        libstdc++6 && \
-    rm -rf /var/lib/apt/lists/*
+FROM ghcr.io/ggml-org/llama.cpp:server
 
 WORKDIR /app
-
-# Copy llama-server and required binaries/libraries from upstream llama.cpp image
-COPY --from=upstream /app/llama-server /app/llama-server
 
 # Copy entrypoint script
 COPY entrypoint.sh /app/entrypoint.sh
@@ -31,3 +18,4 @@ VOLUME ["/models"]
 EXPOSE 8080
 
 ENTRYPOINT ["/app/entrypoint.sh"]
+

@@ -1,28 +1,29 @@
 services:
-  image: ghcr.io/mindustrytool/mindustry-server-manager:latest
-  container_name: server-manager
-  restart: unless-stopped
-  labels:
+  server-manager:
+    image: ghcr.io/mindustrytool/mindustry-server-manager:latest
+    container_name: server-manager
+    restart: unless-stopped
+    labels:
       - "com.centurylinklabs.watchtower.enable=true"
-  volumes:
+    volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - /root/.docker/config.json:/config.json
       - /home/ubuntu/.docker/config.json:/root/.docker/config.json:ro
       - /home/ubuntu/data/mindustry-servers:/home/ubuntu/data/mindustry-servers
-  ports:
+    ports:
       - "8088:8088"
-  env_file: ./config/.env
-  networks:
+    env_file: ./config/.env
+    networks:
       - server-manager
       - mindustry-server
 
-    watchtower:
+  watchtower:
     image: containrrr/watchtower:latest
     container_name: watchtower
     restart: unless-stopped
     volumes:
-        - /var/run/docker.sock:/var/run/docker.sock
-        - /root/.docker/config.json:/config.json
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /root/.docker/config.json:/config.json
     env_file: ./config/.env
 
   llama-translator:
