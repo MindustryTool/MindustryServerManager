@@ -1,11 +1,15 @@
 ## ADDED Requirements
 
 ### Requirement: Player Connect SSE Ingestion
-The system SHALL connect to the Server-Sent Events (SSE) endpoint `GET /api/v4/player-connect/rooms` to receive real-time snapshots of active player-connect rooms. The room list in memory SHALL be updated whenever a new room event is received.
+The system SHALL connect to the Server-Sent Events (SSE) endpoint `GET /api/v4/player-connect/sse` to receive real-time snapshots of active player-connect rooms. The room list in memory SHALL be updated whenever a new room event is received. The system SHALL ignore non-room handshake events without error.
 
 #### Scenario: Successful room update via SSE
 - **WHEN** the SSE endpoint emits an updated room list event containing room metadata
 - **THEN** the system updates its internal room cache with the new list of rooms
+
+#### Scenario: Handshake message received
+- **WHEN** the SSE endpoint emits an initial handshake payload such as `"Connected"`
+- **THEN** the system logs the connection confirmation and does not raise a deserialization error
 
 #### Scenario: SSE disconnection and reconnection
 - **WHEN** the SSE stream disconnects or encounters an I/O error

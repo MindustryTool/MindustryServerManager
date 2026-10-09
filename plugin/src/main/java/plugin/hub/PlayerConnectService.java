@@ -30,7 +30,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @RequiredArgsConstructor
 @ConditionOn(Cfg.OnHub.class)
 public class PlayerConnectService {
-    private static final String DEFAULT_SSE_URL = "https://api.mindustry-tool.com/api/v4/player-connect/rooms";
+    private static final String DEFAULT_SSE_URL = "https://api.mindustry-tool.com/api/v4/player-connect/sse";
 
     private final Scheduler scheduler;
 
@@ -143,6 +143,15 @@ public class PlayerConnectService {
     }
 
     private void handleSsePayload(String jsonPayload) {
+        if (jsonPayload == null || jsonPayload.isBlank()) {
+            return;
+        }
+
+        if (!jsonPayload.trim().startsWith("{")) {
+            Log.info("PlayerConnect SSE message: " + jsonPayload);
+            return;
+        }
+
         try {
             PlayerConnectRoomsEvent event = JsonUtils.readJsonAsClass(jsonPayload, PlayerConnectRoomsEvent.class);
             if (event != null && event.getRooms() != null) {
