@@ -274,6 +274,33 @@ public class FloodSpreader {
     }
 
     /**
+     * Scans the world map for pre-existing Crux flood structures, scheduling evolution
+     * and adding edge tiles to initiate spreading.
+     */
+    public void scanExistingFlood(float multiplier) {
+        if (!isInitialized() || Vars.world == null) {
+            return;
+        }
+        long now = Time.millis();
+        int total = width * height;
+        for (int pos = 0; pos < total; pos++) {
+            Tile tile = Vars.world.tile(pos % width, pos / width);
+            if (tile == null) {
+                continue;
+            }
+            var tier = getFloodTier(tile);
+            if (tier != null) {
+                if (!scheduled.get(pos)) {
+                    scheduleCruxTile(pos, tier, multiplier, now);
+                }
+                if (hasSpreadableNeighbor(pos)) {
+                    addEdgeTile(pos);
+                }
+            }
+        }
+    }
+
+    /**
      * Ensures every tile on each core's perimeter ring has a pending event.
      * Idempotent and cheap; safe to call every tick.
      */

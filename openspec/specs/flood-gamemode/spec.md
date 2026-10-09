@@ -134,3 +134,11 @@ When a Crux team unit is destroyed, the system SHALL attempt to place the last c
 - **WHEN** a Crux team unit is destroyed over deep liquid, an obstacle, or an enemy building
 - **THEN** no flood block is placed
 
+### Requirement: Pre-existing flood map initialization
+When the flood gamemode initializes on map load, the system SHALL scan the world map for pre-existing Crux flood tiles, schedule their tier evolution, and register any flood tiles with spreadable neighbors into the active edge list.
+
+#### Scenario: Pre-existing flood tiles join the spread simulation
+- **WHEN** the map is loaded with pre-existing Crux flood tiles
+- **THEN** tiles that are Crux flood blocks are scheduled for tier evolution and added to the edge list if they have adjacent spreadable tiles, allowing them to spread on the next spread wave
+
+

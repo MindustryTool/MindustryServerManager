@@ -148,6 +148,8 @@ public class TranslationService {
         Set<TranslationProvider> attemptedProviders = Collections.newSetFromMap(new IdentityHashMap<>());
         // Map each visited tier in this request to its base round-robin index
         Map<Integer, Integer> tierBaseIndices = new HashMap<>();
+        record FailedAttempt(RegisteredProvider candidate, String reason) {}
+        List<FailedAttempt> failedAttempts = new ArrayList<>();
         int totalAttempts = 0;
 
         while (totalAttempts < MAX_ATTEMPTS) {
@@ -202,19 +204,38 @@ public class TranslationService {
                 }
 
                 // Provider returned null/blank result
-                Log.warn("Translation provider '@' returned null/blank result (attempt @/@ for '@'). Trying next provider.",
+                String reason = "returned null/blank result";
+                failedAttempts.add(new FailedAttempt(candidate, reason));
+                Log.debug("Translation provider '@' returned null/blank result (attempt @/@ for '@'). Trying next provider.",
                         provider.name(), totalAttempts, MAX_ATTEMPTS, text);
 
             } catch (Exception e) {
-                Log.warn("Translation provider '@' threw exception (attempt @/@ for '@'): @. Trying next provider.",
-                        provider.name(), totalAttempts, MAX_ATTEMPTS, text, e.getMessage());
+                String reason = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+                failedAttempts.add(new FailedAttempt(candidate, reason));
+                Log.debug("Translation provider '@' threw exception (attempt @/@ for '@'): @. Trying next provider.",
+                        provider.name(), totalAttempts, MAX_ATTEMPTS, text, reason);
             }
         }
 
         if (totalAttempts == 0) {
             Log.warn("All translation providers unavailable or in cooldown for text '@' (targetLang: '@')", text, targetLang);
         } else {
-            Log.warn("All @ translation attempt(s) failed for text '@' (targetLang: '@')", totalAttempts, text, targetLang);
+            StringBuilder sb = new StringBuilder();
+            sb.append("All ").append(totalAttempts).append(" translation attempt(s) failed for text '")
+                    .append(text).append("' (targetLang: '").append(targetLang).append("'):");
+            for (int i = 0; i < failedAttempts.size(); i++) {
+                FailedAttempt fa = failedAttempts.get(i);
+                RegisteredProvider rp = fa.candidate();
+                ProviderState state = rp.state();
+                sb.append("\n  ").append(i + 1).append(". [").append(rp.provider().name())
+                        .append("] (tier: ").append(rp.tier()).append(") - Reason: ").append(fa.reason())
+                        .append(" | Stats: recent success: ").append(String.format(Locale.ROOT, "%.1f%%", state.getRecentSuccessRate()))
+                        .append(", lifetime: ").append(String.format(Locale.ROOT, "%.1f%%", state.getLifetimeSuccessRate()))
+                        .append(" (").append(state.getTotalSuccesses()).append("/").append(state.getTotalRequests()).append(")")
+                        .append(", p95 latency: ").append(ProviderState.formatLatency(state.getP95LatencyMillis()))
+                        .append(", consecutive failures: ").append(state.getConsecutiveFailures());
+            }
+            Log.warn("@", sb.toString());
         }
         return null;
     }

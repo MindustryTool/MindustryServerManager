@@ -124,7 +124,7 @@ public class ProviderState {
                 providerName, seconds, consecutiveFailures, cooldownUntil);
     }
 
-    private String formatLatency(long p95) {
+    public static String formatLatency(long p95) {
         return p95 < 0 ? "n/a" : p95 + "ms";
     }
 

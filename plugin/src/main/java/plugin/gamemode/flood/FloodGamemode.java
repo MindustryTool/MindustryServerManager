@@ -75,6 +75,7 @@ public class FloodGamemode {
 
         spreader = new FloodSpreader(config);
         spreader.reset(Vars.world.width(), Vars.world.height());
+        spreader.scanExistingFlood(getFloodMultiplier());
         cores = Team.crux.cores().size;
         startedAt = Time.millis();
         cycleChangeAt = Instant.now();

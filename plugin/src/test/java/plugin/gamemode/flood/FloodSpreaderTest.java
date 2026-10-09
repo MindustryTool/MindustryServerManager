@@ -154,4 +154,15 @@ public class FloodSpreaderTest {
         assertEquals(150, FloodSpreader.MAX_SPREAD_PER_TICK);
         assertEquals(150, FloodSpreader.MAX_FLUSH_PER_WINDOW);
     }
+
+    @Test
+    void testScanExistingFloodHandlesNullWorldGracefully() {
+        // When Vars.world is null or spreader not initialized, scanExistingFlood does not throw
+        spreader.scanExistingFlood(1.0f);
+        assertEquals(0, spreader.edgeTileCount());
+
+        FloodSpreader uninit = new FloodSpreader(config);
+        uninit.scanExistingFlood(1.0f);
+        assertEquals(0, uninit.edgeTileCount());
+    }
 }

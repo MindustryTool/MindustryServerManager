@@ -4,7 +4,7 @@ import plugin.annotations.Configuration;
 
 @Configuration("ziger/config.json")
 public class ZigerConfig {
-    public int targetItems = 8000;
+    public int targetItems = Integer.MAX_VALUE;
     public int targetLiquids = 8000;
     public int thoriumMin = 10;
     public int thoriumTarget = 30;
