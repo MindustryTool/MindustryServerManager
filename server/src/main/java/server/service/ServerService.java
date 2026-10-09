@@ -588,7 +588,7 @@ public class ServerService {
 
         if (wish != null && !mismatches.isEmpty()) {
             status.phase = Phase.ACTING;
-            eventBus.emit(LogEvent.info(serverId, "Reconcile drift, recreating"));
+            eventBus.emit(LogEvent.info(serverId, "[purple]Configuration mismatch, auto restart"));
             try {
                 lockedRecreate(wish);
             } catch (Exception e) {
@@ -597,7 +597,7 @@ public class ServerService {
             }
             status.since = Instant.now();
             status.phase = Phase.IDLE;
-            eventBus.emit(LogEvent.info(serverId, "Reconcile done"));
+            eventBus.emit(LogEvent.info(serverId, "[purple]Restart done"));
             return;
         }
 

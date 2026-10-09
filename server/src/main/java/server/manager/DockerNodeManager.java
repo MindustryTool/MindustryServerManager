@@ -173,7 +173,6 @@ public class DockerNodeManager implements NodeManager {
 
         Volume volume = new Volume("/config");
         String bindSource = bindSourceFor(serverIdString, serverPath);
-        eventBus.emit(LogEvent.info(serverId, "Container bind source: " + bindSource));
         Bind bind = new Bind(bindSource, volume);
 
         ExposedPort tcp = ExposedPort.tcp(Const.DEFAULT_MINDUSTRY_SERVER_PORT);

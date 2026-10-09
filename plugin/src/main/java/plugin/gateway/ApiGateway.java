@@ -139,8 +139,7 @@ public class ApiGateway {
             Log.info("[green]Connected to server manager");
             sendStateUpdate();
         });
-        gatewayClient.onClose(err -> Log.info("[red]Disconnected from server manager: " + err.getMessage()
-                + ", reconnect scheduled"));
+        gatewayClient.onClose(err -> Log.info("[red]Disconnected from server manager: " + err.getMessage()));
         gatewayClient.connect();
     }
 

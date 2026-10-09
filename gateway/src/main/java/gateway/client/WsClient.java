@@ -416,9 +416,6 @@ public class WsClient {
         transport.terminate();
         rpcChannel.onClose(transport, kick);
 
-        LOG.warning("WebSocket kicked by server, auto-reconnect disabled: "
-                + uri + " code=" + statusCode);
-
         fireOnClose(kick);
     }
 
