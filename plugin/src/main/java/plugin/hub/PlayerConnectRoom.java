@@ -33,7 +33,7 @@ public class PlayerConnectRoom {
         private String modVersion;
         private String locale;
         private long createdAt;
-        private int ping;
+        private double ping;
         private List<PlayerInfo> players = new ArrayList<>();
         private String protocolVersion;
     }
