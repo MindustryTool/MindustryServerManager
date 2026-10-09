@@ -85,11 +85,15 @@ public class TowerDefensePathFinder extends Pathfinder {
     }
 
     public static boolean isPath(Tile tile) {
-        return Blocks.darkPanel5 == tile.floor();
+        Block floor = tile.floor();
+        return Blocks.darkPanel5 == floor //
+                || Blocks.darkPanel5 == floor //
+                || Blocks.darkPanel2 == floor;
     }
 
     public static boolean canBePlaced(Tile tile, Block block) {
-        if (tile == null || block == null) return true;
+        if (tile == null || block == null)
+            return true;
         return !tile.getLinkedTilesAs(block, new Seq<>()).contains(TowerDefensePathFinder::isPath);
     }
 }
