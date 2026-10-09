@@ -1,13 +1,21 @@
 package server.service;
 
 import java.io.IOException;
+import java.net.Authenticator;
+import java.net.CookieHandler;
+import java.net.ProxySelector;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpHeaders;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLParameters;
 import javax.net.ssl.SSLSession;
 
 import org.junit.jupiter.api.Test;
@@ -116,17 +124,17 @@ public class LlamaTranslationProviderTest {
             return (HttpResponse<T>) response;
         }
 
-        @Override public Optional<java.net.CookieHandler> cookieHandler() { return Optional.empty(); }
-        @Override public Optional<java.time.Duration> connectTimeout() { return Optional.empty(); }
+        @Override public Optional<CookieHandler> cookieHandler() { return Optional.empty(); }
+        @Override public Optional<Duration> connectTimeout() { return Optional.empty(); }
         @Override public HttpClient.Redirect followRedirects() { return HttpClient.Redirect.NEVER; }
-        @Override public Optional<java.net.ProxySelector> proxy() { return Optional.empty(); }
-        @Override public javax.net.ssl.SSLContext sslContext() { return null; }
-        @Override public javax.net.ssl.SSLParameters sslParameters() { return null; }
-        @Override public Optional<java.net.Authenticator> authenticator() { return Optional.empty(); }
+        @Override public Optional<ProxySelector> proxy() { return Optional.empty(); }
+        @Override public SSLContext sslContext() { return null; }
+        @Override public SSLParameters sslParameters() { return null; }
+        @Override public Optional<Authenticator> authenticator() { return Optional.empty(); }
         @Override public HttpClient.Version version() { return HttpClient.Version.HTTP_2; }
-        @Override public Optional<java.util.concurrent.Executor> executor() { return Optional.empty(); }
-        @Override public <T> java.util.concurrent.CompletableFuture<HttpResponse<T>> sendAsync(HttpRequest request, HttpResponse.BodyHandler<T> responseHandler) { throw new UnsupportedOperationException(); }
-        @Override public <T> java.util.concurrent.CompletableFuture<HttpResponse<T>> sendAsync(HttpRequest request, HttpResponse.BodyHandler<T> responseHandler, HttpResponse.PushPromiseHandler<T> pushPromiseHandler) { throw new UnsupportedOperationException(); }
+        @Override public Optional<Executor> executor() { return Optional.empty(); }
+        @Override public <T> CompletableFuture<HttpResponse<T>> sendAsync(HttpRequest request, HttpResponse.BodyHandler<T> responseHandler) { throw new UnsupportedOperationException(); }
+        @Override public <T> CompletableFuture<HttpResponse<T>> sendAsync(HttpRequest request, HttpResponse.BodyHandler<T> responseHandler, HttpResponse.PushPromiseHandler<T> pushPromiseHandler) { throw new UnsupportedOperationException(); }
     }
 
     @Test

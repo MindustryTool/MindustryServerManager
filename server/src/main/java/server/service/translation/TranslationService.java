@@ -43,7 +43,7 @@ public class TranslationService {
     }
 
     private final List<RegisteredProvider> registeredProviders = new CopyOnWriteArrayList<>();
-    private final Map<Integer, java.util.concurrent.atomic.AtomicInteger> tierRoundRobinIndices = new ConcurrentHashMap<>();
+    private final Map<Integer, AtomicInteger> tierRoundRobinIndices = new ConcurrentHashMap<>();
     private final Cache<String, TranslationResponse> cache;
 
     public TranslationService() {
