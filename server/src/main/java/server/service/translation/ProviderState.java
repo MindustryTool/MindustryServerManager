@@ -15,8 +15,8 @@ public class ProviderState {
     }
 
     private static final int BUFFER_SIZE = 100;
-    private static final long BASE_COOLDOWN_SECONDS = 5;
-    private static final long MAX_COOLDOWN_SECONDS = 600; // 10 minutes
+    private static final long BASE_COOLDOWN_SECONDS = 15;
+    private static final long MAX_COOLDOWN_SECONDS = 900; // 15 minutes
 
     private int consecutiveSuccesses = 0;
     private int consecutiveFailures = 0;
