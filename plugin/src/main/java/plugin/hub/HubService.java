@@ -462,4 +462,30 @@ public class HubService {
 
         return sb.toString();
     }
+
+    public static String formatMods(List<String> mods) {
+        if (mods == null || mods.isEmpty()) {
+            return "";
+        }
+
+        StringBuilder sb = new StringBuilder();
+        int lineLen = 0;
+
+        for (int i = 0; i < mods.size(); i++) {
+            String mod = mods.get(i);
+            if (i > 0) {
+                if (lineLen + mod.length() > 25) {
+                    sb.append(",\n");
+                    lineLen = 0;
+                } else {
+                    sb.append(", ");
+                    lineLen += 2;
+                }
+            }
+            sb.append(mod);
+            lineLen += Strings.stripColors(mod).length();
+        }
+
+        return sb.toString();
+    }
 }

@@ -1,6 +1,8 @@
 package plugin.hub;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import lombok.Data;
 import lombok.experimental.Accessors;
 
@@ -24,7 +26,9 @@ public class PlayerConnectRoom {
     public static class RoomData {
         private String name;
         private String status;
+        @JsonProperty("isPrivate")
         private boolean isPrivate;
+        @JsonProperty("isSecured")
         private boolean isSecured;
         private String mapName;
         private String gamemode;

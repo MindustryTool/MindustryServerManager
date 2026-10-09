@@ -89,7 +89,7 @@ public class PlayerConnectHubEntry implements HubEntry {
         }
 
         if (!mods.isEmpty()) {
-            sb.append("[#4FC3F7]Mods:[white] ").append(mods).append("[white]\n");
+            sb.append("[#4FC3F7]Mods:[white] ").append(HubService.formatMods(mods)).append("[white]\n");
         }
         sb.append("\n[accent]@Tap to join room\n");
 
