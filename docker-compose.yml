@@ -16,7 +16,7 @@ services:
       - server-manager
       - mindustry-server
 
-  watchtower:
+    watchtower:
     image: containrrr/watchtower:latest
     container_name: watchtower
     restart: unless-stopped
@@ -24,6 +24,22 @@ services:
         - /var/run/docker.sock:/var/run/docker.sock
         - /root/.docker/config.json:/config.json
     env_file: ./config/.env
+
+  llama-translator:
+    image: ghcr.io/mindustrytool/llama-translator:latest
+    container_name: llama-translator
+    restart: unless-stopped
+    labels:
+        - "com.centurylinklabs.watchtower.enable=true"
+    volumes:
+        - ./data/models:/models
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 500M
+    networks:
+        - server-manager
 
 networks:
   mindustry-server:
