@@ -3,6 +3,7 @@ package server.service.translation;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -11,6 +12,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import com.github.benmanes.caffeine.cache.Cache;
@@ -20,6 +22,7 @@ import arc.util.Log;
 import common.translation.TranslationResponse;
 import server.service.MultiSourceProxyPool;
 import server.service.TranslationProvider;
+import server.service.translation.provider.BingWebProvider;
 import server.service.translation.provider.GoogleWebProvider;
 import server.service.translation.provider.LingvaProvider;
 
@@ -27,7 +30,7 @@ public class TranslationService {
 
     private static final int MAX_ATTEMPTS = 3;
 
-    public record RegisteredProvider(int tier, int order, TranslationProvider provider, ProviderState state) {
+    public record RegisteredProvider(int tier, TranslationProvider provider, ProviderState state) {
 
         /**
          * Returns true if both the centralized state tracker and the provider's own
@@ -39,7 +42,7 @@ public class TranslationService {
     }
 
     private final List<RegisteredProvider> registeredProviders = new CopyOnWriteArrayList<>();
-    private final Map<Integer, Integer> tierRoundRobinIndices = new ConcurrentHashMap<>();
+    private final Map<Integer, java.util.concurrent.atomic.AtomicInteger> tierRoundRobinIndices = new ConcurrentHashMap<>();
     private final Cache<String, TranslationResponse> cache;
 
     public TranslationService() {
@@ -48,39 +51,35 @@ public class TranslationService {
                 .expireAfterWrite(2, TimeUnit.HOURS)
                 .build());
 
-        registerProvider(0, 0, new GoogleWebProvider(new MultiSourceProxyPool()));
-        registerProvider(1, 50, new LingvaProvider());
-        registerProvider(1, 100, new GoogleWebProvider());
+        registerProvider(0, new BingWebProvider());
+        registerProvider(0, new LingvaProvider());
+        registerProvider(0, new GoogleWebProvider());
+        registerProvider(1, new GoogleWebProvider(new MultiSourceProxyPool()));
     }
 
     public TranslationService(Cache<String, TranslationResponse> cache, TranslationProvider... initialProviders) {
         this.cache = cache;
         if (initialProviders != null) {
             for (int i = 0; i < initialProviders.length; i++) {
-                registerProvider(0, i * 10, initialProviders[i]);
+                registerProvider(0, initialProviders[i]);
             }
         }
     }
 
     public synchronized void registerProvider(TranslationProvider provider) {
-        registerProvider(0, 0, provider);
+        registerProvider(0, provider);
     }
 
     public synchronized void registerProvider(int tier, TranslationProvider provider) {
-        registerProvider(tier, 0, provider);
-    }
-
-    public synchronized void registerProvider(int tier, int order, TranslationProvider provider) {
         if (provider != null) {
             // Avoid duplicate registrations of identical provider instance in the same tier
             boolean exists = registeredProviders.stream()
                     .anyMatch(r -> r.tier() == tier && r.provider().equals(provider));
             if (!exists) {
-                registeredProviders.add(new RegisteredProvider(tier, order, provider, new ProviderState()));
-                registeredProviders.sort(Comparator.comparingInt(RegisteredProvider::tier)
-                        .thenComparingInt(RegisteredProvider::order));
-                Log.info("Registered server translation provider: @ (tier: @, order: @)",
-                        provider.name(), tier, order);
+                registeredProviders.add(new RegisteredProvider(tier, provider, new ProviderState()));
+                registeredProviders.sort(Comparator.comparingInt(RegisteredProvider::tier));
+                Log.info("Registered server translation provider: @ (tier: @)",
+                        provider.name(), tier);
             }
         }
     }
@@ -145,6 +144,8 @@ public class TranslationService {
 
         // Track providers already attempted in this request (by identity to avoid issues with equals())
         Set<TranslationProvider> attemptedProviders = Collections.newSetFromMap(new IdentityHashMap<>());
+        // Map each visited tier in this request to its base round-robin index
+        Map<Integer, Integer> tierBaseIndices = new HashMap<>();
         int totalAttempts = 0;
 
         while (totalAttempts < MAX_ATTEMPTS) {
@@ -158,20 +159,24 @@ public class TranslationService {
                     continue;
                 }
 
-                // Collect available, not-yet-attempted providers in this tier
-                List<RegisteredProvider> eligible = tierList.stream()
-                        .filter(r -> r.isAvailable() && !attemptedProviders.contains(r.provider()))
-                        .collect(Collectors.toList());
+                // Advance tier's atomic index only on the initial attempt for this request in this tier
+                int baseIdx = tierBaseIndices.computeIfAbsent(tier, t ->
+                        tierRoundRobinIndices.computeIfAbsent(t, k -> new AtomicInteger(0)).getAndIncrement());
 
-                if (eligible.isEmpty()) {
-                    continue;
+                // Find the candidate by scanning in cyclical order from baseIdx
+                int totalProvidersInTier = tierList.size();
+                for (int i = 0; i < totalProvidersInTier; i++) {
+                    RegisteredProvider r = tierList.get(Math.floorMod(baseIdx + i, totalProvidersInTier));
+                    if (r.isAvailable() && !attemptedProviders.contains(r.provider())) {
+                        candidate = r;
+                        candidateTier = tier;
+                        break;
+                    }
                 }
 
-                // Round-robin within this tier using eligible providers
-                int idx = tierRoundRobinIndices.merge(tier, 1, Integer::sum) - 1;
-                candidate = eligible.get(Math.floorMod(idx, eligible.size()));
-                candidateTier = tier;
-                break;
+                if (candidate != null) {
+                    break;
+                }
             }
 
             if (candidate == null) {
@@ -183,26 +188,22 @@ public class TranslationService {
             attemptedProviders.add(provider);
             totalAttempts++;
 
-            long startTime = System.currentTimeMillis();
             try {
-                TranslationResponse result = provider.translate(text, targetLang);
-                long durationMillis = System.currentTimeMillis() - startTime;
+                TranslationResponse result = candidate.state().execute(provider.name(),
+                        () -> provider.translate(text, targetLang));
 
-                if (result != null && result.getTranslatedText() != null && !result.getTranslatedText().isBlank()) {
-                    candidate.state().recordSuccess(provider.name(), durationMillis);
+                if (result != null) {
                     cache.put(cacheKey, result);
-                    Log.debug("Translated via '@' [tier: @, @ -> @]: '@' -> '@' (@ms)",
-                            provider.name(), candidateTier, result.getSourceLanguage(), targetLang, text, result.getTranslatedText(), durationMillis);
+                    Log.debug("Translated via '@' [tier: @, @ -> @]: '@' -> '@'",
+                            provider.name(), candidateTier, result.getSourceLanguage(), targetLang, text, result.getTranslatedText());
                     return result;
                 }
 
-                // Provider returned null/blank — treat as failure
-                candidate.state().recordFailure(provider.name(), null);
+                // Provider returned null/blank result
                 Log.warn("Translation provider '@' returned null/blank result (attempt @/@ for '@'). Trying next provider.",
                         provider.name(), totalAttempts, MAX_ATTEMPTS, text);
 
             } catch (Exception e) {
-                candidate.state().recordFailure(provider.name(), e);
                 Log.warn("Translation provider '@' threw exception (attempt @/@ for '@'): @. Trying next provider.",
                         provider.name(), totalAttempts, MAX_ATTEMPTS, text, e.getMessage());
             }

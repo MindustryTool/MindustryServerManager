@@ -78,8 +78,8 @@ public class TranslationServiceTest {
         };
 
         TranslationService service = new TranslationService(Caffeine.newBuilder().build());
-        service.registerProvider(0, 10, p1);
-        service.registerProvider(0, 20, p2);
+        service.registerProvider(0, p1);
+        service.registerProvider(0, p2);
 
         TranslationResponse res1 = service.translate("msg1", "vi");
         TranslationResponse res2 = service.translate("msg2", "vi");
@@ -136,8 +136,8 @@ public class TranslationServiceTest {
         };
 
         TranslationService service = new TranslationService(Caffeine.newBuilder().build());
-        service.registerProvider(0, 10, coolingDownP1);
-        service.registerProvider(0, 20, activeP2);
+        service.registerProvider(0, coolingDownP1);
+        service.registerProvider(0, activeP2);
 
         TranslationResponse res1 = service.translate("msg1", "vi");
         TranslationResponse res2 = service.translate("msg2", "vi");
@@ -187,8 +187,8 @@ public class TranslationServiceTest {
         };
 
         TranslationService service = new TranslationService(Caffeine.newBuilder().build());
-        service.registerProvider(0, 10, tier0Unavailable);
-        service.registerProvider(1, 10, tier1Available);
+        service.registerProvider(0, tier0Unavailable);
+        service.registerProvider(1, tier1Available);
 
         TranslationResponse result = service.translate("test", "vi");
         assertNotNull(result);
@@ -228,8 +228,8 @@ public class TranslationServiceTest {
         };
 
         TranslationService service = new TranslationService(Caffeine.newBuilder().build());
-        service.registerProvider(0, 10, failingPrimary);
-        service.registerProvider(0, 20, backup);
+        service.registerProvider(0, failingPrimary);
+        service.registerProvider(0, backup);
 
         TranslationResponse result = service.translate("test", "vi");
         assertNotNull(result, "Should succeed using the backup provider");
@@ -270,8 +270,8 @@ public class TranslationServiceTest {
         };
 
         TranslationService service = new TranslationService(Caffeine.newBuilder().build());
-        service.registerProvider(0, 10, tier0Failing);
-        service.registerProvider(1, 10, tier1Available);
+        service.registerProvider(0, tier0Failing);
+        service.registerProvider(1, tier1Available);
 
         TranslationResponse result = service.translate("escalation-test", "vi");
         assertNotNull(result, "Should fall back to tier 1");
@@ -341,9 +341,9 @@ public class TranslationServiceTest {
         };
 
         TranslationService service = new TranslationService(Caffeine.newBuilder().build());
-        service.registerProvider(0, 10, fp1);
-        service.registerProvider(0, 20, fp2);
-        service.registerProvider(0, 30, fp3);
+        service.registerProvider(0, fp1);
+        service.registerProvider(0, fp2);
+        service.registerProvider(0, fp3);
 
         TranslationResponse result = service.translate("test", "vi");
         assertNull(result, "Should return null after 3 failed attempts");
@@ -479,5 +479,77 @@ public class TranslationServiceTest {
         assertEquals(100.0, state.getRecentSuccessRate());
         assertEquals(100.0, state.getLifetimeSuccessRate());
         assertTrue(state.getP95LatencyMillis() >= 10, "P95 latency should reflect measured duration");
+    }
+
+    @Test
+    public void testRetriesDoNotPerturbRoundRobinRotation() {
+        AtomicInteger p1Calls = new AtomicInteger(0);
+        AtomicInteger p2Calls = new AtomicInteger(0);
+        AtomicInteger p3Calls = new AtomicInteger(0);
+
+        TranslationProvider p1 = new TranslationProvider() {
+            @Override
+            public String name() {
+                return "p1";
+            }
+
+            @Override
+            public TranslationResponse translate(String text, String targetLang) {
+                p1Calls.incrementAndGet();
+                if ("failing".equals(text)) {
+                    throw new RuntimeException("Simulated failure for p1");
+                }
+                return new TranslationResponse("P1: " + text, "en");
+            }
+        };
+
+        TranslationProvider p2 = new TranslationProvider() {
+            @Override
+            public String name() {
+                return "p2";
+            }
+
+            @Override
+            public TranslationResponse translate(String text, String targetLang) {
+                p2Calls.incrementAndGet();
+                return new TranslationResponse("P2: " + text, "en");
+            }
+        };
+
+        TranslationProvider p3 = new TranslationProvider() {
+            @Override
+            public String name() {
+                return "p3";
+            }
+
+            @Override
+            public TranslationResponse translate(String text, String targetLang) {
+                p3Calls.incrementAndGet();
+                return new TranslationResponse("P3: " + text, "en");
+            }
+        };
+
+        TranslationService service = new TranslationService(Caffeine.newBuilder().build());
+        service.registerProvider(0, p1);
+        service.registerProvider(0, p2);
+        service.registerProvider(0, p3);
+
+        // Request 1: chooses p1. P1 fails -> retry inside same request routes to p2.
+        TranslationResponse res1 = service.translate("failing", "vi");
+        assertEquals("P2: failing", res1.getTranslatedText());
+        assertEquals(1, p1Calls.get());
+        assertEquals(1, p2Calls.get());
+        assertEquals(0, p3Calls.get());
+
+        // Request 2 (independent): tier base index should advance to next slot cleanly (slot 1 -> p2)
+        // rather than skipping ahead to slot 2 due to the previous retry!
+        TranslationResponse res2 = service.translate("req2", "vi");
+        assertEquals("P2: req2", res2.getTranslatedText());
+        assertEquals(2, p2Calls.get());
+
+        // Request 3: tier base index advances to slot 2 -> p3
+        TranslationResponse res3 = service.translate("req3", "vi");
+        assertEquals("P3: req3", res3.getTranslatedText());
+        assertEquals(1, p3Calls.get());
     }
 }

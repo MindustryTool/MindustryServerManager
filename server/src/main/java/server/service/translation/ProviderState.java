@@ -5,7 +5,14 @@ import java.util.Arrays;
 
 import arc.util.Log;
 
+import common.translation.TranslationResponse;
+
 public class ProviderState {
+
+    @FunctionalInterface
+    public interface ProviderAction<T> {
+        T execute() throws Exception;
+    }
 
     private static final int BUFFER_SIZE = 100;
     private static final long BASE_COOLDOWN_SECONDS = 5;
@@ -28,6 +35,23 @@ public class ProviderState {
 
     public synchronized boolean isAvailable() {
         return Instant.now().isAfter(cooldownUntil);
+    }
+
+    public TranslationResponse execute(String providerName, ProviderAction<TranslationResponse> action) throws Exception {
+        long startTime = System.currentTimeMillis();
+        try {
+            TranslationResponse response = action.execute();
+            long durationMillis = System.currentTimeMillis() - startTime;
+            if (response != null && response.getTranslatedText() != null && !response.getTranslatedText().isBlank()) {
+                recordSuccess(providerName, durationMillis);
+                return response;
+            }
+            recordFailure(providerName, null);
+            return null;
+        } catch (Exception e) {
+            recordFailure(providerName, e);
+            throw e;
+        }
     }
 
     public synchronized void recordSuccess(String providerName) {

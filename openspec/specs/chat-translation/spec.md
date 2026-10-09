@@ -5,11 +5,15 @@ Translates in-game chat messages across player locales using server-side transla
 
 ## Requirements
 ### Requirement: Multi-Provider Ordered Fallback Interface
-The server manager SHALL define a `TranslationProvider` interface with name, availability, and translation execution methods, and a `TranslationService` that allows registering providers with explicit tier and order parameters. The service SHALL organize registered providers into tiers and balance requests within each tier using round-robin rotation. When a selected provider fails (throws an exception or returns null/blank text), the service SHALL retry up to 2 more times using up to 2 other available providers (capped at 3 total attempts per request) before returning null. The service SHALL try remaining available providers in the current tier first, and if exhausted, cascade to subsequent tiers.
+The server manager SHALL define a `TranslationProvider` interface with name, availability, and translation execution methods, and a `TranslationService` that allows registering providers with explicit tier parameters. The service SHALL organize registered providers into tiers and balance requests within each tier using round-robin rotation. When a selected provider fails (throws an exception or returns null/blank text), the service SHALL retry up to 2 more times using up to 2 other available providers (capped at 3 total attempts per request) before returning null. The service SHALL try remaining available providers in the current tier first, and if exhausted, cascade to subsequent tiers. Round-robin indexing SHALL advance on initial tier selection per request and SHALL NOT skip positions due to internal retry attempts.
 
 #### Scenario: Round-robin rotation within tier
 - **WHEN** multiple providers in the same tier are available
 - **THEN** successive cache-miss translation requests alternate between the available providers in round-robin order
+
+#### Scenario: Retries do not perturb round-robin index
+- **WHEN** a provider in a tier fails and an intra-tier retry executes
+- **THEN** the subsequent independent translation request selects the next provider in the normal round-robin sequence without index jumping
 
 #### Scenario: Provider in cooldown bypassed in round-robin
 - **WHEN** one provider in a tier is in cooldown and another provider in the same tier is available
@@ -183,3 +187,18 @@ The backend `translate` RPC handler SHALL gate translation per server using a ke
 #### Scenario: Per-server buckets are independent
 - **WHEN** one server exhausts its translation budget
 - **THEN** another server's translate calls continue to be served
+
+### Requirement: Bing Web Translation Provider
+The server manager SHALL provide a `BingWebProvider` implementing `TranslationProvider`. It SHALL dynamically extract authentication parameters (`IG`, `IID`, `key`, `token`) from `https://www.bing.com/translator`, submit translation requests to `https://www.bing.com/ttranslatev3`, unescape HTML entities, and return a `TranslationResponse`. It SHALL cache authentication tokens until expiration and invalidate the cached session when receiving an expired or invalid token response.
+
+#### Scenario: Successful translation request
+- **WHEN** valid text and target language are requested
+- **THEN** the provider extracts or reuses session tokens, issues a POST request to Bing translator endpoint, and returns the translated text in `TranslationResponse`
+
+#### Scenario: Token expiration and refresh
+- **WHEN** the session token expires or Bing returns a token error
+- **THEN** the provider invalidates the existing token session and requests fresh session credentials before retrying
+
+#### Scenario: Invalid response format or Bing failure
+- **WHEN** Bing returns an unexpected status code or response format
+- **THEN** the provider throws a descriptive exception allowing the translation service to trigger cooldown and fallback
