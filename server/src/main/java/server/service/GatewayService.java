@@ -287,7 +287,7 @@ public class GatewayService {
             }
 
             eventBus.emit(new StopEvent(id, reason));
-            Log.info("[red]Client terminated: " + id + " reason: " + reason);
+            Log.info("Client terminated: " + id + " reason: " + reason);
 
             return true;
         }
