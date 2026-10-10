@@ -214,51 +214,71 @@ public class FloodSpreader {
     }
 
     /**
-     * Attempts to downgrade a flood tile one tier lower instead of destroying it.
-     * Called from the BlockDestroyEvent (fires before the block is removed) so that
-     * {@code tile.build} is still valid.
+     * Resolves the previous (lower) flood tier for a destroyed Crux flood tile.
+     * Does not check {@code build.isValid()} because Mindustry marks buildings
+     * dead before firing destruction events.
      *
-     * @return {@code true} if the tile was downgraded (destruction should be
-     *         cancelled by replacing the block), {@code false} if it is already at
-     *         the first tier and should be allowed to be destroyed normally.
+     * @return the preceding {@link FloodConfig.FloodTile}, or {@code null} if not a
+     *         Crux flood tile or already at the lowest tier.
      */
-    public boolean tryDowngradeTile(Tile tile, float multiplier) {
+    public FloodConfig.FloodTile getDowngradeTier(Tile tile) {
         if (tile == null) {
-            return false;
+            return null;
         }
         var build = tile.build;
-        if (build == null || !build.isValid() || build.team != Team.crux) {
-            return false;
+        if (build != null) {
+            if (build.team != Team.crux || build.block == null || build.block.id >= prevTierByBlockId.length) {
+                return null;
+            }
+            return prevTierByBlockId[build.block.id];
         }
-        int blockId = build.block.id;
-        if (blockId >= tierByBlockId.length || tierByBlockId[blockId] == null) {
-            return false;
+        var block = tile.block();
+        if (block != null && tile.team() == Team.crux && block.id < prevTierByBlockId.length) {
+            return prevTierByBlockId[block.id];
+        }
+        return null;
+    }
+
+    /**
+     * Applies a lower-tier flood block to a tile, scheduling its evolution and
+     * registering it as an edge tile if it borders spreadable ground.
+     */
+    public void applyDowngradedTile(Tile tile, FloodConfig.FloodTile lowerTier, float multiplier) {
+        if (tile == null || lowerTier == null || lowerTier.block == null) {
+            return;
+        }
+        if (Vars.world == null || !isInitialized()) {
+            return;
         }
 
-        // Look up the previous (lower) tier.
-        FloodConfig.FloodTile prev = blockId < prevTierByBlockId.length ? prevTierByBlockId[blockId] : null;
-        if (prev == null) {
-            // Already at first tier – let it be destroyed normally.
-            return false;
-        }
-
-        // Replace the block with the lower tier.
         if (Vars.net != null) {
-            Call.setTile(tile, prev.block, Team.crux, 0);
+            Call.setTile(tile, lowerTier.block, Team.crux, 0);
         } else {
-            tile.setBlock(prev.block, Team.crux, 0);
+            tile.setBlock(lowerTier.block, Team.crux, 0);
         }
 
         int pos = posOf(tile);
         if (pos >= 0 && pos < deadlines.length) {
             long now = Time.millis();
-            // Reschedule evolution from the new (lower) tier.
-            scheduleCruxTile(pos, prev, multiplier, now);
+            scheduleCruxTile(pos, lowerTier, multiplier, now);
             if (hasSpreadableNeighbor(pos)) {
                 addEdgeTile(pos);
             }
         }
+    }
 
+    /**
+     * Attempts to downgrade a flood tile one tier lower instead of destroying it.
+     *
+     * @return {@code true} if the tile was downgraded, {@code false} if it is
+     *         already at the first tier or not a Crux flood block.
+     */
+    public boolean tryDowngradeTile(Tile tile, float multiplier) {
+        var prev = getDowngradeTier(tile);
+        if (prev == null) {
+            return false;
+        }
+        applyDowngradedTile(tile, prev, multiplier);
         return true;
     }
 

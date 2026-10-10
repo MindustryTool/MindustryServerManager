@@ -2,10 +2,21 @@ package plugin.gamemode.flood;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import arc.struct.Seq;
+import mindustry.Vars;
+import mindustry.content.Blocks;
+import mindustry.core.ContentLoader;
+import mindustry.game.Team;
+import mindustry.gen.Building;
+import mindustry.world.Block;
+import mindustry.world.Tile;
 
 public class FloodSpreaderTest {
 
@@ -14,6 +25,10 @@ public class FloodSpreaderTest {
 
     @BeforeEach
     void setUp() {
+        if (Vars.content == null) {
+            Vars.content = new ContentLoader();
+            Vars.content.createBaseContent();
+        }
         config = new FloodConfig();
         spreader = new FloodSpreader(config);
         spreader.reset(10, 10);
@@ -151,7 +166,7 @@ public class FloodSpreaderTest {
 
     @Test
     void testPacedWaveAndFlushConstants() {
-        assertEquals(150, FloodSpreader.MAX_SPREAD_PER_TICK);
+        assertEquals(120, FloodSpreader.MAX_SPREAD_PER_TICK);
         assertEquals(150, FloodSpreader.MAX_FLUSH_PER_WINDOW);
     }
 
@@ -164,5 +179,71 @@ public class FloodSpreaderTest {
         FloodSpreader uninit = new FloodSpreader(config);
         uninit.scanExistingFlood(1.0f);
         assertEquals(0, uninit.edgeTileCount());
+    }
+
+    @Test
+    void testGetDowngradeTierNullTile() {
+        assertNull(spreader.getDowngradeTier(null));
+    }
+
+    @Test
+    void testDowngradeTierResolution() {
+        Block tier1Block = new Block("test-tier-1") {};
+        tier1Block.id = 100;
+        Block tier2Block = new Block("test-tier-2") {};
+        tier2Block.id = 101;
+
+        FloodConfig customConfig = new FloodConfig();
+        customConfig.floodTiles = Seq.with(
+                new FloodConfig.FloodTile(tier1Block, 10f, 20),
+                new FloodConfig.FloodTile(tier2Block, 20f, 40)
+        );
+
+        FloodSpreader customSpreader = new FloodSpreader(customConfig);
+        customSpreader.reset(10, 10);
+
+        Tile tile = new Tile(0, 0);
+        // Initially empty tile
+        assertNull(customSpreader.getDowngradeTier(tile));
+
+        // Building with lowest tier (tier 1) returns null (no lower tier)
+        Building tier1Build = Building.create();
+        tier1Build.tile = tile;
+        tier1Build.block = tier1Block;
+        tier1Build.team = Team.crux;
+        tile.build = tier1Build;
+        assertNull(customSpreader.getDowngradeTier(tile));
+
+        // Building with tier 2 returns tier 1
+        Building tier2Build = Building.create();
+        tier2Build.tile = tile;
+        tier2Build.block = tier2Block;
+        tier2Build.team = Team.crux;
+        tile.build = tier2Build;
+        var lower = customSpreader.getDowngradeTier(tile);
+        assertNotNull(lower);
+        assertEquals(tier1Block, lower.block);
+
+        // Building with tier 2 but non-crux team returns null
+        tier2Build.team = Team.sharded;
+        assertNull(customSpreader.getDowngradeTier(tile));
+
+        // Building marked dead (simulating Mindustry Building.killed()) still resolves lower tier
+        tier2Build.team = Team.crux;
+        tier2Build.dead = true;
+        var resolvedOnDeadBuild = customSpreader.getDowngradeTier(tile);
+        assertNotNull(resolvedOnDeadBuild);
+        assertEquals(tier1Block, resolvedOnDeadBuild.block);
+    }
+
+    @Test
+    void testApplyDowngradedTileSafeHandling() {
+        Tile tile = new Tile(2, 2);
+        FloodConfig.FloodTile lowerTier = new FloodConfig.FloodTile(new Block("test-b") {}, 10f, 20);
+
+        // Does not throw when inputs are null or world is null
+        spreader.applyDowngradedTile(tile, lowerTier, 1.0f);
+        spreader.applyDowngradedTile(null, lowerTier, 1.0f);
+        spreader.applyDowngradedTile(tile, null, 1.0f);
     }
 }

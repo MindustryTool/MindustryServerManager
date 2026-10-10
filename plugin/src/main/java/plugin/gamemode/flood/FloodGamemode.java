@@ -280,12 +280,20 @@ public class FloodGamemode {
         if (spreader == null || event.tile == null) {
             return;
         }
-        // BlockDestroyEvent fires before the block is removed, so tile.build is still
-        // valid. Attempt a tier downgrade; if the tile is already at tier 1 (or not a
-        // flood tile at all) we fall through and let the spreader clear its state.
-        if (spreader.tryDowngradeTile(event.tile, getFloodMultiplier())) {
+
+        var lowerTier = spreader.getDowngradeTier(event.tile);
+        if (lowerTier != null) {
+            var tile = event.tile;
+            var multiplier = getFloodMultiplier();
+            spreader.onTileDestroyed(spreader.posOf(tile));
+            Core.app.post(() -> {
+                if (shouldUpdate() && spreader != null && spreader.isInitialized()) {
+                    spreader.applyDowngradedTile(tile, lowerTier, multiplier);
+                }
+            });
             return;
         }
+
         spreader.onTileDestroyed(spreader.posOf(event.tile));
     }
 

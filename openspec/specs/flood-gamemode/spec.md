@@ -63,7 +63,7 @@ The flood simulation SHALL use an event-driven min-heap scheduler with primitive
 
 #### Scenario: Downgrade emits single network dispatch
 - **WHEN** a flood block is downgraded to a lower tier upon taking lethal damage
-- **THEN** the downgrade block transition is emitted via immediate tile RPC without duplicate queueing into the periodic flush queue
+- **THEN** the downgrade block transition is deferred to the next tick to survive tile removal, and emitted via immediate tile RPC without duplicate queueing into the periodic flush queue
 
 #### Scenario: First flush after reset is immediate
 - **WHEN** the flood simulation resets (map load) and tiles transition before any flush window has opened
@@ -140,5 +140,4 @@ When the flood gamemode initializes on map load, the system SHALL scan the world
 #### Scenario: Pre-existing flood tiles join the spread simulation
 - **WHEN** the map is loaded with pre-existing Crux flood tiles
 - **THEN** tiles that are Crux flood blocks are scheduled for tier evolution and added to the edge list if they have adjacent spreadable tiles, allowing them to spread on the next spread wave
-
 
