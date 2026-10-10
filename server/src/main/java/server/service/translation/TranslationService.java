@@ -29,7 +29,7 @@ import server.service.translation.provider.LlamaTranslationProvider;
 
 public class TranslationService {
 
-    private static final int MAX_ATTEMPTS = 3;
+    private static final int MAX_ATTEMPTS = 4;
 
     public record RegisteredProvider(int tier, TranslationProvider provider, ProviderState state) {
 
