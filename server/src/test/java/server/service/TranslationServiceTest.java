@@ -8,6 +8,7 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 
 import common.translation.TranslationResponse;
 import server.service.translation.ProviderState;
+import server.service.translation.TranslationProvider;
 import server.service.translation.TranslationService;
 
 import static org.junit.jupiter.api.Assertions.*;

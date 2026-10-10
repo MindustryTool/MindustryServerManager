@@ -16,7 +16,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import common.translation.TranslationResponse;
 import server.service.MultiSourceProxyPool;
 import server.service.TrackedProxy;
-import server.service.TranslationProvider;
+import server.service.translation.TranslationProvider;
 import server.utils.HttpClients;
 
 public class GoogleWebProvider implements TranslationProvider {

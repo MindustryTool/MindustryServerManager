@@ -21,7 +21,6 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import arc.util.Log;
 import common.translation.TranslationResponse;
 import server.service.MultiSourceProxyPool;
-import server.service.TranslationProvider;
 import server.service.translation.provider.BingWebProvider;
 import server.service.translation.provider.GoogleWebProvider;
 import server.service.translation.provider.LingvaProvider;

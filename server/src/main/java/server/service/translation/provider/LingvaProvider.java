@@ -12,7 +12,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import common.translation.TranslationResponse;
-import server.service.TranslationProvider;
+import server.service.translation.TranslationProvider;
 import server.utils.HttpClients;
 
 public class LingvaProvider implements TranslationProvider {
