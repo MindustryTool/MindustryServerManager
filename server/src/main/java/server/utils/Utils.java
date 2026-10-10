@@ -10,6 +10,8 @@ import java.io.File;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 
 import javax.imageio.ImageIO;
 
@@ -233,8 +235,7 @@ public class Utils {
             var resizedImage = new BufferedImage(
                     (int) scaledSize.getWidth(),
                     (int) scaledSize.getHeight(),
-                    BufferedImage.TYPE_INT_ARGB
-            );
+                    BufferedImage.TYPE_INT_ARGB);
 
             Graphics2D g = resizedImage.createGraphics();
             g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
@@ -245,5 +246,13 @@ public class Utils {
         } catch (Exception e) {
             throw new ApiError(500, "internal-server-error", e);
         }
+    }
+
+    public static Throwable unwrap(Throwable e) {
+        while (e instanceof ExecutionException || e instanceof TimeoutException) {
+            e = e.getCause();
+        }
+
+        return e;
     }
 }

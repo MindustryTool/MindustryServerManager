@@ -45,7 +45,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -67,62 +66,52 @@ public class GatewayService {
 
     private static final double TRANSLATION_RATE_LIMIT_BURST = 50;
     private static final double TRANSLATION_RATE_LIMIT_REFILL_PER_SECOND = 10;
-    private static final Duration TRANSLATION_RATE_LIMIT_IDLE_TTL =
-        Duration.ofMinutes(5);
+    private static final Duration TRANSLATION_RATE_LIMIT_IDLE_TTL = Duration.ofMinutes(5);
 
     private final EventBus eventBus;
     private final EnvConfig envConfig;
     private final NodeManager nodeManager;
     private final TranslationService translationService;
     private final PluginBundleService pluginBundleService;
-    private final ConcurrentHashMap<UUID, GatewayClient> clients =
-        new ConcurrentHashMap<>();
-    private final KeyedRateLimiter<UUID> translationRateLimiter =
-        new KeyedRateLimiter<>(
+    private final ConcurrentHashMap<UUID, GatewayClient> clients = new ConcurrentHashMap<>();
+    private final KeyedRateLimiter<UUID> translationRateLimiter = new KeyedRateLimiter<>(
             TRANSLATION_RATE_LIMIT_BURST,
             TRANSLATION_RATE_LIMIT_REFILL_PER_SECOND,
-            TRANSLATION_RATE_LIMIT_IDLE_TTL
-        );
+            TRANSLATION_RATE_LIMIT_IDLE_TTL);
 
-    private final ScheduledExecutorService scheduler =
-        Executors.newSingleThreadScheduledExecutor();
+    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
     public GatewayService(
-        EventBus eventBus,
-        EnvConfig envConfig,
-        NodeManager nodeManager
-    ) {
+            EventBus eventBus,
+            EnvConfig envConfig,
+            NodeManager nodeManager) {
         this(
-            eventBus,
-            envConfig,
-            nodeManager,
-            new TranslationService(),
-            PluginBundleService.loadFromImage()
-        );
+                eventBus,
+                envConfig,
+                nodeManager,
+                new TranslationService(),
+                PluginBundleService.loadFromImage());
     }
 
     public GatewayService(
-        EventBus eventBus,
-        EnvConfig envConfig,
-        NodeManager nodeManager,
-        TranslationService translationService
-    ) {
+            EventBus eventBus,
+            EnvConfig envConfig,
+            NodeManager nodeManager,
+            TranslationService translationService) {
         this(
-            eventBus,
-            envConfig,
-            nodeManager,
-            translationService,
-            PluginBundleService.loadFromImage()
-        );
+                eventBus,
+                envConfig,
+                nodeManager,
+                translationService,
+                PluginBundleService.loadFromImage());
     }
 
     public GatewayService(
-        EventBus eventBus,
-        EnvConfig envConfig,
-        NodeManager nodeManager,
-        TranslationService translationService,
-        PluginBundleService pluginBundleService
-    ) {
+            EventBus eventBus,
+            EnvConfig envConfig,
+            NodeManager nodeManager,
+            TranslationService translationService,
+            PluginBundleService pluginBundleService) {
         this.eventBus = eventBus;
         this.envConfig = envConfig;
         this.nodeManager = nodeManager;
@@ -131,22 +120,20 @@ public class GatewayService {
 
         nodeManager.onKilled(serverId -> {
             eventBus.emit(
-                new StopEvent(serverId, NodeRemoveReason.PROCESS_KILLED)
-            );
+                    new StopEvent(serverId, NodeRemoveReason.PROCESS_KILLED));
         });
 
         scheduler.scheduleWithFixedDelay(
-            () -> {
-                try {
-                    sweep();
-                } catch (Exception e) {
-                    Log.err("Error sweeping gateway clients", e);
-                }
-            },
-            15,
-            15,
-            TimeUnit.SECONDS
-        );
+                () -> {
+                    try {
+                        sweep();
+                    } catch (Exception e) {
+                        Log.err("Error sweeping gateway clients", e);
+                    }
+                },
+                15,
+                15,
+                TimeUnit.SECONDS);
     }
 
     void sweep() {
@@ -170,23 +157,25 @@ public class GatewayService {
     }
 
     public GatewayClient of(UUID serverId) {
-        return clients.computeIfAbsent(serverId, _ignore ->
-            new GatewayClient(serverId)
-        );
+        return clients.computeIfAbsent(serverId, _ignore -> new GatewayClient(serverId));
     }
 
     public boolean isHosting(UUID serverId) {
         try {
-            return (
-                clients.containsKey(serverId) &&
-                nodeManager.isRunning(serverId) &&
-                of(serverId).server().isHosting().get(5, TimeUnit.SECONDS)
-            );
-        } catch (TimeoutException e) {
-            return false;
-        } catch (NoSessionException e) {
-            return false;
-        } catch (InterruptedException | ExecutionException e) {
+            return (clients.containsKey(serverId) &&
+                    nodeManager.isRunning(serverId) &&
+                    of(serverId).server().isHosting().get(5, TimeUnit.SECONDS));
+        } catch (Throwable e) {
+            if (e instanceof TimeoutException) {
+                return false;
+            }
+
+            e = Utils.unwrap(e);
+
+            if (e instanceof NoSessionException) {
+                return false;
+            }
+
             throw ApiError.internal(e);
         }
     }
@@ -218,8 +207,7 @@ public class GatewayService {
         private final UUID id;
 
         private final RpcChannel rpcChannel = RpcChannel.withExecutor(
-            Const.executorService
-        );
+                Const.executorService);
 
         @Getter
         private final Backend backend = new Backend();
@@ -233,12 +221,8 @@ public class GatewayService {
             this.id = id;
 
             this.registerHandler("get-total-player", Void.class, _ctx -> 0L);
-            this.registerHandler("login", LoginRequest.class, ctx ->
-                backend.login(id, ctx.body())
-            );
-            this.registerHandler("host", UUID.class, ctx ->
-                backend.host(ctx.body())
-            );
+            this.registerHandler("login", LoginRequest.class, ctx -> backend.login(id, ctx.body()));
+            this.registerHandler("host", UUID.class, ctx -> backend.host(ctx.body()));
             this.registerHandler("translate", TranslationRequest.class, ctx -> {
                 if (!translationRateLimiter.tryAcquire(id)) {
                     Log.debug("Translation rate limited for server @", id);
@@ -248,9 +232,8 @@ public class GatewayService {
                 var req = ctx.body();
                 try {
                     return translationService.translate(
-                        req.getText(),
-                        req.getTargetLang()
-                    );
+                            req.getText(),
+                            req.getTargetLang());
                 } catch (Exception e) {
                     Log.warn("Translation error: @", e.getMessage());
                     return null;
@@ -277,18 +260,16 @@ public class GatewayService {
                 var eventType = ServerEvents.getEventMap().get(name);
                 if (eventType == null) {
                     Log.warn(
-                        "Invalid event name: " +
-                            name +
-                            " in " +
-                            ServerEvents.getEventMap().keySet()
-                    );
+                            "Invalid event name: " +
+                                    name +
+                                    " in " +
+                                    ServerEvents.getEventMap().keySet());
                     return null;
                 }
 
                 BaseEvent data = (BaseEvent) Utils.readJsonAsClass(
-                    event,
-                    eventType
-                );
+                        event,
+                        eventType);
                 eventBus.emit(data);
 
                 return null;
@@ -309,24 +290,20 @@ public class GatewayService {
             if (context == null) {
                 // TODO: Proper exception + print message only
                 rpcChannel.onClose(
-                    new RuntimeException("Gateway client disconnected: " + id)
-                );
+                        new RuntimeException("Gateway client disconnected: " + id));
             } else {
                 boolean cleared = rpcChannel.onClose(
-                    new JavalinSession(context),
-                    new RuntimeException("Gateway client disconnected: " + id)
-                );
+                        new JavalinSession(context),
+                        new RuntimeException("Gateway client disconnected: " + id));
                 if (!cleared) {
                     Log.info(
-                        "Ignoring stale close for replaced session: " + id
-                    );
+                            "Ignoring stale close for replaced session: " + id);
                     return;
                 }
             }
 
             eventBus.emit(
-                new StopEvent(id, NodeRemoveReason.SOCKET_DISCONNECT)
-            );
+                    new StopEvent(id, NodeRemoveReason.SOCKET_DISCONNECT));
         }
 
         public boolean isSocketOpen() {
@@ -340,20 +317,18 @@ public class GatewayService {
                     this.server.shutdown().get(5, TimeUnit.SECONDS);
                 } catch (Exception e) {
                     Log.err(
-                        "Shutdown request failed for client " +
-                            id +
-                            ", continuing termination",
-                        e
-                    );
+                            "Shutdown request failed for client " +
+                                    id +
+                                    ", continuing termination",
+                            e);
                 }
 
                 WsSession session = rpcChannel.current();
                 if (session != null) {
                     try {
                         session.close(
-                            WsProtocol.REPLACED_CLOSE_CODE,
-                            "Terminate by server"
-                        );
+                                WsProtocol.REPLACED_CLOSE_CODE,
+                                "Terminate by server");
                     } catch (Exception e) {
                         Log.err("Error closing session for client " + id, e);
                     }
@@ -374,9 +349,8 @@ public class GatewayService {
 
         public void onMessage(WsMessageContext context) {
             rpcChannel.onTextMessage(
-                new JavalinSession(context),
-                context.message()
-            );
+                    new JavalinSession(context),
+                    context.message());
         }
 
         public void onBinary(WsBinaryMessageContext context) {
@@ -384,10 +358,9 @@ public class GatewayService {
         }
 
         public <Req, Res> void registerHandler(
-            String type,
-            Class<Req> clazz,
-            Function<RequestContext<Req>, Res> handler
-        ) {
+                String type,
+                Class<Req> clazz,
+                Function<RequestContext<Req>, Res> handler) {
             rpcChannel.registerHandler(type, clazz, handler);
         }
 
@@ -419,17 +392,14 @@ public class GatewayService {
                     }
 
                     return HttpRequest.newBuilder()
-                        .uri(
-                            new URIBuilder(
-                                base + "/" + String.join("/", str)
-                            ).build()
-                        )
-                        .header("X-SERVER-ID", id.toString())
-                        .header(
-                            "X-MANAGER-AUTH",
-                            envConfig.serverConfig().accessToken()
-                        )
-                        .timeout(Duration.ofMinutes(2));
+                            .uri(
+                                    new URIBuilder(
+                                            base + "/" + String.join("/", str)).build())
+                            .header("X-SERVER-ID", id.toString())
+                            .header(
+                                    "X-MANAGER-AUTH",
+                                    envConfig.serverConfig().accessToken())
+                            .timeout(Duration.ofMinutes(2));
                 } catch (Exception e) {
                     throw new ApiError(500, "Internal server error", e);
                 }
@@ -438,25 +408,21 @@ public class GatewayService {
             public Login login(UUID id, LoginRequest body) {
                 try {
                     HttpRequest request = createRequest("servers", id, "login")
-                        .POST(
-                            HttpRequest.BodyPublishers.ofString(
-                                Utils.toJsonString(body)
-                            )
-                        )
-                        .header("Content-Type", "application/json")
-                        .timeout(Duration.ofSeconds(5))
-                        .build();
+                            .POST(
+                                    HttpRequest.BodyPublishers.ofString(
+                                            Utils.toJsonString(body)))
+                            .header("Content-Type", "application/json")
+                            .timeout(Duration.ofSeconds(5))
+                            .build();
 
                     HttpResponse<String> result = httpClient.send(
-                        request,
-                        BodyHandlers.ofString()
-                    );
+                            request,
+                            BodyHandlers.ofString());
 
                     if (result.statusCode() >= 400) {
                         throw new ApiError(
-                            result.statusCode(),
-                            "Failed to login server: " + result.body()
-                        );
+                                result.statusCode(),
+                                "Failed to login server: " + result.body());
                     }
 
                     return Utils.readJsonAsClass(result.body(), Login.class);
@@ -471,25 +437,22 @@ public class GatewayService {
             public String host(UUID id) {
                 try {
                     HttpRequest request = createRequest(
-                        "servers",
-                        id,
-                        "host-server"
-                    )
-                        .POST(HttpRequest.BodyPublishers.noBody())
-                        .header("Content-Type", "application/json")
-                        .timeout(Duration.ofMinutes(2))
-                        .build();
+                            "servers",
+                            id,
+                            "host-server")
+                            .POST(HttpRequest.BodyPublishers.noBody())
+                            .header("Content-Type", "application/json")
+                            .timeout(Duration.ofMinutes(2))
+                            .build();
 
                     HttpResponse<String> result = httpClient.send(
-                        request,
-                        BodyHandlers.ofString()
-                    );
+                            request,
+                            BodyHandlers.ofString());
 
                     if (result.statusCode() >= 400) {
                         throw new ApiError(
-                            result.statusCode(),
-                            "Failed to host server: " + result.body()
-                        );
+                                result.statusCode(),
+                                "Failed to host server: " + result.body());
                     }
 
                     return result.body();
@@ -505,28 +468,24 @@ public class GatewayService {
         public class Server {
 
             private <R> CompletableFuture<R> sendRequest(
-                String type,
-                Object payload,
-                Class<R> clazz
-            ) {
+                    String type,
+                    Object payload,
+                    Class<R> clazz) {
                 return rpcChannel.sendRequest(
-                    type,
-                    payload,
-                    clazz,
-                    Duration.ofMinutes(1)
-                );
+                        type,
+                        payload,
+                        clazz,
+                        Duration.ofMinutes(1));
             }
 
             private CompletableFuture<Void> sendRequest(
-                String type,
-                Object payload
-            ) {
+                    String type,
+                    Object payload) {
                 return rpcChannel.sendRequest(
-                    type,
-                    payload,
-                    Void.class,
-                    Duration.ofMinutes(1)
-                );
+                        type,
+                        payload,
+                        Void.class,
+                        Duration.ofMinutes(1));
             }
 
             public CompletableFuture<JsonNode> getJson() {
@@ -534,9 +493,8 @@ public class GatewayService {
             }
 
             public CompletableFuture<Void> updatePlayer(
-                String uuid,
-                Login request
-            ) {
+                    String uuid,
+                    Login request) {
                 return sendRequest("update-player", request);
             }
 
@@ -554,19 +512,17 @@ public class GatewayService {
 
             public CompletableFuture<byte[]> getImage() {
                 return sendRequest("generate-map-image", null).thenApply(
-                    res -> {
-                        Fi file = nodeManager.getFile(
-                            id,
-                            "map-preview-image.png"
-                        );
+                        res -> {
+                            Fi file = nodeManager.getFile(
+                                    id,
+                                    "map-preview-image.png");
 
-                        if (!file.exists()) {
-                            return new byte[1];
-                        }
+                            if (!file.exists()) {
+                                return new byte[1];
+                            }
 
-                        return file.readBytes();
-                    }
-                );
+                            return file.readBytes();
+                        });
             }
 
             public CompletableFuture<Void> sendCommand(String... command) {
@@ -595,25 +551,24 @@ public class GatewayService {
 
             public CompletableFuture<List<ServerCommand>> getCommands() {
                 return sendRequest(
-                    "get-commands",
-                    null,
-                    JsonNode.class
-                ).thenApply(n -> {
-                    try {
-                        return Utils.getObjectMapper()
-                            .readerForListOf(ServerCommand.class)
-                            .readValue(n);
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                });
+                        "get-commands",
+                        null,
+                        JsonNode.class).thenApply(n -> {
+                            try {
+                                return Utils.getObjectMapper()
+                                        .readerForListOf(ServerCommand.class)
+                                        .readValue(n);
+                            } catch (Exception e) {
+                                throw new RuntimeException(e);
+                            }
+                        });
             }
 
             public CompletableFuture<PlayerRecordPage> getPlayersInfo(
-                int page,
-                int size,
-                Boolean banned,
-                String filter //
+                    int page,
+                    int size,
+                    Boolean banned,
+                    String filter //
             ) {
                 ObjectNode payload = Utils.getObjectMapper().createObjectNode();
                 payload.put("page", page);
@@ -630,42 +585,39 @@ public class GatewayService {
                 }
 
                 return sendRequest(
-                    "get-players-info",
-                    payload,
-                    PlayerRecordPage.class
-                );
+                        "get-players-info",
+                        payload,
+                        PlayerRecordPage.class);
             }
 
             public CompletableFuture<Map<String, Long>> getKickedIps() {
                 return sendRequest(
-                    "get-kicked-ips",
-                    null,
-                    JsonNode.class
-                ).thenApply(n -> {
-                    if (n == null || n.isNull()) {
-                        return Collections.emptyMap();
-                    }
-                    return Utils.getObjectMapper().convertValue(
-                        n,
-                        new TypeReference<Map<String, Long>>() {}
-                    );
-                });
+                        "get-kicked-ips",
+                        null,
+                        JsonNode.class).thenApply(n -> {
+                            if (n == null || n.isNull()) {
+                                return Collections.emptyMap();
+                            }
+                            return Utils.getObjectMapper().convertValue(
+                                    n,
+                                    new TypeReference<Map<String, Long>>() {
+                                    });
+                        });
             }
 
             public CompletableFuture<List<RecentPlayer>> getRecentPlayers() {
                 return sendRequest(
-                    "get-recent-players",
-                    null,
-                    JsonNode.class
-                ).thenApply(n -> {
-                    try {
-                        return Utils.getObjectMapper()
-                            .readerForListOf(RecentPlayer.class)
-                            .readValue(n);
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                });
+                        "get-recent-players",
+                        null,
+                        JsonNode.class).thenApply(n -> {
+                            try {
+                                return Utils.getObjectMapper()
+                                        .readerForListOf(RecentPlayer.class)
+                                        .readValue(n);
+                            } catch (Exception e) {
+                                throw new RuntimeException(e);
+                            }
+                        });
             }
 
             public CompletableFuture<Boolean> deleteKickedIp(String ip) {
@@ -684,7 +636,8 @@ public class GatewayService {
                 String id = null;
                 try {
                     id = socket == null ? null : socket.sessionId();
-                } catch (Exception ignored) {}
+                } catch (Exception ignored) {
+                }
                 this.connectionId = id;
             }
 
@@ -692,8 +645,7 @@ public class GatewayService {
             public void sendText(String text) {
                 if (socket == null) {
                     throw new IllegalStateException(
-                        "No open gateway session for " + id
-                    );
+                            "No open gateway session for " + id);
                 }
                 socket.send(text);
             }
@@ -702,8 +654,7 @@ public class GatewayService {
             public void sendBinary(ByteBuffer data) {
                 if (socket == null) {
                     throw new IllegalStateException(
-                        "No open gateway session for " + id
-                    );
+                            "No open gateway session for " + id);
                 }
                 socket.send(data.duplicate());
             }
@@ -737,8 +688,8 @@ public class GatewayService {
             @Override
             public int hashCode() {
                 return connectionId != null
-                    ? connectionId.hashCode()
-                    : System.identityHashCode(this);
+                        ? connectionId.hashCode()
+                        : System.identityHashCode(this);
             }
         }
     }
