@@ -31,13 +31,13 @@ import mindustry.world.blocks.storage.CoreBlock;
  */
 public class FloodSpreader {
 
-    public static final int MAX_SPREAD_PER_TICK = 150;
+    public static final int MAX_SPREAD_PER_TICK = 120;
     public static final int MAX_FLUSH_PER_WINDOW = 150;
 
     private static final long DAMAGE_PULSE_MILLIS = 1000;
-    private static final long SPREAD_INTERVAL_MILLIS = 8000;
+    private static final long SPREAD_INTERVAL_MILLIS = 10000;
     private static final long MIN_SPREAD_INTERVAL_MILLIS = 1000;
-    private static final long FLUSH_INTERVAL_MILLIS = 100;
+    private static final long FLUSH_INTERVAL_MILLIS = 150;
     private static final int INITIAL_HEAP_CAPACITY = 256;
     private static final int MAX_EVENTS_PER_TICK = 64;
 
