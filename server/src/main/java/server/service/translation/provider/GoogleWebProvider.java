@@ -25,7 +25,7 @@ public class GoogleWebProvider implements TranslationProvider {
     private static final Duration DIRECT_REQUEST_TIMEOUT = Duration.ofSeconds(8);
     private static final Duration PROXY_CONNECT_TIMEOUT = Duration.ofSeconds(4);
     private static final Duration PROXY_REQUEST_TIMEOUT = Duration.ofSeconds(5);
-    private static final int MAX_PROXY_ATTEMPTS = 3;
+    private static final int MAX_PROXY_ATTEMPTS = 5;
     private static final Pattern HTML_ENTITY_PATTERN = Pattern.compile("&#(\\d+);|&#x([0-9a-fA-F]+);");
 
     private final String name;
