@@ -101,14 +101,14 @@ public class ProviderState {
         }
 
         if (consecutiveSuccesses > 0) {
-            Log.warn("Translation provider '@' started failing after @ consecutive success(es): @ [recent success: @%, fail: @%, p95 latency: @]",
+            Log.info("Translation provider '@' started failing after @ consecutive success(es): @ [recent success: @%, fail: @%, p95 latency: @]",
                     providerName, consecutiveSuccesses, error != null ? error.getMessage() : "empty/null result",
                     String.format("%.1f", getRecentSuccessRate()),
                     String.format("%.1f", 100.0 - getRecentSuccessRate()),
                     formatLatency(getP95LatencyMillis()));
             consecutiveSuccesses = 0;
         } else if (consecutiveFailures == 0) {
-            Log.warn("Translation provider '@' started failing: @ [recent success: @%, fail: @%, p95 latency: @]",
+            Log.info("Translation provider '@' started failing: @ [recent success: @%, fail: @%, p95 latency: @]",
                     providerName, error != null ? error.getMessage() : "empty/null result",
                     String.format("%.1f", getRecentSuccessRate()),
                     String.format("%.1f", 100.0 - getRecentSuccessRate()),
@@ -120,7 +120,7 @@ public class ProviderState {
         long multiplier = 1L << Math.min(consecutiveFailures - 1, 6);
         long seconds = Math.min(MAX_COOLDOWN_SECONDS, BASE_COOLDOWN_SECONDS * multiplier);
         this.cooldownUntil = Instant.now().plusSeconds(seconds);
-        Log.warn("Translation provider '@' placed in cooldown for @s (consecutive failures: @) until @",
+        Log.info("Translation provider '@' placed in cooldown for @s (consecutive failures: @) until @",
                 providerName, seconds, consecutiveFailures, cooldownUntil);
     }
 
