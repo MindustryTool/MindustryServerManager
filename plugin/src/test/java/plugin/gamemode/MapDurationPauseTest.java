@@ -13,9 +13,7 @@ import mindustry.core.GameState;
 import mindustry.game.EventType.PlayEvent;
 import mindustry.game.EventType.StateChangeEvent;
 import mindustry.gen.Groups;
-import plugin.gamemode.attack.AttackRank;
-import plugin.gamemode.flood.FloodRank;
-import plugin.gamemode.survival.SurvivalRank;
+import plugin.maprecord.MapRecordService;
 
 public class MapDurationPauseTest {
 
@@ -26,67 +24,26 @@ public class MapDurationPauseTest {
     }
 
     @Test
-    void testAttackRankPauseTracking() throws InterruptedException {
+    void testMapRecordServicePauseTracking() throws InterruptedException {
         Vars.state.set(GameState.State.playing);
-        AttackRank rank = new AttackRank(null);
-        rank.onPlayEvent(new PlayEvent());
+        MapRecordService service = new MapRecordService(null, null);
+        service.onPlayEvent(new PlayEvent());
 
-        Instant initialStart = rank.getMapStartedAt();
+        Instant initialStart = service.getMapStartedAt();
 
         // Pause state transition
         Vars.state.set(GameState.State.paused);
-        rank.onStateChangeEvent(new StateChangeEvent(GameState.State.playing, GameState.State.paused));
+        service.onStateChangeEvent(new StateChangeEvent(GameState.State.playing, GameState.State.paused));
 
         Thread.sleep(100);
 
         // Resume state transition
         Vars.state.set(GameState.State.playing);
-        rank.onStateChangeEvent(new StateChangeEvent(GameState.State.paused, GameState.State.playing));
+        service.onStateChangeEvent(new StateChangeEvent(GameState.State.paused, GameState.State.playing));
 
-        Instant newStart = rank.getMapStartedAt();
-        // Since pause occurred for ~100ms, new mapStartedAt should be shifted forward in time compared to initialStart
+        Instant newStart = service.getMapStartedAt();
         assertTrue(newStart.isAfter(initialStart));
         long pausedDiff = Duration.between(initialStart, newStart).toMillis();
         assertTrue(pausedDiff >= 80, "Paused difference should be at least 80ms, got: " + pausedDiff);
-    }
-
-    @Test
-    void testFloodRankPauseTracking() throws InterruptedException {
-        Vars.state.set(GameState.State.playing);
-        FloodRank rank = new FloodRank(null);
-        rank.onPlayEvent(new PlayEvent());
-
-        Instant initialStart = rank.getMapStartedAt();
-
-        Vars.state.set(GameState.State.paused);
-        rank.onStateChangeEvent(new StateChangeEvent(GameState.State.playing, GameState.State.paused));
-
-        Thread.sleep(100);
-
-        Vars.state.set(GameState.State.playing);
-        rank.onStateChangeEvent(new StateChangeEvent(GameState.State.paused, GameState.State.playing));
-
-        Instant newStart = rank.getMapStartedAt();
-        assertTrue(newStart.isAfter(initialStart));
-    }
-
-    @Test
-    void testSurvivalRankPauseTracking() throws InterruptedException {
-        Vars.state.set(GameState.State.playing);
-        SurvivalRank rank = new SurvivalRank(null);
-        rank.onPlayEvent(new PlayEvent());
-
-        Instant initialStart = rank.getMapStartedAt();
-
-        Vars.state.set(GameState.State.paused);
-        rank.onStateChangeEvent(new StateChangeEvent(GameState.State.playing, GameState.State.paused));
-
-        Thread.sleep(100);
-
-        Vars.state.set(GameState.State.playing);
-        rank.onStateChangeEvent(new StateChangeEvent(GameState.State.paused, GameState.State.playing));
-
-        Instant newStart = rank.getMapStartedAt();
-        assertTrue(newStart.isAfter(initialStart));
     }
 }

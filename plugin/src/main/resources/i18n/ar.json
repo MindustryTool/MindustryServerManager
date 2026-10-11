@@ -160,7 +160,12 @@
         "no_record": "لا يوجد سجل لهذه الخريطة",
         "title": "الخريطة: {map}\nأفضل وقت: {time}\nاللاعبون: {players}",
         "new_best_time": "أفضل وقت جديد: {time}",
-        "win_bonus": "مكافأة الخبرة للفوز: +{percent}%"
+        "win_bonus": "مكافأة الخبرة للفوز: +{percent}%",
+        "new_rank": "New map record! Rank #{rank}: {time}",
+        "menu_title": "Map Records",
+        "menu_desc": "Map: {map}",
+        "menu_entry": "#{rank} | {time} | {players}",
+        "no_records_menu": "No records found for this map"
     },
     "security": {
         "login_logic": "سجل الدخول أولاً لاستخدام بلوك العرض/اللوحة، استخدم /login لتسجيل الدخول",

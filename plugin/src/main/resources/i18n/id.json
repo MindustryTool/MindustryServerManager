@@ -160,7 +160,12 @@
         "no_record": "Tidak ada catatan untuk map ini",
         "title": "Map: {map}\nWaktu terbaik: {time}\nPemain: {players}",
         "new_best_time": "Waktu terbaik baru: {time}",
-        "win_bonus": "Bonus perolehan exp untuk menang: +{percent}%"
+        "win_bonus": "Bonus perolehan exp untuk menang: +{percent}%",
+        "new_rank": "New map record! Rank #{rank}: {time}",
+        "menu_title": "Map Records",
+        "menu_desc": "Map: {map}",
+        "menu_entry": "#{rank} | {time} | {players}",
+        "no_records_menu": "No records found for this map"
     },
     "security": {
         "login_logic": "Masuk terlebih dahulu untuk menggunakan blok display/canvas, gunakan /login untuk masuk",

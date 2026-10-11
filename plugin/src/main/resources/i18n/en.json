@@ -160,7 +160,12 @@
         "no_record": "No record for this map",
         "title": "Map: {map}\nBest time: {time}\nPlayers: {players}",
         "new_best_time": "New best time: {time}",
-        "win_bonus": "Exp gain bonus for winning: +{percent}%"
+        "new_rank": "New map record! Rank #{rank}: {time}",
+        "win_bonus": "Exp gain bonus for winning: +{percent}%",
+        "menu_title": "Map Records",
+        "menu_desc": "Map: {map}",
+        "menu_entry": "#{rank} | {time} | {players}",
+        "no_records_menu": "No records found for this map"
     },
     "security": {
         "login_logic": "Login first to use display/canvas block, use /login to login",

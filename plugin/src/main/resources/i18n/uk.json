@@ -160,7 +160,12 @@
         "no_record": "Немає рекорду для цієї мапи",
         "title": "Мапа: {map}\nНайкращий час: {time}\nГравці: {players}",
         "new_best_time": "Новий найкращий час: {time}",
-        "win_bonus": "Бонус досвіду за перемогу: +{percent}%"
+        "win_bonus": "Бонус досвіду за перемогу: +{percent}%",
+        "new_rank": "New map record! Rank #{rank}: {time}",
+        "menu_title": "Map Records",
+        "menu_desc": "Map: {map}",
+        "menu_entry": "#{rank} | {time} | {players}",
+        "no_records_menu": "No records found for this map"
     },
     "security": {
         "login_logic": "Спочатку увійдіть, щоб використовувати блок дисплея/полотна; використовуйте /login для входу",

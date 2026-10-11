@@ -160,7 +160,12 @@
         "no_record": "이 맵의 기록이 없습니다",
         "title": "맵: {map}\n최단 시간: {time}\n플레이어: {players}",
         "new_best_time": "새로운 최단 기록: {time}",
-        "win_bonus": "승리 시 경험치 획득 보너스: +{percent}%"
+        "win_bonus": "승리 시 경험치 획득 보너스: +{percent}%",
+        "new_rank": "New map record! Rank #{rank}: {time}",
+        "menu_title": "Map Records",
+        "menu_desc": "Map: {map}",
+        "menu_entry": "#{rank} | {time} | {players}",
+        "no_records_menu": "No records found for this map"
     },
     "security": {
         "login_logic": "디스플레이/캔버스 블록을 사용하려면 먼저 로그인하세요. /login 명령어로 로그인할 수 있습니다",

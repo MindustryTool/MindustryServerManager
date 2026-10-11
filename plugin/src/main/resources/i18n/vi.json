@@ -160,7 +160,12 @@
         "no_record": "Không có kỷ lục cho bản đồ này",
         "title": "Bản đồ: {map}\nThời gian tốt nhất: {time}\nNgười chơi: {players}",
         "new_best_time": "Thời gian tốt nhất mới: {time}",
-        "win_bonus": "Thưởng kinh nghiệm khi thắng: +{percent}%"
+        "new_rank": "Kỷ lục mới! Hạng #{rank}: {time}",
+        "win_bonus": "Thưởng kinh nghiệm khi thắng: +{percent}%",
+        "menu_title": "Kỷ lục bản đồ",
+        "menu_desc": "Bản đồ: {map}",
+        "menu_entry": "#{rank} | {time} | {players}",
+        "no_records_menu": "Chưa có kỷ lục nào cho bản đồ này"
     },
     "gateway": {
         "server_label": "[scarlet][Máy chủ][white] "

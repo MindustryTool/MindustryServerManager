@@ -160,7 +160,12 @@
         "no_record": "Aucun record pour cette carte",
         "title": "Carte : {map}\nMeilleur temps : {time}\nJoueurs : {players}",
         "new_best_time": "Nouveau meilleur temps : {time}",
-        "win_bonus": "Bonus d'exp en cas de victoire : +{percent}%"
+        "win_bonus": "Bonus d'exp en cas de victoire : +{percent}%",
+        "new_rank": "New map record! Rank #{rank}: {time}",
+        "menu_title": "Map Records",
+        "menu_desc": "Map: {map}",
+        "menu_entry": "#{rank} | {time} | {players}",
+        "no_records_menu": "No records found for this map"
     },
     "security": {
         "login_logic": "Connectez-vous d'abord pour utiliser le bloc display/canvas, utilisez /login pour vous connecter",
