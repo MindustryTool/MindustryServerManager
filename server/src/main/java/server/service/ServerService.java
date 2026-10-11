@@ -560,7 +560,7 @@ public class ServerService {
         ServerSnapshot snapshot = state(serverId);
 
         if (isUnreachable(snapshot)) {
-            handleFailure(status, live, serverId);
+            handleFailure(status, live, serverId, "status: " + snapshot.getStatus());
             return;
         }
 
@@ -582,7 +582,7 @@ public class ServerService {
         try {
             mismatches = computeMismatches(serverId, wish, snapshot);
         } catch (Exception e) {
-            handleFailure(status, live, serverId);
+            handleFailure(status, live, serverId, "failed to compute mismatches: " + e.getMessage());
             return;
         }
 
@@ -592,7 +592,7 @@ public class ServerService {
             try {
                 lockedRecreate(wish);
             } catch (Exception e) {
-                handleFailure(status, live, serverId);
+                handleFailure(status, live, serverId, "restart failed: " + e.getMessage());
                 return;
             }
             status.since = Instant.now();
@@ -615,10 +615,11 @@ public class ServerService {
         }
     }
 
-    private void handleFailure(ReconcileStatus status, ServerConfig live, UUID serverId) {
+    private void handleFailure(ReconcileStatus status, ServerConfig live, UUID serverId, String reason) {
         if (status.failingSince == null) {
             status.failingSince = Instant.now();
-            Log.warn("Reconcile unreachable for " + serverId + ", arming reclaim");
+            Log.warn("Server " + serverId + " is unreachable (" + reason + "); grace period started (timeout: "
+                    + UNREACHABLE_REMOVE_AFTER + ")");
         }
 
         if (Duration.between(status.failingSince, Instant.now())
