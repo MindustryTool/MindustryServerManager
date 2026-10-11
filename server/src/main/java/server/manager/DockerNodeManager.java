@@ -100,8 +100,14 @@ public class DockerNodeManager implements NodeManager {
 
             if (!container.getState().equalsIgnoreCase("running")) {
                 eventBus.emit(LogEvent.info(serverId, "Container not running, current state: " + container.getState()));
-                dockerClient.startContainerCmd(container.getId()).exec();
-                eventBus.emit(LogEvent.info(serverId, "Container started"));
+                try {
+                    dockerClient.startContainerCmd(container.getId()).exec();
+                    eventBus.emit(LogEvent.info(serverId, "Container started"));
+                } catch (Exception e) {
+                    Log.err(e);
+                    eventBus.emit(LogEvent.error(serverId, "Error: " + e.getMessage()));
+                    dockerClient.removeContainerCmd(container.getId()).withForce(true).exec();
+                }
             } else {
                 eventBus.emit(LogEvent.info(serverId, "Container already running"));
             }
