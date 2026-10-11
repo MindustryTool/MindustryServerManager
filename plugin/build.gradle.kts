@@ -88,7 +88,7 @@ tasks.register<Jar>("pluginFatJar") {
         "org/sqlite/native/Mac/**",
         "org/sqlite/native/FreeBSD/**",
         "org/sqlite/native/Linux-Android/**",
-        "org/sqlite/native/Linux/**",
+        // "org/sqlite/native/Linux/**",
         "org/sqlite/native/Linux-Musl/aarch64/**",
         "org/sqlite/native/Linux-Musl/x86/**",
         "plugin/processor/**",
