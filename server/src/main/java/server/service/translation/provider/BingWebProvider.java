@@ -11,7 +11,9 @@ import java.time.Instant;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.io.IOException;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -164,7 +166,7 @@ public class BingWebProvider implements TranslationProvider {
     private HttpResponse<String> send(HttpRequest request) throws TranslationException.Temporary {
         try {
             return httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
-        } catch (java.io.IOException e) {
+        } catch (IOException e) {
             throw TranslationException.fromIoError("bing-web", e);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -177,7 +179,7 @@ public class BingWebProvider implements TranslationProvider {
             return parseResponseInternal(jsonBody);
         } catch (TranslationException | SessionExpiredException e) {
             throw e;
-        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+        } catch (JsonProcessingException e) {
             throw new TranslationException.Permanent("bing-web malformed JSON: " + e.getMessage(), e);
         } catch (IllegalArgumentException e) {
             throw new TranslationException.Permanent("bing-web invalid response: " + e.getMessage(), e);

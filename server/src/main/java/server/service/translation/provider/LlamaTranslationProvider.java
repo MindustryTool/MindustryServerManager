@@ -8,8 +8,10 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
+import java.io.IOException;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -84,7 +86,7 @@ public class LlamaTranslationProvider implements TranslationProvider {
         HttpResponse<String> response;
         try {
             response = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
-        } catch (java.io.IOException e) {
+        } catch (IOException e) {
             throw TranslationException.fromIoError("llama-local", e);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -115,7 +117,7 @@ public class LlamaTranslationProvider implements TranslationProvider {
         JsonNode root;
         try {
             root = objectMapper.readTree(jsonBody);
-        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+        } catch (JsonProcessingException e) {
             throw new TranslationException.Permanent("llama-local malformed JSON: " + e.getMessage(), e);
         }
         if (!root.isObject() || !root.has("content")) {

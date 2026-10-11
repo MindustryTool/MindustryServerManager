@@ -7,7 +7,9 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.io.IOException;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -59,7 +61,7 @@ public class LingvaProvider implements TranslationProvider {
         HttpResponse<String> response;
         try {
             response = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
-        } catch (java.io.IOException e) {
+        } catch (IOException e) {
             throw TranslationException.fromIoError("lingva", e);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -99,7 +101,7 @@ public class LingvaProvider implements TranslationProvider {
             return new TranslationResponse(translatedText, sourceLanguage);
         } catch (TranslationException e) {
             throw e;
-        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+        } catch (JsonProcessingException e) {
             throw new TranslationException.Permanent("lingva malformed JSON: " + e.getMessage(), e);
         }
     }

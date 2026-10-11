@@ -4,16 +4,20 @@ import java.io.IOException;
 import java.net.Authenticator;
 import java.net.CookieHandler;
 import java.net.ProxySelector;
+import java.net.URI;
 import java.net.http.HttpClient;
+import java.net.http.HttpHeaders;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLParameters;
+import javax.net.ssl.SSLSession;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -151,8 +155,8 @@ public class ProviderExceptionMappingTest {
         }
 
         @Override
-        public java.net.http.HttpHeaders headers() {
-            return java.net.http.HttpHeaders.of(java.util.Map.of(), (a, b) -> true);
+        public HttpHeaders headers() {
+            return HttpHeaders.of(Map.of(), (a, b) -> true);
         }
 
         @Override
@@ -161,13 +165,13 @@ public class ProviderExceptionMappingTest {
         }
 
         @Override
-        public Optional<javax.net.ssl.SSLSession> sslSession() {
+        public Optional<SSLSession> sslSession() {
             return Optional.empty();
         }
 
         @Override
-        public java.net.URI uri() {
-            return java.net.URI.create("http://localhost/");
+        public URI uri() {
+            return URI.create("http://localhost/");
         }
 
         @Override

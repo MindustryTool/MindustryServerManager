@@ -11,6 +11,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -46,7 +48,7 @@ public class TranslationService {
     private final Map<Integer, AtomicInteger> tierRoundRobinIndices = new ConcurrentHashMap<>();
     private final Cache<String, TranslationResponse> cache;
     private final SqliteTranslationCache l2Cache;
-    private final java.util.concurrent.ScheduledExecutorService purgeScheduler;
+    private final ScheduledExecutorService purgeScheduler;
 
     public TranslationService() {
         this(createDefaultCache(), createDefaultL2());
@@ -72,7 +74,7 @@ public class TranslationService {
         this.cache = cache;
         this.l2Cache = l2;
         if (l2 != null) {
-            purgeScheduler = java.util.concurrent.Executors.newSingleThreadScheduledExecutor(r -> {
+            purgeScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
                 Thread t = new Thread(r, "translation-cache-purge");
                 t.setDaemon(true);
                 return t;

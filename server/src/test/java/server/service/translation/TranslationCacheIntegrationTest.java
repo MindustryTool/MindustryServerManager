@@ -57,7 +57,7 @@ public class TranslationCacheIntegrationTest {
                 }
 
                 @Override
-                public common.translation.TranslationResponse translate(String text, String lang) {
+                public TranslationResponse translate(String text, String lang) {
                     throw new AssertionError("upstream should not be contacted on warm L2");
                 }
             };

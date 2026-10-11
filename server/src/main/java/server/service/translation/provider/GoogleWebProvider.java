@@ -9,7 +9,9 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.io.IOException;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -97,7 +99,7 @@ public class GoogleWebProvider implements TranslationProvider {
         HttpResponse<String> response;
         try {
             response = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
-        } catch (java.io.IOException e) {
+        } catch (IOException e) {
             throw TranslationException.fromIoError("google-web", e);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -158,7 +160,7 @@ public class GoogleWebProvider implements TranslationProvider {
         if (lastException instanceof TranslationException te) {
             throw te;
         }
-        if (lastException instanceof java.io.IOException ioe) {
+        if (lastException instanceof IOException ioe) {
             throw TranslationException.fromIoError("google-web-proxy", ioe);
         }
         throw new TranslationException.Temporary("All " + MAX_PROXY_ATTEMPTS + " proxied attempts failed: " +
@@ -191,7 +193,7 @@ public class GoogleWebProvider implements TranslationProvider {
         return new TranslationResponse(decodedText, sourceLanguage);
         } catch (TranslationException e) {
             throw e;
-        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+        } catch (JsonProcessingException e) {
             throw new TranslationException.Permanent("google-web malformed JSON: " + e.getMessage(), e);
         }
     }
