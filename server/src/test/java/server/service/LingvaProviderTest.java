@@ -2,6 +2,7 @@ package server.service;
 
 import org.junit.jupiter.api.Test;
 import common.translation.TranslationResponse;
+import server.service.translation.TranslationException;
 import server.service.translation.provider.LingvaProvider;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -36,11 +37,11 @@ public class LingvaProviderTest {
     public void testParseInvalidResponseThrowsException() {
         LingvaProvider provider = new LingvaProvider();
 
-        assertThrows(IllegalArgumentException.class, () -> {
+        assertThrows(TranslationException.Permanent.class, () -> {
             provider.parseResponse("{\"error\":\"Invalid target language\"}");
         });
 
-        assertThrows(IllegalArgumentException.class, () -> {
+        assertThrows(TranslationException.Permanent.class, () -> {
             provider.parseResponse("[]");
         });
     }

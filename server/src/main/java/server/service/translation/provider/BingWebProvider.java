@@ -16,6 +16,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import common.translation.TranslationResponse;
+import server.service.translation.TranslationException;
 import server.service.translation.TranslationProvider;
 import server.utils.HttpClients;
 
@@ -94,9 +95,9 @@ public class BingWebProvider implements TranslationProvider {
                     .GET()
                     .build();
 
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            HttpResponse<String> response = send(request);
             if (response.statusCode() != 200) {
-                throw new RuntimeException("Failed to fetch Bing translator page: HTTP " + response.statusCode());
+                throw TranslationException.fromHttpStatus("bing-web", response.statusCode(), response.body());
             }
 
             SessionCredentials fresh = extractCredentials(response.body());
@@ -151,20 +152,39 @@ public class BingWebProvider implements TranslationProvider {
                 .POST(HttpRequest.BodyPublishers.ofString(form))
                 .build();
 
-        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
-
-        if (response.statusCode() == 429) {
-            throw new RuntimeException("BingWebProvider received HTTP 429 Too Many Requests");
-        }
+        HttpResponse<String> response = send(request);
 
         if (response.statusCode() != 200) {
-            throw new RuntimeException("BingWebProvider failed with HTTP " + response.statusCode() + ": " + response.body());
+            throw TranslationException.fromHttpStatus("bing-web", response.statusCode(), response.body());
         }
 
         return parseResponse(response.body());
     }
 
+    private HttpResponse<String> send(HttpRequest request) throws TranslationException.Temporary {
+        try {
+            return httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+        } catch (java.io.IOException e) {
+            throw TranslationException.fromIoError("bing-web", e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new TranslationException.Temporary("bing-web interrupted", e);
+        }
+    }
+
     public TranslationResponse parseResponse(String jsonBody) throws Exception {
+        try {
+            return parseResponseInternal(jsonBody);
+        } catch (TranslationException | SessionExpiredException e) {
+            throw e;
+        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            throw new TranslationException.Permanent("bing-web malformed JSON: " + e.getMessage(), e);
+        } catch (IllegalArgumentException e) {
+            throw new TranslationException.Permanent("bing-web invalid response: " + e.getMessage(), e);
+        }
+    }
+
+    private TranslationResponse parseResponseInternal(String jsonBody) throws Exception {
         if (jsonBody == null || jsonBody.isBlank()) {
             throw new IllegalArgumentException("Empty response received from Bing Translate");
         }
@@ -180,7 +200,10 @@ public class BingWebProvider implements TranslationProvider {
                 if (code == 205) {
                     throw new SessionExpiredException("Bing session token expired or invalid (code 205): " + msg);
                 }
-                throw new RuntimeException("Bing translation failed with status " + code + ": " + msg);
+                if (code == 429 || (code >= 500 && code <= 599)) {
+                    throw new TranslationException.Temporary("Bing translation failed with status " + code + ": " + msg);
+                }
+                throw new TranslationException.Permanent("Bing translation failed with status " + code + ": " + msg);
             }
         }
 

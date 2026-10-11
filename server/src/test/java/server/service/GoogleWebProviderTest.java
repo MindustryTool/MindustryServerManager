@@ -10,6 +10,8 @@ import server.service.translation.provider.GoogleWebProvider;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import server.service.translation.TranslationException;
+
 public class GoogleWebProviderTest {
 
     @Test
@@ -74,7 +76,7 @@ public class GoogleWebProviderTest {
         MultiSourceProxyPool emptyPool = new MultiSourceProxyPool(Collections.emptyList());
         GoogleWebProvider provider = new GoogleWebProvider(emptyPool);
 
-        assertThrows(IllegalStateException.class, () -> provider.translate("hello", "vi"));
+        assertThrows(TranslationException.Temporary.class, () -> provider.translate("hello", "vi"));
     }
 
     @Test

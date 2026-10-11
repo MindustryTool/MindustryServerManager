@@ -46,8 +46,14 @@ public class ProviderState {
                 recordSuccess(providerName, durationMillis);
                 return response;
             }
-            recordFailure(providerName, null);
+            recordPermanentFailure(providerName, null);
             return null;
+        } catch (TranslationException.Permanent e) {
+            recordPermanentFailure(providerName, e);
+            throw e;
+        } catch (TranslationException.Temporary e) {
+            recordFailure(providerName, e);
+            throw e;
         } catch (Exception e) {
             recordFailure(providerName, e);
             throw e;
@@ -122,6 +128,24 @@ public class ProviderState {
         this.cooldownUntil = Instant.now().plusSeconds(seconds);
         Log.info("Translation provider '@' placed in cooldown for @s (consecutive failures: @) until @",
                 providerName, seconds, consecutiveFailures, cooldownUntil);
+    }
+
+    /**
+     * Records a permanent client-side failure for metrics without cooldown.
+     * Leaves {@code cooldownUntil} and {@code consecutiveFailures} unchanged.
+     */
+    public synchronized void recordPermanentFailure(String providerName, Throwable error) {
+        totalFailures++;
+        outcomeBuffer[outcomeIndex] = false;
+        outcomeIndex = (outcomeIndex + 1) % BUFFER_SIZE;
+        if (outcomeCount < BUFFER_SIZE) {
+            outcomeCount++;
+        }
+        if (consecutiveSuccesses > 0) {
+            consecutiveSuccesses = 0;
+        }
+        Log.debug("Translation provider '@' permanent failure (no cooldown): @",
+                providerName, error != null ? error.getMessage() : "empty/null result");
     }
 
     public static String formatLatency(long p95) {

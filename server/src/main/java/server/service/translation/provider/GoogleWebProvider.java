@@ -16,6 +16,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import common.translation.TranslationResponse;
 import server.service.MultiSourceProxyPool;
 import server.service.TrackedProxy;
+import server.service.translation.TranslationException;
 import server.service.translation.TranslationProvider;
 import server.utils.HttpClients;
 
@@ -93,14 +94,18 @@ public class GoogleWebProvider implements TranslationProvider {
                 .GET()
                 .build();
 
-        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
-
-        if (response.statusCode() == 429) {
-            throw new RuntimeException("GoogleWebProvider received HTTP 429 Too Many Requests");
+        HttpResponse<String> response;
+        try {
+            response = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+        } catch (java.io.IOException e) {
+            throw TranslationException.fromIoError("google-web", e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new TranslationException.Temporary("google-web interrupted", e);
         }
 
         if (response.statusCode() != 200) {
-            throw new RuntimeException("GoogleWebProvider failed with HTTP " + response.statusCode() + ": " + response.body());
+            throw TranslationException.fromHttpStatus("google-web", response.statusCode(), response.body());
         }
 
         return parseResponse(response.body());
@@ -133,7 +138,11 @@ public class GoogleWebProvider implements TranslationProvider {
                 }
 
                 proxyPool.recordFailure(candidate);
-                lastException = new RuntimeException("Proxied request returned HTTP " + response.statusCode());
+                lastException = TranslationException.fromHttpStatus("google-web-proxy",
+                        response.statusCode(), response.body());
+            } catch (TranslationException e) {
+                proxyPool.recordFailure(candidate);
+                lastException = e;
             } catch (Exception e) {
                 proxyPool.recordFailure(candidate);
                 lastException = e;
@@ -143,17 +152,24 @@ public class GoogleWebProvider implements TranslationProvider {
         }
 
         if (lastException == null) {
-            throw new IllegalStateException("No proxies available in MultiSourceProxyPool");
+            throw new TranslationException.Temporary("No proxies available in MultiSourceProxyPool");
         }
 
-        throw new RuntimeException("All " + MAX_PROXY_ATTEMPTS + " proxied attempts failed: " +
+        if (lastException instanceof TranslationException te) {
+            throw te;
+        }
+        if (lastException instanceof java.io.IOException ioe) {
+            throw TranslationException.fromIoError("google-web-proxy", ioe);
+        }
+        throw new TranslationException.Temporary("All " + MAX_PROXY_ATTEMPTS + " proxied attempts failed: " +
                 lastException.getMessage(), lastException);
     }
 
     public TranslationResponse parseResponse(String jsonBody) throws Exception {
-        JsonNode root = objectMapper.readTree(jsonBody);
+        try {
+            JsonNode root = objectMapper.readTree(jsonBody);
         if (root == null || !root.isArray() || root.isEmpty()) {
-            throw new IllegalArgumentException("Invalid response format from Google Web Translate: " + jsonBody);
+            throw new TranslationException.Permanent("Invalid response format from Google Web Translate: " + jsonBody);
         }
 
         StringBuilder translatedText = new StringBuilder();
@@ -173,6 +189,11 @@ public class GoogleWebProvider implements TranslationProvider {
 
         String decodedText = unescapeHtml(translatedText.toString());
         return new TranslationResponse(decodedText, sourceLanguage);
+        } catch (TranslationException e) {
+            throw e;
+        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            throw new TranslationException.Permanent("google-web malformed JSON: " + e.getMessage(), e);
+        }
     }
 
     public static String unescapeHtml(String text) {

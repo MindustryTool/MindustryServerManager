@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import common.translation.TranslationResponse;
+import server.service.translation.TranslationException;
 import server.service.translation.provider.BingWebProvider;
 
 public class BingWebProviderTest {
@@ -88,10 +89,10 @@ public class BingWebProviderTest {
     @Test
     public void testParseInvalidFormatThrowsException() {
         BingWebProvider provider = new BingWebProvider();
-        assertThrows(IllegalArgumentException.class, () -> {
+        assertThrows(TranslationException.Permanent.class, () -> {
             provider.parseResponse("[]");
         });
-        assertThrows(IllegalArgumentException.class, () -> {
+        assertThrows(TranslationException.Permanent.class, () -> {
             provider.parseResponse("[{\"translations\":[]}]");
         });
     }

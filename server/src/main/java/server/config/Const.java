@@ -37,6 +37,9 @@ public class Const {
     public static final File volumeFolder = new File(volumeFolderPath);
     public static final Fi serverFolder = new Fi(volumeFolderPath).child("servers");
 
+    public static final String CACHE_DIR = volumeFolderPath + "/cache";
+    public static final String TRANSLATION_DB = CACHE_DIR + "/translations.db";
+
     public static final String MANAGER_VERSION = "0.0.1";
     public static final Long MAX_FILE_SIZE = 5000000l;
 

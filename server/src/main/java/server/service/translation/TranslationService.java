@@ -20,6 +20,7 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 
 import arc.util.Log;
 import common.translation.TranslationResponse;
+import server.config.Const;
 import server.service.MultiSourceProxyPool;
 import server.service.translation.provider.BingWebProvider;
 import server.service.translation.provider.GoogleWebProvider;
@@ -44,12 +45,48 @@ public class TranslationService {
     private final List<RegisteredProvider> registeredProviders = new CopyOnWriteArrayList<>();
     private final Map<Integer, AtomicInteger> tierRoundRobinIndices = new ConcurrentHashMap<>();
     private final Cache<String, TranslationResponse> cache;
+    private final SqliteTranslationCache l2Cache;
+    private final java.util.concurrent.ScheduledExecutorService purgeScheduler;
 
     public TranslationService() {
-        this(Caffeine.newBuilder()
+        this(createDefaultCache(), createDefaultL2());
+    }
+
+    private static Cache<String, TranslationResponse> createDefaultCache() {
+        return Caffeine.newBuilder()
                 .maximumSize(5000)
                 .expireAfterWrite(2, TimeUnit.HOURS)
-                .build());
+                .build();
+    }
+
+    private static SqliteTranslationCache createDefaultL2() {
+        try {
+            return new SqliteTranslationCache(Const.TRANSLATION_DB);
+        } catch (Exception e) {
+            Log.err("Failed to init SQLite L2 translation cache, continuing with L1 only", e);
+            return null;
+        }
+    }
+
+    private TranslationService(Cache<String, TranslationResponse> cache, SqliteTranslationCache l2) {
+        this.cache = cache;
+        this.l2Cache = l2;
+        if (l2 != null) {
+            purgeScheduler = java.util.concurrent.Executors.newSingleThreadScheduledExecutor(r -> {
+                Thread t = new Thread(r, "translation-cache-purge");
+                t.setDaemon(true);
+                return t;
+            });
+            purgeScheduler.scheduleWithFixedDelay(() -> {
+                try {
+                    l2.purgeExpired(System.currentTimeMillis() - SqliteTranslationCache.TTL_MILLIS);
+                } catch (Exception e) {
+                    Log.warn("Translation L2 purge failed: @", e.getMessage());
+                }
+            }, 1, 1, TimeUnit.DAYS);
+        } else {
+            purgeScheduler = null;
+        }
 
         registerProvider(0, new BingWebProvider());
         registerProvider(0, new LingvaProvider());
@@ -59,10 +96,34 @@ public class TranslationService {
     }
 
     public TranslationService(Cache<String, TranslationResponse> cache, TranslationProvider... initialProviders) {
+        this(cache, (SqliteTranslationCache) null, initialProviders);
+    }
+
+    public TranslationService(Cache<String, TranslationResponse> cache, SqliteTranslationCache l2,
+            TranslationProvider... initialProviders) {
         this.cache = cache;
+        this.l2Cache = l2;
+        this.purgeScheduler = null;
         if (initialProviders != null) {
             for (int i = 0; i < initialProviders.length; i++) {
                 registerProvider(0, initialProviders[i]);
+            }
+        }
+    }
+
+    /** Visible for tests and lifecycle management. */
+    public SqliteTranslationCache l2Cache() {
+        return l2Cache;
+    }
+
+    public void close() {
+        if (purgeScheduler != null) {
+            purgeScheduler.shutdownNow();
+        }
+        if (l2Cache != null) {
+            try {
+                l2Cache.close();
+            } catch (Exception ignored) {
             }
         }
     }
@@ -136,6 +197,19 @@ public class TranslationService {
             return cached;
         }
 
+        if (l2Cache != null) {
+            try {
+                var l2Hit = l2Cache.get(cacheKey);
+                if (l2Hit.isPresent()) {
+                    cache.put(cacheKey, l2Hit.get());
+                    Log.debug("Server translation L2 hit for [@]: '@'", targetLang, text);
+                    return l2Hit.get();
+                }
+            } catch (Exception e) {
+                Log.warn("L2 translation cache lookup failed: @", e.getMessage());
+            }
+        }
+
         // Group providers by tier in ascending order
         Map<Integer, List<RegisteredProvider>> tieredProviders = registeredProviders.stream()
                 .collect(Collectors.groupingBy(RegisteredProvider::tier));
@@ -197,6 +271,17 @@ public class TranslationService {
 
                 if (result != null) {
                     cache.put(cacheKey, result);
+                    if (l2Cache != null) {
+                        String lang = targetLang.toLowerCase(Locale.ROOT);
+                        String source = text.trim();
+                        Const.executorService.submit(() -> {
+                            try {
+                                l2Cache.put(cacheKey, lang, source, result);
+                            } catch (Exception e) {
+                                Log.warn("L2 translation cache write failed: @", e.getMessage());
+                            }
+                        });
+                    }
                     Log.debug("Translated via '@' [tier: @, @ -> @]: '@' -> '@'",
                             provider.name(), candidateTier, result.getSourceLanguage(), targetLang, text, result.getTranslatedText());
                     return result;

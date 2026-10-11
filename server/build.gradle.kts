@@ -28,12 +28,12 @@ dependencies {
     implementation("org.modelmapper:modelmapper:3.1.0")
     implementation(project(":gateway"))
     implementation(project(":common"))
+    implementation(project(":database"))
 
     implementation("Anuken:Mindustry:${property("mindustryVersion")}")
 
     testImplementation("org.junit.jupiter:junit-jupiter:5.10.0")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-    testRuntimeOnly("org.xerial:sqlite-jdbc:3.43.2.0")
 
     compileOnly("org.projectlombok:lombok:1.18.30")
 

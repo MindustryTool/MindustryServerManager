@@ -36,3 +36,12 @@
 ## Rotating the gateway signing key
 
 The key is a hard cut: change `GATEWAY_SIGNING_KEY`, then restart the manager. Each server fails one dial, its `server.json` JWT is rewritten with the new key, and it reconnects on its own. Old and new keys are never accepted at the same time.
+
+## Translation persistent cache
+
+Server translation uses L1 Caffeine plus L2 SQLite (`<data>/cache/translations.db`).
+
+- L1 hit returns at once. L1 miss checks L2. L2 hit fills L1 and returns. L2 miss calls upstream and writes both caches.
+- Cache survives restarts. Table `translation_cache` holds `cache_key`, `target_lang`, `source_lang`, `source_text`, `translated_text`, `updated_at` in WAL mode.
+- Eviction: rows untouched for 30 days are purged on startup and daily. Row count caps at 50,000 with LRU delete.
+- Error types: `Temporary` (429, 5xx, timeout) triggers cooldown backoff. `Permanent` (400, bad language, malformed body) records metrics with no cooldown.

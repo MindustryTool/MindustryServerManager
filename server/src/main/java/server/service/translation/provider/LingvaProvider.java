@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import common.translation.TranslationResponse;
+import server.service.translation.TranslationException;
 import server.service.translation.TranslationProvider;
 import server.utils.HttpClients;
 
@@ -55,41 +56,51 @@ public class LingvaProvider implements TranslationProvider {
                 .GET()
                 .build();
 
-        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
-
-        if (response.statusCode() == 429) {
-            throw new RuntimeException("LingvaProvider received HTTP 429 Too Many Requests");
+        HttpResponse<String> response;
+        try {
+            response = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+        } catch (java.io.IOException e) {
+            throw TranslationException.fromIoError("lingva", e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new TranslationException.Temporary("lingva interrupted", e);
         }
 
         if (response.statusCode() != 200) {
-            throw new RuntimeException("LingvaProvider failed with HTTP " + response.statusCode() + ": " + response.body());
+            throw TranslationException.fromHttpStatus("lingva", response.statusCode(), response.body());
         }
 
         return parseResponse(response.body());
     }
 
     public TranslationResponse parseResponse(String jsonBody) throws Exception {
-        JsonNode root = objectMapper.readTree(jsonBody);
-        if (root == null || !root.isObject()) {
-            throw new IllegalArgumentException("Invalid response format from Lingva API: " + jsonBody);
-        }
-
-        JsonNode translationNode = root.get("translation");
-        if (translationNode == null || translationNode.isNull()) {
-            throw new IllegalArgumentException("Missing translation field in Lingva API response: " + jsonBody);
-        }
-
-        String translatedText = translationNode.asText();
-        String sourceLanguage = null;
-
-        JsonNode infoNode = root.get("info");
-        if (infoNode != null && infoNode.isObject()) {
-            JsonNode detectedSourceNode = infoNode.get("detectedSource");
-            if (detectedSourceNode != null && !detectedSourceNode.isNull()) {
-                sourceLanguage = detectedSourceNode.asText();
+        try {
+            JsonNode root = objectMapper.readTree(jsonBody);
+            if (root == null || !root.isObject()) {
+                throw new TranslationException.Permanent("Invalid response format from Lingva API: " + jsonBody);
             }
-        }
 
-        return new TranslationResponse(translatedText, sourceLanguage);
+            JsonNode translationNode = root.get("translation");
+            if (translationNode == null || translationNode.isNull()) {
+                throw new TranslationException.Permanent("Missing translation field in Lingva API response: " + jsonBody);
+            }
+
+            String translatedText = translationNode.asText();
+            String sourceLanguage = null;
+
+            JsonNode infoNode = root.get("info");
+            if (infoNode != null && infoNode.isObject()) {
+                JsonNode detectedSourceNode = infoNode.get("detectedSource");
+                if (detectedSourceNode != null && !detectedSourceNode.isNull()) {
+                    sourceLanguage = detectedSourceNode.asText();
+                }
+            }
+
+            return new TranslationResponse(translatedText, sourceLanguage);
+        } catch (TranslationException e) {
+            throw e;
+        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            throw new TranslationException.Permanent("lingva malformed JSON: " + e.getMessage(), e);
+        }
     }
 }

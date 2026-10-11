@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import common.translation.TranslationResponse;
+import server.service.translation.TranslationException;
 import server.service.translation.provider.LlamaTranslationProvider;
 
 public class LlamaTranslationProviderTest {
@@ -77,9 +78,9 @@ public class LlamaTranslationProviderTest {
     @Test
     public void testParseInvalidJsonThrows() {
         LlamaTranslationProvider provider = new LlamaTranslationProvider();
-        assertThrows(IllegalArgumentException.class, () -> provider.parseResponse(""));
-        assertThrows(IllegalArgumentException.class, () -> provider.parseResponse("[]"));
-        assertThrows(IllegalArgumentException.class, () -> provider.parseResponse("{\"other\":123}"));
+        assertThrows(TranslationException.Permanent.class, () -> provider.parseResponse(""));
+        assertThrows(TranslationException.Permanent.class, () -> provider.parseResponse("[]"));
+        assertThrows(TranslationException.Permanent.class, () -> provider.parseResponse("{\"other\":123}"));
     }
 
     @Test
@@ -155,6 +156,6 @@ public class LlamaTranslationProviderTest {
         HttpClient client = new MockHttpClient(httpResponse);
 
         LlamaTranslationProvider provider = new LlamaTranslationProvider("http://localhost:8080/completion", client, new ObjectMapper());
-        assertThrows(RuntimeException.class, () -> provider.translate("Hello", "vi"));
+        assertThrows(TranslationException.class, () -> provider.translate("Hello", "vi"));
     }
 }

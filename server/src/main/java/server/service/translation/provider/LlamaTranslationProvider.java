@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import common.translation.TranslationResponse;
+import server.service.translation.TranslationException;
 import server.service.translation.TranslationProvider;
 import server.utils.HttpClients;
 
@@ -80,10 +81,18 @@ public class LlamaTranslationProvider implements TranslationProvider {
                 .POST(HttpRequest.BodyPublishers.ofString(jsonPayload, StandardCharsets.UTF_8))
                 .build();
 
-        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+        HttpResponse<String> response;
+        try {
+            response = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+        } catch (java.io.IOException e) {
+            throw TranslationException.fromIoError("llama-local", e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new TranslationException.Temporary("llama-local interrupted", e);
+        }
 
         if (response.statusCode() != 200) {
-            throw new RuntimeException("LlamaTranslationProvider failed with HTTP " + response.statusCode() + ": " + response.body());
+            throw TranslationException.fromHttpStatus("llama-local", response.statusCode(), response.body());
         }
 
         return parseResponse(response.body());
@@ -100,12 +109,17 @@ public class LlamaTranslationProvider implements TranslationProvider {
 
     public TranslationResponse parseResponse(String jsonBody) throws Exception {
         if (jsonBody == null || jsonBody.isBlank()) {
-            throw new IllegalArgumentException("Empty response from llama-server");
+            throw new TranslationException.Permanent("Empty response from llama-server");
         }
 
-        JsonNode root = objectMapper.readTree(jsonBody);
+        JsonNode root;
+        try {
+            root = objectMapper.readTree(jsonBody);
+        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            throw new TranslationException.Permanent("llama-local malformed JSON: " + e.getMessage(), e);
+        }
         if (!root.isObject() || !root.has("content")) {
-            throw new IllegalArgumentException("Invalid response format from llama-server: " + jsonBody);
+            throw new TranslationException.Permanent("Invalid response format from llama-server: " + jsonBody);
         }
 
         String content = root.get("content").asText();
