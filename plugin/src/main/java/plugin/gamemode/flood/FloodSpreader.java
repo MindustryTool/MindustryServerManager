@@ -33,11 +33,13 @@ public class FloodSpreader {
 
     public static final int MAX_SPREAD_PER_TICK = 120;
     public static final int MAX_FLUSH_PER_WINDOW = 150;
+    public static final int MAX_FLUSH_PER_TICK = 30;
+    public static final int ADAPTIVE_FLUSH_PER_TICK = 60;
+    public static final int ADAPTIVE_BACKLOG_THRESHOLD = 300;
 
     private static final long DAMAGE_PULSE_MILLIS = 1000;
     private static final long SPREAD_INTERVAL_MILLIS = 10000;
     private static final long MIN_SPREAD_INTERVAL_MILLIS = 1000;
-    private static final long FLUSH_INTERVAL_MILLIS = 150;
     private static final int INITIAL_HEAP_CAPACITY = 256;
     private static final int MAX_EVENTS_PER_TICK = 64;
 
@@ -82,14 +84,10 @@ public class FloodSpreader {
 
     private boolean loggedFirstPlacement = false;
     private boolean warnedNoTiers = false;
-
     private long nextSpreadAt = 0;
 
-    /**
-     * Earliest wall-clock time at which a buffered tile-update flush may be
-     * emitted.
-     */
-    private long nextFlushAt = 0;
+    private int[] flushBuffer = new int[MAX_FLUSH_PER_TICK];
+    private int[] adaptiveFlushBuffer = new int[ADAPTIVE_FLUSH_PER_TICK];
 
     private int width = 0;
     private int height = 0;
@@ -111,6 +109,9 @@ public class FloodSpreader {
         resetHeapState(totalTiles);
         clearPendingUpdateQueues();
 
+        flushBuffer = new int[MAX_FLUSH_PER_TICK];
+        adaptiveFlushBuffer = new int[ADAPTIVE_FLUSH_PER_TICK];
+
         edgeTiles.clear();
         edgeTileIndex = new int[totalTiles];
         Arrays.fill(edgeTileIndex, -1);
@@ -119,7 +120,6 @@ public class FloodSpreader {
         waveIndex = 0;
 
         nextSpreadAt = 0;
-        nextFlushAt = 0;
         loggedFirstPlacement = false;
         warnedNoTiers = false;
     }
@@ -685,9 +685,7 @@ public class FloodSpreader {
             spreadToNeighbor(x, y - 1, firstTier, now, multiplier);
             spreadToNeighbor(x, y + 1, firstTier, now, multiplier);
 
-            if (!hasSpreadableNeighbor(pos)) {
-                removeEdgeTile(pos);
-            }
+            removeEdgeTile(pos);
         }
 
         if (waveIndex >= waveQueue.size) {
@@ -712,12 +710,39 @@ public class FloodSpreader {
         scheduled.set(nPos);
         push(deadlines[nPos], nPos);
 
-        if (hasSpreadableNeighbor(nPos)) {
-            addEdgeTile(nPos);
+        processPlacedNeighbor(nTile, nx, ny, firstTier.damage * multiplier);
+        return true;
+    }
+
+    private void processPlacedNeighbor(Tile nTile, int nx, int ny, float damage) {
+        if (Vars.world == null) {
+            return;
+        }
+        boolean hasSpreadable = inspectNeighborForPlaced(nx - 1, ny, damage);
+        hasSpreadable |= inspectNeighborForPlaced(nx + 1, ny, damage);
+        hasSpreadable |= inspectNeighborForPlaced(nx, ny - 1, damage);
+        hasSpreadable |= inspectNeighborForPlaced(nx, ny + 1, damage);
+
+        if (hasSpreadable) {
+            addEdgeTile(posOf(nTile));
+        }
+    }
+
+    private boolean inspectNeighborForPlaced(int x, int y, float damage) {
+        if (x < 0 || x >= width || y < 0 || y >= height) {
+            return false;
+        }
+        Tile neighbor = Vars.world.tile(x, y);
+        if (neighbor == null) {
+            return false;
         }
 
-        damageNeighbors(nTile, firstTier.damage * multiplier);
-        return true;
+        var build = neighbor.build;
+        if (build != null && build.isValid() && build.team != Team.crux && damage > 0) {
+            build.damage(damage);
+        }
+
+        return isSpreadable(neighbor);
     }
 
     // Schedules evolution deadline for an existing Crux flood structure.
@@ -855,31 +880,57 @@ public class FloodSpreader {
         removeEdgeTile(pos);
     }
 
+    public int getPendingCount() {
+        return pendingCount;
+    }
+
+    void enqueuePendingUpdate(int tierIndex, int pos) {
+        if (tierIndex >= 0 && tierIndex < pendingUpdatesByTier.length) {
+            pendingUpdatesByTier[tierIndex].add(pos);
+            pendingCount++;
+        }
+    }
+
     private void flushUpdates() {
-        if (pendingCount == 0 || Time.millis() < nextFlushAt) {
+        if (pendingCount == 0) {
             return;
         }
-        nextFlushAt = Time.millis() + FLUSH_INTERVAL_MILLIS;
 
-        for (int i = 0; i < pendingUpdatesByTier.length; i++) {
+        int budget = pendingCount > ADAPTIVE_BACKLOG_THRESHOLD
+                ? ADAPTIVE_FLUSH_PER_TICK
+                : MAX_FLUSH_PER_TICK;
+
+        for (int i = 0; i < pendingUpdatesByTier.length && budget > 0; i++) {
             IntSeq seq = pendingUpdatesByTier[i];
             if (seq == null || seq.isEmpty()) {
                 continue;
             }
 
-            Block block = config.floodTiles.get(i).block;
-            int offset = 0;
-            while (offset < seq.size) {
-                int count = Math.min(seq.size - offset, MAX_FLUSH_PER_WINDOW);
-                int[] batch = new int[count];
-                System.arraycopy(seq.items, offset, batch, 0, count);
-                Call.setTileBlocks(block, Team.crux, batch);
-                offset += count;
+            int count = Math.min(seq.size, budget);
+            int[] batch;
+            if (count == MAX_FLUSH_PER_TICK) {
+                batch = flushBuffer;
+            } else if (count == ADAPTIVE_FLUSH_PER_TICK) {
+                batch = adaptiveFlushBuffer;
+            } else {
+                batch = new int[count];
             }
-            seq.clear();
-        }
+            System.arraycopy(seq.items, 0, batch, 0, count);
 
-        pendingCount = 0;
+            Block block = config.floodTiles.get(i).block;
+            if (Vars.world != null || Vars.net != null) {
+                Call.setTileBlocks(block, Team.crux, batch);
+            }
+
+            if (count == seq.size) {
+                seq.clear();
+            } else {
+                seq.removeRange(0, count - 1);
+            }
+
+            pendingCount -= count;
+            budget -= count;
+        }
     }
 
     private void push(long at, int pos) {

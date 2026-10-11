@@ -43,15 +43,15 @@ A flood tile SHALL remain active only while it is connected to at least one unsu
 - **THEN** its tiles remain active with their existing deadlines
 
 ### Requirement: Event-driven scheduling performance
-The flood simulation SHALL use an event-driven min-heap scheduler with primitive parallel arrays such that ticks with no due events perform O(1) work, no per-tick allocations occur in steady state, standard Mindustry building invariants (`build.isValid() == true`) are preserved on all flood blocks to guarantee reliable engine and gamemode integration, and network tile-block updates are batched per block and flushed at most once per 100 ms window, chunked to at most 150–200 tile positions per packet. The first flush after simulation reset SHALL not be delayed by the window gate.
+The flood simulation SHALL use an event-driven min-heap scheduler with primitive parallel arrays such that ticks with no due events perform O(1) work, no per-tick allocations occur in steady state, standard Mindustry building invariants (`build.isValid() == true`) are preserved on all flood blocks to guarantee reliable engine and gamemode integration, and network tile-block updates are batched per block and flushed steadily every tick with a per-tick budget (up to 30 tiles per tick) using a reusable batch buffer, avoiding interval burst spikes and packet loss while maintaining smooth propagation.
 
 #### Scenario: No-op tick does not send network tile updates
-- **WHEN** a tick completes with no tiles transitioning to new flood blocks
+- **WHEN** a tick completes with no tiles transitioning to new flood blocks and no pending flush queue
 - **THEN** no `Call.setTileBlocks` packets are emitted for that tick
 
-#### Scenario: Rapid transitions coalesce into capped packet batches per window
-- **WHEN** tiles transition to new flood blocks on many consecutive ticks within a single 100 ms window
-- **THEN** `Call.setTileBlocks` packets per affected block are emitted when the window opens, chunked into packets of at most 150–200 tile positions without exceeding network MTU
+#### Scenario: Rapid transitions flush steadily with per-tick budget
+- **WHEN** many tiles transition to new flood blocks across consecutive ticks
+- **THEN** `Call.setTileBlocks` packets are emitted smoothly on each tick up to the per-tick tile budget using a reusable primitive buffer without allocating per-batch arrays or bursting large multi-packet dumps in a single frame
 
 #### Scenario: Flood blocks preserve engine valid state
 - **WHEN** a flood tile of any tier is placed or evolved

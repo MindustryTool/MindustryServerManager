@@ -168,6 +168,53 @@ public class FloodSpreaderTest {
     void testPacedWaveAndFlushConstants() {
         assertEquals(120, FloodSpreader.MAX_SPREAD_PER_TICK);
         assertEquals(150, FloodSpreader.MAX_FLUSH_PER_WINDOW);
+        assertEquals(30, FloodSpreader.MAX_FLUSH_PER_TICK);
+        assertEquals(60, FloodSpreader.ADAPTIVE_FLUSH_PER_TICK);
+        assertEquals(300, FloodSpreader.ADAPTIVE_BACKLOG_THRESHOLD);
+    }
+
+    @Test
+    void testPerTickFlushPacing() {
+        assertEquals(0, spreader.getPendingCount());
+
+        // Enqueue 100 tiles for tier 0
+        for (int i = 0; i < 100; i++) {
+            spreader.enqueuePendingUpdate(0, i);
+        }
+        assertEquals(100, spreader.getPendingCount());
+
+        // Tick 1 flushes exactly MAX_FLUSH_PER_TICK (30)
+        spreader.tick(1.0f);
+        assertEquals(70, spreader.getPendingCount());
+
+        // Tick 2 flushes 30
+        spreader.tick(1.0f);
+        assertEquals(40, spreader.getPendingCount());
+
+        // Tick 3 flushes 30
+        spreader.tick(1.0f);
+        assertEquals(10, spreader.getPendingCount());
+
+        // Tick 4 flushes remaining 10
+        spreader.tick(1.0f);
+        assertEquals(0, spreader.getPendingCount());
+    }
+
+    @Test
+    void testAdaptiveFlushOnBacklog() {
+        // Enqueue 350 tiles (> ADAPTIVE_BACKLOG_THRESHOLD of 300)
+        for (int i = 0; i < 350; i++) {
+            spreader.enqueuePendingUpdate(0, i);
+        }
+        assertEquals(350, spreader.getPendingCount());
+
+        // First tick uses ADAPTIVE_FLUSH_PER_TICK (60)
+        spreader.tick(1.0f);
+        assertEquals(290, spreader.getPendingCount());
+
+        // Since remaining 290 <= 300, next tick returns to MAX_FLUSH_PER_TICK (30)
+        spreader.tick(1.0f);
+        assertEquals(260, spreader.getPendingCount());
     }
 
     @Test
