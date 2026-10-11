@@ -19,7 +19,7 @@ import server.utils.HttpClients;
 
 public class LlamaTranslationProvider implements TranslationProvider {
     public static final String DEFAULT_ENDPOINT = "http://llama-translator:8080/completion";
-    private static final Duration TIMEOUT = Duration.ofSeconds(6);
+    private static final Duration TIMEOUT = Duration.ofSeconds(10);
 
     private final String endpoint;
     private final HttpClient httpClient;
