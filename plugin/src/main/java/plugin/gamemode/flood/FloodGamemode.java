@@ -7,13 +7,17 @@ import java.util.concurrent.TimeUnit;
 
 import arc.Core;
 import arc.Events;
+import arc.math.Mathf;
 import arc.struct.Seq;
 import arc.util.Align;
 import arc.util.Log;
 import arc.util.Time;
 import lombok.RequiredArgsConstructor;
 import mindustry.Vars;
+import mindustry.content.Fx;
 import mindustry.content.UnitTypes;
+import mindustry.entities.Damage;
+import mindustry.entities.Effect;
 import mindustry.game.EventType;
 import mindustry.game.EventType.BlockBuildEndEvent;
 import mindustry.game.EventType.BlockDestroyEvent;
@@ -23,8 +27,10 @@ import mindustry.gen.Building;
 import mindustry.gen.Call;
 import mindustry.gen.Groups;
 import mindustry.gen.Iconc;
+import mindustry.gen.Sounds;
 import mindustry.type.UnitType;
 import mindustry.type.unit.MissileUnitType;
+import mindustry.world.Tile;
 import plugin.annotations.Component;
 import plugin.annotations.ConditionOn;
 import plugin.gamemode.GamemodeCondition;
@@ -44,8 +50,9 @@ public class FloodGamemode {
 
     private final FloodConfig config;
 
-    private final ConcurrentHashMap<Building, Float> damageReceived = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<Building, Long> suppressed = new ConcurrentHashMap<>();
+    final ConcurrentHashMap<Building, Float> damageReceived = new ConcurrentHashMap<>();
+    final ConcurrentHashMap<Building, Long> suppressed = new ConcurrentHashMap<>();
+    final ConcurrentHashMap<Building, Long> suppressionDeadlines = new ConcurrentHashMap<>();
 
     // Reused across ticks to avoid per-tick allocations.
     private final Seq<Building> unsuppressedCoresScratch = new Seq<>();
@@ -65,8 +72,8 @@ public class FloodGamemode {
 
     private boolean isGameOver = false; 
 
-    private boolean shouldUpdate() {
-        return Vars.state.isPlaying();
+    boolean shouldUpdate() {
+        return Vars.state != null && Vars.state.isPlaying();
     }
 
     private void applyRules() {
@@ -83,6 +90,7 @@ public class FloodGamemode {
         days = 0;
 
         suppressed.clear();
+        suppressionDeadlines.clear();
         damageReceived.clear();
         warnedNoCores = false;
         isGameOver = false;
@@ -156,12 +164,17 @@ public class FloodGamemode {
         }
 
         Duration time = Duration.between(Instant.now(), cycleChangeAt.plus(isNight ? nightDuration : dayDuration));
+        long now = Time.millis();
 
         Utils.forEachPlayerLocale((locale, players) -> {
             String label = Tr.t(locale, "flood.suppressed");
-            for (var core : suppressed.keySet()) {
+            for (var entry : suppressed.entrySet()) {
+                var core = entry.getKey();
+                Long deadline = suppressionDeadlines.get(core);
+                long remainingSec = deadline != null ? Math.max(0, (deadline - now + 999) / 1000) : 0;
+                String labelText = "[scarlet]" + Iconc.warning + " " + label + " (" + remainingSec + "s)";
                 for (var p : players) {
-                    Call.label(p.con, "[scarlet]" + Iconc.warning + " " + label, 1.1f, core.getX(), core.getY());
+                    Call.label(p.con, labelText, 1.1f, core.getX(), core.getY());
                 }
             }
 
@@ -251,7 +264,9 @@ public class FloodGamemode {
             return;
         }
 
-        suppressed.entrySet().removeIf(e -> e.getValue() < Time.millis() || !e.getKey().isValid());
+        long now = Time.millis();
+        suppressed.entrySet().removeIf(e -> e.getValue() < now || !isCoreValid(e.getKey()));
+        suppressionDeadlines.keySet().removeIf(core -> !suppressed.containsKey(core) || !isCoreValid(core));
 
         Seq<Building> unsuppressedCores = fillUnsuppressedCores();
 
@@ -281,6 +296,9 @@ public class FloodGamemode {
             return;
         }
 
+        var destroyedTier = spreader.getFloodTier(event.tile);
+        trySpawnDestructionUnit(event.tile, destroyedTier);
+
         var lowerTier = spreader.getDowngradeTier(event.tile);
         if (lowerTier != null) {
             var tile = event.tile;
@@ -295,6 +313,30 @@ public class FloodGamemode {
         }
 
         spreader.onTileDestroyed(spreader.posOf(event.tile));
+    }
+
+    private void trySpawnDestructionUnit(Tile tile, FloodConfig.FloodTile tier) {
+        if (!shouldUpdate() || tier == null || tier.unitType == null || tier.spawnChance <= 0f) {
+            return;
+        }
+
+        long unitCount = Groups.unit.count(u -> u.team == Team.crux);
+        if (unitCount >= 50) {
+            return;
+        }
+
+        if (!Mathf.chance(tier.spawnChance)) {
+            return;
+        }
+
+        var multiplier = getFloodMultiplier();
+        var unit = tier.unitType.create(Team.crux);
+        unit.health(unit.maxHealth * multiplier);
+        unit.set(tile.worldx(), tile.worldy());
+
+        Core.app.post(() -> {
+            unit.add();
+        });
     }
 
     @Listener
@@ -339,25 +381,58 @@ public class FloodGamemode {
 
     @MainThread
     @Schedule(fixedRate = 1, unit = TimeUnit.SECONDS)
-    private void updateSuppress() {
+    void updateSuppress() {
         if (!shouldUpdate()) {
             return;
         }
+
+        long now = Time.millis();
+        suppressed.entrySet().removeIf(e -> e.getValue() < now || !isCoreValid(e.getKey()));
+        suppressionDeadlines.keySet().removeIf(core -> !suppressed.containsKey(core) || !isCoreValid(core));
 
         for (var entry : damageReceived.entrySet()) {
             var core = entry.getKey();
             var damage = entry.getValue();
 
             if (damage > config.suppressThreshold) {
-                suppressed.put(core, Time.millis() + config.suppressTime);
+                suppressed.put(core, now + config.suppressTime);
+                if (!suppressionDeadlines.containsKey(core)) {
+                    suppressionDeadlines.put(core, now + config.coreExplosionTime);
+                }
             }
             damageReceived.put(core, 0f);
         }
 
-        if (suppressed.size() == cores && isGameOver == false) {
+        for (var entry : suppressionDeadlines.entrySet()) {
+            var core = entry.getKey();
+            long deadline = entry.getValue();
+            if (now >= deadline && isCoreValid(core)) {
+                explodeCore(core);
+            }
+        }
+
+        int aliveCores = Team.crux.cores().size;
+        if (!isGameOver && (aliveCores == 0 || (aliveCores > 0 && suppressed.size() == aliveCores))) {
             Events.fire(new FloodWonEvent());
             Events.fire(new EventType.GameOverEvent(Team.sharded));
             isGameOver = true;
         }
+    }
+
+    private boolean isCoreValid(Building core) {
+        return core != null && core.tile != null && core.isValid();
+    }
+
+    private void explodeCore(Building core) {
+        Damage.damage(core.x, core.y, 19f * Vars.tilesize, 5000f);
+        Fx.reactorExplosion.at(core);
+        Sounds.explosionReactor.at(core);
+        Effect.shake(6f, 16f, core);
+
+        suppressed.remove(core);
+        suppressionDeadlines.remove(core);
+        damageReceived.remove(core);
+
+        core.kill();
     }
 }

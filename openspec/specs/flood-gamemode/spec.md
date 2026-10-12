@@ -85,14 +85,26 @@ Flooded tiles SHALL damage valid adjacent enemy buildings by their tier's damage
 - **THEN** it leaves the event heap and performs no further work
 
 ### Requirement: Core damage accounting and suppression
-The system SHALL accumulate damage dealt to crux cores across ticks and mark a core as suppressed for `config.suppressTime` when accumulated damage since the last check exceeds `config.suppressThreshold`. The gamemode SHALL be won when all cores are simultaneously suppressed.
+The system SHALL accumulate damage dealt to crux cores across ticks and mark a core as suppressed for `config.suppressTime` when accumulated damage since the last check exceeds `config.suppressThreshold`. While a core remains continuously suppressed, the system SHALL track a 120-second countdown; if suppression drops before 120 seconds elapse, the countdown SHALL reset back to 120 seconds. When the 120-second countdown reaches zero, the core SHALL trigger a full Thorium Reactor explosion (5,000 damage in a 19-tile radius affecting units and structures of all teams, with reactor visual effects, sound, and screen shake) and be permanently destroyed without sweeping existing flood tiles. The gamemode SHALL be won when all crux cores are destroyed OR when all remaining alive crux cores are simultaneously suppressed.
 
 #### Scenario: Sustained fire suppresses a core
 - **WHEN** players deal more than `suppressThreshold` cumulative damage to a core between suppression checks
 - **THEN** that core is marked suppressed until `suppressTime` elapses
 
-#### Scenario: All cores suppressed triggers win
-- **WHEN** the number of suppressed cores equals the total core count
+#### Scenario: Continuous suppression triggers reactor explosion and destroys core
+- **WHEN** a crux core remains continuously suppressed for 120 seconds
+- **THEN** a full Thorium Reactor explosion is created at the core position dealing 5,000 damage within a 19-tile radius to nearby units and buildings, and the core is permanently destroyed while surrounding flood blocks remain intact
+
+#### Scenario: Suppression interruption resets countdown
+- **WHEN** a suppressed core is unsuppressed before 120 seconds elapse
+- **THEN** its countdown timer resets back to 120 seconds upon next suppression
+
+#### Scenario: All cores destroyed triggers win
+- **WHEN** all crux cores have been destroyed
+- **THEN** a `FloodWonEvent` and a `GameOverEvent` for Team.sharded are fired
+
+#### Scenario: All remaining cores suppressed triggers win
+- **WHEN** all currently alive crux cores are simultaneously suppressed
 - **THEN** a `FloodWonEvent` and a `GameOverEvent` for Team.sharded are fired
 
 ### Requirement: Day/night cycle timing
@@ -110,11 +122,15 @@ The system SHALL spawn escalating unit types (atrax → spiroct → arkyid → t
 - **THEN** units of that tier are spawned at random crux cores
 
 ### Requirement: Player HUD updates once per second
-The system SHALL update each player's info popup once per second showing flood multiplier percent, suppressed core count vs total, time until next cycle change, and current day count; labels SHALL render above suppressed cores. Locale-specific text SHALL continue to be used per player group.
+The system SHALL update each player's info popup once per second showing flood multiplier percent, suppressed core count vs total, time until next cycle change, and current day count; labels SHALL render above suppressed cores displaying the remaining suppression countdown seconds in `[scarlet]⚠ <Localized Text> (Xs)` format. Locale-specific text SHALL continue to be used per player group.
 
 #### Scenario: Popup reflects current state
 - **WHEN** one second elapses during play
 - **THEN** each player sees an updated popup with the current multiplier, suppression counts, countdown, and day number
+
+#### Scenario: Suppressed core label displays remaining seconds
+- **WHEN** a crux core is currently suppressed
+- **THEN** a world label above the core displays warning icon, localized suppressed text, and remaining countdown seconds (e.g., `Suppressed (115s)`)
 
 ### Requirement: Enemy units take damage on flooded tiles
 The system SHALL periodically apply the matching flood tier's damage to non-crux units standing on tiles occupied by a crux building whose block matches a flood tile configuration.
@@ -140,4 +156,15 @@ When the flood gamemode initializes on map load, the system SHALL scan the world
 #### Scenario: Pre-existing flood tiles join the spread simulation
 - **WHEN** the map is loaded with pre-existing Crux flood tiles
 - **THEN** tiles that are Crux flood blocks are scheduled for tier evolution and added to the edge list if they have adjacent spreadable tiles, allowing them to spread on the next spread wave
+
+### Requirement: Flood destruction unit spawning
+The system SHALL evaluate each flood block destroyed (including tier downgrades). If the destroyed block's configured tier defines a unit type and a spawn chance, and total Crux units are below 50, the system SHALL roll the spawn chance and spawn that unit type at the destroyed tile on Team.crux with health scaled by the current flood multiplier.
+
+#### Scenario: Flood block destroyed rolls successful spawn
+- **WHEN** a flood block of a tier with a configured unit type and spawn chance is destroyed, the chance roll succeeds, and Crux has fewer than 50 units
+- **THEN** an enemy unit of the configured type is spawned at the tile position with its health scaled by the current flood multiplier
+
+#### Scenario: Unit cap reached blocks spawn
+- **WHEN** Crux already has 50 or more units
+- **THEN** no unit is spawned even if a destroyed flood block succeeds its spawn roll
 
