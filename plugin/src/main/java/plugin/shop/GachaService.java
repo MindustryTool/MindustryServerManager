@@ -31,13 +31,9 @@ public class GachaService {
     private final Map<String, Long> lastRollTime = new ConcurrentHashMap<>();
 
     public GachaService(MoneyService moneyService, SessionRepository sessionRepository) {
-        this(moneyService, sessionRepository, new Random());
-    }
-
-    public GachaService(MoneyService moneyService, SessionRepository sessionRepository, Random random) {
         this.moneyService = moneyService;
         this.sessionRepository = sessionRepository;
-        this.random = random;
+        this.random = new Random();
         this.lootTable = createDefaultLootTable();
     }
 

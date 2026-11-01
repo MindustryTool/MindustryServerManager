@@ -37,19 +37,15 @@ public class DailyTaskService {
     private final Map<String, Long> lastBuildTime = new ConcurrentHashMap<>();
 
     public DailyTaskService(MoneyService moneyService, SessionRepository sessionRepository, SessionService sessionService) {
-        this(moneyService, sessionRepository, sessionService, List.of(
+        this.moneyService = moneyService;
+        this.sessionRepository = sessionRepository;
+        this.sessionService = sessionService;
+        this.providers = new ArrayList<>(List.of(
             new TowerDefenseTaskProvider(),
             new FloodTaskProvider(),
             new CataliTaskProvider(),
             new DefaultTaskProvider()
         ));
-    }
-
-    public DailyTaskService(MoneyService moneyService, SessionRepository sessionRepository, SessionService sessionService, List<GamemodeTaskProvider> providers) {
-        this.moneyService = moneyService;
-        this.sessionRepository = sessionRepository;
-        this.sessionService = sessionService;
-        this.providers = new ArrayList<>(providers);
     }
 
     public List<GamemodeTaskProvider> getProviders() {
