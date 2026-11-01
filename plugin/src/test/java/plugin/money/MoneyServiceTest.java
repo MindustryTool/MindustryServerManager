@@ -47,7 +47,7 @@ public class MoneyServiceTest {
         Database.setTestPath(tempDir.resolve("test_money.db"));
         database = new Database();
         repository = new SessionRepository(database);
-        sessionService = new SessionService(repository);
+        sessionService = new SessionService(repository, null, null);
         moneyService = new MoneyService(repository, sessionService);
     }
 

@@ -21,6 +21,7 @@ import plugin.database.Database;
 import plugin.event.UnloadServerEvent;
 import plugin.gamemode.Gamemode;
 import plugin.security.UserBanService;
+import plugin.security.ModerationLogService;
 import plugin.session.ExpUtils;
 import plugin.session.Session;
 import plugin.session.SessionData;
@@ -151,9 +152,19 @@ public class ServerCommands {
     }
 
     @ServerCommand(name = "userban", description = "Ban an account by userId")
-    private void userban(@Param(name = "userId") String userId, UserBanService banService) {
-        if (banService.ban(userId)) {
-            Log.info("User '@' has been banned.", userId);
+    private void userban(@Param(name = "userId") String userId, @Param(name = "reason", variadic = true) String[] reasons, UserBanService banService) {
+        if (reasons == null || reasons.length == 0) {
+            Log.err("A reason is required to ban a user.");
+            return;
+        }
+        String reason = String.join(" ", reasons).trim();
+        if (reason.isEmpty()) {
+            Log.err("A reason is required to ban a user.");
+            return;
+        }
+
+        if (banService.ban(userId, reason, "SERVER")) {
+            Log.info("User '@' has been banned for: @", userId, reason);
         } else {
             Log.info("User '@' is already banned or invalid ID.", userId);
         }
@@ -161,7 +172,7 @@ public class ServerCommands {
 
     @ServerCommand(name = "userunban", description = "Unban an account by userId")
     private void userunban(@Param(name = "userId") String userId, UserBanService banService) {
-        if (banService.unban(userId)) {
+        if (banService.unban(userId, "SERVER")) {
             Log.info("User '@' has been unbanned.", userId);
         } else {
             Log.info("User '@' is not banned.", userId);
@@ -176,6 +187,79 @@ public class ServerCommands {
         } else {
             Log.info("Banned user IDs (@): @", bans.size(), String.join(", ", bans));
         }
+    }
+
+    @ServerCommand(name = "ban", description = "Ban a player by type and target with a required reason")
+    private void ban(
+            @Param(name = "type") String type,
+            @Param(name = "target") String target,
+            @Param(name = "reason", variadic = true) String[] reasons,
+            ModerationLogService moderationLogService
+    ) {
+        if (reasons == null || reasons.length == 0) {
+            Log.err("A reason is required to ban a player.");
+            return;
+        }
+        String reason = String.join(" ", reasons).trim();
+        if (reason.isEmpty()) {
+            Log.err("A reason is required to ban a player.");
+            return;
+        }
+
+        if (Vars.netServer == null || Vars.netServer.admins == null) {
+            Log.err("Server is not initialized.");
+            return;
+        }
+
+        String targetUuid = null;
+        String targetIp = null;
+        String targetName = null;
+
+        if (type.equalsIgnoreCase("id")) {
+            targetUuid = target;
+            Vars.netServer.admins.banPlayerID(target);
+            var info = Vars.netServer.admins.getInfoOptional(target);
+            if (info != null) {
+                targetName = info.lastName;
+                targetIp = info.lastIP;
+            }
+            Log.info("Banned player ID '@' for: @", target, reason);
+        } else if (type.equalsIgnoreCase("name")) {
+            Player p = Groups.player != null ? Groups.player.find(pl -> pl.name.equalsIgnoreCase(target) || Strings.stripColors(pl.name).equalsIgnoreCase(target)) : null;
+            if (p != null) {
+                targetUuid = p.uuid();
+                targetIp = p.ip();
+                targetName = Strings.stripColors(p.name);
+                Vars.netServer.admins.banPlayerID(targetUuid);
+                Vars.netServer.admins.banPlayerIP(targetIp);
+                Log.info("Banned player '@' for: @", p.name, reason);
+            } else {
+                Log.err("No online player by that name found: " + target);
+                return;
+            }
+        } else if (type.equalsIgnoreCase("ip")) {
+            targetIp = target;
+            Vars.netServer.admins.banPlayerIP(target);
+            var info = Vars.netServer.admins.findByIP(target);
+            if (info != null) {
+                targetUuid = info.id;
+                targetName = info.lastName;
+            }
+            Log.info("Banned IP '@' for: @", target, reason);
+        } else {
+            Log.err("Invalid ban type. Use 'id', 'name', or 'ip'.");
+            return;
+        }
+
+        if (Groups.player != null) {
+            for (Player p : Groups.player) {
+                if (Vars.netServer.admins.isIDBanned(p.uuid()) || Vars.netServer.admins.isIPBanned(p.ip())) {
+                    p.kick(reason);
+                }
+            }
+        }
+
+        moderationLogService.logBan("BAN", null, targetUuid, targetIp, targetName, reason, "SERVER");
     }
 
     @ServerCommand(name = "exp", description = "Add, remove, or set exp or level for a player uuid")

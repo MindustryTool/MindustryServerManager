@@ -1,5 +1,7 @@
 package plugin.orm.sql;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public final class SqlQuery {
@@ -8,7 +10,7 @@ public final class SqlQuery {
 
     public SqlQuery(String sql, List<Object> parameters) {
         this.sql = sql;
-        this.parameters = List.copyOf(parameters);
+        this.parameters = Collections.unmodifiableList(new ArrayList<>(parameters));
     }
 
     public String sql() {

@@ -46,7 +46,7 @@ public class CombatRewardServiceTest {
         Database.setTestPath(tempDir.resolve("test_combat.db"));
         database = new Database();
         repository = new SessionRepository(database);
-        sessionService = new SessionService(repository);
+        sessionService = new SessionService(repository, null, null);
         moneyService = new MoneyService(repository, sessionService);
         combatRewardService = new CombatRewardService(moneyService, sessionService);
 

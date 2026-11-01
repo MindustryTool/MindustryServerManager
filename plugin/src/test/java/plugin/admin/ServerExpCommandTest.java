@@ -49,7 +49,7 @@ public class ServerExpCommandTest {
         create.setAccessible(true);
         create.invoke(repository);
 
-        sessionService = new SessionService(repository);
+        sessionService = new SessionService(repository, null, null);
         serverCommands = new ServerCommands(database);
     }
 

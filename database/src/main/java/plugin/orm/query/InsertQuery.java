@@ -1,6 +1,7 @@
 package plugin.orm.query;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -56,7 +57,7 @@ public InsertQuery(QuerySource source, Table<?> table) {
     }
 
     public List<Object> values() {
-        return List.copyOf(values);
+        return Collections.unmodifiableList(new ArrayList<>(values));
     }
 
     public Column<?> conflictTarget() {

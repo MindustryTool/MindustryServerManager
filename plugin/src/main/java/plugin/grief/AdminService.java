@@ -35,6 +35,7 @@ import plugin.annotations.Init;
 import plugin.annotations.Listener;
 import plugin.core.Scheduler;
 import plugin.event.KickEvent;
+import plugin.event.PlayerKickEvent;
 import plugin.session.SessionRemovedEvent;
 import plugin.session.Session;
 import plugin.utils.Utils;
@@ -89,6 +90,24 @@ public class AdminService {
     }
 
     @Listener
+    public void onPlayerKick(PlayerKickEvent event) {
+        String name = event.name;
+        if (name == null && Vars.netServer != null && Vars.netServer.admins != null && event.address != null) {
+            PlayerInfo playerInfo = Vars.netServer.admins.findByIP(event.address);
+            if (playerInfo != null) {
+                name = playerInfo.lastName;
+            }
+        }
+        if (name == null) {
+            name = "<Unknown Player>";
+        }
+
+        String reason = event.reason != null ? event.reason : "unknown";
+        ServerEvents.PlayerKickEvent kickEvent = new ServerEvents.PlayerKickEvent(Control.SERVER_ID, event.address,
+                event.uuid, Strings.stripColors(name), Strings.stripColors(reason));
+        apiGateway.fire(kickEvent);
+    }
+
     public void onKickEvent(KickEvent event) {
         PlayerInfo playerInfo = Vars.netServer.admins.findByIP(event.address);
         String name = playerInfo == null ? "<Unknown Player>" : playerInfo.lastName;

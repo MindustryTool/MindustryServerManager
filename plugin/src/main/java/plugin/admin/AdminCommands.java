@@ -9,9 +9,12 @@ import mindustry.Vars;
 import mindustry.content.Fx;
 import mindustry.entities.Effect;
 import mindustry.gen.Call;
+import mindustry.gen.Groups;
+import mindustry.gen.Player;
 import plugin.annotations.ClientCommand;
 import plugin.annotations.Component;
 import plugin.annotations.Param;
+import plugin.security.ModerationLogService;
 import plugin.security.UserBanService;
 import plugin.session.Session;
 import plugin.utils.Tr;
@@ -54,8 +57,19 @@ public class AdminCommands {
     }
 
     @ClientCommand(name = "userban", description = "Ban an account by userId", admin = true)
-    public void userban(Session session, @Param(name = "userId") String userId, UserBanService banService) {
-        if (banService.ban(userId)) {
+    public void userban(Session session, @Param(name = "userId") String userId, @Param(name = "reason", variadic = true) String[] reasons, UserBanService banService) {
+        if (reasons == null || reasons.length == 0) {
+            session.player.sendMessage("[scarlet]A reason is required to ban a user.");
+            return;
+        }
+        String reason = String.join(" ", reasons).trim();
+        if (reason.isEmpty()) {
+            session.player.sendMessage("[scarlet]A reason is required to ban a user.");
+            return;
+        }
+
+        String actor = (session.player != null && session.player.name != null) ? session.player.name : "ADMIN";
+        if (banService.ban(userId, reason, actor)) {
             session.player.sendMessage(Tr.t(session, "security.user_banned_feedback", "id", userId));
         } else {
             session.player.sendMessage("[scarlet]User is already banned or invalid ID.");
@@ -64,7 +78,8 @@ public class AdminCommands {
 
     @ClientCommand(name = "userunban", description = "Unban an account by userId", admin = true)
     public void userunban(Session session, @Param(name = "userId") String userId, UserBanService banService) {
-        if (banService.unban(userId)) {
+        String actor = (session.player != null && session.player.name != null) ? session.player.name : "ADMIN";
+        if (banService.unban(userId, actor)) {
             session.player.sendMessage(Tr.t(session, "security.user_unbanned_feedback", "id", userId));
         } else {
             session.player.sendMessage(Tr.t(session, "security.user_not_banned", "id", userId));
@@ -80,6 +95,81 @@ public class AdminCommands {
             session.player.sendMessage(Tr.t(session, "security.user_bans_list",
                     "count", bans.size(), "ids", String.join(", ", bans)));
         }
+    }
+
+    @ClientCommand(name = "ban", description = "Ban a player with a required reason", admin = true)
+    public void ban(
+            Session session,
+            @Param(name = "type") String type,
+            @Param(name = "target") String target,
+            @Param(name = "reason", variadic = true) String[] reasons,
+            ModerationLogService moderationLogService
+    ) {
+        if (reasons == null || reasons.length == 0) {
+            session.player.sendMessage("[scarlet]A reason is required to ban a player.");
+            return;
+        }
+        String reason = String.join(" ", reasons).trim();
+        if (reason.isEmpty()) {
+            session.player.sendMessage("[scarlet]A reason is required to ban a player.");
+            return;
+        }
+
+        if (Vars.netServer == null || Vars.netServer.admins == null) {
+            session.player.sendMessage("[scarlet]Server is not initialized.");
+            return;
+        }
+
+        String targetUuid = null;
+        String targetIp = null;
+        String targetName = null;
+        String actor = (session.player != null && session.player.name != null) ? session.player.name : "ADMIN";
+
+        if (type.equalsIgnoreCase("id")) {
+            targetUuid = target;
+            Vars.netServer.admins.banPlayerID(target);
+            var info = Vars.netServer.admins.getInfoOptional(target);
+            if (info != null) {
+                targetName = info.lastName;
+                targetIp = info.lastIP;
+            }
+            session.player.sendMessage("[gold]Banned player ID " + target + " for: " + reason);
+        } else if (type.equalsIgnoreCase("name")) {
+            Player p = Groups.player != null ? Groups.player.find(pl -> pl.name.equalsIgnoreCase(target) || Strings.stripColors(pl.name).equalsIgnoreCase(target)) : null;
+            if (p != null) {
+                targetUuid = p.uuid();
+                targetIp = p.ip();
+                targetName = Strings.stripColors(p.name);
+                Vars.netServer.admins.banPlayerID(targetUuid);
+                Vars.netServer.admins.banPlayerIP(targetIp);
+                session.player.sendMessage("[gold]Banned player " + p.name + " for: " + reason);
+            } else {
+                session.player.sendMessage("[scarlet]No online player by that name found: " + target);
+                return;
+            }
+        } else if (type.equalsIgnoreCase("ip")) {
+            targetIp = target;
+            Vars.netServer.admins.banPlayerIP(target);
+            var info = Vars.netServer.admins.findByIP(target);
+            if (info != null) {
+                targetUuid = info.id;
+                targetName = info.lastName;
+            }
+            session.player.sendMessage("[gold]Banned IP " + target + " for: " + reason);
+        } else {
+            session.player.sendMessage("[scarlet]Invalid ban type. Use 'id', 'name', or 'ip'.");
+            return;
+        }
+
+        if (Groups.player != null) {
+            for (Player p : Groups.player) {
+                if (Vars.netServer.admins.isIDBanned(p.uuid()) || Vars.netServer.admins.isIPBanned(p.ip())) {
+                    p.kick(reason);
+                }
+            }
+        }
+
+        moderationLogService.logBan("BAN", null, targetUuid, targetIp, targetName, reason, actor);
     }
 
     private boolean isJsError(String output) {

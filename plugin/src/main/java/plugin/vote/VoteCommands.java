@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import plugin.annotations.ClientCommand;
 import plugin.annotations.Component;
 import plugin.annotations.Param;
+import plugin.maprating.MapRatingService;
 import plugin.session.Session;
 import plugin.utils.Tr;
 
@@ -13,6 +14,7 @@ public class VoteCommands {
 
     private final RtvService voteService;
     private final VoteNewWaveService voteNewWaveService;
+    private final MapRatingService mapRatingService;
 
     @ClientCommand(name = "rtv", description = "Vote to change map", admin = false)
     public void rtv(Session session, @Param(name = "yes", required = false) String yes) {
@@ -23,7 +25,7 @@ public class VoteCommands {
                 voteService.handleVote(session.player);
             }
         } else {
-            new RtvMenu().send(session, 0);
+            new RtvMenu(voteService, mapRatingService).send(session, 0);
         }
     }
 

@@ -46,7 +46,7 @@ public class TrailServiceTest {
         Database.setTestPath(tempDir.resolve("test_trails.db"));
         database = new Database();
         repository = new SessionRepository(database);
-        sessionService = new SessionService(repository);
+        sessionService = new SessionService(repository, null, null);
         moneyService = new MoneyService(repository, sessionService);
         trailService = new TrailService(sessionService, repository);
         trailService.setMoneyService(moneyService);

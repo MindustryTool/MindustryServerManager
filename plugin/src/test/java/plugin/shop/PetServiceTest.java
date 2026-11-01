@@ -46,7 +46,7 @@ public class PetServiceTest {
         Database.setTestPath(tempDir.resolve("test_pets.db"));
         database = new Database();
         repository = new SessionRepository(database);
-        sessionService = new SessionService(repository);
+        sessionService = new SessionService(repository, null, null);
         moneyService = new MoneyService(repository, sessionService);
         petService = new PetService(moneyService);
     }

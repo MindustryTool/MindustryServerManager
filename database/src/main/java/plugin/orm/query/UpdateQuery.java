@@ -1,6 +1,7 @@
 package plugin.orm.query;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -55,7 +56,7 @@ public UpdateQuery(QuerySource source, Table<?> table) {
     }
 
     public List<Object> setValues() {
-        return List.copyOf(setValues);
+        return Collections.unmodifiableList(new ArrayList<>(setValues));
     }
 
     public Condition where() {

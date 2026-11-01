@@ -8,6 +8,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import plugin.annotations.Param;
 import plugin.core.Registry;
+import plugin.database.Database;
+import plugin.security.ModerationLogService;
 import plugin.security.UserBanService;
 import plugin.session.Session;
 
@@ -27,7 +29,7 @@ public class CommandUtilsTest {
     void setUp() {
         Core.settings = new Settings();
         Registry.destroy();
-        Registry.init(UserBanService.class);
+        Registry.init(Database.class, ModerationLogService.class, UserBanService.class);
     }
 
     @Test

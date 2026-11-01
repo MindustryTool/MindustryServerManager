@@ -48,7 +48,7 @@ public class DailyTaskServiceTest {
         Database.setTestPath(tempDir.resolve("test_tasks.db"));
         database = new Database();
         repository = new SessionRepository(database);
-        sessionService = new SessionService(repository);
+        sessionService = new SessionService(repository, null, null);
         moneyService = new MoneyService(repository, sessionService);
         dailyTaskService = new DailyTaskService(moneyService, repository, sessionService);
     }

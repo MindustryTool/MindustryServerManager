@@ -13,6 +13,12 @@ import plugin.utils.Tr;
 @Component
 public class MapRatingCommands {
 
+    private final MapRatingService mapRatingService;
+
+    public MapRatingCommands(MapRatingService mapRatingService) {
+        this.mapRatingService = mapRatingService;
+    }
+
     @ClientCommand(name = "map", description = "Display current map info", admin = false)
     public void map(Session session) {
         if (Vars.state.map == null) {
@@ -20,8 +26,7 @@ public class MapRatingCommands {
             return;
         }
 
-        session.player.sendMessage(MapRating.getDisplayString(session.locale, Vars.state.map));
-
+        session.player.sendMessage(mapRatingService.getDisplayString(session.locale, Vars.state.map));
     }
 
     @ClientCommand(name = "maps", description = "List map", admin = false)
@@ -51,7 +56,7 @@ public class MapRatingCommands {
                     .append(" ")
                     .append(map.name())
                     .append("")
-                    .append(MapRating.getAvgString(map))
+                    .append(mapRatingService.getAvgString(map))
                     .append("\n");
         }
         session.player.sendMessage(sb.toString());

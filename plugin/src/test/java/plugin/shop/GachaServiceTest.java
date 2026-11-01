@@ -49,7 +49,7 @@ public class GachaServiceTest {
         Database.setTestPath(tempDir.resolve("test_gacha.db"));
         database = new Database();
         repository = new SessionRepository(database);
-        sessionService = new SessionService(repository);
+        sessionService = new SessionService(repository, null, null);
         moneyService = new MoneyService(repository, sessionService);
         gachaService = new GachaService(moneyService, repository);
     }

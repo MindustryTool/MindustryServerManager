@@ -16,7 +16,6 @@ import arc.util.Log;
 import arc.util.Strings;
 import common.player.Login;
 import common.player.RecentPlayer;
-import lombok.RequiredArgsConstructor;
 import mindustry.Vars;
 import mindustry.game.EventType.PlayerJoin;
 import mindustry.game.EventType.PlayerLeave;
@@ -27,7 +26,8 @@ import plugin.PluginEvents;
 import plugin.annotations.Component;
 import plugin.annotations.Destroy;
 import plugin.annotations.Init;
-import plugin.core.Registry;
+import plugin.event.UserBannedEvent;
+import plugin.security.ModerationService;
 import plugin.security.UserBanService;
 import plugin.annotations.Listener;
 import plugin.annotations.Schedule;
@@ -36,7 +36,6 @@ import plugin.utils.Tr;
 import plugin.utils.Utils;
 
 @Component
-@RequiredArgsConstructor
 public class SessionService {
     private static class RecentPlayerEntry {
         final RecentPlayer dto;
@@ -52,6 +51,14 @@ public class SessionService {
     private final ConcurrentHashMap<String, RecentPlayerEntry> recentPlayers = new ConcurrentHashMap<>();
 
     private final SessionRepository sessionRepository;
+    private final UserBanService userBanService;
+    private final ModerationService moderationService;
+
+    public SessionService(SessionRepository sessionRepository, UserBanService userBanService, ModerationService moderationService) {
+        this.sessionRepository = sessionRepository;
+        this.userBanService = userBanService;
+        this.moderationService = moderationService;
+    }
 
     private Seq<RankData> leaderboardCache = new Seq<>();
 
@@ -337,9 +344,12 @@ public class SessionService {
 
     public void setLogin(Session session, Login login) {
         if (login != null) {
-            UserBanService userBanService = Registry.get(UserBanService.class);
             if (userBanService != null && userBanService.isBanned(login.getUserId())) {
                 Log.warn("Player @ attempted to log in with banned userId @", session.player.name, login.getUserId());
+                if (moderationService != null && session.player != null) {
+                    moderationService.markBanned(session.player.uuid());
+                    moderationService.markBanned(session.player.ip());
+                }
                 session.player.kick(Tr.t(session, "security.account_banned"));
                 return;
             }
@@ -354,6 +364,25 @@ public class SessionService {
 
         if (login.getIsAdmin()) {
             session.player.sendMessage(Tr.t(session, "session.use_admin"));
+        }
+    }
+
+    @Listener
+    public void onUserBanned(UserBannedEvent event) {
+        if (event == null || event.userId == null) {
+            return;
+        }
+
+        for (Session session : data.values()) {
+            if (session.login != null && event.userId.equals(session.login.getUserId())) {
+                if (session.player != null) {
+                    if (moderationService != null) {
+                        moderationService.markBanned(session.player.uuid());
+                        moderationService.markBanned(session.player.ip());
+                    }
+                    session.player.kick(Tr.t(session, "security.account_banned"));
+                }
+            }
         }
     }
 }

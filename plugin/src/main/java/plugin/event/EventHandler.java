@@ -2,7 +2,7 @@ package plugin.event;
 
 import plugin.session.SessionService;
 
-import plugin.maprating.MapRating;
+import plugin.maprating.MapRatingService;
 
 import plugin.utils.Tr;
 
@@ -24,6 +24,7 @@ import plugin.Control;
 import plugin.session.SessionCreatedEvent;
 import plugin.session.SessionRemovedEvent;
 import plugin.maprating.RateMapMenu;
+import plugin.security.ModerationService;
 import plugin.welcome.WelcomeMenu;
 import common.event.ServerEvents;
 import common.player.PlayerInfo;
@@ -38,10 +39,15 @@ public class EventHandler {
 
     private final ApiGateway apiGateway;
     private final SessionService sessionService;
+    private final MapRatingService mapRatingService;
+    private final ModerationService moderationService;
 
-    public EventHandler(ApiGateway apiGateway, SessionService sessionService) {
+    public EventHandler(ApiGateway apiGateway, SessionService sessionService, MapRatingService mapRatingService,
+            ModerationService moderationService) {
         this.apiGateway = apiGateway;
         this.sessionService = sessionService;
+        this.mapRatingService = mapRatingService;
+        this.moderationService = moderationService;
     }
 
     @Listener
@@ -53,12 +59,20 @@ public class EventHandler {
     }
 
     @Listener
-    private void onPlayerLeave(PlayerLeave event) {
-        if (event.player.con != null && event.player.con.kicked) {
-            String message = Strings.format("[scarlet]Player @ has been kicked", event.player.name);
+    private void onPlayerKick(PlayerKickEvent event) {
+        String name = event.name != null ? event.name : (event.player != null ? event.player.name : event.uuid);
+        String message = Strings.format("[scarlet]Player @ has been kicked", name);
 
-            apiGateway.fire(ServerEvents.LogEvent.info(Control.SERVER_ID, message));
-            apiGateway.fire(new ServerEvents.ChatEvent(Control.SERVER_ID, message));
+        apiGateway.fire(ServerEvents.LogEvent.info(Control.SERVER_ID, message));
+        apiGateway.fire(new ServerEvents.ChatEvent(Control.SERVER_ID, message));
+    }
+
+    @Listener
+    private void onPlayerLeave(PlayerLeave event) {
+        if (event.player != null && event.player.con != null && event.player.con.kicked) {
+            if (moderationService != null) {
+                moderationService.handlePlayerLeaveKicked(event.player);
+            }
         }
     }
 
@@ -75,7 +89,7 @@ public class EventHandler {
         var rateMap = Vars.state.map;
 
         if (rateMap != null) {
-            sessionService.each(session -> new RateMapMenu().send(session, rateMap));
+            sessionService.each(session -> new RateMapMenu(mapRatingService).send(session, rateMap));
         }
     }
 
@@ -85,7 +99,7 @@ public class EventHandler {
 
         if (currentMap != null) {
             Utils.forEachPlayerLocale((locale, players) -> {
-                String msg = MapRating.getDisplayString(locale, currentMap);
+                String msg = mapRatingService.getDisplayString(locale, currentMap);
                 for (var p : players) {
                     p.sendMessage(msg);
                 }

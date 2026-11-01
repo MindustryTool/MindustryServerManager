@@ -1,26 +1,32 @@
 package plugin.vote;
 
-import plugin.menus.PluginMenu;
-
 import arc.struct.Seq;
 import mindustry.gen.Iconc;
 import mindustry.maps.Map;
-import plugin.core.Registry;
-import plugin.utils.Tr;
-import plugin.maprating.MapRating;
+import plugin.maprating.MapRatingService;
+import plugin.maprating.MapRatingStat;
+import plugin.menus.PluginMenu;
 import plugin.session.Session;
+import plugin.utils.Tr;
 
 public class RtvMenu extends PluginMenu<Integer> {
-    private static final int MAPS_PER_PAGE = 7;
+    private static final int MAPS_PER_PAGE = 5;
+
+    private final RtvService rtvService;
+    private final MapRatingService mapRatingService;
+
+    public RtvMenu(RtvService rtvService, MapRatingService mapRatingService) {
+        this.rtvService = rtvService;
+        this.mapRatingService = mapRatingService;
+    }
 
     @Override
     public void build(Session session, Integer page) {
-        var voteHandler = Registry.get(RtvService.class);
-        Seq<Map> maps = new Seq<>(voteHandler.getMaps());
+        Seq<Map> maps = new Seq<>(rtvService.getMaps());
 
         maps.sort((a, b) -> {
-            var ar = MapRating.getStat(a).avgScore;
-            var br = MapRating.getStat(b).avgScore;
+            var ar = mapRatingService.getStat(a).avgScore;
+            var br = mapRatingService.getStat(b).avgScore;
 
             if (ar == 0) {
                 ar = 6;
@@ -50,39 +56,33 @@ public class RtvMenu extends PluginMenu<Integer> {
 
         for (int i = start; i < end; i++) {
             Map map = maps.get(i);
-            var stats = MapRating.getStat(map);
-            String ratingColor = MapRating.avgScoreColor(stats.avgScore);
+            MapRatingStat stats = mapRatingService.getStat(map);
+            String ratingColor = mapRatingService.avgScoreColor(stats.avgScore);
 
-            String voted = voteHandler.isVoted(session.player, map.file.nameWithoutExtension())
+            String voted = rtvService.isVoted(session.player, map.file.nameWithoutExtension())
                     ? Tr.t(session, "rtv.voted_badge")
                     : "";
             String text = String.format("%s%s%.2f [gold]%c []%s (%s)", voted, ratingColor, stats.avgScore, Iconc.star,
                     map.name(), String.valueOf(stats.totalVotes));
 
             option(text, (p, s) -> {
-                voteHandler.handleVote(session.player, map);
+                rtvService.handleVote(session.player, map);
             });
             row();
         }
 
-        boolean hasPrev = currentPage > 1;
-        boolean hasNext = currentPage < totalPages;
-
-        if (hasPrev || hasNext) {
-            if (hasPrev) {
-                option(Tr.t(session, "rtv.previous"), (p, s) -> {
-                    new RtvMenu().send(p, currentPage - 1);
+        if (totalPages > 1) {
+            if (currentPage > 1) {
+                option(Tr.t(session, "rtv.previous_page"), (p, s) -> {
+                    new RtvMenu(rtvService, mapRatingService).send(p, currentPage - 1);
                 });
             }
 
-            if (hasNext) {
-                option(Tr.t(session, "rtv.next"), (p, s) -> {
-                    new RtvMenu().send(p, currentPage + 1);
+            if (currentPage < totalPages) {
+                option(Tr.t(session, "rtv.next_page"), (p, s) -> {
+                    new RtvMenu(rtvService, mapRatingService).send(p, currentPage + 1);
                 });
             }
-            row();
         }
-
-        text(Tr.t(session, "rtv.close"));
     }
 }
