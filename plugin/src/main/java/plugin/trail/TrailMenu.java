@@ -1,13 +1,13 @@
 package plugin.trail;
 
-import plugin.menus.PluginMenu;
-
 import arc.struct.Seq;
 import mindustry.gen.Call;
+import mindustry.gen.Iconc;
 import plugin.core.Registry;
+import plugin.menus.PluginMenu;
+import plugin.session.Session;
 import plugin.session.SessionRepository;
 import plugin.utils.Tr;
-import plugin.session.Session;
 
 public class TrailMenu extends PluginMenu<Integer> {
 
@@ -26,7 +26,7 @@ public class TrailMenu extends PluginMenu<Integer> {
         var end = Math.min(start + size, trails.size);
 
         var hasNoTrail = session.getData().trail == null || session.getData().trail.isEmpty();
-        var nonePrefix = hasNoTrail ? "[accent]● [green]" : "[green]";
+        var nonePrefix = hasNoTrail ? "[accent]" + Iconc.ok + " [green]" : "[green]";
 
         if (currentPage == 0) {
             option(nonePrefix + Tr.t(session, "trail.none"), (s, p) -> {
@@ -44,12 +44,19 @@ public class TrailMenu extends PluginMenu<Integer> {
         for (int i = start; i < end; i++) {
             var trail = trails.get(i);
 
-            var allowed = trail.allowed(session);
+            var owns = trail.owns(session);
             var isCurrent = trail.getName().equals(session.getData().trail);
-            var prefix = isCurrent ? "[accent]● [green]" : (allowed ? "[green]" : "[gray]");
+            String label;
+            if (isCurrent) {
+                label = "[accent]" + Iconc.ok + " [green]" + trail.getName() + " " + Tr.t(session, "trail.equipped");
+            } else if (owns) {
+                label = "[green]" + trail.getName() + " " + Tr.t(session, "trail.owned");
+            } else {
+                label = "[gold]" + trail.getName() + " " + Tr.t(session, "trail.price_tag", "coins", trail.getPrice());
+            }
 
-            option(prefix + trail.getName(), (s, p) -> {
-                if (allowed) {
+            option(label, (s, p) -> {
+                if (trail.owns(s)) {
                     if (trail.getName().equals(s.getData().trail)) {
                         s.getData().trail = "";
                     } else {
@@ -59,6 +66,16 @@ public class TrailMenu extends PluginMenu<Integer> {
                     if (repo != null) {
                         repo.markDirty(s);
                     }
+                    this.send(s, currentPage);
+                } else {
+                    var trailService = Registry.get(TrailService.class);
+                    if (trailService != null && trailService.purchase(s, trail)) {
+                        s.getData().trail = trail.getName();
+                        s.player.sendMessage(Tr.t(s, "trail.purchased", "name", trail.getName()));
+                    } else {
+                        s.player.sendMessage(Tr.t(s, "trail.not_enough_coins", "name", trail.getName(), "coins", trail.getPrice()));
+                    }
+                    this.send(s, currentPage);
                 }
             });
 

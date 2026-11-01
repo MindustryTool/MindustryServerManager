@@ -9,6 +9,7 @@ import plugin.PluginEvents;
 import plugin.annotations.Component;
 import plugin.annotations.ConditionOn;
 import plugin.annotations.Listener;
+import plugin.money.MoneyService;
 import plugin.utils.Tr;
 
 @Component
@@ -16,8 +17,10 @@ import plugin.utils.Tr;
 @RequiredArgsConstructor
 public class DailyService {
     private static final long DAILY_BONUS_EXP = 3600;
+    private static final long DAILY_BONUS_COINS = 500;
 
     private final DailyRepository dailyRepository;
+    private final MoneyService moneyService;
 
     @Listener
     public void onSessionCreated(SessionCreatedEvent event) {
@@ -37,7 +40,8 @@ public class DailyService {
         }
 
         dailyRepository.setLastLogin(uuid, today);
-        session.player.sendMessage(Tr.t(session, "session.daily_bonus", "bonus", "+" + DAILY_BONUS_EXP + " exp"));
+        session.player.sendMessage(Tr.t(session, "session.daily_bonus", "bonus", "+" + DAILY_BONUS_EXP + " exp, +" + DAILY_BONUS_COINS + " coins"));
         PluginEvents.fire(new ExpGainEvent(session, DAILY_BONUS_EXP));
+        moneyService.deposit(session, DAILY_BONUS_COINS);
     }
 }

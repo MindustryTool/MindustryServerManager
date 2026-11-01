@@ -1,41 +1,46 @@
 package plugin.trail;
 
-import plugin.session.SessionService;
-
+import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
-
 import arc.func.Cons2;
 import arc.graphics.Color;
 import arc.struct.Seq;
 import lombok.Data;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import mindustry.content.Fx;
 import mindustry.entities.Effect;
 import mindustry.gen.Call;
 import plugin.annotations.Component;
 import plugin.annotations.Init;
 import plugin.annotations.Schedule;
+import plugin.money.MoneyService;
 import plugin.session.Session;
-import plugin.session.ExpUtils;
+import plugin.session.SessionRepository;
+import plugin.session.SessionService;
 
 @Component
-@RequiredArgsConstructor
 public class TrailService {
 
     public final ConcurrentHashMap<String, Trail> trails = new ConcurrentHashMap<>();
     private final SessionService sessionService;
+    private final MoneyService moneyService;
+    private final SessionRepository sessionRepository;
+
+    public TrailService(SessionService sessionService, MoneyService moneyService, SessionRepository sessionRepository) {
+        this.sessionService = sessionService;
+        this.moneyService = moneyService;
+        this.sessionRepository = sessionRepository;
+    }
 
     @Init
     public void init() {
-        Trail.create(this, "shock", Fx.landShock, TrailRequirement.level(2));
-        Trail.create(this, "lightning", Fx.lightningShoot, TrailRequirement.level(5));
-        Trail.create(this, "fire", Fx.fire, TrailRequirement.level(15));
-        Trail.create(this, "heal", Fx.healWave, TrailRequirement.level(35));
-        Trail.custom(this, "placeblock", (x, y) -> Call.effect(Fx.placeBlock, x, y, 2.5f, Color.white),
-                TrailRequirement.level(50));
-        Trail.create(this, "explotion", Fx.explosion, TrailRequirement.admin());
+        Trail.create(this, "shock", 500, Fx.landShock);
+        Trail.create(this, "lightning", 1000, Fx.lightningShoot);
+        Trail.create(this, "fire", 2000, Fx.fire);
+        Trail.create(this, "heal", 3500, Fx.healWave);
+        Trail.custom(this, "placeblock", 5000, (x, y) -> Call.effect(Fx.placeBlock, x, y, 2.5f, Color.white));
+        Trail.create(this, "explotion", 0, Fx.explosion, TrailRequirement.admin());
     }
 
     @Schedule(fixedRate = 500)
@@ -52,24 +57,60 @@ public class TrailService {
         });
     }
 
+    public boolean purchase(Session session, Trail trail) {
+        if (trail.owns(session)) {
+            return true;
+        }
+        if (moneyService != null && moneyService.withdraw(session, trail.getPrice())) {
+            if (session.getData().unlockedTrails == null) {
+                session.getData().unlockedTrails = new ArrayList<>();
+            }
+            if (!session.getData().unlockedTrails.contains(trail.getName())) {
+                session.getData().unlockedTrails.add(trail.getName());
+            }
+            if (sessionRepository != null) {
+                sessionRepository.markDirty(session);
+            }
+            return true;
+        }
+        return false;
+    }
+
     @Data
     public static final class Trail {
         private final String name;
+        private final long price;
         private final Seq<TrailRequirement> requirements;
         private final Cons2<Float, Float> render;
 
-        public boolean allowed(Session session) {
-            return requirements.allMatch(r -> r.getAllowed().apply(session));
+        public boolean owns(Session session) {
+            if (price <= 0 && requirements.isEmpty()) {
+                return true;
+            }
+            if (session.isAdmin() || session.player.admin) {
+                return true;
+            }
+            return session.getData().unlockedTrails != null && session.getData().unlockedTrails.contains(name);
         }
 
-        public static void create(TrailService handler, String name, Effect effect, TrailRequirement... requirements) {
-            var trail = new Trail(name, Seq.with(requirements), (x, y) -> Call.effect(effect, x, y, 0, Color.white));
+        public boolean allowed(Session session) {
+            if (session.isAdmin() || session.player.admin) {
+                return true;
+            }
+            if (requirements.size > 0 && !requirements.allMatch(r -> r.getAllowed().apply(session))) {
+                return false;
+            }
+            return owns(session);
+        }
+
+        public static void create(TrailService handler, String name, long price, Effect effect, TrailRequirement... requirements) {
+            var trail = new Trail(name, price, Seq.with(requirements), (x, y) -> Call.effect(effect, x, y, 0, Color.white));
             handler.trails.put(name, trail);
         }
 
-        public static void custom(TrailService handler, String name, Cons2<Float, Float> render,
+        public static void custom(TrailService handler, String name, long price, Cons2<Float, Float> render,
                 TrailRequirement... requirements) {
-            var trail = new Trail(name, Seq.with(requirements), render);
+            var trail = new Trail(name, price, Seq.with(requirements), render);
             handler.trails.put(name, trail);
         }
     }
@@ -82,10 +123,6 @@ public class TrailService {
         private TrailRequirement(String message, Function<Session, Boolean> allowed) {
             this.message = message;
             this.allowed = allowed;
-        }
-
-        public static TrailRequirement level(int level) {
-            return new TrailRequirement("@Level >= " + level, session -> ExpUtils.getLevel(session) >= level);
         }
 
         public static TrailRequirement admin() {

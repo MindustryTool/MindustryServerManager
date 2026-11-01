@@ -586,7 +586,7 @@ public class ServerService {
             return;
         }
 
-        if (wish != null && !mismatches.isEmpty()) {
+        if (wish != null && !mismatches.isEmpty() && wish.getIsAutoTurnOff() == false) {
             status.phase = Phase.ACTING;
             eventBus.emit(LogEvent.info(serverId, "[purple]Configuration mismatch, auto restart"));
             try {

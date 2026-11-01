@@ -1,5 +1,8 @@
-## ADDED Requirements
+# money-system Specification
 
+## Purpose
+TBD - created by archiving change add-money-system. Update Purpose after archive.
+## Requirements
 ### Requirement: Persistent wallet in session data
 
 The plugin SHALL maintain a persistent `money` field of type `long` in `SessionData` representing the player's wallet balance. When `money` changes, the session SHALL be marked dirty via `SessionRepository.markDirty(session)` so changes are saved to the database.
@@ -14,11 +17,11 @@ The plugin SHALL maintain a persistent `money` field of type `long` in `SessionD
 
 ### Requirement: Money management service
 
-The plugin SHALL provide a `@Component` class `MoneyService` that exposes methods to check balance, deposit money, and attempt withdrawal.
+The plugin SHALL provide a `@Component` class `MoneyService` that exposes methods to check balance, deposit money, attempt withdrawal, and set balance with arithmetic overflow protection (maximum balance `1,000,000,000,000` coins).
 
 #### Scenario: Deposit money
 - **WHEN** `deposit(session, amount)` is called with a positive amount
-- **THEN** `session.getData().money` is incremented by that amount
+- **THEN** `session.getData().money` is incremented by that amount without exceeding the maximum balance cap
 - **AND** the session is marked dirty in `SessionRepository`
 
 #### Scenario: Successful withdrawal
@@ -35,16 +38,20 @@ The plugin SHALL provide a `@Component` class `MoneyService` that exposes method
 ### Requirement: Combat and wave clear rewards
 
 The plugin SHALL award money to players upon destroying enemy units and completing waves:
-- Destroying an enemy unit SHALL award coins scaled to the unit's tier or difficulty.
-- Completing a wave SHALL award bonus coins to all active players.
+- Destroying an enemy unit SHALL only award coins if the unit is hostile (non-friendly) and not a player or pet. The reward amount SHALL be capped at a maximum of 50 coins per enemy.
+- Completing a wave SHALL award bonus coins to all active players silently without sending repetitive chat notifications.
 
 #### Scenario: Enemy unit destroyed awards coins
-- **WHEN** an enemy unit is destroyed by player turrets or units
-- **THEN** contributing players or the team receive coin rewards
+- **WHEN** a valid hostile enemy unit is destroyed by player turrets or units
+- **THEN** contributing players receive coin rewards capped at 50 coins
 
-#### Scenario: Wave completion awards bonus
+#### Scenario: Friendly or player unit destroyed gives no reward
+- **WHEN** a player, friendly, or pet unit is destroyed
+- **THEN** zero coins are awarded
+
+#### Scenario: Wave completion awards bonus silently
 - **WHEN** a wave is successfully completed
-- **THEN** every active player receives wave completion bonus coins
+- **THEN** every active player receives wave completion bonus coins silently without repetitive chat announcements
 
 ### Requirement: Playtime income with AFK exclusion
 
@@ -65,3 +72,16 @@ The plugin SHALL credit coins earned from completed daily tasks into the player'
 #### Scenario: Depositing daily task reward
 - **WHEN** a player completes a daily task
 - **THEN** the task reward is deposited via `MoneyService.deposit(session, reward)` and the session is marked dirty
+
+### Requirement: Localized economy messages and font-safe balance indicators
+
+All economy notifications, rewards, and balance messages emitted by `MoneyService`, `CombatRewardService`, and money commands SHALL be localized using `Tr.t` and use Mindustry font-safe glyphs and color tags.
+
+#### Scenario: Player receives localized coin deposit notification
+- **WHEN** coins are awarded to a player for playtime or combat
+- **THEN** the notification message is translated according to the player's locale via `Tr.t` without unsupported Unicode emojis
+
+#### Scenario: Balance command displays localized output
+- **WHEN** a player executes `/money` or `/balance`
+- **THEN** the balance response is formatted using localized template strings and font-safe glyphs
+

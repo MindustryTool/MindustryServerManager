@@ -3,12 +3,10 @@
 ## Purpose
 
 TBD - created by syncing change rework-i18n. Update Purpose after implementation.
-
 ## Requirements
-
 ### Requirement: Per-locale JSON catalogs
 
-The plugin SHALL load translation catalogs from classpath JSON files at `i18n/<language>.json` (e.g. `i18n/en.json`, `i18n/vi.json`), one file per base language. Each file SHALL be nested JSON organized by module namespace (e.g. `hub`, `vote`, `session`, `grief`, `tip`, `maprating`, `trail`, `admin`, `security`, `welcome`).
+The plugin SHALL load translation catalogs from classpath JSON files at `i18n/<language>.json` (e.g. `i18n/en.json`, `i18n/vi.json`), one file per base language. Each file SHALL be nested JSON organized by module namespace (e.g. `hub`, `vote`, `session`, `grief`, `tip`, `maprating`, `trail`, `admin`, `security`, `welcome`, `shop`, `pet`, `gacha`, `task`, `money`).
 
 At init the plugin SHALL flatten each catalog into an in-memory map of dotted key → value. A missing catalog file for a referenced base language SHALL log a warning and SHALL NOT prevent startup.
 
@@ -67,3 +65,4 @@ All non-English catalog files SHALL maintain the exact same set of dotted keys a
 #### Scenario: Key removed from English catalog
 - **WHEN** an entry is removed from `i18n/en.json`
 - **THEN** the parity test fails until the same key is removed from every other catalog
+

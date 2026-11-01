@@ -1,5 +1,8 @@
-## ADDED Requirements
+# shop-system Specification
 
+## Purpose
+TBD - created by archiving change add-money-system. Update Purpose after archive.
+## Requirements
 ### Requirement: Gacha rolling system
 
 The plugin SHALL provide a gacha lucky roll system allowing players to spend coins for randomized rewards.
@@ -50,12 +53,47 @@ The plugin SHALL allow players to spend coins to upgrade their core unit capabil
 
 ### Requirement: Shop and Gacha user interfaces
 
-The plugin SHALL provide both interactive GUI dialogs (`/shop`, `/gacha`) and chat commands (`/buy <item>`, `/gacha [roll]`) for all purchasable features.
+The plugin SHALL provide both interactive GUI dialogs (`/shop`, `/gacha`) and chat commands (`/buy <item>`, `/gacha [roll]`) for all purchasable features. All menu titles, item descriptions, and status messages SHALL be localized using `Tr.t` and SHALL use native `mindustry.gen.Iconc` characters rather than unsupported Unicode emojis.
 
 #### Scenario: Opening shop menu
 - **WHEN** a player executes `/shop`
-- **THEN** a menu is displayed offering options for Pet Units, Core Upgrades, and Gacha Rolls
+- **THEN** a menu is displayed offering options dynamically loaded from `ShopRegistry` with localized labels and font-safe icons
 
 #### Scenario: Opening gacha menu
 - **WHEN** a player executes `/gacha`
-- **THEN** a menu is displayed showing roll costs, current player balance, and roll buttons
+- **THEN** a menu is displayed showing roll costs, current player balance, and roll buttons rendered with localized strings and font-safe glyphs
+
+### Requirement: Extensible shop item strategy registry
+
+The plugin SHALL provide a `ShopRegistry` component that registers `ShopItem` implementations. Each `ShopItem` SHALL encapsulate an identifier, localized title and description, dynamic price, availability check, and purchase execution logic.
+
+#### Scenario: Shop items queried through registry
+- **WHEN** the shop menu or `/buy` command looks up available items
+- **THEN** `ShopRegistry.getItems()` returns all registered `ShopItem` strategies
+- **AND** items are evaluated for player availability via `item.isAvailable(session)`
+
+#### Scenario: Dynamic purchase execution
+- **WHEN** a player purchases an item via command or menu
+- **THEN** `ShopRegistry.get(itemId)` resolves the strategy
+- **AND** the strategy validates funds, executes the transaction, and returns a result message
+
+### Requirement: Reusable weighted loot table for gacha
+
+The plugin SHALL use a generic `LootTable<T>` weighted pool to determine gacha rewards.
+
+#### Scenario: Rolling with weighted chances
+- **WHEN** a gacha roll is executed
+- **THEN** `LootTable.roll(random)` selects a reward according to the configured item weights
+
+### Requirement: Purchase action rate-limiting and thread safety
+
+The plugin SHALL enforce a minimum interval of 400ms between shop purchases and gacha rolls per player to prevent concurrent macro spam. All state and coin deductions during purchases SHALL be synchronized per session.
+
+#### Scenario: Rapid purchase clicks throttled
+- **WHEN** a player executes multiple purchase or gacha roll commands within less than 400ms
+- **THEN** requests arriving before the cooldown expires are rejected without deducting coins or firing purchases
+
+#### Scenario: Concurrent purchase race condition prevented
+- **WHEN** multiple purchase commands arrive simultaneously for the same player
+- **THEN** execution is synchronized so that wallet balances and tier levels remain strictly atomic and consistent
+
