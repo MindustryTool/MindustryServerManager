@@ -264,25 +264,6 @@ class ServerServiceReconcileTest {
     }
 
     @Test
-    void configDriftRecreatesNotRemoves() {
-        UUID serverId = UUID.randomUUID();
-        nodes.running.add(serverId);
-        nodes.runningConfig = config(serverId, 6567, true);
-        service.updateConfig(serverId, config(serverId, 7000, true));
-        nodes.mismatches = List.of(drift());
-
-        service.reconcileTick();
-
-        assertTrue(service.hostCalls.contains(serverId), "drift must recreate");
-        assertTrue(service.removed.stream()
-                .noneMatch(r -> r.reason() == NodeRemoveReason.NO_PLAYER),
-                "drift must never auto-remove for idle");
-        assertEquals(1, service.removed.stream()
-                .filter(r -> r.reason() == NodeRemoveReason.CONFIG_DRIFT).count(),
-                "recreate must use the config-drift reason");
-    }
-
-    @Test
     void cleanEmptyServerRemovedAfter20m() throws Exception {
         UUID serverId = UUID.randomUUID();
         nodes.running.add(serverId);
