@@ -14,6 +14,7 @@ import mindustry.gen.Call;
 import plugin.annotations.Component;
 import plugin.annotations.Init;
 import plugin.annotations.Schedule;
+import plugin.core.Registry;
 import plugin.money.MoneyService;
 import plugin.session.Session;
 import plugin.session.SessionRepository;
@@ -24,13 +25,23 @@ public class TrailService {
 
     public final ConcurrentHashMap<String, Trail> trails = new ConcurrentHashMap<>();
     private final SessionService sessionService;
-    private final MoneyService moneyService;
     private final SessionRepository sessionRepository;
+    private MoneyService moneyService;
 
-    public TrailService(SessionService sessionService, MoneyService moneyService, SessionRepository sessionRepository) {
+    public TrailService(SessionService sessionService, SessionRepository sessionRepository) {
         this.sessionService = sessionService;
-        this.moneyService = moneyService;
         this.sessionRepository = sessionRepository;
+    }
+
+    public void setMoneyService(MoneyService moneyService) {
+        this.moneyService = moneyService;
+    }
+
+    public MoneyService resolveMoneyService() {
+        if (moneyService != null) {
+            return moneyService;
+        }
+        return Registry.getOrNull(MoneyService.class);
     }
 
     @Init
@@ -61,7 +72,8 @@ public class TrailService {
         if (trail.owns(session)) {
             return true;
         }
-        if (moneyService != null && moneyService.withdraw(session, trail.getPrice())) {
+        MoneyService ms = resolveMoneyService();
+        if (ms != null && ms.withdraw(session, trail.getPrice())) {
             if (session.getData().unlockedTrails == null) {
                 session.getData().unlockedTrails = new ArrayList<>();
             }
@@ -78,12 +90,16 @@ public class TrailService {
 
     @Data
     public static final class Trail {
+        private final TrailService handler;
         private final String name;
         private final long price;
         private final Seq<TrailRequirement> requirements;
         private final Cons2<Float, Float> render;
 
         public boolean owns(Session session) {
+            if (handler != null && handler.resolveMoneyService() == null) {
+                return true;
+            }
             if (price <= 0 && requirements.isEmpty()) {
                 return true;
             }
@@ -104,13 +120,13 @@ public class TrailService {
         }
 
         public static void create(TrailService handler, String name, long price, Effect effect, TrailRequirement... requirements) {
-            var trail = new Trail(name, price, Seq.with(requirements), (x, y) -> Call.effect(effect, x, y, 0, Color.white));
+            var trail = new Trail(handler, name, price, Seq.with(requirements), (x, y) -> Call.effect(effect, x, y, 0, Color.white));
             handler.trails.put(name, trail);
         }
 
         public static void custom(TrailService handler, String name, long price, Cons2<Float, Float> render,
                 TrailRequirement... requirements) {
-            var trail = new Trail(name, price, Seq.with(requirements), render);
+            var trail = new Trail(handler, name, price, Seq.with(requirements), render);
             handler.trails.put(name, trail);
         }
     }

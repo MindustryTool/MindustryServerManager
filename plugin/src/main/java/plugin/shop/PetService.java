@@ -8,13 +8,16 @@ import mindustry.content.UnitTypes;
 import mindustry.game.EventType.WaveEvent;
 import mindustry.gen.Unit;
 import mindustry.type.UnitType;
+import plugin.Cfg;
 import plugin.annotations.Component;
+import plugin.annotations.ConditionOn;
 import plugin.annotations.Listener;
 import plugin.money.MoneyService;
 import plugin.session.Session;
 import plugin.utils.Tr;
 
 @Component
+@ConditionOn(Cfg.OnOfficial.class)
 public class PetService {
     public static final long COOLDOWN_MILLIS = 60_000;
     public static final int MAX_SUMMONS_PER_WAVE = 2;

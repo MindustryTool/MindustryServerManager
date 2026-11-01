@@ -14,7 +14,7 @@ public class GachaMenu extends PluginMenu<Integer> {
         this.description = Tr.t(session, "gacha.description");
 
         option(Tr.t(session, "gacha.roll_single_btn", "cost", GachaService.COST_SINGLE), (s, p) -> {
-            GachaService gachaService = Registry.get(GachaService.class);
+            GachaService gachaService = Registry.getOrNull(GachaService.class);
             if (gachaService != null) {
                 gachaService.rollSingle(s);
             }
@@ -22,7 +22,7 @@ public class GachaMenu extends PluginMenu<Integer> {
         });
 
         option(Tr.t(session, "gacha.roll_ten_btn", "cost", GachaService.COST_MULTI_10), (s, p) -> {
-            GachaService gachaService = Registry.get(GachaService.class);
+            GachaService gachaService = Registry.getOrNull(GachaService.class);
             if (gachaService != null) {
                 gachaService.rollTen(s);
             }

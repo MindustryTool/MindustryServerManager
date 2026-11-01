@@ -11,7 +11,7 @@ public class TaskMenu extends PluginMenu<Integer> {
 
     @Override
     public void build(Session session, Integer state) {
-        DailyTaskService service = Registry.get(DailyTaskService.class);
+        DailyTaskService service = Registry.getOrNull(DailyTaskService.class);
         if (service == null) {
             text(Tr.t(session, "task.unavailable"));
             return;

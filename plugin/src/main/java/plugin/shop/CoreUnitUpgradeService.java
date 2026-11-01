@@ -5,7 +5,9 @@ import mindustry.Vars;
 import mindustry.game.EventType.PlayerJoin;
 import mindustry.game.EventType.UnitSpawnEvent;
 import mindustry.gen.Unit;
+import plugin.Cfg;
 import plugin.annotations.Component;
+import plugin.annotations.ConditionOn;
 import plugin.annotations.Listener;
 import plugin.annotations.Schedule;
 import plugin.money.MoneyService;
@@ -15,6 +17,7 @@ import plugin.session.SessionService;
 import plugin.utils.Tr;
 
 @Component
+@ConditionOn(Cfg.OnOfficial.class)
 public class CoreUnitUpgradeService {
     public static final int MAX_TIER = 3;
     public static final long COST_TIER_1 = 800;

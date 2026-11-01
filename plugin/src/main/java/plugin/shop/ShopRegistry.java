@@ -7,10 +7,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import mindustry.content.UnitTypes;
+import plugin.Cfg;
 import plugin.annotations.Component;
+import plugin.annotations.ConditionOn;
 import plugin.session.Session;
 
 @Component
+@ConditionOn(Cfg.OnOfficial.class)
 public class ShopRegistry {
     public static final long PURCHASE_COOLDOWN_MILLIS = 400L;
 

@@ -48,7 +48,8 @@ public class TrailServiceTest {
         repository = new SessionRepository(database);
         sessionService = new SessionService(repository);
         moneyService = new MoneyService(repository, sessionService);
-        trailService = new TrailService(sessionService, moneyService, repository);
+        trailService = new TrailService(sessionService, repository);
+        trailService.setMoneyService(moneyService);
 
         trailService.init();
     }
@@ -100,5 +101,13 @@ public class TrailServiceTest {
         assertTrue(bought);
         assertTrue(shock.owns(session));
         assertTrue(session.getData().unlockedTrails.contains("shock"));
+    }
+
+    @Test
+    void trailsAreFreeWhenMoneyServiceNotPresent() {
+        trailService.setMoneyService(null);
+        Session session = createSession("trail_uuid_non_official", 0);
+        TrailService.Trail shock = trailService.trails.get("shock");
+        assertTrue(shock.owns(session));
     }
 }

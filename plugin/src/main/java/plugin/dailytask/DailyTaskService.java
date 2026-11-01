@@ -13,7 +13,9 @@ import mindustry.game.EventType.WaveEvent;
 import mindustry.gen.Iconc;
 import mindustry.gen.Player;
 import mindustry.gen.Unit;
+import plugin.Cfg;
 import plugin.annotations.Component;
+import plugin.annotations.ConditionOn;
 import plugin.annotations.Listener;
 import plugin.money.MoneyService;
 import plugin.session.Session;
@@ -24,6 +26,7 @@ import plugin.session.SessionService;
 import plugin.utils.Tr;
 
 @Component
+@ConditionOn(Cfg.OnOfficial.class)
 public class DailyTaskService {
     public static final long BUILD_DEBOUNCE_MILLIS = 500L;
 

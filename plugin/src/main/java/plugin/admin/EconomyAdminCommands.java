@@ -2,8 +2,10 @@ package plugin.admin;
 
 import java.util.List;
 import mindustry.Vars;
+import plugin.Cfg;
 import plugin.annotations.ClientCommand;
 import plugin.annotations.Component;
+import plugin.annotations.ConditionOn;
 import plugin.annotations.Param;
 import plugin.dailytask.DailyTask;
 import plugin.dailytask.DailyTaskService;
@@ -13,6 +15,7 @@ import plugin.session.SessionService;
 import plugin.utils.Tr;
 
 @Component
+@ConditionOn(Cfg.OnOfficial.class)
 public class EconomyAdminCommands {
     private final MoneyService moneyService;
     private final DailyTaskService dailyTaskService;

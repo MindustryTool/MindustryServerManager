@@ -7,13 +7,16 @@ import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import mindustry.Vars;
 import mindustry.gen.Iconc;
+import plugin.Cfg;
 import plugin.annotations.Component;
+import plugin.annotations.ConditionOn;
 import plugin.money.MoneyService;
 import plugin.session.Session;
 import plugin.session.SessionRepository;
 import plugin.utils.Tr;
 
 @Component
+@ConditionOn(Cfg.OnOfficial.class)
 public class GachaService {
     public static final long COST_SINGLE = 200;
     public static final long COST_MULTI_10 = 1800;

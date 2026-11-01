@@ -2,14 +2,17 @@ package plugin.money;
 
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
+import plugin.Cfg;
 import plugin.PluginEvents;
 import plugin.annotations.Component;
+import plugin.annotations.ConditionOn;
 import plugin.annotations.Schedule;
 import plugin.session.Session;
 import plugin.session.SessionRepository;
 import plugin.session.SessionService;
 
 @Component
+@ConditionOn(Cfg.OnOfficial.class)
 @RequiredArgsConstructor
 public class MoneyService {
     public static final long PLAYTIME_COINS_PER_INTERVAL = 10;

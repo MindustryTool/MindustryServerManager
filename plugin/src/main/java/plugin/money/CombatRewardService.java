@@ -5,11 +5,14 @@ import mindustry.game.EventType.UnitBulletDestroyEvent;
 import mindustry.game.EventType.WaveEvent;
 import mindustry.gen.Player;
 import mindustry.gen.Unit;
+import plugin.Cfg;
 import plugin.annotations.Component;
+import plugin.annotations.ConditionOn;
 import plugin.annotations.Listener;
 import plugin.session.SessionService;
 
 @Component
+@ConditionOn(Cfg.OnOfficial.class)
 public class CombatRewardService {
     public static final long MAX_KILL_REWARD = 50L;
 

@@ -42,6 +42,7 @@ import plugin.annotations.Listener;
 import plugin.annotations.MainThread;
 import plugin.annotations.PlayerActionFilter;
 import plugin.annotations.Schedule;
+import plugin.core.Registry;
 import plugin.gamemode.GamemodeCondition;
 import plugin.money.MoneyService;
 import plugin.session.ExpGainEvent;
@@ -53,7 +54,6 @@ import plugin.session.SessionService;
 public class TowerDefenseGamemode {
 
     private final SessionService sessionService;
-    private final MoneyService moneyService;
 
     public static ObjectMap<UnitType, Seq<ItemStack>> drops;
     public static float multiplier = 1f;
@@ -376,7 +376,10 @@ public class TowerDefenseGamemode {
                     if (expGained > 0) {
                         PluginEvents.fire(new ExpGainEvent(session, expGained));
                         long coins = Math.max(1, (long) (event.unit.maxHealth / 1000f));
-                        moneyService.deposit(session, coins);
+                        MoneyService moneyService = Registry.getOrNull(MoneyService.class);
+                        if (moneyService != null) {
+                            moneyService.deposit(session, coins);
+                        }
                     }
                 });
             }

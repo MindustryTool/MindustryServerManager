@@ -15,7 +15,7 @@ public class ShopMenu extends PluginMenu<Integer> {
         this.title = Tr.t(session, "shop.title", "coins", session.getData().money);
         this.description = Tr.t(session, "shop.description");
 
-        ShopRegistry registry = Registry.get(ShopRegistry.class);
+        ShopRegistry registry = Registry.getOrNull(ShopRegistry.class);
         if (registry != null) {
             List<ShopItem> items = registry.getItems();
             int count = 0;

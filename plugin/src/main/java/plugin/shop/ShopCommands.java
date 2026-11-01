@@ -1,14 +1,17 @@
 package plugin.shop;
 
 import mindustry.Vars;
+import plugin.Cfg;
 import plugin.annotations.ClientCommand;
 import plugin.annotations.Component;
+import plugin.annotations.ConditionOn;
 import plugin.annotations.Param;
 import plugin.dailytask.TaskMenu;
 import plugin.session.Session;
 import plugin.utils.Tr;
 
 @Component
+@ConditionOn(Cfg.OnOfficial.class)
 public class ShopCommands {
     private final ShopRegistry shopRegistry;
 
