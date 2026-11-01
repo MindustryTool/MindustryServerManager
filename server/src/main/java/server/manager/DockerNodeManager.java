@@ -251,12 +251,12 @@ public class DockerNodeManager implements NodeManager {
                 .withBinds(bind);
 
         if (Const.IS_PRODUCTION) {
-            hostConfig.withExtraHosts("server.mindustry-tool.com:148.113.245.224",
-                    "api.mindustry-tool.com:148.113.245.224");
+            hostConfig.withExtraHosts("server.mindustry-tool.com:194.163.191.228",
+                    "api.mindustry-tool.com:194.163.191.228");
         }
 
         if (Const.IS_PRODUCTION) {
-            hostConfig.withRuntime("io.containerd.kata.v2");
+            hostConfig.withRuntime("runsc");
         }
 
         command.withExposedPorts(exposedPorts)
