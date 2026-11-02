@@ -100,6 +100,60 @@ public class ServerService {
     private void init() {
         scheduler.scheduleWithFixedDelay(this::reconcileTick, 1, 1, TimeUnit.MINUTES);
         scheduler.scheduleWithFixedDelay(this::removeOldServer, 0, 24, TimeUnit.HOURS);
+        scheduler.schedule(() -> Const.executorService.submit(this::autoHostOfficialServers), 1, TimeUnit.MINUTES);
+    }
+
+    List<ServerConfig> findOfficialPersistentServers() {
+        Fi serverFolder = nodeManager.getServerFolder();
+        if (serverFolder == null || !serverFolder.exists()) {
+            return List.of();
+        }
+
+        Fi[] serverDirs = serverFolder.list();
+        if (serverDirs == null) {
+            return List.of();
+        }
+
+        List<ServerConfig> result = new ArrayList<>();
+        for (Fi file : serverDirs) {
+            if (!file.isDirectory()) {
+                continue;
+            }
+            final UUID serverId;
+            try {
+                serverId = UUID.fromString(file.name());
+            } catch (IllegalArgumentException e) {
+                continue;
+            }
+
+            ServerConfig config = loadDesiredConfig(serverId);
+            if (config != null
+                    && Boolean.TRUE.equals(config.getIsOfficial())
+                    && Boolean.FALSE.equals(config.getIsAutoTurnOff())) {
+                if (config.getId() == null) {
+                    config.setId(serverId);
+                }
+                result.add(config);
+            }
+        }
+        return result;
+    }
+
+    void autoHostOfficialServers() {
+        List<ServerConfig> targets = findOfficialPersistentServers();
+        for (ServerConfig config : targets) {
+            UUID id = config.getId();
+            try {
+                if (gatewayService.isHosting(id)) {
+                    Log.info("Official server @ is already hosting, skipping auto-host", id);
+                    continue;
+                }
+                Log.info("Auto hosting official server @", id);
+                host(config);
+            } catch (Exception e) {
+                Log.err("Failed to auto host official server " + id, e);
+            }
+        }
     }
 
     private void removeOldServer() {
