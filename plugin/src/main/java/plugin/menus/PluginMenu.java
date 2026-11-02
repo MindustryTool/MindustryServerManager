@@ -1,7 +1,6 @@
 package plugin.menus;
 
 import java.time.Instant;
-
 import arc.math.Mathf;
 import arc.struct.Seq;
 import arc.util.Log;
@@ -19,11 +18,12 @@ public abstract class PluginMenu<T> {
     public T state = null;
 
     public final Instant createdAt = Instant.now();
+    private final int menuId = Mathf.random(1000, Integer.MAX_VALUE);
 
     public Seq<Seq<HudOption<T>>> options = new Seq<>(new Seq<>());
 
     public final int getMenuId() {
-        return Mathf.random(1000, Integer.MAX_VALUE);
+        return menuId;
     }
 
     public void option(String text, PlayerPressCallback<T> callback) {
@@ -50,7 +50,7 @@ public abstract class PluginMenu<T> {
     }
 
     public boolean valid() {
-        return true;
+        return session != null && session.player != null && session.player.con != null;
     }
 
     protected abstract void build(Session session, T state);
