@@ -22,10 +22,10 @@ The `server` application SHALL provide a shared `ScheduledExecutorService` for p
 - **THEN** all scheduled tasks are triggered from the shared server scheduler
 
 ### Requirement: Gateway Client Lifecycle and RPC Channel Teardown
-`GatewayService` SHALL supply the shared server scheduler to each `GatewayClient`'s `RpcChannel` and SHALL call `shutdown()` on the `RpcChannel` when a client is removed or terminated.
+`GatewayService` SHALL supply the shared server scheduler to each `GatewayClient`'s `RpcChannel` and SHALL call `shutdown()` on the `RpcChannel` when a client is removed in `GatewayService.sweep()`.
 
 #### Scenario: Disconnected client releases RPC resources
-- **WHEN** a server container terminates or is removed by `GatewayService.sweep()`
+- **WHEN** a server container terminates and is removed by `GatewayService.sweep()`
 - **THEN** its `GatewayClient` RPC channel is shut down and all pending timer resources are released
 
 ### Requirement: Jetty Thread Pool Right-Sizing

@@ -355,7 +355,6 @@ public class GatewayService {
 
             eventBus.emit(new StopEvent(id, reason));
             Log.info("Client terminated: " + id + " reason: " + reason);
-            rpcChannel.shutdown();
 
             return true;
         }

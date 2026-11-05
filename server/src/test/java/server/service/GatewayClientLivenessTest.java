@@ -326,4 +326,22 @@ public class GatewayClientLivenessTest {
                 ((StopEvent) events.stream().filter(StopEvent.class::isInstance).findFirst().orElseThrow()).getReason());
         assertSame(client, service.of(id), "terminate must not drop the cache entry");
     }
+
+    @Test
+    void reconnectAfterTerminateAdoptsNewSession() throws Exception {
+        RunningNodeManager nodes = new RunningNodeManager();
+        setUp(nodes);
+
+        UUID id = UUID.randomUUID();
+        GatewayService.GatewayClient client = service.of(id);
+        FakeSession session = new FakeSession(true);
+        client.rpcChannel().onOpen(session);
+
+        service.terminate(id, NodeRemoveReason.CONFIG_DRIFT);
+
+        FakeSession newSession = new FakeSession(true);
+        client.rpcChannel().onOpen(newSession);
+
+        assertSame(newSession, client.rpcChannel().current(), "reconnect after terminate adopts new session");
+    }
 }
