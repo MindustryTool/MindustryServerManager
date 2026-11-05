@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.concurrent.ExecutorService;
+import server.utils.ThreadExecutors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Executors;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -43,7 +45,13 @@ public class Const {
     public static final String MANAGER_VERSION = "0.0.1";
     public static final Long MAX_FILE_SIZE = 5000000l;
 
-    public static final ExecutorService executorService = Executors.newCachedThreadPool();
+    public static final ExecutorService executorService = ThreadExecutors.createVirtualThreadExecutor();
+
+    public static final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+        Thread t = new Thread(r, "server-scheduler");
+        t.setDaemon(true);
+        return t;
+    });
 
     private static final ModelMapper modelMapper = new ModelMapper();
     private static final ObjectMapper objectMapper = createObjectMapper();

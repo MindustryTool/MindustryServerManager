@@ -1,38 +1,56 @@
 package plugin.shop;
 
+import lombok.RequiredArgsConstructor;
 import mindustry.gen.Iconc;
+import mindustry.ui.builder.UiBuilder;
+import plugin.annotations.Component;
 import plugin.core.Registry;
-import plugin.menus.PluginMenu;
-import plugin.session.Session;
+import plugin.menus.MenuContext;
+import plugin.menus.ServerMenu;
 import plugin.utils.Tr;
 
-public class GachaMenu extends PluginMenu<Integer> {
+@Component
+@RequiredArgsConstructor
+public class GachaMenu extends ServerMenu<Integer> {
+
+    private final GachaService gachaService;
 
     @Override
-    public void build(Session session, Integer state) {
-        this.title = Tr.t(session, "gacha.title", "coins", session.getData().money);
-        this.description = Tr.t(session, "gacha.description");
+    public void build(MenuContext<Integer> ctx) {
+        this.title = Tr.t(ctx.getSession(), "gacha.title", "coins", ctx.getSession().getData().money);
 
-        option(Tr.t(session, "gacha.roll_single_btn", "cost", GachaService.COST_SINGLE), (s, p) -> {
-            GachaService gachaService = Registry.getOrNull(GachaService.class);
-            if (gachaService != null) {
-                gachaService.rollSingle(s);
-            }
-            this.send(s, 0);
+        ctx.label("[gold]★ Lucky Gacha Machine ★");
+        ctx.row();
+        ctx.label("[lightgray]" + Tr.t(ctx.getSession(), "gacha.description"));
+        ctx.row();
+
+        ctx.table(rolls -> {
+            String singleAct = ctx.registerAction((sess, st, res) -> {
+                if (gachaService != null) {
+                    gachaService.rollSingle(sess);
+                }
+                Registry.get(GachaMenu.class).send(sess, 0);
+            });
+
+            String tenAct = ctx.registerAction((sess, st, res) -> {
+                if (gachaService != null) {
+                    gachaService.rollTen(sess);
+                }
+                Registry.get(GachaMenu.class).send(sess, 0);
+            });
+
+            rolls.add(UiBuilder.button(Tr.t(ctx.getSession(), "gacha.roll_single_btn", "cost", GachaService.COST_SINGLE)).clicked(singleAct).width(140f).height(45f).pad(4f));
+            rolls.add(UiBuilder.button(Tr.t(ctx.getSession(), "gacha.roll_ten_btn", "cost", GachaService.COST_MULTI_10)).clicked(tenAct).width(140f).height(45f).pad(4f));
         });
 
-        option(Tr.t(session, "gacha.roll_ten_btn", "cost", GachaService.COST_MULTI_10), (s, p) -> {
-            GachaService gachaService = Registry.getOrNull(GachaService.class);
-            if (gachaService != null) {
-                gachaService.rollTen(s);
-            }
-            this.send(s, 0);
+        ctx.row();
+
+        ctx.table(nav -> {
+            String backAct = ctx.registerAction((sess, st, res) -> Registry.get(ShopMenu.class).send(sess, 0));
+            String closeAct = ctx.registerAction((sess, st, res) -> {});
+
+            nav.add(UiBuilder.button("[lightgray]" + Iconc.left + " " + Tr.t(ctx.getSession(), "gacha.back_to_shop")).clicked(backAct).width(140f).height(40f).pad(4f));
+            nav.add(UiBuilder.button(Tr.t(ctx.getSession(), "gacha.close")).clicked(closeAct).width(100f).height(40f).pad(4f));
         });
-        row();
-
-        option("[lightgray]" + Iconc.left + " " + Tr.t(session, "gacha.back_to_shop"), (s, p) -> new ShopMenu().send(s, 0));
-        row();
-
-        text(Tr.t(session, "gacha.close"));
     }
 }

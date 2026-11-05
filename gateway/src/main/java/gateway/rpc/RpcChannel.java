@@ -1,6 +1,5 @@
 package gateway.rpc;
 
-
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.time.Duration;
@@ -45,6 +44,7 @@ public class RpcChannel implements SessionProvider {
 
     private final ObjectMapper mapper;
     private final ScheduledExecutorService scheduler;
+    private final boolean ownedScheduler;
 
     private volatile WsSession current;
     private volatile boolean shutdown = false;
@@ -64,24 +64,39 @@ public class RpcChannel implements SessionProvider {
     private final FrameWriter frameSink = this::sendRaw;
 
     public static RpcChannel create() {
-        return new RpcChannel(defaultMapper(), defaultScheduler(), Runnable::run);
+        return new RpcChannel(defaultMapper(), defaultScheduler(), Runnable::run, true);
     }
 
     public static RpcChannel withExecutor(Executor handlerExecutor) {
         Objects.requireNonNull(handlerExecutor, "handlerExecutor");
-        return new RpcChannel(defaultMapper(), defaultScheduler(), handlerExecutor);
+        return new RpcChannel(defaultMapper(), defaultScheduler(), handlerExecutor, true);
+    }
+
+    public static RpcChannel withExecutor(Executor handlerExecutor, ScheduledExecutorService scheduler) {
+        Objects.requireNonNull(handlerExecutor, "handlerExecutor");
+        Objects.requireNonNull(scheduler, "scheduler");
+        return new RpcChannel(defaultMapper(), scheduler, handlerExecutor, false);
     }
 
     public static RpcChannel withMapper(ObjectMapper mapper, Executor handlerExecutor) {
         Objects.requireNonNull(mapper, "mapper");
         Objects.requireNonNull(handlerExecutor, "handlerExecutor");
-        return new RpcChannel(mapper, defaultScheduler(), handlerExecutor);
+        return new RpcChannel(mapper, defaultScheduler(), handlerExecutor, true);
+    }
+
+    public static RpcChannel withMapper(ObjectMapper mapper, ScheduledExecutorService scheduler,
+            Executor handlerExecutor) {
+        Objects.requireNonNull(mapper, "mapper");
+        Objects.requireNonNull(scheduler, "scheduler");
+        Objects.requireNonNull(handlerExecutor, "handlerExecutor");
+        return new RpcChannel(mapper, scheduler, handlerExecutor, false);
     }
 
     private RpcChannel(ObjectMapper mapper, ScheduledExecutorService scheduler,
-            Executor handlerExecutor) {
+            Executor handlerExecutor, boolean ownedScheduler) {
         this.mapper = mapper;
         this.scheduler = scheduler;
+        this.ownedScheduler = ownedScheduler;
         this.rpc = new RpcProtocol(mapper, scheduler, handlerExecutor, DEFAULT_TIMEOUT, frameSink, this);
         this.stream = new StreamProtocol(mapper, scheduler, handlerExecutor, DEFAULT_TIMEOUT, frameSink, this,
                 rpc, rpc);
@@ -549,6 +564,8 @@ public class RpcChannel implements SessionProvider {
             shutdown = true;
         }
         onClose(new RuntimeException("RpcChannel shutdown"));
-        scheduler.shutdownNow();
+        if (ownedScheduler) {
+            scheduler.shutdownNow();
+        }
     }
 }

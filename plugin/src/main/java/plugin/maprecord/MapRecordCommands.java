@@ -1,7 +1,6 @@
 package plugin.maprecord;
 
 import java.util.List;
-
 import lombok.RequiredArgsConstructor;
 import mindustry.Vars;
 import plugin.annotations.ClientCommand;
@@ -17,6 +16,7 @@ import plugin.utils.Tr;
 @RequiredArgsConstructor
 public class MapRecordCommands {
     private final MapRecordRepository repository;
+    private final MapRecordsMenu mapRecordsMenu;
 
     @ClientCommand(name = "records", description = "View top 10 map records", admin = false)
     public void records(Session session) {
@@ -30,6 +30,6 @@ public class MapRecordCommands {
         List<MapRecord> records = repository.getTopRecords(mapName, currentMode, 10);
 
         MapRecordMenuState state = new MapRecordMenuState(Vars.state.map.name(), currentMode, records);
-        new MapRecordsMenu().send(session, state);
+        mapRecordsMenu.send(session, state);
     }
 }

@@ -1,88 +1,66 @@
 package plugin.vote;
 
 import arc.struct.Seq;
+import lombok.RequiredArgsConstructor;
 import mindustry.gen.Iconc;
 import mindustry.maps.Map;
+import mindustry.ui.builder.UiBuilder;
+import mindustry.ui.builder.UiBuilder.TableBuilder;
+import plugin.annotations.Component;
 import plugin.maprating.MapRatingService;
 import plugin.maprating.MapRatingStat;
-import plugin.menus.PluginMenu;
-import plugin.session.Session;
+import plugin.menus.MenuContext;
+import plugin.menus.ServerMenu;
 import plugin.utils.Tr;
 
-public class RtvMenu extends PluginMenu<Integer> {
-    private static final int MAPS_PER_PAGE = 5;
+@Component
+@RequiredArgsConstructor
+public class RtvMenu extends ServerMenu<Integer> {
 
     private final RtvService rtvService;
     private final MapRatingService mapRatingService;
 
-    public RtvMenu(RtvService rtvService, MapRatingService mapRatingService) {
-        this.rtvService = rtvService;
-        this.mapRatingService = mapRatingService;
-    }
-
     @Override
-    public void build(Session session, Integer page) {
+    public void build(MenuContext<Integer> ctx) {
         Seq<Map> maps = new Seq<>(rtvService.getMaps());
 
         maps.sort((a, b) -> {
             var ar = mapRatingService.getStat(a).avgScore;
             var br = mapRatingService.getStat(b).avgScore;
-
-            if (ar == 0) {
-                ar = 6;
-            }
-
-            if (br == 0) {
-                br = 6;
-            }
-
+            if (ar == 0) ar = 6;
+            if (br == 0) br = 6;
             return Float.compare(br, ar);
         });
 
-        int totalPages = (int) Math.ceil((double) maps.size / MAPS_PER_PAGE);
+        this.title = Tr.t(ctx.getSession(), "rtv.available_maps");
 
-        if (totalPages == 0) {
-            totalPages = 1;
-        }
+        ctx.label("[accent]Select a map to vote for next match:");
+        ctx.row();
 
-        int currentPage = Math.max(1, Math.min(page, totalPages));
+        ctx.pane(MenuContext.SAFE_WIDTH, 320f, paneTable -> {
+            for (Map map : maps) {
+                MapRatingStat stats = mapRatingService.getStat(map);
+                String ratingColor = mapRatingService.avgScoreColor(stats.avgScore);
+                boolean isVoted = rtvService.isVoted(ctx.getSession().player, map.file.nameWithoutExtension());
 
-        this.title = Tr.t(session, "rtv.available_maps");
-        this.description = Tr.t(session, "rtv.page_description",
-                "current", currentPage, "total", totalPages);
+                TableBuilder card = UiBuilder.table().pad(4f);
+                String titleText = String.format("%s%s%.2f [gold]%c []%s",
+                    isVoted ? "[accent]" + Tr.t(ctx.getSession(), "rtv.voted_badge") + " " : "",
+                    ratingColor, stats.avgScore, Iconc.star, map.name());
 
-        int start = (currentPage - 1) * MAPS_PER_PAGE;
-        int end = Math.min(start + MAPS_PER_PAGE, maps.size);
+                card.add(UiBuilder.label(titleText).align("left"));
+                card.add(UiBuilder.label("[gray](" + stats.totalVotes + " votes)").align("right"));
+                card.row();
 
-        for (int i = start; i < end; i++) {
-            Map map = maps.get(i);
-            MapRatingStat stats = mapRatingService.getStat(map);
-            String ratingColor = mapRatingService.avgScoreColor(stats.avgScore);
+                String voteAct = ctx.registerAction((sess, st, res) -> rtvService.handleVote(sess.player, map));
+                String voteBtnText = isVoted ? "[scarlet]Cancel Vote" : "[accent]Vote Map";
+                card.add(UiBuilder.button(voteBtnText).clicked(voteAct).width(130f).height(38f).align("right").colspan(2).pad(2f));
 
-            String voted = rtvService.isVoted(session.player, map.file.nameWithoutExtension())
-                    ? Tr.t(session, "rtv.voted_badge")
-                    : "";
-            String text = String.format("%s%s%.2f [gold]%c []%s (%s)", voted, ratingColor, stats.avgScore, Iconc.star,
-                    map.name(), String.valueOf(stats.totalVotes));
-
-            option(text, (p, s) -> {
-                rtvService.handleVote(session.player, map);
-            });
-            row();
-        }
-
-        if (totalPages > 1) {
-            if (currentPage > 1) {
-                option(Tr.t(session, "rtv.previous_page"), (p, s) -> {
-                    new RtvMenu(rtvService, mapRatingService).send(p, currentPage - 1);
-                });
+                paneTable.add(card.growX().pad(2f)).row();
             }
+        });
 
-            if (currentPage < totalPages) {
-                option(Tr.t(session, "rtv.next_page"), (p, s) -> {
-                    new RtvMenu(rtvService, mapRatingService).send(p, currentPage + 1);
-                });
-            }
-        }
+        ctx.row();
+        ctx.closeButton(Tr.t(ctx.getSession(), "rtv.btn_close"));
     }
 }

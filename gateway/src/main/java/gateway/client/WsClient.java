@@ -1,6 +1,5 @@
 package gateway.client;
 
-
 import java.net.http.HttpClient;
 import java.net.http.WebSocket;
 import java.net.URI;
@@ -61,6 +60,7 @@ public class WsClient {
         private Duration pongDeadline = PONG_DEADLINE;
         private Executor executor;
         private WsDialer dialer;
+        private ScheduledExecutorService scheduler;
 
         private Builder(URI uri, RpcChannel channel) {
             this.uri = Objects.requireNonNull(uri, "uri");
@@ -103,6 +103,11 @@ public class WsClient {
             return this;
         }
 
+        public Builder scheduler(ScheduledExecutorService scheduler) {
+            this.scheduler = scheduler;
+            return this;
+        }
+
         public WsClient build() {
             String scheme = uri.getScheme();
 
@@ -132,6 +137,7 @@ public class WsClient {
     private final Supplier<Map<String, String>> headersSupplier;
     private final HttpClient httpClient;
     private final ScheduledExecutorService scheduler;
+    private final boolean ownedScheduler;
     private final Duration pingInterval;
     private final Duration pongDeadline;
     private final WsDialer dialer;
@@ -151,11 +157,10 @@ public class WsClient {
         public void onRemoteClose(WebSocketConnection transport, int statusCode, String reason) {
             if (statusCode == WsProtocol.REPLACED_CLOSE_CODE) {
                 onKick(transport, statusCode, reason);
-                return;
+            } else {
+                onDrop(transport, new RuntimeException(
+                        "WebSocket closed remotely (code " + statusCode + "): " + reason));
             }
-
-            LOG.warning("WebSocket closed: " + statusCode + ", reason: " + reason);
-            onDrop(transport, new RuntimeException("remote close " + statusCode + ": " + reason));
         }
 
         @Override
@@ -191,11 +196,17 @@ public class WsClient {
             };
         }
 
-        this.scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
-            Thread t = new Thread(r, "jdk-ws-client");
-            t.setDaemon(true);
-            return t;
-        });
+        if (b.scheduler != null) {
+            this.scheduler = b.scheduler;
+            this.ownedScheduler = false;
+        } else {
+            this.scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+                Thread t = new Thread(r, "jdk-ws-client");
+                t.setDaemon(true);
+                return t;
+            });
+            this.ownedScheduler = true;
+        }
     }
 
     public WsClient onOpen(Runnable callback) {
@@ -301,7 +312,9 @@ public class WsClient {
 
         rpcChannel.onClose(new RuntimeException("WsClient closed: " + reason));
 
-        scheduler.shutdownNow();
+        if (ownedScheduler) {
+            scheduler.shutdownNow();
+        }
     }
 
     private synchronized WebSocketConnection beginDial() {
@@ -476,5 +489,4 @@ public class WsClient {
             reconnectTask = null;
         }
     }
-
 }

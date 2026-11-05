@@ -20,6 +20,7 @@ import mindustry.game.EventType.PlayerLeave;
 import mindustry.game.EventType.PlayEvent;
 import mindustry.gen.Groups;
 import mindustry.gen.Player;
+import plugin.core.Registry;
 import plugin.Control;
 import plugin.session.SessionCreatedEvent;
 import plugin.session.SessionRemovedEvent;
@@ -89,7 +90,7 @@ public class EventHandler {
         var rateMap = Vars.state.map;
 
         if (rateMap != null) {
-            sessionService.each(session -> new RateMapMenu(mapRatingService).send(session, rateMap));
+            sessionService.each(session -> Registry.get(RateMapMenu.class).send(session, rateMap));
         }
     }
 
@@ -191,7 +192,7 @@ public class EventHandler {
                 session.player.sendMessage("\n" + translated + "\n");
             });
 
-            new WelcomeMenu().send(session, null);
+            Registry.get(WelcomeMenu.class).send(session, null);
 
         } catch (Exception e) {
             Log.err("Failed to handle player join: " + e.getMessage());

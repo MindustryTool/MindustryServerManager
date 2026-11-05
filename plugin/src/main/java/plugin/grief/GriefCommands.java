@@ -10,6 +10,7 @@ import plugin.session.Session;
 public class GriefCommands {
 
     private final AdminService adminService;
+    private final GriefMenu griefMenu;
 
     @ClientCommand(name = "grief", description = "Report a player", admin = false)
     public void grief(Session session) {
@@ -18,6 +19,6 @@ public class GriefCommands {
             return;
         }
 
-        new GriefMenu().send(session, null);
+        griefMenu.send(session, null);
     }
 }

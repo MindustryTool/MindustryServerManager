@@ -1,22 +1,23 @@
 package gateway.client;
 
-
 import java.io.ByteArrayOutputStream;
 import java.net.http.WebSocket;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.BlockingQueue;
+import java.util.Objects;
+import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.Objects;
 
 import gateway.rpc.RpcChannel;
 import gateway.session.WsSession;
@@ -53,8 +54,8 @@ class WebSocketConnection implements WsSession {
     private final AtomicBoolean terminated = new AtomicBoolean(false);
     private final AtomicBoolean readStarted = new AtomicBoolean(false);
 
-    private final BlockingQueue<OutboundItem> sendQueue = new LinkedBlockingQueue<>();
-    private volatile Thread senderThread;
+    private final Queue<OutboundItem> sendQueue = new ConcurrentLinkedQueue<>();
+    private final AtomicBoolean isSending = new AtomicBoolean(false);
     private volatile ScheduledFuture<?> pingTask;
     private volatile Instant lastPongAt = Instant.now();
 
@@ -97,7 +98,7 @@ class WebSocketConnection implements WsSession {
             this.socket = socket;
         }
 
-        ensureSenderRunning();
+        drain();
         startPingTask();
     }
 
@@ -125,7 +126,7 @@ class WebSocketConnection implements WsSession {
 
         stopPingTask();
         sendQueue.clear();
-        sendQueue.offer(PoisonPill.poison());
+        drain();
     }
 
     /**
@@ -142,7 +143,7 @@ class WebSocketConnection implements WsSession {
             sendQueue.offer(SendFrame.close(code, reason));
         }
 
-        sendQueue.offer(PoisonPill.poison());
+        drain();
     }
 
     int queueDepth() {
@@ -231,57 +232,78 @@ class WebSocketConnection implements WsSession {
         if (depth >= QUEUE_WARN_DEPTH && depth % QUEUE_WARN_DEPTH == 0) {
             LOG.warning("WebSocketConnection send queue depth " + depth);
         }
+
+        drain();
     }
 
-    private synchronized void ensureSenderRunning() {
-        Thread t = senderThread;
-
-        if (t != null && t.isAlive()) {
+    private void drain() {
+        if (!isSending.compareAndSet(false, true)) {
             return;
         }
 
-        Thread next = new Thread(this::senderLoop, "jdk-ws-sender");
-        next.setDaemon(true);
-        senderThread = next;
-        next.start();
+        while (true) {
+            OutboundItem item = sendQueue.poll();
+
+            if (item == null || item instanceof PoisonPill) {
+                isSending.set(false);
+                if (!sendQueue.isEmpty() && isSending.compareAndSet(false, true)) {
+                    continue;
+                }
+                return;
+            }
+
+            SendFrame op = (SendFrame) item;
+
+            if (terminated.get() && !(op instanceof SendFrame.CloseFrame)) {
+                continue;
+            }
+
+            WebSocket ws = socket;
+
+            if (ws == null || ws.isOutputClosed()) {
+                continue;
+            }
+
+            SendContext ctx = new SendContext(ws, sendTimeout, events);
+            CompletableFuture<WebSocket> future;
+
+            try {
+                future = op.executeAsync(ctx);
+                if (sendTimeout != null && !sendTimeout.isZero() && !sendTimeout.isNegative()) {
+                    future = future.orTimeout(sendTimeout.toMillis(), TimeUnit.MILLISECONDS);
+                }
+            } catch (Exception e) {
+                LOG.log(Level.WARNING, "send failed: " + op.getClass().getSimpleName(), e);
+                events.onTransportError(this, Causes.rootCause(e));
+                continue;
+            }
+
+            if (!future.isDone()) {
+                future.whenComplete((result, error) -> {
+                    if (error != null) {
+                        LOG.log(Level.WARNING, "send failed: " + op.getClass().getSimpleName(), error);
+                        events.onTransportError(this, Causes.rootCause(errorOrException(error)));
+                    }
+                    isSending.set(false);
+                    drain();
+                });
+                return;
+            }
+
+            try {
+                future.getNow(null);
+            } catch (Exception e) {
+                LOG.log(Level.WARNING, "send failed: " + op.getClass().getSimpleName(), e);
+                events.onTransportError(this, Causes.rootCause(errorOrException(e)));
+            }
+        }
     }
 
-    private void senderLoop() {
-        try {
-            while (!Thread.currentThread().isInterrupted()) {
-                OutboundItem item = sendQueue.take();
-
-                if (item instanceof PoisonPill) {
-                    return;
-                }
-
-                SendFrame op = (SendFrame) item;
-
-                if (terminated.get() && !(op instanceof SendFrame.CloseFrame)) {
-                    continue;
-                }
-
-                WebSocket ws = socket;
-
-                if (ws == null || ws.isOutputClosed()) {
-                    continue;
-                }
-
-                SendContext ctx = new SendContext(ws, sendTimeout, events);
-
-                try {
-                    op.execute(ctx);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    return;
-                } catch (Exception e) {
-                    LOG.log(Level.WARNING, "send failed: " + op.getClass().getSimpleName(), e);
-                    events.onTransportError(this, Causes.rootCause(e));
-                }
-            }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+    private static Throwable errorOrException(Throwable t) {
+        if (t instanceof ExecutionException || t instanceof CompletionException) {
+            return t.getCause() != null ? t.getCause() : t;
         }
+        return t;
     }
 
     private synchronized void startPingTask() {
@@ -321,6 +343,7 @@ class WebSocketConnection implements WsSession {
                         }
 
                         sendQueue.offer(SendFrame.ping());
+                        drain();
                     } catch (Exception e) {
                         LOG.log(Level.FINE, "Ping task error", e);
                     }

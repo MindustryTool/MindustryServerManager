@@ -52,12 +52,13 @@ public class BackendGateway {
                     "[red]Invalid BACKEND_WS_URL '" + config.wsUrl() + "'; backend gateway connection suspended", e);
         }
 
-        RpcChannel rpcChannel = RpcChannel.withExecutor(Const.executorService);
+        RpcChannel rpcChannel = RpcChannel.withExecutor(Const.executorService, Const.scheduler);
         BackendRpc backendRpc = new BackendRpc(serverService, gatewayService, nodeManager);
         backendRpc.attach(rpcChannel);
 
         WsClient wsClient = WsClient.builder(uri, rpcChannel)
                 .bearerToken(config.accessToken())
+                .scheduler(Const.scheduler)
                 .build();
 
         wsClient.onOpen(() -> {

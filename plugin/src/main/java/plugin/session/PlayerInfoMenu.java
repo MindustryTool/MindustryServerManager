@@ -1,29 +1,43 @@
 package plugin.session;
 
-import plugin.hub.ServerListMenu;
-
-import plugin.menus.PluginMenu;
-
-import plugin.core.Registry;
+import lombok.RequiredArgsConstructor;
+import mindustry.ui.builder.UiBuilder;
+import mindustry.ui.builder.UiBuilder.TableBuilder;
+import plugin.annotations.Component;
+import plugin.menus.MenuContext;
+import plugin.menus.ServerMenu;
 import plugin.utils.Tr;
 
-public class PlayerInfoMenu extends PluginMenu<Session> {
+@Component
+@RequiredArgsConstructor
+public class PlayerInfoMenu extends ServerMenu<Session> {
 
-    public PlayerInfoMenu() {
-    }
+    private final SessionService sessionService;
 
     @Override
-    public void build(Session session, Session caller) {
-        this.title = Tr.t(session.locale, "session.players_title");
+    public void build(MenuContext<Session> ctx) {
+        Session caller = ctx.getState() != null ? ctx.getState() : ctx.getSession();
+        this.title = Tr.t(ctx.getSession().locale, "session.players_title");
 
-        Registry.get(SessionService.class).each(p -> {
-            option(p.player.name, (t, s) -> {
-                caller.player.sendMessage(SessionUtils.getInfoString(p, p.getData()));
+        ctx.label("[accent]Select an online player to view stats:");
+        ctx.row();
+
+        ctx.pane(MenuContext.SAFE_WIDTH, 300f, paneTable -> {
+            sessionService.each(target -> {
+                TableBuilder card = UiBuilder.table().pad(4f);
+                String nameText = target.player.name + " [gray](#" + target.player.id() + ")";
+                card.add(UiBuilder.label("[yellow]" + nameText).align("left"));
+
+                String inspectAct = ctx.registerAction((sess, st, res) -> {
+                    caller.player.sendMessage(SessionUtils.getInfoString(target, target.getData()));
+                });
+
+                card.add(UiBuilder.button("View Info").clicked(inspectAct).width(110f).height(38f).align("right").padLeft(8f));
+                paneTable.add(card.growX().pad(2f)).row();
             });
-            row();
         });
 
-        option(Tr.t(session.locale, "session.close"),
-                (p, s) -> new ServerListMenu().send(session, 0));
+        ctx.row();
+        ctx.closeButton(Tr.t(ctx.getSession().locale, "session.close"));
     }
 }

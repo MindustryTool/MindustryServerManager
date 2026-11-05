@@ -1,29 +1,40 @@
 package plugin.session;
 
+import lombok.RequiredArgsConstructor;
 import mindustry.gen.Call;
-import plugin.core.Registry;
-import plugin.menus.PluginMenu;
+import mindustry.ui.builder.UiBuilder;
+import plugin.annotations.Component;
+import plugin.menus.MenuContext;
+import plugin.menus.ServerMenu;
 import plugin.utils.Tr;
 
-public class LoginMenu extends PluginMenu<Void> {
+@Component
+@RequiredArgsConstructor
+public class LoginMenu extends ServerMenu<Void> {
+
+    private final LoginService loginService;
 
     @Override
-    protected void build(Session session, Void state) {
-        this.title = Tr.t(session, "login.menu_title");
-        this.description = Tr.t(session, "login.menu_desc");
+    public void build(MenuContext<Void> ctx) {
+        this.title = Tr.t(ctx.getSession(), "login.menu_title");
 
-        option(Tr.t(session, "login.btn_open"), (s, st) -> {
-            var loginService = Registry.get(LoginService.class);
-            var link = loginService.getOrGenerateLink(s.player);
-            if (link != null && link.url != null && !link.url.isEmpty()) {
-                Call.openURI(s.player.con, link.url);
-                s.player.sendMessage(Tr.t(s, "login.link_opened"));
-            } else {
-                s.player.sendMessage(Tr.t(s, "login.link_expired"));
-            }
+        ctx.label(Tr.t(ctx.getSession(), "login.menu_desc"));
+        ctx.row();
+
+        ctx.table(actions -> {
+            String openAct = ctx.registerAction((sess, st, res) -> {
+                var link = loginService.getOrGenerateLink(sess.player);
+                if (link != null && link.url != null && !link.url.isEmpty()) {
+                    Call.openURI(sess.player.con, link.url);
+                    sess.player.sendMessage(Tr.t(sess, "login.link_opened"));
+                } else {
+                    sess.player.sendMessage(Tr.t(sess, "login.link_expired"));
+                }
+            });
+            String cancelAct = ctx.registerAction((sess, st, res) -> {});
+
+            actions.add(UiBuilder.button("[green]" + Tr.t(ctx.getSession(), "login.btn_open")).clicked(openAct).width(160f).height(44f).pad(6f));
+            actions.add(UiBuilder.button(Tr.t(ctx.getSession(), "login.btn_cancel")).clicked(cancelAct).width(120f).height(44f).pad(6f));
         });
-        row();
-
-        text(Tr.t(session, "login.btn_cancel"));
     }
 }

@@ -10,11 +10,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -70,14 +70,20 @@ public class DockerNodeManager implements NodeManager {
     private final Map<UUID, ResultCallback.Adapter<Frame>> logCallbacks = new ConcurrentHashMap<>();
 
     private static final Fi SERVER_FOLDER = new Fi(Const.volumeFolderPath).child("servers");
-    private static final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    private final ScheduledExecutorService scheduler;
 
     private Optional<Consumer<UUID>> onKilled;
 
     public DockerNodeManager(DockerClient dockerClient, EnvConfig envConfig, EventBus eventBus) {
+        this(dockerClient, envConfig, eventBus, Const.scheduler);
+    }
+
+    public DockerNodeManager(DockerClient dockerClient, EnvConfig envConfig, EventBus eventBus,
+            ScheduledExecutorService scheduler) {
         this.dockerClient = dockerClient;
         this.envConfig = envConfig;
         this.eventBus = eventBus;
+        this.scheduler = Objects.requireNonNull(scheduler, "scheduler");
 
         init();
     }
@@ -258,7 +264,8 @@ public class DockerNodeManager implements NodeManager {
         }
 
         if (Const.IS_PRODUCTION) {
-            hostConfig.withRuntime("runsc");
+            String runtime = request.getIsOfficial() ? "runc" : "runsc";
+            hostConfig.withRuntime(runtime);
         }
 
         command.withExposedPorts(exposedPorts)

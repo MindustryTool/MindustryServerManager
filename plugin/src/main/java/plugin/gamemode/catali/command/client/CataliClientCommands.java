@@ -1,30 +1,32 @@
 package plugin.gamemode.catali.command.client;
 
+import lombok.RequiredArgsConstructor;
 import mindustry.game.Team;
 import plugin.PluginEvents;
 import plugin.annotations.ClientCommand;
 import plugin.annotations.Component;
 import plugin.annotations.ConditionOn;
-import plugin.gamemode.GamemodeCondition;
 import plugin.annotations.Param;
+import plugin.gamemode.GamemodeCondition;
 import plugin.gamemode.catali.CataliGamemode;
 import plugin.gamemode.catali.event.ExpGainEvent;
 import plugin.gamemode.catali.menu.AIPickMenu;
 import plugin.gamemode.catali.menu.AbandonMenu;
 import plugin.gamemode.catali.menu.CommonUpgradeMenu;
 import plugin.gamemode.catali.menu.RareUpgradeMenu;
-import plugin.utils.Tr;
 import plugin.session.Session;
+import plugin.utils.Tr;
 
 @ConditionOn(value = GamemodeCondition.class, args = { "catali" })
 @Component
+@RequiredArgsConstructor
 public class CataliClientCommands {
 
     private final CataliGamemode gamemode;
-
-    public CataliClientCommands(CataliGamemode gamemode) {
-        this.gamemode = gamemode;
-    }
+    private final AbandonMenu abandonMenu;
+    private final CommonUpgradeMenu commonUpgradeMenu;
+    private final RareUpgradeMenu rareUpgradeMenu;
+    private final AIPickMenu aiPickMenu;
 
     @ClientCommand(name = "a", description = "Abandon a unit or team", admin = false)
     public void abandon(Session session) {
@@ -35,7 +37,7 @@ public class CataliClientCommands {
             return;
         }
 
-        new AbandonMenu(gamemode).send(session, team);
+        abandonMenu.send(session, team);
     }
 
     @ClientCommand(name = "addexp", description = "Add experience points to a unit", admin = true)
@@ -77,12 +79,12 @@ public class CataliClientCommands {
         } else {
             var showed = false;
             if (team.level.commonUpgradePoints > 0) {
-                new CommonUpgradeMenu().send(session, team);
+                commonUpgradeMenu.send(session, team);
                 showed = true;
             }
 
             if (team.level.rareUpgradePoints > 0) {
-                new RareUpgradeMenu().send(session, team);
+                rareUpgradeMenu.send(session, team);
                 showed = true;
             }
 
@@ -100,7 +102,7 @@ public class CataliClientCommands {
         if (team == null) {
             session.player.sendMessage(Tr.t(player, "catali.start_new_team"));
         } else {
-            new AIPickMenu().send(session, team);
+            aiPickMenu.send(session, team);
         }
     }
 }

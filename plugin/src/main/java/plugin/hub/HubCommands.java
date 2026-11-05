@@ -13,6 +13,8 @@ import plugin.utils.Tr;
 public class HubCommands {
 
     private final ApiGateway apiGateway;
+    private final ServerListMenu serverListMenu;
+    private final GlobalServerListMenu globalServerListMenu;
 
     @ClientCommand(name = "hub", description = "Go to hub", admin = false)
     public void hub(Session session) {
@@ -30,11 +32,11 @@ public class HubCommands {
 
     @ClientCommand(name = "servers", description = "Display available servers", admin = false)
     public void servers(Session session) {
-        new ServerListMenu().send(session, 0);
+        serverListMenu.send(session, 0);
     }
 
     @ClientCommand(name = "redirect", description = "Redirect all player to server")
     public void redirect(Session session) {
-        new GlobalServerListMenu().send(session, 0);
+        globalServerListMenu.send(session, 0);
     }
 }

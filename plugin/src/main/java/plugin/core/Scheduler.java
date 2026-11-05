@@ -18,7 +18,7 @@ import arc.util.Timer;
 @Component
 public class Scheduler {
 
-    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(8);
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
 
     public void execute(Runnable command) {
         scheduler.execute(command);

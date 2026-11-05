@@ -9,30 +9,52 @@ import plugin.annotations.Init;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
-import java.nio.file.*;
+import java.nio.file.ClosedWatchServiceException;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardWatchEventKinds;
+import java.nio.file.WatchEvent;
+import java.nio.file.WatchKey;
+import java.nio.file.WatchService;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 @Component
 public class FileWatcherManager {
-    private final Thread watcherThread = new Thread(this::processEvents, "FileWatcherService");
-
-    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
-        Thread t = new Thread(r, "FileWatcher-Scheduler");
-        t.setDaemon(true);
-        return t;
-    });
-
+    private Thread watcherThread;
+    private ScheduledExecutorService scheduler;
     private WatchService watchService;
     private final Map<WatchKey, List<WatcherRegistration>> keys = new ConcurrentHashMap<>();
     private volatile boolean running = true;
+    private final AtomicBoolean started = new AtomicBoolean(false);
 
     @Init
     public void init() {
+        // Initialization deferred until a watcher is actually registered
+    }
+
+    private synchronized void ensureStarted() {
+        if (!started.compareAndSet(false, true)) {
+            return;
+        }
         try {
             watchService = FileSystems.getDefault().newWatchService();
+            scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+                Thread t = new Thread(r, "FileWatcher-Scheduler");
+                t.setDaemon(true);
+                return t;
+            });
+            watcherThread = new Thread(this::processEvents, "FileWatcherService");
             watcherThread.setDaemon(true);
             watcherThread.start();
         } catch (IOException e) {
@@ -70,8 +92,12 @@ public class FileWatcherManager {
         if (target == null)
             return;
 
-        scheduler.execute(() -> {
+        ensureStarted();
+        if (scheduler == null) {
+            return;
+        }
 
+        scheduler.execute(() -> {
             Path dirToWatch;
             boolean isDirectory;
 
@@ -144,8 +170,12 @@ public class FileWatcherManager {
     @Destroy
     public void destroy() {
         running = false;
-        watcherThread.interrupt();
-        scheduler.shutdownNow();
+        if (watcherThread != null) {
+            watcherThread.interrupt();
+        }
+        if (scheduler != null) {
+            scheduler.shutdownNow();
+        }
         try {
             if (watchService != null)
                 watchService.close();

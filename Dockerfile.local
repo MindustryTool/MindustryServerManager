@@ -1,7 +1,7 @@
 #syntax=docker/dockerfile:1
 # Local-only fast build. Prod Dockerfile stays unchanged.
 # Use: DOCKER_BUILDKIT=1 docker build -f Dockerfile.local -t mindustry-server-manager:local .
-FROM gradle:8.7.0-jdk17 AS build
+FROM gradle:8.7.0-jdk21 AS build
 WORKDIR /home/gradle/src
 
 COPY gradle/ /home/gradle/src/gradle/
@@ -20,7 +20,7 @@ RUN --mount=type=cache,target=/home/gradle/.gradle/caches,uid=1000,gid=1000 --mo
 
 RUN sha256sum /home/gradle/src/plugin/build/libs/plugin.jar | cut -d' ' -f1 > /home/gradle/src/plugin/build/libs/plugin.sha256
 
-FROM eclipse-temurin:17-jre-alpine
+FROM eclipse-temurin:21-jre-alpine
 
 WORKDIR /app
 

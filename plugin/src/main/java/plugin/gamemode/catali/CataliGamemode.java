@@ -73,6 +73,9 @@ public class CataliGamemode {
     private final BlockSpawner blockSpawner;
     private final CataliConfig config;
     private final SessionService sessionService;
+    private final AIPickMenu aiPickMenu;
+    private final CommonUpgradeMenu commonUpgradeMenu;
+    private final RareUpgradeMenu rareUpgradeMenu;
 
     public static final Seq<UnitType> coreUnits = Seq.with(
             UnitTypes.alpha,
@@ -622,7 +625,7 @@ public class CataliGamemode {
             return;
         }
 
-        sessionService.get(leader).ifPresent(session -> new AIPickMenu().send(session, event.team));
+        sessionService.get(leader).ifPresent(session -> aiPickMenu.send(session, event.team));
     }
 
     @Listener
@@ -896,11 +899,11 @@ Call.infoPopup(event.player.con, Tr.t(event.player, "catali.tile_not_safe"),
         }
 
         if (event.team.level.commonUpgradePoints > 0) {
-            new CommonUpgradeMenu().send(session, event.team);
+            commonUpgradeMenu.send(session, event.team);
         }
 
         if (event.team.level.rareUpgradePoints > 0) {
-            new RareUpgradeMenu().send(session, event.team);
+            rareUpgradeMenu.send(session, event.team);
         }
     }
 

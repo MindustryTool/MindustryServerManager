@@ -1,48 +1,79 @@
 package plugin.gamemode.catali.menu;
 
+import java.util.Objects;
+
 import arc.struct.Seq;
+import lombok.RequiredArgsConstructor;
 import mindustry.gen.Groups;
 import mindustry.gen.Player;
+import mindustry.ui.builder.UiBuilder;
+import plugin.annotations.Component;
+import plugin.annotations.ConditionOn;
+import plugin.gamemode.GamemodeCondition;
 import plugin.gamemode.catali.data.CataliTeamData;
-import plugin.menus.PluginMenu;
-import plugin.utils.Tr;
+import plugin.menus.MenuContext;
+import plugin.menus.ServerMenu;
 import plugin.session.Session;
+import plugin.utils.Tr;
 
-public class AssignNextLeaderMenu extends PluginMenu<CataliTeamData> {
+@Component
+@RequiredArgsConstructor
+@ConditionOn(value = GamemodeCondition.class, args = {"catali"})
+public class AssignNextLeaderMenu extends ServerMenu<CataliTeamData> {
 
     @Override
-    public void build(Session session, CataliTeamData team) {
+    public void build(MenuContext<CataliTeamData> ctx) {
+        Session session = ctx.getSession();
+        CataliTeamData team = ctx.getState();
+        Objects.requireNonNull(session);
+        Objects.requireNonNull(team);
+
+        this.title = Tr.t(session, "catali.assign_next_leader");
+
         var availableTeammates = new Seq<Player>();
         for (var uuid : team.members) {
             if (uuid.equals(session.player.uuid()) || uuid.equals(team.nextLeaderUuid)) {
                 continue;
             }
             var p = Groups.player.find(pl -> pl.uuid().equals(uuid));
-            if (p != null)
+            if (p != null) {
                 availableTeammates.add(p);
+            }
         }
 
         if (availableTeammates.isEmpty()) {
-            title = Tr.t(session, "catali.no_teammates");
+            ctx.label("[lightgray]" + Tr.t(session, "catali.no_teammates"));
+            ctx.row();
+            ctx.closeButton(Tr.t(session, "catali.close"));
             return;
         }
 
-        title = Tr.t(session, "catali.assign_next_leader");
-        description = Tr.t(session, "catali.select_next_leader");
+        ctx.label("[lightgray]" + Tr.t(session, "catali.select_next_leader"));
+        ctx.row();
 
-        int i = 0;
-        for (var p : availableTeammates) {
-            if (i > 0 && i % 2 == 0)
-                row();
+        ctx.pane(MenuContext.SAFE_WIDTH, 220f, paneTable -> {
+            for (var p : availableTeammates) {
+                var card = UiBuilder.table().pad(4f);
+                card.width(MenuContext.SAFE_CARD_WIDTH);
 
-            option(p.name(), (s, st) -> {
-                team.assignNextLeader(p.uuid());
-                s.player.sendMessage(Tr.t(s, "catali.leadership_transferred", "name", p.name()));
-            });
-            i++;
-        }
+                card.add(UiBuilder.label("[white]" + p.name() + "[]").align("left")).pad(4f);
 
-        row();
-        text(Tr.t(session, "catali.close"));
+                String actId = ctx.registerAction((sess, t, res) -> {
+                    team.assignNextLeader(p.uuid());
+                    sess.player.sendMessage(Tr.t(sess, "catali.leadership_transferred", "name", p.name()));
+                });
+
+                card.add(UiBuilder.button("[accent]Assign Leader[]")
+                        .clicked(actId)
+                        .width(115f)
+                        .height(34f)
+                        .align("right"));
+
+                paneTable.add(card.growX().pad(2f)).row();
+            }
+        });
+
+        ctx.row();
+        ctx.closeButton(Tr.t(session, "catali.close"));
     }
 }

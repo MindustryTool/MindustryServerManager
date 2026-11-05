@@ -17,6 +17,9 @@ import plugin.vote.VoteKickService.Vote;
 public class VoteKickCommands {
 
     private final VoteKickService voteKickService;
+    private final VoteKickMenu voteKickMenu;
+    private final VotePromptMenu votePromptMenu;
+    private final LoginMenu loginMenu;
 
     @ClientCommand(name = "votekick", description = "Vote to kick a player with a valid reason.", admin = false)
     public void votekick(Session session,
@@ -24,17 +27,17 @@ public class VoteKickCommands {
                          @Param(name = "reason", required = false, variadic = true) String[] reasonWords) {
         if (!session.isLoggedIn()) {
             session.player.sendMessage(Tr.t(session, "votekick.login_required"));
-            new LoginMenu().send(session, null);
+            loginMenu.send(session, null);
             return;
         }
 
         if (voteKickService.isVoting()) {
-            new VotePromptMenu().send(session, null);
+            votePromptMenu.send(session, null);
             return;
         }
 
         if (targetName == null || targetName.trim().isEmpty()) {
-            new VoteKickMenu().send(session, null);
+            voteKickMenu.send(session, null);
             return;
         }
 
@@ -53,7 +56,7 @@ public class VoteKickCommands {
         }
 
         if (reasonWords == null || reasonWords.length == 0) {
-            new VoteKickMenu().send(session, found);
+            voteKickMenu.send(session, found);
             return;
         }
 
@@ -69,7 +72,7 @@ public class VoteKickCommands {
         }
 
         if (choice == null || choice.trim().isEmpty()) {
-            new VotePromptMenu().send(session, null);
+            votePromptMenu.send(session, null);
             return;
         }
 

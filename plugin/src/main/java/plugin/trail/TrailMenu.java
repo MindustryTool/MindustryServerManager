@@ -1,93 +1,87 @@
 package plugin.trail;
 
 import arc.struct.Seq;
-import mindustry.gen.Call;
+import lombok.RequiredArgsConstructor;
 import mindustry.gen.Iconc;
+import mindustry.ui.builder.UiBuilder;
+import mindustry.ui.builder.UiBuilder.TableBuilder;
+import plugin.annotations.Component;
 import plugin.core.Registry;
-import plugin.menus.PluginMenu;
-import plugin.session.Session;
+import plugin.menus.MenuContext;
+import plugin.menus.ServerMenu;
 import plugin.session.SessionRepository;
 import plugin.utils.Tr;
 
-public class TrailMenu extends PluginMenu<Integer> {
+@Component
+@RequiredArgsConstructor
+public class TrailMenu extends ServerMenu<Integer> {
 
-    public TrailMenu() {
-    }
+    private final TrailService trailService;
+    private final SessionRepository sessionRepository;
 
     @Override
-    public void build(Session session, Integer page) {
-        var trails = Seq.with(Registry.get(TrailService.class).trails.values());
+    public void build(MenuContext<Integer> ctx) {
+        var trails = Seq.with(trailService.trails.values());
+        this.title = "Cosmetic Trails";
 
-        var size = 5;
+        boolean hasTrail = ctx.getSession().getData().trail != null && !ctx.getSession().getData().trail.isEmpty();
+        ctx.label("[accent]Choose a cosmetic trail to equip:");
+        ctx.row();
 
-        var maxPage = Math.max(0, (trails.size - 1) / size);
-        var currentPage = Math.min(page, maxPage);
-        var start = currentPage * size;
-        var end = Math.min(start + size, trails.size);
-
-        var hasNoTrail = session.getData().trail == null || session.getData().trail.isEmpty();
-        var nonePrefix = hasNoTrail ? "[accent]" + Iconc.ok + " [green]" : "[green]";
-
-        if (currentPage == 0) {
-            option(nonePrefix + Tr.t(session, "trail.none"), (s, p) -> {
-                s.getData().trail = "";
-                var repo = Registry.get(SessionRepository.class);
-                if (repo != null) {
-                    repo.markDirty(s);
+        if (hasTrail) {
+            ctx.button("[scarlet]Clear Active Trail", (sess, st, res) -> {
+                sess.getData().trail = "";
+                if (sessionRepository != null) {
+                    sessionRepository.markDirty(sess);
                 }
-                s.player.sendMessage(Tr.t(s, "trail.removed"));
-                Call.hideFollowUpMenu(s.player.con, this.getMenuId());
+                sess.player.sendMessage(Tr.t(sess, "trail.removed"));
+                Registry.get(TrailMenu.class).send(sess, 0);
             });
-            row();
+            ctx.row();
         }
 
-        for (int i = start; i < end; i++) {
-            var trail = trails.get(i);
+        ctx.pane(MenuContext.SAFE_WIDTH, 320f, paneTable -> {
+            for (var trail : trails) {
+                boolean owns = trail.owns(ctx.getSession());
+                boolean isCurrent = trail.getName().equals(ctx.getSession().getData().trail);
 
-            var owns = trail.owns(session);
-            var isCurrent = trail.getName().equals(session.getData().trail);
-            String label;
-            if (isCurrent) {
-                label = "[accent]" + Iconc.ok + " [green]" + trail.getName() + " " + Tr.t(session, "trail.equipped");
-            } else if (owns) {
-                label = "[green]" + trail.getName() + " " + Tr.t(session, "trail.owned");
-            } else {
-                label = "[gold]" + trail.getName() + " " + Tr.t(session, "trail.price_tag", "coins", trail.getPrice());
-            }
+                TableBuilder card = UiBuilder.table().pad(4f);
+                String badge = isCurrent ? "[green]" + Iconc.ok + " EQUIPPED"
+                    : owns ? "[accent]OWNED"
+                    : "[gold]" + trail.getPrice() + " Coins";
 
-            option(label, (s, p) -> {
-                if (trail.owns(s)) {
-                    if (trail.getName().equals(s.getData().trail)) {
-                        s.getData().trail = "";
+                card.add(UiBuilder.label("[white]" + trail.getName()).align("left"));
+                card.add(UiBuilder.label(badge).align("right"));
+                card.row();
+
+                String actionText = isCurrent ? "Unequip" : owns ? "Equip" : "Buy";
+                String trailAct = ctx.registerAction((sess, st, res) -> {
+                    if (trail.owns(sess)) {
+                        if (trail.getName().equals(sess.getData().trail)) {
+                            sess.getData().trail = "";
+                        } else {
+                            sess.getData().trail = trail.getName();
+                        }
+                        if (sessionRepository != null) {
+                            sessionRepository.markDirty(sess);
+                        }
                     } else {
-                        s.getData().trail = trail.getName();
+                        if (trailService.purchase(sess, trail)) {
+                            sess.getData().trail = trail.getName();
+                            sess.player.sendMessage(Tr.t(sess, "trail.purchased", "name", trail.getName()));
+                        } else {
+                            sess.player.sendMessage(Tr.t(sess, "trail.not_enough_coins", "name", trail.getName(), "coins", trail.getPrice()));
+                        }
                     }
-                    var repo = Registry.get(SessionRepository.class);
-                    if (repo != null) {
-                        repo.markDirty(s);
-                    }
-                    this.send(s, currentPage);
-                } else {
-                    var trailService = Registry.get(TrailService.class);
-                    if (trailService != null && trailService.purchase(s, trail)) {
-                        s.getData().trail = trail.getName();
-                        s.player.sendMessage(Tr.t(s, "trail.purchased", "name", trail.getName()));
-                    } else {
-                        s.player.sendMessage(Tr.t(s, "trail.not_enough_coins", "name", trail.getName(), "coins", trail.getPrice()));
-                    }
-                    this.send(s, currentPage);
-                }
-            });
+                    Registry.get(TrailMenu.class).send(sess, 0);
+                });
 
-            for (var req : trail.getRequirements()) {
-                text((req.getAllowed().apply(session) ? "[green]" : "[red]") + req.getMessage());
+                card.add(UiBuilder.button(actionText).clicked(trailAct).width(110f).height(38f).align("right").colspan(2).pad(2f));
+                paneTable.add(card.growX().pad(2f)).row();
             }
-            row();
-        }
+        });
 
-        option(Tr.t(session, "trail.previous"), (s, p) -> this.send(session, Math.max(0, currentPage - 1)));
-        option(Tr.t(session, "trail.next"), (s, p) -> this.send(session, Math.min(maxPage, currentPage + 1)));
-        row();
-        text(Tr.t(session, "trail.close"));
+        ctx.row();
+        ctx.closeButton(Tr.t(ctx.getSession(), "trail.close"));
     }
 }

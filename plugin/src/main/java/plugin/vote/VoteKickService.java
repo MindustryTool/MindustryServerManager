@@ -24,6 +24,7 @@ import plugin.Control;
 import plugin.annotations.Component;
 import plugin.annotations.Destroy;
 import plugin.annotations.Listener;
+import plugin.core.Registry;
 import plugin.core.Scheduler;
 import plugin.gateway.ApiGateway;
 import plugin.session.LoginMenu;
@@ -126,7 +127,7 @@ public class VoteKickService {
         if (sessionOpt.isEmpty() || !sessionOpt.get().isLoggedIn()) {
             initiator.sendMessage(Tr.t(initiator, "votekick.login_required"));
             if (sessionOpt.isPresent()) {
-                new LoginMenu().send(sessionOpt.get(), null);
+                Registry.get(LoginMenu.class).send(sessionOpt.get(), null);
             }
             return false;
         }
@@ -236,7 +237,7 @@ public class VoteKickService {
             }
             var sessionOpt = sessionService.get(p);
             if (sessionOpt.isPresent()) {
-                new VotePromptMenu().send(sessionOpt.get(), null);
+                Registry.get(VotePromptMenu.class).send(sessionOpt.get(), null);
             }
         }
     }

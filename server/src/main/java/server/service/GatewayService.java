@@ -41,11 +41,11 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -79,7 +79,7 @@ public class GatewayService {
             TRANSLATION_RATE_LIMIT_REFILL_PER_SECOND,
             TRANSLATION_RATE_LIMIT_IDLE_TTL);
 
-    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    private final ScheduledExecutorService scheduler;
 
     public GatewayService(
             EventBus eventBus,
@@ -112,18 +112,29 @@ public class GatewayService {
             NodeManager nodeManager,
             TranslationService translationService,
             PluginBundleService pluginBundleService) {
+        this(eventBus, envConfig, nodeManager, translationService, pluginBundleService, Const.scheduler);
+    }
+
+    public GatewayService(
+            EventBus eventBus,
+            EnvConfig envConfig,
+            NodeManager nodeManager,
+            TranslationService translationService,
+            PluginBundleService pluginBundleService,
+            ScheduledExecutorService scheduler) {
         this.eventBus = eventBus;
         this.envConfig = envConfig;
         this.nodeManager = nodeManager;
         this.translationService = translationService;
         this.pluginBundleService = pluginBundleService;
+        this.scheduler = Objects.requireNonNull(scheduler, "scheduler");
 
         nodeManager.onKilled(serverId -> {
             eventBus.emit(
                     new StopEvent(serverId, NodeRemoveReason.PROCESS_KILLED));
         });
 
-        scheduler.scheduleWithFixedDelay(
+        this.scheduler.scheduleWithFixedDelay(
                 () -> {
                     try {
                         sweep();
@@ -152,6 +163,7 @@ public class GatewayService {
 
             if (!runningIds.contains(serverId)) {
                 clients.remove(serverId);
+                client.shutdown();
             }
         });
     }
@@ -207,7 +219,7 @@ public class GatewayService {
         private final UUID id;
 
         private final RpcChannel rpcChannel = RpcChannel.withExecutor(
-                Const.executorService);
+                Const.executorService, scheduler);
 
         @Getter
         private final Backend backend = new Backend();
@@ -343,8 +355,13 @@ public class GatewayService {
 
             eventBus.emit(new StopEvent(id, reason));
             Log.info("Client terminated: " + id + " reason: " + reason);
+            rpcChannel.shutdown();
 
             return true;
+        }
+
+        public void shutdown() {
+            rpcChannel.shutdown();
         }
 
         public void onMessage(WsMessageContext context) {

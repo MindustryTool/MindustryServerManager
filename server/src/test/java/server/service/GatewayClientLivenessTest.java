@@ -2,6 +2,7 @@ package server.service;
 
 import java.io.Closeable;
 import java.nio.ByteBuffer;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -251,6 +252,8 @@ public class GatewayClientLivenessTest {
 
         GatewayService.GatewayClient after = service.of(id);
         assertNotSame(before, after, "container-gone client must be evicted from the cache");
+        assertTrue(before.rpcChannel().awaitSession(Duration.ofMillis(10)).isCompletedExceptionally(),
+                "Evicted client's rpcChannel must be shut down");
         assertTrue(nodes.removed.isEmpty(), "eviction must not terminate or remove a container");
         assertEquals(0, stopCount());
     }

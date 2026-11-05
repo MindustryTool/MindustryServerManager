@@ -13,7 +13,6 @@ import mindustry.gen.Call;
 import mindustry.gen.Player;
 import mindustry.ui.Menus;
 import mindustry.ui.builder.MenuResult;
-import mindustry.ui.builder.UiBuilder;
 import mindustry.ui.builder.UiBuilder.TableBuilder;
 import plugin.Tasks;
 import plugin.annotations.Component;
@@ -144,22 +143,11 @@ public class PluginMenuService {
         menus.insert(0, new ServerMenuHolder<>(menu));
     }
 
-    public void add(PluginMenu<?> menu) {
-        if (menu == null || menu.session == null) {
-            return;
-        }
-        if (menus.contains(
-                m -> m.getMenuClass().equals(menu.getClass()) && m.getSession().player == menu.session.player)) {
-            return;
-        }
-        menus.insert(0, new LegacyMenuHolder<>(menu));
-    }
-
-    public Seq<PluginMenu<?>> getPlayerMenus(Player player) {
-        Seq<PluginMenu<?>> result = new Seq<>();
+    public Seq<ServerMenu<?>> getPlayerMenus(Player player) {
+        Seq<ServerMenu<?>> result = new Seq<>();
         for (QueuedMenu q : menus) {
-            if (q.getSession().player == player && q instanceof LegacyMenuHolder<?> legacy) {
-                result.add(legacy.menu);
+            if (q.getSession().player == player && q instanceof ServerMenuHolder<?> serverHolder) {
+                result.add(serverHolder.menu);
             }
         }
         return result;
@@ -270,81 +258,6 @@ public class PluginMenuService {
                     menu.isHideExisting(),
                     menu.isFillScreen(),
                     ctx.getRoot());
-        }
-    }
-
-    private static class LegacyMenuHolder<T> implements QueuedMenu {
-        private final PluginMenu<T> menu;
-
-        LegacyMenuHolder(PluginMenu<T> menu) {
-            this.menu = menu;
-        }
-
-        @Override
-        public Session getSession() {
-            return menu.session;
-        }
-
-        @Override
-        public boolean valid() {
-            return menu.valid();
-        }
-
-        @Override
-        public Class<?> getMenuClass() {
-            return menu.getClass();
-        }
-
-        @Override
-        @SuppressWarnings("unchecked")
-        public void show(PluginMenuService service, long token) {
-            try {
-                menu.build();
-            } catch (Exception e) {
-                menu.session.player.sendMessage(Tr.t(menu.session, "menu.error", "message", e.getMessage()));
-                Log.err("Failed to build legacy menu @", e);
-                service.activeMenus.remove(menu.session.player);
-                service.showNext(menu.session.player);
-                return;
-            }
-
-            ActiveMenuEntry entry = new ActiveMenuEntry(menu.session, menu.state, token);
-            TableBuilder root = UiBuilder.table();
-
-            if (menu.description != null && !menu.description.isEmpty()) {
-                root.add(UiBuilder.label(menu.description).wrap().pad(8f)).row();
-            }
-
-            menu.options.removeAll(op -> op.size == 0);
-            int optIndex = 0;
-
-            for (int i = 0; i < menu.options.size; i++) {
-                var rowOptions = menu.options.get(i);
-                TableBuilder rowTable = UiBuilder.table();
-
-                for (var op : rowOptions) {
-                    String actionId = "opt_" + (optIndex++);
-                    if (op.getCallback() != null) {
-                        entry.actions.put(actionId, (sess, st, res) -> op.getCallback().accept(sess, (T) st));
-                        rowTable.add(UiBuilder.button(op.getText()).clicked(actionId).pad(4f).width(160f).height(45f));
-                    } else {
-                        rowTable.add(UiBuilder.button(op.getText()).disabled(true).pad(4f).width(160f).height(45f));
-                    }
-                }
-                root.add(rowTable).row();
-            }
-
-            service.activeMenus.put(menu.session.player, entry);
-
-            Call.menuBuilder(
-                    menu.session.player.con,
-                    service.getMenuBuilderId(),
-                    token,
-                    menu.title,
-                    true,
-                    true,
-                    false,
-                    root);
         }
     }
 }

@@ -1,65 +1,93 @@
 package plugin.gamemode.catali.menu;
 
+import java.util.Objects;
+
 import common.util.Pair;
+import mindustry.ui.builder.UiBuilder;
+import plugin.annotations.Component;
+import plugin.annotations.ConditionOn;
 import plugin.core.Registry;
+import plugin.gamemode.GamemodeCondition;
 import plugin.gamemode.catali.data.CataliCommonUpgrade;
 import plugin.gamemode.catali.data.CataliTeamData;
-import plugin.menus.PluginMenu;
-import plugin.utils.Tr;
+import plugin.menus.MenuContext;
+import plugin.menus.ServerMenu;
 import plugin.session.Session;
+import plugin.utils.Tr;
 
-public class CommonUpgradeQuantityMenu extends PluginMenu<Pair<CataliTeamData, CataliCommonUpgrade>> {
+@Component
+@ConditionOn(value = GamemodeCondition.class, args = {"catali"})
+public class CommonUpgradeQuantityMenu extends ServerMenu<Pair<CataliTeamData, CataliCommonUpgrade>> {
 
     @Override
-    public void build(Session session, Pair<CataliTeamData, CataliCommonUpgrade> pair) {
-        var team = pair.first;
-        var upgrade = pair.second;
+    public void build(MenuContext<Pair<CataliTeamData, CataliCommonUpgrade>> ctx) {
+        Session session = ctx.getSession();
+        Pair<CataliTeamData, CataliCommonUpgrade> pair = ctx.getState();
+        Objects.requireNonNull(session);
+        Objects.requireNonNull(pair);
 
+        CataliTeamData team = pair.first;
+        CataliCommonUpgrade upgrade = pair.second;
         var level = team.level;
 
-        title = Tr.t(session, "catali.upgrade_quantity");
-        description = Tr.t(session, "catali.select_points_to_spend");
+        this.title = Tr.t(session, "catali.upgrade_quantity");
 
-        option("1", (s, st) -> {
-            team.consumeUpgrade(upgrade, 1);
-            if (level.commonUpgradePoints > 0) {
-                Registry.inject(CommonUpgradeMenu.class).send(s, team);
-            }
-        });
+        String upgradeName = Tr.t(session, "catali." + upgrade.name().toLowerCase());
+        ctx.label("[accent]" + upgradeName + "[] [lightgray]- " + Tr.t(session, "catali.select_points_to_spend"));
+        ctx.row();
 
+        var container = UiBuilder.table().pad(8f);
+
+        // Quick amount buttons
+        var btnTable = UiBuilder.table().pad(4f);
+
+        // 1 point
+        String act1 = ctx.registerAction((sess, p, res) -> applyPoints(sess, team, upgrade, 1));
+        btnTable.add(UiBuilder.button("+1 Point").clicked(act1).width(90f).height(40f).pad(3f));
+
+        // 2 points
         if (level.commonUpgradePoints >= 2) {
-            option("2", (s, st) -> {
-                team.consumeUpgrade(upgrade, 2);
-                if (level.commonUpgradePoints > 0) {
-                    Registry.inject(CommonUpgradeMenu.class).send(s, team);
-                }
-            });
+            String act2 = ctx.registerAction((sess, p, res) -> applyPoints(sess, team, upgrade, 2));
+            btnTable.add(UiBuilder.button("+2 Points").clicked(act2).width(90f).height(40f).pad(3f));
         }
 
+        // 5 points
         if (level.commonUpgradePoints >= 5) {
-            option("5", (s, st) -> {
-                team.consumeUpgrade(upgrade, 5);
-                if (level.commonUpgradePoints > 0) {
-                    Registry.inject(CommonUpgradeMenu.class).send(s, team);
-                }
-            });
+            String act5 = ctx.registerAction((sess, p, res) -> applyPoints(sess, team, upgrade, 5));
+            btnTable.add(UiBuilder.button("+5 Points").clicked(act5).width(90f).height(40f).pad(3f));
         }
 
-        row();
+        btnTable.row();
 
-        option(Tr.t(session, "catali.all_points"), (s, st) -> {
-            team.consumeUpgrade(upgrade, level.commonUpgradePoints);
-            if (level.commonUpgradePoints > 0) {
-                Registry.inject(CommonUpgradeMenu.class).send(s, team);
-            }
-        });
+        // All points
+        String actAll = ctx.registerAction((sess, p, res) -> applyPoints(sess, team, upgrade, level.commonUpgradePoints));
+        btnTable.add(UiBuilder.button(Tr.t(session, "catali.all_points") + " (" + level.commonUpgradePoints + ")")
+                .clicked(actAll)
+                .width(240f)
+                .height(40f)
+                .pad(4f));
 
-        row();
+        container.add(btnTable).row();
+        ctx.add(container);
+        ctx.row();
 
-        option(Tr.t(session, "catali.back"), (s, st) -> {
-            Registry.inject(CommonUpgradeMenu.class).send(s, team);
+        // Navigation bar
+        var navBar = UiBuilder.table().pad(4f);
+        String backAct = ctx.registerAction((sess, p, res) -> {
+            Registry.get(CommonUpgradeMenu.class).send(sess, team);
         });
-        option(Tr.t(session, "catali.close"), (s, st) -> {
-        });
+        navBar.add(UiBuilder.button(Tr.t(session, "catali.back")).clicked(backAct).width(105f).height(38f).pad(3f));
+
+        String closeAct = ctx.registerAction((sess, p, res) -> {});
+        navBar.add(UiBuilder.button(Tr.t(session, "catali.close")).clicked(closeAct).width(105f).height(38f).pad(3f));
+
+        ctx.add(navBar);
+    }
+
+    private void applyPoints(Session session, CataliTeamData team, CataliCommonUpgrade upgrade, int amount) {
+        team.consumeUpgrade(upgrade, amount);
+        if (team.level.commonUpgradePoints > 0) {
+            Registry.get(CommonUpgradeMenu.class).send(session, team);
+        }
     }
 }

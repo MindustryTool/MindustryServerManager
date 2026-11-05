@@ -2,14 +2,18 @@ package gateway.client;
 
 import java.net.http.WebSocket;
 import java.nio.ByteBuffer;
+import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
-import java.util.Objects;
 
 public sealed interface SendFrame extends OutboundItem
         permits SendFrame.TextFrame, SendFrame.BinaryFrame, SendFrame.PingFrame, SendFrame.CloseFrame {
 
     void execute(SendContext ctx) throws Exception;
+
+    CompletableFuture<WebSocket> executeAsync(SendContext ctx);
 
     static SendFrame text(String text) {
         Objects.requireNonNull(text, "text");
@@ -39,9 +43,12 @@ public sealed interface SendFrame extends OutboundItem
 
         @Override
         public void execute(SendContext ctx) throws Exception {
-            WebSocket socket = ctx.socket();
-            socket.sendText(text, true)
-                    .get(ctx.sendTimeout().toMillis(), TimeUnit.MILLISECONDS);
+            executeAsync(ctx).get(ctx.sendTimeout().toMillis(), TimeUnit.MILLISECONDS);
+        }
+
+        @Override
+        public CompletableFuture<WebSocket> executeAsync(SendContext ctx) {
+            return ctx.socket().sendText(text, true);
         }
     }
 
@@ -53,9 +60,12 @@ public sealed interface SendFrame extends OutboundItem
 
         @Override
         public void execute(SendContext ctx) throws Exception {
-            WebSocket socket = ctx.socket();
-            socket.sendBinary(ByteBuffer.wrap(bytes), true)
-                    .get(ctx.sendTimeout().toMillis(), TimeUnit.MILLISECONDS);
+            executeAsync(ctx).get(ctx.sendTimeout().toMillis(), TimeUnit.MILLISECONDS);
+        }
+
+        @Override
+        public CompletableFuture<WebSocket> executeAsync(SendContext ctx) {
+            return ctx.socket().sendBinary(ByteBuffer.wrap(bytes), true);
         }
     }
 
@@ -67,9 +77,12 @@ public sealed interface SendFrame extends OutboundItem
 
         @Override
         public void execute(SendContext ctx) throws Exception {
-            WebSocket socket = ctx.socket();
-            socket.sendPing(ByteBuffer.wrap(payload))
-                    .get(ctx.sendTimeout().toMillis(), TimeUnit.MILLISECONDS);
+            executeAsync(ctx).get(ctx.sendTimeout().toMillis(), TimeUnit.MILLISECONDS);
+        }
+
+        @Override
+        public CompletableFuture<WebSocket> executeAsync(SendContext ctx) {
+            return ctx.socket().sendPing(ByteBuffer.wrap(payload));
         }
     }
 
@@ -81,25 +94,25 @@ public sealed interface SendFrame extends OutboundItem
 
         @Override
         public void execute(SendContext ctx) throws Exception {
+            executeAsync(ctx).get(ctx.sendTimeout().toMillis(), TimeUnit.MILLISECONDS);
+        }
+
+        @Override
+        public CompletableFuture<WebSocket> executeAsync(SendContext ctx) {
             WebSocket socket = ctx.socket();
-
             if (socket.isOutputClosed()) {
-                return;
+                return CompletableFuture.completedFuture(socket);
             }
-
-            try {
-                socket.sendClose(code, reason)
-                        .get(ctx.sendTimeout().toMillis(), TimeUnit.MILLISECONDS);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw e;
-            } catch (Exception e) {
+            return socket.sendClose(code, reason).exceptionally(e -> {
                 try {
                     socket.abort();
                 } catch (Exception ignored) {
                 }
-                throw e;
-            }
+                if (e instanceof RuntimeException re) {
+                    throw re;
+                }
+                throw new CompletionException(e);
+            });
         }
     }
 }

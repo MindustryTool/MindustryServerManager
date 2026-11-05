@@ -15,7 +15,7 @@ import plugin.utils.Tr;
 public abstract class ServerMenu<T> {
 
     protected String title = "";
-    protected boolean fillScreen = true;
+    protected boolean fillScreen = false;
     protected boolean hideOnClick = true;
     protected boolean hideExisting = true;
 
@@ -29,6 +29,10 @@ public abstract class ServerMenu<T> {
     }
 
     public abstract void build(MenuContext<T> ctx);
+
+    public void send(Session session) {
+        send(session, null);
+    }
 
     public void send(Session session, T state) {
         Objects.requireNonNull(session, "session must not be null");

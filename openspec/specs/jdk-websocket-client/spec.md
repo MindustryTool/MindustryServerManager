@@ -76,3 +76,21 @@ The `:gateway` module SHALL provide `WsClient` wrapping Java 17 `java.net.http.H
 - **WHEN** a fresh transport is attached but the connect is superseded before `beginRead()`
 - **THEN** the transport never requests frames and terminates without delivering inbound to the channel
 
+### Requirement: Non-Blocking Outbound Frame Queue
+The `WebSocketConnection` SHALL dispatch outbound frames (`TextFrame`, `BinaryFrame`, `PingFrame`, `CloseFrame`) without spawning a dedicated background worker thread or blocking on `Future.get()`. Outbound frames SHALL be serialized asynchronously preserving emission order using `CompletableFuture` chaining.
+
+#### Scenario: Serialized frame delivery
+- **WHEN** multiple caller threads enqueue frames simultaneously
+- **THEN** frames are transmitted in arrival order without interleaving and without spawning a dedicated sender OS thread
+
+#### Scenario: Async send error handling
+- **WHEN** an asynchronous write fails or times out
+- **THEN** the transport logs the failure and notifies `TransportEvents.onTransportError`
+
+### Requirement: Shared Scheduler Injection
+`WsClient` and `RpcChannel` SHALL accept an optional `ScheduledExecutorService` parameter in their builders or factory methods. When provided, timeout checking and reconnect tasks SHALL use the supplied scheduler instead of creating an independent thread pool.
+
+#### Scenario: Custom scheduler utilized
+- **WHEN** a `WsClient` or `RpcChannel` is built with an external `ScheduledExecutorService`
+- **THEN** it does not create a new single-thread scheduled executor and registers timer tasks with the external scheduler
+

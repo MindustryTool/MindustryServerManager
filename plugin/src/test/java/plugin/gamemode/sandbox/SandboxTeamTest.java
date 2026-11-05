@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import plugin.gamemode.Gamemode;
 import plugin.gamemode.GamemodeCondition;
+import plugin.menus.MenuContext;
 import plugin.session.Session;
 import plugin.session.SessionData;
 
@@ -116,7 +117,7 @@ public class SandboxTeamTest {
 
     @Test
     void teamCommandChangesTeamDirectlyByName() {
-        SandboxCommands commands = new SandboxCommands();
+        SandboxCommands commands = new SandboxCommands(new SandboxTeamMenu());
         Player player = createMockPlayer();
         player.team(Team.sharded);
 
@@ -128,7 +129,7 @@ public class SandboxTeamTest {
 
     @Test
     void teamCommandChangesTeamDirectlyById() {
-        SandboxCommands commands = new SandboxCommands();
+        SandboxCommands commands = new SandboxCommands(new SandboxTeamMenu());
         Player player = createMockPlayer();
         player.team(Team.sharded);
 
@@ -140,7 +141,7 @@ public class SandboxTeamTest {
 
     @Test
     void teamCommandWithInvalidTeamLeavesTeamUnchanged() {
-        SandboxCommands commands = new SandboxCommands();
+        SandboxCommands commands = new SandboxCommands(new SandboxTeamMenu());
         Player player = createMockPlayer();
         player.team(Team.sharded);
 
@@ -151,15 +152,15 @@ public class SandboxTeamTest {
     }
 
     @Test
-    void menuBuildInitializesOptions() {
+    void menuBuildInitializesUi() {
         SandboxTeamMenu menu = new SandboxTeamMenu();
         Player player = createMockPlayer();
 
         Session session = new Session(player, new SessionData());
-        menu.session = session;
-        menu.build();
+        MenuContext<Void> ctx = new MenuContext<>(session, null, 1);
+        menu.build(ctx);
 
-        assertNotNull(menu.title);
-        assertFalse(menu.options.isEmpty());
+        assertNotNull(menu.getTitle());
+        assertNotNull(ctx.getRoot());
     }
 }

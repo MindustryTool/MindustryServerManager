@@ -5,7 +5,9 @@ import com.github.dockerjava.core.DefaultDockerClientConfig;
 import com.github.dockerjava.core.DockerClientImpl;
 import com.github.dockerjava.httpclient5.ApacheDockerHttpClient;
 import io.javalin.Javalin;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import io.javalin.json.JavalinJackson;
+import server.config.Const;
 import server.manager.DockerNodeManager;
 import server.manager.NodeManager;
 import server.service.*;
@@ -48,6 +50,7 @@ public class ServerMain {
 
         Javalin app = Javalin.create(config -> {
             config.showJavalinBanner = false;
+            config.jetty.threadPool = new QueuedThreadPool(32, 4);
             config.router.contextPath = "/";
             config.jetty.modifyWebSocketServletFactory(factory -> {
                 factory.setMaxTextMessageSize(50 * 1024 * 1024);
@@ -121,6 +124,16 @@ public class ServerMain {
                 app.stop();
             } catch (Exception e) {
                 Log.err("Error stopping Javalin", e);
+            }
+            try {
+                Const.scheduler.shutdownNow();
+            } catch (Exception e) {
+                Log.err("Error stopping scheduler", e);
+            }
+            try {
+                Const.executorService.shutdownNow();
+            } catch (Exception e) {
+                Log.err("Error stopping executor service", e);
             }
         }, "server-main-shutdown"));
     }

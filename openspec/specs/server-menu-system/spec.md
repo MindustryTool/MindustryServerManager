@@ -24,12 +24,12 @@ The system SHALL assign a unique incremental token to each displayed menu sessio
 - **WHEN** a player dismisses or closes a menu dialog without selecting a button
 - **THEN** the system receives a cancelled `MenuResult`, clears the active menu for the player, and advances the queue
 
-### Requirement: Backward compatibility for legacy PluginMenu
-The system SHALL translate legacy `PluginMenu` option matrices into `MenuBuilder` table nodes without requiring changes to existing menu subclasses.
+### Requirement: Domain menus use native ServerMenu
+All server menus across hub, moderation, voting, progression, cosmetics, and gamemodes SHALL inherit from `ServerMenu<T>` and build layouts using `MenuContext<T>`.
 
-#### Scenario: Legacy PluginMenu execution
-- **WHEN** an existing `PluginMenu` subclass requests to display
-- **THEN** the system converts the menu's title, description, and button rows into `UiBuilder` nodes and displays them via `Call.menuBuilder`
+#### Scenario: Server menu renders native UiBuilder layout
+- **WHEN** any server menu is triggered for a player
+- **THEN** the menu builds its layout directly via `MenuContext<T>` and displays to the client without legacy translation
 
 ### Requirement: Player menu queue management
 The system SHALL maintain a FIFO queue of pending menus per player and present only one active menu at a time.

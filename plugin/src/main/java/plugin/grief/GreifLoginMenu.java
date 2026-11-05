@@ -1,21 +1,33 @@
 package plugin.grief;
 
-import plugin.menus.PluginMenu;
-
 import mindustry.gen.Call;
+import mindustry.ui.builder.UiBuilder;
+import plugin.annotations.Component;
+import plugin.menus.MenuContext;
+import plugin.menus.ServerMenu;
 import plugin.utils.Tr;
-import plugin.session.Session;
 
-public class GreifLoginMenu extends PluginMenu<String> {
+@Component
+public class GreifLoginMenu extends ServerMenu<String> {
 
     @Override
-    protected void build(Session session, String url) {
-        description = Tr.t(session, "grief.login_prompt");
+    public void build(MenuContext<String> ctx) {
+        String url = ctx.getState();
+        this.title = "Grief Check";
 
-        text(Tr.t(session, "grief.cancel"));
-        option(Tr.t(session, "grief.login"), (p, s) -> {
-            Call.openURI(session.player.con, url);
+        ctx.label(Tr.t(ctx.getSession(), "grief.login_prompt"));
+        ctx.row();
+
+        ctx.table(actions -> {
+            String loginAct = ctx.registerAction((sess, st, res) -> {
+                if (url != null && !url.isEmpty()) {
+                    Call.openURI(sess.player.con, url);
+                }
+            });
+            String cancelAct = ctx.registerAction((sess, st, res) -> {});
+
+            actions.add(UiBuilder.button(Tr.t(ctx.getSession(), "grief.login")).clicked(loginAct).width(120f).height(42f)).pad(6f);
+            actions.add(UiBuilder.button(Tr.t(ctx.getSession(), "grief.cancel")).clicked(cancelAct).width(120f).height(42f)).pad(6f);
         });
     }
-
 }

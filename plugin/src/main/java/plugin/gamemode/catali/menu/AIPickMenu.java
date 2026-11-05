@@ -1,25 +1,69 @@
 package plugin.gamemode.catali.menu;
 
-import lombok.RequiredArgsConstructor;
-import plugin.gamemode.catali.data.CataliTeamData;
-import plugin.menus.PluginMenu;
-import plugin.utils.Tr;
-import plugin.session.Session;
+import java.util.Objects;
 
+import lombok.RequiredArgsConstructor;
+import mindustry.ui.builder.UiBuilder;
+import plugin.annotations.Component;
+import plugin.annotations.ConditionOn;
+import plugin.gamemode.GamemodeCondition;
+import plugin.gamemode.catali.data.CataliTeamData;
+import plugin.menus.MenuContext;
+import plugin.menus.ServerMenu;
+import plugin.session.Session;
+import plugin.utils.Tr;
+
+@Component
 @RequiredArgsConstructor
-public class AIPickMenu extends PluginMenu<CataliTeamData> {
+@ConditionOn(value = GamemodeCondition.class, args = {"catali"})
+public class AIPickMenu extends ServerMenu<CataliTeamData> {
 
     @Override
-    protected void build(Session session, CataliTeamData team) {
-        title = Tr.t(session, "catali.choose_controller");
-        description = Tr.t(session, "catali.controller_description");
+    public void build(MenuContext<CataliTeamData> ctx) {
+        Session session = ctx.getSession();
+        CataliTeamData team = ctx.getState();
+        Objects.requireNonNull(session);
+        Objects.requireNonNull(team);
 
-        option(Tr.t(session, "catali.classic_controller"), (s, t) -> {
-            team.useCommandAi = false;
-        });
-        row();
-        option(Tr.t(session, "catali.command_controller"), (s, t) -> {
-            team.useCommandAi = true;
-        });
+        this.title = Tr.t(session, "catali.choose_controller");
+
+        ctx.label("[lightgray]" + Tr.t(session, "catali.controller_description"));
+        ctx.row();
+
+        var container = UiBuilder.table().pad(8f);
+
+        // Classic Controller Card
+        var classicCard = UiBuilder.table().pad(6f);
+        classicCard.width(MenuContext.SAFE_CARD_WIDTH);
+        classicCard.add(UiBuilder.label("[accent]" + Tr.t(session, "catali.classic_controller") + "[]")).row();
+        if (!team.useCommandAi) {
+            classicCard.add(UiBuilder.label("[stat](Active Controller)[]"));
+        } else {
+            String actId = ctx.registerAction((sess, t, res) -> {
+                team.useCommandAi = false;
+                sess.player.sendMessage("[green]Switched to Classic Controller.");
+            });
+            classicCard.add(UiBuilder.button("[accent]Select[]").clicked(actId).width(110f).height(32f));
+        }
+        container.add(classicCard).pad(4f).row();
+
+        // Command Controller Card
+        var cmdCard = UiBuilder.table().pad(6f);
+        cmdCard.width(MenuContext.SAFE_CARD_WIDTH);
+        cmdCard.add(UiBuilder.label("[accent]" + Tr.t(session, "catali.command_controller") + "[]")).row();
+        if (team.useCommandAi) {
+            cmdCard.add(UiBuilder.label("[stat](Active Controller)[]"));
+        } else {
+            String actId = ctx.registerAction((sess, t, res) -> {
+                team.useCommandAi = true;
+                sess.player.sendMessage("[green]Switched to Command Controller.");
+            });
+            cmdCard.add(UiBuilder.button("[accent]Select[]").clicked(actId).width(110f).height(32f));
+        }
+        container.add(cmdCard).row();
+
+        ctx.add(container);
+        ctx.row();
+        ctx.closeButton(Tr.t(session, "catali.close"));
     }
 }

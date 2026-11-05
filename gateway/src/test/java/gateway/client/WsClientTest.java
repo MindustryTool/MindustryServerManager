@@ -15,6 +15,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -617,6 +618,44 @@ class WsClientTest {
                     "expected TimeoutException, got: " + err);
         } finally {
             channel.shutdown();
+        }
+    }
+
+    @Test
+    void noSenderThreadSpawnedOnConnectAndSend() throws Exception {
+        RpcChannel channel = RpcChannel.create();
+        TestDialer dialer = new TestDialer();
+        WsClient client = WsClient
+                .builder(URI.create("ws://localhost:1/gateway"), channel)
+                .dialer(dialer)
+                .build();
+        try {
+            client.connect();
+            channel.sendNotification("test", "hello");
+            boolean senderThreadFound = Thread.getAllStackTraces().keySet().stream()
+                    .anyMatch(t -> "jdk-ws-sender".equals(t.getName()));
+            assertFalse(senderThreadFound, "Dedicated jdk-ws-sender thread must not exist");
+        } finally {
+            client.close();
+            channel.shutdown();
+            dialer.shutdown();
+        }
+    }
+
+    @Test
+    void externalSchedulerNotTerminatedOnClientClose() {
+        ScheduledExecutorService shared = Executors.newSingleThreadScheduledExecutor();
+        RpcChannel channel = RpcChannel.create();
+        try {
+            WsClient client = WsClient
+                    .builder(URI.create("ws://localhost:1/gateway"), channel)
+                    .scheduler(shared)
+                    .build();
+            client.close();
+            assertFalse(shared.isShutdown(), "Injected scheduler must not be closed by client");
+        } finally {
+            channel.shutdown();
+            shared.shutdownNow();
         }
     }
 }

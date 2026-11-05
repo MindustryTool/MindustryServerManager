@@ -1,4 +1,4 @@
-FROM gradle:8.7.0-jdk17 AS build
+FROM gradle:8.7.0-jdk21 AS build
 WORKDIR /home/gradle/src
 
 COPY --chown=gradle:gradle gradle/ /home/gradle/src/gradle/
@@ -14,7 +14,7 @@ RUN gradle :server:build :plugin:build --no-daemon
 
 RUN sha256sum /home/gradle/src/plugin/build/libs/plugin.jar | cut -d' ' -f1 > /home/gradle/src/plugin/build/libs/plugin.sha256
 
-FROM eclipse-temurin:17-jre-alpine
+FROM eclipse-temurin:21-jre-alpine
 
 WORKDIR /app
 

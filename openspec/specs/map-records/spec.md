@@ -50,7 +50,7 @@ The system SHALL provide in-game notifications and a custom menu to view stored 
 
 #### Scenario: Inspecting top 10 records via client command
 - **WHEN** a player executes the `/records` command
-- **THEN** a custom `PluginMenu` opens displaying the top 10 recorded attempts for the current map, including rank, time, date, and participant names
+- **THEN** a custom `ServerMenu` opens displaying the top 10 recorded attempts for the current map, including rank, time, date, and participant names
 
 #### Scenario: Achieving a new record
 - **WHEN** a qualifying attempt finishes and ranks as a new #1 record

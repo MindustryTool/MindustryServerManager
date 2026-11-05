@@ -11,7 +11,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -51,7 +50,11 @@ public class TranslationService {
     private final ScheduledExecutorService purgeScheduler;
 
     public TranslationService() {
-        this(createDefaultCache(), createDefaultL2());
+        this(createDefaultCache(), createDefaultL2(), Const.scheduler);
+    }
+
+    public TranslationService(ScheduledExecutorService scheduler) {
+        this(createDefaultCache(), createDefaultL2(), scheduler);
     }
 
     private static Cache<String, TranslationResponse> createDefaultCache() {
@@ -70,24 +73,19 @@ public class TranslationService {
         }
     }
 
-    private TranslationService(Cache<String, TranslationResponse> cache, SqliteTranslationCache l2) {
+    private TranslationService(Cache<String, TranslationResponse> cache, SqliteTranslationCache l2,
+            ScheduledExecutorService scheduler) {
         this.cache = cache;
         this.l2Cache = l2;
-        if (l2 != null) {
-            purgeScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
-                Thread t = new Thread(r, "translation-cache-purge");
-                t.setDaemon(true);
-                return t;
-            });
-            purgeScheduler.scheduleWithFixedDelay(() -> {
+        this.purgeScheduler = scheduler;
+        if (l2 != null && scheduler != null && !scheduler.isShutdown()) {
+            scheduler.scheduleWithFixedDelay(() -> {
                 try {
                     l2.purgeExpired(System.currentTimeMillis() - SqliteTranslationCache.TTL_MILLIS);
                 } catch (Exception e) {
                     Log.warn("Translation L2 purge failed: @", e.getMessage());
                 }
             }, 1, 1, TimeUnit.DAYS);
-        } else {
-            purgeScheduler = null;
         }
 
         registerProvider(0, new BingWebProvider());

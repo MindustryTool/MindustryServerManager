@@ -4,6 +4,7 @@ import plugin.session.SessionService;
 
 import plugin.utils.Tr;
 
+import plugin.core.Registry;
 import plugin.gateway.ApiGateway;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -68,7 +69,7 @@ public class GriefDetectService {
 
                 var login = apiGateway.login(entry.getKey());
 
-                new GreifLoginMenu().send(session, login.getLoginLink());
+                Registry.get(GreifLoginMenu.class).send(session, login.getLoginLink());
             }
 
         }

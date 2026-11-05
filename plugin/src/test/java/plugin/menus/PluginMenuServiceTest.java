@@ -31,41 +31,25 @@ public class PluginMenuServiceTest {
     }
 
     @Test
-    void addLegacyMenuAndPreventDuplicates() {
-        TestLegacyMenu menu1 = new TestLegacyMenu();
-        menu1.session = session;
+    void addServerMenuAndPreventDuplicates() {
+        TestServerMenu menu1 = new TestServerMenu();
+        menu1.setSession(session);
 
         service.add(menu1);
         assertEquals(1, service.getPlayerMenus(player).size);
         assertEquals(menu1, service.getPlayerMenus(player).first());
 
-        TestLegacyMenu menu2 = new TestLegacyMenu();
-        menu2.session = session;
+        TestServerMenu menu2 = new TestServerMenu();
+        menu2.setSession(session);
         service.add(menu2);
 
         assertEquals(1, service.getPlayerMenus(player).size, "Duplicate menu class for player should be ignored");
     }
 
     @Test
-    void addServerMenuAndPreventDuplicates() {
-        TestServerMenu menu1 = new TestServerMenu();
-        menu1.setSession(session);
-
-        service.add(menu1);
-
-        TestServerMenu menu2 = new TestServerMenu();
-        menu2.setSession(session);
-        service.add(menu2);
-
-        // Verification: onSessionRemoved should cleanly remove the single queued menu
-        service.onSessionRemoved(new SessionRemovedEvent(session));
-        assertEquals(0, service.getPlayerMenus(player).size);
-    }
-
-    @Test
     void onSessionRemovedClearsQueuedMenus() {
-        TestLegacyMenu menu = new TestLegacyMenu();
-        menu.session = session;
+        TestServerMenu menu = new TestServerMenu();
+        menu.setSession(session);
         service.add(menu);
         assertEquals(1, service.getPlayerMenus(player).size);
 
@@ -105,13 +89,6 @@ public class PluginMenuServiceTest {
         MenuResult cancelledResult = new MenuResult();
         cancelledResult.token = token;
         assertTrue(cancelledResult.wasCancelled());
-    }
-
-    private static class TestLegacyMenu extends PluginMenu<Void> {
-        @Override
-        protected void build(Session session, Void state) {
-            option("Option 1", (s, st) -> {});
-        }
     }
 
     private static class TestServerMenu extends ServerMenu<String> {

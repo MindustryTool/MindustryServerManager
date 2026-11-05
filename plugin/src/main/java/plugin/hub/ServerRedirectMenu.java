@@ -1,52 +1,59 @@
 package plugin.hub;
 
-import plugin.menus.PluginMenu;
-
-import mindustry.gen.Call;
-import mindustry.gen.Player;
-import plugin.Tasks;
-import plugin.core.Registry;
-import plugin.gateway.ApiGateway;
-import plugin.utils.Tr;
-import plugin.session.Session;
-import plugin.utils.Utils;
-
 import java.net.InetAddress;
-
 import arc.util.Log;
 import arc.util.Timer;
 import common.server.Server;
+import lombok.RequiredArgsConstructor;
+import mindustry.gen.Call;
+import mindustry.gen.Player;
+import mindustry.ui.builder.UiBuilder;
+import plugin.Tasks;
+import plugin.annotations.Component;
+import plugin.gateway.ApiGateway;
+import plugin.menus.MenuContext;
+import plugin.menus.ServerMenu;
+import plugin.utils.Tr;
+import plugin.utils.Utils;
 
-public class ServerRedirectMenu extends PluginMenu<Server> {
+@Component
+@RequiredArgsConstructor
+public class ServerRedirectMenu extends ServerMenu<Server> {
 
-    public ServerRedirectMenu() {
-    }
+    private final ApiGateway apiGateway;
 
     @Override
-    public void build(Session session, Server serverData) {
-        this.title = Tr.t(session.locale, "hub.redirect.title");
-        this.description = Tr.t(session.locale, "hub.redirect.confirm", "server", serverData.getName());
+    public void build(MenuContext<Server> ctx) {
+        Server serverData = ctx.getState();
+        if (serverData == null) {
+            return;
+        }
 
-        text(Tr.t(session.locale, "hub.redirect.no"));
-        option(Tr.t(session.locale, "hub.redirect.yes"),
-                (p, s) -> onServerChoose(p.player, s.getId().toString(), s.getName()));
+        this.title = Tr.t(ctx.getSession().locale, "hub.redirect.title");
+
+        ctx.label(Tr.t(ctx.getSession().locale, "hub.redirect.confirm", "server", serverData.getName()));
+        ctx.row();
+
+        ctx.table(actions -> {
+            String confirmAct = ctx.registerAction((sess, st, res) -> onServerChoose(sess.player, serverData.getId().toString(), serverData.getName()));
+            String cancelAct = ctx.registerAction((sess, st, res) -> {});
+
+            actions.add(UiBuilder.button(Tr.t(ctx.getSession().locale, "hub.redirect.yes")).clicked(confirmAct).width(120f).height(45f).pad(8f));
+            actions.add(UiBuilder.button(Tr.t(ctx.getSession().locale, "hub.redirect.no")).clicked(cancelAct).width(120f).height(45f).pad(8f));
+        });
     }
 
     public void onServerChoose(Player player, String id, String name) {
         Tasks.io("Server Choose", () -> {
             try {
-                player.sendMessage(Tr.t(Utils.parseLocale(player.locale()),
-                        "hub.redirect.starting", "server", name));
-
+                player.sendMessage(Tr.t(Utils.parseLocale(player.locale()), "hub.redirect.starting", "server", name));
                 Log.info(String.format("Send host command to server %s %S", name, id));
 
-                var data = Registry.get(ApiGateway.class).hostRemoteServer(id);
-
+                var data = apiGateway.hostRemoteServer(id);
                 player.sendMessage(Tr.t(Utils.parseLocale(player.locale()), "hub.redirect.redirecting"));
 
                 Utils.forEachPlayerLocale((locale, players) -> {
-                    String msg = Tr.t(locale, "hub.redirect.announce",
-                            "player", player.coloredName(), "server", name);
+                    String msg = Tr.t(locale, "hub.redirect.announce", "player", player.coloredName(), "server", name);
                     for (var p : players) {
                         p.sendMessage(msg);
                     }
@@ -54,9 +61,7 @@ public class ServerRedirectMenu extends PluginMenu<Server> {
 
                 String host = "";
                 int port = 6567;
-
                 var colon = data.lastIndexOf(":");
-
                 if (colon > 0) {
                     host = data.substring(0, colon);
                     port = Integer.parseInt(data.substring(colon + 1).trim());
@@ -69,11 +74,15 @@ public class ServerRedirectMenu extends PluginMenu<Server> {
                 int finalPort = port;
 
                 Timer.schedule(() -> {
-                    Call.connect(player.con, finalHost.getHostAddress(), finalPort);
-                }, 1f);
+                    try {
+                        Call.connect(player.con, finalHost.getHostAddress(), finalPort);
+                    } catch (Exception e) {
+                        Log.err("Failed to redirect player", e);
+                    }
+                }, 1.5f);
             } catch (Exception e) {
+                Log.err("Failed to choose server", e);
                 player.sendMessage(Tr.t(Utils.parseLocale(player.locale()), "hub.redirect.error"));
-                Log.err("Failed to redirect player: " + e.getMessage());
             }
         });
     }

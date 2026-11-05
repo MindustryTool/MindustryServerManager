@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import mindustry.gen.Iconc;
 import mindustry.gen.Player;
+import plugin.core.Registry;
 import plugin.session.SessionService;
 
 import java.util.ArrayList;
@@ -53,6 +54,6 @@ public class ServerHubEntry implements HubEntry {
 
     @Override
     public void onInteract(Player player, SessionService sessionService, HubService hubService) {
-        sessionService.get(player).ifPresent(session -> new ServerRedirectMenu().send(session, server));
+        sessionService.get(player).ifPresent(session -> Registry.get(ServerRedirectMenu.class).send(session, server));
     }
 }

@@ -9,6 +9,9 @@ import plugin.utils.Tr;
 @RequiredArgsConstructor
 public class SessionCommands {
 
+    private final LoginMenu loginMenu;
+    private final PlayerInfoMenu playerInfoMenu;
+
     @ClientCommand(name = "admin", description = "Toogle admin permisison", admin = true)
     public void admin(Session session) {
         if (session.isAdmin()) {
@@ -30,7 +33,7 @@ public class SessionCommands {
             return;
         }
 
-        new LoginMenu().send(session, null);
+        loginMenu.send(session, null);
     }
 
     @ClientCommand(name = "me", description = "Display your info", admin = false)
@@ -40,6 +43,6 @@ public class SessionCommands {
 
     @ClientCommand(name = "pinfo", description = "Display player info", admin = false)
     public void pinfo(Session session) {
-        new PlayerInfoMenu().send(session, session);
+        playerInfoMenu.send(session, session);
     }
 }

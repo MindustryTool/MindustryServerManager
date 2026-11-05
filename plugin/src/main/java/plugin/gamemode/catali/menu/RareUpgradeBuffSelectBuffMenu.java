@@ -1,45 +1,84 @@
 package plugin.gamemode.catali.menu;
 
+import java.util.Objects;
+
 import common.util.Pair;
+import lombok.RequiredArgsConstructor;
 import mindustry.gen.Unit;
+import mindustry.ui.builder.UiBuilder;
 import plugin.PluginEvents;
+import plugin.annotations.Component;
+import plugin.annotations.ConditionOn;
 import plugin.core.Registry;
+import plugin.gamemode.GamemodeCondition;
 import plugin.gamemode.catali.CataliConfig;
 import plugin.gamemode.catali.data.CataliTeamData;
 import plugin.gamemode.catali.event.CataliBuffRareUpgrade;
-import plugin.menus.PluginMenu;
-import plugin.utils.Tr;
+import plugin.menus.MenuContext;
+import plugin.menus.ServerMenu;
 import plugin.session.Session;
+import plugin.utils.Tr;
 
-public class RareUpgradeBuffSelectBuffMenu extends PluginMenu<Pair<CataliTeamData, Unit>> {
+@Component
+@RequiredArgsConstructor
+@ConditionOn(value = GamemodeCondition.class, args = {"catali"})
+public class RareUpgradeBuffSelectBuffMenu extends ServerMenu<Pair<CataliTeamData, Unit>> {
 
     @Override
-    public void build(Session session, Pair<CataliTeamData, Unit> pair) {
-        var team = pair.first;
-        var unit = pair.second;
+    public void build(MenuContext<Pair<CataliTeamData, Unit>> ctx) {
+        Session session = ctx.getSession();
+        Pair<CataliTeamData, Unit> pair = ctx.getState();
+        Objects.requireNonNull(session);
+        Objects.requireNonNull(pair);
 
-        var availableEffectsAppliedTo = CataliConfig.selectBuffsCanBeApplied(unit);
+        CataliTeamData team = pair.first;
+        Unit unit = pair.second;
 
-        title = Tr.t(session, "catali.select_buff");
-        description = Tr.t(session, "catali.choose_buff");
+        this.title = Tr.t(session, "catali.select_buff");
 
-        int i = 0;
-        for (var effect : availableEffectsAppliedTo) {
-            if (i > 0 && i % 2 == 0)
-                row();
+        ctx.label("[lightgray]" + Tr.t(session, "catali.choose_buff") + " for "
+                + unit.type.emoji() + " [accent]" + unit.type.name + "[]");
+        ctx.row();
 
-            option(effect.emoji() + " " + effect.name, (s, st) -> {
-                PluginEvents.fire(new CataliBuffRareUpgrade(team, unit, effect));
-            });
-            i++;
-        }
+        var availableEffects = CataliConfig.selectBuffsCanBeApplied(unit);
 
-        row();
+        ctx.pane(MenuContext.SAFE_WIDTH, 220f, paneTable -> {
+            if (availableEffects.isEmpty()) {
+                paneTable.add(UiBuilder.label("[lightgray]No applicable buffs.")).row();
+                return;
+            }
 
-        option(Tr.t(session, "catali.back"), (s, st) -> {
-            Registry.inject(RareUpgradeBuffSelectUnitMenu.class).send(s, team);
+            for (var effect : availableEffects) {
+                var card = UiBuilder.table().pad(4f);
+                card.width(MenuContext.SAFE_CARD_WIDTH);
+
+                card.add(UiBuilder.label(effect.emoji() + " [white]" + effect.name + "[]").align("left")).pad(4f);
+
+                String actId = ctx.registerAction((sess, p, res) -> {
+                    PluginEvents.fire(new CataliBuffRareUpgrade(team, unit, effect));
+                });
+
+                card.add(UiBuilder.button("[green]Apply[]")
+                        .clicked(actId)
+                        .width(95f)
+                        .height(34f)
+                        .align("right"));
+
+                paneTable.add(card.growX().pad(2f)).row();
+            }
         });
-        option(Tr.t(session, "catali.close"), (s, st) -> {
+
+        ctx.row();
+
+        var navBar = UiBuilder.table().pad(4f);
+        String backAct = ctx.registerAction((sess, p, res) -> {
+            Registry.get(RareUpgradeBuffSelectUnitMenu.class).send(sess, team);
         });
+        navBar.add(UiBuilder.button(Tr.t(session, "catali.back")).clicked(backAct).width(105f).height(38f).pad(3f));
+
+        String closeAct = ctx.registerAction((sess, p, res) -> {});
+        navBar.add(UiBuilder.button(Tr.t(session, "catali.close")).clicked(closeAct).width(105f).height(38f).pad(3f));
+
+        ctx.add(navBar);
     }
 }

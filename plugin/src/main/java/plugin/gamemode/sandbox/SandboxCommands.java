@@ -2,6 +2,7 @@ package plugin.gamemode.sandbox;
 
 import java.util.Objects;
 
+import lombok.RequiredArgsConstructor;
 import mindustry.game.Team;
 import plugin.annotations.ClientCommand;
 import plugin.annotations.Component;
@@ -12,15 +13,18 @@ import plugin.session.Session;
 import plugin.utils.Tr;
 
 @Component
+@RequiredArgsConstructor
 @ConditionOn(value = GamemodeCondition.class, args = {"sandbox"})
 public class SandboxCommands {
+
+    private final SandboxTeamMenu sandboxTeamMenu;
 
     @ClientCommand(name = "team", description = "Open team selection menu or change team directly", admin = false)
     public void team(Session session, @Param(name = "name|id", required = false) String teamName) {
         Objects.requireNonNull(session);
 
         if (teamName == null || teamName.trim().isEmpty()) {
-            new SandboxTeamMenu().send(session, null);
+            sandboxTeamMenu.send(session);
             return;
         }
 
@@ -50,7 +54,6 @@ public class SandboxCommands {
                 return team;
             }
         }
-
         return null;
     }
 }

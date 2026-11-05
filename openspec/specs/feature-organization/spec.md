@@ -29,7 +29,7 @@ The shared infrastructure SHALL remain centralized and SHALL NOT contain feature
 - `plugin` package root SHALL retain only `Control`, `Cfg`, `PluginEvents`, `PluginState`, `Tasks`.
 - `core`, `annotations`, `database`, `json` packages SHALL be unchanged.
 - `commands` SHALL contain only `ClientCommandHandler`, `ServerCommandHandler`, `ParamException`.
-- `menus` SHALL contain only `PluginMenu`, `PluginMenuService`.
+- `menus` SHALL contain only `ServerMenu`, `MenuContext`, `PluginMenuService`.
 - `event` SHALL contain only `PluginUnloadEvent`, `UnloadServerEvent`.
 - `utils` SHALL contain only `Utils`, `JsonUtils`, `HttpUtils`, `TimeUtils`, `TextWidth`, `CommandUtils`.
 
@@ -81,7 +81,7 @@ The refactored source SHALL contain no imports, reflection strings, or package d
 
 #### Scenario: Grep of source tree
 - **WHEN** the source is searched for `plugin.service.`, `plugin.menus.`, `plugin.commands.client.`, `plugin.commands.server.`, `plugin.type.`, `plugin.event.`, and `plugin.utils.` (as package references)
-- **THEN** only the retained shared classes (`plugin.menus.PluginMenu`, `plugin.menus.PluginMenuService`, `plugin.event.PluginUnloadEvent`, `plugin.event.UnloadServerEvent`, `plugin.commands.ClientCommandHandler`, `plugin.commands.ServerCommandHandler`, `plugin.commands.ParamException`, `plugin.utils.Utils`, `plugin.utils.JsonUtils`, `plugin.utils.HttpUtils`, `plugin.utils.TimeUtils`, `plugin.utils.TextWidth`, `plugin.utils.CommandUtils`) reference their former packages
+- **THEN** only the retained shared classes (`plugin.menus.ServerMenu`, `plugin.menus.MenuContext`, `plugin.menus.PluginMenuService`, `plugin.event.PluginUnloadEvent`, `plugin.event.UnloadServerEvent`, `plugin.commands.ClientCommandHandler`, `plugin.commands.ServerCommandHandler`, `plugin.commands.ParamException`, `plugin.utils.Utils`, `plugin.utils.JsonUtils`, `plugin.utils.HttpUtils`, `plugin.utils.TimeUtils`, `plugin.utils.TextWidth`, `plugin.utils.CommandUtils`) reference their former packages
 - **AND** no other references exist
 
 #### Scenario: SessionHandler fully removed

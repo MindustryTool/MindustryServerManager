@@ -1,102 +1,95 @@
 package plugin.hub;
 
-import plugin.menus.PluginMenu;
-
+import java.util.Comparator;
+import java.util.List;
 import arc.util.Log;
-import mindustry.gen.Call;
+import common.server.Server;
+import lombok.RequiredArgsConstructor;
+import mindustry.ui.builder.UiBuilder;
+import mindustry.ui.builder.UiBuilder.TableBuilder;
+import plugin.annotations.Component;
 import plugin.core.Registry;
 import plugin.gateway.ApiGateway;
+import plugin.menus.MenuContext;
+import plugin.menus.ServerMenu;
 import plugin.utils.Tr;
-import plugin.session.Session;
-import common.server.Server;
-import java.util.List;
 
-public class GlobalServerListMenu extends PluginMenu<Integer> {
+@Component
+@RequiredArgsConstructor
+public class GlobalServerListMenu extends ServerMenu<Integer> {
 
-    public GlobalServerListMenu() {
-    }
+    private final ApiGateway apiGateway;
 
     @Override
-    public void build(Session session, Integer page) {
+    public void build(MenuContext<Integer> ctx) {
+        int page = ctx.getState() != null ? ctx.getState() : 0;
+        int size = 8;
+
+        this.title = Tr.t(ctx.getSession().locale, "hub.global.title");
+
         try {
-            int size = 8;
             PaginationRequest request = new PaginationRequest().setPage(page).setSize(size);
-            List<Server> servers = Registry.get(ApiGateway.class).getServers(request);
+            List<Server> servers = apiGateway.getServers(request);
 
-            this.title = Tr.t(session.locale, "hub.global.title");
-            this.description = "";
+            ctx.label(Tr.t(ctx.getSession().locale, "hub.choose_server"));
+            ctx.row();
 
-            text(Tr.t(session.locale, "hub.global.server_name"));
-            text(Tr.t(session.locale, "hub.global.players_playing"));
-            row();
+            ctx.pane(MenuContext.SAFE_WIDTH, 320f, paneTable -> {
+                if (servers == null || servers.isEmpty()) {
+                    paneTable.add(UiBuilder.label("[lightgray]" + Tr.t(ctx.getSession().locale, "hub.global.server_offline")).pad(16f));
+                    return;
+                }
 
-            text(Tr.t(session.locale, "hub.global.server_gamemode"));
-            text(Tr.t(session.locale, "hub.global.map_playing"));
-            row();
+                servers.stream().sorted(Comparator.comparing(Server::getPlayers).reversed()).forEach(server -> {
+                    TableBuilder card = UiBuilder.table().pad(6f);
 
-            text(Tr.t(session.locale, "hub.global.server_mods"));
-            row();
+                    boolean isOnline = server.getMapName() != null;
+                    String statusText = isOnline
+                        ? Tr.t(ctx.getSession().locale, "hub.global.players", "players", server.getPlayers())
+                        : "[scarlet]" + Tr.t(ctx.getSession().locale, "hub.global.server_offline");
 
-            text(Tr.t(session.locale, "hub.global.server_description"));
-            row();
+                    card.add(UiBuilder.label("[gold]" + server.getName()).align("left"));
+                    card.add(UiBuilder.label(statusText).align("right"));
+                    card.row();
 
-            servers.forEach(server -> {
-                option("-----------------", (p, s) -> {
+                    if (isOnline) {
+                        String details = Tr.t(ctx.getSession().locale, "hub.global.gamemode", "mode", server.getMode())
+                            + " | " + Tr.t(ctx.getSession().locale, "hub.global.map", "map", server.getMapName());
+                        card.add(UiBuilder.label("[lightgray]" + details).align("left").colspan(2));
+                        card.row();
+                    }
+
+                    if (server.getDescription() != null && !server.getDescription().trim().isEmpty()) {
+                        card.add(UiBuilder.label("[gray]" + server.getDescription()).wrap().align("left").colspan(2));
+                        card.row();
+                    }
+
+                    String redirectAct = ctx.registerAction((sess, st, res) -> ServerUtils.redirectAll(server));
+                    card.add(UiBuilder.button("Redirect All").clicked(redirectAct).width(140f).height(40f).align("right").colspan(2).pad(4f));
+
+                    paneTable.add(card.growX().pad(4f)).row();
                 });
-                row();
-
-                option(String.format("[#FFD700]%s", server.getName()),
-                        (p, s) -> ServerUtils.redirectAll(server));
-                option(Tr.t(session.locale, "hub.global.players", "players", server.getPlayers()),
-                        (p, s) -> ServerUtils.redirectAll(server));
-                row();
-
-                option(Tr.t(session.locale, "hub.global.gamemode", "mode", server.getMode()),
-                        (p, s) -> ServerUtils.redirectAll(server));
-                option(Tr.t(session.locale, "hub.global.map", "map",
-                        server.getMapName() != null ? server.getMapName()
-                                : Tr.t(session.locale, "hub.global.server_offline")),
-                        (p, s) -> ServerUtils.redirectAll(server));
-                row();
-
-                if (server.getMods() != null && !server.getMods().isEmpty()) {
-                    option(Tr.t(session.locale, "hub.global.mods", "mods",
-                            String.join(", ", server.getMods())),
-                            (p, s) -> ServerUtils.redirectAll(server));
-                    row();
-                }
-
-                if (server.getDescription() != null && !server.getDescription().trim().isEmpty()) {
-                    option(String.format("[#B0B0B0]%s", server.getDescription()),
-                            (p, s) -> ServerUtils.redirectAll(server));
-                    row();
-                }
             });
 
-            if (page > 0) {
-                option(Tr.t(session.locale, "hub.global.previous"),
-                        (p, s) -> new GlobalServerListMenu().send(p, s - 1));
-            } else {
-                option(Tr.t(session.locale, "hub.global.first_page"), (p, s) -> {
-                    new GlobalServerListMenu().send(p, s);
-                    Call.infoToast(p.player.con, Tr.t(session.locale, "hub.global.dont_click"), 10f);
-                });
-            }
+            ctx.row();
 
-            if (servers.size() == size) {
-                option(Tr.t(session.locale, "hub.global.next"), (p, s) -> new GlobalServerListMenu().send(p, s + 1));
-            } else {
-                option(Tr.t(session.locale, "hub.global.no_more"), (p, s) -> {
-                    new GlobalServerListMenu().send(p, s);
-                    Call.infoToast(p.player.con, Tr.t(session.locale, "hub.global.dont_click"), 10f);
-                });
-            }
+            ctx.table(bottom -> {
+                if (page > 0) {
+                    String prevAct = ctx.registerAction((sess, st, res) -> Registry.get(GlobalServerListMenu.class).send(sess, page - 1));
+                    bottom.add(UiBuilder.button(Tr.t(ctx.getSession().locale, "hub.list.previous")).clicked(prevAct).width(95f).height(40f).pad(4f));
+                }
 
-            row();
+                if (servers != null && servers.size() == size) {
+                    String nextAct = ctx.registerAction((sess, st, res) -> Registry.get(GlobalServerListMenu.class).send(sess, page + 1));
+                    bottom.add(UiBuilder.button(Tr.t(ctx.getSession().locale, "hub.list.next")).clicked(nextAct).width(95f).height(40f).pad(4f));
+                }
 
-            text(Tr.t(session.locale, "hub.global.close"));
+                String closeAct = ctx.registerAction((sess, st, res) -> {});
+                bottom.add(UiBuilder.button(Tr.t(ctx.getSession().locale, "hub.list.close")).clicked(closeAct).width(95f).height(40f).pad(4f));
+            });
         } catch (Exception e) {
             Log.err("Failed to build global server list menu", e);
+            ctx.label("[scarlet]Failed to load server list");
         }
     }
 }

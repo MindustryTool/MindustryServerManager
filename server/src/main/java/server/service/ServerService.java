@@ -17,7 +17,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -65,7 +64,7 @@ public class ServerService {
     private final WsHandler wsHandler;
     private final PluginBundleService pluginBundle;
 
-    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    private final ScheduledExecutorService scheduler;
     private final ConcurrentHashMap<UUID, ReconcileStatus> reconcileStates = new ConcurrentHashMap<>();
 
     private final LoadingCache<String, ReentrantLock> locks = Caffeine.newBuilder()
@@ -87,12 +86,19 @@ public class ServerService {
 
     public ServerService(GatewayService gatewayService, NodeManager nodeManager, EventBus eventBus,
             ApiService apiService, WsHandler wsHandler, PluginBundleService pluginBundle) {
+        this(gatewayService, nodeManager, eventBus, apiService, wsHandler, pluginBundle, Const.scheduler);
+    }
+
+    public ServerService(GatewayService gatewayService, NodeManager nodeManager, EventBus eventBus,
+            ApiService apiService, WsHandler wsHandler, PluginBundleService pluginBundle,
+            ScheduledExecutorService scheduler) {
         this.gatewayService = gatewayService;
         this.nodeManager = nodeManager;
         this.eventBus = eventBus;
         this.apiService = apiService;
         this.wsHandler = wsHandler;
         this.pluginBundle = pluginBundle;
+        this.scheduler = Objects.requireNonNull(scheduler, "scheduler");
 
         init();
     }
