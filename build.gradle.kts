@@ -17,6 +17,17 @@ allprojects {
             }
         }
 
+        // Downloads the full desktop client JAR (with fonts and spritesheets) for tests and dev preview tools
+        ivy {
+            url = uri("https://github.com/")
+            patternLayout {
+                artifact("/[organisation]/Mindustry/releases/download/[revision]/Mindustry.jar")
+            }
+            metadataSources {
+                artifact()
+            }
+        }
+
         // If the version is set to 'latest', downloads the latest Mindustry *release* as a dependency
         ivy {
             url = uri("https://github.com/")

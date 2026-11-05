@@ -42,6 +42,7 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
     testImplementation("Anuken:Mindustry:${property("mindustryVersion")}")
+    testImplementation("Anuken:MindustryDesktop:${property("mindustryVersion")}")
 }
 
 tasks.test {
