@@ -264,8 +264,7 @@ public class DockerNodeManager implements NodeManager {
         }
 
         if (Const.IS_PRODUCTION) {
-            String runtime = request.getIsOfficial() ? "runc" : "runsc";
-            hostConfig.withRuntime(runtime);
+            hostConfig.withRuntime("runsc");
         }
 
         command.withExposedPorts(exposedPorts)
