@@ -1,6 +1,8 @@
 package plugin.maprating;
 
 import java.util.Locale;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import arc.util.Log;
 import mindustry.gen.Iconc;
@@ -11,6 +13,7 @@ import plugin.utils.Tr;
 @Component
 public class MapRatingService {
     private final MapRatingRepository repository;
+    private final ConcurrentMap<String, MapRatingStat> cache = new ConcurrentHashMap<>();
 
     public MapRatingService(MapRatingRepository repository) {
         this.repository = repository;
@@ -25,6 +28,13 @@ public class MapRatingService {
 
     public void updateMapRating(String mapName, int star) {
         repository.updateRating(mapName, star);
+        if (mapName != null && !mapName.isBlank()) {
+            String cleanName = mapName.trim();
+            repository.findByMapName(cleanName).ifPresentOrElse(
+                    r -> cache.put(cleanName, new MapRatingStat(r.votes(), r.rating())),
+                    () -> cache.remove(cleanName)
+            );
+        }
     }
 
     public MapRatingStat getStat(Map map) {
@@ -35,9 +45,14 @@ public class MapRatingService {
     }
 
     public MapRatingStat getStat(String mapName) {
-        return repository.findByMapName(mapName)
-                .map(r -> new MapRatingStat(r.votes(), r.rating()))
-                .orElseGet(() -> new MapRatingStat(0, 0f));
+        if (mapName == null || mapName.isBlank()) {
+            return new MapRatingStat(0, 0f);
+        }
+        return cache.computeIfAbsent(mapName.trim(), name ->
+                repository.findByMapName(name)
+                        .map(r -> new MapRatingStat(r.votes(), r.rating()))
+                        .orElseGet(() -> new MapRatingStat(0, 0f))
+        );
     }
 
     public String getAvgString(Map map) {

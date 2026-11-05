@@ -17,20 +17,39 @@ import plugin.utils.Tr;
 @RequiredArgsConstructor
 public class RtvMenu extends ServerMenu<Integer> {
 
+    public record RtvMapEntry(Map map, MapRatingStat stat, float sortScore) {}
+
     private final RtvService rtvService;
     private final MapRatingService mapRatingService;
 
+    public static Seq<RtvMapEntry> prepareSortedEntries(Seq<Map> maps, MapRatingService mapRatingService) {
+        Seq<RtvMapEntry> entries = new Seq<>(maps.size);
+        for (Map map : maps) {
+            MapRatingStat stat = mapRatingService.getStat(map);
+            float sortScore = (stat.avgScore == 0) ? 6.0f : stat.avgScore;
+            entries.add(new RtvMapEntry(map, stat, sortScore));
+        }
+
+        entries.sort((a, b) -> {
+            int scoreCmp = Float.compare(b.sortScore(), a.sortScore());
+            if (scoreCmp != 0) {
+                return scoreCmp;
+            }
+            int votesCmp = Integer.compare(b.stat().totalVotes, a.stat().totalVotes);
+            if (votesCmp != 0) {
+                return votesCmp;
+            }
+            String nameA = a.map() != null && a.map().name() != null ? a.map().name() : "";
+            String nameB = b.map() != null && b.map().name() != null ? b.map().name() : "";
+            return nameA.compareToIgnoreCase(nameB);
+        });
+
+        return entries;
+    }
+
     @Override
     public void build(MenuContext<Integer> ctx) {
-        Seq<Map> maps = new Seq<>(rtvService.getMaps());
-
-        maps.sort((a, b) -> {
-            var ar = mapRatingService.getStat(a).avgScore;
-            var br = mapRatingService.getStat(b).avgScore;
-            if (ar == 0) ar = 6;
-            if (br == 0) br = 6;
-            return Float.compare(br, ar);
-        });
+        Seq<RtvMapEntry> entries = prepareSortedEntries(rtvService.getMaps(), mapRatingService);
 
         this.title = Tr.t(ctx.getSession(), "rtv.available_maps");
 
@@ -38,8 +57,9 @@ public class RtvMenu extends ServerMenu<Integer> {
         ctx.row();
 
         ctx.pane(MenuContext.SAFE_WIDTH, 320f, paneTable -> {
-            for (Map map : maps) {
-                MapRatingStat stats = mapRatingService.getStat(map);
+            for (RtvMapEntry entry : entries) {
+                Map map = entry.map();
+                MapRatingStat stats = entry.stat();
                 String ratingColor = mapRatingService.avgScoreColor(stats.avgScore);
                 boolean isVoted = rtvService.isVoted(ctx.getSession().player, map.file.nameWithoutExtension());
 

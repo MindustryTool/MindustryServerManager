@@ -102,4 +102,27 @@ public class MapRatingServiceTest {
         assertEquals(true, starDisplay.contains("[gold]"));
         assertEquals(true, starDisplay.contains("[gray]"));
     }
+
+    @Test
+    void testCachedStatRetrievalAndInvalidation() {
+        service.updateMapRating("cache_map", 5);
+        var statInitial = service.getStat("cache_map");
+        assertEquals(1, statInitial.totalVotes);
+        assertEquals(5.0f, statInitial.avgScore, 0.001);
+
+        // Mutate DB directly; cache should return the cached instance
+        database.db().update(MapRatings.TABLE)
+                .set(MapRatings.VOTES, 99)
+                .where(MapRatings.MAP_NAME.eq("cache_map"))
+                .execute();
+
+        var statCached = service.getStat("cache_map");
+        assertEquals(1, statCached.totalVotes);
+
+        // Update through service; cache should be updated with new DB value
+        service.updateMapRating("cache_map", 5);
+        var statUpdated = service.getStat("cache_map");
+        assertEquals(2, statUpdated.totalVotes);
+        assertEquals(5.0f, statUpdated.avgScore, 0.001);
+    }
 }

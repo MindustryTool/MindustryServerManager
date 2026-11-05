@@ -28,3 +28,14 @@ The system SHALL format map rating information including author, description, st
 #### Scenario: Display string includes star breakdown
 - **WHEN** `getDisplayString` is requested for a map with votes
 - **THEN** the returned text contains each star level count and colored average rating
+
+### Requirement: In-memory rating caching
+The `MapRatingService` SHALL cache retrieved `MapRatingStat` values in memory to avoid redundant database reads.
+
+#### Scenario: Cached stat retrieval on repeated query
+- **WHEN** ratings for a map name are requested multiple times
+- **THEN** the system returns the cached `MapRatingStat` without querying the database again
+
+#### Scenario: Cache updated after vote submission
+- **WHEN** a player submits a star rating for a map
+- **THEN** the in-memory cache for that map is updated with the new vote counts and rating
