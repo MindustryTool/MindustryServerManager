@@ -227,12 +227,12 @@ public class Utils {
             return;
         }
 
-        if (lastImagePreviewAt.plusSeconds(5).isBefore(Instant.now())) {
+        if (lastImagePreviewAt.plusSeconds(15).isBefore(Instant.now())) {
             lastImagePreviewAt = Instant.now();
 
             appPostWithTimeout(() -> {
                 SaveIO.save(tempFile);
-            }, 5000, "Generate map preview");
+            }, 3000, "Generate map preview");
 
             var bytes = tempFile.readBytes();
 
