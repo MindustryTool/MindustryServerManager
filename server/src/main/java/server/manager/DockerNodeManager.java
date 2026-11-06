@@ -249,7 +249,7 @@ public class DockerNodeManager implements NodeManager {
                 .withCpuPeriod(100000L)
                 .withCpuQuota((long) (request.getCpu() * 100000L))
                 .withCpuShares(Math.round(request.getCpu() * 1024.0f))
-                .withCpusetCpus("0-3")
+                .withCpusetCpus("1-5")
                 .withMemory(request.getMemory() * 1024 * 1024L)
                 .withRestartPolicy(RestartPolicy.onFailureRestart(1000))
                 .withLogConfig(new LogConfig(LogConfig.LoggingType.JSON_FILE, Map.of(
