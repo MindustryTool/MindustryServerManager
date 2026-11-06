@@ -25,7 +25,7 @@ public class TrailMenu extends ServerMenu<Integer> {
         this.title = "Cosmetic Trails";
 
         boolean hasTrail = ctx.getSession().getData().trail != null && !ctx.getSession().getData().trail.isEmpty();
-        ctx.label("[accent]Choose a cosmetic trail to equip:");
+        ctx.label("[accent]Choose a cosmetic trail to equip:").width(MenuContext.SAFE_WIDTH);
         ctx.row();
 
         if (hasTrail) {
@@ -36,7 +36,7 @@ public class TrailMenu extends ServerMenu<Integer> {
                 }
                 sess.player.sendMessage(Tr.t(sess, "trail.removed"));
                 Registry.get(TrailMenu.class).send(sess, 0);
-            });
+            }).width(MenuContext.SAFE_CARD_WIDTH).height(36f).pad(4f);
             ctx.row();
         }
 
@@ -46,12 +46,13 @@ public class TrailMenu extends ServerMenu<Integer> {
                 boolean isCurrent = trail.getName().equals(ctx.getSession().getData().trail);
 
                 TableBuilder card = UiBuilder.table().pad(4f);
+                card.width(MenuContext.SAFE_CARD_WIDTH);
                 String badge = isCurrent ? "[green]" + Iconc.ok + " EQUIPPED"
                     : owns ? "[accent]OWNED"
                     : "[gold]" + trail.getPrice() + " Coins";
 
-                card.add(UiBuilder.label("[white]" + trail.getName()).align("left"));
-                card.add(UiBuilder.label(badge).align("right"));
+                card.add(UiBuilder.label("[white]" + trail.getName()).wrap().align("left").growX());
+                card.add(UiBuilder.label(badge).align("right").padLeft(8f));
                 card.row();
 
                 String actionText = isCurrent ? "Unequip" : owns ? "Equip" : "Buy";
@@ -76,7 +77,7 @@ public class TrailMenu extends ServerMenu<Integer> {
                     Registry.get(TrailMenu.class).send(sess, 0);
                 });
 
-                card.add(UiBuilder.button(actionText).clicked(trailAct).width(110f).height(38f).align("right").colspan(2).pad(2f));
+                card.add(UiBuilder.button(actionText).clicked(trailAct).width(90f).height(34f).align("right").colspan(2).pad(2f));
                 paneTable.add(card.growX().pad(2f)).row();
             }
         });

@@ -40,15 +40,16 @@ public class TaskMenu extends ServerMenu<Integer> {
                 boolean done = progress >= task.getGoal();
 
                 TableBuilder card = UiBuilder.table().pad(6f);
+                card.width(MenuContext.SAFE_CARD_WIDTH);
                 String statusIcon = done ? "[green]" + Iconc.ok + " " : "[yellow]⏳ ";
                 String titleText = statusIcon + "[white]" + task.getTitle(ctx.getSession());
                 String rewardBadge = "[gold]+" + task.getRewardCoins() + " Coins";
 
-                card.add(UiBuilder.label(titleText).align("left"));
-                card.add(UiBuilder.label(rewardBadge).align("right"));
+                card.add(UiBuilder.label(titleText).wrap().align("left").growX());
+                card.add(UiBuilder.label(rewardBadge).align("right").padLeft(4f));
                 card.row();
 
-                card.add(UiBuilder.label("[lightgray]" + task.getDescription(ctx.getSession())).wrap().align("left").colspan(2));
+                card.add(UiBuilder.label("[lightgray]" + task.getDescription(ctx.getSession())).wrap().align("left").colspan(2).growX());
                 card.row();
 
                 String progressText = String.format("[accent]Progress: [white]%d / %d", Math.min(progress, task.getGoal()), task.getGoal());

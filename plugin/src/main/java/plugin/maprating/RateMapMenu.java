@@ -27,7 +27,7 @@ public class RateMapMenu extends ServerMenu<Map> {
         Locale locale = ctx.getSession().locale;
         this.title = Tr.t(locale, "maprating.rate_title");
 
-        ctx.label("[accent]Map: [gold]" + map.name());
+        ctx.label("[accent]Map: [gold]" + map.name()).width(MenuContext.SAFE_WIDTH);
         ctx.row();
 
         ctx.table(starsTable -> {
@@ -45,7 +45,7 @@ public class RateMapMenu extends ServerMenu<Map> {
                     });
                 });
 
-                starsTable.add(UiBuilder.button(starDisplay).clicked(act).width(200f).height(42f).pad(4f)).row();
+                starsTable.add(UiBuilder.button(starDisplay).clicked(act).width(MenuContext.SAFE_CARD_WIDTH).height(34f).pad(2f)).row();
             }
         });
 

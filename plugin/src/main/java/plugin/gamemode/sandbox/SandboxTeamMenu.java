@@ -45,10 +45,10 @@ public class SandboxTeamMenu extends ServerMenu<Void> {
                 var card = UiBuilder.table().pad(4f);
                 card.width(MenuContext.SAFE_CARD_WIDTH);
 
-                card.add(UiBuilder.label(team.coloredName()).align("left")).pad(4f);
+                card.add(UiBuilder.label(team.coloredName()).wrap().align("left").growX().pad(4f));
 
                 if (isCurrent) {
-                    card.add(UiBuilder.label("[stat](Current)[]").align("right").pad(4f));
+                    card.add(UiBuilder.label("[stat](Current)[]").align("right").pad(4f).padLeft(8f));
                 } else {
                     String actId = ctx.registerAction((sess, st, res) -> {
                         if (sess.player != null) {

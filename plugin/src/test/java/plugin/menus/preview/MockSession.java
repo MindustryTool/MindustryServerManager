@@ -14,6 +14,7 @@ public final class MockSession {
     private String name = "DevPlayer";
     private String uuid = "uuid_dev_test";
     private boolean admin = false;
+    private boolean mobile = false;
     private int level = 1;
 
     private MockSession() {
@@ -43,6 +44,11 @@ public final class MockSession {
         return this;
     }
 
+    public MockSession mobile(boolean mobile) {
+        this.mobile = mobile;
+        return this;
+    }
+
     public MockSession level(int level) {
         this.level = level;
         return this;
@@ -69,6 +75,7 @@ public final class MockSession {
             public void close() {
             }
         };
+        player.con.mobile = mobile;
 
         SessionData data = new SessionData();
         data.name = name;

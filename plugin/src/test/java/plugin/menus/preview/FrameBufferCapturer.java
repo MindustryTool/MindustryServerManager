@@ -8,7 +8,9 @@ import arc.files.Fi;
 import arc.graphics.Gl;
 import arc.graphics.g2d.Draw;
 import arc.graphics.gl.FrameBuffer;
+import arc.scene.ui.layout.Scl;
 import arc.util.ScreenUtils;
+import mindustry.Vars;
 import mindustry.ui.builder.UiTreeBuilder;
 import mindustry.ui.dialogs.BaseDialog;
 import plugin.menus.MenuContext;
@@ -22,20 +24,37 @@ public final class FrameBufferCapturer {
     private FrameBufferCapturer() {
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
     public static void capture(ServerMenu<?> menu, Session session, Path outputPath, boolean fullScreen) {
+        capture(menu, session, outputPath, fullScreen, MenuViewport.DESKTOP);
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public static void capture(ServerMenu<?> menu, Session session, Path outputPath, boolean fullScreen, MenuViewport viewport) {
         Objects.requireNonNull(menu, "menu must not be null");
         Objects.requireNonNull(session, "session must not be null");
         Objects.requireNonNull(outputPath, "outputPath must not be null");
+        Objects.requireNonNull(viewport, "viewport must not be null");
 
         MenuPreviewBackend.getInstance().runOnGlThread(() -> {
+            boolean originalMobile = Vars.mobile;
             try {
                 if (outputPath.getParent() != null) {
                     Files.createDirectories(outputPath.getParent());
                 }
 
-                int screenW = Core.graphics.getWidth();
-                int screenH = Core.graphics.getHeight();
+                // Pin the UI scale: the harness boots Arc with whatever scale the machine reports,
+                // which makes explicit cell sizes inconsistent between captures and with font metrics.
+                Scl.setProduct(1f);
+
+                int screenW = viewport.width;
+                int screenH = viewport.height;
+
+                Vars.mobile = viewport.mobile;
+                if (session.player != null && session.player.con != null) {
+                    session.player.con.mobile = viewport.mobile;
+                }
+
+                Core.scene.resize(screenW, screenH);
 
                 if (frameBuffer == null || frameBuffer.getWidth() != screenW || frameBuffer.getHeight() != screenH) {
                     if (frameBuffer != null) {
@@ -98,6 +117,9 @@ public final class FrameBufferCapturer {
                 dialog.remove();
             } catch (Exception e) {
                 throw new RuntimeException("Failed capturing menu to " + outputPath, e);
+            } finally {
+                Vars.mobile = originalMobile;
+                Core.scene.resize(1920, 1080);
             }
         });
     }

@@ -77,9 +77,9 @@ public class CommonUpgradeMenu extends ServerMenu<CataliTeamData> {
         card.width(MenuContext.SAFE_CARD_WIDTH);
 
         var info = UiBuilder.table();
-        info.add(UiBuilder.label("[accent]" + title + "[]").align("left")).row();
-        info.add(UiBuilder.label("[lightgray]" + stats + "[]").align("left"));
-        card.add(info).pad(4f);
+        info.add(UiBuilder.label("[accent]" + title + "[]").wrap().align("left").growX()).row();
+        info.add(UiBuilder.label("[lightgray]" + stats + "[]").wrap().align("left").growX());
+        card.add(info.growX().pad(4f));
 
         String actId = ctx.registerAction((sess, t, res) -> {
             if (team.level.commonUpgradePoints == 1) {
@@ -89,7 +89,7 @@ public class CommonUpgradeMenu extends ServerMenu<CataliTeamData> {
             }
         });
 
-        card.add(UiBuilder.button("[green]Upgrade[]").clicked(actId).width(95f).height(32f).align("right").pad(4f));
+        card.add(UiBuilder.button("[green]Upgrade[]").clicked(actId).width(105f).height(32f).align("right").pad(4f));
         table.add(card.growX().pad(2f)).row();
     }
 }

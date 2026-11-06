@@ -48,7 +48,7 @@ public class RareUpgradeMenu extends ServerMenu<CataliTeamData> {
         if (team.canHaveMoreUnit()) {
             var spawnCard = UiBuilder.table().pad(4f);
             spawnCard.width(MenuContext.SAFE_CARD_WIDTH);
-            spawnCard.add(UiBuilder.label("[accent]" + Tr.t(session, "catali.spawn_unit") + "[]").align("left")).pad(4f);
+            spawnCard.add(UiBuilder.label("[accent]" + Tr.t(session, "catali.spawn_unit") + "[]").wrap().align("left").growX().pad(4f));
             String spawnAct = ctx.registerAction((sess, t, res) -> {
                 PluginEvents.fire(new CataliSpawnRareUpgrade(team));
             });
@@ -59,7 +59,7 @@ public class RareUpgradeMenu extends ServerMenu<CataliTeamData> {
         // Option 2: Evolve Unit
         var evolveCard = UiBuilder.table().pad(4f);
         evolveCard.width(MenuContext.SAFE_CARD_WIDTH);
-        evolveCard.add(UiBuilder.label("[accent]" + Tr.t(session, "catali.evolve_unit") + "[]").align("left")).pad(4f);
+        evolveCard.add(UiBuilder.label("[accent]" + Tr.t(session, "catali.evolve_unit") + "[]").wrap().align("left").growX().pad(4f));
         String evolveAct = ctx.registerAction((sess, t, res) -> {
             tierUnitMenu.send(sess, team);
         });
@@ -69,7 +69,7 @@ public class RareUpgradeMenu extends ServerMenu<CataliTeamData> {
         // Option 3: Apply Buff
         var buffCard = UiBuilder.table().pad(4f);
         buffCard.width(MenuContext.SAFE_CARD_WIDTH);
-        buffCard.add(UiBuilder.label("[accent]" + Tr.t(session, "catali.apply_buff") + "[]").align("left")).pad(4f);
+        buffCard.add(UiBuilder.label("[accent]" + Tr.t(session, "catali.apply_buff") + "[]").wrap().align("left").growX().pad(4f));
         String buffAct = ctx.registerAction((sess, t, res) -> {
             buffUnitMenu.send(sess, team);
         });

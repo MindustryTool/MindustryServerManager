@@ -10,11 +10,13 @@ public final class MenuSnapshot {
     private final ServerMenu<?> menu;
     private final Session session;
     private final boolean fullScreen;
+    private final MenuViewport viewport;
 
     private MenuSnapshot(Builder builder) {
         this.menu = Objects.requireNonNull(builder.menu, "menu must not be null");
         this.session = builder.session != null ? builder.session : MockSession.builder().build();
         this.fullScreen = builder.fullScreen;
+        this.viewport = builder.viewport != null ? builder.viewport : MenuViewport.DESKTOP;
     }
 
     public static Builder builder() {
@@ -26,13 +28,14 @@ public final class MenuSnapshot {
     }
 
     public void toFile(Path outputPath) {
-        FrameBufferCapturer.capture(menu, session, outputPath, fullScreen);
+        FrameBufferCapturer.capture(menu, session, outputPath, fullScreen, viewport);
     }
 
     public static final class Builder {
         private ServerMenu<?> menu;
         private Session session;
         private boolean fullScreen = false;
+        private MenuViewport viewport = MenuViewport.DESKTOP;
 
         private Builder() {
         }
@@ -49,6 +52,11 @@ public final class MenuSnapshot {
 
         public Builder fullScreen(boolean fullScreen) {
             this.fullScreen = fullScreen;
+            return this;
+        }
+
+        public Builder viewport(MenuViewport viewport) {
+            this.viewport = Objects.requireNonNull(viewport, "viewport must not be null");
             return this;
         }
 

@@ -33,8 +33,8 @@ public class LoginMenu extends ServerMenu<Void> {
             });
             String cancelAct = ctx.registerAction((sess, st, res) -> {});
 
-            actions.add(UiBuilder.button("[green]" + Tr.t(ctx.getSession(), "login.btn_open")).clicked(openAct).width(160f).height(44f).pad(6f));
-            actions.add(UiBuilder.button(Tr.t(ctx.getSession(), "login.btn_cancel")).clicked(cancelAct).width(120f).height(44f).pad(6f));
+            actions.add(UiBuilder.button("[green]" + Tr.t(ctx.getSession(), "login.btn_open")).clicked(openAct).width(135f).height(40f).pad(4f));
+            actions.add(UiBuilder.button(Tr.t(ctx.getSession(), "login.btn_cancel")).clicked(cancelAct).width(105f).height(40f).pad(4f));
         });
     }
 }

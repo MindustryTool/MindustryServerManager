@@ -1,7 +1,6 @@
 package plugin.gamemode.catali.menu;
 
 import java.util.Objects;
-
 import common.util.Pair;
 import mindustry.ui.builder.UiBuilder;
 import plugin.annotations.Component;
@@ -33,7 +32,7 @@ public class CommonUpgradeQuantityMenu extends ServerMenu<Pair<CataliTeamData, C
         this.title = Tr.t(session, "catali.upgrade_quantity");
 
         String upgradeName = Tr.t(session, "catali." + upgrade.name().toLowerCase());
-        ctx.label("[accent]" + upgradeName + "[] [lightgray]- " + Tr.t(session, "catali.select_points_to_spend"));
+        ctx.label("[accent]" + upgradeName + "[] [lightgray]- " + Tr.t(session, "catali.select_points_to_spend")).width(MenuContext.SAFE_WIDTH);
         ctx.row();
 
         var container = UiBuilder.table().pad(8f);
@@ -63,8 +62,9 @@ public class CommonUpgradeQuantityMenu extends ServerMenu<Pair<CataliTeamData, C
         String actAll = ctx.registerAction((sess, p, res) -> applyPoints(sess, team, upgrade, level.commonUpgradePoints));
         btnTable.add(UiBuilder.button(Tr.t(session, "catali.all_points") + " (" + level.commonUpgradePoints + ")")
                 .clicked(actAll)
-                .width(240f)
+                .width(MenuContext.SAFE_CARD_WIDTH)
                 .height(40f)
+                .colspan(3)
                 .pad(4f));
 
         container.add(btnTable).row();

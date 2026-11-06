@@ -25,14 +25,15 @@ public class PlayerInfoMenu extends ServerMenu<Session> {
         ctx.pane(MenuContext.SAFE_WIDTH, 300f, paneTable -> {
             sessionService.each(target -> {
                 TableBuilder card = UiBuilder.table().pad(4f);
+                card.width(MenuContext.SAFE_CARD_WIDTH);
                 String nameText = target.player.name + " [gray](#" + target.player.id() + ")";
-                card.add(UiBuilder.label("[yellow]" + nameText).align("left"));
+                card.add(UiBuilder.label("[yellow]" + nameText).wrap().align("left").growX());
 
                 String inspectAct = ctx.registerAction((sess, st, res) -> {
                     caller.player.sendMessage(SessionUtils.getInfoString(target, target.getData()));
                 });
 
-                card.add(UiBuilder.button("View Info").clicked(inspectAct).width(110f).height(38f).align("right").padLeft(8f));
+                card.add(UiBuilder.button("View Info").clicked(inspectAct).width(100f).height(34f).align("right").padLeft(6f));
                 paneTable.add(card.growX().pad(2f)).row();
             });
         });

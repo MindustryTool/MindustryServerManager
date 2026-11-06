@@ -1,7 +1,6 @@
 package plugin.gamemode.catali.menu;
 
 import java.util.Objects;
-
 import common.util.Pair;
 import lombok.RequiredArgsConstructor;
 import mindustry.ui.builder.UiBuilder;
@@ -31,14 +30,14 @@ public class RareUpgradeBuffSelectUnitMenu extends ServerMenu<CataliTeamData> {
 
         this.title = Tr.t(session, "catali.select_unit_for_buff");
 
-        ctx.label("[lightgray]" + Tr.t(session, "catali.choose_unit_for_buff"));
+        ctx.label("[lightgray]" + Tr.t(session, "catali.choose_unit_for_buff")).width(MenuContext.SAFE_WIDTH);
         ctx.row();
 
         var units = team.units();
 
         ctx.pane(MenuContext.SAFE_WIDTH, 220f, paneTable -> {
             if (units.isEmpty()) {
-                paneTable.add(UiBuilder.label("[lightgray]No units available.")).row();
+                paneTable.add(UiBuilder.label("[lightgray]No units available.").wrap().width(MenuContext.SAFE_CARD_WIDTH)).row();
                 return;
             }
 
@@ -48,7 +47,7 @@ public class RareUpgradeBuffSelectUnitMenu extends ServerMenu<CataliTeamData> {
 
                 String label = unit.type.emoji() + " [white]" + unit.type.name + "[] [gray]("
                         + Math.round(unit.health()) + "/" + Math.round(unit.maxHealth()) + " HP)[]";
-                card.add(UiBuilder.label(label).align("left")).pad(4f);
+                card.add(UiBuilder.label(label).wrap().align("left").growX().pad(4f));
 
                 String actId = ctx.registerAction((sess, t, res) -> {
                     buffSelectMenu.send(sess, Pair.of(team, unit));

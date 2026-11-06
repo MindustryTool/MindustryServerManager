@@ -56,7 +56,7 @@ public class AssignNextLeaderMenu extends ServerMenu<CataliTeamData> {
                 var card = UiBuilder.table().pad(4f);
                 card.width(MenuContext.SAFE_CARD_WIDTH);
 
-                card.add(UiBuilder.label("[white]" + p.name() + "[]").align("left")).pad(4f);
+                card.add(UiBuilder.label("[white]" + p.name() + "[]").wrap().align("left").growX().pad(4f));
 
                 String actId = ctx.registerAction((sess, t, res) -> {
                     team.assignNextLeader(p.uuid());

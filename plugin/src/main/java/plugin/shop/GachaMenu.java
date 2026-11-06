@@ -39,8 +39,8 @@ public class GachaMenu extends ServerMenu<Integer> {
                 Registry.get(GachaMenu.class).send(sess, 0);
             });
 
-            rolls.add(UiBuilder.button(Tr.t(ctx.getSession(), "gacha.roll_single_btn", "cost", GachaService.COST_SINGLE)).clicked(singleAct).width(140f).height(45f).pad(4f));
-            rolls.add(UiBuilder.button(Tr.t(ctx.getSession(), "gacha.roll_ten_btn", "cost", GachaService.COST_MULTI_10)).clicked(tenAct).width(140f).height(45f).pad(4f));
+            rolls.add(UiBuilder.button(Tr.t(ctx.getSession(), "gacha.roll_single_btn", "cost", GachaService.COST_SINGLE)).clicked(singleAct).width(MenuContext.SAFE_CARD_WIDTH).height(44f).pad(4f)).row();
+            rolls.add(UiBuilder.button(Tr.t(ctx.getSession(), "gacha.roll_ten_btn", "cost", GachaService.COST_MULTI_10)).clicked(tenAct).width(MenuContext.SAFE_CARD_WIDTH).height(44f).pad(4f));
         });
 
         ctx.row();

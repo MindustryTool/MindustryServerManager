@@ -30,13 +30,25 @@ public class MenuContext<T> {
     private final Map<String, MenuAction<T>> actions = new HashMap<>();
     private final AtomicInteger actionCounter = new AtomicInteger();
 
-    public static final float SAFE_WIDTH = 340f;
-    public static final float SAFE_CARD_WIDTH = 300f;
+    public static final float SAFE_WIDTH = 320f;
+    public static final float SAFE_CARD_WIDTH = 290f;
+    public static final float MOBILE_MAX_PANE_HEIGHT = 220f;
 
     public MenuContext(Session session, T state, long token) {
         this.session = Objects.requireNonNull(session, "session must not be null");
         this.state = state;
         this.token = token;
+    }
+
+    public boolean isMobile() {
+        return session.player != null && session.player.con != null && session.player.con.mobile;
+    }
+
+    public float safeMaxPaneHeight(float requestedHeight) {
+        if (isMobile()) {
+            return Math.min(requestedHeight, MOBILE_MAX_PANE_HEIGHT);
+        }
+        return requestedHeight;
     }
 
     public String registerAction(MenuAction<T> action) {
@@ -75,19 +87,17 @@ public class MenuContext<T> {
         TableBuilder content = UiBuilder.table();
         contentBuilder.get(content);
         PaneBuilder pane = UiBuilder.pane().add(content);
-        pane.width(Math.min(width, SAFE_WIDTH)).maxHeight(height);
+        pane.width(Math.min(width, SAFE_WIDTH)).maxHeight(safeMaxPaneHeight(height));
         root.add(pane);
         return pane;
     }
 
     public LabelBuilder label(String text) {
-        LabelBuilder lbl = UiBuilder.label(text).wrap();
-        root.add(lbl);
-        return lbl;
+        return label(text, lbl -> {});
     }
 
     public LabelBuilder label(String text, Cons<LabelBuilder> configure) {
-        LabelBuilder lbl = UiBuilder.label(text).wrap();
+        LabelBuilder lbl = UiBuilder.label(text).wrap().width(SAFE_WIDTH);
         configure.get(lbl);
         root.add(lbl);
         return lbl;

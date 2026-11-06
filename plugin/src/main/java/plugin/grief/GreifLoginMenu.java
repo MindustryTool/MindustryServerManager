@@ -26,8 +26,8 @@ public class GreifLoginMenu extends ServerMenu<String> {
             });
             String cancelAct = ctx.registerAction((sess, st, res) -> {});
 
-            actions.add(UiBuilder.button(Tr.t(ctx.getSession(), "grief.login")).clicked(loginAct).width(120f).height(42f)).pad(6f);
-            actions.add(UiBuilder.button(Tr.t(ctx.getSession(), "grief.cancel")).clicked(cancelAct).width(120f).height(42f)).pad(6f);
+            actions.add(UiBuilder.button(Tr.t(ctx.getSession(), "grief.login")).clicked(loginAct).width(120f).height(38f).pad(4f));
+            actions.add(UiBuilder.button(Tr.t(ctx.getSession(), "grief.cancel")).clicked(cancelAct).width(120f).height(38f).pad(4f));
         });
     }
 }

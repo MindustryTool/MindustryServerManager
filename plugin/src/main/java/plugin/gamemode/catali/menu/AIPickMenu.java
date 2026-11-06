@@ -35,32 +35,32 @@ public class AIPickMenu extends ServerMenu<CataliTeamData> {
         // Classic Controller Card
         var classicCard = UiBuilder.table().pad(6f);
         classicCard.width(MenuContext.SAFE_CARD_WIDTH);
-        classicCard.add(UiBuilder.label("[accent]" + Tr.t(session, "catali.classic_controller") + "[]")).row();
+        classicCard.add(UiBuilder.label("[accent]" + Tr.t(session, "catali.classic_controller") + "[]").align("left").growX());
         if (!team.useCommandAi) {
-            classicCard.add(UiBuilder.label("[stat](Active Controller)[]"));
+            classicCard.add(UiBuilder.label("[stat](Active Controller)[]").align("right").padLeft(6f));
         } else {
             String actId = ctx.registerAction((sess, t, res) -> {
                 team.useCommandAi = false;
                 sess.player.sendMessage("[green]Switched to Classic Controller.");
             });
-            classicCard.add(UiBuilder.button("[accent]Select[]").clicked(actId).width(110f).height(32f));
+            classicCard.add(UiBuilder.button("[accent]Select[]").clicked(actId).width(100f).height(32f).padLeft(6f));
         }
-        container.add(classicCard).pad(4f).row();
+        container.add(classicCard.pad(4f)).row();
 
         // Command Controller Card
         var cmdCard = UiBuilder.table().pad(6f);
         cmdCard.width(MenuContext.SAFE_CARD_WIDTH);
-        cmdCard.add(UiBuilder.label("[accent]" + Tr.t(session, "catali.command_controller") + "[]")).row();
+        cmdCard.add(UiBuilder.label("[accent]" + Tr.t(session, "catali.command_controller") + "[]").align("left").growX());
         if (team.useCommandAi) {
-            cmdCard.add(UiBuilder.label("[stat](Active Controller)[]"));
+            cmdCard.add(UiBuilder.label("[stat](Active Controller)[]").align("right").padLeft(6f));
         } else {
             String actId = ctx.registerAction((sess, t, res) -> {
                 team.useCommandAi = true;
                 sess.player.sendMessage("[green]Switched to Command Controller.");
             });
-            cmdCard.add(UiBuilder.button("[accent]Select[]").clicked(actId).width(110f).height(32f));
+            cmdCard.add(UiBuilder.button("[accent]Select[]").clicked(actId).width(100f).height(32f).padLeft(6f));
         }
-        container.add(cmdCard).row();
+        container.add(cmdCard.pad(4f)).row();
 
         ctx.add(container);
         ctx.row();

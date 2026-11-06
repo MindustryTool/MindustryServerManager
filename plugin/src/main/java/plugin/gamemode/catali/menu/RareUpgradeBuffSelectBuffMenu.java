@@ -1,7 +1,6 @@
 package plugin.gamemode.catali.menu;
 
 import java.util.Objects;
-
 import common.util.Pair;
 import lombok.RequiredArgsConstructor;
 import mindustry.gen.Unit;
@@ -37,14 +36,14 @@ public class RareUpgradeBuffSelectBuffMenu extends ServerMenu<Pair<CataliTeamDat
         this.title = Tr.t(session, "catali.select_buff");
 
         ctx.label("[lightgray]" + Tr.t(session, "catali.choose_buff") + " for "
-                + unit.type.emoji() + " [accent]" + unit.type.name + "[]");
+                + unit.type.emoji() + " [accent]" + unit.type.name + "[]").width(MenuContext.SAFE_WIDTH);
         ctx.row();
 
         var availableEffects = CataliConfig.selectBuffsCanBeApplied(unit);
 
         ctx.pane(MenuContext.SAFE_WIDTH, 220f, paneTable -> {
             if (availableEffects.isEmpty()) {
-                paneTable.add(UiBuilder.label("[lightgray]No applicable buffs.")).row();
+                paneTable.add(UiBuilder.label("[lightgray]No applicable buffs.").wrap().width(MenuContext.SAFE_CARD_WIDTH)).row();
                 return;
             }
 
@@ -52,7 +51,7 @@ public class RareUpgradeBuffSelectBuffMenu extends ServerMenu<Pair<CataliTeamDat
                 var card = UiBuilder.table().pad(4f);
                 card.width(MenuContext.SAFE_CARD_WIDTH);
 
-                card.add(UiBuilder.label(effect.emoji() + " [white]" + effect.name + "[]").align("left")).pad(4f);
+                card.add(UiBuilder.label(effect.emoji() + " [white]" + effect.name + "[]").wrap().align("left").growX().pad(4f));
 
                 String actId = ctx.registerAction((sess, p, res) -> {
                     PluginEvents.fire(new CataliBuffRareUpgrade(team, unit, effect));

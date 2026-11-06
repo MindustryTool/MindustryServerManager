@@ -1,7 +1,6 @@
 package plugin.gamemode.catali.menu;
 
 import java.util.Objects;
-
 import common.util.Pair;
 import lombok.RequiredArgsConstructor;
 import mindustry.ui.builder.UiBuilder;
@@ -33,14 +32,14 @@ public class RareUpgradeTierSelectUnitMenu extends ServerMenu<CataliTeamData> {
 
         this.title = Tr.t(session, "catali.select_unit_to_evolve");
 
-        ctx.label("[lightgray]" + Tr.t(session, "catali.choose_unit_to_evolve"));
+        ctx.label("[lightgray]" + Tr.t(session, "catali.choose_unit_to_evolve")).width(MenuContext.SAFE_WIDTH);
         ctx.row();
 
         var units = team.getUpgradeableUnits();
 
         ctx.pane(MenuContext.SAFE_WIDTH, 220f, paneTable -> {
             if (units.isEmpty()) {
-                paneTable.add(UiBuilder.label("[lightgray]No upgradeable units available.")).row();
+                paneTable.add(UiBuilder.label("[lightgray]No upgradeable units available.").wrap().width(MenuContext.SAFE_CARD_WIDTH)).row();
                 return;
             }
 
@@ -55,7 +54,7 @@ public class RareUpgradeTierSelectUnitMenu extends ServerMenu<CataliTeamData> {
 
                 String label = unit.type.emoji() + " [white]" + unit.type.name + "[] [gray]("
                         + evolutions.size() + " branches)[]";
-                card.add(UiBuilder.label(label).align("left")).pad(4f);
+                card.add(UiBuilder.label(label).wrap().align("left").growX().pad(4f));
 
                 String actId = ctx.registerAction((sess, t, res) -> {
                     upgradeMenu.send(sess, Pair.of(team, unit));

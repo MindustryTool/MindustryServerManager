@@ -46,13 +46,13 @@ public class AbandonMenu extends ServerMenu<CataliTeamData> {
 
                 String unitInfo = unit.type.emoji() + " [accent]" + unit.type.name + "[] [gray]("
                         + Math.round(unit.health()) + "/" + Math.round(unit.maxHealth()) + " HP)[]";
-                card.add(UiBuilder.label(unitInfo).align("left")).pad(4f);
+                card.add(UiBuilder.label(unitInfo).wrap().align("left").growX().pad(4f));
 
                 String actId = ctx.registerAction((sess, t, res) -> gamemode.abandonUnit(unit));
                 card.add(UiBuilder.button("[scarlet]" + Tr.t(session, "catali.abandon_unit") + "[]")
                         .clicked(actId)
-                        .width(105f)
-                        .height(35f)
+                        .width(95f)
+                        .height(32f)
                         .align("right"));
 
                 paneTable.add(card.growX().pad(2f)).row();

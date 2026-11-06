@@ -64,23 +64,24 @@ public class RtvMenu extends ServerMenu<Integer> {
                 boolean isVoted = rtvService.isVoted(ctx.getSession().player, map.file.nameWithoutExtension());
 
                 TableBuilder card = UiBuilder.table().pad(4f);
+                card.width(MenuContext.SAFE_CARD_WIDTH);
                 String titleText = String.format("%s%s%.2f [gold]%c []%s",
                     isVoted ? "[accent]" + Tr.t(ctx.getSession(), "rtv.voted_badge") + " " : "",
                     ratingColor, stats.avgScore, Iconc.star, map.name());
 
-                card.add(UiBuilder.label(titleText).align("left"));
-                card.add(UiBuilder.label("[gray](" + stats.totalVotes + " votes)").align("right"));
+                card.add(UiBuilder.label(titleText).wrap().align("left").growX());
+                card.add(UiBuilder.label("[gray](" + stats.totalVotes + " votes)").align("right").padLeft(4f));
                 card.row();
 
                 String voteAct = ctx.registerAction((sess, st, res) -> rtvService.handleVote(sess.player, map));
                 String voteBtnText = isVoted ? "[scarlet]Cancel Vote" : "[accent]Vote Map";
-                card.add(UiBuilder.button(voteBtnText).clicked(voteAct).width(130f).height(38f).align("right").colspan(2).pad(2f));
+                card.add(UiBuilder.button(voteBtnText).clicked(voteAct).width(120f).height(34f).align("right").colspan(2).pad(2f));
 
                 paneTable.add(card.growX().pad(2f)).row();
             }
         });
 
         ctx.row();
-        ctx.closeButton(Tr.t(ctx.getSession(), "rtv.btn_close"));
+        ctx.closeButton(Tr.t(ctx.getSession(), "rtv.close"));
     }
 }

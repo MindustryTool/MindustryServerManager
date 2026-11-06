@@ -1,7 +1,6 @@
 package plugin.gamemode.catali.menu;
 
 import java.util.Objects;
-
 import common.util.Pair;
 import lombok.RequiredArgsConstructor;
 import mindustry.gen.Unit;
@@ -39,14 +38,14 @@ public class RareUpgradeTierSelectUpgradeMenu extends ServerMenu<Pair<CataliTeam
         this.title = Tr.t(session, "catali.select_evolution");
 
         ctx.label("[lightgray]" + Tr.t(session, "catali.choose_evolution") + " for "
-                + unit.type.emoji() + " [accent]" + unit.type.name + "[]");
+                + unit.type.emoji() + " [accent]" + unit.type.name + "[]").width(MenuContext.SAFE_WIDTH);
         ctx.row();
 
         var availableUnitsUpgradeTo = config.getUnitEvolutions(unit.type);
 
         ctx.pane(MenuContext.SAFE_WIDTH, 220f, paneTable -> {
             if (availableUnitsUpgradeTo.isEmpty()) {
-                paneTable.add(UiBuilder.label("[lightgray]No available evolutions.")).row();
+                paneTable.add(UiBuilder.label("[lightgray]No available evolutions.").wrap().width(MenuContext.SAFE_CARD_WIDTH)).row();
                 return;
             }
 
@@ -54,7 +53,7 @@ public class RareUpgradeTierSelectUpgradeMenu extends ServerMenu<Pair<CataliTeam
                 var card = UiBuilder.table().pad(4f);
                 card.width(MenuContext.SAFE_CARD_WIDTH);
 
-                card.add(UiBuilder.label(upgrade.emoji() + " [white]" + upgrade.name + "[]").align("left")).pad(4f);
+                card.add(UiBuilder.label(upgrade.emoji() + " [white]" + upgrade.name + "[]").wrap().align("left").growX().pad(4f));
 
                 String actId = ctx.registerAction((sess, p, res) -> {
                     PluginEvents.fire(new CataliTierRareUpgrade(team, unit, upgrade));

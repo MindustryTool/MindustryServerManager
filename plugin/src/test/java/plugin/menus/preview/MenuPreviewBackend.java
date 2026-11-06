@@ -1,15 +1,21 @@
 package plugin.menus.preview;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import arc.Core;
+import arc.Settings;
 import arc.backend.sdl.SdlApplication;
 import arc.backend.sdl.SdlConfig;
+import arc.files.Fi;
 import arc.util.Log;
 import mindustry.ClientLauncher;
 import mindustry.Vars;
+import mindustry.content.TechTree;
+import mindustry.core.ContentLoader;
 import mindustry.core.Version;
 import mindustry.desktop.DesktopLauncher;
 
@@ -40,6 +46,23 @@ public final class MenuPreviewBackend {
 
     private void launch() {
         try {
+            Path tempDir = Files.createTempDirectory("mindustry-preview-data");
+            tempDir.toFile().deleteOnExit();
+            Fi tempFi = new Fi(tempDir.toFile());
+            Core.settings = new Settings();
+            Core.settings.setDataDirectory(tempFi);
+
+            Vars.dataDirectory = tempFi;
+            Vars.modDirectory = tempFi.child("mods");
+            Vars.skipModCode = true;
+
+            if (TechTree.all != null) {
+                TechTree.all.clear();
+            }
+            if (TechTree.roots != null) {
+                TechTree.roots.clear();
+            }
+            Vars.content = new ContentLoader();
             Version.init();
             Vars.loadLogger();
 

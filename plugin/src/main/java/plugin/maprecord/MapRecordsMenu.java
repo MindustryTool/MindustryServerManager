@@ -24,12 +24,12 @@ public class MapRecordsMenu extends ServerMenu<MapRecordMenuState> {
         Locale locale = ctx.getSession().locale;
         this.title = Tr.t(locale, "rank.menu_title");
 
-        ctx.label("[accent]Leaderboard: [gold]" + state.mapName());
+        ctx.label("[accent]Leaderboard: [gold]" + state.mapName()).width(MenuContext.SAFE_WIDTH);
         ctx.row();
 
         List<MapRecord> records = state.records();
         if (records == null || records.isEmpty()) {
-            ctx.label("[lightgray]" + Tr.t(locale, "rank.no_records_menu"));
+            ctx.label("[lightgray]" + Tr.t(locale, "rank.no_records_menu")).width(MenuContext.SAFE_WIDTH);
             ctx.row();
             ctx.closeButton("[gray]Close");
             return;
@@ -43,12 +43,14 @@ public class MapRecordsMenu extends ServerMenu<MapRecordMenuState> {
                 List<String> names = record.players().stream().map(MapRecordPlayer::name).toList();
                 String playersStr = names.isEmpty() ? "-" : String.join(", ", names);
 
-                String rankBadge = rank == 1 ? "[gold]#1 " : rank == 2 ? "[silver]#2 " : rank == 3 ? "[bronze]#3 " : "[lightgray]#" + rank + " ";
+                String rankBadge = rank == 1 ? "[gold]#1" : rank == 2 ? "[#C0C0C0]#2" : rank == 3 ? "[#CD7F32]#3" : "[lightgray]#" + rank;
                 TableBuilder row = UiBuilder.table().pad(4f);
+                row.width(MenuContext.SAFE_CARD_WIDTH);
 
-                row.add(UiBuilder.label(rankBadge + "[green]" + time).align("left"));
-                row.add(UiBuilder.label("[lightgray]" + playersStr).align("right"));
+                row.add(UiBuilder.label(rankBadge).align("left").growX());
+                row.add(UiBuilder.label("[green]" + time).align("right").padLeft(6f));
                 row.row();
+                row.add(UiBuilder.label("[lightgray]" + playersStr).wrap().align("left").colspan(2).growX());
 
                 paneTable.add(row.growX().pad(2f)).row();
             }

@@ -3,9 +3,7 @@
 ## Purpose
 
 Declarative, typed server menu framework backed by Mindustry build 160's `MenuBuilder` and `UiBuilder`, supporting scrollable panes, form fields, and stable callback dispatching.
-
 ## Requirements
-
 ### Requirement: Server menu framework uses build 160 MenuBuilder
 The system SHALL register a centralized `MenuBuilderListener` using `Menus.registerMenuBuilder` and send menus to players using `Call.menuBuilder`.
 
@@ -41,3 +39,15 @@ The system SHALL maintain a FIFO queue of pending menus per player and present o
 #### Scenario: Session removal cleanup
 - **WHEN** a player disconnects or their session is removed
 - **THEN** all active and queued menus for that player are discarded
+
+### Requirement: Responsive mobile layout constraints
+The system SHALL constrain server menu widths and scroll pane heights to prevent off-screen clipping on compact mobile viewports in both landscape and portrait orientations.
+
+#### Scenario: Mobile landscape vertical containment
+- **WHEN** a menu with a scrollable pane is displayed to a mobile connection
+- **THEN** the scroll pane maximum height is constrained so the entire dialog fits within the 360px vertical screen boundary
+
+#### Scenario: Mobile portrait horizontal containment
+- **WHEN** a menu with cards, labels, or buttons is displayed in portrait orientation
+- **THEN** all description labels wrap within safe bounds and table widths do not exceed 320px
+

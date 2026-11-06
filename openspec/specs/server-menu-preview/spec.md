@@ -3,9 +3,7 @@
 ## Purpose
 
 Offscreen rendering tool for developer preview and snapshot verification of `ServerMenu` instances, producing pixel-accurate PNG images without running a live server or game client.
-
 ## Requirements
-
 ### Requirement: Offscreen menu rendering to image
 The system SHALL provide a programmatic API to build and render a `ServerMenu` instance into a PNG image file using Mindustry client UI components.
 
@@ -37,3 +35,15 @@ The system SHALL isolate offscreen rendering and desktop assets to test and deve
 #### Scenario: Production build packaging
 - **WHEN** the production plugin jar is built
 - **THEN** desktop client classes and assets are excluded from the output artifact
+
+### Requirement: Compact mobile viewport simulation
+The system SHALL support simulating compact mobile screen resolutions and mobile connection modes during offscreen menu rendering.
+
+#### Scenario: Rendering in compact mobile landscape
+- **WHEN** menu capture is requested with `viewport(720, 360)` and mobile mode enabled
+- **THEN** the system resizes the scene to 720x360, enables mobile scaling, and renders the dialog within the compact landscape viewport
+
+#### Scenario: Rendering in compact mobile portrait
+- **WHEN** menu capture is requested with `viewport(360, 720)` and mobile mode enabled
+- **THEN** the system resizes the scene to 360x720, enables mobile scaling, and renders the dialog within the compact portrait viewport
+
