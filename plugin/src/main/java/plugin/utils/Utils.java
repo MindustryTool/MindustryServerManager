@@ -227,7 +227,7 @@ public class Utils {
             return;
         }
 
-        if (lastImagePreviewAt.plusSeconds(15).isBefore(Instant.now())) {
+        if (lastImagePreviewAt.plusSeconds(30).isBefore(Instant.now())) {
             lastImagePreviewAt = Instant.now();
 
             appPostWithTimeout(() -> {
