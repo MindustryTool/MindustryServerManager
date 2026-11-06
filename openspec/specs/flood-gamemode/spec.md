@@ -168,3 +168,18 @@ The system SHALL evaluate each flood block destroyed (including tier downgrades)
 - **WHEN** Crux already has 50 or more units
 - **THEN** no unit is spawned even if a destroyed flood block succeeds its spawn roll
 
+
+### Requirement: Cross-map task isolation for deferred flood actions
+The system SHALL ensure that deferred execution tasks for flood tile downgrades, destruction unit spawns, and night unit spawns are bound to the match session in which they were queued. Any deferred task executing after the active match or `FloodSpreader` has changed SHALL be discarded without performing world modifications or spawning entities. Furthermore, `FloodSpreader.applyDowngradedTile` SHALL verify that the target tile matches the tile instance in the active world before applying tile changes.
+
+#### Scenario: Deferred downgrade discarded after map change
+- **WHEN** a tile downgrade is deferred to `Core.app.post` but the world reloads or changes maps before the task executes
+- **THEN** the task detects that the active `FloodSpreader` instance has changed and discards the downgrade without modifying the new world or throwing an out-of-bounds error
+
+#### Scenario: Foreign tile rejected by applyDowngradedTile
+- **WHEN** `applyDowngradedTile` receives a tile that does not equal `Vars.world.tile(tile.x, tile.y)`
+- **THEN** the method returns early without calling `Call.setTile` or scheduling the tile
+
+#### Scenario: Deferred unit spawn discarded after map change
+- **WHEN** unit spawning from block destruction or night spawn is queued in `Core.app.post` but the world changes before execution
+- **THEN** the task detects that the active match has ended and discards the spawn without adding units to the new match

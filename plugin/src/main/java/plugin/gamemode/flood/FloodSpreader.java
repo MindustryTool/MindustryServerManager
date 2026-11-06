@@ -250,6 +250,9 @@ public class FloodSpreader {
         if (Vars.world == null || !isInitialized()) {
             return;
         }
+        if (Vars.world.tile(tile.x, tile.y) != tile) {
+            return;
+        }
 
         if (Vars.net != null) {
             Call.setTile(tile, lowerTier.block, Team.crux, 0);

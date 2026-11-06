@@ -13,6 +13,8 @@ import arc.struct.Seq;
 import mindustry.Vars;
 import mindustry.content.Blocks;
 import mindustry.core.ContentLoader;
+import mindustry.core.World;
+import org.junit.jupiter.api.AfterEach;
 import mindustry.game.Team;
 import mindustry.gen.Building;
 import mindustry.world.Block;
@@ -25,6 +27,7 @@ public class FloodSpreaderTest {
 
     @BeforeEach
     void setUp() {
+        Vars.headless = true;
         if (Vars.content == null) {
             Vars.content = new ContentLoader();
             Vars.content.createBaseContent();
@@ -283,6 +286,11 @@ public class FloodSpreaderTest {
         assertEquals(tier1Block, resolvedOnDeadBuild.block);
     }
 
+    @AfterEach
+    void tearDown() {
+        Vars.world = null;
+    }
+
     @Test
     void testApplyDowngradedTileSafeHandling() {
         Tile tile = new Tile(2, 2);
@@ -292,5 +300,31 @@ public class FloodSpreaderTest {
         spreader.applyDowngradedTile(tile, lowerTier, 1.0f);
         spreader.applyDowngradedTile(null, lowerTier, 1.0f);
         spreader.applyDowngradedTile(tile, null, 1.0f);
+    }
+
+    @Test
+    void testApplyDowngradedTileRejectsForeignOrOutOfBoundsTiles() {
+        Vars.world = new World();
+        mindustry.world.Tiles tiles = Vars.world.resize(10, 10);
+        Tile validTile = new Tile(2, 2);
+        tiles.set(2, 2, validTile);
+
+        Block testBlock = new Block("test-downgrade") {};
+        FloodConfig.FloodTile lowerTier = new FloodConfig.FloodTile(testBlock, 10f, 20);
+
+        // Out of bounds tile
+        Tile oobTile = new Tile(50, 50);
+        spreader.applyDowngradedTile(oobTile, lowerTier, 1.0f);
+        assertEquals(Blocks.air, oobTile.block());
+
+        // Foreign tile (matching coordinates but different object instance than Vars.world.tile)
+        Tile foreignTile = new Tile(2, 2);
+        spreader.applyDowngradedTile(foreignTile, lowerTier, 1.0f);
+        assertEquals(Blocks.air, foreignTile.block());
+        assertEquals(Blocks.air, validTile.block());
+
+        // Valid tile from current world
+        spreader.applyDowngradedTile(validTile, lowerTier, 1.0f);
+        assertEquals(testBlock, validTile.block());
     }
 }

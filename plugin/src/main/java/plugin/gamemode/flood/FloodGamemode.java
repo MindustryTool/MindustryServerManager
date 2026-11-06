@@ -57,7 +57,7 @@ public class FloodGamemode {
     // Reused across ticks to avoid per-tick allocations.
     private final Seq<Building> unsuppressedCoresScratch = new Seq<>();
 
-    private FloodSpreader spreader;
+    FloodSpreader spreader;
 
     private long startedAt = 0;
     private int cores = 1;
@@ -141,6 +141,7 @@ public class FloodGamemode {
         }
 
         var multiplier = getFloodMultiplier();
+        var activeSpreader = spreader;
 
         for (var core : Team.crux.cores()) {
             if (suppressed.containsKey(core)) {
@@ -152,7 +153,9 @@ public class FloodGamemode {
             unit.set(core.getX(), core.getY());
 
             Core.app.post(() -> {
-                unit.add();
+                if (shouldUpdate() && spreader == activeSpreader && activeSpreader.isInitialized()) {
+                    unit.add();
+                }
             });
         }
     }
@@ -291,7 +294,7 @@ public class FloodGamemode {
     }
 
     @Listener
-    private void onBlockDestroyed(BlockDestroyEvent event) {
+    void onBlockDestroyed(BlockDestroyEvent event) {
         if (spreader == null || event.tile == null) {
             return;
         }
@@ -304,9 +307,10 @@ public class FloodGamemode {
             var tile = event.tile;
             var multiplier = getFloodMultiplier();
             spreader.onTileDestroyed(spreader.posOf(tile));
+            var activeSpreader = spreader;
             Core.app.post(() -> {
-                if (shouldUpdate() && spreader != null && spreader.isInitialized()) {
-                    spreader.applyDowngradedTile(tile, lowerTier, multiplier);
+                if (shouldUpdate() && spreader == activeSpreader && activeSpreader.isInitialized()) {
+                    activeSpreader.applyDowngradedTile(tile, lowerTier, multiplier);
                 }
             });
             return;
@@ -334,8 +338,11 @@ public class FloodGamemode {
         unit.health(unit.maxHealth * multiplier);
         unit.set(tile.worldx(), tile.worldy());
 
+        var activeSpreader = spreader;
         Core.app.post(() -> {
-            unit.add();
+            if (shouldUpdate() && spreader == activeSpreader && activeSpreader.isInitialized()) {
+                unit.add();
+            }
         });
     }
 

@@ -7,7 +7,16 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import java.util.ArrayList;
+import java.util.List;
+import arc.Core;
+import arc.mock.MockApplication;
+import arc.struct.Seq;
+import mindustry.core.World;
+import mindustry.game.EventType.BlockDestroyEvent;
+import mindustry.world.Block;
 
 import arc.util.Time;
 import mindustry.Vars;
@@ -95,5 +104,74 @@ public class FloodGamemodeTest {
 
         assertTrue(gamemode.suppressed.containsKey(core));
         assertTrue(gamemode.suppressionDeadlines.containsKey(core));
+    }
+
+    @AfterEach
+    void tearDown() {
+        Vars.world = null;
+        Core.app = null;
+    }
+
+    @Test
+    void testDeferredCallbackIgnoredAfterSpreaderRecreated() {
+        Vars.headless = true;
+        Vars.world = new World();
+        mindustry.world.Tiles tiles = Vars.world.resize(10, 10);
+        Tile tile = new Tile(2, 2);
+        tiles.set(2, 2, tile);
+
+        Block tier1Block = new Block("test-t1") {};
+        tier1Block.id = 100;
+        Block tier2Block = new Block("test-t2") {};
+        tier2Block.id = 101;
+
+        FloodConfig customConfig = new FloodConfig();
+        customConfig.floodTiles = Seq.with(
+                new FloodConfig.FloodTile(tier1Block, 10f, 20),
+                new FloodConfig.FloodTile(tier2Block, 20f, 40)
+        );
+
+        FloodGamemode customGamemode = new FloodGamemode(customConfig);
+        FloodSpreader oldSpreader = new FloodSpreader(customConfig);
+        oldSpreader.reset(10, 10);
+        customGamemode.spreader = oldSpreader;
+
+        Building build = Building.create();
+        build.tile = tile;
+        build.block = tier2Block;
+        build.team = Team.crux;
+        tile.build = build;
+
+        List<Runnable> postedTasks = new ArrayList<>();
+        Core.app = new MockApplication() {
+            @Override
+            public void post(Runnable runnable) {
+                postedTasks.add(runnable);
+            }
+        };
+
+        BlockDestroyEvent event = new BlockDestroyEvent(tile);
+        customGamemode.onBlockDestroyed(event);
+
+        assertEquals(1, postedTasks.size());
+
+        // Simulate world reload / new match: spreader is replaced
+        FloodSpreader newSpreader = new FloodSpreader(customConfig);
+        newSpreader.reset(10, 10);
+        customGamemode.spreader = newSpreader;
+
+        // Executing the stale task must be safely discarded
+        postedTasks.get(0).run();
+        assertEquals(Blocks.air, tile.block());
+
+        // Verify that matching active spreader does execute
+        postedTasks.clear();
+        tile.build = build;
+        customGamemode.spreader = oldSpreader;
+        customGamemode.onBlockDestroyed(event);
+        assertEquals(1, postedTasks.size());
+
+        postedTasks.get(0).run();
+        assertEquals(tier1Block, tile.block());
     }
 }
