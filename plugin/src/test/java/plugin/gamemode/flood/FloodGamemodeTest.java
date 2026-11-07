@@ -27,6 +27,7 @@ import mindustry.core.GameState;
 import mindustry.game.Team;
 import mindustry.gen.Building;
 import mindustry.world.Tile;
+import mindustry.world.Tiles;
 
 public class FloodGamemodeTest {
 
@@ -116,7 +117,7 @@ public class FloodGamemodeTest {
     void testDeferredCallbackIgnoredAfterSpreaderRecreated() {
         Vars.headless = true;
         Vars.world = new World();
-        mindustry.world.Tiles tiles = Vars.world.resize(10, 10);
+        Tiles tiles = Vars.world.resize(10, 10);
         Tile tile = new Tile(2, 2);
         tiles.set(2, 2, tile);
 
