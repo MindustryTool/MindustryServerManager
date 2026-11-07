@@ -28,8 +28,5 @@ public class WelcomeMenu extends ServerMenu<Void> {
             links.add(UiBuilder.button(Iconc.link + " [green]" + Tr.t(ctx.getSession(), "welcome.website")).clicked(webAct).width(MenuContext.SAFE_CARD_WIDTH).height(40f).pad(3f)).row();
             links.add(UiBuilder.button(Iconc.discord + " [blue]" + Tr.t(ctx.getSession(), "welcome.discord")).clicked(discordAct).width(MenuContext.SAFE_CARD_WIDTH).height(40f).pad(3f)).row();
         });
-
-        ctx.row();
-        ctx.closeButton(Iconc.cancel + " [red]" + Tr.t(ctx.getSession(), "welcome.close"));
     }
 }

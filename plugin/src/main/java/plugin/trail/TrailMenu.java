@@ -81,8 +81,5 @@ public class TrailMenu extends ServerMenu<Integer> {
                 paneTable.add(card.growX().pad(2f)).row();
             }
         });
-
-        ctx.row();
-        ctx.closeButton(Tr.t(ctx.getSession(), "trail.close"));
     }
 }

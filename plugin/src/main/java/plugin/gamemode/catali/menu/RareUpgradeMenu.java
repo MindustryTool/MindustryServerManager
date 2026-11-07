@@ -77,7 +77,5 @@ public class RareUpgradeMenu extends ServerMenu<CataliTeamData> {
         table.add(buffCard.growX().pad(2f)).row();
 
         ctx.add(table);
-        ctx.row();
-        ctx.closeButton(Tr.t(session, "catali.close"));
     }
 }

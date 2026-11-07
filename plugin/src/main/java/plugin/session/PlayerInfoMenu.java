@@ -37,8 +37,5 @@ public class PlayerInfoMenu extends ServerMenu<Session> {
                 paneTable.add(card.growX().pad(2f)).row();
             });
         });
-
-        ctx.row();
-        ctx.closeButton(Tr.t(ctx.getSession().locale, "session.close"));
     }
 }

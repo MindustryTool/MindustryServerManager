@@ -65,9 +65,6 @@ public class CommonUpgradeMenu extends ServerMenu<CataliTeamData> {
                     Tr.t(session, "catali.experience"),
                     "Lv " + upgrades.getExpLevel() + " (+" + Math.round((upgrades.getExpMultiplier() - 1f) * 100f) + "%)");
         });
-
-        ctx.row();
-        ctx.closeButton(Tr.t(session, "catali.close"));
     }
 
     private void addUpgradeCard(MenuContext<CataliTeamData> ctx, TableBuilder table,

@@ -47,10 +47,7 @@ public class GachaMenu extends ServerMenu<Integer> {
 
         ctx.table(nav -> {
             String backAct = ctx.registerAction((sess, st, res) -> Registry.get(ShopMenu.class).send(sess, 0));
-            String closeAct = ctx.registerAction((sess, st, res) -> {});
-
-            nav.add(UiBuilder.button("[lightgray]" + Iconc.left + " " + Tr.t(ctx.getSession(), "gacha.back_to_shop")).clicked(backAct).width(140f).height(40f).pad(4f));
-            nav.add(UiBuilder.button(Tr.t(ctx.getSession(), "gacha.close")).clicked(closeAct).width(100f).height(40f).pad(4f));
+            nav.add(UiBuilder.button("[lightgray]" + Iconc.left + " " + Tr.t(ctx.getSession(), "gacha.back_to_shop")).clicked(backAct).width(160f).height(40f).pad(4f));
         });
     }
 }

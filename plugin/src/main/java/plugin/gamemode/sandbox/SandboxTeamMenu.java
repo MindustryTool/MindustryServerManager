@@ -62,8 +62,5 @@ public class SandboxTeamMenu extends ServerMenu<Void> {
                 paneTable.add(card.growX().pad(2f)).row();
             }
         });
-
-        ctx.row();
-        ctx.closeButton(Tr.t(session, "sandbox.close"));
     }
 }

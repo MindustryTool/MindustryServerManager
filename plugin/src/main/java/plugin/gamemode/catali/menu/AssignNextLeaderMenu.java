@@ -43,8 +43,6 @@ public class AssignNextLeaderMenu extends ServerMenu<CataliTeamData> {
 
         if (availableTeammates.isEmpty()) {
             ctx.label("[lightgray]" + Tr.t(session, "catali.no_teammates"));
-            ctx.row();
-            ctx.closeButton(Tr.t(session, "catali.close"));
             return;
         }
 
@@ -72,8 +70,5 @@ public class AssignNextLeaderMenu extends ServerMenu<CataliTeamData> {
                 paneTable.add(card.growX().pad(2f)).row();
             }
         });
-
-        ctx.row();
-        ctx.closeButton(Tr.t(session, "catali.close"));
     }
 }

@@ -48,8 +48,5 @@ public class RateMapMenu extends ServerMenu<Map> {
                 starsTable.add(UiBuilder.button(starDisplay).clicked(act).width(MenuContext.SAFE_CARD_WIDTH).height(34f).pad(2f)).row();
             }
         });
-
-        ctx.row();
-        ctx.closeButton("[gray]Cancel");
     }
 }

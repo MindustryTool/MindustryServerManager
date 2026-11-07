@@ -65,7 +65,5 @@ public class AbandonMenu extends ServerMenu<CataliTeamData> {
                 .clicked(abandonTeamAct)
                 .width(240f)
                 .height(40f));
-        ctx.row();
-        ctx.closeButton(Tr.t(session, "catali.close"));
     }
 }

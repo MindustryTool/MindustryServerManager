@@ -63,7 +63,5 @@ public class AIPickMenu extends ServerMenu<CataliTeamData> {
         container.add(cmdCard.pad(4f)).row();
 
         ctx.add(container);
-        ctx.row();
-        ctx.closeButton(Tr.t(session, "catali.close"));
     }
 }

@@ -80,8 +80,5 @@ public class RtvMenu extends ServerMenu<Integer> {
                 paneTable.add(card.growX().pad(2f)).row();
             }
         });
-
-        ctx.row();
-        ctx.closeButton(Tr.t(ctx.getSession(), "rtv.close"));
     }
 }

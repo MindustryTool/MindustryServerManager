@@ -53,13 +53,10 @@ public class ShopMenu extends ServerMenu<Integer> {
         ctx.table(nav -> {
             String gachaAct = ctx.registerAction((sess, st, res) -> Registry.get(GachaMenu.class).send(sess, 0));
             String trailAct = ctx.registerAction((sess, st, res) -> Registry.get(TrailMenu.class).send(sess, 0));
-            String closeAct = ctx.registerAction((sess, st, res) -> {});
 
             nav.add(UiBuilder.button("[gold]" + Iconc.star + " " + Tr.t(ctx.getSession(), "shop.open_gacha")).clicked(gachaAct).width(MenuContext.SAFE_CARD_WIDTH).height(44f).pad(3f));
             nav.row();
             nav.add(UiBuilder.button("[sky]" + Iconc.star + " " + Tr.t(ctx.getSession(), "shop.open_trails")).clicked(trailAct).width(MenuContext.SAFE_CARD_WIDTH).height(44f).pad(3f));
-            nav.row();
-            nav.add(UiBuilder.button(Tr.t(ctx.getSession(), "shop.close")).clicked(closeAct).width(120f).height(38f).pad(3f));
         });
     }
 }

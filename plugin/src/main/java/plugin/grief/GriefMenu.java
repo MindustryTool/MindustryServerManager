@@ -39,9 +39,6 @@ public class GriefMenu extends ServerMenu<Session> {
                     paneTable.add(card.growX().pad(2f)).row();
                 });
             });
-
-            ctx.row();
-            ctx.closeButton(Tr.t(ctx.getSession().locale, "grief.close"));
         } else {
             ctx.label("[yellow]Report player: [scarlet]" + target.player.name + "[yellow]?").width(MenuContext.SAFE_WIDTH);
             ctx.row();

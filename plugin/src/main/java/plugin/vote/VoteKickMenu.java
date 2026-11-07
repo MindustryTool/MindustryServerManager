@@ -60,9 +60,6 @@ public class VoteKickMenu extends ServerMenu<Player> {
                     paneTable.add(card.growX().pad(2f)).row();
                 }
             });
-
-            ctx.row();
-            ctx.closeButton(Tr.t(ctx.getSession(), "votekick.btn_close"));
         } else {
             ctx.label(Tr.t(ctx.getSession(), "votekick.menu_select_reason", "target", target.name)).width(MenuContext.SAFE_WIDTH);
             ctx.row();
@@ -83,13 +80,8 @@ public class VoteKickMenu extends ServerMenu<Player> {
             });
 
             ctx.row();
-            ctx.table(bottom -> {
-                String backAct = ctx.registerAction((sess, st, res) -> Registry.get(VoteKickMenu.class).send(sess, null));
-                bottom.add(UiBuilder.button(Tr.t(ctx.getSession(), "votekick.btn_back")).clicked(backAct).width(100f).height(36f).pad(3f));
-
-                String closeAct = ctx.registerAction((sess, st, res) -> {});
-                bottom.add(UiBuilder.button(Tr.t(ctx.getSession(), "votekick.btn_close")).clicked(closeAct).width(100f).height(36f).pad(3f));
-            });
+            ctx.button(Tr.t(ctx.getSession(), "votekick.btn_back"), (sess, st, res) -> Registry.get(VoteKickMenu.class).send(sess, null))
+                .width(120f).height(36f).pad(3f);
         }
     }
 }

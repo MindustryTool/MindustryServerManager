@@ -24,7 +24,5 @@ public class JoinTeamMenu extends ServerMenu<Void> {
         this.title = Tr.t(session, "catali.join_team");
 
         ctx.label("[lightgray]" + Tr.t(session, "catali.select_team_leader"));
-        ctx.row();
-        ctx.closeButton(Tr.t(session, "catali.close"));
     }
 }

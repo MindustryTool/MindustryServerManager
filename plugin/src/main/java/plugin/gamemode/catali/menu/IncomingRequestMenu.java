@@ -73,7 +73,5 @@ public class IncomingRequestMenu extends ServerMenu<Player> {
 
         card.add(btnBar);
         ctx.add(card);
-        ctx.row();
-        ctx.closeButton(Tr.t(session, "catali.close"));
     }
 }

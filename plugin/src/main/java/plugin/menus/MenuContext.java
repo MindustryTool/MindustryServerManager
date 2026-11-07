@@ -153,10 +153,6 @@ public class MenuContext<T> {
         return button(text, action);
     }
 
-    public ButtonBuilder closeButton(String text) {
-        return button(text, (sess, st, res) -> {});
-    }
-
     public FieldBuilder field(String text, String hint, Cons<String> onEnter) {
         String actionId = "fld_" + actionCounter.incrementAndGet();
         registerAction(actionId, (sess, st, res) -> {

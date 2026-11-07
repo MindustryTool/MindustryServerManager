@@ -30,8 +30,6 @@ public class MapRecordsMenu extends ServerMenu<MapRecordMenuState> {
         List<MapRecord> records = state.records();
         if (records == null || records.isEmpty()) {
             ctx.label("[lightgray]" + Tr.t(locale, "rank.no_records_menu")).width(MenuContext.SAFE_WIDTH);
-            ctx.row();
-            ctx.closeButton("[gray]Close");
             return;
         }
 
@@ -55,8 +53,5 @@ public class MapRecordsMenu extends ServerMenu<MapRecordMenuState> {
                 paneTable.add(row.growX().pad(2f)).row();
             }
         });
-
-        ctx.row();
-        ctx.closeButton("[gray]Close");
     }
 }

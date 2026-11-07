@@ -21,8 +21,6 @@ public class VotePromptMenu extends ServerMenu<Void> {
         if (current == null) {
             this.title = Tr.t(ctx.getSession(), "votekick.menu_title");
             ctx.label(Tr.t(ctx.getSession(), "votekick.no_vote_in_progress")).width(MenuContext.SAFE_WIDTH);
-            ctx.row();
-            ctx.closeButton(Tr.t(ctx.getSession(), "votekick.btn_close"));
             return;
         }
 
@@ -49,8 +47,5 @@ public class VotePromptMenu extends ServerMenu<Void> {
                 actions.add(UiBuilder.button(Tr.t(ctx.getSession(), "votekick.btn_cancel")).clicked(cancelAct).width(MenuContext.SAFE_CARD_WIDTH).height(38f).colspan(2).pad(3f));
             }
         });
-
-        ctx.row();
-        ctx.closeButton(Tr.t(ctx.getSession(), "votekick.btn_close"));
     }
 }

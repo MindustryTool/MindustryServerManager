@@ -21,8 +21,6 @@ public class TaskMenu extends ServerMenu<Integer> {
     public void build(MenuContext<Integer> ctx) {
         if (dailyTaskService == null) {
             ctx.label(Tr.t(ctx.getSession(), "task.unavailable"));
-            ctx.row();
-            ctx.closeButton(Tr.t(ctx.getSession(), "task.close"));
             return;
         }
 
@@ -59,8 +57,5 @@ public class TaskMenu extends ServerMenu<Integer> {
                 paneTable.add(card.growX().pad(4f)).row();
             }
         });
-
-        ctx.row();
-        ctx.closeButton(Tr.t(ctx.getSession(), "task.close"));
     }
 }

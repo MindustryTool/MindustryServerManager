@@ -76,10 +76,7 @@ public class RareUpgradeTierSelectUnitMenu extends ServerMenu<CataliTeamData> {
         String backAct = ctx.registerAction((sess, t, res) -> {
             Registry.get(RareUpgradeMenu.class).send(sess, team);
         });
-        navBar.add(UiBuilder.button(Tr.t(session, "catali.back")).clicked(backAct).width(105f).height(38f).pad(3f));
-
-        String closeAct = ctx.registerAction((sess, t, res) -> {});
-        navBar.add(UiBuilder.button(Tr.t(session, "catali.close")).clicked(closeAct).width(105f).height(38f).pad(3f));
+        navBar.add(UiBuilder.button(Tr.t(session, "catali.back")).clicked(backAct).width(120f).height(38f).pad(3f));
 
         ctx.add(navBar);
     }

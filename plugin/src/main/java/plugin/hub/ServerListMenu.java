@@ -79,22 +79,20 @@ public class ServerListMenu extends ServerMenu<Integer> {
                 });
             });
 
-            ctx.row();
+            if (page > 0 || (servers != null && servers.size() == size)) {
+                ctx.row();
+                ctx.table(bottom -> {
+                    if (page > 0) {
+                        String prevAct = ctx.registerAction((sess, st, res) -> Registry.get(ServerListMenu.class).send(sess, page - 1));
+                        bottom.add(UiBuilder.button(Tr.t(ctx.getSession().locale, "hub.list.previous")).clicked(prevAct).width(95f).height(36f).pad(2f));
+                    }
 
-            ctx.table(bottom -> {
-                if (page > 0) {
-                    String prevAct = ctx.registerAction((sess, st, res) -> Registry.get(ServerListMenu.class).send(sess, page - 1));
-                    bottom.add(UiBuilder.button(Tr.t(ctx.getSession().locale, "hub.list.previous")).clicked(prevAct).width(95f).height(36f).pad(2f));
-                }
-
-                if (servers != null && servers.size() == size) {
-                    String nextAct = ctx.registerAction((sess, st, res) -> Registry.get(ServerListMenu.class).send(sess, page + 1));
-                    bottom.add(UiBuilder.button(Tr.t(ctx.getSession().locale, "hub.list.next")).clicked(nextAct).width(95f).height(36f).pad(2f));
-                }
-
-                String closeAct = ctx.registerAction((sess, st, res) -> {});
-                bottom.add(UiBuilder.button(Tr.t(ctx.getSession().locale, "hub.list.close")).clicked(closeAct).width(95f).height(36f).pad(2f));
-            });
+                    if (servers != null && servers.size() == size) {
+                        String nextAct = ctx.registerAction((sess, st, res) -> Registry.get(ServerListMenu.class).send(sess, page + 1));
+                        bottom.add(UiBuilder.button(Tr.t(ctx.getSession().locale, "hub.list.next")).clicked(nextAct).width(95f).height(36f).pad(2f));
+                    }
+                });
+            }
         } catch (Exception e) {
             Log.err("Failed to build server list menu", e);
             ctx.label("[scarlet]Failed to load server list");
