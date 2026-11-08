@@ -143,13 +143,6 @@ public class ApiGateway {
         gatewayClient.connect();
     }
 
-    @Schedule(fixedDelay = 5, unit = TimeUnit.MINUTES)
-    private void autoGenerateMapImage() {
-        if (Vars.state.isPlaying()) {
-            generateMapImage();
-        }
-    }
-
     @Schedule(fixedDelay = 10, unit = TimeUnit.SECONDS)
     private void autoHost() {
         try {

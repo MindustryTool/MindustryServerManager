@@ -106,10 +106,6 @@ public class EventHandler {
                 }
             });
         }
-
-        Tasks.io("update map preview", () -> {
-            Utils.generateMapPreview();
-        });
     }
 
     @Listener
