@@ -3,7 +3,6 @@ package plugin.shop;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import mindustry.Vars;
 import mindustry.content.UnitTypes;
 import mindustry.game.EventType.WaveEvent;
 import mindustry.gen.Unit;
@@ -57,7 +56,7 @@ public class PetService {
     }
 
     private void sendMessage(Session session, String message) {
-        if (session.player != null && Vars.net != null) {
+        if (session.player != null) {
             session.player.sendMessage(message);
         }
     }

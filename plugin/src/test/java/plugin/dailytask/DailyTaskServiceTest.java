@@ -9,7 +9,9 @@ import java.util.List;
 import arc.Core;
 import arc.Settings;
 import arc.files.Fi;
+import mindustry.Vars;
 import mindustry.gen.Player;
+import mindustry.net.Net;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,6 +47,9 @@ public class DailyTaskServiceTest {
 
     @BeforeEach
     void setUp() {
+        if (Vars.net == null) {
+            Vars.net = new Net(null);
+        }
         Database.setTestPath(tempDir.resolve("test_tasks.db"));
         database = new Database();
         repository = new SessionRepository(database);

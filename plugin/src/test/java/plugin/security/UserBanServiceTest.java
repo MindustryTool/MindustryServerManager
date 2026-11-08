@@ -4,6 +4,9 @@ import java.nio.file.Path;
 
 import arc.Core;
 import arc.Settings;
+import mindustry.Vars;
+import mindustry.core.NetServer;
+import mindustry.net.Net;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,6 +39,12 @@ public class UserBanServiceTest {
 
     @BeforeEach
     void setUp() {
+        if (Vars.net == null) {
+            Vars.net = new Net(null);
+        }
+        if (Vars.netServer == null) {
+            Vars.netServer = new NetServer();
+        }
         Core.settings = new Settings();
         Database.setTestPath(tempDir.resolve("userban_test.db"));
         database = new Database();

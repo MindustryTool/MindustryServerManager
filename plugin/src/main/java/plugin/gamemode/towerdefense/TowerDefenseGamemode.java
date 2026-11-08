@@ -251,8 +251,7 @@ public class TowerDefenseGamemode {
     @MainThread
     @Schedule(fixedDelay = 1, unit = TimeUnit.SECONDS)
     public void onSecondTick() {
-        if (Vars.state.rules.waveTeam != null && Vars.state.rules.waveTeam.data() != null
-                && Vars.state.rules.waveTeam.data().units != null) {
+        if (Vars.state.rules.waveTeam != null) {
             Vars.state.rules.waveTeam.data().units.each(unit -> {
                 var core = unit.closestEnemyCore();
                 if (core == null || unit.dst(core) > 80f) {

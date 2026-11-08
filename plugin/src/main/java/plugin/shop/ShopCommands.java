@@ -1,7 +1,6 @@
 package plugin.shop;
 
 import lombok.RequiredArgsConstructor;
-import mindustry.Vars;
 import plugin.Cfg;
 import plugin.annotations.ClientCommand;
 import plugin.annotations.Component;
@@ -38,7 +37,7 @@ public class ShopCommands {
 
     @ClientCommand(name = "money", description = "Check your coin balance", admin = false)
     public void money(Session session) {
-        if (session.player != null && Vars.net != null) {
+        if (session.player != null) {
             session.player.sendMessage(Tr.t(session, "money.balance", "coins", session.getData().money));
         }
     }

@@ -107,7 +107,7 @@ public class DailyTaskService {
 
                 if (updated >= task.getGoal() && current < task.getGoal()) {
                     moneyService.deposit(session, task.getRewardCoins());
-                    if (session.player != null && Vars.net != null) {
+                    if (session.player != null) {
                         session.player.sendMessage("[green]" + Iconc.ok + " " + Tr.t(session, "task.completed_notify",
                                 "title", task.getTitle(session),
                                 "coins", task.getRewardCoins()));
@@ -154,7 +154,7 @@ public class DailyTaskService {
         if (event.unit == null || event.bullet == null) {
             return;
         }
-        if (Vars.state != null && Vars.state.rules != null && event.unit.team == Vars.state.rules.defaultTeam) {
+        if (event.unit.team == Vars.state.rules.defaultTeam) {
             return;
         }
 

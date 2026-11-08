@@ -117,13 +117,11 @@ public class Utils {
 
         List<Mod> mods = new ArrayList<>();
 
-        if (Vars.mods != null) {
-            for (var mod : Vars.mods.list()) {
-                mods.add(new Mod()//
-                        .setFilename(mod.file.absolutePath())//
-                        .setName(mod.meta.name)
-                        .setMeta(ModMetadata.from(mod.meta)));
-            }
+        for (var mod : Vars.mods.list()) {
+            mods.add(new Mod()//
+                    .setFilename(mod.file.absolutePath())//
+                    .setName(mod.meta.name)
+                    .setMeta(ModMetadata.from(mod.meta)));
         }
 
         List<PlayerInfo> players = Registry.get(SessionService.class).get()

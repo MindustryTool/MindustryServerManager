@@ -42,11 +42,7 @@ public class CombatRewardService {
         if (event.unit.isPlayer() || event.unit.getPlayer() != null) {
             return;
         }
-        if (Vars.state != null && Vars.state.rules != null) {
-            if (event.unit.team == Vars.state.rules.defaultTeam) {
-                return;
-            }
-        }
+        if (event.unit.team == Vars.state.rules.defaultTeam) { return; }
 
         Player killer = null;
         Object owner = event.bullet.owner();

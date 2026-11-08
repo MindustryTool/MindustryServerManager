@@ -206,11 +206,6 @@ public class ServerCommands {
             return;
         }
 
-        if (Vars.netServer == null || Vars.netServer.admins == null) {
-            Log.err("Server is not initialized.");
-            return;
-        }
-
         String targetUuid = null;
         String targetIp = null;
         String targetName = null;
@@ -225,7 +220,7 @@ public class ServerCommands {
             }
             Log.info("Banned player ID '@' for: @", target, reason);
         } else if (type.equalsIgnoreCase("name")) {
-            Player p = Groups.player != null ? Groups.player.find(pl -> pl.name.equalsIgnoreCase(target) || Strings.stripColors(pl.name).equalsIgnoreCase(target)) : null;
+            Player p = Groups.player.find(pl -> pl.name.equalsIgnoreCase(target) || Strings.stripColors(pl.name).equalsIgnoreCase(target));
             if (p != null) {
                 targetUuid = p.uuid();
                 targetIp = p.ip();
@@ -251,11 +246,9 @@ public class ServerCommands {
             return;
         }
 
-        if (Groups.player != null) {
-            for (Player p : Groups.player) {
-                if (Vars.netServer.admins.isIDBanned(p.uuid()) || Vars.netServer.admins.isIPBanned(p.ip())) {
-                    p.kick(reason);
-                }
+        for (Player p : Groups.player) {
+            if (Vars.netServer.admins.isIDBanned(p.uuid()) || Vars.netServer.admins.isIPBanned(p.ip())) {
+                p.kick(reason);
             }
         }
 
@@ -284,9 +277,7 @@ public class ServerCommands {
             data = online.getData();
             playerName = Strings.stripColors(online.player.name);
         } else {
-            PlayerInfo info = (Vars.netServer != null && Vars.netServer.admins != null)
-                    ? Vars.netServer.admins.getInfoOptional(targetUuid)
-                    : null;
+            PlayerInfo info = Vars.netServer.admins.getInfoOptional(targetUuid);
             boolean exists = sessionRepository.exists(targetUuid) || info != null;
             if (!exists) {
                 Log.err("Player with uuid '@' not found.", targetUuid);

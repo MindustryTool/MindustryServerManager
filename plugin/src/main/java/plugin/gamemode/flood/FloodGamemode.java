@@ -73,7 +73,7 @@ public class FloodGamemode {
     private boolean isGameOver = false; 
 
     boolean shouldUpdate() {
-        return Vars.state != null && Vars.state.isPlaying();
+        return Vars.state.isPlaying();
     }
 
     private void applyRules() {
@@ -364,7 +364,7 @@ public class FloodGamemode {
         }
 
         var tile = event.unit.tileOn();
-        if (tile == null && Vars.world != null) {
+        if (tile == null) {
             tile = Vars.world.tileWorld(event.unit.x, event.unit.y);
         }
         if (tile == null) {

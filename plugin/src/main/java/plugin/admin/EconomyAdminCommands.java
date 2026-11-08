@@ -1,7 +1,6 @@
 package plugin.admin;
 
 import java.util.List;
-import mindustry.Vars;
 import plugin.Cfg;
 import plugin.annotations.ClientCommand;
 import plugin.annotations.Component;
@@ -39,7 +38,7 @@ public class EconomyAdminCommands {
     }
 
     private void send(Session session, String message) {
-        if (session.player != null && Vars.net != null) {
+        if (session.player != null) {
             session.player.sendMessage(message);
         }
     }

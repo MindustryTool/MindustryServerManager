@@ -14,9 +14,9 @@ import mindustry.Vars;
 import mindustry.content.Blocks;
 import mindustry.core.ContentLoader;
 import mindustry.core.World;
-import org.junit.jupiter.api.AfterEach;
 import mindustry.game.Team;
 import mindustry.gen.Building;
+import mindustry.net.Net;
 import mindustry.world.Block;
 import mindustry.world.Tile;
 import mindustry.world.Tiles;
@@ -32,6 +32,12 @@ public class FloodSpreaderTest {
         if (Vars.content == null) {
             Vars.content = new ContentLoader();
             Vars.content.createBaseContent();
+        }
+        if (Vars.world == null) {
+            Vars.world = new World();
+        }
+        if (Vars.net == null) {
+            Vars.net = new Net(null);
         }
         config = new FloodConfig();
         spreader = new FloodSpreader(config);
@@ -222,11 +228,7 @@ public class FloodSpreaderTest {
     }
 
     @Test
-    void testScanExistingFloodHandlesNullWorldGracefully() {
-        // When Vars.world is null or spreader not initialized, scanExistingFlood does not throw
-        spreader.scanExistingFlood(1.0f);
-        assertEquals(0, spreader.edgeTileCount());
-
+    void testScanExistingFloodHandlesUninitializedSpreader() {
         FloodSpreader uninit = new FloodSpreader(config);
         uninit.scanExistingFlood(1.0f);
         assertEquals(0, uninit.edgeTileCount());
@@ -287,17 +289,12 @@ public class FloodSpreaderTest {
         assertEquals(tier1Block, resolvedOnDeadBuild.block);
     }
 
-    @AfterEach
-    void tearDown() {
-        Vars.world = null;
-    }
-
     @Test
     void testApplyDowngradedTileSafeHandling() {
         Tile tile = new Tile(2, 2);
         FloodConfig.FloodTile lowerTier = new FloodConfig.FloodTile(new Block("test-b") {}, 10f, 20);
 
-        // Does not throw when inputs are null or world is null
+        // Does not throw when inputs are null
         spreader.applyDowngradedTile(tile, lowerTier, 1.0f);
         spreader.applyDowngradedTile(null, lowerTier, 1.0f);
         spreader.applyDowngradedTile(tile, null, 1.0f);

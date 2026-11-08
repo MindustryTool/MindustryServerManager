@@ -147,7 +147,7 @@ public class FloodSpreader {
 
     private void rebuildTiers() {
         int maxBlockId = 2048;
-        if (Vars.content != null && Vars.content.blocks() != null) {
+        if (Vars.content.blocks() != null) {
             maxBlockId = Math.max(Vars.content.blocks().size + 64, 2048);
         }
 
@@ -188,7 +188,7 @@ public class FloodSpreader {
     // Flags all registered core block IDs as valid flood-connected anchor
     // structures.
     private void mapCoreBlocks(int maxBlockId) {
-        if (Vars.content != null && Vars.content.blocks() != null) {
+        if (Vars.content.blocks() != null) {
             for (var block : Vars.content.blocks()) {
                 if (block instanceof CoreBlock && block.id < maxBlockId) {
                     isFloodOrCoreBlockId[block.id] = true;
@@ -247,18 +247,14 @@ public class FloodSpreader {
         if (tile == null || lowerTier == null || lowerTier.block == null) {
             return;
         }
-        if (Vars.world == null || !isInitialized()) {
+        if (!isInitialized()) {
             return;
         }
         if (Vars.world.tile(tile.x, tile.y) != tile) {
             return;
         }
 
-        if (Vars.net != null) {
-            Call.setTile(tile, lowerTier.block, Team.crux, 0);
-        } else {
-            tile.setBlock(lowerTier.block, Team.crux, 0);
-        }
+        Call.setTile(tile, lowerTier.block, Team.crux, 0);
 
         int pos = posOf(tile);
         if (pos >= 0 && pos < deadlines.length) {
@@ -301,7 +297,7 @@ public class FloodSpreader {
      * and adding edge tiles to initiate spreading.
      */
     public void scanExistingFlood(float multiplier) {
-        if (!isInitialized() || Vars.world == null) {
+        if (!isInitialized()) {
             return;
         }
         long now = Time.millis();
@@ -445,9 +441,6 @@ public class FloodSpreader {
         if (tile == null || lastTier == null || lastTier.block == null) {
             return false;
         }
-        if (Vars.world == null) {
-            return false;
-        }
 
         Block block = lastTier.block;
         int size = block.size;
@@ -503,11 +496,7 @@ public class FloodSpreader {
             return false;
         }
 
-        if (Vars.net != null) {
-            Call.setTile(tile, lastTier.block, Team.crux, 0);
-        } else {
-            tile.setBlock(lastTier.block, Team.crux, 0);
-        }
+        Call.setTile(tile, lastTier.block, Team.crux, 0);
 
         int pos = posOf(tile);
         if (pos >= 0 && pos < width * height) {
@@ -552,7 +541,7 @@ public class FloodSpreader {
     }
 
     public boolean hasAdjacentFlood(Tile tile) {
-        if (tile == null || Vars.world == null) {
+        if (tile == null) {
             return false;
         }
         return isFloodTile(Vars.world.tile(tile.x - 1, tile.y))
@@ -632,8 +621,7 @@ public class FloodSpreader {
         if (nx < 0 || nx >= width || ny < 0 || ny >= height) {
             return false;
         }
-        Tile tile = Vars.world != null ? Vars.world.tile(nx, ny) : null;
-        return isSpreadable(tile);
+        return isSpreadable(Vars.world.tile(nx, ny));
     }
 
     public boolean hasSpreadableNeighbor(int pos) {
@@ -673,7 +661,7 @@ public class FloodSpreader {
                 continue;
             }
 
-            Tile tile = Vars.world != null ? Vars.world.tile(pos % width, pos / width) : null;
+            Tile tile = Vars.world.tile(pos % width, pos / width);
             if (tile == null || !isFloodTile(tile)) {
                 removeEdgeTile(pos);
                 continue;
@@ -718,9 +706,6 @@ public class FloodSpreader {
     }
 
     private void processPlacedNeighbor(Tile nTile, int nx, int ny, float damage) {
-        if (Vars.world == null) {
-            return;
-        }
         boolean hasSpreadable = inspectNeighborForPlaced(nx - 1, ny, damage);
         hasSpreadable |= inspectNeighborForPlaced(nx + 1, ny, damage);
         hasSpreadable |= inspectNeighborForPlaced(nx, ny - 1, damage);
@@ -921,9 +906,7 @@ public class FloodSpreader {
             System.arraycopy(seq.items, 0, batch, 0, count);
 
             Block block = config.floodTiles.get(i).block;
-            if (Vars.world != null || Vars.net != null) {
-                Call.setTileBlocks(block, Team.crux, batch);
-            }
+            Call.setTileBlocks(block, Team.crux, batch);
 
             if (count == seq.size) {
                 seq.clear();

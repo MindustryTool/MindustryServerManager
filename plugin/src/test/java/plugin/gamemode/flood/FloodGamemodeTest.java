@@ -26,6 +26,7 @@ import mindustry.core.ContentLoader;
 import mindustry.core.GameState;
 import mindustry.game.Team;
 import mindustry.gen.Building;
+import mindustry.net.Net;
 import mindustry.world.Tile;
 import mindustry.world.Tiles;
 
@@ -44,6 +45,9 @@ public class FloodGamemodeTest {
             Vars.state = new GameState();
         }
         Vars.state.set(GameState.State.playing);
+        if (Vars.net == null) {
+            Vars.net = new Net(null);
+        }
 
         config = new FloodConfig();
         gamemode = new FloodGamemode(config);

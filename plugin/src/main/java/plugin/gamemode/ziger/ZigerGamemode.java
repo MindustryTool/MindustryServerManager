@@ -31,7 +31,7 @@ import plugin.annotations.Listener;
 import plugin.annotations.Trigger;
 
 @Component
-@ConditionOn(value = GamemodeCondition.class, args = {"ziger"})
+@ConditionOn(value = GamemodeCondition.class, args = { "ziger" })
 @RequiredArgsConstructor
 public class ZigerGamemode {
 
@@ -72,6 +72,10 @@ public class ZigerGamemode {
 
     @Trigger(EventType.Trigger.update)
     private void tick() {
+        if (!Vars.state.isPlaying()) {
+            return;
+        }
+
         for (var entry : fillableBuildings) {
             FillableBuilding fb = entry.value;
             fb.info.fill(fb.building);

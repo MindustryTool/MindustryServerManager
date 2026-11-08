@@ -72,7 +72,7 @@ public class ModerationLogService {
     @Listener
     public void onPlayerKick(PlayerKickEvent event) {
         String name = event.name;
-        if (name == null && Vars.netServer != null && Vars.netServer.admins != null) {
+        if (name == null) {
             if (event.uuid != null) {
                 var info = Vars.netServer.admins.getInfoOptional(event.uuid);
                 if (info != null) {
@@ -95,18 +95,16 @@ public class ModerationLogService {
     @Listener
     public void onKickEvent(KickEvent event) {
         String name = null;
-        if (Vars.netServer != null && Vars.netServer.admins != null) {
-            if (event.uuid != null) {
-                var info = Vars.netServer.admins.getInfoOptional(event.uuid);
-                if (info != null) {
-                    name = info.lastName;
-                }
+        if (event.uuid != null) {
+            var info = Vars.netServer.admins.getInfoOptional(event.uuid);
+            if (info != null) {
+                name = info.lastName;
             }
-            if (name == null && event.address != null) {
-                var info = Vars.netServer.admins.findByIP(event.address);
-                if (info != null) {
-                    name = info.lastName;
-                }
+        }
+        if (name == null && event.address != null) {
+            var info = Vars.netServer.admins.findByIP(event.address);
+            if (info != null) {
+                name = info.lastName;
             }
         }
 
@@ -125,7 +123,7 @@ public class ModerationLogService {
             name = Strings.stripColors(event.player.name);
             ip = event.player.ip();
             uuid = event.player.uuid();
-        } else if (Vars.netServer != null && Vars.netServer.admins != null && uuid != null) {
+        } else if (uuid != null) {
             var info = Vars.netServer.admins.getInfoOptional(uuid);
             if (info != null) {
                 name = info.lastName;

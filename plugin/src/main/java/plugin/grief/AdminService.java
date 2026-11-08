@@ -92,7 +92,7 @@ public class AdminService {
     @Listener
     public void onPlayerKick(PlayerKickEvent event) {
         String name = event.name;
-        if (name == null && Vars.netServer != null && Vars.netServer.admins != null && event.address != null) {
+        if (name == null && event.address != null) {
             PlayerInfo playerInfo = Vars.netServer.admins.findByIP(event.address);
             if (playerInfo != null) {
                 name = playerInfo.lastName;

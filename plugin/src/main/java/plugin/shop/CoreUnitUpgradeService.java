@@ -1,7 +1,6 @@
 package plugin.shop;
 
 import java.util.concurrent.TimeUnit;
-import mindustry.Vars;
 import mindustry.game.EventType.PlayerJoin;
 import mindustry.game.EventType.UnitSpawnEvent;
 import mindustry.gen.Unit;
@@ -44,7 +43,7 @@ public class CoreUnitUpgradeService {
     }
 
     private void sendMessage(Session session, String message) {
-        if (session.player != null && Vars.net != null) {
+        if (session.player != null) {
             session.player.sendMessage(message);
         }
     }

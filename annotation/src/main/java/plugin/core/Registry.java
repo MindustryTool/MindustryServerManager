@@ -11,7 +11,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 public final class Registry {
 
@@ -50,15 +49,18 @@ public final class Registry {
         }
     }
 
-    public static synchronized <T extends Annotation> void registerClassHandler(Class<T> annotationType, ClassAnnotationHandler<T> handler) {
+    public static synchronized <T extends Annotation> void registerClassHandler(Class<T> annotationType,
+            ClassAnnotationHandler<T> handler) {
         classHandlers.computeIfAbsent(annotationType, k -> new ArrayList<>()).add(handler);
     }
 
-    public static synchronized <T extends Annotation> void registerFieldHandler(Class<T> annotationType, FieldAnnotationHandler<T> handler) {
+    public static synchronized <T extends Annotation> void registerFieldHandler(Class<T> annotationType,
+            FieldAnnotationHandler<T> handler) {
         fieldHandlers.computeIfAbsent(annotationType, k -> new ArrayList<>()).add(handler);
     }
 
-    public static synchronized <T extends Annotation> void registerMethodHandler(Class<T> annotationType, MethodAnnotationHandler<T> handler) {
+    public static synchronized <T extends Annotation> void registerMethodHandler(Class<T> annotationType,
+            MethodAnnotationHandler<T> handler) {
         methodHandlers.computeIfAbsent(annotationType, k -> new ArrayList<>()).add(handler);
     }
 
@@ -87,7 +89,7 @@ public final class Registry {
 
     public static void init(Collection<Class<?>> components) {
         try {
-            List<Class<?>> filtered = measure("filtering", () -> components.stream()
+            List<Class<?>> filtered = components.stream()
                     .filter(clazz -> {
                         if (clazz.isAnnotation() || clazz.isInterface()) {
                             return false;
@@ -106,13 +108,11 @@ public final class Registry {
 
                         return true;
                     })
-                    .toList());
+                    .toList();
 
-            measure("component scan", () -> {
-                for (Class<?> clazz : filtered) {
-                    getOrCreate(clazz);
-                }
-            });
+            for (Class<?> clazz : filtered) {
+                getOrCreate(clazz);
+            }
 
         } catch (Exception e) {
             throw new RuntimeException("Registry init failed", e);
@@ -253,66 +253,64 @@ public final class Registry {
             return;
         }
 
-        measure("initialize " + instance.getClass().getName(), () -> {
-            Class<?> clazz = instance.getClass();
+        Class<?> clazz = instance.getClass();
 
-            // 1. Class annotation handlers
-            for (var entry : classHandlers.entrySet()) {
+        // 1. Class annotation handlers
+        for (var entry : classHandlers.entrySet()) {
+            Class<? extends Annotation> annotationType = entry.getKey();
+            withAnnotation(clazz, annotationType, a -> {
+                for (ClassAnnotationHandler<?> handler : entry.getValue()) {
+                    @SuppressWarnings("unchecked")
+                    ClassAnnotationHandler<Annotation> typed = (ClassAnnotationHandler<Annotation>) handler;
+                    typed.handle(a, instance);
+                }
+            });
+        }
+
+        // 2. Field annotation handlers
+        for (Field field : clazz.getDeclaredFields()) {
+            field.setAccessible(true);
+            for (var entry : fieldHandlers.entrySet()) {
                 Class<? extends Annotation> annotationType = entry.getKey();
-                withAnnotation(clazz, annotationType, a -> {
-                    for (ClassAnnotationHandler<?> handler : entry.getValue()) {
+                withAnnotation(field, annotationType, a -> {
+                    for (FieldAnnotationHandler<?> handler : entry.getValue()) {
                         @SuppressWarnings("unchecked")
-                        ClassAnnotationHandler<Annotation> typed = (ClassAnnotationHandler<Annotation>) handler;
-                        typed.handle(a, instance);
+                        FieldAnnotationHandler<Annotation> typed = (FieldAnnotationHandler<Annotation>) handler;
+                        typed.handle(a, field, instance);
                     }
                 });
             }
+        }
 
-            // 2. Field annotation handlers
-            for (Field field : clazz.getDeclaredFields()) {
-                field.setAccessible(true);
-                for (var entry : fieldHandlers.entrySet()) {
-                    Class<? extends Annotation> annotationType = entry.getKey();
-                    withAnnotation(field, annotationType, a -> {
-                        for (FieldAnnotationHandler<?> handler : entry.getValue()) {
+        // 3. Method annotation handlers
+        for (Method method : clazz.getDeclaredMethods()) {
+            method.setAccessible(true);
+
+            // Built-in @Init
+            withAnnotation(method, Init.class, a -> {
+                try {
+                    method.invoke(instance);
+                } catch (Exception e) {
+                    throw new RuntimeException("Failed to invoke @Init on " + clazz.getName(), e);
+                }
+            });
+
+            // Registered method handlers
+            for (var entry : methodHandlers.entrySet()) {
+                Class<? extends Annotation> annotationType = entry.getKey();
+                withAnnotation(method, annotationType, a -> {
+                    if (ConditionUtils.passes(method)) {
+                        for (MethodAnnotationHandler<?> handler : entry.getValue()) {
                             @SuppressWarnings("unchecked")
-                            FieldAnnotationHandler<Annotation> typed = (FieldAnnotationHandler<Annotation>) handler;
-                            typed.handle(a, field, instance);
+                            MethodAnnotationHandler<Annotation> typed = (MethodAnnotationHandler<Annotation>) handler;
+                            typed.handle(a, method, instance);
                         }
-                    });
-                }
-            }
-
-            // 3. Method annotation handlers
-            for (Method method : clazz.getDeclaredMethods()) {
-                method.setAccessible(true);
-
-                // Built-in @Init
-                withAnnotation(method, Init.class, a -> {
-                    try {
-                        method.invoke(instance);
-                    } catch (Exception e) {
-                        throw new RuntimeException("Failed to invoke @Init on " + clazz.getName(), e);
                     }
                 });
-
-                // Registered method handlers
-                for (var entry : methodHandlers.entrySet()) {
-                    Class<? extends Annotation> annotationType = entry.getKey();
-                    withAnnotation(method, annotationType, a -> {
-                        if (ConditionUtils.passes(method)) {
-                            for (MethodAnnotationHandler<?> handler : entry.getValue()) {
-                                @SuppressWarnings("unchecked")
-                                MethodAnnotationHandler<Annotation> typed = (MethodAnnotationHandler<Annotation>) handler;
-                                typed.handle(a, method, instance);
-                            }
-                        }
-                    });
-                }
             }
+        }
 
-            initialized.add(instance);
-        });
+        initialized.add(instance);
     }
 
     private static boolean isLazy(Class<?> type) {
@@ -349,8 +347,7 @@ public final class Registry {
     private static <T extends Annotation> boolean withAnnotation(
             Field field,
             Class<T> annotation,
-            Consumer<T> consumer
-    ) {
+            Consumer<T> consumer) {
         if (field.isAnnotationPresent(annotation)) {
             consumer.accept(field.getAnnotation(annotation));
             return true;
@@ -361,8 +358,7 @@ public final class Registry {
     private static <T extends Annotation> boolean withAnnotation(
             Method method,
             Class<T> annotation,
-            Consumer<T> consumer
-    ) {
+            Consumer<T> consumer) {
         if (method.isAnnotationPresent(annotation)) {
             consumer.accept(method.getAnnotation(annotation));
             return true;
@@ -373,32 +369,12 @@ public final class Registry {
     private static <T extends Annotation> boolean withAnnotation(
             Class<?> clazz,
             Class<T> annotation,
-            Consumer<T> consumer
-    ) {
+            Consumer<T> consumer) {
         if (clazz.isAnnotationPresent(annotation)) {
             consumer.accept(clazz.getAnnotation(annotation));
             return true;
         }
         return false;
-    }
-
-    private static void measure(String name, Runnable action) {
-        long start = System.nanoTime();
-        action.run();
-        long durationMs = (System.nanoTime() - start) / 1_000_000L;
-        if (durationMs > 20) {
-            logger.info("[#50C878][timing] @ took @ms", name, durationMs);
-        }
-    }
-
-    private static <T> T measure(String name, Supplier<T> action) {
-        long start = System.nanoTime();
-        T result = action.get();
-        long durationMs = (System.nanoTime() - start) / 1_000_000L;
-        if (durationMs > 20) {
-            logger.info("[#50C878][timing] @ took @ms", name, durationMs);
-        }
-        return result;
     }
 
     private static String format(String pattern, Object... args) {

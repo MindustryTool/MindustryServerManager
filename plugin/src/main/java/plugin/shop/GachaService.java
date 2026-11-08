@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
-import mindustry.Vars;
 import mindustry.gen.Iconc;
 import plugin.Cfg;
 import plugin.annotations.Component;
@@ -77,7 +76,7 @@ public class GachaService {
     }
 
     private void sendMessage(Session session, String message) {
-        if (session.player != null && Vars.net != null) {
+        if (session.player != null) {
             session.player.sendMessage(message);
         }
     }

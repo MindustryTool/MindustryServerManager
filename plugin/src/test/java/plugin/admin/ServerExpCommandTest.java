@@ -8,7 +8,10 @@ import java.lang.reflect.Method;
 import arc.Core;
 import arc.Settings;
 import arc.files.Fi;
+import mindustry.Vars;
+import mindustry.core.NetServer;
 import mindustry.gen.Player;
+import mindustry.net.Net;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,6 +45,12 @@ public class ServerExpCommandTest {
 
     @BeforeEach
     void setUp() throws Exception {
+        if (Vars.net == null) {
+            Vars.net = new Net(null);
+        }
+        if (Vars.netServer == null) {
+            Vars.netServer = new NetServer();
+        }
         Database.setTestPath(tempDir.resolve("test_exp.db"));
         database = new Database();
         repository = new SessionRepository(database);

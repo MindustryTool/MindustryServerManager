@@ -115,11 +115,6 @@ public class AdminCommands {
             return;
         }
 
-        if (Vars.netServer == null || Vars.netServer.admins == null) {
-            session.player.sendMessage("[scarlet]Server is not initialized.");
-            return;
-        }
-
         String targetUuid = null;
         String targetIp = null;
         String targetName = null;
@@ -135,7 +130,7 @@ public class AdminCommands {
             }
             session.player.sendMessage("[gold]Banned player ID " + target + " for: " + reason);
         } else if (type.equalsIgnoreCase("name")) {
-            Player p = Groups.player != null ? Groups.player.find(pl -> pl.name.equalsIgnoreCase(target) || Strings.stripColors(pl.name).equalsIgnoreCase(target)) : null;
+            Player p = Groups.player.find(pl -> pl.name.equalsIgnoreCase(target) || Strings.stripColors(pl.name).equalsIgnoreCase(target));
             if (p != null) {
                 targetUuid = p.uuid();
                 targetIp = p.ip();
@@ -161,11 +156,9 @@ public class AdminCommands {
             return;
         }
 
-        if (Groups.player != null) {
-            for (Player p : Groups.player) {
-                if (Vars.netServer.admins.isIDBanned(p.uuid()) || Vars.netServer.admins.isIPBanned(p.ip())) {
-                    p.kick(reason);
-                }
+        for (Player p : Groups.player) {
+            if (Vars.netServer.admins.isIDBanned(p.uuid()) || Vars.netServer.admins.isIPBanned(p.ip())) {
+                p.kick(reason);
             }
         }
 
