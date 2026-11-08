@@ -19,6 +19,7 @@ public class IdleTickThrottlerTest {
     @Test
     void defaultSleepDurationIs100Ms() {
         assertEquals(IdleTickThrottler.DEFAULT_THROTTLE_SLEEP_MS, throttler.getThrottleSleepMs());
+        assertEquals(100L, throttler.getThrottleSleepMs());
     }
 
     @Test

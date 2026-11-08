@@ -2,16 +2,17 @@ package plugin.core;
 
 import arc.Core;
 import arc.util.Log;
-import arc.util.Time;
 import mindustry.Vars;
 import mindustry.core.GameState.State;
+import mindustry.game.EventType;
 import mindustry.game.EventType.PlayerJoin;
 import mindustry.game.EventType.PlayerLeave;
+import mindustry.game.EventType.WorldLoadEvent;
 import mindustry.gen.Groups;
 import plugin.annotations.Component;
-import plugin.annotations.Destroy;
 import plugin.annotations.Init;
 import plugin.annotations.Listener;
+import plugin.annotations.Trigger;
 
 @Component
 public class IdleTickThrottler {
@@ -22,14 +23,23 @@ public class IdleTickThrottler {
 
     @Init
     public void init() {
-        Time.setDeltaProvider(this::provideDelta);
         Log.info("IdleTickThrottler initialized with @ms sleep", throttleSleepMs);
     }
 
-    @Destroy
-    public void destroy() {
-        Time.setDeltaProvider(() -> Math.min(Core.graphics.getDeltaTime() * 60f, 3f));
-        Log.info("IdleTickThrottler destroyed, default delta provider restored");
+    @Trigger(EventType.Trigger.update)
+    public void onUpdate() {
+        if (shouldThrottle()) {
+            throttleSleep();
+        }
+    }
+
+    @Listener
+    public void onWorldLoad(WorldLoadEvent event) {
+        if (Core.app != null) {
+            Core.app.post(this::checkAutoPause);
+        } else {
+            checkAutoPause();
+        }
     }
 
     @Listener
@@ -56,15 +66,12 @@ public class IdleTickThrottler {
         }
     }
 
-    public float provideDelta() {
-        if (shouldThrottle()) {
-            try {
-                Thread.sleep(throttleSleepMs);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
+    public void throttleSleep() {
+        try {
+            Thread.sleep(throttleSleepMs);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
-        return Math.min(Core.graphics.getDeltaTime() * 60f, 3f);
     }
 
     public boolean shouldThrottle() {
