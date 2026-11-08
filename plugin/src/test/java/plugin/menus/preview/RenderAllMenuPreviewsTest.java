@@ -17,7 +17,6 @@ import mindustry.content.Fx;
 import mindustry.game.Team;
 import mindustry.gen.Player;
 import mindustry.maps.Map;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import plugin.dailytask.DailyTask;
@@ -27,6 +26,7 @@ import plugin.gamemode.catali.data.CataliCommonUpgrade;
 import plugin.gamemode.catali.data.CataliTeamData;
 import plugin.gamemode.catali.menu.AIPickMenu;
 import plugin.gamemode.catali.menu.AbandonMenu;
+import plugin.gamemode.catali.menu.AssignNextLeaderMenu;
 import plugin.gamemode.catali.menu.CommonUpgradeMenu;
 import plugin.gamemode.catali.menu.CommonUpgradeQuantityMenu;
 import plugin.gamemode.catali.menu.JoinTeamMenu;
@@ -77,15 +77,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class RenderAllMenuPreviewsTest {
 
     private static final Path BASE_DIR = Path.of("build", "menu-previews");
-    private static final Path BATCH1_DIR = BASE_DIR.resolve("batch1");
-    private static final Path BATCH2_DIR = BASE_DIR.resolve("batch2");
-    private static final Path BATCH3_DIR = BASE_DIR.resolve("batch3");
 
-    @BeforeAll
-    static void ensureDirectories() throws IOException {
-        Files.createDirectories(BATCH1_DIR);
-        Files.createDirectories(BATCH2_DIR);
-        Files.createDirectories(BATCH3_DIR);
+    private static Path categoryDir(String folder) {
+        Path dir = BASE_DIR.resolve(folder);
+        try {
+            Files.createDirectories(dir);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to create preview dir: " + dir, e);
+        }
+        return dir;
     }
 
     private static Map createMap(String filename, String name) {
@@ -94,133 +94,28 @@ class RenderAllMenuPreviewsTest {
         return new Map(new Fi(filename), 100, 100, tags, true, 0, 146);
     }
 
-    private static void renderAllViewports(ServerMenu<?> menu, Session session, Path targetPath) {
+    private static void render(ServerMenu<?> menu, Session session, String folder, String name) {
+        Path target = categoryDir(folder).resolve(name + ".png");
         for (MenuViewport vp : MenuViewport.values()) {
             Session s = MockSession.builder()
                     .locale("en")
                     .mobile(vp.mobile)
                     .admin(session != null && session.player != null && session.player.admin)
+                    .name(session != null && session.player != null ? session.player.name : "Player")
                     .build();
-            MenuSnapshot.builder().menu(menu).session(s).viewport(vp).capture(targetPath);
+            MenuSnapshot.builder().menu(menu).session(s).viewport(vp).capture(target);
         }
     }
 
-    @Test
-    void renderBatch1() {
-        Map mapA = createMap("craters.msav", "Ancient Craters - Sector 146");
-        Map mapB = createMap("ruins.msav", "Desolate Windswept Ruins");
-        Seq<Map> maps = Seq.with(mapA, mapB);
-
-        RtvMenu rtvMenu = new RtvMenu(new RtvService(null, null) {
-            @Override
-            public Seq<Map> getMaps() {
-                return maps;
-            }
-
-            @Override
-            public boolean isVoted(Player player, String mapId) {
-                return "craters".equals(mapId);
-            }
-        }, new MapRatingService((MapRatingRepository) null) {
-            @Override
-            public MapRatingStat getStat(Map map) {
-                return new MapRatingStat(32, 4.88f);
-            }
-        });
-
-        TaskMenu taskMenu = new TaskMenu(new DailyTaskService(null, null, null) {
-            @Override
-            public void checkRollover(Session session) {}
-
-            @Override
-            public List<DailyTask> getActiveTasks() {
-                return List.of(
-                        new DailyTask("task_1", "task.td_waves_title", "task.td_waves_desc", 30, 250, DailyTask.TaskType.SURVIVE_WAVES),
-                        new DailyTask("task_2", "task.td_kills_title", "task.td_kills_desc", 500, 500, DailyTask.TaskType.KILL_UNITS)
-                );
-            }
-
-            @Override
-            public int getProgress(Session session, String taskId) {
-                return "task_1".equals(taskId) ? 30 : 185;
-            }
-        });
-
-        Player initiator = Player.create();
-        initiator.name = "GoodPlayer";
-        Player target = Player.create();
-        target.name = "GrieferBot999";
-        VoteKickSession voteSession = new VoteKickSession(target, initiator, "Griefing conveyor belts");
-        VotePromptMenu votePromptMenu = new VotePromptMenu(new VoteKickService(null, null, null) {
-            @Override
-            public VoteKickSession getCurrentSession() {
-                return voteSession;
-            }
-
-            @Override
-            public int getVotes() {
-                return 3;
-            }
-
-            @Override
-            public int getVotesRequired() {
-                return 5;
-            }
-
-            @Override
-            public int getRemainingSeconds() {
-                return 24;
-            }
-        });
-
-        WelcomeMenu welcomeMenu = new WelcomeMenu();
-        LoginMenu loginMenu = new LoginMenu(new LoginService(null));
-
-        ShopRegistry shopRegistry = new ShopRegistry(null, null, null) {
-            @Override
-            public List<ShopItem> getItems() {
-                List<ShopItem> list = new ArrayList<>();
-                list.add(new ShopItem() {
-                    @Override public String getId() { return "pet_fire"; }
-                    @Override public String getTitle(Session s) { return "Fire Pet Companion"; }
-                    @Override public String getDescription(Session s) { return ""; }
-                    @Override public long getPrice(Session s) { return 500; }
-                    @Override public boolean isAvailable(Session s) { return true; }
-                    @Override public boolean purchase(Session s) { return true; }
-                });
-                list.add(new ShopItem() {
-                    @Override public String getId() { return "trail_rainbow"; }
-                    @Override public String getTitle(Session s) { return "Rainbow Trail"; }
-                    @Override public String getDescription(Session s) { return ""; }
-                    @Override public long getPrice(Session s) { return 1000; }
-                    @Override public boolean isAvailable(Session s) { return true; }
-                    @Override public boolean purchase(Session s) { return true; }
-                });
-                return list;
-            }
-        };
-        ShopMenu shopMenu = new ShopMenu(shopRegistry);
-        GachaMenu gachaMenu = new GachaMenu(new GachaService(null, null));
-
-        Session adminSession = MockSession.builder().locale("en").admin(true).build();
-        renderAllViewports(rtvMenu, adminSession, BATCH1_DIR.resolve("rtv.png"));
-        renderAllViewports(taskMenu, adminSession, BATCH1_DIR.resolve("task.png"));
-        renderAllViewports(votePromptMenu, adminSession, BATCH1_DIR.resolve("votekick.png"));
-        renderAllViewports(welcomeMenu, adminSession, BATCH1_DIR.resolve("welcome.png"));
-        renderAllViewports(loginMenu, adminSession, BATCH1_DIR.resolve("login.png"));
-        renderAllViewports(shopMenu, adminSession, BATCH1_DIR.resolve("shop.png"));
-        renderAllViewports(gachaMenu, adminSession, BATCH1_DIR.resolve("gacha.png"));
-
-        assertTrue(Files.exists(BATCH1_DIR.resolve("rtv-desktop.png")));
-        assertTrue(Files.exists(BATCH1_DIR.resolve("rtv-mobile-landscape.png")));
-        assertTrue(Files.exists(BATCH1_DIR.resolve("rtv-mobile-portrait.png")));
-        assertTrue(Files.exists(BATCH1_DIR.resolve("login-desktop.png")));
-        assertTrue(Files.exists(BATCH1_DIR.resolve("shop-desktop.png")));
-        assertTrue(Files.exists(BATCH1_DIR.resolve("gacha-desktop.png")));
+    private static void assertPreviewsExist(String folder, String name) {
+        Path dir = BASE_DIR.resolve(folder);
+        assertTrue(Files.exists(dir.resolve(name + "-desktop.png")));
+        assertTrue(Files.exists(dir.resolve(name + "-mobile-landscape.png")));
+        assertTrue(Files.exists(dir.resolve(name + "-mobile-portrait.png")));
     }
 
     @Test
-    void renderBatch2() {
+    void renderCataliGamemode() {
         CataliTeamData team = new CataliTeamData(Team.sharded, "uuid_dev_test");
         team.level.commonUpgradePoints = 5;
         team.level.rareUpgradePoints = 3;
@@ -244,24 +139,39 @@ class RenderAllMenuPreviewsTest {
         rareUpgradeMenu.setState(team);
 
         JoinTeamMenu joinTeamMenu = new JoinTeamMenu();
-        SandboxTeamMenu sandboxTeamMenu = new SandboxTeamMenu();
+
+        AssignNextLeaderMenu assignLeaderMenu = new AssignNextLeaderMenu();
+        assignLeaderMenu.setState(team);
 
         Session session = MockSession.builder().locale("en").build();
-        renderAllViewports(abandonMenu, session, BATCH2_DIR.resolve("abandon.png"));
-        renderAllViewports(aiPickMenu, session, BATCH2_DIR.resolve("aipick.png"));
-        renderAllViewports(commonUpgradeMenu, session, BATCH2_DIR.resolve("common_upgrade.png"));
-        renderAllViewports(quantityMenu, session, BATCH2_DIR.resolve("upgrade_quantity.png"));
-        renderAllViewports(rareUpgradeMenu, session, BATCH2_DIR.resolve("rare_upgrade.png"));
-        renderAllViewports(joinTeamMenu, session, BATCH2_DIR.resolve("jointeam.png"));
-        renderAllViewports(sandboxTeamMenu, session, BATCH2_DIR.resolve("sandbox_team.png"));
+        render(abandonMenu, session, "catali", "abandon");
+        render(aiPickMenu, session, "catali", "aipick");
+        render(commonUpgradeMenu, session, "catali", "common_upgrade");
+        render(quantityMenu, session, "catali", "upgrade_quantity");
+        render(rareUpgradeMenu, session, "catali", "rare_upgrade");
+        render(joinTeamMenu, session, "catali", "jointeam");
+        render(assignLeaderMenu, session, "catali", "assign_leader");
 
-        assertTrue(Files.exists(BATCH2_DIR.resolve("sandbox_team-desktop.png")));
-        assertTrue(Files.exists(BATCH2_DIR.resolve("sandbox_team-mobile-landscape.png")));
-        assertTrue(Files.exists(BATCH2_DIR.resolve("sandbox_team-mobile-portrait.png")));
+        assertPreviewsExist("catali", "abandon");
+        assertPreviewsExist("catali", "aipick");
+        assertPreviewsExist("catali", "common_upgrade");
+        assertPreviewsExist("catali", "upgrade_quantity");
+        assertPreviewsExist("catali", "rare_upgrade");
+        assertPreviewsExist("catali", "jointeam");
+        assertPreviewsExist("catali", "assign_leader");
     }
 
     @Test
-    void renderBatch3() {
+    void renderSandboxGamemode() {
+        SandboxTeamMenu sandboxTeamMenu = new SandboxTeamMenu();
+        Session session = MockSession.builder().locale("en").build();
+        render(sandboxTeamMenu, session, "sandbox", "sandbox_team");
+
+        assertPreviewsExist("sandbox", "sandbox_team");
+    }
+
+    @Test
+    void renderHubFeature() {
         Server server1 = new Server()
                 .setId(UUID.randomUUID())
                 .setName("Survival EU Alpha")
@@ -296,11 +206,166 @@ class RenderAllMenuPreviewsTest {
         ServerRedirectMenu serverRedirectMenu = new ServerRedirectMenu(mockGateway);
         serverRedirectMenu.setState(server1);
 
+        Session session = MockSession.builder().locale("en").build();
+        render(globalServerListMenu, session, "hub", "global_server_list");
+        render(serverListMenu, session, "hub", "server_list");
+        render(serverRedirectMenu, session, "hub", "server_redirect");
+
+        assertPreviewsExist("hub", "global_server_list");
+        assertPreviewsExist("hub", "server_list");
+        assertPreviewsExist("hub", "server_redirect");
+    }
+
+    @Test
+    void renderShopFeature() {
+        ShopRegistry shopRegistry = new ShopRegistry(null, null, null) {
+            @Override
+            public List<ShopItem> getItems() {
+                List<ShopItem> list = new ArrayList<>();
+                list.add(new ShopItem() {
+                    @Override public String getId() { return "pet_fire"; }
+                    @Override public String getTitle(Session s) { return "Fire Pet Companion"; }
+                    @Override public String getDescription(Session s) { return ""; }
+                    @Override public long getPrice(Session s) { return 500; }
+                    @Override public boolean isAvailable(Session s) { return true; }
+                    @Override public boolean purchase(Session s) { return true; }
+                });
+                list.add(new ShopItem() {
+                    @Override public String getId() { return "trail_rainbow"; }
+                    @Override public String getTitle(Session s) { return "Rainbow Trail"; }
+                    @Override public String getDescription(Session s) { return ""; }
+                    @Override public long getPrice(Session s) { return 1000; }
+                    @Override public boolean isAvailable(Session s) { return true; }
+                    @Override public boolean purchase(Session s) { return true; }
+                });
+                return list;
+            }
+        };
+        ShopMenu shopMenu = new ShopMenu(shopRegistry);
+        GachaMenu gachaMenu = new GachaMenu(new GachaService(null, null));
+
+        Session session = MockSession.builder().locale("en").build();
+        render(shopMenu, session, "shop", "shop");
+        render(gachaMenu, session, "shop", "gacha");
+
+        assertPreviewsExist("shop", "shop");
+        assertPreviewsExist("shop", "gacha");
+    }
+
+    @Test
+    void renderTrailFeature() {
+        TrailService trailService = new TrailService(null, null);
+        Trail.create(trailService, "Fire Trail", 200, Fx.fire);
+        Trail.create(trailService, "Lightning Spark", 500, Fx.lightningShoot);
+        Trail.create(trailService, "Cosmic Glow", 1000, Fx.healWave);
+        TrailMenu trailMenu = new TrailMenu(trailService, null);
+        trailMenu.setState(0);
+
+        Session session = MockSession.builder().locale("en").build();
+        render(trailMenu, session, "trail", "trail");
+
+        assertPreviewsExist("trail", "trail");
+    }
+
+    @Test
+    void renderVoteFeature() {
+        Map mapA = createMap("craters.msav", "Ancient Craters - Sector 146");
+        Map mapB = createMap("ruins.msav", "Desolate Windswept Ruins");
+        Seq<Map> maps = Seq.with(mapA, mapB);
+
+        RtvMenu rtvMenu = new RtvMenu(new RtvService(null, null) {
+            @Override
+            public Seq<Map> getMaps() {
+                return maps;
+            }
+
+            @Override
+            public boolean isVoted(Player player, String mapId) {
+                return "craters".equals(mapId);
+            }
+        }, new MapRatingService((MapRatingRepository) null) {
+            @Override
+            public MapRatingStat getStat(Map map) {
+                return new MapRatingStat(32, 4.88f);
+            }
+        });
+
+        Player initiator = Player.create();
+        initiator.name = "GoodPlayer";
+        Player target = Player.create();
+        target.name = "GrieferBot999";
+        VoteKickSession voteSession = new VoteKickSession(target, initiator, "Griefing conveyor belts");
+        VotePromptMenu votePromptMenu = new VotePromptMenu(new VoteKickService(null, null, null) {
+            @Override
+            public VoteKickSession getCurrentSession() {
+                return voteSession;
+            }
+
+            @Override
+            public int getVotes() {
+                return 3;
+            }
+
+            @Override
+            public int getVotesRequired() {
+                return 5;
+            }
+
+            @Override
+            public int getRemainingSeconds() {
+                return 24;
+            }
+        });
+
+        Session adminSession = MockSession.builder().locale("en").admin(true).build();
+        render(rtvMenu, adminSession, "vote", "rtv");
+        render(votePromptMenu, adminSession, "vote", "vote_prompt");
+
+        assertPreviewsExist("vote", "rtv");
+        assertPreviewsExist("vote", "vote_prompt");
+    }
+
+    @Test
+    void renderDailyTaskFeature() {
+        TaskMenu taskMenu = new TaskMenu(new DailyTaskService(null, null, null) {
+            @Override
+            public void checkRollover(Session session) {}
+
+            @Override
+            public List<DailyTask> getActiveTasks() {
+                return List.of(
+                        new DailyTask("task_1", "task.td_waves_title", "task.td_waves_desc", 30, 250, DailyTask.TaskType.SURVIVE_WAVES),
+                        new DailyTask("task_2", "task.td_kills_title", "task.td_kills_desc", 500, 500, DailyTask.TaskType.KILL_UNITS)
+                );
+            }
+
+            @Override
+            public int getProgress(Session session, String taskId) {
+                return "task_1".equals(taskId) ? 30 : 185;
+            }
+        });
+
+        Session session = MockSession.builder().locale("en").build();
+        render(taskMenu, session, "dailytask", "task");
+
+        assertPreviewsExist("dailytask", "task");
+    }
+
+    @Test
+    void renderMapRatingFeature() {
         Map sampleMap = createMap("craters.msav", "Ancient Craters");
         MapRatingService mapRatingService = new MapRatingService(null);
         RateMapMenu rateMapMenu = new RateMapMenu(mapRatingService);
         rateMapMenu.setState(sampleMap);
 
+        Session session = MockSession.builder().locale("en").build();
+        render(rateMapMenu, session, "maprating", "rate_map");
+
+        assertPreviewsExist("maprating", "rate_map");
+    }
+
+    @Test
+    void renderMapRecordFeature() {
         List<MapRecordPlayer> players = List.of(
                 new MapRecordPlayer("u1", "PlayerOne"),
                 new MapRecordPlayer("u2", "SpeedRunner_99"),
@@ -313,12 +378,15 @@ class RenderAllMenuPreviewsTest {
         MapRecordsMenu mapRecordsMenu = new MapRecordsMenu();
         mapRecordsMenu.setState(recordState);
 
-        TrailService trailService = new TrailService(null, null);
-        Trail.create(trailService, "Fire Trail", 200, Fx.fire);
-        Trail.create(trailService, "Lightning Spark", 500, Fx.lightningShoot);
-        Trail.create(trailService, "Cosmic Glow", 1000, Fx.healWave);
-        TrailMenu trailMenu = new TrailMenu(trailService, null);
-        trailMenu.setState(0);
+        Session session = MockSession.builder().locale("en").build();
+        render(mapRecordsMenu, session, "maprecord", "map_records");
+
+        assertPreviewsExist("maprecord", "map_records");
+    }
+
+    @Test
+    void renderSessionFeature() {
+        LoginMenu loginMenu = new LoginMenu(new LoginService(null));
 
         SessionService mockSessionService = new SessionService(null, null, null) {
             @Override
@@ -340,25 +408,57 @@ class RenderAllMenuPreviewsTest {
                 }
             }
         };
-        GriefMenu griefMenu = new GriefMenu(mockSessionService, null);
         PlayerInfoMenu playerInfoMenu = new PlayerInfoMenu(mockSessionService);
+
+        Session session = MockSession.builder().locale("en").name("PlayerOne").build();
+        render(loginMenu, session, "session", "login");
+        render(playerInfoMenu, session, "session", "player_info");
+
+        assertPreviewsExist("session", "login");
+        assertPreviewsExist("session", "player_info");
+    }
+
+    @Test
+    void renderGriefFeature() {
+        SessionService mockSessionService = new SessionService(null, null, null) {
+            @Override
+            public void each(Cons<Session> item) {
+                item.get(MockSession.builder().name("PlayerOne").build());
+                item.get(MockSession.builder().name("SpeedRunner_99").build());
+                item.get(MockSession.builder().name("MegaBuilder").build());
+            }
+
+            @Override
+            public void each(Boolf<Session> pred, Cons<Session> item) {
+                Session s1 = MockSession.builder().name("SuspiciousUser").build();
+                Session s2 = MockSession.builder().name("TrollBuilder").build();
+                if (pred.get(s1)) {
+                    item.get(s1);
+                }
+                if (pred.get(s2)) {
+                    item.get(s2);
+                }
+            }
+        };
+        GriefMenu griefMenu = new GriefMenu(mockSessionService, null);
 
         GreifLoginMenu greifLoginMenu = new GreifLoginMenu();
         greifLoginMenu.setState("https://verify.mindustry-tool.com/auth");
 
         Session session = MockSession.builder().locale("en").name("Moderator").build();
-        renderAllViewports(globalServerListMenu, session, BATCH3_DIR.resolve("global_server_list.png"));
-        renderAllViewports(serverListMenu, session, BATCH3_DIR.resolve("server_list.png"));
-        renderAllViewports(serverRedirectMenu, session, BATCH3_DIR.resolve("server_redirect.png"));
-        renderAllViewports(rateMapMenu, session, BATCH3_DIR.resolve("rate_map.png"));
-        renderAllViewports(mapRecordsMenu, session, BATCH3_DIR.resolve("map_records.png"));
-        renderAllViewports(trailMenu, session, BATCH3_DIR.resolve("trail.png"));
-        renderAllViewports(griefMenu, session, BATCH3_DIR.resolve("grief.png"));
-        renderAllViewports(playerInfoMenu, session, BATCH3_DIR.resolve("player_info.png"));
-        renderAllViewports(greifLoginMenu, session, BATCH3_DIR.resolve("grief_login.png"));
+        render(griefMenu, session, "grief", "grief");
+        render(greifLoginMenu, session, "grief", "grief_login");
 
-        assertTrue(Files.exists(BATCH3_DIR.resolve("global_server_list-desktop.png")));
-        assertTrue(Files.exists(BATCH3_DIR.resolve("player_info-desktop.png")));
-        assertTrue(Files.exists(BATCH3_DIR.resolve("player_info-mobile-portrait.png")));
+        assertPreviewsExist("grief", "grief");
+        assertPreviewsExist("grief", "grief_login");
+    }
+
+    @Test
+    void renderWelcomeFeature() {
+        WelcomeMenu welcomeMenu = new WelcomeMenu();
+        Session session = MockSession.builder().locale("en").build();
+        render(welcomeMenu, session, "welcome", "welcome");
+
+        assertPreviewsExist("welcome", "welcome");
     }
 }
