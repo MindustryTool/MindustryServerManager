@@ -37,17 +37,17 @@ public class RareUpgradeBuffSelectUnitMenu extends ServerMenu<CataliTeamData> {
 
         ctx.pane(MenuContext.SAFE_WIDTH, 220f, paneTable -> {
             if (units.isEmpty()) {
-                paneTable.add(UiBuilder.label("[lightgray]No units available.").wrap().width(MenuContext.SAFE_CARD_WIDTH)).row();
+                paneTable.add(UiBuilder.label("[lightgray]No units available.").wrap().align("left").growX()).row();
                 return;
             }
 
             for (var unit : units) {
-                var card = UiBuilder.table().pad(4f);
+                var card = UiBuilder.table().align("left");
                 card.width(MenuContext.SAFE_CARD_WIDTH);
 
                 String label = unit.type.emoji() + " [white]" + unit.type.name + "[] [gray]("
                         + Math.round(unit.health()) + "/" + Math.round(unit.maxHealth()) + " HP)[]";
-                card.add(UiBuilder.label(label).wrap().align("left").growX().pad(4f));
+                card.add(UiBuilder.label(label).wrap().align("left").growX().padLeft(4f));
 
                 String actId = ctx.registerAction((sess, t, res) -> {
                     buffSelectMenu.send(sess, Pair.of(team, unit));

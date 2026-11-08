@@ -36,7 +36,7 @@ public class TrailMenu extends ServerMenu<Integer> {
                 }
                 sess.player.sendMessage(Tr.t(sess, "trail.removed"));
                 Registry.get(TrailMenu.class).send(sess, 0);
-            }).width(MenuContext.SAFE_CARD_WIDTH).height(36f).pad(4f);
+            }).growX().height(36f).pad(4f);
             ctx.row();
         }
 
@@ -45,13 +45,13 @@ public class TrailMenu extends ServerMenu<Integer> {
                 boolean owns = trail.owns(ctx.getSession());
                 boolean isCurrent = trail.getName().equals(ctx.getSession().getData().trail);
 
-                TableBuilder card = UiBuilder.table().pad(4f);
+                TableBuilder card = UiBuilder.table().align("left");
                 card.width(MenuContext.SAFE_CARD_WIDTH);
                 String badge = isCurrent ? "[green]" + Iconc.ok + " EQUIPPED"
                     : owns ? "[accent]OWNED"
                     : "[gold]" + trail.getPrice() + " Coins";
 
-                card.add(UiBuilder.label("[white]" + trail.getName()).wrap().align("left").growX());
+                card.add(UiBuilder.label("[white]" + trail.getName()).wrap().align("left").growX().padLeft(4f));
                 card.add(UiBuilder.label(badge).align("right").padLeft(8f));
                 card.row();
 

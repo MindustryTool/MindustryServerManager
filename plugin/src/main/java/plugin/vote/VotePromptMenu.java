@@ -44,7 +44,7 @@ public class VotePromptMenu extends ServerMenu<Void> {
             if (ctx.getSession().player.admin) {
                 actions.row();
                 String cancelAct = ctx.registerAction((sess, st, res) -> voteKickService.cancelByAdmin(sess.player));
-                actions.add(UiBuilder.button(Tr.t(ctx.getSession(), "votekick.btn_cancel")).clicked(cancelAct).width(MenuContext.SAFE_CARD_WIDTH).height(38f).colspan(2).pad(3f));
+                actions.add(UiBuilder.button(Tr.t(ctx.getSession(), "votekick.btn_cancel")).clicked(cancelAct).growX().height(38f).colspan(2).pad(3f));
             }
         });
     }

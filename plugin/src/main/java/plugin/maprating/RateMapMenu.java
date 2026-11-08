@@ -45,8 +45,8 @@ public class RateMapMenu extends ServerMenu<Map> {
                     });
                 });
 
-                starsTable.add(UiBuilder.button(starDisplay).clicked(act).width(MenuContext.SAFE_CARD_WIDTH).height(34f).pad(2f)).row();
+                starsTable.add(UiBuilder.button(starDisplay).clicked(act).growX().height(34f).pad(2f)).row();
             }
-        });
+        }).growX();
     }
 }

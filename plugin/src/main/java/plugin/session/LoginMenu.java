@@ -34,9 +34,9 @@ public class LoginMenu extends ServerMenu<Void> {
 
             actions.add(UiBuilder.button("[green]" + Tr.t(ctx.getSession(), "login.btn_open"))
                 .clicked(openAct)
-                .width(MenuContext.SAFE_CARD_WIDTH)
+                .growX()
                 .height(36f)
                 .pad(4f));
-        });
+        }).growX();
     }
 }

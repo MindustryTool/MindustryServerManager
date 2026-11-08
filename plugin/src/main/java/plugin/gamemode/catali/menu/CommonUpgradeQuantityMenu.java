@@ -62,7 +62,7 @@ public class CommonUpgradeQuantityMenu extends ServerMenu<Pair<CataliTeamData, C
         String actAll = ctx.registerAction((sess, p, res) -> applyPoints(sess, team, upgrade, level.commonUpgradePoints));
         btnTable.add(UiBuilder.button(Tr.t(session, "catali.all_points") + " (" + level.commonUpgradePoints + ")")
                 .clicked(actAll)
-                .width(MenuContext.SAFE_CARD_WIDTH)
+                .growX()
                 .height(40f)
                 .colspan(3)
                 .pad(4f));

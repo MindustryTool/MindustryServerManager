@@ -63,13 +63,13 @@ public class RtvMenu extends ServerMenu<Integer> {
                 String ratingColor = mapRatingService.avgScoreColor(stats.avgScore);
                 boolean isVoted = rtvService.isVoted(ctx.getSession().player, map.file.nameWithoutExtension());
 
-                TableBuilder card = UiBuilder.table().pad(4f);
+                TableBuilder card = UiBuilder.table().align("left");
                 card.width(MenuContext.SAFE_CARD_WIDTH);
                 String titleText = String.format("%s%s%.2f [gold]%c []%s",
                     isVoted ? "[accent]" + Tr.t(ctx.getSession(), "rtv.voted_badge") + " " : "",
                     ratingColor, stats.avgScore, Iconc.star, map.name());
 
-                card.add(UiBuilder.label(titleText).wrap().align("left").growX());
+                card.add(UiBuilder.label(titleText).wrap().align("left").growX().padLeft(4f));
                 card.add(UiBuilder.label("[gray](" + stats.totalVotes + " votes)").align("right").padLeft(4f));
                 card.row();
 

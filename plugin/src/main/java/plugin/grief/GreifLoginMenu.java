@@ -27,9 +27,9 @@ public class GreifLoginMenu extends ServerMenu<String> {
 
             actions.add(UiBuilder.button("[green]" + Tr.t(ctx.getSession(), "grief.login"))
                 .clicked(loginAct)
-                .width(MenuContext.SAFE_CARD_WIDTH)
+                .growX()
                 .height(36f)
                 .pad(4f));
-        });
+        }).growX();
     }
 }

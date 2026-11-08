@@ -89,7 +89,7 @@ public class MenuContext<T> {
     }
 
     public PaneBuilder pane(float width, float height, Cons<TableBuilder> contentBuilder) {
-        TableBuilder content = UiBuilder.table();
+        TableBuilder content = UiBuilder.table().align("top").align("left");
         contentBuilder.get(content);
         PaneBuilder pane = UiBuilder.pane().add(content);
         pane.width(Math.min(width, SAFE_WIDTH)).maxHeight(safeMaxPaneHeight(height));

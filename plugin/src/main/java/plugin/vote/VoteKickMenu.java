@@ -45,14 +45,14 @@ public class VoteKickMenu extends ServerMenu<Player> {
 
             ctx.pane(MenuContext.SAFE_WIDTH, 280f, paneTable -> {
                 if (candidates.isEmpty()) {
-                    paneTable.add(UiBuilder.label("[lightgray]No eligible players to votekick").wrap().width(MenuContext.SAFE_CARD_WIDTH).pad(16f));
+                    paneTable.add(UiBuilder.label("[lightgray]No eligible players to votekick").wrap().align("left").growX().pad(16f));
                     return;
                 }
 
                 for (Player candidate : candidates) {
-                    TableBuilder card = UiBuilder.table().pad(4f);
+                    TableBuilder card = UiBuilder.table().align("left");
                     card.width(MenuContext.SAFE_CARD_WIDTH);
-                    card.add(UiBuilder.label("[white]" + candidate.name + " [gray](#" + candidate.id() + ")").wrap().align("left").growX());
+                    card.add(UiBuilder.label("[white]" + candidate.name + " [gray](#" + candidate.id() + ")").wrap().align("left").growX().padLeft(4f));
 
                     String kickAct = ctx.registerAction((sess, st, res) -> Registry.get(VoteKickMenu.class).send(sess, candidate));
                     card.add(UiBuilder.button("Select").clicked(kickAct).width(90f).height(36f).align("right").padLeft(6f));
@@ -75,7 +75,7 @@ public class VoteKickMenu extends ServerMenu<Player> {
                 for (String key : reasonKeys) {
                     String reasonText = Tr.t(ctx.getSession(), key);
                     String act = ctx.registerAction((sess, st, res) -> voteKickService.startVote(sess.player, target, reasonText));
-                    reasonsTable.add(UiBuilder.button(reasonText).clicked(act).width(MenuContext.SAFE_CARD_WIDTH).height(38f).pad(3f)).row();
+                    reasonsTable.add(UiBuilder.button(reasonText).clicked(act).growX().height(38f).pad(3f)).row();
                 }
             });
 

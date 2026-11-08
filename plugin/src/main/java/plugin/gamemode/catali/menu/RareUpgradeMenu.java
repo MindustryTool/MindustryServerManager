@@ -46,9 +46,8 @@ public class RareUpgradeMenu extends ServerMenu<CataliTeamData> {
 
         // Option 1: Spawn Unit
         if (team.canHaveMoreUnit()) {
-            var spawnCard = UiBuilder.table().pad(4f);
-            spawnCard.width(MenuContext.SAFE_CARD_WIDTH);
-            spawnCard.add(UiBuilder.label("[accent]" + Tr.t(session, "catali.spawn_unit") + "[]").wrap().align("left").growX().pad(4f));
+            var spawnCard = UiBuilder.table().align("left");
+            spawnCard.add(UiBuilder.label("[accent]" + Tr.t(session, "catali.spawn_unit") + "[]").wrap().align("left").growX().padLeft(4f));
             String spawnAct = ctx.registerAction((sess, t, res) -> {
                 PluginEvents.fire(new CataliSpawnRareUpgrade(team));
             });
@@ -57,9 +56,8 @@ public class RareUpgradeMenu extends ServerMenu<CataliTeamData> {
         }
 
         // Option 2: Evolve Unit
-        var evolveCard = UiBuilder.table().pad(4f);
-        evolveCard.width(MenuContext.SAFE_CARD_WIDTH);
-        evolveCard.add(UiBuilder.label("[accent]" + Tr.t(session, "catali.evolve_unit") + "[]").wrap().align("left").growX().pad(4f));
+        var evolveCard = UiBuilder.table().align("left");
+        evolveCard.add(UiBuilder.label("[accent]" + Tr.t(session, "catali.evolve_unit") + "[]").wrap().align("left").growX().padLeft(4f));
         String evolveAct = ctx.registerAction((sess, t, res) -> {
             tierUnitMenu.send(sess, team);
         });
@@ -67,15 +65,14 @@ public class RareUpgradeMenu extends ServerMenu<CataliTeamData> {
         table.add(evolveCard.growX().pad(2f)).row();
 
         // Option 3: Apply Buff
-        var buffCard = UiBuilder.table().pad(4f);
-        buffCard.width(MenuContext.SAFE_CARD_WIDTH);
-        buffCard.add(UiBuilder.label("[accent]" + Tr.t(session, "catali.apply_buff") + "[]").wrap().align("left").growX().pad(4f));
+        var buffCard = UiBuilder.table().align("left");
+        buffCard.add(UiBuilder.label("[accent]" + Tr.t(session, "catali.apply_buff") + "[]").wrap().align("left").growX().padLeft(4f));
         String buffAct = ctx.registerAction((sess, t, res) -> {
             buffUnitMenu.send(sess, team);
         });
         buffCard.add(UiBuilder.button("[accent]Buff[]").clicked(buffAct).width(95f).height(32f).align("right").pad(4f));
         table.add(buffCard.growX().pad(2f)).row();
 
-        ctx.add(table);
+        ctx.add(table.growX());
     }
 }

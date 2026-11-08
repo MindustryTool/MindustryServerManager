@@ -29,9 +29,9 @@ public class GriefMenu extends ServerMenu<Session> {
 
             ctx.pane(MenuContext.SAFE_WIDTH, 280f, paneTable -> {
                 sessionService.each(t -> t != ctx.getSession(), t -> {
-                    TableBuilder card = UiBuilder.table().pad(4f);
+                    TableBuilder card = UiBuilder.table().align("left");
                     card.width(MenuContext.SAFE_CARD_WIDTH);
-                    card.add(UiBuilder.label("[white]" + t.player.name).wrap().align("left").growX());
+                    card.add(UiBuilder.label("[white]" + t.player.name).wrap().align("left").growX().padLeft(4f));
 
                     String reportAct = ctx.registerAction((sess, st, res) -> Registry.get(GriefMenu.class).send(sess, t));
                     card.add(UiBuilder.button(Tr.t(ctx.getSession().locale, "grief.report")).clicked(reportAct).width(90f).height(36f).align("right").padLeft(8f));

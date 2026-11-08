@@ -42,13 +42,13 @@ public class MapRecordsMenu extends ServerMenu<MapRecordMenuState> {
                 String playersStr = names.isEmpty() ? "-" : String.join(", ", names);
 
                 String rankBadge = rank == 1 ? "[gold]#1" : rank == 2 ? "[#C0C0C0]#2" : rank == 3 ? "[#CD7F32]#3" : "[lightgray]#" + rank;
-                TableBuilder row = UiBuilder.table().pad(4f);
+                TableBuilder row = UiBuilder.table().align("left");
                 row.width(MenuContext.SAFE_CARD_WIDTH);
 
-                row.add(UiBuilder.label(rankBadge).align("left").growX());
+                row.add(UiBuilder.label(rankBadge).align("left").growX().padLeft(4f));
                 row.add(UiBuilder.label("[green]" + time).align("right").padLeft(6f));
                 row.row();
-                row.add(UiBuilder.label("[lightgray]" + playersStr).wrap().align("left").colspan(2).growX());
+                row.add(UiBuilder.label("[lightgray]" + playersStr).wrap().align("left").colspan(2).growX().padLeft(4f));
 
                 paneTable.add(row.growX().pad(2f)).row();
             }

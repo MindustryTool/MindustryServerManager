@@ -45,15 +45,15 @@ public class RareUpgradeTierSelectUpgradeMenu extends ServerMenu<Pair<CataliTeam
 
         ctx.pane(MenuContext.SAFE_WIDTH, 220f, paneTable -> {
             if (availableUnitsUpgradeTo.isEmpty()) {
-                paneTable.add(UiBuilder.label("[lightgray]No available evolutions.").wrap().width(MenuContext.SAFE_CARD_WIDTH)).row();
+                paneTable.add(UiBuilder.label("[lightgray]No available evolutions.").wrap().align("left").growX()).row();
                 return;
             }
 
             for (var upgrade : availableUnitsUpgradeTo) {
-                var card = UiBuilder.table().pad(4f);
+                var card = UiBuilder.table().align("left");
                 card.width(MenuContext.SAFE_CARD_WIDTH);
 
-                card.add(UiBuilder.label(upgrade.emoji() + " [white]" + upgrade.name + "[]").wrap().align("left").growX().pad(4f));
+                card.add(UiBuilder.label(upgrade.emoji() + " [white]" + upgrade.name + "[]").wrap().align("left").growX().padLeft(4f));
 
                 String actId = ctx.registerAction((sess, p, res) -> {
                     PluginEvents.fire(new CataliTierRareUpgrade(team, unit, upgrade));

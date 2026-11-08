@@ -36,7 +36,7 @@ public class GlobalServerListMenu extends ServerMenu<Integer> {
 
             ctx.pane(MenuContext.SAFE_WIDTH, 320f, paneTable -> {
                 if (servers == null || servers.isEmpty()) {
-                    paneTable.add(UiBuilder.label("[lightgray]" + Tr.t(ctx.getSession().locale, "hub.global.server_offline")).wrap().width(MenuContext.SAFE_CARD_WIDTH).pad(16f));
+                    paneTable.add(UiBuilder.label("[lightgray]" + Tr.t(ctx.getSession().locale, "hub.global.server_offline")).wrap().align("left").growX().pad(16f));
                     return;
                 }
 
@@ -45,7 +45,7 @@ public class GlobalServerListMenu extends ServerMenu<Integer> {
                     var card = UiBuilder.buttonTable()
                         .style("flatBordert")
                         .width(MenuContext.SAFE_CARD_WIDTH)
-                        .margin(6f)
+                        .margin(12f)
                         .clicked(redirectAct);
 
                     boolean isOnline = server.getMapName() != null;
@@ -53,7 +53,7 @@ public class GlobalServerListMenu extends ServerMenu<Integer> {
                         ? Tr.t(ctx.getSession().locale, "hub.global.players", "players", server.getPlayers())
                         : "[scarlet]" + Tr.t(ctx.getSession().locale, "hub.global.server_offline");
 
-                    card.add(UiBuilder.label("[gold]" + server.getName()).wrap().width(MenuContext.SAFE_CARD_WIDTH - 100f).align("left").growX());
+                    card.add(UiBuilder.label("[gold]" + server.getName()).wrap().align("left").growX());
                     card.add(UiBuilder.label(statusText).align("right").padLeft(4f));
                     card.add(UiBuilder.label("[lightgray]" + Iconc.right).padLeft(6f));
                     card.row();
@@ -61,12 +61,12 @@ public class GlobalServerListMenu extends ServerMenu<Integer> {
                     if (isOnline) {
                         String details = Tr.t(ctx.getSession().locale, "hub.global.gamemode", "mode", server.getMode())
                             + " | " + Tr.t(ctx.getSession().locale, "hub.global.map", "map", server.getMapName());
-                        card.add(UiBuilder.label("[lightgray]" + details).wrap().width(MenuContext.SAFE_CARD_WIDTH - 24f).align("left").colspan(3));
+                        card.add(UiBuilder.label("[lightgray]" + details).wrap().align("left").growX().colspan(3));
                         card.row();
                     }
 
                     if (server.getDescription() != null && !server.getDescription().trim().isEmpty()) {
-                        card.add(UiBuilder.label("[gray]" + server.getDescription()).wrap().width(MenuContext.SAFE_CARD_WIDTH - 24f).align("left").colspan(3));
+                        card.add(UiBuilder.label("[gray]" + server.getDescription()).wrap().align("left").growX().colspan(3));
                         card.row();
                     }
 

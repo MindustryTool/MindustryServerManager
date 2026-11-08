@@ -33,9 +33,8 @@ public class AIPickMenu extends ServerMenu<CataliTeamData> {
         var container = UiBuilder.table().pad(8f);
 
         // Classic Controller Card
-        var classicCard = UiBuilder.table().pad(6f);
-        classicCard.width(MenuContext.SAFE_CARD_WIDTH);
-        classicCard.add(UiBuilder.label("[accent]" + Tr.t(session, "catali.classic_controller") + "[]").align("left").growX());
+        var classicCard = UiBuilder.table().align("left");
+        classicCard.add(UiBuilder.label("[accent]" + Tr.t(session, "catali.classic_controller") + "[]").align("left").growX().padLeft(4f));
         if (!team.useCommandAi) {
             classicCard.add(UiBuilder.label("[stat](Active Controller)[]").align("right").padLeft(6f));
         } else {
@@ -45,12 +44,11 @@ public class AIPickMenu extends ServerMenu<CataliTeamData> {
             });
             classicCard.add(UiBuilder.button("[accent]Select[]").clicked(actId).width(100f).height(32f).padLeft(6f));
         }
-        container.add(classicCard.pad(4f)).row();
+        container.add(classicCard.growX().pad(4f)).row();
 
         // Command Controller Card
-        var cmdCard = UiBuilder.table().pad(6f);
-        cmdCard.width(MenuContext.SAFE_CARD_WIDTH);
-        cmdCard.add(UiBuilder.label("[accent]" + Tr.t(session, "catali.command_controller") + "[]").align("left").growX());
+        var cmdCard = UiBuilder.table().align("left");
+        cmdCard.add(UiBuilder.label("[accent]" + Tr.t(session, "catali.command_controller") + "[]").align("left").growX().padLeft(4f));
         if (team.useCommandAi) {
             cmdCard.add(UiBuilder.label("[stat](Active Controller)[]").align("right").padLeft(6f));
         } else {
@@ -60,8 +58,8 @@ public class AIPickMenu extends ServerMenu<CataliTeamData> {
             });
             cmdCard.add(UiBuilder.button("[accent]Select[]").clicked(actId).width(100f).height(32f).padLeft(6f));
         }
-        container.add(cmdCard.pad(4f)).row();
+        container.add(cmdCard.growX().pad(4f)).row();
 
-        ctx.add(container);
+        ctx.add(container.growX());
     }
 }

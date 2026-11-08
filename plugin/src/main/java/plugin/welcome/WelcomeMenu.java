@@ -24,9 +24,9 @@ public class WelcomeMenu extends ServerMenu<Void> {
             String webAct = ctx.registerAction((sess, st, res) -> Call.openURI(sess.player.con, Cfg.MINDUSTRY_TOOL_URL));
             String discordAct = ctx.registerAction((sess, st, res) -> Call.openURI(sess.player.con, Cfg.DISCORD_INVITE_URL));
 
-            links.add(UiBuilder.button(Iconc.book + " [green]" + Tr.t(ctx.getSession(), "welcome.rules")).clicked(rulesAct).width(MenuContext.SAFE_CARD_WIDTH).height(36f).pad(3f)).row();
-            links.add(UiBuilder.button(Iconc.link + " [green]" + Tr.t(ctx.getSession(), "welcome.website")).clicked(webAct).width(MenuContext.SAFE_CARD_WIDTH).height(36f).pad(3f)).row();
-            links.add(UiBuilder.button(Iconc.discord + " [royal]" + Tr.t(ctx.getSession(), "welcome.discord")).clicked(discordAct).width(MenuContext.SAFE_CARD_WIDTH).height(36f).pad(3f)).row();
-        });
+            links.add(UiBuilder.button(Iconc.book + " [green]" + Tr.t(ctx.getSession(), "welcome.rules")).clicked(rulesAct).growX().height(36f).pad(3f)).row();
+            links.add(UiBuilder.button(Iconc.link + " [green]" + Tr.t(ctx.getSession(), "welcome.website")).clicked(webAct).growX().height(36f).pad(3f)).row();
+            links.add(UiBuilder.button(Iconc.discord + " [royal]" + Tr.t(ctx.getSession(), "welcome.discord")).clicked(discordAct).growX().height(36f).pad(3f)).row();
+        }).growX();
     }
 }

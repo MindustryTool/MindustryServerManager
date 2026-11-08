@@ -38,14 +38,15 @@ public class SandboxTeamMenu extends ServerMenu<Void> {
         ctx.row();
 
         ctx.pane(MenuContext.SAFE_WIDTH, 260f, paneTable -> {
+            paneTable.align("top").align("left");
             Team currentTeam = session.player != null ? session.player.team() : null;
 
             for (Team team : PLAYABLE_TEAMS) {
                 boolean isCurrent = currentTeam == team;
-                var card = UiBuilder.table().pad(4f);
+                var card = UiBuilder.table().align("left");
                 card.width(MenuContext.SAFE_CARD_WIDTH);
 
-                card.add(UiBuilder.label(team.coloredName()).wrap().align("left").growX().pad(4f));
+                card.add(UiBuilder.label(team.coloredName()).wrap().align("left").growX().padLeft(4f));
 
                 if (isCurrent) {
                     card.add(UiBuilder.label("[stat](Current)[]").align("right").pad(4f).padLeft(8f));
@@ -56,10 +57,10 @@ public class SandboxTeamMenu extends ServerMenu<Void> {
                             sess.player.sendMessage(Tr.t(sess, "sandbox.team_changed", "team", team.coloredName()));
                         }
                     });
-                    card.add(UiBuilder.button("[accent]Switch[]").clicked(actId).width(95f).height(36f).align("right").pad(4f));
+                    card.add(UiBuilder.button("[accent]Switch[]").clicked(actId).width(95f).height(36f).align("right").padRight(6f));
                 }
 
-                paneTable.add(card.growX().pad(2f)).row();
+                paneTable.add(card.growX().padTop(2f).padBottom(2f)).row();
             }
         });
     }

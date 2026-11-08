@@ -33,10 +33,10 @@ public class PlayerInfoMenu extends ServerMenu<Session> {
             }
 
             for (Session target : targets) {
-                TableBuilder card = UiBuilder.table().pad(4f);
+                TableBuilder card = UiBuilder.table().align("left");
                 card.width(MenuContext.SAFE_CARD_WIDTH);
                 String nameText = target.player.name + " [gray](#" + target.player.id() + ")";
-                card.add(UiBuilder.label("[yellow]" + nameText).wrap().align("left").growX());
+                card.add(UiBuilder.label("[yellow]" + nameText).wrap().align("left").growX().padLeft(4f));
 
                 String inspectAct = ctx.registerAction((sess, st, res) -> {
                     caller.player.sendMessage(SessionUtils.getInfoString(target, target.getData()));

@@ -70,13 +70,13 @@ public class CommonUpgradeMenu extends ServerMenu<CataliTeamData> {
     private void addUpgradeCard(MenuContext<CataliTeamData> ctx, TableBuilder table,
                                Session session, CataliTeamData team, CataliCommonUpgrade upgrade,
                                String title, String stats) {
-        var card = UiBuilder.table().pad(4f);
+        var card = UiBuilder.table().align("left");
         card.width(MenuContext.SAFE_CARD_WIDTH);
 
-        var info = UiBuilder.table();
+        var info = UiBuilder.table().align("left");
         info.add(UiBuilder.label("[accent]" + title + "[]").wrap().align("left").growX()).row();
         info.add(UiBuilder.label("[lightgray]" + stats + "[]").wrap().align("left").growX());
-        card.add(info.growX().pad(4f));
+        card.add(info.growX().padLeft(4f));
 
         String actId = ctx.registerAction((sess, t, res) -> {
             if (team.level.commonUpgradePoints == 1) {

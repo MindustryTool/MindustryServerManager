@@ -78,12 +78,6 @@ class RenderAllMenuPreviewsTest {
     private static final Path BATCH2_DIR = BASE_DIR.resolve("batch2");
     private static final Path BATCH3_DIR = BASE_DIR.resolve("batch3");
 
-    private static final MenuViewport[] VIEWPORTS = {
-            MenuViewport.DESKTOP,
-            MenuViewport.MOBILE_LANDSCAPE,
-            MenuViewport.MOBILE_PORTRAIT
-    };
-
     @BeforeAll
     static void ensureDirectories() throws IOException {
         Files.createDirectories(BATCH1_DIR);
@@ -95,6 +89,17 @@ class RenderAllMenuPreviewsTest {
         StringMap tags = new StringMap();
         tags.put("name", name);
         return new Map(new Fi(filename), 100, 100, tags, true, 0, 146);
+    }
+
+    private static void renderAllViewports(plugin.menus.ServerMenu<?> menu, Session session, Path targetPath) {
+        for (MenuViewport vp : MenuViewport.values()) {
+            Session s = MockSession.builder()
+                    .locale("en")
+                    .mobile(vp.mobile)
+                    .admin(session != null && session.player != null && session.player.admin)
+                    .build();
+            MenuSnapshot.builder().menu(menu).session(s).viewport(vp).capture(targetPath);
+        }
     }
 
     @Test
@@ -194,21 +199,21 @@ class RenderAllMenuPreviewsTest {
         ShopMenu shopMenu = new ShopMenu(shopRegistry);
         GachaMenu gachaMenu = new GachaMenu(new GachaService(null, null));
 
-        for (MenuViewport vp : VIEWPORTS) {
-            String suffix = "_" + vp.name().toLowerCase() + ".png";
-            Session session = MockSession.builder().locale("en").mobile(vp.mobile).admin(true).build();
+        Session adminSession = MockSession.builder().locale("en").admin(true).build();
+        renderAllViewports(rtvMenu, adminSession, BATCH1_DIR.resolve("rtv.png"));
+        renderAllViewports(taskMenu, adminSession, BATCH1_DIR.resolve("task.png"));
+        renderAllViewports(votePromptMenu, adminSession, BATCH1_DIR.resolve("votekick.png"));
+        renderAllViewports(welcomeMenu, adminSession, BATCH1_DIR.resolve("welcome.png"));
+        renderAllViewports(loginMenu, adminSession, BATCH1_DIR.resolve("login.png"));
+        renderAllViewports(shopMenu, adminSession, BATCH1_DIR.resolve("shop.png"));
+        renderAllViewports(gachaMenu, adminSession, BATCH1_DIR.resolve("gacha.png"));
 
-            MenuSnapshot.builder().menu(rtvMenu).session(session).viewport(vp).capture(BATCH1_DIR.resolve("rtv" + suffix));
-            MenuSnapshot.builder().menu(taskMenu).session(session).viewport(vp).capture(BATCH1_DIR.resolve("task" + suffix));
-            MenuSnapshot.builder().menu(votePromptMenu).session(session).viewport(vp).capture(BATCH1_DIR.resolve("votekick" + suffix));
-            MenuSnapshot.builder().menu(welcomeMenu).session(session).viewport(vp).capture(BATCH1_DIR.resolve("welcome" + suffix));
-            MenuSnapshot.builder().menu(loginMenu).session(session).viewport(vp).capture(BATCH1_DIR.resolve("login" + suffix));
-            MenuSnapshot.builder().menu(shopMenu).session(session).viewport(vp).capture(BATCH1_DIR.resolve("shop" + suffix));
-            MenuSnapshot.builder().menu(gachaMenu).session(session).viewport(vp).capture(BATCH1_DIR.resolve("gacha" + suffix));
-        }
-
-        assertTrue(Files.exists(BATCH1_DIR.resolve("rtv_mobile_landscape.png")));
-        assertTrue(Files.exists(BATCH1_DIR.resolve("login_desktop.png")));
+        assertTrue(Files.exists(BATCH1_DIR.resolve("rtv-desktop.png")));
+        assertTrue(Files.exists(BATCH1_DIR.resolve("rtv-mobile-landscape.png")));
+        assertTrue(Files.exists(BATCH1_DIR.resolve("rtv-mobile-portrait.png")));
+        assertTrue(Files.exists(BATCH1_DIR.resolve("login-desktop.png")));
+        assertTrue(Files.exists(BATCH1_DIR.resolve("shop-desktop.png")));
+        assertTrue(Files.exists(BATCH1_DIR.resolve("gacha-desktop.png")));
     }
 
     @Test
@@ -238,22 +243,18 @@ class RenderAllMenuPreviewsTest {
         JoinTeamMenu joinTeamMenu = new JoinTeamMenu();
         SandboxTeamMenu sandboxTeamMenu = new SandboxTeamMenu();
 
-        for (MenuViewport vp : VIEWPORTS) {
-            String suffix = "_" + vp.name().toLowerCase() + ".png";
-            Session session = MockSession.builder().locale("en").mobile(vp.mobile).build();
+        Session session = MockSession.builder().locale("en").build();
+        renderAllViewports(abandonMenu, session, BATCH2_DIR.resolve("abandon.png"));
+        renderAllViewports(aiPickMenu, session, BATCH2_DIR.resolve("aipick.png"));
+        renderAllViewports(commonUpgradeMenu, session, BATCH2_DIR.resolve("common_upgrade.png"));
+        renderAllViewports(quantityMenu, session, BATCH2_DIR.resolve("upgrade_quantity.png"));
+        renderAllViewports(rareUpgradeMenu, session, BATCH2_DIR.resolve("rare_upgrade.png"));
+        renderAllViewports(joinTeamMenu, session, BATCH2_DIR.resolve("jointeam.png"));
+        renderAllViewports(sandboxTeamMenu, session, BATCH2_DIR.resolve("sandbox_team.png"));
 
-            MenuSnapshot.builder().menu(abandonMenu).session(session).viewport(vp).capture(BATCH2_DIR.resolve("abandon" + suffix));
-            MenuSnapshot.builder().menu(aiPickMenu).session(session).viewport(vp).capture(BATCH2_DIR.resolve("aipick" + suffix));
-            MenuSnapshot.builder().menu(commonUpgradeMenu).session(session).viewport(vp).capture(BATCH2_DIR.resolve("common_upgrade" + suffix));
-            MenuSnapshot.builder().menu(quantityMenu).session(session).viewport(vp).capture(BATCH2_DIR.resolve("upgrade_quantity" + suffix));
-            MenuSnapshot.builder().menu(rareUpgradeMenu).session(session).viewport(vp).capture(BATCH2_DIR.resolve("rare_upgrade" + suffix));
-            MenuSnapshot.builder().menu(joinTeamMenu).session(session).viewport(vp).capture(BATCH2_DIR.resolve("jointeam" + suffix));
-            MenuSnapshot.builder().menu(sandboxTeamMenu).session(session).viewport(vp).capture(BATCH2_DIR.resolve("sandbox_team" + suffix));
-        }
-
-        assertTrue(Files.exists(BATCH2_DIR.resolve("sandbox_team_desktop.png")));
-        assertTrue(Files.exists(BATCH2_DIR.resolve("sandbox_team_mobile_landscape.png")));
-        assertTrue(Files.exists(BATCH2_DIR.resolve("sandbox_team_mobile_portrait.png")));
+        assertTrue(Files.exists(BATCH2_DIR.resolve("sandbox_team-desktop.png")));
+        assertTrue(Files.exists(BATCH2_DIR.resolve("sandbox_team-mobile-landscape.png")));
+        assertTrue(Files.exists(BATCH2_DIR.resolve("sandbox_team-mobile-portrait.png")));
     }
 
     @Test
@@ -342,22 +343,19 @@ class RenderAllMenuPreviewsTest {
         GreifLoginMenu greifLoginMenu = new GreifLoginMenu();
         greifLoginMenu.setState("https://verify.mindustry-tool.com/auth");
 
-        for (MenuViewport vp : VIEWPORTS) {
-            String suffix = "_" + vp.name().toLowerCase() + ".png";
-            Session session = MockSession.builder().locale("en").mobile(vp.mobile).name("Moderator").build();
+        Session session = MockSession.builder().locale("en").name("Moderator").build();
+        renderAllViewports(globalServerListMenu, session, BATCH3_DIR.resolve("global_server_list.png"));
+        renderAllViewports(serverListMenu, session, BATCH3_DIR.resolve("server_list.png"));
+        renderAllViewports(serverRedirectMenu, session, BATCH3_DIR.resolve("server_redirect.png"));
+        renderAllViewports(rateMapMenu, session, BATCH3_DIR.resolve("rate_map.png"));
+        renderAllViewports(mapRecordsMenu, session, BATCH3_DIR.resolve("map_records.png"));
+        renderAllViewports(trailMenu, session, BATCH3_DIR.resolve("trail.png"));
+        renderAllViewports(griefMenu, session, BATCH3_DIR.resolve("grief.png"));
+        renderAllViewports(playerInfoMenu, session, BATCH3_DIR.resolve("player_info.png"));
+        renderAllViewports(greifLoginMenu, session, BATCH3_DIR.resolve("grief_login.png"));
 
-            MenuSnapshot.builder().menu(globalServerListMenu).session(session).viewport(vp).capture(BATCH3_DIR.resolve("global_server_list" + suffix));
-            MenuSnapshot.builder().menu(serverListMenu).session(session).viewport(vp).capture(BATCH3_DIR.resolve("server_list" + suffix));
-            MenuSnapshot.builder().menu(serverRedirectMenu).session(session).viewport(vp).capture(BATCH3_DIR.resolve("server_redirect" + suffix));
-            MenuSnapshot.builder().menu(rateMapMenu).session(session).viewport(vp).capture(BATCH3_DIR.resolve("rate_map" + suffix));
-            MenuSnapshot.builder().menu(mapRecordsMenu).session(session).viewport(vp).capture(BATCH3_DIR.resolve("map_records" + suffix));
-            MenuSnapshot.builder().menu(trailMenu).session(session).viewport(vp).capture(BATCH3_DIR.resolve("trail" + suffix));
-            MenuSnapshot.builder().menu(griefMenu).session(session).viewport(vp).capture(BATCH3_DIR.resolve("grief" + suffix));
-            MenuSnapshot.builder().menu(playerInfoMenu).session(session).viewport(vp).capture(BATCH3_DIR.resolve("player_info" + suffix));
-            MenuSnapshot.builder().menu(greifLoginMenu).session(session).viewport(vp).capture(BATCH3_DIR.resolve("grief_login" + suffix));
-        }
-
-        assertTrue(Files.exists(BATCH3_DIR.resolve("global_server_list_desktop.png")));
-        assertTrue(Files.exists(BATCH3_DIR.resolve("player_info_desktop.png")));
+        assertTrue(Files.exists(BATCH3_DIR.resolve("global_server_list-desktop.png")));
+        assertTrue(Files.exists(BATCH3_DIR.resolve("player_info-desktop.png")));
+        assertTrue(Files.exists(BATCH3_DIR.resolve("player_info-mobile-portrait.png")));
     }
 }

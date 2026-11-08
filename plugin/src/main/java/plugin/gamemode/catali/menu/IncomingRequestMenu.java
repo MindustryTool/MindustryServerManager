@@ -41,9 +41,8 @@ public class IncomingRequestMenu extends ServerMenu<Player> {
         ctx.label("[lightgray]" + Tr.t(session, "catali.accept_reject_request"));
         ctx.row();
 
-        var card = UiBuilder.table().pad(6f);
-        card.width(MenuContext.SAFE_CARD_WIDTH);
-        card.add(UiBuilder.label("[white]Player: [accent]" + requester.name() + "[]")).row();
+        var card = UiBuilder.table().align("left");
+        card.add(UiBuilder.label("[white]Player: [accent]" + requester.name() + "[]").wrap().align("left").growX().padLeft(4f)).row();
 
         var btnBar = UiBuilder.table().pad(4f);
 

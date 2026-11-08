@@ -30,15 +30,16 @@ Guidelines for building server menus using Mindustry build 160's `MenuBuilder`, 
 
 ## 3. Layout, Alignment & Sizing
 
+* **Card Width Bounds in Scroll Panes**: Items inside scrollable panes (`ctx.pane(...)`) MUST specify `card.width(MenuContext.SAFE_CARD_WIDTH)` (`290f`). This provides Arc's `Table` with a concrete boundary to wrap dynamic and multi-column labels within the 320px scroll viewport. Without this bound, unconstrained labels expand the table past 320px, causing the scrollpane scissor bounds to clip buttons, counts, and arrows.
+* **Left Alignment**: Mindustry centers elements by default. Panes and cards must be aligned to the left (`.align("left")`), with standard `padLeft(4f)` on inner labels matching `ctx.label(...)` for clean vertical alignment.
 * **Rows and Columns**: Organize layouts in structured rows and columns using `.row()`.
-* **Left Alignment**: Mindustry centers elements by default. Explicitly align content, labels, and tables to the left (`.align("left")`).
-* **Fill Available Width**: Do not leave uneven empty margins on the sides. Use `growX` to fill container width or align items cleanly to edges.
+* **Fill Available Width**: Use `growX` on cells inside bounded cards to fill card width cleanly.
 * **Uniform Button Height**: Native dialogs feature a fixed cancel button. Match button heights to standard row heights (34–40px) for visual balance.
+* **Button and Table Margins**: When styling tables or buttons with border drawables (e.g., `flatBordert` which has ~6px 9-patch border insets), use `.margin(12f)` to provide breathing room inside the border so text and content do not touch the border lines.
 * **Mobile Viewport Boundaries**:
   * Root containers must stay within mobile safe width: `MenuContext.SAFE_WIDTH` (`320f`).
-  * Card items must fit card width: `MenuContext.SAFE_CARD_WIDTH` (`290f`).
+  * Card items inside scroll panes must fit: `MenuContext.SAFE_CARD_WIDTH` (`290f`).
   * Scrollable panes must stay within mobile max height: `MenuContext.MOBILE_MAX_PANE_HEIGHT` (`220f`).
-  * Never use rigid fixed widths or heights for containers with dynamic or localized text.
 
 ---
 
@@ -182,8 +183,7 @@ public void build(MenuContext<Integer> ctx) {
         }
 
         for (var entry : entries) {
-            TableBuilder card = UiBuilder.table().pad(4f);
-            card.width(MenuContext.SAFE_CARD_WIDTH);
+            TableBuilder card = UiBuilder.table().align("left");
 
             // Left-aligned title with right-aligned stats
             card.add(UiBuilder.label(entry.name()).wrap().align("left").growX());

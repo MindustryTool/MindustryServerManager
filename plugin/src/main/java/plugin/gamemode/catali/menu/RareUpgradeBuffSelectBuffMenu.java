@@ -43,15 +43,15 @@ public class RareUpgradeBuffSelectBuffMenu extends ServerMenu<Pair<CataliTeamDat
 
         ctx.pane(MenuContext.SAFE_WIDTH, 220f, paneTable -> {
             if (availableEffects.isEmpty()) {
-                paneTable.add(UiBuilder.label("[lightgray]No applicable buffs.").wrap().width(MenuContext.SAFE_CARD_WIDTH)).row();
+                paneTable.add(UiBuilder.label("[lightgray]No applicable buffs.").wrap().align("left").growX()).row();
                 return;
             }
 
             for (var effect : availableEffects) {
-                var card = UiBuilder.table().pad(4f);
+                var card = UiBuilder.table().align("left");
                 card.width(MenuContext.SAFE_CARD_WIDTH);
 
-                card.add(UiBuilder.label(effect.emoji() + " [white]" + effect.name + "[]").wrap().align("left").growX().pad(4f));
+                card.add(UiBuilder.label(effect.emoji() + " [white]" + effect.name + "[]").wrap().align("left").growX().padLeft(4f));
 
                 String actId = ctx.registerAction((sess, p, res) -> {
                     PluginEvents.fire(new CataliBuffRareUpgrade(team, unit, effect));
