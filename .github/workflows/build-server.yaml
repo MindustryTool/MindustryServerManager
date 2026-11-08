@@ -35,3 +35,10 @@ jobs:
           push: true
           tags: ghcr.io/mindustrytool/mindustry-server-manager:v2
 
+      - name: Trigger Deploy in MindustryToolProject
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          repository: MindustryTool/MindustryToolProject
+          event-type: image-updated
+          client-payload: '{"image": "mindustry-server-manager:v2"}'
