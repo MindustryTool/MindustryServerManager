@@ -10,13 +10,18 @@ import lombok.Getter;
 import mindustry.ui.builder.MenuResult;
 import mindustry.ui.builder.UiBuilder;
 import mindustry.ui.builder.UiBuilder.ButtonBuilder;
+import mindustry.ui.builder.UiBuilder.ButtonTableBuilder;
 import mindustry.ui.builder.UiBuilder.CheckBuilder;
+import mindustry.ui.builder.UiBuilder.DefaultsBuilder;
 import mindustry.ui.builder.UiBuilder.FieldBuilder;
+import mindustry.ui.builder.UiBuilder.ImageBuilder;
+import mindustry.ui.builder.UiBuilder.ImageButtonBuilder;
 import mindustry.ui.builder.UiBuilder.LabelBuilder;
 import mindustry.ui.builder.UiBuilder.NodeBuilder;
 import mindustry.ui.builder.UiBuilder.PaneBuilder;
 import mindustry.ui.builder.UiBuilder.SliderBuilder;
 import mindustry.ui.builder.UiBuilder.SpaceBuilder;
+import mindustry.ui.builder.UiBuilder.StackBuilder;
 import mindustry.ui.builder.UiBuilder.TableBuilder;
 import plugin.session.Session;
 
@@ -179,6 +184,69 @@ public class MenuContext<T> {
         sld.id(sliderId);
         root.add(sld);
         return sld;
+    }
+
+    public ImageBuilder image(String region) {
+        return image(region, img -> {});
+    }
+
+    public ImageBuilder image(String region, Cons<ImageBuilder> configure) {
+        ImageBuilder img = UiBuilder.image(region);
+        configure.get(img);
+        root.add(img);
+        return img;
+    }
+
+    public ImageButtonBuilder imageButton(String icon, MenuAction<T> action) {
+        String actionId = registerAction(action);
+        ImageButtonBuilder btn = UiBuilder.imageButton(icon).clicked(actionId);
+        root.add(btn);
+        return btn;
+    }
+
+    public ImageButtonBuilder imageButton(String icon, Cons<Session> action) {
+        return imageButton(icon, (sess, st, res) -> action.get(sess));
+    }
+
+    public ImageButtonBuilder imageButton(String icon, Cons2<Session, T> action) {
+        return imageButton(icon, (sess, st, res) -> action.get(sess, st));
+    }
+
+    public ImageButtonBuilder imageButton(ImageButtonBuilder btn, MenuAction<T> action) {
+        String actionId = registerAction(action);
+        btn.clicked(actionId);
+        root.add(btn);
+        return btn;
+    }
+
+    public ButtonTableBuilder buttonTable(Cons<ButtonTableBuilder> builder, MenuAction<T> action) {
+        String actionId = registerAction(action);
+        ButtonTableBuilder btnTable = UiBuilder.buttonTable().clicked(actionId);
+        builder.get(btnTable);
+        root.add(btnTable);
+        return btnTable;
+    }
+
+    public ButtonTableBuilder buttonTable(Cons<ButtonTableBuilder> builder, Cons<Session> action) {
+        return buttonTable(builder, (sess, st, res) -> action.get(sess));
+    }
+
+    public ButtonTableBuilder buttonTable(Cons<ButtonTableBuilder> builder, Cons2<Session, T> action) {
+        return buttonTable(builder, (sess, st, res) -> action.get(sess, st));
+    }
+
+    public StackBuilder stack(Cons<StackBuilder> builder) {
+        StackBuilder stack = UiBuilder.stack();
+        builder.get(stack);
+        root.add(stack);
+        return stack;
+    }
+
+    public DefaultsBuilder defaults(Cons<DefaultsBuilder> configure) {
+        DefaultsBuilder defaults = UiBuilder.defaults();
+        configure.get(defaults);
+        root.add(defaults);
+        return defaults;
     }
 
     @FunctionalInterface

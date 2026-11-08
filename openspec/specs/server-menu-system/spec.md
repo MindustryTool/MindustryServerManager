@@ -62,3 +62,26 @@ The system SHALL constrain server menu widths and scroll pane heights to prevent
 - **WHEN** a menu with cards, labels, or buttons is displayed in portrait orientation
 - **THEN** all description labels wrap within safe bounds and table widths do not exceed 320px
 
+### Requirement: MenuContext UiBuilder convenience methods
+`MenuContext<T>` SHALL expose convenience helper methods for constructing `image`, `imageButton`, `buttonTable`, `stack`, and `defaults` elements directly on the root table, automatically registering actions for interactive elements.
+
+#### Scenario: Adding an image to menu context
+- **WHEN** a developer calls `ctx.image(region)` or `ctx.image(region, configure)`
+- **THEN** an `ImageBuilder` node configured with the region is created, added to the root table, and returned
+
+#### Scenario: Adding an image button with an action
+- **WHEN** a developer calls `ctx.imageButton(icon, action)`
+- **THEN** a unique action token is registered and an `ImageButtonBuilder` node with the action attached is added to the root table
+
+#### Scenario: Adding a clickable button table
+- **WHEN** a developer calls `ctx.buttonTable(builder, action)`
+- **THEN** a unique action token is registered and a `ButtonTableBuilder` node populated with children is added to the root table
+
+#### Scenario: Adding a stack container
+- **WHEN** a developer calls `ctx.stack(builder)`
+- **THEN** a `StackBuilder` node populated with overlaid children is created, added to the root table, and returned
+
+#### Scenario: Setting cell defaults
+- **WHEN** a developer calls `ctx.defaults(configure)`
+- **THEN** a `DefaultsBuilder` node configured with cell properties is added to the root table and returned
+

@@ -9,6 +9,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import mindustry.gen.Player;
 import mindustry.ui.builder.MenuResult;
+import mindustry.ui.builder.UiBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import plugin.session.Session;
@@ -89,6 +90,28 @@ public class PluginMenuServiceTest {
         MenuResult cancelledResult = new MenuResult();
         cancelledResult.token = token;
         assertTrue(cancelledResult.wasCancelled());
+    }
+
+    @Test
+    void menuContextUiBuilderConvenienceMethods() {
+        AtomicBoolean imageButtonClicked = new AtomicBoolean(false);
+        AtomicBoolean buttonTableClicked = new AtomicBoolean(false);
+
+        MenuContext<String> ctx = new MenuContext<>(session, "testState", 100L);
+
+        ctx.image("ranai", i -> i.size(64f));
+        ctx.imageButton("play", (sess, st, res) -> imageButtonClicked.set(true));
+        ctx.buttonTable(bt -> bt.add(UiBuilder.label("Inside")), (sess, st, res) -> buttonTableClicked.set(true));
+        ctx.stack(stk -> stk.add(UiBuilder.image("bg")));
+        ctx.defaults(d -> d.pad(4f));
+
+        assertEquals(2, ctx.getActions().size());
+
+        for (var action : ctx.getActions().values()) {
+            action.handle(session, ctx.getState(), new MenuResult());
+        }
+        assertTrue(imageButtonClicked.get());
+        assertTrue(buttonTableClicked.get());
     }
 
     private static class TestServerMenu extends ServerMenu<String> {
