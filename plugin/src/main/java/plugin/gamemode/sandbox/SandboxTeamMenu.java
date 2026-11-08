@@ -56,7 +56,7 @@ public class SandboxTeamMenu extends ServerMenu<Void> {
                             sess.player.sendMessage(Tr.t(sess, "sandbox.team_changed", "team", team.coloredName()));
                         }
                     });
-                    card.add(UiBuilder.button("[accent]Switch[]").clicked(actId).width(95f).height(32f).align("right").pad(4f));
+                    card.add(UiBuilder.button("[accent]Switch[]").clicked(actId).width(95f).height(36f).align("right").pad(4f));
                 }
 
                 paneTable.add(card.growX().pad(2f)).row();

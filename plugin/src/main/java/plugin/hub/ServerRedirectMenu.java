@@ -36,10 +36,11 @@ public class ServerRedirectMenu extends ServerMenu<Server> {
 
         ctx.table(actions -> {
             String confirmAct = ctx.registerAction((sess, st, res) -> onServerChoose(sess.player, serverData.getId().toString(), serverData.getName()));
-            String cancelAct = ctx.registerAction((sess, st, res) -> {});
-
-            actions.add(UiBuilder.button(Tr.t(ctx.getSession().locale, "hub.redirect.yes")).clicked(confirmAct).width(120f).height(38f).pad(4f));
-            actions.add(UiBuilder.button(Tr.t(ctx.getSession().locale, "hub.redirect.no")).clicked(cancelAct).width(120f).height(38f).pad(4f));
+            actions.add(UiBuilder.button("[green]" + Tr.t(ctx.getSession().locale, "hub.redirect.yes"))
+                .clicked(confirmAct)
+                .width(MenuContext.SAFE_CARD_WIDTH)
+                .height(36f)
+                .pad(4f));
         });
     }
 

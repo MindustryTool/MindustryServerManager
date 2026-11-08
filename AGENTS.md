@@ -37,4 +37,6 @@
 
 - Variables from Arc or Mindustry are non-null by default unless marked with `@Nullable`. Do not add redundant null checks that waste CPU.
 
-- Follow the server menu UI and interaction guidelines in `spec/SERVER_MENU_GUIDELINES.md` when creating or modifying server menus.
+- Follow the server menu UI and interaction guidelines in [SERVER_MENU_GUIDELINES.md](spec/SERVER_MENU_GUIDELINES.md) when creating or modifying server menus.
+
+- Use [MenuSnapshot](plugin/src/test/java/plugin/menus/preview/MenuSnapshot.java) to preview and visually verify server menu layouts across viewports.

@@ -102,7 +102,12 @@ public class MenuContext<T> {
     }
 
     public LabelBuilder label(String text, Cons<LabelBuilder> configure) {
-        LabelBuilder lbl = UiBuilder.label(text).wrap().width(SAFE_WIDTH);
+        LabelBuilder lbl = UiBuilder.label(text)
+            .wrap()
+            .width(SAFE_WIDTH)
+            .labelAlign("left")
+            .align("left")
+            .padLeft(4f);
         configure.get(lbl);
         root.add(lbl);
         return lbl;

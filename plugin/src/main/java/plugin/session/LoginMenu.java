@@ -31,10 +31,12 @@ public class LoginMenu extends ServerMenu<Void> {
                     sess.player.sendMessage(Tr.t(sess, "login.link_expired"));
                 }
             });
-            String cancelAct = ctx.registerAction((sess, st, res) -> {});
 
-            actions.add(UiBuilder.button("[green]" + Tr.t(ctx.getSession(), "login.btn_open")).clicked(openAct).width(135f).height(40f).pad(4f));
-            actions.add(UiBuilder.button(Tr.t(ctx.getSession(), "login.btn_cancel")).clicked(cancelAct).width(105f).height(40f).pad(4f));
+            actions.add(UiBuilder.button("[green]" + Tr.t(ctx.getSession(), "login.btn_open"))
+                .clicked(openAct)
+                .width(MenuContext.SAFE_CARD_WIDTH)
+                .height(36f)
+                .pad(4f));
         });
     }
 }

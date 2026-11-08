@@ -52,10 +52,10 @@ public class VoteKickMenu extends ServerMenu<Player> {
                 for (Player candidate : candidates) {
                     TableBuilder card = UiBuilder.table().pad(4f);
                     card.width(MenuContext.SAFE_CARD_WIDTH);
-                    card.add(UiBuilder.label("[scarlet]" + candidate.name + " [gray](#" + candidate.id() + ")").wrap().align("left").growX());
+                    card.add(UiBuilder.label("[white]" + candidate.name + " [gray](#" + candidate.id() + ")").wrap().align("left").growX());
 
                     String kickAct = ctx.registerAction((sess, st, res) -> Registry.get(VoteKickMenu.class).send(sess, candidate));
-                    card.add(UiBuilder.button("Select").clicked(kickAct).width(90f).height(34f).align("right").padLeft(6f));
+                    card.add(UiBuilder.button("Select").clicked(kickAct).width(90f).height(36f).align("right").padLeft(6f));
 
                     paneTable.add(card.growX().pad(2f)).row();
                 }

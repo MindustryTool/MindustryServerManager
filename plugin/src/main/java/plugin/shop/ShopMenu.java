@@ -26,14 +26,18 @@ public class ShopMenu extends ServerMenu<Integer> {
         ctx.row();
 
         if (shopRegistry != null) {
-            List<ShopItem> items = shopRegistry.getItems();
+            List<ShopItem> items = shopRegistry.getItems().stream()
+                .filter(item -> !"gacha".equals(item.getId()))
+                .toList();
 
-            ctx.pane(MenuContext.SAFE_WIDTH, 300f, paneTable -> {
+            ctx.pane(MenuContext.SAFE_WIDTH, 260f, paneTable -> {
+                if (items.isEmpty()) {
+                    paneTable.add(UiBuilder.label("[lightgray]No items available in shop")
+                        .wrap().align("left").growX().pad(8f)).row();
+                    return;
+                }
+
                 for (ShopItem item : items) {
-                    if ("gacha".equals(item.getId())) {
-                        continue;
-                    }
-
                     TableBuilder card = UiBuilder.table().pad(4f);
                     card.width(MenuContext.SAFE_CARD_WIDTH);
                     card.add(UiBuilder.label("[gold]" + item.getTitle(ctx.getSession())).wrap().align("left").growX());
@@ -43,7 +47,7 @@ public class ShopMenu extends ServerMenu<Integer> {
                         Registry.get(ShopMenu.class).send(sess, 0);
                     });
 
-                    card.add(UiBuilder.button("Buy").clicked(buyAct).width(80f).height(34f).align("right").padLeft(6f));
+                    card.add(UiBuilder.button("Buy").clicked(buyAct).width(80f).height(36f).align("right").padLeft(6f));
                     paneTable.add(card.growX().pad(2f)).row();
                 }
             });
@@ -54,9 +58,9 @@ public class ShopMenu extends ServerMenu<Integer> {
             String gachaAct = ctx.registerAction((sess, st, res) -> Registry.get(GachaMenu.class).send(sess, 0));
             String trailAct = ctx.registerAction((sess, st, res) -> Registry.get(TrailMenu.class).send(sess, 0));
 
-            nav.add(UiBuilder.button("[gold]" + Iconc.star + " " + Tr.t(ctx.getSession(), "shop.open_gacha")).clicked(gachaAct).width(MenuContext.SAFE_CARD_WIDTH).height(44f).pad(3f));
+            nav.add(UiBuilder.button("[gold]" + Iconc.star + " " + Tr.t(ctx.getSession(), "shop.open_gacha")).clicked(gachaAct).width(MenuContext.SAFE_CARD_WIDTH).height(36f).pad(2f));
             nav.row();
-            nav.add(UiBuilder.button("[sky]" + Iconc.star + " " + Tr.t(ctx.getSession(), "shop.open_trails")).clicked(trailAct).width(MenuContext.SAFE_CARD_WIDTH).height(44f).pad(3f));
+            nav.add(UiBuilder.button("[sky]" + Iconc.star + " " + Tr.t(ctx.getSession(), "shop.open_trails")).clicked(trailAct).width(MenuContext.SAFE_CARD_WIDTH).height(36f).pad(2f));
         });
     }
 }

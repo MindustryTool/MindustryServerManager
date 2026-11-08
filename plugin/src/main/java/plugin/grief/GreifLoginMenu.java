@@ -24,10 +24,12 @@ public class GreifLoginMenu extends ServerMenu<String> {
                     Call.openURI(sess.player.con, url);
                 }
             });
-            String cancelAct = ctx.registerAction((sess, st, res) -> {});
 
-            actions.add(UiBuilder.button(Tr.t(ctx.getSession(), "grief.login")).clicked(loginAct).width(120f).height(38f).pad(4f));
-            actions.add(UiBuilder.button(Tr.t(ctx.getSession(), "grief.cancel")).clicked(cancelAct).width(120f).height(38f).pad(4f));
+            actions.add(UiBuilder.button("[green]" + Tr.t(ctx.getSession(), "grief.login"))
+                .clicked(loginAct)
+                .width(MenuContext.SAFE_CARD_WIDTH)
+                .height(36f)
+                .pad(4f));
         });
     }
 }

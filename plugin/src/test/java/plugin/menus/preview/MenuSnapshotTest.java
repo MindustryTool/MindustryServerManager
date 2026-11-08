@@ -133,4 +133,15 @@ class MenuSnapshotTest {
         assertTrue(img.getWidth() < 1920, "Cropped width should be smaller than screen width");
         assertTrue(img.getHeight() < 1080, "Cropped height should be smaller than screen height");
     }
+
+    @Test
+    void captureSandboxTeamMenuAcrossViewports(@TempDir Path tempDir) throws IOException {
+        Path target = tempDir.resolve("sandbox-team.png");
+        plugin.gamemode.sandbox.SandboxTeamMenu menu = new plugin.gamemode.sandbox.SandboxTeamMenu();
+        MenuSnapshot.capture(menu, target);
+
+        assertTrue(Files.exists(tempDir.resolve("sandbox-team-desktop.png")));
+        assertTrue(Files.exists(tempDir.resolve("sandbox-team-mobile-landscape.png")));
+        assertTrue(Files.exists(tempDir.resolve("sandbox-team-mobile-portrait.png")));
+    }
 }
