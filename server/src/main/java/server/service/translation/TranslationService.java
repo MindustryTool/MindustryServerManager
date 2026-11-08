@@ -26,7 +26,6 @@ import server.service.MultiSourceProxyPool;
 import server.service.translation.provider.BingWebProvider;
 import server.service.translation.provider.GoogleWebProvider;
 import server.service.translation.provider.LingvaProvider;
-import server.service.translation.provider.LlamaTranslationProvider;
 
 public class TranslationService {
 
@@ -92,7 +91,7 @@ public class TranslationService {
         registerProvider(0, new LingvaProvider());
         registerProvider(0, new GoogleWebProvider());
         registerProvider(1, new GoogleWebProvider(new MultiSourceProxyPool()));
-        registerProvider(2, new LlamaTranslationProvider());
+        // registerProvider(2, new LlamaTranslationProvider());
     }
 
     public TranslationService(Cache<String, TranslationResponse> cache, TranslationProvider... initialProviders) {
