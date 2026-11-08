@@ -1,5 +1,7 @@
 package plugin.menus.preview;
 
+import java.util.Locale;
+
 public enum MenuViewport {
     DESKTOP(1920, 1080, false),
     MOBILE_LANDSCAPE(720, 360, true),
@@ -13,5 +15,9 @@ public enum MenuViewport {
         this.width = width;
         this.height = height;
         this.mobile = mobile;
+    }
+
+    public String suffix() {
+        return name().toLowerCase(Locale.ROOT).replace('_', '-');
     }
 }

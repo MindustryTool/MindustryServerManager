@@ -16,7 +16,7 @@ public final class MenuSnapshot {
         this.menu = Objects.requireNonNull(builder.menu, "menu must not be null");
         this.session = builder.session != null ? builder.session : MockSession.builder().build();
         this.fullScreen = builder.fullScreen;
-        this.viewport = builder.viewport != null ? builder.viewport : MenuViewport.DESKTOP;
+        this.viewport = builder.viewport;
     }
 
     public static Builder builder() {
@@ -28,14 +28,45 @@ public final class MenuSnapshot {
     }
 
     public void toFile(Path outputPath) {
-        FrameBufferCapturer.capture(menu, session, outputPath, fullScreen, viewport);
+        Objects.requireNonNull(outputPath, "outputPath must not be null");
+        if (viewport != null) {
+            Path targetPath = resolveSuffixedPath(outputPath, viewport);
+            FrameBufferCapturer.capture(menu, session, targetPath, fullScreen, viewport);
+        } else {
+            for (MenuViewport vp : MenuViewport.values()) {
+                Path targetPath = resolveSuffixedPath(outputPath, vp);
+                FrameBufferCapturer.capture(menu, session, targetPath, fullScreen, vp);
+            }
+        }
+    }
+
+    public static Path resolveSuffixedPath(Path outputPath, MenuViewport viewport) {
+        Objects.requireNonNull(outputPath, "outputPath must not be null");
+        Objects.requireNonNull(viewport, "viewport must not be null");
+
+        Path fileNamePath = outputPath.getFileName();
+        String fileName = fileNamePath != null ? fileNamePath.toString() : "";
+        String suffix = viewport.suffix();
+
+        String newFileName;
+        int dotIndex = fileName.lastIndexOf('.');
+        if (dotIndex > 0) {
+            String baseName = fileName.substring(0, dotIndex);
+            String extension = fileName.substring(dotIndex);
+            newFileName = baseName + "-" + suffix + extension;
+        } else {
+            newFileName = fileName + "-" + suffix;
+        }
+
+        Path parent = outputPath.getParent();
+        return parent != null ? parent.resolve(newFileName) : Path.of(newFileName);
     }
 
     public static final class Builder {
         private ServerMenu<?> menu;
         private Session session;
-        private boolean fullScreen = false;
-        private MenuViewport viewport = MenuViewport.DESKTOP;
+        private boolean fullScreen = true;
+        private MenuViewport viewport;
 
         private Builder() {
         }
@@ -65,3 +96,4 @@ public final class MenuSnapshot {
         }
     }
 }
+
