@@ -18,6 +18,7 @@ import mindustry.game.Team;
 import mindustry.gen.Player;
 import mindustry.maps.Map;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import plugin.dailytask.DailyTask;
 import plugin.dailytask.DailyTaskService;
@@ -49,6 +50,7 @@ import plugin.maprecord.MapRecord;
 import plugin.maprecord.MapRecordMenuState;
 import plugin.maprecord.MapRecordPlayer;
 import plugin.maprecord.MapRecordsMenu;
+import plugin.menus.ServerMenu;
 import plugin.session.LoginMenu;
 import plugin.session.LoginService;
 import plugin.session.PlayerInfoMenu;
@@ -71,6 +73,7 @@ import plugin.welcome.WelcomeMenu;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@Tag("renderer")
 class RenderAllMenuPreviewsTest {
 
     private static final Path BASE_DIR = Path.of("build", "menu-previews");
@@ -91,7 +94,7 @@ class RenderAllMenuPreviewsTest {
         return new Map(new Fi(filename), 100, 100, tags, true, 0, 146);
     }
 
-    private static void renderAllViewports(plugin.menus.ServerMenu<?> menu, Session session, Path targetPath) {
+    private static void renderAllViewports(ServerMenu<?> menu, Session session, Path targetPath) {
         for (MenuViewport vp : MenuViewport.values()) {
             Session s = MockSession.builder()
                     .locale("en")

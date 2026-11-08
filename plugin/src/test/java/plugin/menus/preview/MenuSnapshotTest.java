@@ -5,8 +5,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import javax.imageio.ImageIO;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import plugin.gamemode.sandbox.SandboxTeamMenu;
 import plugin.menus.MenuContext;
 import plugin.menus.ServerMenu;
 
@@ -42,6 +44,7 @@ class MenuSnapshotTest {
     }
 
     @Test
+    @Tag("renderer")
     void captureAllViewportsByDefault(@TempDir Path tempDir) throws IOException {
         Path target = tempDir.resolve("preview.png");
 
@@ -80,6 +83,7 @@ class MenuSnapshotTest {
     }
 
     @Test
+    @Tag("renderer")
     void captureExplicitSingleViewportWithSuffix(@TempDir Path tempDir) throws IOException {
         Path target = tempDir.resolve("single.png");
 
@@ -108,6 +112,7 @@ class MenuSnapshotTest {
     }
 
     @Test
+    @Tag("renderer")
     void captureCroppedDialogWhenFullScreenFalse(@TempDir Path tempDir) throws IOException {
         Path target = tempDir.resolve("cropped.png");
 
@@ -135,9 +140,10 @@ class MenuSnapshotTest {
     }
 
     @Test
+    @Tag("renderer")
     void captureSandboxTeamMenuAcrossViewports(@TempDir Path tempDir) throws IOException {
         Path target = tempDir.resolve("sandbox-team.png");
-        plugin.gamemode.sandbox.SandboxTeamMenu menu = new plugin.gamemode.sandbox.SandboxTeamMenu();
+        SandboxTeamMenu menu = new SandboxTeamMenu();
         MenuSnapshot.capture(menu, target);
 
         assertTrue(Files.exists(tempDir.resolve("sandbox-team-desktop.png")));

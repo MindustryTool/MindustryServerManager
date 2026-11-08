@@ -1,4 +1,4 @@
-
+﻿
 import org.gradle.jvm.toolchain.JavaLanguageVersion
 
 java {
@@ -45,8 +45,28 @@ dependencies {
     testImplementation("Anuken:MindustryDesktop:${property("mindustryVersion")}")
 }
 
+val isCi = System.getenv("CI") != null || System.getenv("GITHUB_ACTIONS") != null
+
 tasks.test {
-    useJUnitPlatform()
+    useJUnitPlatform {
+        if (isCi || !project.hasProperty("includeRenderer")) {
+            excludeTags("renderer")
+        }
+    }
+}
+
+tasks.register<Test>("renderPreviews") {
+    group = "verification"
+    description = "Renders menu preview snapshots via OpenGL."
+    useJUnitPlatform {
+        includeTags("renderer")
+    }
+}
+
+tasks.register("renderMenuPreviews") {
+    group = "verification"
+    description = "Alias for renderPreviews."
+    dependsOn("renderPreviews")
 }
 
 // Thin jar stays default for IDE use. Fat pack runs only at pack time.
