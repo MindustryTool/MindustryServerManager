@@ -34,3 +34,5 @@
   `Objects.requireNonNull(...)` instead of `java.util.Objects.requireNonNull(...)`.
 
 - Code is written with test in mind but do not write only for testing code/function
+
+- Variables from Arc or Mindustry are non-null by default unless marked with `@Nullable`. Do not add redundant null checks that waste CPU.

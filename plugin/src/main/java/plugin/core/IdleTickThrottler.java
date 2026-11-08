@@ -35,32 +35,24 @@ public class IdleTickThrottler {
 
     @Listener
     public void onWorldLoad(WorldLoadEvent event) {
-        if (Core.app != null) {
-            Core.app.post(this::checkAutoPause);
-        } else {
-            checkAutoPause();
-        }
+        Core.app.post(this::checkAutoPause);
     }
 
     @Listener
     public void onPlayerLeave(PlayerLeave event) {
-        if (Core.app != null) {
-            Core.app.post(this::checkAutoPause);
-        } else {
-            checkAutoPause();
-        }
+        Core.app.post(this::checkAutoPause);
     }
 
     @Listener
     public void onPlayerJoin(PlayerJoin event) {
-        if (Vars.state != null && Vars.state.isPaused()) {
+        if (Vars.state.isPaused()) {
             Vars.state.set(State.playing);
             Log.info("Player joined: playing");
         }
     }
 
     public void checkAutoPause() {
-        if (Vars.state != null && Vars.state.isPlaying() && Groups.player != null && Groups.player.isEmpty()) {
+        if (Vars.state.isPlaying() && Groups.player.isEmpty()) {
             Vars.state.set(State.paused);
             Log.info("No player: paused");
         }
@@ -75,9 +67,7 @@ public class IdleTickThrottler {
     }
 
     public boolean shouldThrottle() {
-        boolean paused = Vars.state != null && Vars.state.isPaused();
-        int playerCount = Groups.player != null ? Groups.player.size() : 0;
-        return shouldThrottle(paused, playerCount);
+        return shouldThrottle(Vars.state.isPaused(), Groups.player.size());
     }
 
     public boolean shouldThrottle(boolean paused, int playerCount) {
