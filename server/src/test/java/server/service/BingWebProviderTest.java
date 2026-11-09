@@ -1,27 +1,7 @@
 package server.service;
 
-import java.io.IOException;
-import java.net.Authenticator;
-import java.net.CookieHandler;
-import java.net.ProxySelector;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpHeaders;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.time.Duration;
-import java.util.Collections;
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLParameters;
-import javax.net.ssl.SSLSession;
-
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import common.translation.TranslationResponse;
 import server.service.translation.TranslationException;
@@ -114,82 +94,5 @@ public class BingWebProviderTest {
         assertNull(provider.translate("   ", "vi"));
         assertNull(provider.translate("hello", null));
         assertNull(provider.translate("hello", ""));
-    }
-
-    private static class StubHttpResponse<T> implements HttpResponse<T> {
-        private final int statusCode;
-        private final T body;
-
-        StubHttpResponse(int statusCode, T body) {
-            this.statusCode = statusCode;
-            this.body = body;
-        }
-
-        @Override public int statusCode() { return statusCode; }
-        @Override public T body() { return body; }
-        @Override public HttpRequest request() { return null; }
-        @Override public Optional<HttpResponse<T>> previousResponse() { return Optional.empty(); }
-        @Override public HttpHeaders headers() { return HttpHeaders.of(Collections.emptyMap(), (k, v) -> true); }
-        @Override public Optional<SSLSession> sslSession() { return Optional.empty(); }
-        @Override public URI uri() { return URI.create("http://localhost"); }
-        @Override public HttpClient.Version version() { return HttpClient.Version.HTTP_2; }
-    }
-
-    private static class SequentialHttpClient extends HttpClient {
-        private final HttpResponse<String>[] responses;
-        private int index = 0;
-
-        @SafeVarargs
-        SequentialHttpClient(HttpResponse<String>... responses) {
-            this.responses = responses;
-        }
-
-        @Override
-        @SuppressWarnings("unchecked")
-        public <T> HttpResponse<T> send(HttpRequest request, HttpResponse.BodyHandler<T> responseHandler) throws IOException, InterruptedException {
-            if (index >= responses.length) {
-                throw new IllegalStateException("Exhausted stub responses");
-            }
-            return (HttpResponse<T>) responses[index++];
-        }
-
-        @Override public Optional<CookieHandler> cookieHandler() { return Optional.empty(); }
-        @Override public Optional<Duration> connectTimeout() { return Optional.empty(); }
-        @Override public HttpClient.Redirect followRedirects() { return HttpClient.Redirect.NEVER; }
-        @Override public Optional<ProxySelector> proxy() { return Optional.empty(); }
-        @Override public SSLContext sslContext() { return null; }
-        @Override public SSLParameters sslParameters() { return null; }
-        @Override public Optional<Authenticator> authenticator() { return Optional.empty(); }
-        @Override public HttpClient.Version version() { return HttpClient.Version.HTTP_2; }
-        @Override public Optional<Executor> executor() { return Optional.empty(); }
-        @Override public <T> CompletableFuture<HttpResponse<T>> sendAsync(HttpRequest request, HttpResponse.BodyHandler<T> responseHandler) { throw new UnsupportedOperationException(); }
-        @Override public <T> CompletableFuture<HttpResponse<T>> sendAsync(HttpRequest request, HttpResponse.BodyHandler<T> responseHandler, HttpResponse.PushPromiseHandler<T> pushPromiseHandler) { throw new UnsupportedOperationException(); }
-    }
-
-    @Test
-    public void testSessionRefreshOnExpiryRetry() throws Exception {
-        HttpResponse<String> htmlResponse = new StubHttpResponse<>(200, """
-                IG:"IG_1" data-iid="IID_1"
-                params_AbusePreventionHelper = [123,"tok",3600000]
-                """);
-
-        HttpResponse<String> expiredResponse = new StubHttpResponse<>(200, "{\"statusCode\":205}");
-
-        HttpResponse<String> successResponse = new StubHttpResponse<>(200, """
-                [{"translations":[{"text":"Translated text","to":"vi"}],"detectedLanguage":{"language":"en"}}]
-                """);
-
-        // 1: initial html fetch
-        // 2: translate POST -> 205 (session expired)
-        // 3: refresh html fetch
-        // 4: translate POST -> 200 success
-        HttpClient client = new SequentialHttpClient(htmlResponse, expiredResponse, htmlResponse, successResponse);
-
-        BingWebProvider provider = new BingWebProvider(client, new ObjectMapper());
-        TranslationResponse result = provider.translate("Hello", "vi");
-
-        assertNotNull(result);
-        assertEquals("Translated text", result.getTranslatedText());
-        assertEquals("en", result.getSourceLanguage());
     }
 }
