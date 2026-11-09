@@ -21,7 +21,6 @@ import java.util.stream.Collectors;
 
 import arc.Core;
 import arc.files.Fi;
-import arc.graphics.Pixmap;
 import arc.util.Log;
 import arc.util.Strings;
 import arc.util.Time;
@@ -36,7 +35,6 @@ import mindustry.Vars;
 import mindustry.core.Version;
 import mindustry.gen.Groups;
 import mindustry.gen.Player;
-import mindustry.io.MapIO;
 import mindustry.io.SaveIO;
 import mindustry.maps.Map;
 import plugin.Control;
@@ -181,29 +179,6 @@ public class Utils {
         } catch (Exception e) {
             Log.warn("Failed to hash plugin.jar", e);
             return null;
-        }
-    }
-
-    public static byte[] mapPreview2() {
-        Pixmap pix = null;
-        try {
-            if (Vars.state.map != null) {
-                pix = MapIO.generatePreview(Vars.world.tiles);
-                Fi file = Vars.dataDirectory.child(MAP_PREVIEW_IMAGE_FILE_NAME);
-                file.writePng(pix);
-                pix.dispose();
-
-                return file.readBytes();
-            }
-
-            return new byte[] {};
-        } catch (Exception e) {
-            Log.err("Failed to generate map preview: " + e.getMessage());
-            return new byte[] {};
-        } finally {
-            if (pix != null) {
-                pix.dispose();
-            }
         }
     }
 
