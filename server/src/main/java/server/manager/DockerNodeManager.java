@@ -245,7 +245,6 @@ public class DockerNodeManager implements NodeManager {
             exposedPorts.add(localTcp);
         }
 
-
         HostConfig hostConfig = HostConfig.newHostConfig()
                 .withPortBindings(portBindings)
                 .withNetworkMode("mindustry-server")
@@ -260,6 +259,15 @@ public class DockerNodeManager implements NodeManager {
                 .withPidsLimit(64L)
                 .withDns("8.8.8.8", "1.1.1.1")
                 .withBinds(bind);
+
+        if (!request.getIsOfficial()) {
+            long period = 100_000L;
+            
+            hostConfig
+                    .withCpuPeriod(period)
+                    .withCpuQuota((long) (request.getCpu() * period));
+
+        }
 
         if (Const.IS_PRODUCTION) {
             hostConfig.withExtraHosts("server.mindustry-tool.com:194.163.191.228",
