@@ -1,5 +1,10 @@
-## ADDED Requirements
+# live-map-preview-generation Specification
 
+## Purpose
+
+Live-map PNG generation from the current game state via the external image renderer, including the in-memory save-bytes hand-off and the on-disk PNG hand-off to `get-image`.
+
+## Requirements
 ### Requirement: Live map preview generated from in-memory save bytes
 
 The system SHALL generate the live-map preview PNG by saving the current game state with `SaveIO.write` to an in-memory deflated stream and POSTing those bytes to the external image renderer, without writing a temporary `.msav` file to disk.
