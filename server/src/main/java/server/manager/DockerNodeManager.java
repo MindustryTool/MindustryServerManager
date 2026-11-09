@@ -63,7 +63,9 @@ public class DockerNodeManager implements NodeManager {
     public static final Fi SERVER_FOLDER = new Fi(Const.volumeFolderPath).child("servers");
     public static final String CONFIG_VERSION = "2";
     public static final List<String> DEFAULT_JVM_ARGS = List.of(
-            "-XX:+UseG1GC",
+            "-XX:+UseZGC",
+            "-XX:+ZGenerational",
+            "-Xms64m",
             "-XX:+CrashOnOutOfMemoryError",
             "-XX:+HeapDumpOnOutOfMemoryError",
             "-XX:HeapDumpPath=/config",
@@ -262,7 +264,7 @@ public class DockerNodeManager implements NodeManager {
 
         if (!request.getIsOfficial()) {
             long period = 100_000L;
-            
+
             hostConfig
                     .withCpuPeriod(period)
                     .withCpuQuota((long) (request.getCpu() * period));
