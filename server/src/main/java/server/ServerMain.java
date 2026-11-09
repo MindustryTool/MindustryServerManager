@@ -31,7 +31,6 @@ public class ServerMain {
         ApacheDockerHttpClient dockerHttpClient = new ApacheDockerHttpClient.Builder()
                 .dockerHost(dockerConfig.getDockerHost())
                 .sslConfig(dockerConfig.getSSLConfig())
-                .maxConnections(100)
                 .connectionTimeout(Duration.ofSeconds(30))
                 .responseTimeout(Duration.ofSeconds(45))
                 .build();
