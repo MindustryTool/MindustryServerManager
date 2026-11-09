@@ -2,12 +2,15 @@ package plugin.hub;
 
 import java.net.InetAddress;
 import arc.util.Log;
+import arc.util.Scaling;
 import arc.util.Timer;
 import common.server.Server;
 import lombok.RequiredArgsConstructor;
 import mindustry.gen.Call;
+import mindustry.gen.Iconc;
 import mindustry.gen.Player;
 import mindustry.ui.builder.UiBuilder;
+import mindustry.ui.builder.UiBuilder.TableBuilder;
 import plugin.Tasks;
 import plugin.annotations.Component;
 import plugin.gateway.ApiGateway;
@@ -24,24 +27,88 @@ public class ServerRedirectMenu extends ServerMenu<Server> {
 
     @Override
     public void build(MenuContext<Server> ctx) {
-        Server serverData = ctx.getState();
-        if (serverData == null) {
+        Server server = ctx.getState();
+        if (server == null) {
             return;
         }
 
         this.title = Tr.t(ctx.getSession().locale, "hub.redirect.title");
 
-        ctx.label(Tr.t(ctx.getSession().locale, "hub.redirect.confirm", "server", serverData.getName()));
+        String serverId = server.getId() != null ? server.getId().toString() : "";
+        boolean isOnline = server.getMapName() != null;
+        String statusText = isOnline
+                ? "[green]● " + Tr.t(ctx.getSession().locale, "hub.list.players", "players", server.getPlayers())
+                : "[scarlet]● " + Tr.t(ctx.getSession().locale, "hub.list.server_offline");
+
+        TableBuilder card = UiBuilder.table().background("pane").margin(12f).align("top").align("left");
+        card.width(MenuContext.SAFE_CARD_WIDTH);
+
+        card.add(UiBuilder.image("net-server-" + serverId)
+                .placeholder("nomap")
+                .scaling(Scaling.fit)
+                .width(266f)
+                .height(115f)
+                .align("center"))
+            .row();
+
+        card.add(UiBuilder.label("[yellow]" + server.getName())
+                .wrap()
+                .align("left")
+                .labelAlign("left")
+                .width(266f)
+                .padTop(6f))
+            .row();
+
+        card.add(UiBuilder.label(statusText)
+                .align("left")
+                .labelAlign("left")
+                .width(266f)
+                .padTop(2f))
+            .row();
+
+        if (isOnline) {
+            String details = Tr.t(ctx.getSession().locale, "hub.list.gamemode", "mode", server.getMode().toLowerCase())
+                    + " • " + Tr.t(ctx.getSession().locale, "hub.list.map", "map", server.getMapName());
+            card.add(UiBuilder.label("[lightgray]" + details)
+                    .wrap()
+                    .align("left")
+                    .labelAlign("left")
+                    .width(266f)
+                    .padTop(2f))
+                .row();
+        }
+
+        if (server.getDescription() != null && !server.getDescription().trim().isEmpty()) {
+            card.add(UiBuilder.label("[gray]" + server.getDescription())
+                    .wrap()
+                    .align("left")
+                    .labelAlign("left")
+                    .width(266f)
+                    .padTop(3f))
+                .row();
+        }
+
+        ctx.add(card);
         ctx.row();
 
         ctx.table(actions -> {
-            String confirmAct = ctx.registerAction((sess, st, res) -> onServerChoose(sess.player, serverData.getId().toString(), serverData.getName()));
-            actions.add(UiBuilder.button("[green]" + Tr.t(ctx.getSession().locale, "hub.redirect.yes"))
-                .clicked(confirmAct)
-                .growX()
-                .height(48f)
-                .pad(4f));
-        }).growX();
+            actions.align("center");
+            String confirmAct = ctx.registerAction((sess, st, res) -> onServerChoose(sess.player, serverId, server.getName()));
+            actions.add(UiBuilder.button("[green]" + Iconc.right + " " + Tr.t(ctx.getSession().locale, "hub.redirect.yes"))
+                    .clicked(confirmAct)
+                    .width(130f)
+                    .height(36f)
+                    .pad(3f));
+
+            String cancelAct = ctx.registerAction((sess, st, res) -> {
+                // Closes dialog naturally by returning
+            });
+            actions.add(UiBuilder.button("[scarlet]" + Iconc.cancel + " " + Tr.t(ctx.getSession().locale, "hub.redirect.no"))
+                    .clicked(cancelAct)
+                    .width(130f)
+                    .height(36f)
+                    .pad(3f));
+        }).padTop(6f);
     }
 
     public void onServerChoose(Player player, String id, String name) {

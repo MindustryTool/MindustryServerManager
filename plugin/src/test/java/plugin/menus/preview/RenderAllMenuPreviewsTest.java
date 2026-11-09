@@ -6,6 +6,10 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import arc.graphics.Color;
+import arc.graphics.Pixmap;
+import arc.graphics.Texture;
+import arc.graphics.g2d.TextureRegion;
 import arc.files.Fi;
 import arc.func.Boolf;
 import arc.func.Cons;
@@ -93,6 +97,28 @@ class RenderAllMenuPreviewsTest {
         StringMap tags = new StringMap();
         tags.put("name", name);
         return new Map(new Fi(filename), 100, 100, tags, true, 0, 146);
+    }
+
+    private static void mockPreviewTexture(String name, Color topColor, Color bottomColor) {
+        MenuPreviewBackend.getInstance().runOnGlThread(() -> {
+            if (!arc.Core.atlas.has(name)) {
+                int w = 240, h = 135;
+                Pixmap pix = new Pixmap(w, h);
+                for (int x = 0; x < w; x++) {
+                    for (int y = 0; y < h; y++) {
+                        float lerp = (float) y / h;
+                        Color c = topColor.cpy().lerp(bottomColor, lerp);
+                        if (x % 24 == 0 || y % 24 == 0) {
+                            c.mul(1.22f);
+                        }
+                        pix.setRaw(x, y, c.rgba());
+                    }
+                }
+                Texture tex = new Texture(pix);
+                arc.Core.atlas.addRegion(name, new TextureRegion(tex));
+            }
+            return null;
+        });
     }
 
     private static void render(ServerMenu<?> menu, Session session, String folder, String name) {
@@ -198,6 +224,9 @@ class RenderAllMenuPreviewsTest {
             }
         };
 
+        mockPreviewTexture("net-server-" + server1.getId(), Color.valueOf("1e3c72"), Color.valueOf("2a5298"));
+        mockPreviewTexture("net-server-" + server2.getId(), Color.valueOf("b22222"), Color.valueOf("4a0e17"));
+
         ServerImageService stubImageService = new ServerImageService();
         GlobalServerListMenu globalServerListMenu = new GlobalServerListMenu(mockGateway, stubImageService);
         globalServerListMenu.setState(0);
@@ -274,6 +303,9 @@ class RenderAllMenuPreviewsTest {
         Map mapA = createMap("craters.msav", "Ancient Craters - Sector 146");
         Map mapB = createMap("ruins.msav", "Desolate Windswept Ruins");
         Seq<Map> maps = Seq.with(mapA, mapB);
+
+        mockPreviewTexture("net-map-craters", Color.valueOf("2b580c"), Color.valueOf("639a67"));
+        mockPreviewTexture("net-map-ruins", Color.valueOf("4a2810"), Color.valueOf("7c3f00"));
 
         RtvMenu rtvMenu = new RtvMenu(new RtvService(null, null) {
             @Override
@@ -356,6 +388,7 @@ class RenderAllMenuPreviewsTest {
     @Test
     void renderMapRatingFeature() {
         Map sampleMap = createMap("craters.msav", "Ancient Craters");
+        mockPreviewTexture("net-map-craters", Color.valueOf("2b580c"), Color.valueOf("639a67"));
         MapRatingService mapRatingService = new MapRatingService(null);
         RateMapMenu rateMapMenu = new RateMapMenu(mapRatingService);
         rateMapMenu.setState(sampleMap);

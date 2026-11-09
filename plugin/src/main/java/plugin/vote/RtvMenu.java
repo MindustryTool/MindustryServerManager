@@ -21,7 +21,8 @@ import plugin.utils.Tr;
 @Component
 public class RtvMenu extends ServerMenu<Integer> {
 
-    public record RtvMapEntry(Map map, MapRatingStat stat, float sortScore) {}
+    public record RtvMapEntry(Map map, MapRatingStat stat, float sortScore) {
+    }
 
     private final RtvService rtvService;
     private final MapRatingService mapRatingService;
@@ -115,57 +116,70 @@ public class RtvMenu extends ServerMenu<Integer> {
         ctx.label(Tr.t(ctx.getSession(), "rtv.select_map")).padBottom(4f);
         ctx.row();
 
-        TableBuilder grid = UiBuilder.table().wrap(true).align("top").align("left");
+        TableBuilder grid = UiBuilder.table().align("top").align("left");
 
-        for (RtvMapEntry entry : entries) {
-            Map map = entry.map();
-            MapRatingStat stats = entry.stat();
-            String ratingColor = mapRatingService.avgScoreColor(stats.avgScore);
-            boolean isVoted = rtvService.isVoted(ctx.getSession().player, map.file.nameWithoutExtension());
-            String mapId = map.file.nameWithoutExtension();
-
-            TableBuilder card = UiBuilder.table().align("top").align("center");
-            card.width(136f).pad(4f);
-
-            card.add(UiBuilder.image("net-map-" + mapId)
-                    .placeholder("nomap")
-                    .scaling(Scaling.fit)
-                    .width(128f)
-                    .height(80f)
-                    .align("center"))
-                .row();
-
-            String nameText = (map.name() != null && !map.name().isEmpty()) ? map.name() : mapId;
-            card.add(UiBuilder.label("[white]" + nameText)
+        if (entries.isEmpty()) {
+            grid.add(UiBuilder.label("[lightgray]" + Tr.t(ctx.getSession(), "maprating.no_more_maps"))
                     .wrap()
-                    .align("center")
-                    .labelAlign("center")
-                    .width(128f)
-                    .padTop(4f))
-                .row();
+                    .align("left")
+                    .growX()
+                    .pad(16f));
+        } else {
+            int cols = ctx.isMobile() ? 2 : 3;
+            int index = 0;
+            for (RtvMapEntry entry : entries) {
+                Map map = entry.map();
+                MapRatingStat stats = entry.stat();
+                String ratingColor = mapRatingService.avgScoreColor(stats.avgScore);
+                boolean isVoted = rtvService.isVoted(ctx.getSession().player, map.file.nameWithoutExtension());
+                String mapId = map.file.nameWithoutExtension();
 
-            String ratingText = String.format("%s%.2f [gold]%c [gray](%d)",
-                ratingColor, stats.avgScore, Iconc.star, stats.totalVotes);
-            card.add(UiBuilder.label(ratingText)
-                    .align("center")
-                    .labelAlign("center")
-                    .width(128f)
-                    .padTop(2f))
-                .row();
+                TableBuilder card = UiBuilder.table().background("pane").margin(10f).align("top").align("center");
+                card.width(148f).pad(4f);
 
-            String voteAct = ctx.registerAction((sess, st, res) -> rtvService.handleVote(sess.player, map));
-            String voteBtnText = isVoted
-                ? "[scarlet]" + Tr.t(ctx.getSession(), "rtv.cancel_vote")
-                : "[accent]" + Tr.t(ctx.getSession(), "rtv.vote_map");
+                card.add(UiBuilder.image("net-map-" + mapId)
+                        .placeholder("nomap")
+                        .scaling(Scaling.fit)
+                        .width(128f)
+                        .height(80f)
+                        .align("center"))
+                    .row();
 
-            card.add(UiBuilder.button(voteBtnText)
-                    .clicked(voteAct)
-                    .width(128f)
-                    .height(48f)
-                    .align("center")
-                    .padTop(4f));
+                String nameText = (map.name() != null && !map.name().isEmpty()) ? map.name() : mapId;
+                card.add(UiBuilder.label("[white]" + nameText)
+                        .wrap()
+                        .align("center")
+                        .labelAlign("center")
+                        .width(128f)
+                        .padTop(4f))
+                    .row();
 
-            grid.add(card);
+                String ratingText = String.format("%s%.2f [gold]%c [gray](%d)",
+                    ratingColor, stats.avgScore, Iconc.star, stats.totalVotes);
+                card.add(UiBuilder.label(ratingText)
+                        .align("center")
+                        .labelAlign("center")
+                        .width(128f)
+                        .padTop(2f))
+                    .row();
+
+                String voteAct = ctx.registerAction((sess, st, res) -> rtvService.handleVote(sess.player, map));
+                String voteBtnText = isVoted
+                    ? "[scarlet]" + Tr.t(ctx.getSession(), "rtv.cancel_vote")
+                    : "[accent]" + Tr.t(ctx.getSession(), "rtv.vote_map");
+
+                card.add(UiBuilder.button(voteBtnText)
+                        .clicked(voteAct)
+                        .width(128f)
+                        .height(34f)
+                        .align("center")
+                        .padTop(4f));
+
+                grid.add(card);
+                if (++index % cols == 0) {
+                    grid.row();
+                }
+            }
         }
 
         PaneBuilder pane = UiBuilder.pane().add(grid).grow();
