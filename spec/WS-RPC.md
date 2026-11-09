@@ -21,7 +21,8 @@ Either peer may answer them. The protocol does not define client or
 server roles.
 
 Design goals: single connection, explicit correlation, fail-loud
-errors, bounded memory, ordered delivery per sender.
+errors, bounded memory, per-stream ordered delivery with control
+interleave.
 
 Every control frame declares its sort with an explicit `kind` field.
 There are no reserved application names: any handler, stream type, or
@@ -46,10 +47,26 @@ RFC 2119.
 frame kinds: UTF-8 JSON text frames (control) and binary frames
 (stream chunks).
 
-3.2. Order: frames MUST be transmitted and processed in call order
-per connection. A stream `start` frame MUST never be reordered after
-its own chunks. Concurrent streams from one sender interleave freely;
-the receiver separates them by stream identifier (Section 8).
+3.2. Order: per-stream order is preserved on the wire, but control
+frames MAY cut in between binary chunks. Frames are processed in
+arrival order per connection. Concretely:
+- A stream `start` frame MUST precede its own chunks, chunks MUST
+  stay in index order, and `done` MUST follow them (Sections 8.2, 9).
+- A control frame (`request`, `notification`, `response`,
+  `response-error`, `listen`, `listening`, `event`, `unlisten`,
+  `listen-ended`, `listen-error`, `stream-abort`) already queued MAY
+  be transmitted between chunk frames; it MUST NOT wait for the full
+  stream.
+- Neither kind starves the other: after at most 3 consecutive
+  control frames the sender MUST emit a queued binary chunk if one
+  exists (and vice versa), so the 4th frame of the other kind goes
+  next. The sender MUST NOT block waiting for the other kind — a
+  stream drains fully when no control frame is queued.
+- Receivers MUST tolerate a control frame between any two chunks of
+  a stream and MUST NOT assume `start` is immediately followed by
+  chunk 0.
+- Concurrent streams from one sender interleave freely; the receiver
+  separates them by stream identifier (Section 8).
 
 3.3. Keepalive: peers MAY use WebSocket ping/pong. Recommended
 practice is a ping every 20 seconds, declare the peer dead after
@@ -479,6 +496,7 @@ event-stream-specific timeout.
 | Concurrent streams  | 8          | max open streams per connection (senders + receiver slots) |
 | Chunk max           | 65536 B    | largest binary payload per frame             |
 | Stream max          | 33554432 B | largest reassembled stream (32 MiB), enforced incrementally and finally |
+| Control interleave  | 3          | max consecutive frames of one kind before a queued frame of the other kind MUST cut in (Section 3.2) |
 
 ## 12. Connection loss
 
@@ -504,8 +522,9 @@ with a log and MUST NOT be re-routed to a replacement connection
   an answer, and never answer a notification.
 - Acknowledge a `listen` with `listening`; confirm an `unlisten` with
   `listen-ended`.
-- Preserve emission order per connection; separate concurrent streams
-  by `streamId`.
+- Preserve per-stream emission order (`start` < chunks < `done`);
+  allow control frames to cut in between chunks per Section 3.2;
+  separate concurrent streams by `streamId`.
 - Compare digests case-insensitively; emit lowercase.
 - Enforce the cap before dispatch, on every path.
 - Apply the Section 11 constants on both sides.

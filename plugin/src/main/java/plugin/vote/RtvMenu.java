@@ -111,28 +111,30 @@ public class RtvMenu extends ServerMenu<Integer> {
             streamMapTextures(ctx.getSession().player, maps);
         }
 
-        ctx.getRoot().align("topLeft");
+        ctx.getRoot().align("top");
 
         this.title = Tr.t(ctx.getSession(), "rtv.available_maps");
 
         ctx.label(Tr.t(ctx.getSession(), "rtv.select_map"))
-                .align("left")
-                .labelAlign("left")
+                .align("center")
+                .labelAlign("center")
                 .padBottom(6f);
         ctx.row();
-
-        TableBuilder grid = UiBuilder.table().align("topLeft");
 
         float cardWidth = 280f;
         float cardHeight = 310f;
         float contentWidth = cardWidth - 20f;
-        int cols = ctx.getResponsiveColumns(cardWidth, 8f);
+        float spacing = 8f;
+        int maxCols = ctx.getResponsiveColumns(cardWidth, spacing);
+        float innerWidth = maxCols * cardWidth + Math.max(0, maxCols - 1) * spacing;
         int index = 0;
+
+        TableBuilder grid = UiBuilder.table().align("topLeft").width(innerWidth);
 
         if (entries.isEmpty()) {
             grid.add(UiBuilder.label("[lightgray]" + Tr.t(ctx.getSession(), "maprating.no_more_maps"))
                     .wrap()
-                    .align("left")
+                    .align("center")
                     .growX()
                     .pad(16f));
         } else {
@@ -190,13 +192,16 @@ public class RtvMenu extends ServerMenu<Integer> {
                         .padTop(8f));
 
                 grid.add(card);
-                if (++index % cols == 0) {
+                if (++index % maxCols == 0) {
                     grid.row();
                 }
             }
         }
 
-        PaneBuilder pane = UiBuilder.pane().add(grid).grow().align("topLeft");
+        TableBuilder contentWrapper = UiBuilder.table().align("top");
+        contentWrapper.add(grid);
+
+        PaneBuilder pane = UiBuilder.pane().add(contentWrapper).grow().align("top");
         ctx.add(pane);
     }
 }

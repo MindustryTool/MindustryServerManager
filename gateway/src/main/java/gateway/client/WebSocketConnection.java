@@ -22,6 +22,7 @@ import java.util.logging.Logger;
 import gateway.rpc.RpcChannel;
 import gateway.session.WsSession;
 import gateway.util.Causes;
+import gateway.wire.WsProtocol;
 
 /**
  * One physical socket and everything bound to it: the send queue, the
@@ -35,6 +36,7 @@ class WebSocketConnection implements WsSession {
 
     static final Duration DEFAULT_SEND_TIMEOUT = Duration.ofSeconds(10);
     private static final int QUEUE_WARN_DEPTH = 1000;
+    static final int CONTROL_INTERLEAVE_INTERVAL = 3;
 
     /** Policy callbacks owned by the lifecycle. */
     interface Events {
@@ -54,7 +56,9 @@ class WebSocketConnection implements WsSession {
     private final AtomicBoolean terminated = new AtomicBoolean(false);
     private final AtomicBoolean readStarted = new AtomicBoolean(false);
 
-    private final Queue<OutboundItem> sendQueue = new ConcurrentLinkedQueue<>();
+    private final Queue<OutboundItem> controlQueue = new ConcurrentLinkedQueue<>();
+    private final Queue<OutboundItem> binaryQueue = new ConcurrentLinkedQueue<>();
+    private int controlRun;
     private final AtomicBoolean isSending = new AtomicBoolean(false);
     private volatile ScheduledFuture<?> pingTask;
     private volatile Instant lastPongAt = Instant.now();
@@ -125,7 +129,8 @@ class WebSocketConnection implements WsSession {
         }
 
         stopPingTask();
-        sendQueue.clear();
+        controlQueue.clear();
+        binaryQueue.clear();
         drain();
     }
 
@@ -140,14 +145,14 @@ class WebSocketConnection implements WsSession {
         WebSocket target = socket;
 
         if (target != null && !target.isOutputClosed()) {
-            sendQueue.offer(SendFrame.close(code, reason));
+            controlQueue.offer(SendFrame.close(code, reason));
         }
 
         drain();
     }
 
     int queueDepth() {
-        return sendQueue.size();
+        return controlQueue.size() + binaryQueue.size();
     }
 
     @Override
@@ -225,9 +230,9 @@ class WebSocketConnection implements WsSession {
             throw new IllegalStateException("WebSocket is not open");
         }
 
-        sendQueue.offer(op);
+        queueFor(op).offer(op);
 
-        int depth = sendQueue.size();
+        int depth = queueDepth();
 
         if (depth >= QUEUE_WARN_DEPTH && depth % QUEUE_WARN_DEPTH == 0) {
             LOG.warning("WebSocketConnection send queue depth " + depth);
@@ -236,23 +241,74 @@ class WebSocketConnection implements WsSession {
         drain();
     }
 
+    private Queue<OutboundItem> queueFor(OutboundItem op) {
+        return isBinaryLane(op) ? binaryQueue : controlQueue;
+    }
+
+    private boolean isBinaryLane(OutboundItem op) {
+        if (op instanceof SendFrame.BinaryFrame) {
+            return true;
+        }
+        if (op instanceof SendFrame.TextFrame text) {
+            return isStreamEnvelope(text.text());
+        }
+        return false;
+    }
+
+    private boolean isStreamEnvelope(String text) {
+        int i = text.indexOf("\"kind\":\"");
+        if (i < 0) {
+            return false;
+        }
+        String rest = text.substring(i + 8);
+        return rest.startsWith(WsProtocol.STREAM_START_TYPE)
+                || rest.startsWith(WsProtocol.STREAM_DONE_TYPE)
+                || rest.startsWith(WsProtocol.STREAM_REPLY_START_TYPE)
+                || rest.startsWith(WsProtocol.STREAM_REPLY_DONE_TYPE);
+    }
+
+    private boolean isEmpty() {
+        return controlQueue.isEmpty() && binaryQueue.isEmpty();
+    }
+
+    private OutboundItem pollNext() {
+        boolean hasControl = !controlQueue.isEmpty();
+        boolean hasBinary = !binaryQueue.isEmpty();
+        if (!hasControl && !hasBinary) {
+            return null;
+        }
+        if (hasControl && hasBinary) {
+            if (controlRun >= CONTROL_INTERLEAVE_INTERVAL) {
+                controlRun = 0;
+                return binaryQueue.poll();
+            }
+            return controlQueue.poll();
+        }
+        return hasControl ? controlQueue.poll() : binaryQueue.poll();
+    }
+
     private void drain() {
         if (!isSending.compareAndSet(false, true)) {
             return;
         }
 
         while (true) {
-            OutboundItem item = sendQueue.poll();
+            OutboundItem item = pollNext();
 
             if (item == null || item instanceof PoisonPill) {
                 isSending.set(false);
-                if (!sendQueue.isEmpty() && isSending.compareAndSet(false, true)) {
+                if (!isEmpty() && isSending.compareAndSet(false, true)) {
                     continue;
                 }
                 return;
             }
 
             SendFrame op = (SendFrame) item;
+            if (isBinaryLane(op)) {
+                controlRun = 0;
+            } else {
+                controlRun++;
+            }
 
             if (terminated.get() && !(op instanceof SendFrame.CloseFrame)) {
                 continue;
@@ -342,7 +398,7 @@ class WebSocketConnection implements WsSession {
                             return;
                         }
 
-                        sendQueue.offer(SendFrame.ping());
+                        controlQueue.offer(SendFrame.ping());
                         drain();
                     } catch (Exception e) {
                         LOG.log(Level.FINE, "Ping task error", e);

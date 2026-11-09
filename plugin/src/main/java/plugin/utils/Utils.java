@@ -223,13 +223,13 @@ public class Utils {
                         .post("https://api.mindustry-tool.com", "api", "v4", "maps", "image-json")
                         .header("Content-Type", "application/json")
                         .content(JsonUtils.toJsonString(body))
-                        .timeout(120000)
+                        .timeout(180000)
                         .error(error -> {
                             if (error instanceof HttpStatusException httpStatusException) {
                                 Log.err("Fail to fetch map preview:"
                                         + httpStatusException.response.getResultAsString());
                             } else {
-                                Log.err("Fail to generate map preview: " + error.getMessage());
+                                Log.err("Fail to generate map preview: " + error.getMessage() + ", force=" + force);
                             }
                         })
                         .submit((res) -> {

@@ -43,26 +43,28 @@ public class ServerListMenu extends ServerMenu<Integer> {
                 serverImageService.streamServerTextures(ctx.getSession().player, servers);
             }
 
-            ctx.getRoot().align("topLeft");
+            ctx.getRoot().align("top");
 
             ctx.label(Tr.t(ctx.getSession().locale, "hub.choose_server"))
-                    .align("left")
-                    .labelAlign("left")
+                    .align("center")
+                    .labelAlign("center")
                     .padBottom(6f);
             ctx.row();
-
-            TableBuilder grid = UiBuilder.table().align("topLeft");
 
             float cardWidth = 330f;
             float cardHeight = 370f;
             float contentWidth = cardWidth - 20f;
-            int cols = ctx.getResponsiveColumns(cardWidth, 8f);
+            float spacing = 8f;
+            int maxCols = ctx.getResponsiveColumns(cardWidth, spacing);
+            float innerWidth = maxCols * cardWidth + Math.max(0, maxCols - 1) * spacing;
             int[] index = {0};
+
+            TableBuilder grid = UiBuilder.table().align("topLeft").width(innerWidth);
 
             if (servers == null || servers.isEmpty()) {
                 grid.add(UiBuilder.label("[lightgray]" + Tr.t(ctx.getSession().locale, "hub.list.server_offline"))
                         .wrap()
-                        .align("left")
+                        .align("center")
                         .growX()
                         .pad(16f));
             } else {
@@ -141,13 +143,16 @@ public class ServerListMenu extends ServerMenu<Integer> {
                             .padTop(8f));
 
                     grid.add(card);
-                    if (++index[0] % cols == 0) {
+                    if (++index[0] % maxCols == 0) {
                         grid.row();
                     }
                 });
             }
 
-            PaneBuilder pane = UiBuilder.pane().add(grid).grow().align("topLeft");
+            TableBuilder contentWrapper = UiBuilder.table().align("top");
+            contentWrapper.add(grid);
+
+            PaneBuilder pane = UiBuilder.pane().add(contentWrapper).grow().align("top");
             ctx.add(pane);
 
             if (page > 0 || (servers != null && servers.size() == size)) {
