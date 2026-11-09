@@ -40,7 +40,7 @@ public class HostService {
     @MainThread
     @Schedule(delay = 5, fixedDelay = 5, unit = TimeUnit.MINUTES)
     private void autoSave() {
-        if (Vars.state.isPlaying()) {
+        if (Vars.state.isPlaying() && !Vars.world.isGenerating()) {
             SaveIO.save(SAVE_FILE);
         }
     }

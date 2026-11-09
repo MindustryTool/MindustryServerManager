@@ -48,12 +48,6 @@ public class GlobalServerListMenu extends ServerMenu<Integer> {
 
             ctx.getRoot().align("top");
 
-            ctx.label(Tr.t(ctx.getSession().locale, "hub.choose_server"))
-                    .align("center")
-                    .labelAlign("center")
-                    .padBottom(6f);
-            ctx.row();
-
             float cardWidth = CARD_WIDTH;
             float cardHeight = CARD_HEIGHT;
             float contentWidth = cardWidth - 20f;

@@ -207,7 +207,7 @@ public class GatewayClientLivenessTest {
         service = new GatewayService(bus, env, nodes, translations, bundles);
     }
 
-    private GatewayService.GatewayClient client() {
+    private GatewayClient client() {
         return service.of(UUID.randomUUID());
     }
 
@@ -221,7 +221,7 @@ public class GatewayClientLivenessTest {
 
     @Test
     void openAdoptsSessionOnCachedHandle() {
-        GatewayService.GatewayClient handle = client();
+        GatewayClient handle = client();
         handle.rpcChannel().onOpen(new FakeSession(true));
 
         assertNotNull(handle.rpcChannel().current(), "open adopts the incoming session");
@@ -230,7 +230,7 @@ public class GatewayClientLivenessTest {
     @Test
     void cacheMissBuildsReusableHandle() {
         UUID id = UUID.randomUUID();
-        GatewayService.GatewayClient first = service.of(id);
+        GatewayClient first = service.of(id);
 
         assertSame(first, service.of(id), "of() returns the cached handle");
     }
@@ -245,12 +245,12 @@ public class GatewayClientLivenessTest {
         setUp(nodes);
 
         UUID id = UUID.randomUUID();
-        GatewayService.GatewayClient before = service.of(id);
+        GatewayClient before = service.of(id);
         service.of(UUID.randomUUID());
 
         service.sweep();
 
-        GatewayService.GatewayClient after = service.of(id);
+        GatewayClient after = service.of(id);
         assertNotSame(before, after, "container-gone client must be evicted from the cache");
         assertTrue(before.rpcChannel().awaitSession(Duration.ofMillis(10)).isCompletedExceptionally(),
                 "Evicted client's rpcChannel must be shut down");
@@ -265,7 +265,7 @@ public class GatewayClientLivenessTest {
         nodes.setRunning(id);
         setUp(nodes);
 
-        GatewayService.GatewayClient before = service.of(id);
+        GatewayClient before = service.of(id);
 
         service.sweep();
 
@@ -312,7 +312,7 @@ public class GatewayClientLivenessTest {
         setUp(nodes);
 
         UUID id = UUID.randomUUID();
-        GatewayService.GatewayClient client = service.of(id);
+        GatewayClient client = service.of(id);
         FakeSession session = new FakeSession(true);
         client.rpcChannel().onOpen(session);
 
@@ -333,7 +333,7 @@ public class GatewayClientLivenessTest {
         setUp(nodes);
 
         UUID id = UUID.randomUUID();
-        GatewayService.GatewayClient client = service.of(id);
+        GatewayClient client = service.of(id);
         FakeSession session = new FakeSession(true);
         client.rpcChannel().onOpen(session);
 

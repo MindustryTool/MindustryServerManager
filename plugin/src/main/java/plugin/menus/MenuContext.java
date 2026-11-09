@@ -63,6 +63,10 @@ public class MenuContext<T> {
 
     public float safeMaxPaneHeight(float requestedHeight) {
         if (isMobile()) {
+            if (session.player != null && session.player.con != null && session.player.con.viewHeight > 0) {
+                float dynamicMax = Math.max(100f, session.player.con.viewHeight - 190f);
+                return Math.min(requestedHeight, Math.min(dynamicMax, MOBILE_MAX_PANE_HEIGHT));
+            }
             return Math.min(requestedHeight, MOBILE_MAX_PANE_HEIGHT);
         }
         return requestedHeight;

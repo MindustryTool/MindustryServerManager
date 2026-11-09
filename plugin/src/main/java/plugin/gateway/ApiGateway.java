@@ -68,6 +68,7 @@ import plugin.commands.ServerCommandHandler;
 import plugin.Cfg;
 import plugin.PluginState;
 import plugin.core.Registry;
+import plugin.core.Scheduler;
 import plugin.event.UnloadServerEvent;
 import common.server.CommandParam;
 import common.player.PlayerRecord;
@@ -91,6 +92,7 @@ public class ApiGateway {
 
     private final HostService hostService;
     private final SessionService sessionService;
+    private final Scheduler scheduler;
 
     private final RpcChannel rpcChannel = RpcChannel.withMapper(JsonUtils.getObjectMapper(), executor);
     private final WsClient gatewayClient = WsClient.builder(URI.create(Cfg.gatewayUrl()), rpcChannel)
@@ -581,7 +583,10 @@ public class ApiGateway {
     @Listener(PlayEvent.class)
     private void onPlay() {
         sendStateUpdate();
-        generateMapImage(true);
+        
+        scheduler.schedule(() -> {
+            generateMapImage(true);
+        }, 10, TimeUnit.SECONDS);
     }
 
     private Void sendStateUpdate() {

@@ -76,7 +76,7 @@ class TranslationRateLimitTest {
                 translations, new PluginBundleService(new byte[] { 1 }, "test"));
     }
 
-    private JsonNode callTranslate(GatewayService.GatewayClient client, CapturingSession session, String text)
+    private JsonNode callTranslate(GatewayClient client, CapturingSession session, String text)
             throws Exception {
         int before = session.sent.size();
         String frame = "{\"id\":\"" + UUID.randomUUID() + "\",\"kind\":\"request\",\"type\":\"translate\","
@@ -96,7 +96,7 @@ class TranslationRateLimitTest {
 
     @Test
     void underLimitCallIsServed() throws Exception {
-        GatewayService.GatewayClient client = service.of(UUID.randomUUID());
+        GatewayClient client = service.of(UUID.randomUUID());
         CapturingSession session = new CapturingSession();
         client.rpcChannel().onOpen(session);
 
@@ -108,7 +108,7 @@ class TranslationRateLimitTest {
 
     @Test
     void overLimitCallIsRejectedWithoutInvokingService() throws Exception {
-        GatewayService.GatewayClient client = service.of(UUID.randomUUID());
+        GatewayClient client = service.of(UUID.randomUUID());
         CapturingSession session = new CapturingSession();
         client.rpcChannel().onOpen(session);
 
@@ -129,7 +129,7 @@ class TranslationRateLimitTest {
 
     @Test
     void perServerBucketsAreIndependent() throws Exception {
-        GatewayService.GatewayClient busy = service.of(UUID.randomUUID());
+        GatewayClient busy = service.of(UUID.randomUUID());
         CapturingSession busySession = new CapturingSession();
         busy.rpcChannel().onOpen(busySession);
 
@@ -137,7 +137,7 @@ class TranslationRateLimitTest {
             callTranslate(busy, busySession, "busy-" + i);
         }
 
-        GatewayService.GatewayClient other = service.of(UUID.randomUUID());
+        GatewayClient other = service.of(UUID.randomUUID());
         CapturingSession otherSession = new CapturingSession();
         other.rpcChannel().onOpen(otherSession);
 

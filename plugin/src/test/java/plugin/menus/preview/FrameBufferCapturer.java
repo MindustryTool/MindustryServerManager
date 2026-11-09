@@ -84,6 +84,11 @@ public final class FrameBufferCapturer {
                 dialog.centerWindow();
                 dialog.validate();
 
+                if (dialog.x < 0 || dialog.y < 0 || dialog.x + dialog.getWidth() > screenW || dialog.y + dialog.getHeight() > screenH) {
+                    System.err.printf("[CLIP_DETECTED] %s on %s: pos=(%.1f, %.1f) size=(%.1f, %.1f) screen=(%d, %d)%n",
+                            menu.getClass().getSimpleName(), viewport, dialog.x, dialog.y, dialog.getWidth(), dialog.getHeight(), screenW, screenH);
+                }
+
                 Core.scene.act(0f);
 
                 frameBuffer.begin();

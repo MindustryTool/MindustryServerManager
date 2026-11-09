@@ -6,11 +6,11 @@ import arc.util.Log;
 import arc.util.Scaling;
 import arc.util.Timer;
 import common.server.Server;
-import lombok.RequiredArgsConstructor;
 import mindustry.gen.Call;
 import mindustry.gen.Iconc;
 import mindustry.gen.Player;
 import mindustry.ui.builder.UiBuilder;
+import mindustry.ui.builder.UiBuilder.PaneBuilder;
 import mindustry.ui.builder.UiBuilder.TableBuilder;
 import plugin.Tasks;
 import plugin.annotations.Component;
@@ -21,11 +21,16 @@ import plugin.utils.Tr;
 import plugin.utils.Utils;
 
 @Component
-@RequiredArgsConstructor
 public class ServerRedirectMenu extends ServerMenu<Server> {
 
     private final ApiGateway apiGateway;
     private final ServerImageService serverImageService;
+
+    public ServerRedirectMenu(ApiGateway apiGateway, ServerImageService serverImageService) {
+        this.apiGateway = apiGateway;
+        this.serverImageService = serverImageService;
+        this.fillScreen = true;
+    }
 
     @Override
     public void build(MenuContext<Server> ctx) {
@@ -39,6 +44,7 @@ public class ServerRedirectMenu extends ServerMenu<Server> {
         }
 
         this.title = Tr.t(ctx.getSession().locale, "hub.redirect.title");
+        ctx.getRoot().align("top");
 
         String serverId = server.getId() != null ? server.getId().toString() : "";
         boolean isOnline = server.getMapName() != null;
@@ -46,75 +52,89 @@ public class ServerRedirectMenu extends ServerMenu<Server> {
                 ? "[green]● " + Tr.t(ctx.getSession().locale, "hub.list.players", "players", server.getPlayers())
                 : "[scarlet]● " + Tr.t(ctx.getSession().locale, "hub.list.server_offline");
 
-        TableBuilder card = UiBuilder.table().background("pane").margin(12f).align("top").align("left");
-        card.width(MenuContext.SAFE_CARD_WIDTH);
+        float cardWidth = 330f;
+        float cardHeight = 370f;
+        float contentWidth = cardWidth - 20f;
+
+        TableBuilder card = UiBuilder.table()
+                .background("pane")
+                .margin(10f)
+                .align("topLeft")
+                .width(cardWidth)
+                .height(cardHeight);
 
         card.add(UiBuilder.image("net-server-" + serverId)
                 .placeholder("nomap")
                 .scaling(Scaling.fit)
-                .width(266f)
-                .height(115f)
+                .width(contentWidth)
+                .height(180f)
                 .align("center"))
-            .row();
+                .row();
 
         card.add(UiBuilder.label("[yellow]" + server.getName())
                 .wrap()
                 .align("left")
                 .labelAlign("left")
-                .width(266f)
+                .width(contentWidth)
                 .padTop(6f))
-            .row();
+                .row();
 
         card.add(UiBuilder.label(statusText)
                 .align("left")
                 .labelAlign("left")
-                .width(266f)
+                .width(contentWidth)
                 .padTop(2f))
-            .row();
+                .row();
 
         if (isOnline) {
             String details = Tr.t(ctx.getSession().locale, "hub.list.gamemode", "mode", server.getMode().toLowerCase())
                     + " • " + Tr.t(ctx.getSession().locale, "hub.list.map", "map", server.getMapName());
             card.add(UiBuilder.label("[lightgray]" + details)
                     .wrap()
-                    .align("left")
+                        .align("left")
                     .labelAlign("left")
-                    .width(266f)
+                    .width(contentWidth)
                     .padTop(2f))
-                .row();
+                    .row();
         }
 
         if (server.getDescription() != null && !server.getDescription().trim().isEmpty()) {
             card.add(UiBuilder.label("[gray]" + server.getDescription())
                     .wrap()
-                    .align("left")
+                        .align("left")
                     .labelAlign("left")
-                    .width(266f)
-                    .padTop(3f))
-                .row();
+                    .width(contentWidth)
+                    .padTop(2f))
+                    .row();
         }
 
-        ctx.add(card);
-        ctx.row();
+        TableBuilder btnRow = UiBuilder.table().align("center");
+        float btnWidth = (contentWidth - 8f) / 2f;
 
-        ctx.table(actions -> {
-            actions.align("center");
-            String confirmAct = ctx.registerAction((sess, st, res) -> onServerChoose(sess.player, serverId, server.getName()));
-            actions.add(UiBuilder.button("[green]" + Iconc.right + " " + Tr.t(ctx.getSession().locale, "hub.redirect.yes"))
-                    .clicked(confirmAct)
-                    .width(130f)
-                    .height(36f)
-                    .pad(3f));
+        String confirmAct = ctx.registerAction((sess, st, res) -> onServerChoose(sess.player, serverId, server.getName()));
+        btnRow.add(UiBuilder.button("[green]" + Iconc.right + " " + Tr.t(ctx.getSession().locale, "hub.redirect.yes"))
+                .clicked(confirmAct)
+                .width(btnWidth)
+                .height(36f));
 
-            String cancelAct = ctx.registerAction((sess, st, res) -> {
-                // Closes dialog naturally by returning
-            });
-            actions.add(UiBuilder.button("[scarlet]" + Iconc.cancel + " " + Tr.t(ctx.getSession().locale, "hub.redirect.no"))
-                    .clicked(cancelAct)
-                    .width(130f)
-                    .height(36f)
-                    .pad(3f));
-        }).padTop(6f);
+        String cancelAct = ctx.registerAction((sess, st, res) -> {
+            // Closes dialog naturally by returning
+        });
+        btnRow.add(UiBuilder.button("[scarlet]" + Iconc.cancel + " " + Tr.t(ctx.getSession().locale, "hub.redirect.no"))
+                .clicked(cancelAct)
+                .width(btnWidth)
+                .height(36f)
+                .padLeft(8f));
+
+        card.add(btnRow)
+                .width(contentWidth)
+                .padTop(8f);
+
+        TableBuilder contentWrapper = UiBuilder.table().align("top");
+        contentWrapper.add(card);
+
+        PaneBuilder pane = UiBuilder.pane().add(contentWrapper).grow().align("top");
+        ctx.add(pane);
     }
 
     public void onServerChoose(Player player, String id, String name) {

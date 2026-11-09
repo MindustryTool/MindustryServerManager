@@ -115,12 +115,6 @@ public class RtvMenu extends ServerMenu<Integer> {
 
         this.title = Tr.t(ctx.getSession(), "rtv.available_maps");
 
-        ctx.label(Tr.t(ctx.getSession(), "rtv.select_map"))
-                .align("center")
-                .labelAlign("center")
-                .padBottom(6f);
-        ctx.row();
-
         float cardWidth = 280f;
         float cardHeight = 310f;
         float contentWidth = cardWidth - 20f;
