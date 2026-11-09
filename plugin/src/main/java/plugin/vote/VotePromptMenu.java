@@ -42,9 +42,8 @@ public class VotePromptMenu extends ServerMenu<Void> {
             actions.add(UiBuilder.button(Tr.t(ctx.getSession(), "votekick.btn_no")).clicked(noAct).width(135f).height(40f).pad(3f));
 
             if (ctx.getSession().player.admin) {
-                actions.row();
-                String cancelAct = ctx.registerAction((sess, st, res) -> voteKickService.cancelByAdmin(sess.player));
-                actions.add(UiBuilder.button(Tr.t(ctx.getSession(), "votekick.btn_cancel")).clicked(cancelAct).growX().height(38f).colspan(2).pad(3f));
+                ctx.row();
+                ctx.cancelButton(Tr.t(ctx.getSession(), "votekick.btn_cancel"), (sess, st, res) -> voteKickService.cancelByAdmin(sess.player));
             }
         });
     }

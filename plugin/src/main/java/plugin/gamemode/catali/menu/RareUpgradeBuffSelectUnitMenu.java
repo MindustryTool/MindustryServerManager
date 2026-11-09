@@ -64,12 +64,8 @@ public class RareUpgradeBuffSelectUnitMenu extends ServerMenu<CataliTeamData> {
 
         ctx.row();
 
-        var navBar = UiBuilder.table().pad(4f);
-        String backAct = ctx.registerAction((sess, t, res) -> {
+        ctx.cancelButton(Tr.t(session, "catali.back"), (sess, t, res) -> {
             Registry.get(RareUpgradeMenu.class).send(sess, team);
         });
-        navBar.add(UiBuilder.button(Tr.t(session, "catali.back")).clicked(backAct).width(120f).height(38f).pad(3f));
-
-        ctx.add(navBar);
     }
 }

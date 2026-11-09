@@ -5,7 +5,9 @@ import mindustry.gen.Iconc;
 import mindustry.ui.builder.UiBuilder;
 import plugin.Cfg;
 import plugin.annotations.Component;
+import plugin.core.Registry;
 import plugin.menus.MenuContext;
+import plugin.menus.PluginMenuService;
 import plugin.menus.ServerMenu;
 import plugin.utils.Tr;
 
@@ -36,6 +38,10 @@ public class WelcomeMenu extends ServerMenu<Void> {
 
             links.add(UiBuilder.button(Iconc.discord + " [royal]" + Tr.t(ctx.getSession(), "welcome.discord"))
                     .clicked(discordAct).growX().height(36f).pad(3f)).row();
+
+            String backAct = ctx.registerAction((sess, st, res) -> Registry.get(PluginMenuService.class).hide(sess.player));
+            links.add(UiBuilder.button(Tr.t(ctx.getSession(), "menu.back"))
+                    .clicked(backAct).growX().height(36f).pad(3f)).row();
         }).growX();
     }
 }

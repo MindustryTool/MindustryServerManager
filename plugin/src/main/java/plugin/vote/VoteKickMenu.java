@@ -80,8 +80,7 @@ public class VoteKickMenu extends ServerMenu<Player> {
             });
 
             ctx.row();
-            ctx.button(Tr.t(ctx.getSession(), "votekick.btn_back"), (sess, st, res) -> Registry.get(VoteKickMenu.class).send(sess, null))
-                .width(120f).height(36f).pad(3f);
+            ctx.cancelButton(Tr.t(ctx.getSession(), "votekick.btn_back"), (sess, st, res) -> Registry.get(VoteKickMenu.class).send(sess, null));
         }
     }
 }

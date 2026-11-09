@@ -12,6 +12,8 @@ import plugin.utils.JsonUtils;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.WatchEvent;
+import java.util.function.Consumer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -28,7 +30,7 @@ public class ConfigManagerTest {
         Vars.dataDirectory = new Fi(tempDir.toFile());
         FileWatcherManager dummyWatcher = new FileWatcherManager() {
             @Override
-            public void watch(Path target, java.util.function.Consumer<Path> callback, long debounceMs, java.nio.file.WatchEvent.Kind<?>... events) {
+            public void watch(Path target, Consumer<Path> callback, long debounceMs, WatchEvent.Kind<?>... events) {
                 // No-op for unit tests
             }
         };

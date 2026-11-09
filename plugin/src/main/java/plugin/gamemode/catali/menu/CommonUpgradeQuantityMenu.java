@@ -71,14 +71,9 @@ public class CommonUpgradeQuantityMenu extends ServerMenu<Pair<CataliTeamData, C
         ctx.add(container);
         ctx.row();
 
-        // Navigation bar
-        var navBar = UiBuilder.table().pad(4f);
-        String backAct = ctx.registerAction((sess, p, res) -> {
+        ctx.cancelButton(Tr.t(session, "catali.back"), (sess, p, res) -> {
             Registry.get(CommonUpgradeMenu.class).send(sess, team);
         });
-        navBar.add(UiBuilder.button(Tr.t(session, "catali.back")).clicked(backAct).width(120f).height(38f).pad(3f));
-
-        ctx.add(navBar);
     }
 
     private void applyPoints(Session session, CataliTeamData team, CataliCommonUpgrade upgrade, int amount) {
