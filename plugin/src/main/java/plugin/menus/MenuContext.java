@@ -6,7 +6,6 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import arc.func.Cons;
 import arc.func.Cons2;
-import arc.util.Log;
 import lombok.Getter;
 import mindustry.ui.builder.MenuResult;
 import mindustry.ui.builder.UiBuilder;
@@ -52,29 +51,14 @@ public class MenuContext<T> {
 
     public float getViewportWidth() {
         if (session.player != null && session.player.con != null && session.player.con.viewWidth > 0) {
-            Log.info("[MenuContext-Debug] Player '@' (con.mobile=@): using con.viewWidth=@, con.viewHeight=@, viewX=@, viewY=@",
-                    session.player.name, session.player.con.mobile, session.player.con.viewWidth, session.player.con.viewHeight,
-                    session.player.con.viewX, session.player.con.viewY);
             return session.player.con.viewWidth;
         }
-        boolean mobile = isMobile();
-        float fallback = mobile ? SAFE_WIDTH : 1200f;
-        Log.info("[MenuContext-Debug] Player '@': fallback used (mobile=@, con=@, rawViewWidth=@) -> returning @",
-                session.player != null ? session.player.name : "null",
-                mobile,
-                (session.player != null && session.player.con != null) ? "present" : "null",
-                (session.player != null && session.player.con != null) ? session.player.con.viewWidth : -1f,
-                fallback);
-        return fallback;
+        return isMobile() ? SAFE_WIDTH : 1200f;
     }
 
     public int getResponsiveColumns(float itemWidth, float spacing) {
         float availableWidth = getViewportWidth();
-        float raw = (availableWidth - 32f + spacing) / (itemWidth + spacing);
-        int cols = Math.max(1, (int) Math.floor(raw));
-        Log.info("[MenuContext-Debug] getResponsiveColumns: itemWidth=@, spacing=@, availableWidth=@, rawCols=@, calculatedCols=@",
-                itemWidth, spacing, availableWidth, raw, cols);
-        return cols;
+        return Math.max(1, (int) Math.floor((availableWidth - 32f + spacing) / (itemWidth + spacing)));
     }
 
     public float safeMaxPaneHeight(float requestedHeight) {

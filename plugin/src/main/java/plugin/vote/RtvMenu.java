@@ -2,7 +2,6 @@ package plugin.vote;
 
 import arc.files.Fi;
 import arc.struct.Seq;
-import arc.util.Log;
 import arc.util.Scaling;
 import mindustry.Vars;
 import mindustry.gen.Iconc;
@@ -123,10 +122,6 @@ public class RtvMenu extends ServerMenu<Integer> {
         int maxCols = ctx.getResponsiveColumns(cardWidth, spacing);
         float innerWidth = maxCols * cardWidth + Math.max(0, maxCols - 1) * spacing;
         int index = 0;
-
-        Log.info("[RtvMenu-Debug] build() player='@', entries=@, cardWidth=@, spacing=@, maxCols=@, innerWidth=@, fillScreen=@",
-                (ctx.getSession() != null && ctx.getSession().player != null) ? ctx.getSession().player.name : "null",
-                entries.size, cardWidth, spacing, maxCols, innerWidth, this.fillScreen);
 
         TableBuilder grid = UiBuilder.table().align("topLeft").width(innerWidth);
 

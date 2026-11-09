@@ -1,6 +1,8 @@
 package plugin.utils;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.time.Instant;
@@ -24,6 +26,7 @@ import arc.files.Fi;
 import arc.util.Log;
 import arc.util.Strings;
 import arc.util.Time;
+import arc.util.io.FastDeflaterOutputStream;
 import arc.util.Http.HttpStatusException;
 import java.security.MessageDigest;
 import common.content.Mod;
@@ -36,6 +39,7 @@ import mindustry.core.Version;
 import mindustry.gen.Groups;
 import mindustry.gen.Player;
 import mindustry.io.SaveIO;
+import mindustry.io.SaveOptions;
 import mindustry.maps.Map;
 import plugin.Control;
 import plugin.Tasks;
@@ -182,16 +186,10 @@ public class Utils {
         }
     }
 
-    private static final String MAP_PREVIEW_FILE_NAME = "map-preview.msav";
     private static final String MAP_PREVIEW_IMAGE_FILE_NAME = "map-preview-image.png";
 
     public static synchronized void generateMapPreview(boolean force) {
-        Fi tempFile = Vars.dataDirectory.child(MAP_PREVIEW_FILE_NAME);
         Fi tempImageFile = Vars.dataDirectory.child(MAP_PREVIEW_IMAGE_FILE_NAME);
-
-        if (tempFile.isDirectory()) {
-            tempFile.deleteDirectory();
-        }
 
         if (tempImageFile.isDirectory()) {
             tempImageFile.deleteDirectory();
@@ -204,13 +202,17 @@ public class Utils {
         if (force || lastImagePreviewAt.plusSeconds(3 * 60).isBefore(Instant.now())) {
             lastImagePreviewAt = Instant.now();
 
-            appPostWithTimeout(() -> {
-                SaveIO.save(tempFile);
+            byte[] bytes = appPostWithTimeout(() -> {
+                ByteArrayOutputStream raw = new ByteArrayOutputStream();
+                try (FastDeflaterOutputStream deflated = new FastDeflaterOutputStream(raw)) {
+                    SaveIO.write(deflated, new SaveOptions());
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+                return raw.toByteArray();
             }, 3000, "Generate map preview");
 
             Tasks.io("generate map preview", () -> {
-                var bytes = tempFile.readBytes();
-
                 if (bytes.length == 0) {
                     return;
                 }
