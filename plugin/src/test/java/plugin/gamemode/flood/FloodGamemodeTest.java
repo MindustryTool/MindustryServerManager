@@ -57,7 +57,21 @@ public class FloodGamemodeTest {
     void testConfigDefaultsAndConstructors() {
         assertEquals(120_000L, config.coreExplosionTime);
         assertNotNull(config.floodTiles);
-        assertEquals(10, config.floodTiles.size);
+        assertEquals(7, config.floodTiles.size);
+
+        assertEquals(9f, config.floodTiles.first().damage);
+
+        var expectedBlocks = Seq.with(
+                Blocks.scrapWall,
+                Blocks.copperWall,
+                Blocks.titaniumWall,
+                Blocks.plastaniumWall,
+                Blocks.thoriumWall,
+                Blocks.phaseWall,
+                Blocks.surgeWall);
+        for (int i = 0; i < expectedBlocks.size; i++) {
+            assertEquals(expectedBlocks.get(i), config.floodTiles.get(i).block);
+        }
 
         for (var tile : config.floodTiles) {
             assertNotNull(tile.block);
@@ -66,11 +80,11 @@ public class FloodGamemodeTest {
             assertTrue(tile.spawnChance > 0f);
         }
 
-        var customTile3 = new FloodConfig.FloodTile(Blocks.conveyor, 10f, 30L);
+        var customTile3 = new FloodConfig.FloodTile(Blocks.scrapWall, 10f, 30L);
         assertNull(customTile3.unitType);
         assertEquals(0f, customTile3.spawnChance);
 
-        var customTile5 = new FloodConfig.FloodTile(Blocks.conveyor, 10f, 30L, UnitTypes.crawler, 0.05f);
+        var customTile5 = new FloodConfig.FloodTile(Blocks.scrapWall, 10f, 30L, UnitTypes.crawler, 0.05f);
         assertEquals(UnitTypes.crawler, customTile5.unitType);
         assertEquals(0.05f, customTile5.spawnChance);
     }

@@ -92,7 +92,7 @@ public class RtvMenu extends ServerMenu<Integer> {
                 if (imageFile != null && imageFile.exists()) {
                     byte[] bytes = imageFile.readBytes();
                     if (bytes.length > 0 && player.con != null && Vars.netServer != null) {
-                        Vars.netServer.sendTexture(player.con, "net-map-" + map.file.nameWithoutExtension(), bytes);
+                        Vars.netServer.sendTexture(player.con, "map-" + map.file.nameWithoutExtension(), bytes);
                     }
                 }
             }

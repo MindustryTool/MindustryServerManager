@@ -1,6 +1,7 @@
 package plugin.hub;
 
 import java.net.InetAddress;
+import java.util.List;
 import arc.util.Log;
 import arc.util.Scaling;
 import arc.util.Timer;
@@ -24,12 +25,17 @@ import plugin.utils.Utils;
 public class ServerRedirectMenu extends ServerMenu<Server> {
 
     private final ApiGateway apiGateway;
+    private final ServerImageService serverImageService;
 
     @Override
     public void build(MenuContext<Server> ctx) {
         Server server = ctx.getState();
         if (server == null) {
             return;
+        }
+
+        if (ctx.getSession() != null && ctx.getSession().player != null && serverImageService != null) {
+            serverImageService.streamServerTextures(ctx.getSession().player, List.of(server));
         }
 
         this.title = Tr.t(ctx.getSession().locale, "hub.redirect.title");

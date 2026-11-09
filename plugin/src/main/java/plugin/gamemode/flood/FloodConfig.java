@@ -11,20 +11,16 @@ import mindustry.type.UnitType;
 import mindustry.world.Block;
 import plugin.annotations.Configuration;
 
-@Configuration("flood/config.json")
+@Configuration(value = "flood/config.json", version = 3)
 public class FloodConfig {
     public Seq<FloodTile> floodTiles = Seq.with(
-            new FloodTile(Blocks.conveyor, 9f, 20, UnitTypes.atrax, 0.050f),
-            new FloodTile(Blocks.titaniumConveyor, 12f, 80, UnitTypes.atrax, 0.045f),
-            new FloodTile(Blocks.armoredConveyor, 15f, 125, UnitTypes.atrax, 0.040f),
-            new FloodTile(Blocks.scrapWall, 18f, 160, UnitTypes.atrax, 0.035f),
-            new FloodTile(Blocks.copperWall, 24f, 200, UnitTypes.spiroct, 0.030f),
-            new FloodTile(Blocks.titaniumWall, 30f, 300, UnitTypes.spiroct, 0.025f),
-            new FloodTile(Blocks.plastaniumWall, 45f, 400, UnitTypes.spiroct, 0.020f),
-            new FloodTile(Blocks.thoriumWall, 60f, 600, UnitTypes.arkyid, 0.015f),
-            new FloodTile(Blocks.phaseWall, 90f, 800, UnitTypes.arkyid, 0.010f),
-            new FloodTile(Blocks.surgeWall, 120f, 1100, UnitTypes.toxopid, 0.005f)
-    );
+            new FloodTile(Blocks.scrapWall, 9f, 70, UnitTypes.atrax, 0.035f),
+            new FloodTile(Blocks.copperWall, 14f, 120, UnitTypes.atrax, 0.030f),
+            new FloodTile(Blocks.titaniumWall, 21f, 200, UnitTypes.spiroct, 0.025f),
+            new FloodTile(Blocks.plastaniumWall, 33f, 400, UnitTypes.spiroct, 0.020f),
+            new FloodTile(Blocks.thoriumWall, 51f, 600, UnitTypes.arkyid, 0.015f),
+            new FloodTile(Blocks.phaseWall, 78f, 800, UnitTypes.arkyid, 0.010f),
+            new FloodTile(Blocks.surgeWall, 120f, 1100, UnitTypes.toxopid, 0.005f));
 
     public float suppressThreshold = 500f;
     public long suppressTime = 1000 * 5;

@@ -183,3 +183,41 @@ The system SHALL ensure that deferred execution tasks for flood tile downgrades,
 #### Scenario: Deferred unit spawn discarded after map change
 - **WHEN** unit spawning from block destruction or night spawn is queued in `Core.app.post` but the world changes before execution
 - **THEN** the task detects that the active match has ended and discards the spawn without adding units to the new match
+
+### Requirement: Walls-only flood tier ladder
+
+The system SHALL define the default `floodTiles` ladder as 7 walls-only tiers ending in `surgeWall`, containing no conveyor blocks, and the spreader SHALL seed, spread, and evolve using this configured order.
+
+#### Scenario: Default ladder has no conveyors
+
+- **WHEN** the system loads `FloodConfig` defaults
+- **THEN** `floodTiles` contains exactly `scrapWall`, `copperWall`, `titaniumWall`, `plastaniumWall`, `thoriumWall`, `phaseWall`, `surgeWall` and none of `conveyor`, `titaniumConveyor`, or `armoredConveyor`
+
+#### Scenario: Spread seeds with scrapWall
+
+- **WHEN** the flood seeds from an unsuppressed core with default config
+- **THEN** newly seeded and spread tiles are placed as `scrapWall` (the first configured tier)
+
+#### Scenario: Evolution follows wall order
+
+- **WHEN** a flood tile evolves past its `evolveTime`
+- **THEN** it transitions to the next wall in the 7-tier order until `surgeWall` is reached
+
+### Requirement: Rebalanced damage and evolve-time defaults
+
+The system SHALL ship default tier values that rescale `damage` geometrically from 9 to 120 and moderately compress early `evolveTime` while anchoring late tiers, with all other tier fields (`unitType`, `spawnChance`) carried over unchanged per tier.
+
+#### Scenario: Damage matches geometric ladder
+
+- **WHEN** the system loads `FloodConfig` defaults
+- **THEN** damages are approximately 9, 14, 21, 33, 51, 78, 120 across the 7 wall tiers and the first tier is 9
+
+#### Scenario: Early evolve times are compressed
+
+- **WHEN** the system loads `FloodConfig` defaults
+- **THEN** `scrapWall` evolve time is in the 60-80s class (strictly less than the old 160s) and `surgeWall` remains 1100s
+
+#### Scenario: Spawn configuration is untouched
+
+- **WHEN** the system loads `FloodConfig` defaults
+- **THEN** each wall tier keeps its previously configured `unitType` and `spawnChance` with no rebalancing

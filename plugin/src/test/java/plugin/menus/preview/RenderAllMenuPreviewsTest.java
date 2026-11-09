@@ -234,7 +234,7 @@ class RenderAllMenuPreviewsTest {
         ServerListMenu serverListMenu = new ServerListMenu(mockGateway, stubImageService);
         serverListMenu.setState(0);
 
-        ServerRedirectMenu serverRedirectMenu = new ServerRedirectMenu(mockGateway);
+        ServerRedirectMenu serverRedirectMenu = new ServerRedirectMenu(mockGateway, stubImageService);
         serverRedirectMenu.setState(server1);
 
         Session session = MockSession.builder().locale("en").build();

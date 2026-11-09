@@ -96,7 +96,7 @@ public class ServerImageService {
                 String serverId = server.getId().toString();
                 byte[] imageBytes = getImage(serverId);
                 if (imageBytes != null && imageBytes.length > 0 && player.con != null && Vars.netServer != null) {
-                    Vars.netServer.sendTexture(player.con, "net-server-" + serverId, imageBytes);
+                    Vars.netServer.sendTexture(player.con, "server-" + serverId, imageBytes);
                 }
             }
         });
