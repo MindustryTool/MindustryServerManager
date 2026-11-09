@@ -5,7 +5,9 @@ import lombok.RequiredArgsConstructor;
 import mindustry.gen.Iconc;
 import mindustry.ui.builder.UiBuilder;
 import mindustry.ui.builder.UiBuilder.TableBuilder;
+import plugin.Cfg.OnOfficial;
 import plugin.annotations.Component;
+import plugin.annotations.ConditionOn;
 import plugin.core.Registry;
 import plugin.menus.MenuContext;
 import plugin.menus.ServerMenu;
@@ -14,6 +16,7 @@ import plugin.utils.Tr;
 
 @Component
 @RequiredArgsConstructor
+@ConditionOn(OnOfficial.class)
 public class ShopMenu extends ServerMenu<Integer> {
 
     private final ShopRegistry shopRegistry;

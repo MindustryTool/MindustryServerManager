@@ -6,13 +6,16 @@ import lombok.RequiredArgsConstructor;
 import mindustry.gen.Iconc;
 import mindustry.ui.builder.UiBuilder;
 import mindustry.ui.builder.UiBuilder.TableBuilder;
+import plugin.Cfg.OnOfficial;
 import plugin.annotations.Component;
+import plugin.annotations.ConditionOn;
 import plugin.menus.MenuContext;
 import plugin.menus.ServerMenu;
 import plugin.utils.Tr;
 
 @Component
 @RequiredArgsConstructor
+@ConditionOn(OnOfficial.class)
 public class TaskMenu extends ServerMenu<Integer> {
 
     private final DailyTaskService dailyTaskService;
@@ -47,10 +50,12 @@ public class TaskMenu extends ServerMenu<Integer> {
                 card.add(UiBuilder.label(rewardBadge).align("right").padLeft(4f));
                 card.row();
 
-                card.add(UiBuilder.label("[lightgray]" + task.getDescription(ctx.getSession())).wrap().align("left").colspan(2).growX().padLeft(4f));
+                card.add(UiBuilder.label("[lightgray]" + task.getDescription(ctx.getSession())).wrap().align("left")
+                        .colspan(2).growX().padLeft(4f));
                 card.row();
 
-                String progressText = Tr.t(ctx.getSession(), "task.progress", "current", Math.min(progress, task.getGoal()), "target", task.getGoal());
+                String progressText = Tr.t(ctx.getSession(), "task.progress", "current",
+                        Math.min(progress, task.getGoal()), "target", task.getGoal());
                 card.add(UiBuilder.label(progressText).align("left").colspan(2).padLeft(4f));
                 card.row();
 
