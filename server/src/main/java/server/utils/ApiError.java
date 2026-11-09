@@ -59,6 +59,7 @@ public class ApiError extends RuntimeException {
         for (StackTraceElement element : message.getStackTrace()) {
             sb.append("\n").append(element);
         }
+        
         return new ApiError(500, sb.toString(), message);
     }
 

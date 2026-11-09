@@ -43,6 +43,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
@@ -184,7 +185,7 @@ public class GatewayClient {
     public boolean terminate(NodeRemoveReason reason) {
         if (rpcChannel.isConnected()) {
             try {
-                this.server.shutdown().get(5, java.util.concurrent.TimeUnit.SECONDS);
+                this.server.shutdown().get(5, TimeUnit.SECONDS);
             } catch (Exception e) {
                 Log.err("Shutdown request failed for client " + id + ", continuing termination", e);
             }
