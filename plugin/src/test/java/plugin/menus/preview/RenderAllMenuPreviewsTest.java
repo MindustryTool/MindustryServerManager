@@ -200,22 +200,38 @@ class RenderAllMenuPreviewsTest {
     @Test
     void renderHubFeature() {
         Server server1 = new Server()
-                .setId(UUID.randomUUID())
-                .setName("Survival EU Alpha")
-                .setDescription("Official survival sector with active defenses and custom waves")
-                .setMode("survival")
-                .setMapName("Ancient Caldera")
+                .setId(UUID.fromString("019c488a-b22e-76df-99c3-00f4f9add778"))
+                .setName("[#B388FF]V[#A970FF]N[#9B5CFF]M Flood")
+                .setDescription("Flood survival with active dynamic waves and defenses")
+                .setMode("ATTACK")
+                .setMapName("flod 3[red][v1.3]")
                 .setPlayers(12);
 
         Server server2 = new Server()
-                .setId(UUID.randomUUID())
-                .setName("Attack Arena Asia")
-                .setDescription("High intensity attack match against enemy core bases")
-                .setMode("attack")
-                .setMapName("Fortress Assault")
+                .setId(UUID.fromString("019b9d4c-9d44-70a9-b520-4bbd756cd007"))
+                .setName("[#B388FF]V[#A970FF]N[#9B5CFF]M[] [#FF3355]San[#FF6B6B]box[]")
+                .setDescription("PvP Sandbox arena with custom building kits")
+                .setMode("SANDBOX")
+                .setMapName("diamond")
                 .setPlayers(8);
 
-        List<Server> mockServers = List.of(server1, server2);
+        Server server3 = new Server()
+                .setId(UUID.fromString("019b9d0f-277a-7193-bc66-1de6cb8d5d60"))
+                .setName("[#B388FF]V[#A970FF]N[#9B5CFF]M[] [#FFD60A]Zi[#FF9F1C]ger[]")
+                .setDescription("[green]Infinite [sky]item, [green]infinite [scarlet]enemy")
+                .setMode("ATTACK")
+                .setMapName("labubu dubai chocolate")
+                .setPlayers(5);
+
+        Server server4 = new Server()
+                .setId(UUID.fromString("019b9d5a-a68c-763f-8285-f82b4bf6cfe0"))
+                .setName("[#B388FF]V[#A970FF]N[#9B5CFF]M[] [#39FF88]Tower [#1FD1A5]Defense[]")
+                .setDescription("Tower defense survival against enemy waves")
+                .setMode("SURVIVAL")
+                .setMapName("Stone maze")
+                .setPlayers(3);
+
+        List<Server> mockServers = List.of(server1, server2, server3, server4);
 
         ApiGateway mockGateway = new ApiGateway(null, null) {
             @Override
@@ -226,6 +242,8 @@ class RenderAllMenuPreviewsTest {
 
         mockPreviewTexture("net-server-" + server1.getId(), Color.valueOf("1e3c72"), Color.valueOf("2a5298"));
         mockPreviewTexture("net-server-" + server2.getId(), Color.valueOf("b22222"), Color.valueOf("4a0e17"));
+        mockPreviewTexture("net-server-" + server3.getId(), Color.valueOf("d4a017"), Color.valueOf("5a3d00"));
+        mockPreviewTexture("net-server-" + server4.getId(), Color.valueOf("205020"), Color.valueOf("0a200a"));
 
         ServerImageService stubImageService = new ServerImageService();
         GlobalServerListMenu globalServerListMenu = new GlobalServerListMenu(mockGateway, stubImageService);
@@ -300,12 +318,18 @@ class RenderAllMenuPreviewsTest {
 
     @Test
     void renderVoteFeature() {
-        Map mapA = createMap("craters.msav", "Ancient Craters - Sector 146");
-        Map mapB = createMap("ruins.msav", "Desolate Windswept Ruins");
-        Seq<Map> maps = Seq.with(mapA, mapB);
+        Map mapA = createMap("flod3.msav", "flod 3[red][v1.3]");
+        Map mapB = createMap("diamond.msav", "diamond");
+        Map mapC = createMap("flod10.msav", "flod 10[red][v1.5]");
+        Map mapD = createMap("easyflod.msav", "easy flood");
+        Map mapE = createMap("StoneMaze.msav", "Stone maze");
+        Seq<Map> maps = Seq.with(mapA, mapB, mapC, mapD, mapE);
 
-        mockPreviewTexture("net-map-craters", Color.valueOf("2b580c"), Color.valueOf("639a67"));
-        mockPreviewTexture("net-map-ruins", Color.valueOf("4a2810"), Color.valueOf("7c3f00"));
+        mockPreviewTexture("net-map-flod3", Color.valueOf("2b580c"), Color.valueOf("639a67"));
+        mockPreviewTexture("net-map-diamond", Color.valueOf("1a4a6e"), Color.valueOf("4da8da"));
+        mockPreviewTexture("net-map-flod10", Color.valueOf("6a1b1b"), Color.valueOf("b22222"));
+        mockPreviewTexture("net-map-easyflod", Color.valueOf("2d5a27"), Color.valueOf("85a970"));
+        mockPreviewTexture("net-map-StoneMaze", Color.valueOf("4a4036"), Color.valueOf("8a7b6c"));
 
         RtvMenu rtvMenu = new RtvMenu(new RtvService(null, null) {
             @Override
@@ -315,7 +339,7 @@ class RenderAllMenuPreviewsTest {
 
             @Override
             public boolean isVoted(Player player, String mapId) {
-                return "craters".equals(mapId);
+                return "flod3".equals(mapId);
             }
         }, new MapRatingService((MapRatingRepository) null) {
             @Override
@@ -387,8 +411,8 @@ class RenderAllMenuPreviewsTest {
 
     @Test
     void renderMapRatingFeature() {
-        Map sampleMap = createMap("craters.msav", "Ancient Craters");
-        mockPreviewTexture("net-map-craters", Color.valueOf("2b580c"), Color.valueOf("639a67"));
+        Map sampleMap = createMap("flod3.msav", "flod 3[red][v1.3]");
+        mockPreviewTexture("net-map-flod3", Color.valueOf("2b580c"), Color.valueOf("639a67"));
         MapRatingService mapRatingService = new MapRatingService(null);
         RateMapMenu rateMapMenu = new RateMapMenu(mapRatingService);
         rateMapMenu.setState(sampleMap);
@@ -406,9 +430,9 @@ class RenderAllMenuPreviewsTest {
                 new MapRecordPlayer("u2", "SpeedRunner_99"),
                 new MapRecordPlayer("u3", "DefenderHero")
         );
-        MapRecord rec1 = new MapRecord(1L, "Ancient Craters", "survival", 1254000L, players, System.currentTimeMillis());
-        MapRecord rec2 = new MapRecord(2L, "Ancient Craters", "survival", 1580000L, List.of(new MapRecordPlayer("u4", "SoloMaster")), System.currentTimeMillis());
-        MapRecordMenuState recordState = new MapRecordMenuState("Ancient Craters", "survival", List.of(rec1, rec2));
+        MapRecord rec1 = new MapRecord(1L, "flod 3[red][v1.3]", "attack", 1254000L, players, System.currentTimeMillis());
+        MapRecord rec2 = new MapRecord(2L, "flod 3[red][v1.3]", "attack", 1580000L, List.of(new MapRecordPlayer("u4", "SoloMaster")), System.currentTimeMillis());
+        MapRecordMenuState recordState = new MapRecordMenuState("flod 3[red][v1.3]", "attack", List.of(rec1, rec2));
 
         MapRecordsMenu mapRecordsMenu = new MapRecordsMenu();
         mapRecordsMenu.setState(recordState);

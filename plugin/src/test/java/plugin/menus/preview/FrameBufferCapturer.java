@@ -52,6 +52,8 @@ public final class FrameBufferCapturer {
                 Vars.mobile = viewport.mobile;
                 if (session.player != null && session.player.con != null) {
                     session.player.con.mobile = viewport.mobile;
+                    session.player.con.viewWidth = screenW;
+                    session.player.con.viewHeight = screenH;
                 }
 
                 Core.scene.resize(screenW, screenH);

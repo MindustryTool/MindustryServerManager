@@ -49,6 +49,18 @@ public class MenuContext<T> {
         return session.player != null && session.player.con != null && session.player.con.mobile;
     }
 
+    public float getViewportWidth() {
+        if (session.player != null && session.player.con != null && session.player.con.viewWidth > 0) {
+            return session.player.con.viewWidth;
+        }
+        return isMobile() ? SAFE_WIDTH : 1200f;
+    }
+
+    public int getResponsiveColumns(float itemWidth, float spacing) {
+        float availableWidth = getViewportWidth();
+        return Math.max(1, (int) Math.floor((availableWidth - 32f) / (itemWidth + spacing)));
+    }
+
     public float safeMaxPaneHeight(float requestedHeight) {
         if (isMobile()) {
             return Math.min(requestedHeight, MOBILE_MAX_PANE_HEIGHT);

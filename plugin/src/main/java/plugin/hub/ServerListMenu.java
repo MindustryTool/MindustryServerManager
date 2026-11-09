@@ -43,10 +43,21 @@ public class ServerListMenu extends ServerMenu<Integer> {
                 serverImageService.streamServerTextures(ctx.getSession().player, servers);
             }
 
-            ctx.label(Tr.t(ctx.getSession().locale, "hub.choose_server")).padBottom(4f);
+            ctx.getRoot().align("topLeft");
+
+            ctx.label(Tr.t(ctx.getSession().locale, "hub.choose_server"))
+                    .align("left")
+                    .labelAlign("left")
+                    .padBottom(6f);
             ctx.row();
 
-            TableBuilder grid = UiBuilder.table().align("top").align("left");
+            TableBuilder grid = UiBuilder.table().align("topLeft");
+
+            float cardWidth = 360f;
+            float cardHeight = 380f;
+            float contentWidth = cardWidth - 20f;
+            int cols = ctx.getResponsiveColumns(cardWidth, 8f);
+            int[] index = {0};
 
             if (servers == null || servers.isEmpty()) {
                 grid.add(UiBuilder.label("[lightgray]" + Tr.t(ctx.getSession().locale, "hub.list.server_offline"))
@@ -55,9 +66,6 @@ public class ServerListMenu extends ServerMenu<Integer> {
                         .growX()
                         .pad(16f));
             } else {
-                int cols = ctx.isMobile() ? 1 : 2;
-                int[] index = {0};
-
                 servers.stream().sorted(Comparator.comparing(Server::getPlayers).reversed()).forEach(server -> {
                     String serverId = server.getId() != null ? server.getId().toString() : "";
                     var mods = server.getMods();
@@ -70,14 +78,19 @@ public class ServerListMenu extends ServerMenu<Integer> {
                             ? "[green]● " + Tr.t(ctx.getSession().locale, "hub.list.players", "players", server.getPlayers())
                             : "[scarlet]● " + Tr.t(ctx.getSession().locale, "hub.list.server_offline");
 
-                    TableBuilder card = UiBuilder.table().background("pane").margin(10f).align("top").align("left");
-                    card.width(200f).pad(4f);
+                    TableBuilder card = UiBuilder.table()
+                            .background("pane")
+                            .margin(10f)
+                            .align("topLeft")
+                            .width(cardWidth)
+                            .height(cardHeight)
+                            .pad(4f);
 
                     card.add(UiBuilder.image("net-server-" + serverId)
                             .placeholder("nomap")
                             .scaling(Scaling.fit)
-                            .width(180f)
-                            .height(100f)
+                            .width(contentWidth)
+                            .height(180f)
                             .align("center"))
                         .row();
 
@@ -85,15 +98,15 @@ public class ServerListMenu extends ServerMenu<Integer> {
                             .wrap()
                             .align("left")
                             .labelAlign("left")
-                            .width(180f)
-                            .padTop(4f))
+                            .width(contentWidth)
+                            .padTop(6f))
                         .row();
 
                     card.add(UiBuilder.label(statusText)
                             .align("left")
                             .labelAlign("left")
-                            .width(180f)
-                            .padTop(2f))
+                            .width(contentWidth)
+                            .padTop(3f))
                         .row();
 
                     if (isOnline) {
@@ -103,8 +116,8 @@ public class ServerListMenu extends ServerMenu<Integer> {
                                 .wrap()
                                 .align("left")
                                 .labelAlign("left")
-                                .width(180f)
-                                .padTop(2f))
+                                .width(contentWidth)
+                                .padTop(3f))
                             .row();
                     }
 
@@ -113,8 +126,8 @@ public class ServerListMenu extends ServerMenu<Integer> {
                                 .wrap()
                                 .align("left")
                                 .labelAlign("left")
-                                .width(180f)
-                                .padTop(2f))
+                                .width(contentWidth)
+                                .padTop(3f))
                             .row();
                     }
 
@@ -122,10 +135,10 @@ public class ServerListMenu extends ServerMenu<Integer> {
                     String buttonLabel = "[accent]" + Iconc.right + " " + (isOnline ? "Play" : "Start");
                     card.add(UiBuilder.button(buttonLabel)
                             .clicked(connectAction)
-                            .width(180f)
-                            .height(34f)
+                            .width(contentWidth)
+                            .height(38f)
                             .align("left")
-                            .padTop(6f));
+                            .padTop(8f));
 
                     grid.add(card);
                     if (++index[0] % cols == 0) {
@@ -134,7 +147,7 @@ public class ServerListMenu extends ServerMenu<Integer> {
                 });
             }
 
-            PaneBuilder pane = UiBuilder.pane().add(grid).grow();
+            PaneBuilder pane = UiBuilder.pane().add(grid).grow().align("topLeft");
             ctx.add(pane);
 
             if (page > 0 || (servers != null && servers.size() == size)) {

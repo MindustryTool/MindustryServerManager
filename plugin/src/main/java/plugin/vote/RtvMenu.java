@@ -111,12 +111,23 @@ public class RtvMenu extends ServerMenu<Integer> {
             streamMapTextures(ctx.getSession().player, maps);
         }
 
+        ctx.getRoot().align("topLeft");
+
         this.title = Tr.t(ctx.getSession(), "rtv.available_maps");
 
-        ctx.label(Tr.t(ctx.getSession(), "rtv.select_map")).padBottom(4f);
+        ctx.label(Tr.t(ctx.getSession(), "rtv.select_map"))
+                .align("left")
+                .labelAlign("left")
+                .padBottom(6f);
         ctx.row();
 
-        TableBuilder grid = UiBuilder.table().align("top").align("left");
+        TableBuilder grid = UiBuilder.table().align("topLeft");
+
+        float cardWidth = 280f;
+        float cardHeight = 310f;
+        float contentWidth = cardWidth - 20f;
+        int cols = ctx.getResponsiveColumns(cardWidth, 8f);
+        int index = 0;
 
         if (entries.isEmpty()) {
             grid.add(UiBuilder.label("[lightgray]" + Tr.t(ctx.getSession(), "maprating.no_more_maps"))
@@ -125,8 +136,6 @@ public class RtvMenu extends ServerMenu<Integer> {
                     .growX()
                     .pad(16f));
         } else {
-            int cols = ctx.isMobile() ? 2 : 3;
-            int index = 0;
             for (RtvMapEntry entry : entries) {
                 Map map = entry.map();
                 MapRatingStat stats = entry.stat();
@@ -134,32 +143,37 @@ public class RtvMenu extends ServerMenu<Integer> {
                 boolean isVoted = rtvService.isVoted(ctx.getSession().player, map.file.nameWithoutExtension());
                 String mapId = map.file.nameWithoutExtension();
 
-                TableBuilder card = UiBuilder.table().background("pane").margin(10f).align("top").align("center");
-                card.width(148f).pad(4f);
+                TableBuilder card = UiBuilder.table()
+                        .background("pane")
+                        .margin(10f)
+                        .align("topLeft")
+                        .width(cardWidth)
+                        .height(cardHeight)
+                        .pad(4f);
 
                 card.add(UiBuilder.image("net-map-" + mapId)
                         .placeholder("nomap")
                         .scaling(Scaling.fit)
-                        .width(128f)
-                        .height(80f)
+                        .width(contentWidth)
+                        .height(160f)
                         .align("center"))
                     .row();
 
                 String nameText = (map.name() != null && !map.name().isEmpty()) ? map.name() : mapId;
                 card.add(UiBuilder.label("[white]" + nameText)
                         .wrap()
-                        .align("center")
-                        .labelAlign("center")
-                        .width(128f)
-                        .padTop(4f))
+                        .align("left")
+                        .labelAlign("left")
+                        .width(contentWidth)
+                        .padTop(6f))
                     .row();
 
                 String ratingText = String.format("%s%.2f [gold]%c [gray](%d)",
                     ratingColor, stats.avgScore, Iconc.star, stats.totalVotes);
                 card.add(UiBuilder.label(ratingText)
-                        .align("center")
-                        .labelAlign("center")
-                        .width(128f)
+                        .align("left")
+                        .labelAlign("left")
+                        .width(contentWidth)
                         .padTop(2f))
                     .row();
 
@@ -170,10 +184,10 @@ public class RtvMenu extends ServerMenu<Integer> {
 
                 card.add(UiBuilder.button(voteBtnText)
                         .clicked(voteAct)
-                        .width(128f)
-                        .height(34f)
-                        .align("center")
-                        .padTop(4f));
+                        .width(contentWidth)
+                        .height(36f)
+                        .align("left")
+                        .padTop(8f));
 
                 grid.add(card);
                 if (++index % cols == 0) {
@@ -182,7 +196,7 @@ public class RtvMenu extends ServerMenu<Integer> {
             }
         }
 
-        PaneBuilder pane = UiBuilder.pane().add(grid).grow();
+        PaneBuilder pane = UiBuilder.pane().add(grid).grow().align("topLeft");
         ctx.add(pane);
     }
 }

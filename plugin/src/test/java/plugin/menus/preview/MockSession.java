@@ -1,6 +1,5 @@
 package plugin.menus.preview;
 
-import java.util.Locale;
 import java.util.Objects;
 import common.player.Login;
 import mindustry.gen.Player;
@@ -76,6 +75,8 @@ public final class MockSession {
             }
         };
         player.con.mobile = mobile;
+        player.con.viewWidth = mobile ? 360f : 1920f;
+        player.con.viewHeight = mobile ? 720f : 1080f;
 
         SessionData data = new SessionData();
         data.name = name;
