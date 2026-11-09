@@ -54,7 +54,7 @@ public class GlobalServerListMenu extends ServerMenu<Integer> {
             float spacing = 8f;
             int maxCols = ctx.getResponsiveColumns(cardWidth, spacing);
             float innerWidth = maxCols * cardWidth + Math.max(0, maxCols - 1) * spacing;
-            int[] index = {0};
+            int[] index = { 0 };
 
             TableBuilder grid = UiBuilder.table().align("topLeft").width(innerWidth);
 
@@ -69,7 +69,8 @@ public class GlobalServerListMenu extends ServerMenu<Integer> {
                     String serverId = server.getId() != null ? server.getId().toString() : "";
                     boolean isOnline = server.getMapName() != null;
                     String statusText = isOnline
-                            ? "[green]● " + Tr.t(ctx.getSession().locale, "hub.global.players", "players", server.getPlayers())
+                            ? "[green]● " + Tr.t(ctx.getSession().locale, "hub.global.players", "players",
+                                    server.getPlayers())
                             : "[scarlet]● " + Tr.t(ctx.getSession().locale, "hub.global.server_offline");
 
                     TableBuilder card = UiBuilder.table()
@@ -86,7 +87,7 @@ public class GlobalServerListMenu extends ServerMenu<Integer> {
                             .width(contentWidth)
                             .height(180f)
                             .align("center"))
-                        .row();
+                            .row();
 
                     card.add(UiBuilder.label("[gold]" + server.getName())
                             .wrap()
@@ -94,14 +95,14 @@ public class GlobalServerListMenu extends ServerMenu<Integer> {
                             .labelAlign("left")
                             .width(contentWidth)
                             .padTop(6f))
-                        .row();
+                            .row();
 
                     card.add(UiBuilder.label(statusText)
                             .align("left")
                             .labelAlign("left")
                             .width(contentWidth)
                             .padTop(3f))
-                        .row();
+                            .row();
 
                     if (isOnline) {
                         String details = Tr.t(ctx.getSession().locale, "hub.global.gamemode", "mode", server.getMode())
@@ -112,7 +113,7 @@ public class GlobalServerListMenu extends ServerMenu<Integer> {
                                 .labelAlign("left")
                                 .width(contentWidth)
                                 .padTop(3f))
-                            .row();
+                                .row();
                     }
 
                     if (server.getDescription() != null && !server.getDescription().trim().isEmpty()) {
@@ -122,8 +123,10 @@ public class GlobalServerListMenu extends ServerMenu<Integer> {
                                 .labelAlign("left")
                                 .width(contentWidth)
                                 .padTop(3f))
-                            .row();
+                                .row();
                     }
+
+                    card.add(UiBuilder.space().growY());
 
                     String redirectAct = ctx.registerAction((sess, st, res) -> ServerUtils.redirectAll(server));
                     String buttonLabel = "[gold]" + Iconc.players + " Redirect All";
@@ -151,13 +154,17 @@ public class GlobalServerListMenu extends ServerMenu<Integer> {
                 ctx.row();
                 ctx.table(bottom -> {
                     if (page > 0) {
-                        String prevAct = ctx.registerAction((sess, st, res) -> Registry.get(GlobalServerListMenu.class).send(sess, page - 1));
-                        bottom.add(UiBuilder.button(Tr.t(ctx.getSession().locale, "hub.list.previous")).clicked(prevAct).width(95f).height(36f).pad(2f));
+                        String prevAct = ctx.registerAction(
+                                (sess, st, res) -> Registry.get(GlobalServerListMenu.class).send(sess, page - 1));
+                        bottom.add(UiBuilder.button(Tr.t(ctx.getSession().locale, "hub.list.previous")).clicked(prevAct)
+                                .width(95f).height(36f).pad(2f));
                     }
 
                     if (servers != null && servers.size() == size) {
-                        String nextAct = ctx.registerAction((sess, st, res) -> Registry.get(GlobalServerListMenu.class).send(sess, page + 1));
-                        bottom.add(UiBuilder.button(Tr.t(ctx.getSession().locale, "hub.list.next")).clicked(nextAct).width(95f).height(36f).pad(2f));
+                        String nextAct = ctx.registerAction(
+                                (sess, st, res) -> Registry.get(GlobalServerListMenu.class).send(sess, page + 1));
+                        bottom.add(UiBuilder.button(Tr.t(ctx.getSession().locale, "hub.list.next")).clicked(nextAct)
+                                .width(95f).height(36f).pad(2f));
                     }
                 });
             }

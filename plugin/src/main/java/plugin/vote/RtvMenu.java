@@ -153,7 +153,7 @@ public class RtvMenu extends ServerMenu<Integer> {
                         .width(contentWidth)
                         .height(160f)
                         .align("center"))
-                    .row();
+                        .row();
 
                 String nameText = (map.name() != null && !map.name().isEmpty()) ? map.name() : mapId;
                 card.add(UiBuilder.label("[white]" + nameText)
@@ -162,21 +162,23 @@ public class RtvMenu extends ServerMenu<Integer> {
                         .labelAlign("left")
                         .width(contentWidth)
                         .padTop(6f))
-                    .row();
+                        .row();
 
                 String ratingText = String.format("%s%.2f [gold]%c [gray](%d)",
-                    ratingColor, stats.avgScore, Iconc.star, stats.totalVotes);
+                        ratingColor, stats.avgScore, Iconc.star, stats.totalVotes);
                 card.add(UiBuilder.label(ratingText)
                         .align("left")
                         .labelAlign("left")
                         .width(contentWidth)
                         .padTop(2f))
-                    .row();
+                        .row();
+
+                card.add(UiBuilder.space().growY());
 
                 String voteAct = ctx.registerAction((sess, st, res) -> rtvService.handleVote(sess.player, map));
                 String voteBtnText = isVoted
-                    ? "[scarlet]" + Tr.t(ctx.getSession(), "rtv.cancel_vote")
-                    : "[accent]" + Tr.t(ctx.getSession(), "rtv.vote_map");
+                        ? "[scarlet]" + Tr.t(ctx.getSession(), "rtv.cancel_vote")
+                        : "[accent]" + Tr.t(ctx.getSession(), "rtv.vote_map");
 
                 card.add(UiBuilder.button(voteBtnText)
                         .clicked(voteAct)

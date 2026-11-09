@@ -33,7 +33,7 @@ public class Tasks {
                 throw e;
             } finally {
                 var elapsed = Time.millis() - startedAt;
-                if (elapsed > 11000) {
+                if (elapsed > 20_000) {
                     Log.warn("IO task " + name + " took " + elapsed + "ms");
                 }
             }

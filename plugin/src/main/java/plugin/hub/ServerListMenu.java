@@ -127,6 +127,8 @@ public class ServerListMenu extends ServerMenu<Integer> {
                             .row();
                     }
 
+                    card.add(UiBuilder.space().growY());
+
                     String connectAction = ctx.registerAction((sess, st, res) -> ServerUtils.redirect(sess.player, server));
                     String buttonLabel = "[accent]" + Iconc.right + " " + (isOnline ? "Play" : "Start");
                     card.add(UiBuilder.button(buttonLabel)

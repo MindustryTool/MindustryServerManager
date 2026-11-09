@@ -13,6 +13,7 @@ import mindustry.entities.Effect;
 import mindustry.gen.Call;
 import plugin.annotations.Component;
 import plugin.annotations.Init;
+import plugin.annotations.MainThread;
 import plugin.annotations.Schedule;
 import plugin.core.Registry;
 import plugin.money.MoneyService;
@@ -55,6 +56,7 @@ public class TrailService {
     }
 
     @Schedule(fixedRate = 500)
+    @MainThread
     private void render() {
         sessionService.each(session -> {
             var userTrail = session.getData().trail;
@@ -119,8 +121,10 @@ public class TrailService {
             return owns(session);
         }
 
-        public static void create(TrailService handler, String name, long price, Effect effect, TrailRequirement... requirements) {
-            var trail = new Trail(handler, name, price, Seq.with(requirements), (x, y) -> Call.effect(effect, x, y, 0, Color.white));
+        public static void create(TrailService handler, String name, long price, Effect effect,
+                TrailRequirement... requirements) {
+            var trail = new Trail(handler, name, price, Seq.with(requirements),
+                    (x, y) -> Call.effect(effect, x, y, 0, Color.white));
             handler.trails.put(name, trail);
         }
 
