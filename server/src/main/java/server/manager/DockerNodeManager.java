@@ -61,7 +61,7 @@ import com.github.dockerjava.api.model.Volume;
 
 public class DockerNodeManager implements NodeManager {
     public static final Fi SERVER_FOLDER = new Fi(Const.volumeFolderPath).child("servers");
-    public static final String CONFIG_VERSION = "2";
+    public static final String CONFIG_VERSION = "3";
     public static final List<String> DEFAULT_JVM_ARGS = List.of(
             "-XX:+UseZGC",
             "-XX:+ZGenerational",
@@ -252,13 +252,13 @@ public class DockerNodeManager implements NodeManager {
                 .withNetworkMode("mindustry-server")
                 // Experimental: Limit CPU using share
                 .withCpuShares((int) (request.getCpu() * 1024))
-                .withCpusetCpus("1-5")
+                .withCpusetCpus("0-4")
                 .withMemory(request.getMemory() * 1024 * 1024L)
                 .withRestartPolicy(RestartPolicy.onFailureRestart(1000))
                 .withLogConfig(new LogConfig(LogConfig.LoggingType.JSON_FILE, Map.of(
                         "max-size", "100m",
                         "max-file", "5")))
-                .withPidsLimit(64L)
+                .withPidsLimit(256L)
                 .withDns("8.8.8.8", "1.1.1.1")
                 .withBinds(bind);
 
