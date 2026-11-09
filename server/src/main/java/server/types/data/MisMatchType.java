@@ -5,6 +5,7 @@ public enum MisMatchType {
     CPU,
     MEMORY,
     IMAGE,
+    CONFIG_VERSION,
     ENV,
     HUB,
     MODE,

@@ -11,6 +11,7 @@ import lombok.experimental.Accessors;
 @Accessors(chain = true)
 public class ServerMetadata {
     private String serverImageHash;
+    private String configVersion;
 
     @JsonProperty(required = true)
     private ServerConfig config;

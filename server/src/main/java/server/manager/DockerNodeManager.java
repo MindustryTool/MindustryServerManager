@@ -60,16 +60,8 @@ import com.github.dockerjava.api.model.Statistics;
 import com.github.dockerjava.api.model.Volume;
 
 public class DockerNodeManager implements NodeManager {
-    private final DockerClient dockerClient;
-    private final EnvConfig envConfig;
-    private final EventBus eventBus;
-    private final Cache<String, Instant> lastLogTimeCache = Caffeine.newBuilder()
-            .expireAfterWrite(Duration.ofMinutes(5))
-            .build();
-
-    private final Map<UUID, ResultCallback.Adapter<Frame>> logCallbacks = new ConcurrentHashMap<>();
-
-    private static final Fi SERVER_FOLDER = new Fi(Const.volumeFolderPath).child("servers");
+    public static final Fi SERVER_FOLDER = new Fi(Const.volumeFolderPath).child("servers");
+    public static final String CONFIG_VERSION = "1";
     public static final List<String> DEFAULT_JVM_ARGS = List.of(
             "-XX:+UseG1GC",
             "-XX:+CrashOnOutOfMemoryError",
@@ -80,6 +72,15 @@ public class DockerNodeManager implements NodeManager {
             "-XX:CICompilerCount=2",
             "-XX:+UseDynamicNumberOfCompilerThreads",
             "-XX:MaxRAMPercentage=60");
+
+    private final DockerClient dockerClient;
+    private final EnvConfig envConfig;
+    private final EventBus eventBus;
+    private final Cache<String, Instant> lastLogTimeCache = Caffeine.newBuilder()
+            .expireAfterWrite(Duration.ofMinutes(5))
+            .build();
+
+    private final Map<UUID, ResultCallback.Adapter<Frame>> logCallbacks = new ConcurrentHashMap<>();
 
     private final ScheduledExecutorService scheduler;
 
@@ -213,7 +214,8 @@ public class DockerNodeManager implements NodeManager {
 
         var currentMetadata = new ServerMetadata()
                 .setConfig(request)
-                .setServerImageHash(serverImage.getId());
+                .setServerImageHash(serverImage.getId())
+                .setConfigVersion(CONFIG_VERSION);
 
         var command = dockerClient.createContainerCmd(image)
                 .withName(request.getId().toString())
@@ -371,12 +373,20 @@ public class DockerNodeManager implements NodeManager {
                 : config.getImage();
         var serverImage = dockerClient.inspectImageCmd(imageToInspect).exec();
 
-        if (!meta.getServerImageHash().equals(serverImage.getId())) {
+        if (!Objects.equals(meta.getServerImageHash(), serverImage.getId())) {
             result.add(new ServerMisMatch()
                     .setType(MisMatchType.IMAGE)
                     .setField("Server image mismatch")
                     .setExpected(serverImage.getId())
                     .setCurrent(meta.getServerImageHash()));
+        }
+
+        if (!Objects.equals(meta.getConfigVersion(), CONFIG_VERSION)) {
+            result.add(new ServerMisMatch()
+                    .setType(MisMatchType.CONFIG_VERSION)
+                    .setField("Config version mismatch")
+                    .setExpected(CONFIG_VERSION)
+                    .setCurrent(meta.getConfigVersion()));
         }
 
         return result;

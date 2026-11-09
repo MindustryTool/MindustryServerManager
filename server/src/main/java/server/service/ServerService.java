@@ -384,6 +384,7 @@ public class ServerService {
             if (!existing.exists()) {
                 return null;
             }
+
             ServerConfigMessage current = Utils.objectMapper.readValue(
                     existing.readBytes(), ServerConfigMessage.class);
 
@@ -727,12 +728,15 @@ public class ServerService {
         }
 
         var mods = getMods(serverId).stream()
-                .filter(mod -> !mod.getName().equals("PluginLoader")).toList();
+                .filter(mod -> !mod.getName().equals("PluginLoader"))
+                .toList();
+
         List<ServerMisMatch> mismatches = new ArrayList<>(
                 nodeManager.getMismatch(serverId, wish, snapshot, mods));
 
         String liveHash = snapshot.getPluginHash();
         String wantHash = pluginBundle.getPluginVersion();
+
         if (liveHash != null && wantHash != null && !Objects.equals(liveHash, wantHash)) {
             mismatches.add(new ServerMisMatch()
                     .setType(MisMatchType.PLUGIN_JAR)
