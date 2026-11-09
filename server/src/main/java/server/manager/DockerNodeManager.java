@@ -243,12 +243,13 @@ public class DockerNodeManager implements NodeManager {
             exposedPorts.add(localTcp);
         }
 
+        long period = 20_000L;
+
         HostConfig hostConfig = HostConfig.newHostConfig()
                 .withPortBindings(portBindings)
                 .withNetworkMode("mindustry-server")
-                .withCpuPeriod(100000L)
-                .withCpuQuota((long) (request.getCpu() * 100000L))
-                .withCpuShares(Math.round(request.getCpu() * 1024.0f))
+                .withCpuPeriod(period)
+                .withCpuQuota((long) (request.getCpu() * period))
                 .withCpusetCpus("1-5")
                 .withMemory(request.getMemory() * 1024 * 1024L)
                 .withRestartPolicy(RestartPolicy.onFailureRestart(1000))

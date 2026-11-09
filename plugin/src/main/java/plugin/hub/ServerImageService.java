@@ -16,6 +16,7 @@ import mindustry.Vars;
 import mindustry.gen.Player;
 import plugin.Tasks;
 import plugin.annotations.Component;
+import plugin.utils.HttpClients;
 
 @Component
 public class ServerImageService {
@@ -27,7 +28,7 @@ public class ServerImageService {
     private final Cache<String, Optional<byte[]>> imageCache;
 
     public ServerImageService() {
-        this(HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build(), DEFAULT_IMAGE_BASE_URL, null);
+        this(HttpClients.shared(), DEFAULT_IMAGE_BASE_URL, null);
     }
 
     public ServerImageService(HttpClient httpClient, String imageBaseUrl) {

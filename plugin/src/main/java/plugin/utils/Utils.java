@@ -20,6 +20,8 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.net.http.HttpRequest;
+import java.time.Duration;
 
 import arc.Core;
 import arc.files.Fi;
@@ -27,7 +29,6 @@ import arc.util.Log;
 import arc.util.Strings;
 import arc.util.Time;
 import arc.util.io.FastDeflaterOutputStream;
-import arc.util.Http.HttpStatusException;
 import java.security.MessageDigest;
 import common.content.Mod;
 import common.content.ModMetadata;
@@ -221,22 +222,16 @@ public class Utils {
 
                 body.put("data", Base64.getEncoder().encodeToString(bytes));
 
-                HttpUtils
-                        .post("https://api.mindustry-tool.com", "api", "v4", "maps", "image-json")
-                        .header("Content-Type", "application/json")
-                        .content(JsonUtils.toJsonString(body))
-                        .timeout(180000)
-                        .error(error -> {
-                            if (error instanceof HttpStatusException httpStatusException) {
-                                Log.err("Fail to fetch map preview:"
-                                        + httpStatusException.response.getResultAsString());
-                            } else {
-                                Log.err("Fail to generate map preview: " + error.getMessage() + ", force=" + force);
-                            }
-                        })
-                        .submit((res) -> {
-                            tempImageFile.write(res.getResultAsStream(), false);
-                        });
+                try {
+                    byte[] response = HttpUtils.send(
+                            HttpUtils.post("https://api.mindustry-tool.com", "api", "v4", "maps", "image-json")
+                                    .header("Content-Type", "application/json")
+                                    .POST(HttpRequest.BodyPublishers.ofString(JsonUtils.toJsonString(body))),
+                            Duration.ofSeconds(180));
+                    tempImageFile.writeBytes(response, false);
+                } catch (Exception e) {
+                    Log.err("Fail to generate map preview: " + e.getMessage() + ", force=" + force, e);
+                }
             });
         }
     }

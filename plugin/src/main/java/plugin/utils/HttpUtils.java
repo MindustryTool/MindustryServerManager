@@ -1,15 +1,16 @@
 package plugin.utils;
 
+import java.io.IOException;
 import java.net.SocketTimeoutException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 
-import arc.util.Http;
-import arc.util.Http.HttpRequest;
-import arc.util.Http.HttpStatusException;
 import arc.util.Strings;
 
 public class HttpUtils {
@@ -21,65 +22,71 @@ public class HttpUtils {
         return Strings.join("/", pathList);
     }
 
-    public static HttpRequest get(Object... path) {
-        return Http.get(toPath(path));
+    public static HttpRequest.Builder get(Object... path) {
+        return HttpRequest.newBuilder()
+                .uri(URI.create(toPath(path)))
+                .GET();
     }
 
-    public static HttpRequest post(Object... path) {
-        return Http.post(toPath(path));
+    public static HttpRequest.Builder post(Object... path) {
+        return HttpRequest.newBuilder()
+                .uri(URI.create(toPath(path)));
     }
 
-    public static <T> T send(HttpRequest req, Class<T> clazz) {
-        return send(req, Duration.ofSeconds(10), clazz);
+    public static <T> T send(HttpRequest.Builder builder, Class<T> clazz) {
+        return send(builder, Duration.ofSeconds(10), clazz);
     }
 
     @SuppressWarnings("unchecked")
-    public static <T> T send(HttpRequest req, Duration timeout, Class<T> clazz) {
-        byte[] response = send(req, timeout);
+    public static <T> T send(HttpRequest.Builder builder, Duration timeout, Class<T> clazz) {
+        byte[] response = send(builder, timeout);
 
         if (clazz.equals(Void.class)) {
             return null;
         }
 
         if (clazz.equals(String.class)) {
-            return (T) new String(response);
+            return (T) new String(response, StandardCharsets.UTF_8);
         }
 
         if (clazz.equals(byte[].class)) {
             return (T) response;
         }
 
-        return JsonUtils.readJsonAsClass(new String(response), clazz);
+        return JsonUtils.readJsonAsClass(new String(response, StandardCharsets.UTF_8), clazz);
     }
 
-    public static <T> List<T> sendList(HttpRequest req, Duration timeout, Class<T> clazz) {
-        byte[] response = send(req, timeout);
-        return JsonUtils.readJsonAsArrayClass(new String(response), clazz);
+    public static <T> List<T> sendList(HttpRequest.Builder builder, Duration timeout, Class<T> clazz) {
+        byte[] response = send(builder, timeout);
+        return JsonUtils.readJsonAsArrayClass(new String(response, StandardCharsets.UTF_8), clazz);
     }
 
-    public static byte[] send(HttpRequest req, Duration timeout) {
-        CompletableFuture<byte[]> res = new CompletableFuture<>();
-        req
-                .timeout((int) timeout.toMillis())
-                .redirects(true)
-                .error(error -> {
-                    if (error instanceof SocketTimeoutException) {
-                        res.completeExceptionally(
-                                new RuntimeException(req.url + " timeout in " + timeout.toMillis() + "ms", error));
-                    } else if (error instanceof HttpStatusException e) {
-                        res.completeExceptionally(
-                                new RuntimeException(req.url + " " + e.response.getResultAsString(), e));
-                    } else {
-                        res.completeExceptionally(new RuntimeException(req.url, error));
-                    }
-                })
-                .submit(response -> {
-                    res.complete(response.getResult());
-                });
+    public static byte[] send(HttpRequest.Builder builder, Duration timeout) {
+        return send(HttpClients.shared(), builder, timeout);
+    }
+
+    static byte[] send(HttpClient client, HttpRequest.Builder builder, Duration timeout) {
+        HttpRequest request = builder.timeout(timeout).build();
         try {
-            return res.get(timeout.toMillis(), TimeUnit.MILLISECONDS);
-        } catch (Exception e) {
-            throw new IllegalStateException(req.method + " " + req.url + " timeout in " + timeout.toMillis() + "ms", e);
+            HttpResponse<byte[]> response = client.send(request, HttpResponse.BodyHandlers.ofByteArray());
+            int status = response.statusCode();
+            if (status >= 400) {
+                String body = new String(response.body(), StandardCharsets.UTF_8);
+                throw new RuntimeException(request.uri() + " " + body);
+            }
+            return response.body();
+        } catch (SocketTimeoutException e) {
+            throw new RuntimeException(request.uri() + " timeout in " + timeout.toMillis() + "ms", e);
+        } catch (IOException | InterruptedException e) {
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+            throw new RuntimeException(request.uri().toString(), e);
         }
+    }
+
+    static <T> List<T> sendList(HttpClient client, HttpRequest.Builder builder, Duration timeout, Class<T> clazz) {
+        byte[] response = send(client, builder, timeout);
+        return JsonUtils.readJsonAsArrayClass(new String(response, StandardCharsets.UTF_8), clazz);
     }
 }
