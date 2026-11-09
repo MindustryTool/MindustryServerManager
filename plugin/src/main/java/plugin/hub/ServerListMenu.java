@@ -53,8 +53,8 @@ public class ServerListMenu extends ServerMenu<Integer> {
 
             TableBuilder grid = UiBuilder.table().align("topLeft");
 
-            float cardWidth = 360f;
-            float cardHeight = 380f;
+            float cardWidth = 330f;
+            float cardHeight = 370f;
             float contentWidth = cardWidth - 20f;
             int cols = ctx.getResponsiveColumns(cardWidth, 8f);
             int[] index = {0};

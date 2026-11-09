@@ -28,8 +28,8 @@ public class GlobalServerListMenu extends ServerMenu<Integer> {
         this.fillScreen = true;
     }
 
-    public static final float CARD_WIDTH = 360f;
-    public static final float CARD_HEIGHT = 380f;
+    public static final float CARD_WIDTH = 330f;
+    public static final float CARD_HEIGHT = 370f;
 
     @Override
     public void build(MenuContext<Integer> ctx) {
