@@ -37,7 +37,7 @@ public class RareUpgradeBuffSelectUnitMenu extends ServerMenu<CataliTeamData> {
 
         ctx.pane(MenuContext.SAFE_WIDTH, 220f, paneTable -> {
             if (units.isEmpty()) {
-                paneTable.add(UiBuilder.label("[lightgray]No units available.").wrap().align("left").growX()).row();
+                paneTable.add(UiBuilder.label(Tr.t(session, "catali.no_units_available")).wrap().align("left").growX()).row();
                 return;
             }
 
@@ -45,15 +45,14 @@ public class RareUpgradeBuffSelectUnitMenu extends ServerMenu<CataliTeamData> {
                 var card = UiBuilder.table().align("left");
                 card.width(MenuContext.SAFE_CARD_WIDTH);
 
-                String label = unit.type.emoji() + " [white]" + unit.type.name + "[] [gray]("
-                        + Math.round(unit.health()) + "/" + Math.round(unit.maxHealth()) + " HP)[]";
+                String label = unit.type.emoji() + " " + Tr.t(session, "catali.unit_hp", "name", unit.type.name, "hp", Math.round(unit.health()), "maxhp", Math.round(unit.maxHealth()));
                 card.add(UiBuilder.label(label).wrap().align("left").growX().padLeft(4f));
 
                 String actId = ctx.registerAction((sess, t, res) -> {
                     buffSelectMenu.send(sess, Pair.of(team, unit));
                 });
 
-                card.add(UiBuilder.button("[accent]Select[]")
+                card.add(UiBuilder.button(Tr.t(session, "catali.select"))
                         .clicked(actId)
                         .width(95f)
                         .height(34f)

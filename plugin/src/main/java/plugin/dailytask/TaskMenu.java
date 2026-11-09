@@ -41,7 +41,7 @@ public class TaskMenu extends ServerMenu<Integer> {
                 card.width(MenuContext.SAFE_CARD_WIDTH);
                 String statusIcon = done ? "[green]" + Iconc.ok + " " : "[yellow]⏳ ";
                 String titleText = statusIcon + "[white]" + task.getTitle(ctx.getSession());
-                String rewardBadge = "[gold]+" + task.getRewardCoins() + " Coins";
+                String rewardBadge = Tr.t(ctx.getSession(), "task.reward_badge", "coins", task.getRewardCoins());
 
                 card.add(UiBuilder.label(titleText).wrap().align("left").growX().padLeft(4f));
                 card.add(UiBuilder.label(rewardBadge).align("right").padLeft(4f));
@@ -50,7 +50,7 @@ public class TaskMenu extends ServerMenu<Integer> {
                 card.add(UiBuilder.label("[lightgray]" + task.getDescription(ctx.getSession())).wrap().align("left").colspan(2).growX().padLeft(4f));
                 card.row();
 
-                String progressText = String.format("[accent]Progress: [white]%d / %d", Math.min(progress, task.getGoal()), task.getGoal());
+                String progressText = Tr.t(ctx.getSession(), "task.progress", "current", Math.min(progress, task.getGoal()), "target", task.getGoal());
                 card.add(UiBuilder.label(progressText).align("left").colspan(2).padLeft(4f));
                 card.row();
 

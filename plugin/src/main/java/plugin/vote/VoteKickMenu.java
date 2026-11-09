@@ -45,7 +45,7 @@ public class VoteKickMenu extends ServerMenu<Player> {
 
             ctx.pane(MenuContext.SAFE_WIDTH, 280f, paneTable -> {
                 if (candidates.isEmpty()) {
-                    paneTable.add(UiBuilder.label("[lightgray]No eligible players to votekick").wrap().align("left").growX().pad(16f));
+                    paneTable.add(UiBuilder.label(Tr.t(ctx.getSession(), "votekick.no_eligible_players")).wrap().align("left").growX().pad(16f));
                     return;
                 }
 
@@ -55,7 +55,7 @@ public class VoteKickMenu extends ServerMenu<Player> {
                     card.add(UiBuilder.label("[white]" + candidate.name + " [gray](#" + candidate.id() + ")").wrap().align("left").growX().padLeft(4f));
 
                     String kickAct = ctx.registerAction((sess, st, res) -> Registry.get(VoteKickMenu.class).send(sess, candidate));
-                    card.add(UiBuilder.button("Select").clicked(kickAct).width(90f).height(36f).align("right").padLeft(6f));
+                    card.add(UiBuilder.button(Tr.t(ctx.getSession(), "votekick.select")).clicked(kickAct).width(90f).height(36f).align("right").padLeft(6f));
 
                     paneTable.add(card.growX().pad(2f)).row();
                 }

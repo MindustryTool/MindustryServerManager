@@ -32,7 +32,7 @@ public class ShopMenu extends ServerMenu<Integer> {
 
             ctx.pane(MenuContext.SAFE_WIDTH, 260f, paneTable -> {
                 if (items.isEmpty()) {
-                    paneTable.add(UiBuilder.label("[lightgray]No items available in shop")
+                    paneTable.add(UiBuilder.label(Tr.t(ctx.getSession(), "shop.no_items"))
                         .wrap().align("left").growX().pad(8f)).row();
                     return;
                 }
@@ -47,7 +47,7 @@ public class ShopMenu extends ServerMenu<Integer> {
                         Registry.get(ShopMenu.class).send(sess, 0);
                     });
 
-                    card.add(UiBuilder.button("Buy").clicked(buyAct).width(80f).height(36f).align("right").padLeft(6f));
+                    card.add(UiBuilder.button(Tr.t(ctx.getSession(), "shop.buy")).clicked(buyAct).width(80f).height(36f).align("right").padLeft(6f));
                     paneTable.add(card.growX().pad(2f)).row();
                 }
             });

@@ -85,3 +85,14 @@ The system SHALL constrain server menu widths and scroll pane heights to prevent
 - **WHEN** a developer calls `ctx.defaults(configure)`
 - **THEN** a `DefaultsBuilder` node configured with cell properties is added to the root table and returned
 
+
+### Requirement: Server menus use translation catalog for user-facing text
+All domain server menus SHALL resolve user-facing text through `Tr.t`. Hardcoded English literals SHALL NOT be used for titles, labels, buttons, empty states, badges, or menu-triggered feedback messages.
+
+#### Scenario: No hardcoded menu literals
+- **WHEN** a domain menu is implemented or modified
+- **THEN** all user-facing text is either a `Tr.t` result or a documented non-translatable brand/icon value
+
+#### Scenario: Menu feedback is localized
+- **WHEN** a menu action sends feedback to a player
+- **THEN** the feedback message is resolved through `Tr.t`

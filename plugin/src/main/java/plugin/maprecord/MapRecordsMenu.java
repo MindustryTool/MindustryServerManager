@@ -24,7 +24,7 @@ public class MapRecordsMenu extends ServerMenu<MapRecordMenuState> {
         Locale locale = ctx.getSession().locale;
         this.title = Tr.t(locale, "rank.menu_title");
 
-        ctx.label("[accent]Leaderboard: [gold]" + state.mapName()).width(MenuContext.SAFE_WIDTH);
+        ctx.label(Tr.t(ctx.getSession(), "rank.leaderboard", "map", state.mapName())).width(MenuContext.SAFE_WIDTH);
         ctx.row();
 
         List<MapRecord> records = state.records();

@@ -66,3 +66,14 @@ All non-English catalog files SHALL maintain the exact same set of dotted keys a
 - **WHEN** an entry is removed from `i18n/en.json`
 - **THEN** the parity test fails until the same key is removed from every other catalog
 
+
+### Requirement: Non-English catalogs contain genuine menu translations
+For menu-related keys, non-English locale catalogs SHALL contain real translations in their own language. English copies SHALL NOT be used as the default way to satisfy `LocaleKeyParityTest`.
+
+#### Scenario: New menu key added
+- **WHEN** a menu-related key is added to `en.json`
+- **THEN** each non-English catalog receives a genuine translation or an explicitly tracked follow-up item
+
+#### Scenario: Parity remains enforced
+- **WHEN** catalogs are validated
+- **THEN** `LocaleKeyParityTest` still requires identical key sets across all locales

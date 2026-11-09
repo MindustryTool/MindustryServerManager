@@ -36,13 +36,13 @@ public class AIPickMenu extends ServerMenu<CataliTeamData> {
         var classicCard = UiBuilder.table().align("left");
         classicCard.add(UiBuilder.label("[accent]" + Tr.t(session, "catali.classic_controller") + "[]").align("left").growX().padLeft(4f));
         if (!team.useCommandAi) {
-            classicCard.add(UiBuilder.label("[stat](Active Controller)[]").align("right").padLeft(6f));
+            classicCard.add(UiBuilder.label(Tr.t(session, "catali.active_controller")).align("right").padLeft(6f));
         } else {
             String actId = ctx.registerAction((sess, t, res) -> {
                 team.useCommandAi = false;
-                sess.player.sendMessage("[green]Switched to Classic Controller.");
+                sess.player.sendMessage(Tr.t(sess, "catali.switched_classic"));
             });
-            classicCard.add(UiBuilder.button("[accent]Select[]").clicked(actId).width(100f).height(32f).padLeft(6f));
+            classicCard.add(UiBuilder.button(Tr.t(session, "catali.select")).clicked(actId).width(100f).height(32f).padLeft(6f));
         }
         container.add(classicCard.growX().pad(4f)).row();
 
@@ -50,13 +50,13 @@ public class AIPickMenu extends ServerMenu<CataliTeamData> {
         var cmdCard = UiBuilder.table().align("left");
         cmdCard.add(UiBuilder.label("[accent]" + Tr.t(session, "catali.command_controller") + "[]").align("left").growX().padLeft(4f));
         if (team.useCommandAi) {
-            cmdCard.add(UiBuilder.label("[stat](Active Controller)[]").align("right").padLeft(6f));
+            cmdCard.add(UiBuilder.label(Tr.t(session, "catali.active_controller")).align("right").padLeft(6f));
         } else {
             String actId = ctx.registerAction((sess, t, res) -> {
                 team.useCommandAi = true;
-                sess.player.sendMessage("[green]Switched to Command Controller.");
+                sess.player.sendMessage(Tr.t(sess, "catali.switched_command"));
             });
-            cmdCard.add(UiBuilder.button("[accent]Select[]").clicked(actId).width(100f).height(32f).padLeft(6f));
+            cmdCard.add(UiBuilder.button(Tr.t(session, "catali.select")).clicked(actId).width(100f).height(32f).padLeft(6f));
         }
         container.add(cmdCard.growX().pad(4f)).row();
 

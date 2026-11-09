@@ -20,7 +20,7 @@ public class PlayerInfoMenu extends ServerMenu<Session> {
         Session caller = ctx.getState() != null ? ctx.getState() : ctx.getSession();
         this.title = Tr.t(ctx.getSession().locale, "session.players_title");
 
-        ctx.label("[accent]Select an online player to view stats:");
+        ctx.label(Tr.t(ctx.getSession(), "session.select_player"));
         ctx.row();
 
         Seq<Session> targets = new Seq<>();
@@ -28,7 +28,7 @@ public class PlayerInfoMenu extends ServerMenu<Session> {
 
         ctx.pane(MenuContext.SAFE_WIDTH, 260f, paneTable -> {
             if (targets.isEmpty()) {
-                paneTable.add(UiBuilder.label("[lightgray]No players online").wrap().align("left").growX().pad(8f)).row();
+                paneTable.add(UiBuilder.label(Tr.t(ctx.getSession(), "session.no_players_online")).wrap().align("left").growX().pad(8f)).row();
                 return;
             }
 
@@ -42,7 +42,7 @@ public class PlayerInfoMenu extends ServerMenu<Session> {
                     caller.player.sendMessage(SessionUtils.getInfoString(target, target.getData()));
                 });
 
-                card.add(UiBuilder.button("View Info").clicked(inspectAct).width(100f).height(36f).align("right").padLeft(6f));
+                card.add(UiBuilder.button(Tr.t(ctx.getSession(), "session.view_info")).clicked(inspectAct).width(100f).height(36f).align("right").padLeft(6f));
                 paneTable.add(card.growX().pad(2f)).row();
             }
         });

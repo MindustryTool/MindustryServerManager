@@ -27,7 +27,7 @@ public class RateMapMenu extends ServerMenu<Map> {
         Locale locale = ctx.getSession().locale;
         this.title = Tr.t(locale, "maprating.rate_title");
 
-        ctx.label("[accent]Map: [gold]" + map.name()).width(MenuContext.SAFE_WIDTH);
+        ctx.label(Tr.t(ctx.getSession(), "maprating.map_label", "map", map.name())).width(MenuContext.SAFE_WIDTH);
         ctx.row();
 
         ctx.table(starsTable -> {

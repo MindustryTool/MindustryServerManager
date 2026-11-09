@@ -38,7 +38,7 @@ public class RareUpgradeMenu extends ServerMenu<CataliTeamData> {
         this.title = Tr.t(session, "catali.rare_upgrades");
 
         int points = team.level.rareUpgradePoints;
-        ctx.label("[gold]Available Rare Points: " + points + "[] - "
+        ctx.label(Tr.t(session, "catali.available_rare_points", "points", points) + "[] - "
                 + Tr.t(session, "catali.select_rare_upgrade_type"));
         ctx.row();
 
@@ -51,7 +51,7 @@ public class RareUpgradeMenu extends ServerMenu<CataliTeamData> {
             String spawnAct = ctx.registerAction((sess, t, res) -> {
                 PluginEvents.fire(new CataliSpawnRareUpgrade(team));
             });
-            spawnCard.add(UiBuilder.button("[green]Spawn[]").clicked(spawnAct).width(95f).height(32f).align("right").pad(4f));
+            spawnCard.add(UiBuilder.button(Tr.t(session, "catali.spawn")).clicked(spawnAct).width(95f).height(32f).align("right").pad(4f));
             table.add(spawnCard.growX().pad(2f)).row();
         }
 
@@ -61,7 +61,7 @@ public class RareUpgradeMenu extends ServerMenu<CataliTeamData> {
         String evolveAct = ctx.registerAction((sess, t, res) -> {
             tierUnitMenu.send(sess, team);
         });
-        evolveCard.add(UiBuilder.button("[accent]Evolve[]").clicked(evolveAct).width(95f).height(32f).align("right").pad(4f));
+        evolveCard.add(UiBuilder.button("[accent]" + Tr.t(session, "catali.evolve") + "[]").clicked(evolveAct).width(95f).height(32f).align("right").pad(4f));
         table.add(evolveCard.growX().pad(2f)).row();
 
         // Option 3: Apply Buff
@@ -70,7 +70,7 @@ public class RareUpgradeMenu extends ServerMenu<CataliTeamData> {
         String buffAct = ctx.registerAction((sess, t, res) -> {
             buffUnitMenu.send(sess, team);
         });
-        buffCard.add(UiBuilder.button("[accent]Buff[]").clicked(buffAct).width(95f).height(32f).align("right").pad(4f));
+        buffCard.add(UiBuilder.button(Tr.t(session, "catali.buff")).clicked(buffAct).width(95f).height(32f).align("right").pad(4f));
         table.add(buffCard.growX().pad(2f)).row();
 
         ctx.add(table.growX());

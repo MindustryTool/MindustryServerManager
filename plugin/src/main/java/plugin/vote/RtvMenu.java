@@ -53,7 +53,7 @@ public class RtvMenu extends ServerMenu<Integer> {
 
         this.title = Tr.t(ctx.getSession(), "rtv.available_maps");
 
-        ctx.label("[accent]Select a map to vote for next match:");
+        ctx.label(Tr.t(ctx.getSession(), "rtv.select_map"));
         ctx.row();
 
         ctx.pane(MenuContext.SAFE_WIDTH, 320f, paneTable -> {
@@ -70,11 +70,11 @@ public class RtvMenu extends ServerMenu<Integer> {
                     ratingColor, stats.avgScore, Iconc.star, map.name());
 
                 card.add(UiBuilder.label(titleText).wrap().align("left").growX().padLeft(4f));
-                card.add(UiBuilder.label("[gray](" + stats.totalVotes + " votes)").align("right").padLeft(4f));
+                card.add(UiBuilder.label(Tr.t(ctx.getSession(), "rtv.vote_count", "votes", stats.totalVotes)).align("right").padLeft(4f));
                 card.row();
 
                 String voteAct = ctx.registerAction((sess, st, res) -> rtvService.handleVote(sess.player, map));
-                String voteBtnText = isVoted ? "[scarlet]Cancel Vote" : "[accent]Vote Map";
+                String voteBtnText = isVoted ? Tr.t(ctx.getSession(), "rtv.cancel_vote") : Tr.t(ctx.getSession(), "rtv.vote_map");
                 card.add(UiBuilder.button(voteBtnText).clicked(voteAct).width(120f).height(34f).align("right").colspan(2).pad(2f));
 
                 paneTable.add(card.growX().pad(2f)).row();

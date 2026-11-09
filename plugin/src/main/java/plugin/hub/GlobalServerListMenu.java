@@ -90,7 +90,7 @@ public class GlobalServerListMenu extends ServerMenu<Integer> {
             }
         } catch (Exception e) {
             Log.err("Failed to build global server list menu", e);
-            ctx.label("[scarlet]Failed to load server list");
+            ctx.label(Tr.t(ctx.getSession(), "hub.global.load_failed"));
         }
     }
 }

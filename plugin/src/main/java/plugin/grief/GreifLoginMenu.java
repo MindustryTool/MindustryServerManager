@@ -13,7 +13,7 @@ public class GreifLoginMenu extends ServerMenu<String> {
     @Override
     public void build(MenuContext<String> ctx) {
         String url = ctx.getState();
-        this.title = "Grief Check";
+        this.title = Tr.t(ctx.getSession(), "grief.login_title");
 
         ctx.label(Tr.t(ctx.getSession(), "grief.login_prompt"));
         ctx.row();

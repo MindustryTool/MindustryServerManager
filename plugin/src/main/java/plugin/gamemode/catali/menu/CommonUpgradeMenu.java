@@ -38,7 +38,7 @@ public class CommonUpgradeMenu extends ServerMenu<CataliTeamData> {
         this.title = Tr.t(session, "catali.common_upgrades");
 
         int points = team.level.commonUpgradePoints;
-        ctx.label("[gold]Points: " + points + "[] - "
+        ctx.label(Tr.t(session, "catali.points_label", "points", points) + "[] - "
                 + Tr.t(session, "catali.upgrade_points_description", "points", points));
         ctx.row();
 
@@ -48,22 +48,22 @@ public class CommonUpgradeMenu extends ServerMenu<CataliTeamData> {
             // Damage Card
             addUpgradeCard(ctx, paneTable, session, team, CataliCommonUpgrade.DAMAGE,
                     Tr.t(session, "catali.damage"),
-                    "Lv " + upgrades.getDamageLevel() + " (+" + Math.round((upgrades.getDamageMultiplier() - 1f) * 100f) + "%)");
+                    Tr.t(session, "catali.level_stats", "level", upgrades.getDamageLevel(), "percent", Math.round((upgrades.getDamageMultiplier() - 1f) * 100f)));
 
             // Health Card
             addUpgradeCard(ctx, paneTable, session, team, CataliCommonUpgrade.HEALTH,
                     Tr.t(session, "catali.health"),
-                    "Lv " + upgrades.getHealthLevel() + " (+" + Math.round((upgrades.getHealthMultiplier() - 1f) * 100f) + "%)");
+                    Tr.t(session, "catali.level_stats", "level", upgrades.getHealthLevel(), "percent", Math.round((upgrades.getHealthMultiplier() - 1f) * 100f)));
 
             // Regen Card
             addUpgradeCard(ctx, paneTable, session, team, CataliCommonUpgrade.REGEN,
                     Tr.t(session, "catali.regeneration"),
-                    "Lv " + upgrades.getRegenLevel() + " (+" + Math.round((upgrades.getRegenMultiplier() - 1f) * 100f) + "%)");
+                    Tr.t(session, "catali.level_stats", "level", upgrades.getRegenLevel(), "percent", Math.round((upgrades.getRegenMultiplier() - 1f) * 100f)));
 
             // Exp Card
             addUpgradeCard(ctx, paneTable, session, team, CataliCommonUpgrade.EXP,
                     Tr.t(session, "catali.experience"),
-                    "Lv " + upgrades.getExpLevel() + " (+" + Math.round((upgrades.getExpMultiplier() - 1f) * 100f) + "%)");
+                    Tr.t(session, "catali.level_stats", "level", upgrades.getExpLevel(), "percent", Math.round((upgrades.getExpMultiplier() - 1f) * 100f)));
         });
     }
 
@@ -86,7 +86,7 @@ public class CommonUpgradeMenu extends ServerMenu<CataliTeamData> {
             }
         });
 
-        card.add(UiBuilder.button("[green]Upgrade[]").clicked(actId).width(105f).height(32f).align("right").pad(4f));
+        card.add(UiBuilder.button(Tr.t(session, "catali.upgrade")).clicked(actId).width(105f).height(32f).align("right").pad(4f));
         table.add(card.growX().pad(2f)).row();
     }
 }

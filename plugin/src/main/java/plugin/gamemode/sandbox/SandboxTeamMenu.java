@@ -49,7 +49,7 @@ public class SandboxTeamMenu extends ServerMenu<Void> {
                 card.add(UiBuilder.label(team.coloredName()).wrap().align("left").growX().padLeft(4f));
 
                 if (isCurrent) {
-                    card.add(UiBuilder.label("[stat](Current)[]").align("right").pad(4f).padLeft(8f));
+                    card.add(UiBuilder.label(Tr.t(session, "sandbox.current")).align("right").pad(4f).padLeft(8f));
                 } else {
                     String actId = ctx.registerAction((sess, st, res) -> {
                         if (sess.player != null) {
@@ -57,7 +57,7 @@ public class SandboxTeamMenu extends ServerMenu<Void> {
                             sess.player.sendMessage(Tr.t(sess, "sandbox.team_changed", "team", team.coloredName()));
                         }
                     });
-                    card.add(UiBuilder.button("[accent]Switch[]").clicked(actId).width(95f).height(36f).align("right").padRight(6f));
+                    card.add(UiBuilder.button(Tr.t(session, "sandbox.switch_team")).clicked(actId).width(95f).height(36f).align("right").padRight(6f));
                 }
 
                 paneTable.add(card.growX().padTop(2f).padBottom(2f)).row();

@@ -19,7 +19,7 @@ public class GachaMenu extends ServerMenu<Integer> {
     public void build(MenuContext<Integer> ctx) {
         this.title = Tr.t(ctx.getSession(), "gacha.title", "coins", ctx.getSession().getData().money);
 
-        ctx.label("[gold]★ Lucky Gacha Machine ★");
+        ctx.label(Tr.t(ctx.getSession(), "gacha.machine_title"));
         ctx.row();
         ctx.label("[lightgray]" + Tr.t(ctx.getSession(), "gacha.description"));
         ctx.row();

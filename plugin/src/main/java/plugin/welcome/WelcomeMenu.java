@@ -16,7 +16,7 @@ public class WelcomeMenu extends ServerMenu<Void> {
     public void build(MenuContext<Void> ctx) {
         this.title = "[gold]MindustryTool";
 
-        ctx.label("[accent]Welcome to the server!");
+        ctx.label(Tr.t(ctx.getSession(), "welcome.welcome_message"));
         ctx.row();
 
         ctx.table(links -> {

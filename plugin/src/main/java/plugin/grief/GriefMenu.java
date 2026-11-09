@@ -40,7 +40,7 @@ public class GriefMenu extends ServerMenu<Session> {
                 });
             });
         } else {
-            ctx.label("[yellow]Report player: [scarlet]" + target.player.name + "[yellow]?").width(MenuContext.SAFE_WIDTH);
+            ctx.label(Tr.t(ctx.getSession(), "grief.report_player", "player", target.player.name)).width(MenuContext.SAFE_WIDTH);
             ctx.row();
 
             ctx.table(actions -> {

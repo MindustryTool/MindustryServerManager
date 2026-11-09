@@ -95,7 +95,7 @@ public class ServerListMenu extends ServerMenu<Integer> {
             }
         } catch (Exception e) {
             Log.err("Failed to build server list menu", e);
-            ctx.label("[scarlet]Failed to load server list");
+            ctx.label(Tr.t(ctx.getSession(), "hub.list.load_failed"));
         }
     }
 }

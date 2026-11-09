@@ -42,7 +42,7 @@ public class IncomingRequestMenu extends ServerMenu<Player> {
         ctx.row();
 
         var card = UiBuilder.table().align("left");
-        card.add(UiBuilder.label("[white]Player: [accent]" + requester.name() + "[]").wrap().align("left").growX().padLeft(4f)).row();
+        card.add(UiBuilder.label(Tr.t(session, "catali.player_label", "name", requester.name())).wrap().align("left").growX().padLeft(4f)).row();
 
         var btnBar = UiBuilder.table().pad(4f);
 
@@ -51,7 +51,7 @@ public class IncomingRequestMenu extends ServerMenu<Player> {
             team.members.add(requester.uuid());
             requester.team(team.team);
             requester.sendMessage(Tr.t(requester, "catali.join_accepted", "name", session.player.name));
-            sess.player.sendMessage("[green]Accepted " + requester.name() + " into team.");
+            sess.player.sendMessage(Tr.t(sess, "catali.accepted_into_team", "name", requester.name()));
         });
         btnBar.add(UiBuilder.button("[green]" + Tr.t(session, "catali.accept") + "[]")
                 .clicked(acceptAct)
@@ -62,7 +62,7 @@ public class IncomingRequestMenu extends ServerMenu<Player> {
         String rejectAct = ctx.registerAction((sess, req, res) -> {
             team.joinRequests.remove(requester.uuid());
             requester.sendMessage(Tr.t(requester, "catali.join_rejected", "name", session.player.name));
-            sess.player.sendMessage("[scarlet]Rejected " + requester.name() + "'s join request.");
+            sess.player.sendMessage(Tr.t(sess, "catali.rejected_request", "name", requester.name()));
         });
         btnBar.add(UiBuilder.button("[scarlet]" + Tr.t(session, "catali.reject") + "[]")
                 .clicked(rejectAct)

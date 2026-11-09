@@ -37,7 +37,7 @@ public class RareUpgradeTierSelectUpgradeMenu extends ServerMenu<Pair<CataliTeam
 
         this.title = Tr.t(session, "catali.select_evolution");
 
-        ctx.label("[lightgray]" + Tr.t(session, "catali.choose_evolution") + " for "
+        ctx.label("[lightgray]" + Tr.t(session, "catali.choose_evolution") + " " + Tr.t(session, "catali.for_unit") + " "
                 + unit.type.emoji() + " [accent]" + unit.type.name + "[]").width(MenuContext.SAFE_WIDTH);
         ctx.row();
 
@@ -45,7 +45,7 @@ public class RareUpgradeTierSelectUpgradeMenu extends ServerMenu<Pair<CataliTeam
 
         ctx.pane(MenuContext.SAFE_WIDTH, 220f, paneTable -> {
             if (availableUnitsUpgradeTo.isEmpty()) {
-                paneTable.add(UiBuilder.label("[lightgray]No available evolutions.").wrap().align("left").growX()).row();
+                paneTable.add(UiBuilder.label(Tr.t(session, "catali.no_available_evolutions")).wrap().align("left").growX()).row();
                 return;
             }
 
@@ -59,7 +59,7 @@ public class RareUpgradeTierSelectUpgradeMenu extends ServerMenu<Pair<CataliTeam
                     PluginEvents.fire(new CataliTierRareUpgrade(team, unit, upgrade));
                 });
 
-                card.add(UiBuilder.button("[green]Evolve[]")
+                card.add(UiBuilder.button("[green]" + Tr.t(session, "catali.evolve") + "[]")
                         .clicked(actId)
                         .width(95f)
                         .height(34f)

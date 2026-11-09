@@ -22,14 +22,14 @@ public class TrailMenu extends ServerMenu<Integer> {
     @Override
     public void build(MenuContext<Integer> ctx) {
         var trails = Seq.with(trailService.trails.values());
-        this.title = "Cosmetic Trails";
+        this.title = Tr.t(ctx.getSession(), "trail.menu_title");
 
         boolean hasTrail = ctx.getSession().getData().trail != null && !ctx.getSession().getData().trail.isEmpty();
-        ctx.label("[accent]Choose a cosmetic trail to equip:").width(MenuContext.SAFE_WIDTH);
+        ctx.label(Tr.t(ctx.getSession(), "trail.choose_trail")).width(MenuContext.SAFE_WIDTH);
         ctx.row();
 
         if (hasTrail) {
-            ctx.button("[scarlet]Clear Active Trail", (sess, st, res) -> {
+            ctx.button(Tr.t(ctx.getSession(), "trail.clear_active"), (sess, st, res) -> {
                 sess.getData().trail = "";
                 if (sessionRepository != null) {
                     sessionRepository.markDirty(sess);
@@ -47,15 +47,15 @@ public class TrailMenu extends ServerMenu<Integer> {
 
                 TableBuilder card = UiBuilder.table().align("left");
                 card.width(MenuContext.SAFE_CARD_WIDTH);
-                String badge = isCurrent ? "[green]" + Iconc.ok + " EQUIPPED"
-                    : owns ? "[accent]OWNED"
-                    : "[gold]" + trail.getPrice() + " Coins";
+                String badge = isCurrent ? "[green]" + Iconc.ok + " " + Tr.t(ctx.getSession(), "trail.equipped_text")
+                    : owns ? "[accent]" + Tr.t(ctx.getSession(), "trail.owned_text")
+                    : "[gold]" + trail.getPrice() + " " + Tr.t(ctx.getSession(), "trail.coins");
 
                 card.add(UiBuilder.label("[white]" + trail.getName()).wrap().align("left").growX().padLeft(4f));
                 card.add(UiBuilder.label(badge).align("right").padLeft(8f));
                 card.row();
 
-                String actionText = isCurrent ? "Unequip" : owns ? "Equip" : "Buy";
+                String actionText = isCurrent ? Tr.t(ctx.getSession(), "trail.unequip") : owns ? Tr.t(ctx.getSession(), "trail.equip") : Tr.t(ctx.getSession(), "trail.buy");
                 String trailAct = ctx.registerAction((sess, st, res) -> {
                     if (trail.owns(sess)) {
                         if (trail.getName().equals(sess.getData().trail)) {

@@ -61,7 +61,7 @@ public class AssignNextLeaderMenu extends ServerMenu<CataliTeamData> {
                     sess.player.sendMessage(Tr.t(sess, "catali.leadership_transferred", "name", p.name()));
                 });
 
-                card.add(UiBuilder.button("[accent]Assign Leader[]")
+                card.add(UiBuilder.button(Tr.t(session, "catali.assign_leader"))
                         .clicked(actId)
                         .width(115f)
                         .height(34f)
