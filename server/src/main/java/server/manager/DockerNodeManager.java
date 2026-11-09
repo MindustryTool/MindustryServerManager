@@ -245,13 +245,12 @@ public class DockerNodeManager implements NodeManager {
             exposedPorts.add(localTcp);
         }
 
-        long period = 20_000L;
 
         HostConfig hostConfig = HostConfig.newHostConfig()
                 .withPortBindings(portBindings)
                 .withNetworkMode("mindustry-server")
-                .withCpuPeriod(period)
-                .withCpuQuota((long) (request.getCpu() * period))
+                // Experimental: Limit CPU using share
+                .withCpuShares((int) (request.getCpu() * 1024))
                 .withCpusetCpus("1-5")
                 .withMemory(request.getMemory() * 1024 * 1024L)
                 .withRestartPolicy(RestartPolicy.onFailureRestart(1000))
