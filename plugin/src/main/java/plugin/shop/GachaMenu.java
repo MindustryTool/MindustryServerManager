@@ -29,16 +29,12 @@ public class GachaMenu extends ServerMenu<Integer> {
 
         ctx.table(rolls -> {
             String singleAct = ctx.registerAction((sess, st, res) -> {
-                if (gachaService != null) {
-                    gachaService.rollSingle(sess);
-                }
+                gachaService.rollSingle(sess);
                 Registry.get(GachaMenu.class).send(sess, 0);
             });
 
             String tenAct = ctx.registerAction((sess, st, res) -> {
-                if (gachaService != null) {
-                    gachaService.rollTen(sess);
-                }
+                gachaService.rollTen(sess);
                 Registry.get(GachaMenu.class).send(sess, 0);
             });
 

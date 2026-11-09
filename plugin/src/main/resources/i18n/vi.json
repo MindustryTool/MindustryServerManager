@@ -453,7 +453,6 @@
     "status_format": "{status}{title} [white]({current}/{target}) [gold]+{coins} xu",
     "bullet_format": "[gray]* {description}",
     "completed_notify": "[gold]Đã hoàn thành nhiệm vụ: [accent]{title} [white](+[gold]{coins} xu[white])",
-    "unavailable": "[scarlet]Dịch vụ nhiệm vụ hàng ngày hiện không khả dụng.",
     "close": "[gray]Đóng",
     "td_waves_title": "Vượt qua 15 Đợt",
     "td_waves_desc": "Phòng thủ và vượt qua 15 đợt trong Tower Defense",

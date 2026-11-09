@@ -77,6 +77,8 @@ public class DockerNodeManager implements NodeManager {
             "-XX:HeapDumpPath=/config",
             "-XX:MaxDirectMemorySize=128m",
             "-XX:-ShrinkHeapInSteps",
+            "-XX:CICompilerCount=2",
+            "-XX:+UseDynamicNumberOfCompilerThreads",
             "-XX:MaxRAMPercentage=60");
 
     private final ScheduledExecutorService scheduler;

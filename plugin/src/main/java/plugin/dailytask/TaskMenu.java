@@ -22,11 +22,6 @@ public class TaskMenu extends ServerMenu<Integer> {
 
     @Override
     public void build(MenuContext<Integer> ctx) {
-        if (dailyTaskService == null) {
-            ctx.label(Tr.t(ctx.getSession(), "task.unavailable"));
-            return;
-        }
-
         dailyTaskService.checkRollover(ctx.getSession());
         this.title = Tr.t(ctx.getSession(), "task.menu_title", "date", LocalDate.now().toString());
 

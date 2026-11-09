@@ -453,7 +453,6 @@
     "status_format": "{status}{title} [white]({current}/{target}) [gold]+{coins} coins",
     "bullet_format": "[gray]* {description}",
     "completed_notify": "[gold]Completed daily task: [accent]{title} [white](+[gold]{coins} coins[white])",
-    "unavailable": "[scarlet]Daily tasks service unavailable.",
     "close": "[gray]Close",
     "td_waves_title": "Survive 15 Waves",
     "td_waves_desc": "Defend and clear 15 waves in Tower Defense",

@@ -4,7 +4,7 @@
 
 ### Requirement: Build-time component registry generation
 
-The build SHALL generate a `ComponentRegistry` class containing the list of classes annotated with `@Component` in the plugin source, without performing a classpath scan at runtime. Generation SHALL be performed by a Java annotation processor that runs as part of `javac` compilation and selects annotated types through the compiler type model — not by a Gradle task that scans source text with regular expressions.
+The build SHALL generate a `ComponentRegistry` class containing the list of classes annotated with `@Component` in the plugin source, without performing a classpath scan at runtime. Generation SHALL be performed by a Java annotation processor that runs as part of `javac` compilation and selects annotated types through the compiler type model — not by a Gradle task that scans source text with regular expressions. The registry file SHALL be written after annotation processing completes, so the final round sees the full component set. The processor SHALL additionally validate dependency condition coverage as specified by `component-condition-consistency`, and compilation SHALL fail on violation.
 
 #### Scenario: Generated registry lists all components
 - **WHEN** the plugin module is compiled
@@ -18,6 +18,10 @@ The build SHALL generate a `ComponentRegistry` class containing the list of clas
 - **WHEN** the plugin module is configured
 - **THEN** no Gradle task scans source text to discover `@Component` classes
 - **AND** generation is driven by the annotation processor during compilation
+
+#### Scenario: Uncovered dependency edge fails the build
+- **WHEN** the plugin module is compiled and a component depends on a conditional component without covering its conditions
+- **THEN** the build fails with a diagnostic naming the dependent class, the dependency class, and the missing condition
 
 ### Requirement: Registry init uses the generated registry
 `Registry.init` SHALL obtain the component class list from the generated `ComponentRegistry` instead of using a runtime `Reflections` scan.
