@@ -1,4 +1,9 @@
-## ADDED Requirements
+# gamemode-throttling Specification
+
+## Purpose
+Schedule gamemode maintenance and spawning routines on periodic intervals instead of continuous 60 TPS triggers.
+
+## Requirements
 
 ### Requirement: Throttled Building Replenishment in Ziger
 `ZigerGamemode` SHALL replenish fillable buildings on a periodic schedule with a fixed delay of 500 milliseconds rather than executing on every game tick.

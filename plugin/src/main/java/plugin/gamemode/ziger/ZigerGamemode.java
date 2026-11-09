@@ -1,5 +1,6 @@
 package plugin.gamemode.ziger;
 
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import arc.struct.ObjectMap;
@@ -11,7 +12,6 @@ import mindustry.content.Items;
 import mindustry.game.EventType.BlockBuildEndEvent;
 import mindustry.game.EventType.BlockDestroyEvent;
 import mindustry.game.EventType.ResetEvent;
-import mindustry.game.EventType;
 import mindustry.game.EventType.WorldLoadEvent;
 import mindustry.gen.Building;
 import mindustry.gen.Groups;
@@ -28,7 +28,8 @@ import plugin.annotations.Component;
 import plugin.annotations.ConditionOn;
 import plugin.gamemode.GamemodeCondition;
 import plugin.annotations.Listener;
-import plugin.annotations.Trigger;
+import plugin.annotations.MainThread;
+import plugin.annotations.Schedule;
 
 @Component
 @ConditionOn(value = GamemodeCondition.class, args = { "ziger" })
@@ -70,7 +71,8 @@ public class ZigerGamemode {
         clearCache();
     }
 
-    @Trigger(EventType.Trigger.update)
+    @MainThread
+    @Schedule(fixedDelay = 500, unit = TimeUnit.MILLISECONDS)
     private void tick() {
         if (!Vars.state.isPlaying()) {
             return;

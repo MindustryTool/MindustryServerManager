@@ -12,7 +12,6 @@ import mindustry.content.Fx;
 import mindustry.content.StatusEffects;
 import mindustry.content.UnitTypes;
 import mindustry.game.EventType.*;
-import mindustry.game.EventType;
 import mindustry.game.Team;
 import mindustry.gen.Building;
 import mindustry.gen.Call;
@@ -31,7 +30,6 @@ import plugin.annotations.Init;
 import plugin.annotations.Listener;
 import plugin.annotations.MainThread;
 import plugin.annotations.Schedule;
-import plugin.annotations.Trigger;
 import plugin.session.SessionCreatedEvent;
 import plugin.gamemode.catali.data.CataliTeamData;
 import plugin.gamemode.catali.event.CataliBuffRareUpgrade;
@@ -209,7 +207,8 @@ public class CataliGamemode {
         }
     }
 
-    @Trigger(EventType.Trigger.update)
+    @MainThread
+    @Schedule(fixedDelay = 1, unit = TimeUnit.SECONDS)
     public void update() {
         if (!Vars.state.isPlaying()) {
             return;
@@ -256,7 +255,8 @@ public class CataliGamemode {
         }
     }
 
-    @Trigger(EventType.Trigger.update)
+    @MainThread
+    @Schedule(fixedDelay = 1, unit = TimeUnit.SECONDS)
     public void spawn() {
         if (!shouldUpdate()) {
             return;

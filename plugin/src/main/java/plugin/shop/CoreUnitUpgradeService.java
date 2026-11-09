@@ -8,6 +8,7 @@ import plugin.Cfg;
 import plugin.annotations.Component;
 import plugin.annotations.ConditionOn;
 import plugin.annotations.Listener;
+import plugin.annotations.MainThread;
 import plugin.annotations.Schedule;
 import plugin.money.MoneyService;
 import plugin.session.Session;
@@ -89,6 +90,7 @@ public class CoreUnitUpgradeService {
         }
     }
 
+    @MainThread
     @Schedule(fixedDelay = 2, unit = TimeUnit.SECONDS)
     public void maintainUpgrades() {
         sessionService.each(this::applyContentPatch);
