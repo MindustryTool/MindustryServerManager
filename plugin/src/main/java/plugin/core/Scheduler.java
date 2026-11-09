@@ -37,6 +37,8 @@ public class Scheduler {
     }
 
     public void process(Schedule schedule, Object instance, Method method) {
+        validate(schedule, method);
+
         boolean isMainThread = method.isAnnotationPresent(MainThread.class);
         Runnable task = createInvocationTask(instance, method, isMainThread);
 
@@ -44,10 +46,27 @@ public class Scheduler {
             scheduleFixedRate(schedule, method, task, isMainThread);
         } else if (schedule.fixedDelay() > -1) {
             scheduleFixedDelay(schedule, method, task, isMainThread);
-        } else if (schedule.delay() > -1) {
-            scheduleOneTime(schedule, method, task, isMainThread);
         } else {
-            Log.warn("Invalid scheduler " + schedule);
+            scheduleOneTime(schedule, method, task, isMainThread);
+        }
+    }
+
+    private void validate(Schedule schedule, Method method) {
+        String target = method.getDeclaringClass().getSimpleName() + "." + method.getName();
+
+        if (schedule.fixedRate() != -1 && schedule.fixedRate() <= 0) {
+            throw new IllegalArgumentException(
+                    "@Schedule fixedRate must be > 0: " + target + " fixedRate=" + schedule.fixedRate() + " "
+                            + schedule.unit());
+        }
+        if (schedule.fixedDelay() != -1 && schedule.fixedDelay() <= 0) {
+            throw new IllegalArgumentException(
+                    "@Schedule fixedDelay must be > 0: " + target + " fixedDelay=" + schedule.fixedDelay() + " "
+                            + schedule.unit());
+        }
+        if (schedule.delay() < 0) {
+            throw new IllegalArgumentException(
+                    "@Schedule delay must be >= 0: " + target + " delay=" + schedule.delay() + " " + schedule.unit());
         }
     }
 
@@ -56,12 +75,11 @@ public class Scheduler {
         Runnable wrapped = createWrapper(task, method, expected, "fixed rate");
 
         if (isMainThread) {
-            float delaySeconds = schedule.unit().toMillis(Math.max(0, schedule.delay())) / 1000f;
+            float delaySeconds = schedule.unit().toMillis(schedule.delay()) / 1000f;
             float intervalSeconds = schedule.unit().toMillis(schedule.fixedRate()) / 1000f;
-            Timer.schedule(wrapped, delaySeconds, intervalSeconds);   
+            Timer.schedule(wrapped, delaySeconds, intervalSeconds);
         } else {
-            scheduler.scheduleAtFixedRate(wrapped, Math.max(0, schedule.delay()), schedule.fixedRate(),
-                    schedule.unit());
+            scheduler.scheduleAtFixedRate(wrapped, schedule.delay(), schedule.fixedRate(), schedule.unit());
         }
         Log.debug("[gray]Scheduled " + method + " with fixed rate " + schedule.fixedRate() + " " + schedule.unit());
     }
@@ -71,9 +89,9 @@ public class Scheduler {
         Runnable wrapped = createWrapper(task, method, expected, "fixed delay");
 
         if (isMainThread) {
-            float delaySeconds = schedule.unit().toMillis(Math.max(0, schedule.delay())) / 1000f;
+            float delaySeconds = schedule.unit().toMillis(schedule.delay()) / 1000f;
             float intervalSeconds = schedule.unit().toMillis(schedule.fixedDelay()) / 1000f;
-            
+
             Timer.schedule(new Timer.Task() {
                 @Override
                 public void run() {
@@ -82,15 +100,14 @@ public class Scheduler {
                 }
             }, delaySeconds);
         } else {
-            scheduler.scheduleWithFixedDelay(wrapped, Math.max(0, schedule.delay()), schedule.fixedDelay(),
-                    schedule.unit());
+            scheduler.scheduleWithFixedDelay(wrapped, schedule.delay(), schedule.fixedDelay(), schedule.unit());
         }
         Log.debug("[gray]Scheduled " + method + " with fixed delay " + schedule.fixedDelay() + " " + schedule.unit());
     }
 
     private void scheduleOneTime(Schedule schedule, Method method, Runnable task, boolean isMainThread) {
         if (isMainThread) {
-            float delaySeconds = schedule.unit().toMillis(Math.max(0, schedule.delay())) / 1000f;
+            float delaySeconds = schedule.unit().toMillis(schedule.delay()) / 1000f;
             Timer.schedule(task, delaySeconds);
         } else {
             scheduler.schedule(task, schedule.delay(), schedule.unit());

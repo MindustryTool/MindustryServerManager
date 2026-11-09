@@ -9,7 +9,7 @@ import java.util.concurrent.TimeUnit;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
 public @interface Schedule {
-    long delay() default -1;
+    long delay() default 0;
     long fixedDelay() default -1;
     long fixedRate() default -1;
     TimeUnit unit() default TimeUnit.MILLISECONDS;
