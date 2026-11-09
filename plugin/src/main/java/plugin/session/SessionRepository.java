@@ -225,18 +225,18 @@ public class SessionRepository {
 
     private void write(String uuid, SessionData pdata) {
         try {
-            String json;
-            long totalExp;
+            SessionData snapshot;
 
             synchronized (pdata) {
                 var now = Instant.now().toEpochMilli();
-                var playTime = Math.max(0, now - pdata.lastSaved);
-                pdata.playTime += playTime;
+                pdata.playTime += Math.max(0, now - pdata.lastSaved);
                 pdata.lastSaved = now;
 
-                json = JsonUtils.toJsonString(pdata);
-                totalExp = (long) pdata.exp;
+                snapshot = pdata.copy();
             }
+
+            String json = JsonUtils.toJsonString(snapshot);
+            long totalExp = (long) snapshot.exp;
 
             database.db().insert(Sessions.TABLE)
                     .set(Sessions.UUID, uuid)

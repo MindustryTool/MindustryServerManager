@@ -228,11 +228,8 @@ public class SessionService {
     @Listener
     public void onExpGain(ExpGainEvent event) {
         Session session = event.session;
-        SessionData data = session.getData();
 
-        synchronized (data) {
-            data.exp += event.amount + session.expGainBonus * event.amount;
-        }
+        session.getData().addExp(event.amount + session.expGainBonus * event.amount);
 
         sessionRepository.markDirty(session);
         updateLevel(session);
@@ -242,20 +239,14 @@ public class SessionService {
         int level = getLevel.apply(session);
 
         if (level != session.currentLevel) {
-            if (session.currentLevel != 0) {
-                int oldLevel = session.currentLevel;
-                int newLevel = level;
-
-                if (level > session.currentLevel) {
-                    PluginEvents.fire(new LevelUpEvent(session, oldLevel, newLevel));
-                }
+            if (session.currentLevel != 0 && level > session.currentLevel) {
+                PluginEvents.fire(new LevelUpEvent(session, session.currentLevel, level));
             }
 
             session.currentLevel = level;
+            session.player.color = Color.white;
+            session.player.name(getPlayerName.apply(session));
         }
-        session.player.color = Color.white;
-        session.player.name(getPlayerName.apply(session));
-        sessionRepository.markDirty(session);
     }
 
     public Optional<Session> getByUuid(String uuid) {
@@ -281,6 +272,7 @@ public class SessionService {
                 }
 
                 updateLevel(session);
+                sessionRepository.markDirty(session);
 
             } catch (Exception e) {
                 Log.err(e);

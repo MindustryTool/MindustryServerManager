@@ -34,11 +34,16 @@ The plugin SHALL store a player's total exp as a `float` counter so fractional `
 
 ### Requirement: Centralized exp gain via ExpGainEvent
 
-The plugin SHALL add exp to a player's stored counter only through a single event mechanism: firing `ExpGainEvent(session, amount)` (defined in `plugin.session`, carrying the `Session` and a `long` amount). A single listener SHALL be the only place that mutates the exp counter: it applies the event amount, marks the session dirty, and recomputes the player's level.
+The plugin SHALL add exp to a player's stored counter only through a single event mechanism: firing `ExpGainEvent(session, amount)` (defined in `plugin.session`, carrying the `Session` and a `long` amount). A single listener SHALL be the only place that mutates the exp counter: it applies the event amount thread-safely under a short per-session lock that is never held during JSON serialization, marks the session dirty, and recomputes the player's level.
 
 #### Scenario: Firing the event grants exp
 - **WHEN** `ExpGainEvent(session, X)` is fired
-- **THEN** the session's stored `data.exp` increases by `X`, the session is marked dirty, and the player's level is recomputed
+- **THEN** the session's stored `data.exp` increases by `X` via a thread-safe update, the session is marked dirty, and the player's level is recomputed
+
+#### Scenario: Concurrent exp gains do not block on persistence
+- **WHEN** multiple `ExpGainEvent` instances are fired concurrently or in rapid succession
+- **THEN** each event applies its exp increment atomically
+- **AND** the invoking thread never waits for JSON serialization or database writes
 
 ### Requirement: Per-second exp accumulation
 
@@ -56,11 +61,15 @@ While a player is online, the plugin SHALL increment that player's stored exp co
 
 ### Requirement: Level derived from the stored exp counter
 
-The player's level SHALL be computed exclusively from the stored exp counter via `ExpUtils.levelFromTotalExp(data.exp)`. Level-up messages, player name formatting, and the `/me` info string SHALL all reflect the stored counter.
+The player's level SHALL be computed exclusively from the stored exp counter via `ExpUtils.levelFromTotalExp(data.exp)`. Level-up messages and player name formatting SHALL reflect the stored counter, and player name updates SHALL be triggered only when a player's level actually changes or during session initialization.
 
 #### Scenario: Level reflects accumulated counter
 - **WHEN** a player's `data.exp` reaches a value that maps to a higher level
 - **THEN** `SessionService.update` raises `session.currentLevel`, updates the player name, and broadcasts the level-up message
+
+#### Scenario: Name update skipped when level does not change
+- **WHEN** an exp gain increases `data.exp` but the computed level remains equal to `session.currentLevel`
+- **THEN** `session.currentLevel` remains unchanged and player name formatting and network name synchronization packets are not sent
 
 #### Scenario: Info string uses stored exp
 - **WHEN** a player runs `/me`

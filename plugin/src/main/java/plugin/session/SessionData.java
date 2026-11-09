@@ -11,7 +11,6 @@ public class SessionData {
     public String name = "";
     public String locale = "";
     public long playTime = 0;
-    public float exp = 0;
     public long lastSaved = Instant.now().toEpochMilli();
     public String trail = "";
     public boolean griefer = false;
@@ -20,4 +19,30 @@ public class SessionData {
     public String dailyTaskDate = "";
     public Map<String, Integer> dailyTaskProgress = new HashMap<>();
     public int coreUpgradeLevel = 0;
+
+    public volatile float exp = 0;
+    
+    public synchronized float addExp(float delta) {
+        exp += delta;
+        return exp;
+    }
+
+    public SessionData copy() {
+        SessionData copy = new SessionData();
+
+        copy.name = name;
+        copy.locale = locale;
+        copy.playTime = playTime;
+        copy.exp = exp;
+        copy.lastSaved = lastSaved;
+        copy.trail = trail;
+        copy.griefer = griefer;
+        copy.money = money;
+        copy.unlockedTrails = new ArrayList<>(unlockedTrails);
+        copy.dailyTaskDate = dailyTaskDate;
+        copy.dailyTaskProgress = new HashMap<>(dailyTaskProgress);
+        copy.coreUpgradeLevel = coreUpgradeLevel;
+
+        return copy;
+    }
 }
