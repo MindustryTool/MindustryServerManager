@@ -12,6 +12,8 @@ import plugin.maprating.MapRatingService;
 import plugin.maprating.MapRatingStat;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class RtvMenuTest {
 
@@ -99,5 +101,39 @@ public class RtvMenuTest {
         // Sorting must complete cleanly without throwing IllegalArgumentException
         var sorted = RtvMenu.prepareSortedEntries(maps, service);
         assertEquals(150, sorted.size);
+    }
+
+    @Test
+    void testFullscreenConfiguredOnConstruction() {
+        RtvMenu menu = new RtvMenu(null, null);
+        assertTrue(menu.isFillScreen());
+    }
+
+    @Test
+    void testFindPreRenderedImageMissingReturnsNull() {
+        Fi tempFile = Fi.tempFile("non_existent_map.msav");
+        tempFile.delete();
+        Map map = createMap(tempFile.absolutePath(), "No Image Map");
+
+        assertNull(RtvMenu.findPreRenderedImage(map));
+    }
+
+    @Test
+    void testFindPreRenderedImagePrefersSiblingMsavPng() {
+        Fi tempDir = Fi.tempDirectory("map_test_dir");
+        try {
+            Fi mapFile = tempDir.child("desert.msav");
+            mapFile.writeString("dummy map data");
+
+            Fi imageFile = tempDir.child("desert.msav.png");
+            imageFile.writeBytes(new byte[]{1, 2, 3});
+
+            Map map = createMap(mapFile.absolutePath(), "Desert");
+            Fi found = RtvMenu.findPreRenderedImage(map);
+
+            assertEquals(imageFile.absolutePath(), found.absolutePath());
+        } finally {
+            tempDir.deleteDirectory();
+        }
     }
 }

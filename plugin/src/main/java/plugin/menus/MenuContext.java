@@ -151,6 +151,10 @@ public class MenuContext<T> {
         return btn;
     }
 
+    public ButtonBuilder cancelButton(String text, MenuAction<T> action) {
+        return button(text, action).growX().height(36f).pad(3f);
+    }
+
     public ButtonBuilder option(String text, Cons2<Session, T> action) {
         return button(text, action);
     }
