@@ -86,7 +86,7 @@ public class CommonUpgradeMenu extends ServerMenu<CataliTeamData> {
             }
         });
 
-        card.add(UiBuilder.button(Tr.t(session, "catali.upgrade")).clicked(actId).width(105f).height(32f).align("right").pad(4f));
+        card.add(UiBuilder.button(Tr.t(session, "catali.upgrade")).clicked(actId).width(105f).height(48f).align("right").pad(4f));
         table.add(card.growX().pad(2f)).row();
     }
 }

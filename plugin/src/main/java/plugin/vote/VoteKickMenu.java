@@ -55,7 +55,7 @@ public class VoteKickMenu extends ServerMenu<Player> {
                     card.add(UiBuilder.label("[white]" + candidate.name + " [gray](#" + candidate.id() + ")").wrap().align("left").growX().padLeft(4f));
 
                     String kickAct = ctx.registerAction((sess, st, res) -> Registry.get(VoteKickMenu.class).send(sess, candidate));
-                    card.add(UiBuilder.button(Tr.t(ctx.getSession(), "votekick.select")).clicked(kickAct).width(90f).height(36f).align("right").padLeft(6f));
+                    card.add(UiBuilder.button(Tr.t(ctx.getSession(), "votekick.select")).clicked(kickAct).width(90f).height(48f).align("right").padLeft(6f));
 
                     paneTable.add(card.growX().pad(2f)).row();
                 }
@@ -75,12 +75,9 @@ public class VoteKickMenu extends ServerMenu<Player> {
                 for (String key : reasonKeys) {
                     String reasonText = Tr.t(ctx.getSession(), key);
                     String act = ctx.registerAction((sess, st, res) -> voteKickService.startVote(sess.player, target, reasonText));
-                    reasonsTable.add(UiBuilder.button(reasonText).clicked(act).growX().height(36f).pad(3f)).row();
+                    reasonsTable.add(UiBuilder.button(reasonText).clicked(act).growX().height(48f).pad(3f)).row();
                 }
             });
-
-            ctx.row();
-            ctx.cancelButton(Tr.t(ctx.getSession(), "votekick.btn_back"), (sess, st, res) -> Registry.get(VoteKickMenu.class).send(sess, null));
         }
     }
 }

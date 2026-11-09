@@ -56,7 +56,7 @@ public class IncomingRequestMenu extends ServerMenu<Player> {
         btnBar.add(UiBuilder.button("[green]" + Tr.t(session, "catali.accept") + "[]")
                 .clicked(acceptAct)
                 .width(105f)
-                .height(35f)
+                .height(48f)
                 .pad(3f));
 
         String rejectAct = ctx.registerAction((sess, req, res) -> {
@@ -67,7 +67,7 @@ public class IncomingRequestMenu extends ServerMenu<Player> {
         btnBar.add(UiBuilder.button("[scarlet]" + Tr.t(session, "catali.reject") + "[]")
                 .clicked(rejectAct)
                 .width(105f)
-                .height(35f)
+                .height(48f)
                 .pad(3f));
 
         card.add(btnBar);

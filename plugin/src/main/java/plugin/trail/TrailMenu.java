@@ -36,7 +36,7 @@ public class TrailMenu extends ServerMenu<Integer> {
                 }
                 sess.player.sendMessage(Tr.t(sess, "trail.removed"));
                 Registry.get(TrailMenu.class).send(sess, 0);
-            }).growX().height(36f).pad(4f);
+            }).growX().height(48f).pad(4f);
             ctx.row();
         }
 
@@ -77,7 +77,7 @@ public class TrailMenu extends ServerMenu<Integer> {
                     Registry.get(TrailMenu.class).send(sess, 0);
                 });
 
-                card.add(UiBuilder.button(actionText).clicked(trailAct).width(90f).height(34f).align("right").colspan(2).pad(2f));
+                card.add(UiBuilder.button(actionText).clicked(trailAct).width(90f).height(48f).align("right").colspan(2).pad(2f));
                 paneTable.add(card.growX().pad(2f)).row();
             }
         });

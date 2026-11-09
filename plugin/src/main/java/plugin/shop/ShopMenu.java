@@ -47,7 +47,7 @@ public class ShopMenu extends ServerMenu<Integer> {
                         Registry.get(ShopMenu.class).send(sess, 0);
                     });
 
-                    card.add(UiBuilder.button(Tr.t(ctx.getSession(), "shop.buy")).clicked(buyAct).width(80f).height(36f).align("right").padLeft(6f));
+                    card.add(UiBuilder.button(Tr.t(ctx.getSession(), "shop.buy")).clicked(buyAct).width(80f).height(48f).align("right").padLeft(6f));
                     paneTable.add(card.growX().pad(2f)).row();
                 }
             });
@@ -58,9 +58,9 @@ public class ShopMenu extends ServerMenu<Integer> {
             String gachaAct = ctx.registerAction((sess, st, res) -> Registry.get(GachaMenu.class).send(sess, 0));
             String trailAct = ctx.registerAction((sess, st, res) -> Registry.get(TrailMenu.class).send(sess, 0));
 
-            nav.add(UiBuilder.button("[gold]" + Iconc.star + " " + Tr.t(ctx.getSession(), "shop.open_gacha")).clicked(gachaAct).growX().height(36f).pad(2f));
+            nav.add(UiBuilder.button("[gold]" + Iconc.star + " " + Tr.t(ctx.getSession(), "shop.open_gacha")).clicked(gachaAct).growX().height(48f).pad(2f));
             nav.row();
-            nav.add(UiBuilder.button("[sky]" + Iconc.star + " " + Tr.t(ctx.getSession(), "shop.open_trails")).clicked(trailAct).growX().height(36f).pad(2f));
+            nav.add(UiBuilder.button("[sky]" + Iconc.star + " " + Tr.t(ctx.getSession(), "shop.open_trails")).clicked(trailAct).growX().height(48f).pad(2f));
         });
     }
 }

@@ -39,7 +39,7 @@ public class ServerRedirectMenu extends ServerMenu<Server> {
             actions.add(UiBuilder.button("[green]" + Tr.t(ctx.getSession().locale, "hub.redirect.yes"))
                 .clicked(confirmAct)
                 .growX()
-                .height(36f)
+                .height(48f)
                 .pad(4f));
         }).growX();
     }

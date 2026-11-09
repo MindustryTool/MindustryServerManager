@@ -1,4 +1,10 @@
-## ADDED Requirements
+# responsive-server-menu Specification
+
+## Purpose
+
+Responsive fullscreen grid layout for server selection menus (`ServerListMenu` and `GlobalServerListMenu`) with left-aligned cards, texture streaming, and in-memory 5-minute image caching.
+
+## Requirements
 
 ### Requirement: Responsive fullscreen server menu grid
 The server list menus (`ServerListMenu` and `GlobalServerListMenu`) SHALL enable `fillScreen` and display servers in a scrollable, responsive wrap grid (`UiBuilder.table().wrap(true)`).

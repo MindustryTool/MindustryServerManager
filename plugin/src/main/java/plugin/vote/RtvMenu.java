@@ -161,7 +161,7 @@ public class RtvMenu extends ServerMenu<Integer> {
             card.add(UiBuilder.button(voteBtnText)
                     .clicked(voteAct)
                     .width(128f)
-                    .height(34f)
+                    .height(48f)
                     .align("center")
                     .padTop(4f));
 

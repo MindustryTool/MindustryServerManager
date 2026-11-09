@@ -40,6 +40,7 @@ import plugin.grief.GreifLoginMenu;
 import plugin.grief.GriefMenu;
 import plugin.hub.GlobalServerListMenu;
 import plugin.hub.PaginationRequest;
+import plugin.hub.ServerImageService;
 import plugin.hub.ServerListMenu;
 import plugin.hub.ServerRedirectMenu;
 import plugin.maprating.MapRatingRepository;
@@ -197,10 +198,11 @@ class RenderAllMenuPreviewsTest {
             }
         };
 
-        GlobalServerListMenu globalServerListMenu = new GlobalServerListMenu(mockGateway);
+        ServerImageService stubImageService = new ServerImageService();
+        GlobalServerListMenu globalServerListMenu = new GlobalServerListMenu(mockGateway, stubImageService);
         globalServerListMenu.setState(0);
 
-        ServerListMenu serverListMenu = new ServerListMenu(mockGateway);
+        ServerListMenu serverListMenu = new ServerListMenu(mockGateway, stubImageService);
         serverListMenu.setState(0);
 
         ServerRedirectMenu serverRedirectMenu = new ServerRedirectMenu(mockGateway);

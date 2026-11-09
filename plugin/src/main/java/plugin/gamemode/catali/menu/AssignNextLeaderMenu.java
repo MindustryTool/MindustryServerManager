@@ -64,7 +64,7 @@ public class AssignNextLeaderMenu extends ServerMenu<CataliTeamData> {
                 card.add(UiBuilder.button(Tr.t(session, "catali.assign_leader"))
                         .clicked(actId)
                         .width(115f)
-                        .height(34f)
+                        .height(48f)
                         .align("right"));
 
                 paneTable.add(card.growX().pad(2f)).row();

@@ -51,7 +51,7 @@ public class AbandonMenu extends ServerMenu<CataliTeamData> {
                 card.add(UiBuilder.button("[scarlet]" + Tr.t(session, "catali.abandon_unit") + "[]")
                         .clicked(actId)
                         .width(95f)
-                        .height(32f)
+                        .height(48f)
                         .align("right"));
 
                 paneTable.add(card.growX().pad(2f)).row();
@@ -63,6 +63,6 @@ public class AbandonMenu extends ServerMenu<CataliTeamData> {
         ctx.add(UiBuilder.button("[scarlet]" + Tr.t(session, "catali.abandon_team") + "[]")
                 .clicked(abandonTeamAct)
                 .width(240f)
-                .height(40f));
+                .height(48f));
     }
 }

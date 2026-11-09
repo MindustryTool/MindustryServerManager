@@ -6,7 +6,6 @@ import lombok.RequiredArgsConstructor;
 import mindustry.ui.builder.UiBuilder;
 import plugin.annotations.Component;
 import plugin.annotations.ConditionOn;
-import plugin.core.Registry;
 import plugin.gamemode.GamemodeCondition;
 import plugin.gamemode.catali.CataliConfig;
 import plugin.gamemode.catali.data.CataliTeamData;
@@ -62,17 +61,11 @@ public class RareUpgradeTierSelectUnitMenu extends ServerMenu<CataliTeamData> {
                 card.add(UiBuilder.button("[accent]" + Tr.t(session, "catali.evolve") + "[]")
                         .clicked(actId)
                         .width(95f)
-                        .height(34f)
+                        .height(48f)
                         .align("right"));
 
                 paneTable.add(card.growX().pad(2f)).row();
             }
-        });
-
-        ctx.row();
-
-        ctx.cancelButton(Tr.t(session, "catali.back"), (sess, t, res) -> {
-            Registry.get(RareUpgradeMenu.class).send(sess, team);
         });
     }
 }

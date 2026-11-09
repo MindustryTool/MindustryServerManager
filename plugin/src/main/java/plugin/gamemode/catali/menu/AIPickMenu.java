@@ -42,7 +42,7 @@ public class AIPickMenu extends ServerMenu<CataliTeamData> {
                 team.useCommandAi = false;
                 sess.player.sendMessage(Tr.t(sess, "catali.switched_classic"));
             });
-            classicCard.add(UiBuilder.button(Tr.t(session, "catali.select")).clicked(actId).width(100f).height(32f).padLeft(6f));
+            classicCard.add(UiBuilder.button(Tr.t(session, "catali.select")).clicked(actId).width(100f).height(48f).padLeft(6f));
         }
         container.add(classicCard.growX().pad(4f)).row();
 
@@ -56,7 +56,7 @@ public class AIPickMenu extends ServerMenu<CataliTeamData> {
                 team.useCommandAi = true;
                 sess.player.sendMessage(Tr.t(sess, "catali.switched_command"));
             });
-            cmdCard.add(UiBuilder.button(Tr.t(session, "catali.select")).clicked(actId).width(100f).height(32f).padLeft(6f));
+            cmdCard.add(UiBuilder.button(Tr.t(session, "catali.select")).clicked(actId).width(100f).height(48f).padLeft(6f));
         }
         container.add(cmdCard.growX().pad(4f)).row();
 

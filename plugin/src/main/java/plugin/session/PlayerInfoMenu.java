@@ -42,7 +42,7 @@ public class PlayerInfoMenu extends ServerMenu<Session> {
                     caller.player.sendMessage(SessionUtils.getInfoString(target, target.getData()));
                 });
 
-                card.add(UiBuilder.button(Tr.t(ctx.getSession(), "session.view_info")).clicked(inspectAct).width(100f).height(36f).align("right").padLeft(6f));
+                card.add(UiBuilder.button(Tr.t(ctx.getSession(), "session.view_info")).clicked(inspectAct).width(100f).height(48f).align("right").padLeft(6f));
                 paneTable.add(card.growX().pad(2f)).row();
             }
         });

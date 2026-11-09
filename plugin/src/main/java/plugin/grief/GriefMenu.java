@@ -34,7 +34,7 @@ public class GriefMenu extends ServerMenu<Session> {
                     card.add(UiBuilder.label("[white]" + t.player.name).wrap().align("left").growX().padLeft(4f));
 
                     String reportAct = ctx.registerAction((sess, st, res) -> Registry.get(GriefMenu.class).send(sess, t));
-                    card.add(UiBuilder.button(Tr.t(ctx.getSession().locale, "grief.report")).clicked(reportAct).width(90f).height(36f).align("right").padLeft(8f));
+                    card.add(UiBuilder.button(Tr.t(ctx.getSession().locale, "grief.report")).clicked(reportAct).width(90f).height(48f).align("right").padLeft(8f));
 
                     paneTable.add(card.growX().pad(2f)).row();
                 });
@@ -46,11 +46,8 @@ public class GriefMenu extends ServerMenu<Session> {
             ctx.table(actions -> {
                 String confirmAct = ctx.registerAction((sess, st, res) -> adminService.reportGrief(sess, target));
 
-                actions.add(UiBuilder.button(Tr.t(ctx.getSession().locale, "grief.report")).clicked(confirmAct).width(120f).height(36f).pad(4f));
+                actions.add(UiBuilder.button(Tr.t(ctx.getSession().locale, "grief.report")).clicked(confirmAct).width(120f).height(48f).pad(4f));
             });
-
-            ctx.row();
-            ctx.cancelButton(Tr.t(ctx.getSession().locale, "grief.cancel"), (sess, st, res) -> Registry.get(GriefMenu.class).send(sess, null));
         }
     }
 }

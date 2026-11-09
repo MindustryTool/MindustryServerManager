@@ -39,15 +39,15 @@ public class GachaMenu extends ServerMenu<Integer> {
                 Registry.get(GachaMenu.class).send(sess, 0);
             });
 
-            rolls.add(UiBuilder.button(Tr.t(ctx.getSession(), "gacha.roll_single_btn", "cost", GachaService.COST_SINGLE)).clicked(singleAct).growX().height(36f).pad(3f)).row();
-            rolls.add(UiBuilder.button(Tr.t(ctx.getSession(), "gacha.roll_ten_btn", "cost", GachaService.COST_MULTI_10)).clicked(tenAct).growX().height(36f).pad(3f));
+            rolls.add(UiBuilder.button(Tr.t(ctx.getSession(), "gacha.roll_single_btn", "cost", GachaService.COST_SINGLE)).clicked(singleAct).growX().height(48f).pad(3f)).row();
+            rolls.add(UiBuilder.button(Tr.t(ctx.getSession(), "gacha.roll_ten_btn", "cost", GachaService.COST_MULTI_10)).clicked(tenAct).growX().height(48f).pad(3f));
         }).growX();
 
         ctx.row();
 
         ctx.table(nav -> {
             String backAct = ctx.registerAction((sess, st, res) -> Registry.get(ShopMenu.class).send(sess, 0));
-            nav.add(UiBuilder.button("[lightgray]" + Iconc.left + " " + Tr.t(ctx.getSession(), "gacha.back_to_shop")).clicked(backAct).width(160f).height(36f).pad(3f));
+            nav.add(UiBuilder.button("[lightgray]" + Iconc.left + " " + Tr.t(ctx.getSession(), "gacha.back_to_shop")).clicked(backAct).width(160f).height(48f).pad(3f));
         });
     }
 }

@@ -28,7 +28,7 @@ public class GreifLoginMenu extends ServerMenu<String> {
             actions.add(UiBuilder.button("[green]" + Tr.t(ctx.getSession(), "grief.login"))
                 .clicked(loginAct)
                 .growX()
-                .height(36f)
+                .height(48f)
                 .pad(4f));
         }).growX();
     }

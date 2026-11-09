@@ -75,6 +75,7 @@ public final class FrameBufferCapturer {
                     dialog.titleTable.remove();
                 }
 
+                dialog.addCloseButton();
                 UiTreeBuilder.build(dialog.cont, ctx.getRoot());
                 dialog.pack();
                 dialog.show(Core.scene, null);
