@@ -115,7 +115,7 @@ The server manager SHALL provide a `GoogleWebProvider` implementing `Translation
 - **THEN** the provider decodes them into standard characters (`'`, `"`, `&`)
 
 ### Requirement: Asynchronous Chat Interception
-The plugin `ChatTranslation` component SHALL intercept non-command chat messages via `Vars.netServer.admins.addChatFilter`, immediately deliver the untranslated message to the sender, return `null` synchronously to prevent blocking the game thread, and execute translation asynchronously by querying `ApiGateway` directly.
+The plugin `ChatTranslation` component SHALL intercept non-command chat messages via `Vars.netServer.admins.addChatFilter`, immediately deliver the untranslated message to the sender, return `null` synchronously to prevent blocking the game thread, and execute translation asynchronously by querying `ApiGateway` without blocking worker threads. Target players SHALL be grouped by recipient language, and messages SHALL be delivered per language stream as soon as each individual language translation completes or fails.
 
 #### Scenario: Message does not freeze server ticks
 - **WHEN** a player sends a chat message that requires translation
@@ -132,6 +132,14 @@ The plugin `ChatTranslation` component SHALL intercept non-command chat messages
 #### Scenario: Command bypass
 - **WHEN** a player message begins with `/`
 - **THEN** the filter returns the message without intercepting or modifying it
+
+#### Scenario: Per-language streaming delivery
+- **WHEN** translation for a specific target language completes
+- **THEN** the translated message is dispatched immediately to recipients of that language on the main thread without waiting for other pending target languages
+
+#### Scenario: Isolated failure and timeout fallback
+- **WHEN** translation for a specific target language times out or throws an error
+- **THEN** recipients of that specific language receive the fallback original message without delaying other successful translations
 
 ### Requirement: Color Stripping Prior to Translation
 The plugin SHALL strip all Mindustry color tags (`Strings.stripColors`) from the message before passing the text to any translation provider.

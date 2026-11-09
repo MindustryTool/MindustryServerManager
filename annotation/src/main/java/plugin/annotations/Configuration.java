@@ -14,4 +14,9 @@ public @interface Configuration {
      * The path to the JSON configuration file.
      */
     String value();
+
+    /**
+     * The schema version of the configuration.
+     */
+    int version() default 1;
 }
