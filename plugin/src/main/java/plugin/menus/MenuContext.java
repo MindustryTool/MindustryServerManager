@@ -58,7 +58,7 @@ public class MenuContext<T> {
 
     public int getResponsiveColumns(float itemWidth, float spacing) {
         float availableWidth = getViewportWidth();
-        return Math.max(1, (int) Math.floor((availableWidth - 32f) / (itemWidth + spacing)));
+        return Math.max(1, (int) Math.floor((availableWidth - 32f + spacing) / (itemWidth + spacing)));
     }
 
     public float safeMaxPaneHeight(float requestedHeight) {

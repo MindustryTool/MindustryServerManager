@@ -6,11 +6,9 @@ import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
-import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -22,7 +20,6 @@ import java.util.logging.Logger;
 import gateway.rpc.RpcChannel;
 import gateway.session.WsSession;
 import gateway.util.Causes;
-import gateway.wire.WsProtocol;
 
 /**
  * One physical socket and everything bound to it: the send queue, the
@@ -36,7 +33,6 @@ class WebSocketConnection implements WsSession {
 
     static final Duration DEFAULT_SEND_TIMEOUT = Duration.ofSeconds(10);
     private static final int QUEUE_WARN_DEPTH = 1000;
-    static final int CONTROL_INTERLEAVE_INTERVAL = 3;
 
     /** Policy callbacks owned by the lifecycle. */
     interface Events {
@@ -56,9 +52,7 @@ class WebSocketConnection implements WsSession {
     private final AtomicBoolean terminated = new AtomicBoolean(false);
     private final AtomicBoolean readStarted = new AtomicBoolean(false);
 
-    private final Queue<OutboundItem> controlQueue = new ConcurrentLinkedQueue<>();
-    private final Queue<OutboundItem> binaryQueue = new ConcurrentLinkedQueue<>();
-    private int controlRun;
+    private final OutboundInterleave<OutboundItem> interleave = new OutboundInterleave<>();
     private final AtomicBoolean isSending = new AtomicBoolean(false);
     private volatile ScheduledFuture<?> pingTask;
     private volatile Instant lastPongAt = Instant.now();
@@ -129,8 +123,7 @@ class WebSocketConnection implements WsSession {
         }
 
         stopPingTask();
-        controlQueue.clear();
-        binaryQueue.clear();
+        interleave.clear();
         drain();
     }
 
@@ -145,14 +138,14 @@ class WebSocketConnection implements WsSession {
         WebSocket target = socket;
 
         if (target != null && !target.isOutputClosed()) {
-            controlQueue.offer(SendFrame.close(code, reason));
+            interleave.offer(SendFrame.close(code, reason), false);
         }
 
         drain();
     }
 
     int queueDepth() {
-        return controlQueue.size() + binaryQueue.size();
+        return interleave.depth();
     }
 
     @Override
@@ -230,7 +223,7 @@ class WebSocketConnection implements WsSession {
             throw new IllegalStateException("WebSocket is not open");
         }
 
-        queueFor(op).offer(op);
+        interleave.offer(op, isBinaryLane(op));
 
         int depth = queueDepth();
 
@@ -241,50 +234,14 @@ class WebSocketConnection implements WsSession {
         drain();
     }
 
-    private Queue<OutboundItem> queueFor(OutboundItem op) {
-        return isBinaryLane(op) ? binaryQueue : controlQueue;
-    }
-
     private boolean isBinaryLane(OutboundItem op) {
         if (op instanceof SendFrame.BinaryFrame) {
             return true;
         }
         if (op instanceof SendFrame.TextFrame text) {
-            return isStreamEnvelope(text.text());
+            return OutboundInterleave.isStreamEnvelope(text.text());
         }
         return false;
-    }
-
-    private boolean isStreamEnvelope(String text) {
-        int i = text.indexOf("\"kind\":\"");
-        if (i < 0) {
-            return false;
-        }
-        String rest = text.substring(i + 8);
-        return rest.startsWith(WsProtocol.STREAM_START_TYPE)
-                || rest.startsWith(WsProtocol.STREAM_DONE_TYPE)
-                || rest.startsWith(WsProtocol.STREAM_REPLY_START_TYPE)
-                || rest.startsWith(WsProtocol.STREAM_REPLY_DONE_TYPE);
-    }
-
-    private boolean isEmpty() {
-        return controlQueue.isEmpty() && binaryQueue.isEmpty();
-    }
-
-    private OutboundItem pollNext() {
-        boolean hasControl = !controlQueue.isEmpty();
-        boolean hasBinary = !binaryQueue.isEmpty();
-        if (!hasControl && !hasBinary) {
-            return null;
-        }
-        if (hasControl && hasBinary) {
-            if (controlRun >= CONTROL_INTERLEAVE_INTERVAL) {
-                controlRun = 0;
-                return binaryQueue.poll();
-            }
-            return controlQueue.poll();
-        }
-        return hasControl ? controlQueue.poll() : binaryQueue.poll();
     }
 
     private void drain() {
@@ -293,22 +250,19 @@ class WebSocketConnection implements WsSession {
         }
 
         while (true) {
-            OutboundItem item = pollNext();
+            OutboundItem item = interleave.pollNext();
 
             if (item == null || item instanceof PoisonPill) {
                 isSending.set(false);
-                if (!isEmpty() && isSending.compareAndSet(false, true)) {
+                if (!interleave.isEmpty() && isSending.compareAndSet(false, true)) {
                     continue;
                 }
                 return;
             }
 
             SendFrame op = (SendFrame) item;
-            if (isBinaryLane(op)) {
-                controlRun = 0;
-            } else {
-                controlRun++;
-            }
+            boolean binaryLane = isBinaryLane(op);
+            interleave.sent(binaryLane);
 
             if (terminated.get() && !(op instanceof SendFrame.CloseFrame)) {
                 continue;
@@ -398,7 +352,7 @@ class WebSocketConnection implements WsSession {
                             return;
                         }
 
-                        controlQueue.offer(SendFrame.ping());
+                        interleave.offer(SendFrame.ping(), false);
                         drain();
                     } catch (Exception e) {
                         LOG.log(Level.FINE, "Ping task error", e);

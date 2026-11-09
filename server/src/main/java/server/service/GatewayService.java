@@ -19,6 +19,7 @@ import common.server.ServerCommand;
 import common.server.ServerSnapshot;
 import common.server.StartServer;
 import common.translation.TranslationRequest;
+import gateway.client.OutboundInterleave;
 import gateway.rpc.RequestContext;
 import gateway.rpc.RpcChannel;
 import gateway.session.WsSession;
@@ -49,6 +50,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import lombok.Getter;
 import lombok.experimental.Accessors;
@@ -218,6 +221,10 @@ public class GatewayService {
         @Getter
         private final UUID id;
 
+        private final OutboundInterleave<JavalinFrame> interleave = new OutboundInterleave<>();
+        private final AtomicBoolean sendingJavalin = new AtomicBoolean(false);
+        private final AtomicInteger sessionEpoch = new AtomicInteger();
+
         private final RpcChannel rpcChannel = RpcChannel.withExecutor(
                 Const.executorService, scheduler);
 
@@ -290,6 +297,7 @@ public class GatewayService {
 
         public synchronized void onOpen(WsConnectContext context) {
             Log.info("Gateway client connected: " + id);
+            sessionEpoch.incrementAndGet();
 
             // Overwrite wins: a duplicate or reconnect open replaces the socket.
             eventBus.emit(new StartEvent(id));
@@ -298,6 +306,7 @@ public class GatewayService {
 
         public synchronized void onClose(WsCloseContext context) {
             Log.info("Gateway client disconnected: " + id);
+            sessionEpoch.incrementAndGet();
 
             if (context == null) {
                 // TODO: Proper exception + print message only
@@ -641,6 +650,57 @@ public class GatewayService {
             }
         }
 
+        private static final class JavalinFrame {
+            final WsContext socket;
+            final String text;
+            final byte[] binary;
+            final boolean binaryLane;
+            final int epoch;
+
+            JavalinFrame(WsContext socket, String text, byte[] binary, boolean binaryLane, int epoch) {
+                this.socket = socket;
+                this.text = text;
+                this.binary = binary;
+                this.binaryLane = binaryLane;
+                this.epoch = epoch;
+            }
+        }
+
+        private void enqueueJavalin(WsContext socket, String text, byte[] binary, boolean binaryLane) {
+            JavalinFrame frame = new JavalinFrame(socket, text, binary, binaryLane, sessionEpoch.get());
+            interleave.offer(frame, binaryLane);
+            drainJavalin();
+        }
+
+        private void drainJavalin() {
+            if (!sendingJavalin.compareAndSet(false, true)) {
+                return;
+            }
+            while (true) {
+                JavalinFrame frame = interleave.pollNext();
+                if (frame == null) {
+                    sendingJavalin.set(false);
+                    if (!interleave.isEmpty() && sendingJavalin.compareAndSet(false, true)) {
+                        continue;
+                    }
+                    return;
+                }
+                if (frame.epoch != sessionEpoch.get()) {
+                    continue;
+                }
+                interleave.sent(frame.binaryLane);
+                try {
+                    if (frame.text != null) {
+                        frame.socket.send(frame.text);
+                    } else {
+                        frame.socket.send(ByteBuffer.wrap(frame.binary));
+                    }
+                } catch (Exception e) {
+                    Log.warn("Failed to send over Javalin session for " + id + ": " + e.getMessage());
+                }
+            }
+        }
+
         /** Session bound to a single connection; a fresh one is created per open. */
         private class JavalinSession implements WsSession {
 
@@ -663,7 +723,7 @@ public class GatewayService {
                     throw new IllegalStateException(
                             "No open gateway session for " + id);
                 }
-                socket.send(text);
+                enqueueJavalin(socket, text, null, OutboundInterleave.isStreamEnvelope(text));
             }
 
             @Override
@@ -672,7 +732,10 @@ public class GatewayService {
                     throw new IllegalStateException(
                             "No open gateway session for " + id);
                 }
-                socket.send(data.duplicate());
+                ByteBuffer dup = data.duplicate();
+                byte[] bytes = new byte[dup.remaining()];
+                dup.get(bytes);
+                enqueueJavalin(socket, null, bytes, true);
             }
 
             @Override

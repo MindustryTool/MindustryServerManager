@@ -87,6 +87,7 @@ class RenderAllMenuPreviewsTest {
         Path dir = BASE_DIR.resolve(folder);
         try {
             Files.createDirectories(dir);
+            System.out.println("PREVIEW_DIR_ABSOLUTE: " + dir.toAbsolutePath());
         } catch (IOException e) {
             throw new RuntimeException("Failed to create preview dir: " + dir, e);
         }
@@ -318,18 +319,44 @@ class RenderAllMenuPreviewsTest {
 
     @Test
     void renderVoteFeature() {
-        Map mapA = createMap("flod3.msav", "flod 3[red][v1.3]");
-        Map mapB = createMap("diamond.msav", "diamond");
-        Map mapC = createMap("flod10.msav", "flod 10[red][v1.5]");
-        Map mapD = createMap("easyflod.msav", "easy flood");
-        Map mapE = createMap("StoneMaze.msav", "Stone maze");
-        Seq<Map> maps = Seq.with(mapA, mapB, mapC, mapD, mapE);
+        Seq<Map> maps = new Seq<>();
+        String[][] realMaps = {
+                {"flod12.msav", "flod 12[red][v1.5]"},
+                {"diamond(1).msav", "diamond"},
+                {"flod10.msav", "flod 10[red][v1.5]"},
+                {"flod9.msav", "flod9[red][v1.3]"},
+                {"flodmk2.msav", "flod mk2[red][v1.3]"},
+                {"flod7.msav", "flod 7[red][v1.3]"},
+                {"flod3.msav", "flod 3[red][v1.3]"},
+                {"flod13.msav", "flod 13[red][v1.3]"},
+                {"flod8.msav", "flod 8[red][v1.2]"},
+                {"flod6.msav", "flod 6[red][v1.4]"},
+                {"flod5.msav", "flod 5[red][v1.1]"},
+                {"flod.msav", "flod"},
+                {"flod11.msav", "flod 11[red][v1.5]"},
+                {"019ca89e-f5fb-7724-ade9-915ed10bc4a0.msav", "Stone maze"},
+                {"easyflod.msav", "easy flood"},
+                {"flod4.msav", "flod 4[red][v1.3]"}
+        };
 
-        mockPreviewTexture("net-map-flod3", Color.valueOf("2b580c"), Color.valueOf("639a67"));
-        mockPreviewTexture("net-map-diamond", Color.valueOf("1a4a6e"), Color.valueOf("4da8da"));
-        mockPreviewTexture("net-map-flod10", Color.valueOf("6a1b1b"), Color.valueOf("b22222"));
-        mockPreviewTexture("net-map-easyflod", Color.valueOf("2d5a27"), Color.valueOf("85a970"));
-        mockPreviewTexture("net-map-StoneMaze", Color.valueOf("4a4036"), Color.valueOf("8a7b6c"));
+        Color[] palette = {
+                Color.valueOf("2b580c"), Color.valueOf("639a67"),
+                Color.valueOf("1a4a6e"), Color.valueOf("4da8da"),
+                Color.valueOf("6a1b1b"), Color.valueOf("b22222"),
+                Color.valueOf("2d5a27"), Color.valueOf("85a970"),
+                Color.valueOf("4a4036"), Color.valueOf("8a7b6c"),
+                Color.valueOf("7b3f00"), Color.valueOf("d2691e")
+        };
+
+        for (int i = 0; i < realMaps.length; i++) {
+            String file = realMaps[i][0];
+            String name = realMaps[i][1];
+            maps.add(createMap(file, name));
+            String base = file.replace(".msav", "");
+            Color c1 = palette[(i * 2) % palette.length];
+            Color c2 = palette[(i * 2 + 1) % palette.length];
+            mockPreviewTexture("net-map-" + base, c1, c2);
+        }
 
         RtvMenu rtvMenu = new RtvMenu(new RtvService(null, null) {
             @Override
