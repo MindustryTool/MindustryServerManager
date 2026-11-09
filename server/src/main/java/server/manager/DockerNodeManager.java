@@ -70,6 +70,15 @@ public class DockerNodeManager implements NodeManager {
     private final Map<UUID, ResultCallback.Adapter<Frame>> logCallbacks = new ConcurrentHashMap<>();
 
     private static final Fi SERVER_FOLDER = new Fi(Const.volumeFolderPath).child("servers");
+    public static final List<String> DEFAULT_JVM_ARGS = List.of(
+            "-XX:+UseG1GC",
+            "-XX:+CrashOnOutOfMemoryError",
+            "-XX:+HeapDumpOnOutOfMemoryError",
+            "-XX:HeapDumpPath=/config",
+            "-XX:MaxDirectMemorySize=128m",
+            "-XX:-ShrinkHeapInSteps",
+            "-XX:MaxRAMPercentage=60");
+
     private final ScheduledExecutorService scheduler;
 
     private Optional<Consumer<UUID>> onKilled;
@@ -215,18 +224,7 @@ public class DockerNodeManager implements NodeManager {
         exposedPorts.add(tcp);
         exposedPorts.add(udp);
 
-        List<String> args = List.of(
-                "-XX:+CrashOnOutOfMemoryError",
-                "-XX:+UseSerialGC",
-                "-XX:TieredStopAtLevel=1",
-                "-XX:+HeapDumpOnOutOfMemoryError",
-                "-XX:HeapDumpPath=/config",
-                "-XX:MinHeapFreeRatio=5",
-                "-XX:MaxHeapFreeRatio=20",
-                "-XX:MaxDirectMemorySize=128m",
-                "-XX:-ShrinkHeapInSteps",
-                "-XX:MaxRAMPercentage=60",
-                "-XX:ActiveProcessorCount=1");
+        List<String> args = DEFAULT_JVM_ARGS;
 
         env.add("IS_HUB=" + request.getIsHub());
         env.add("IS_OFFICIAL=" + request.getIsOfficial());
