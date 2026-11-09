@@ -40,6 +40,7 @@ import server.service.translation.TranslationService;
 import server.types.data.NodeUsage;
 import server.types.data.ServerMisMatch;
 import server.types.data.ServerState;
+import server.utils.ApiError;
 import server.utils.Utils;
 
 class ServerServiceUpdateConfigTest {
@@ -259,7 +260,7 @@ class ServerServiceUpdateConfigTest {
     }
 
     @Test
-    void wipedStoreHealsOnMismatchWithNoError() throws Exception {
+    void wipedStoreHealsBeforeMismatchErrorWithoutSession() throws Exception {
         UUID serverId = UUID.randomUUID();
 
         serverService.updateConfig(serverId, config(serverId, "cmd-a", "sandbox"));
@@ -267,9 +268,10 @@ class ServerServiceUpdateConfigTest {
 
         assertTrue(nodes.getFile(serverId, "server.json").delete(), "wipe the store");
 
-        List<ServerMisMatch> result = serverService.getMismatch(serverId, config(serverId, "cmd-b", "survival"));
+        assertThrows(ApiError.class,
+                () -> serverService.getMismatch(serverId, config(serverId, "cmd-b", "survival")),
+                "strict getMismatch must fail without a gateway session");
 
-        assertNotNull(result, "mismatch diff still runs with no store");
         ServerConfigMessage healed = readStored(serverId);
         assertEquals("cmd-b", healed.getStartServer().getHostCommand());
         assertEquals("survival", healed.getStartServer().getMode());
