@@ -6,7 +6,6 @@ import java.util.concurrent.Executors;
 import java.util.function.Supplier;
 
 import arc.util.Log;
-import arc.util.Time;
 
 public class Tasks {
     private static final ExecutorService IO_TASK_EXECUTOR = Executors
@@ -25,17 +24,11 @@ public class Tasks {
         }
 
         return CompletableFuture.supplyAsync(() -> {
-            long startedAt = Time.millis();
             try {
                 return supplier.get();
             } catch (Exception e) {
                 Log.err("Failed to execute io task: " + name, e);
                 throw e;
-            } finally {
-                var elapsed = Time.millis() - startedAt;
-                if (elapsed > 20_000) {
-                    Log.warn("IO task " + name + " took " + elapsed + "ms");
-                }
             }
         }, IO_TASK_EXECUTOR);
     }
