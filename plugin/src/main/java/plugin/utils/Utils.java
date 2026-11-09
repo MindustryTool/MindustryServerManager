@@ -210,7 +210,7 @@ public class Utils {
     private static final String MAP_PREVIEW_FILE_NAME = "map-preview.msav";
     private static final String MAP_PREVIEW_IMAGE_FILE_NAME = "map-preview-image.png";
 
-    public static synchronized void generateMapPreview() {
+    public static synchronized void generateMapPreview(boolean force) {
         Fi tempFile = Vars.dataDirectory.child(MAP_PREVIEW_FILE_NAME);
         Fi tempImageFile = Vars.dataDirectory.child(MAP_PREVIEW_IMAGE_FILE_NAME);
 
@@ -226,7 +226,7 @@ public class Utils {
             return;
         }
 
-        if (lastImagePreviewAt.plusSeconds(30).isBefore(Instant.now())) {
+        if (force || lastImagePreviewAt.plusSeconds(3 * 60).isBefore(Instant.now())) {
             lastImagePreviewAt = Instant.now();
 
             appPostWithTimeout(() -> {

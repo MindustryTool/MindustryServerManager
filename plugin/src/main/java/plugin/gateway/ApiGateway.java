@@ -122,7 +122,7 @@ public class ApiGateway {
         this.registerHandler("pause", Void.class, _ctx -> tooglePause());
         this.registerHandler("get-state", Void.class, _ctx -> Utils.getState());
         this.registerHandler("sync-state", Void.class, _ctx -> sendStateUpdate());
-        this.registerHandler("generate-map-image", Void.class, _ctx -> generateMapImage());
+        this.registerHandler("generate-map-image", Void.class, _ctx -> generateMapImage(false));
         this.registerHandler("send-command", String[].class, ctx -> sendCommand(ctx.body()));
         this.registerHandler("say", String.class, ctx -> say(ctx.body()));
         this.registerHandler("host", StartServer.class, ctx -> host(ctx.body()));
@@ -512,8 +512,8 @@ public class ApiGateway {
         }, "Delete kicked ip");
     }
 
-    private Void generateMapImage() {
-        Utils.generateMapPreview();
+    private Void generateMapImage(boolean force) {
+        Utils.generateMapPreview(force);
         return null;
     }
 
@@ -581,7 +581,7 @@ public class ApiGateway {
     @Listener(PlayEvent.class)
     private void onPlay() {
         sendStateUpdate();
-        generateMapImage();
+        generateMapImage(true);
     }
 
     private Void sendStateUpdate() {
