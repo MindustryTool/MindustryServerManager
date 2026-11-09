@@ -1,5 +1,8 @@
-## ADDED Requirements
+# configuration-versioning Specification
 
+## Purpose
+Enables schema version tracking in @Configuration classes, automatic overwriting of outdated configuration files with fresh code defaults, pretty-printed JSON formatting, and graceful handling of newer configuration files.
+## Requirements
 ### Requirement: @Configuration version attribute
 The `@Configuration` annotation SHALL declare an integer `version` attribute defaulting to `1`.
 
@@ -51,3 +54,4 @@ The `@Configuration` annotation SHALL declare an integer `version` attribute def
 - **AND** code specifies `@Configuration(value = "...", version = 2)`
 - **THEN** `ConfigManager` logs a warning about the version mismatch
 - **AND** loads available fields into the instance without overwriting the file on disk
+

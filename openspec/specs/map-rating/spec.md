@@ -3,9 +3,7 @@
 ## Purpose
 
 Persistent star-based map rating storage in SQLite, allowing players to rate maps from 1 to 5 stars, querying rating stats, and formatting display strings with colored breakdowns.
-
 ## Requirements
-
 ### Requirement: Database-backed map rating storage
 The system SHALL persist map rating star counts, vote totals (`votes`), and average rating (`rating`) in the `map_ratings` SQLite database table keyed by `map_name`.
 
@@ -39,3 +37,17 @@ The `MapRatingService` SHALL cache retrieved `MapRatingStat` values in memory to
 #### Scenario: Cache updated after vote submission
 - **WHEN** a player submits a star rating for a map
 - **THEN** the in-memory cache for that map is updated with the new vote counts and rating
+
+### Requirement: Startup Preloading of Map Ratings
+`MapRatingService` SHALL preload all rating records from the `map_ratings` database table into an in-memory cache upon server startup and world change, ensuring that operations iterating over map pools (such as `RtvMenu` generation and `/topmaps`) read exclusively from memory without querying SQLite on the main game thread.
+
+#### Scenario: RTV menu opens
+- **WHEN** a player opens `/rtv` with many maps in rotation
+- **THEN** all map rating stats are retrieved from the preloaded in-memory cache
+- **AND** no database queries are executed on the main game thread
+
+#### Scenario: Asynchronous vote persistence
+- **WHEN** a player submits a map rating
+- **THEN** the in-memory cache is updated immediately
+- **AND** database persistence runs asynchronously in `Tasks.io`
+

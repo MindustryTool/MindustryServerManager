@@ -2,7 +2,6 @@
 
 ## Purpose
 TBD - created by archiving change merge-session-handler-service. Update Purpose after archive.
-
 ## Requirements
 ### Requirement: Unified session service component
 
@@ -121,3 +120,12 @@ The daily login process SHALL NOT be hardcoded in `SessionService`. It SHALL be 
 #### Scenario: Corrupt row does not reset level
 - **WHEN** a `PlayerJoin` event fires for a uuid whose stored row exists but fails to deserialize
 - **THEN** the error is logged with the uuid, the previously cached `SessionData` is kept if present, and the player is not silently reset to level 1
+
+### Requirement: Asynchronous write-behind on player disconnect
+When a player disconnects, `SessionRepository.onSessionRemoved` SHALL queue the session persistence write to `Tasks.io` asynchronously and remove the session from the in-memory cache, rather than executing a synchronous database write on the main thread.
+
+#### Scenario: Player disconnects
+- **WHEN** a player disconnects and `PlayerLeave` fires
+- **THEN** session write is dispatched to `Tasks.io`
+- **AND** the main game tick loop does not block on database execution
+
