@@ -52,15 +52,19 @@ The system SHALL maintain a FIFO queue of pending menus per player and present o
 - **THEN** all active and queued menus for that player are discarded
 
 ### Requirement: Responsive mobile layout constraints
-The system SHALL constrain server menu widths and scroll pane heights to prevent off-screen clipping on compact mobile viewports in both landscape and portrait orientations.
+The system SHALL dynamically constrain server menu widths and scroll pane heights to prevent off-screen clipping on compact mobile viewports down to 288px in width and 360px in height. MenuContext SHALL provide dynamic `safeWidth()` and `safeCardWidth()` methods that scale according to `player.con.viewWidth`, and multi-button action rows SHALL use `growX()` to fit available card or dialog width without hardcoded button widths.
 
 #### Scenario: Mobile landscape vertical containment
 - **WHEN** a menu with a scrollable pane is displayed to a mobile connection
 - **THEN** the scroll pane maximum height is constrained so the entire dialog fits within the 360px vertical screen boundary
 
-#### Scenario: Mobile portrait horizontal containment
-- **WHEN** a menu with cards, labels, or buttons is displayed in portrait orientation
-- **THEN** all description labels wrap within safe bounds and table widths do not exceed 320px
+#### Scenario: Mobile portrait horizontal containment on 288px viewports
+- **WHEN** a menu with cards, labels, or buttons is displayed on a connection with a viewport width of 288px
+- **THEN** dialog content width is constrained to at most 260px, card items inside scroll panes are constrained to at most 240px, and all description labels wrap without overflowing the screen
+
+#### Scenario: Multi-button action rows auto-fit
+- **WHEN** a menu renders multiple buttons side by side in an action row
+- **THEN** the buttons use `growX()` to expand proportionally within the available row width instead of exceeding the dialog boundaries
 
 ### Requirement: MenuContext UiBuilder convenience methods
 `MenuContext<T>` SHALL expose convenience helper methods for constructing `image`, `imageButton`, `buttonTable`, `stack`, and `defaults` elements directly on the root table, automatically registering actions for interactive elements.

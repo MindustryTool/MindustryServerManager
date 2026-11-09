@@ -44,7 +44,7 @@ public class CommonUpgradeMenu extends ServerMenu<CataliTeamData> {
 
         var upgrades = team.upgrades;
 
-        ctx.pane(MenuContext.SAFE_WIDTH, 260f, paneTable -> {
+        ctx.pane(260f, paneTable -> {
             // Damage Card
             addUpgradeCard(ctx, paneTable, session, team, CataliCommonUpgrade.DAMAGE,
                     Tr.t(session, "catali.damage"),
@@ -71,7 +71,7 @@ public class CommonUpgradeMenu extends ServerMenu<CataliTeamData> {
                                Session session, CataliTeamData team, CataliCommonUpgrade upgrade,
                                String title, String stats) {
         var card = UiBuilder.table().align("left");
-        card.width(MenuContext.SAFE_CARD_WIDTH);
+        card.width(ctx.safeCardWidth());
 
         var info = UiBuilder.table().align("left");
         info.add(UiBuilder.label("[accent]" + title + "[]").wrap().align("left").growX()).row();

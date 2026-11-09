@@ -25,7 +25,7 @@ public class TrailMenu extends ServerMenu<Integer> {
         this.title = Tr.t(ctx.getSession(), "trail.menu_title");
 
         boolean hasTrail = ctx.getSession().getData().trail != null && !ctx.getSession().getData().trail.isEmpty();
-        ctx.label(Tr.t(ctx.getSession(), "trail.choose_trail")).width(MenuContext.SAFE_WIDTH);
+        ctx.label(Tr.t(ctx.getSession(), "trail.choose_trail"));
         ctx.row();
 
         if (hasTrail) {
@@ -40,13 +40,13 @@ public class TrailMenu extends ServerMenu<Integer> {
             ctx.row();
         }
 
-        ctx.pane(MenuContext.SAFE_WIDTH, 320f, paneTable -> {
+        ctx.pane(320f, paneTable -> {
             for (var trail : trails) {
                 boolean owns = trail.owns(ctx.getSession());
                 boolean isCurrent = trail.getName().equals(ctx.getSession().getData().trail);
 
                 TableBuilder card = UiBuilder.table().align("left");
-                card.width(MenuContext.SAFE_CARD_WIDTH);
+                card.width(ctx.safeCardWidth());
                 String badge = isCurrent ? "[green]" + Iconc.ok + " " + Tr.t(ctx.getSession(), "trail.equipped_text")
                     : owns ? "[accent]" + Tr.t(ctx.getSession(), "trail.owned_text")
                     : "[gold]" + trail.getPrice() + " " + Tr.t(ctx.getSession(), "trail.coins");

@@ -40,7 +40,7 @@ public class RateMapMenu extends ServerMenu<Map> {
         String ratingColor = mapRatingService.avgScoreColor(stats.avgScore);
 
         TableBuilder card = UiBuilder.table().background("pane").margin(12f).align("center");
-        card.width(MenuContext.SAFE_CARD_WIDTH);
+        card.width(ctx.safeCardWidth());
 
         card.add(UiBuilder.image("net-map-" + mapId)
                 .placeholder("nomap")
@@ -54,7 +54,7 @@ public class RateMapMenu extends ServerMenu<Map> {
                 .wrap()
                 .align("center")
                 .labelAlign("center")
-                .width(260f)
+                .growX()
                 .padTop(6f))
             .row();
 
@@ -63,7 +63,7 @@ public class RateMapMenu extends ServerMenu<Map> {
                     .wrap()
                     .align("center")
                     .labelAlign("center")
-                    .width(260f)
+                    .growX()
                     .padTop(2f))
                 .row();
         }
@@ -73,7 +73,7 @@ public class RateMapMenu extends ServerMenu<Map> {
         card.add(UiBuilder.label(ratingText)
                 .align("center")
                 .labelAlign("center")
-                .width(260f)
+                .growX()
                 .padTop(2f))
             .row();
 
@@ -81,7 +81,7 @@ public class RateMapMenu extends ServerMenu<Map> {
         ctx.row();
 
         ctx.table(starsTable -> {
-            starsTable.align("center");
+            starsTable.width(ctx.safeCardWidth()).align("center");
             for (int i = 1; i <= 5; i++) {
                 int star = i;
                 String starText = "[gold]" + Iconc.star + " [white]" + star;
@@ -98,9 +98,9 @@ public class RateMapMenu extends ServerMenu<Map> {
 
                 starsTable.add(UiBuilder.button(starText)
                         .clicked(act)
-                        .width(52f)
                         .height(36f)
-                        .pad(2f));
+                        .growX()
+                        .pad(1f));
             }
         }).padTop(6f);
     }

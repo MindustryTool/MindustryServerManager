@@ -78,8 +78,8 @@ class MenuSnapshotTest {
 
         BufferedImage portImg = ImageIO.read(mobilePortPath.toFile());
         assertNotNull(portImg);
-        assertEquals(360, portImg.getWidth());
-        assertEquals(720, portImg.getHeight());
+        assertEquals(288, portImg.getWidth());
+        assertEquals(512, portImg.getHeight());
     }
 
     @Test

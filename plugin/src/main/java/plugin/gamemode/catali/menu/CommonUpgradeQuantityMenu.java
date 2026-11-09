@@ -32,7 +32,7 @@ public class CommonUpgradeQuantityMenu extends ServerMenu<Pair<CataliTeamData, C
         this.title = Tr.t(session, "catali.upgrade_quantity");
 
         String upgradeName = Tr.t(session, "catali." + upgrade.name().toLowerCase());
-        ctx.label("[accent]" + upgradeName + "[] [lightgray]- " + Tr.t(session, "catali.select_points_to_spend")).width(MenuContext.SAFE_WIDTH);
+        ctx.label("[accent]" + upgradeName + "[] [lightgray]- " + Tr.t(session, "catali.select_points_to_spend"));
         ctx.row();
 
         var container = UiBuilder.table().pad(8f);

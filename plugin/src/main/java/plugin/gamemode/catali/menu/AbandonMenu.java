@@ -34,7 +34,7 @@ public class AbandonMenu extends ServerMenu<CataliTeamData> {
         ctx.row();
 
         var units = team.units();
-        ctx.pane(MenuContext.SAFE_WIDTH, 220f, paneTable -> {
+        ctx.pane(220f, paneTable -> {
             if (units.isEmpty()) {
                 paneTable.add(UiBuilder.label("[lightgray]" + Tr.t(session, "catali.no_units"))).row();
                 return;
@@ -42,7 +42,7 @@ public class AbandonMenu extends ServerMenu<CataliTeamData> {
 
             for (var unit : units) {
                 var card = UiBuilder.table().align("left");
-                card.width(MenuContext.SAFE_CARD_WIDTH);
+                card.width(ctx.safeCardWidth());
 
                 String unitInfo = unit.type.emoji() + " " + Tr.t(session, "catali.unit_hp", "name", unit.type.name, "hp", Math.round(unit.health()), "maxhp", Math.round(unit.maxHealth()));
                 card.add(UiBuilder.label(unitInfo).wrap().align("left").growX().padLeft(4f));

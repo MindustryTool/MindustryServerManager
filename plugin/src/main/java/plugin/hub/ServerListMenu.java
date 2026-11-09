@@ -45,7 +45,7 @@ public class ServerListMenu extends ServerMenu<Integer> {
 
             ctx.getRoot().align("top");
 
-            float cardWidth = 330f;
+            float cardWidth = Math.min(330f, Math.max(200f, ctx.getViewportWidth() - 32f));
             float cardHeight = 370f;
             float contentWidth = cardWidth - 20f;
             float spacing = 8f;

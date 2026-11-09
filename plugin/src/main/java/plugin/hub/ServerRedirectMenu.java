@@ -52,7 +52,7 @@ public class ServerRedirectMenu extends ServerMenu<Server> {
                 ? "[green]● " + Tr.t(ctx.getSession().locale, "hub.list.players", "players", server.getPlayers())
                 : "[scarlet]● " + Tr.t(ctx.getSession().locale, "hub.list.server_offline");
 
-        float cardWidth = 330f;
+        float cardWidth = Math.min(330f, Math.max(200f, ctx.getViewportWidth() - 32f));
         float cardHeight = 370f;
         float contentWidth = cardWidth - 20f;
 

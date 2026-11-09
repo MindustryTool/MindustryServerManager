@@ -22,7 +22,7 @@ public class ShopMenu extends ServerMenu<Integer> {
     public void build(MenuContext<Integer> ctx) {
         this.title = Tr.t(ctx.getSession(), "shop.title", "coins", ctx.getSession().getData().money);
 
-        ctx.label("[accent]" + Tr.t(ctx.getSession(), "shop.description")).width(MenuContext.SAFE_WIDTH);
+        ctx.label("[accent]" + Tr.t(ctx.getSession(), "shop.description"));
         ctx.row();
 
         if (shopRegistry != null) {
@@ -30,7 +30,7 @@ public class ShopMenu extends ServerMenu<Integer> {
                 .filter(item -> !"gacha".equals(item.getId()))
                 .toList();
 
-            ctx.pane(MenuContext.SAFE_WIDTH, 260f, paneTable -> {
+            ctx.pane(260f, paneTable -> {
                 if (items.isEmpty()) {
                     paneTable.add(UiBuilder.label(Tr.t(ctx.getSession(), "shop.no_items"))
                         .wrap().align("left").growX().pad(8f)).row();
@@ -39,7 +39,7 @@ public class ShopMenu extends ServerMenu<Integer> {
 
                 for (ShopItem item : items) {
                     TableBuilder card = UiBuilder.table().align("left");
-                    card.width(MenuContext.SAFE_CARD_WIDTH);
+                    card.width(ctx.safeCardWidth());
                     card.add(UiBuilder.label("[gold]" + item.getTitle(ctx.getSession())).wrap().align("left").growX().padLeft(4f));
 
                     String buyAct = ctx.registerAction((sess, st, res) -> {
@@ -55,12 +55,12 @@ public class ShopMenu extends ServerMenu<Integer> {
         }
 
         ctx.table(nav -> {
-            nav.align("center");
+            nav.width(ctx.safeWidth()).align("center");
             String gachaAct = ctx.registerAction((sess, st, res) -> Registry.get(GachaMenu.class).send(sess, 0));
             String trailAct = ctx.registerAction((sess, st, res) -> Registry.get(TrailMenu.class).send(sess, 0));
 
-            nav.add(UiBuilder.button("[gold]" + Iconc.star + " " + Tr.t(ctx.getSession(), "shop.open_gacha")).clicked(gachaAct).width(135f).height(38f).pad(2f));
-            nav.add(UiBuilder.button("[sky]" + Iconc.star + " " + Tr.t(ctx.getSession(), "shop.open_trails")).clicked(trailAct).width(135f).height(38f).pad(2f));
+            nav.add(UiBuilder.button("[gold]" + Iconc.star + " " + Tr.t(ctx.getSession(), "shop.open_gacha")).clicked(gachaAct).height(38f).growX().pad(2f));
+            nav.add(UiBuilder.button("[sky]" + Iconc.star + " " + Tr.t(ctx.getSession(), "shop.open_trails")).clicked(trailAct).height(38f).growX().pad(2f));
         });
     }
 }

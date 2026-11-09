@@ -31,12 +31,12 @@ public class RareUpgradeTierSelectUnitMenu extends ServerMenu<CataliTeamData> {
 
         this.title = Tr.t(session, "catali.select_unit_to_evolve");
 
-        ctx.label("[lightgray]" + Tr.t(session, "catali.choose_unit_to_evolve")).width(MenuContext.SAFE_WIDTH);
+        ctx.label("[lightgray]" + Tr.t(session, "catali.choose_unit_to_evolve"));
         ctx.row();
 
         var units = team.getUpgradeableUnits();
 
-        ctx.pane(MenuContext.SAFE_WIDTH, 220f, paneTable -> {
+        ctx.pane(220f, paneTable -> {
             if (units.isEmpty()) {
                 paneTable.add(UiBuilder.label(Tr.t(session, "catali.no_upgradeable_units")).wrap().align("left").growX()).row();
                 return;
@@ -49,7 +49,7 @@ public class RareUpgradeTierSelectUnitMenu extends ServerMenu<CataliTeamData> {
                 }
 
                 var card = UiBuilder.table().align("left");
-                card.width(MenuContext.SAFE_CARD_WIDTH);
+                card.width(ctx.safeCardWidth());
 
                 String label = unit.type.emoji() + " " + Tr.t(session, "catali.unit_branches", "name", unit.type.name, "branches", evolutions.size());
                 card.add(UiBuilder.label(label).wrap().align("left").growX().padLeft(4f));

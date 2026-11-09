@@ -35,8 +35,12 @@ public class MenuContext<T> {
     private final Map<String, MenuAction<T>> actions = new HashMap<>();
     private final AtomicInteger actionCounter = new AtomicInteger();
 
-    public static final float SAFE_WIDTH = 320f;
-    public static final float SAFE_CARD_WIDTH = 290f;
+    public static final float DIALOG_HORIZONTAL_MARGIN = 24f;
+    public static final float SCROLLBAR_RESERVE = 24f;
+    public static final float DESKTOP_MAX_DIALOG_WIDTH = 360f;
+
+    public static final float SAFE_WIDTH = 260f;
+    public static final float SAFE_CARD_WIDTH = 240f;
     public static final float MOBILE_MAX_PANE_HEIGHT = 220f;
 
     public MenuContext(Session session, T state, long token) {
@@ -54,6 +58,23 @@ public class MenuContext<T> {
             return session.player.con.viewWidth;
         }
         return isMobile() ? SAFE_WIDTH : 1200f;
+    }
+
+    public float getDialogWidth() {
+        float available = getViewportWidth() - DIALOG_HORIZONTAL_MARGIN;
+        return Math.min(DESKTOP_MAX_DIALOG_WIDTH, Math.max(200f, available));
+    }
+
+    public float getCardWidth(float paneWidth) {
+        return Math.max(160f, paneWidth - SCROLLBAR_RESERVE);
+    }
+
+    public float safeCardWidth() {
+        return getCardWidth(getDialogWidth());
+    }
+
+    public float safeWidth() {
+        return getDialogWidth();
     }
 
     public int getResponsiveColumns(float itemWidth, float spacing) {
@@ -97,18 +118,18 @@ public class MenuContext<T> {
     }
 
     public PaneBuilder pane(Cons<TableBuilder> contentBuilder) {
-        return pane(SAFE_WIDTH, 260f, contentBuilder);
+        return pane(safeWidth(), 260f, contentBuilder);
     }
 
     public PaneBuilder pane(float height, Cons<TableBuilder> contentBuilder) {
-        return pane(SAFE_WIDTH, height, contentBuilder);
+        return pane(safeWidth(), height, contentBuilder);
     }
 
     public PaneBuilder pane(float width, float height, Cons<TableBuilder> contentBuilder) {
         TableBuilder content = UiBuilder.table().align("top").align("left");
         contentBuilder.get(content);
         PaneBuilder pane = UiBuilder.pane().add(content);
-        pane.width(Math.min(width, SAFE_WIDTH)).maxHeight(safeMaxPaneHeight(height));
+        pane.width(Math.min(width, safeWidth())).maxHeight(safeMaxPaneHeight(height));
         root.add(pane);
         return pane;
     }
@@ -120,7 +141,7 @@ public class MenuContext<T> {
     public LabelBuilder label(String text, Cons<LabelBuilder> configure) {
         LabelBuilder lbl = UiBuilder.label(text)
             .wrap()
-            .width(SAFE_WIDTH)
+            .width(safeWidth())
             .labelAlign("left")
             .align("left")
             .padLeft(4f);

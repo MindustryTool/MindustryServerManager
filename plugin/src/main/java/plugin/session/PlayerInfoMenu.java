@@ -26,7 +26,7 @@ public class PlayerInfoMenu extends ServerMenu<Session> {
         Seq<Session> targets = new Seq<>();
         sessionService.each(targets::add);
 
-        ctx.pane(MenuContext.SAFE_WIDTH, 260f, paneTable -> {
+        ctx.pane(260f, paneTable -> {
             if (targets.isEmpty()) {
                 paneTable.add(UiBuilder.label(Tr.t(ctx.getSession(), "session.no_players_online")).wrap().align("left").growX().pad(8f)).row();
                 return;
@@ -34,7 +34,7 @@ public class PlayerInfoMenu extends ServerMenu<Session> {
 
             for (Session target : targets) {
                 TableBuilder card = UiBuilder.table().align("left");
-                card.width(MenuContext.SAFE_CARD_WIDTH);
+                card.width(ctx.safeCardWidth());
                 String nameText = target.player.name + " [gray](#" + target.player.id() + ")";
                 card.add(UiBuilder.label("[yellow]" + nameText).wrap().align("left").growX().padLeft(4f));
 

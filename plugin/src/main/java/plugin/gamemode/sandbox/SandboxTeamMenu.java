@@ -37,14 +37,14 @@ public class SandboxTeamMenu extends ServerMenu<Void> {
         ctx.label("[lightgray]" + Tr.t(session, "sandbox.team_menu_description"));
         ctx.row();
 
-        ctx.pane(MenuContext.SAFE_WIDTH, 260f, paneTable -> {
+        ctx.pane(260f, paneTable -> {
             paneTable.align("top").align("left");
             Team currentTeam = session.player != null ? session.player.team() : null;
 
             for (Team team : PLAYABLE_TEAMS) {
                 boolean isCurrent = currentTeam == team;
                 var card = UiBuilder.table().align("left");
-                card.width(MenuContext.SAFE_CARD_WIDTH);
+                card.width(ctx.safeCardWidth());
 
                 card.add(UiBuilder.label(team.coloredName()).wrap().align("left").growX().padLeft(4f));
 

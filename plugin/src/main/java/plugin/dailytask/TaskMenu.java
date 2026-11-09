@@ -32,13 +32,13 @@ public class TaskMenu extends ServerMenu<Integer> {
 
         List<DailyTask> tasks = dailyTaskService.getActiveTasks();
 
-        ctx.pane(MenuContext.SAFE_WIDTH, 320f, paneTable -> {
+        ctx.pane(320f, paneTable -> {
             for (DailyTask task : tasks) {
                 int progress = dailyTaskService.getProgress(ctx.getSession(), task.getId());
                 boolean done = progress >= task.getGoal();
 
                 TableBuilder card = UiBuilder.table().align("left");
-                card.width(MenuContext.SAFE_CARD_WIDTH);
+                card.width(ctx.safeCardWidth());
                 String statusIcon = done ? "[green]" + Iconc.ok + " " : "[yellow]⏳ ";
                 String titleText = statusIcon + "[white]" + task.getTitle(ctx.getSession());
                 String rewardBadge = Tr.t(ctx.getSession(), "task.reward_badge", "coins", task.getRewardCoins());

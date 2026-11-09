@@ -49,10 +49,10 @@ public class AssignNextLeaderMenu extends ServerMenu<CataliTeamData> {
         ctx.label("[lightgray]" + Tr.t(session, "catali.select_next_leader"));
         ctx.row();
 
-        ctx.pane(MenuContext.SAFE_WIDTH, 220f, paneTable -> {
+        ctx.pane(220f, paneTable -> {
             for (var p : availableTeammates) {
                 var card = UiBuilder.table().align("left");
-                card.width(MenuContext.SAFE_CARD_WIDTH);
+                card.width(ctx.safeCardWidth());
 
                 card.add(UiBuilder.label("[white]" + p.name() + "[]").wrap().align("left").growX().padLeft(4f));
 

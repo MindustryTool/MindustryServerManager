@@ -41,15 +41,15 @@ The system SHALL isolate offscreen rendering and desktop assets to test and deve
 - **THEN** desktop client classes and assets are excluded from the output artifact
 
 ### Requirement: Compact mobile viewport simulation
-The system SHALL support simulating compact mobile screen resolutions and mobile connection modes during offscreen menu rendering.
+The system SHALL support simulating compact mobile screen resolutions down to 288px width and mobile connection modes during offscreen menu rendering.
 
 #### Scenario: Rendering in compact mobile landscape
 - **WHEN** menu capture is requested with `viewport(720, 360)` and mobile mode enabled
 - **THEN** the system resizes the scene to 720x360, enables mobile scaling, and renders the dialog within the compact landscape viewport
 
 #### Scenario: Rendering in compact mobile portrait
-- **WHEN** menu capture is requested with `viewport(360, 720)` and mobile mode enabled
-- **THEN** the system resizes the scene to 360x720, enables mobile scaling, and renders the dialog within the compact portrait viewport
+- **WHEN** menu capture is requested with `MenuViewport.MOBILE_PORTRAIT`
+- **THEN** the system resizes the scene to 288x512, enables mobile scaling, sets connection view width to 288px, and renders the dialog within the 288px portrait viewport
 
 ### Requirement: Preview dialog includes default close button
 The offscreen renderer SHALL add the default close/cancel button to the rendered dialog, matching the production `Menus.menuBuilder` behavior, so preview images include the 64 px cancel button and dialog proportions match in-game dialogs.

@@ -75,8 +75,8 @@ public final class MockSession {
             }
         };
         player.con.mobile = mobile;
-        player.con.viewWidth = mobile ? 360f : 1920f;
-        player.con.viewHeight = mobile ? 720f : 1080f;
+        player.con.viewWidth = mobile ? 288f : 1920f;
+        player.con.viewHeight = mobile ? 512f : 1080f;
 
         SessionData data = new SessionData();
         data.name = name;

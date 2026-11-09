@@ -20,7 +20,7 @@ public class VotePromptMenu extends ServerMenu<Void> {
 
         if (current == null) {
             this.title = Tr.t(ctx.getSession(), "votekick.menu_title");
-            ctx.label(Tr.t(ctx.getSession(), "votekick.no_vote_in_progress")).width(MenuContext.SAFE_WIDTH);
+            ctx.label(Tr.t(ctx.getSession(), "votekick.no_vote_in_progress"));
             return;
         }
 
@@ -31,15 +31,16 @@ public class VotePromptMenu extends ServerMenu<Void> {
             "reason", current.reason,
             "votes", voteKickService.getVotes(),
             "required", voteKickService.getVotesRequired(),
-            "time", voteKickService.getRemainingSeconds())).width(MenuContext.SAFE_WIDTH);
+            "time", voteKickService.getRemainingSeconds()));
         ctx.row();
 
         ctx.table(actions -> {
+            actions.width(ctx.safeWidth()).align("center");
             String yesAct = ctx.registerAction((sess, st, res) -> voteKickService.vote(sess.player, Vote.YES));
             String noAct = ctx.registerAction((sess, st, res) -> voteKickService.vote(sess.player, Vote.NO));
 
-            actions.add(UiBuilder.button(Tr.t(ctx.getSession(), "votekick.btn_yes")).clicked(yesAct).width(135f).height(48f).pad(3f));
-            actions.add(UiBuilder.button(Tr.t(ctx.getSession(), "votekick.btn_no")).clicked(noAct).width(135f).height(48f).pad(3f));
+            actions.add(UiBuilder.button(Tr.t(ctx.getSession(), "votekick.btn_yes")).clicked(yesAct).height(48f).growX().pad(3f));
+            actions.add(UiBuilder.button(Tr.t(ctx.getSession(), "votekick.btn_no")).clicked(noAct).height(48f).growX().pad(3f));
         });
     }
 }

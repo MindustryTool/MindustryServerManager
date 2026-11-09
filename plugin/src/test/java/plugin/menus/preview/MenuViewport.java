@@ -5,7 +5,7 @@ import java.util.Locale;
 public enum MenuViewport {
     DESKTOP(1920, 1080, false),
     MOBILE_LANDSCAPE(720, 360, true),
-    MOBILE_PORTRAIT(360, 720, true);
+    MOBILE_PORTRAIT(288, 512, true);
 
     public final int width;
     public final int height;

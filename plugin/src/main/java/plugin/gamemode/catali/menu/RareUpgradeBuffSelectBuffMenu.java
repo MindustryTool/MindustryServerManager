@@ -35,12 +35,12 @@ public class RareUpgradeBuffSelectBuffMenu extends ServerMenu<Pair<CataliTeamDat
         this.title = Tr.t(session, "catali.select_buff");
 
         ctx.label("[lightgray]" + Tr.t(session, "catali.choose_buff") + " " + Tr.t(session, "catali.for_unit") + " "
-                + unit.type.emoji() + " [accent]" + unit.type.name + "[]").width(MenuContext.SAFE_WIDTH);
+                + unit.type.emoji() + " [accent]" + unit.type.name + "[]");
         ctx.row();
 
         var availableEffects = CataliConfig.selectBuffsCanBeApplied(unit);
 
-        ctx.pane(MenuContext.SAFE_WIDTH, 220f, paneTable -> {
+        ctx.pane(220f, paneTable -> {
             if (availableEffects.isEmpty()) {
                 paneTable.add(UiBuilder.label(Tr.t(session, "catali.no_applicable_buffs")).wrap().align("left").growX()).row();
                 return;
@@ -48,7 +48,7 @@ public class RareUpgradeBuffSelectBuffMenu extends ServerMenu<Pair<CataliTeamDat
 
             for (var effect : availableEffects) {
                 var card = UiBuilder.table().align("left");
-                card.width(MenuContext.SAFE_CARD_WIDTH);
+                card.width(ctx.safeCardWidth());
 
                 card.add(UiBuilder.label(effect.emoji() + " [white]" + effect.name + "[]").wrap().align("left").growX().padLeft(4f));
 

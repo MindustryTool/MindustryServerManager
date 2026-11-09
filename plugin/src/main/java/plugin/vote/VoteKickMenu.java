@@ -32,7 +32,7 @@ public class VoteKickMenu extends ServerMenu<Player> {
         Player target = ctx.getState();
 
         if (target == null) {
-            ctx.label(Tr.t(ctx.getSession(), "votekick.menu_select_player")).width(MenuContext.SAFE_WIDTH);
+            ctx.label(Tr.t(ctx.getSession(), "votekick.menu_select_player"));
             ctx.row();
 
             Seq<Player> candidates = new Seq<>();
@@ -43,7 +43,7 @@ public class VoteKickMenu extends ServerMenu<Player> {
                 }
             }
 
-            ctx.pane(MenuContext.SAFE_WIDTH, 280f, paneTable -> {
+            ctx.pane(280f, paneTable -> {
                 if (candidates.isEmpty()) {
                     paneTable.add(UiBuilder.label(Tr.t(ctx.getSession(), "votekick.no_eligible_players")).wrap().align("left").growX().pad(16f));
                     return;
@@ -51,7 +51,7 @@ public class VoteKickMenu extends ServerMenu<Player> {
 
                 for (Player candidate : candidates) {
                     TableBuilder card = UiBuilder.table().align("left");
-                    card.width(MenuContext.SAFE_CARD_WIDTH);
+                    card.width(ctx.safeCardWidth());
                     card.add(UiBuilder.label("[white]" + candidate.name + " [gray](#" + candidate.id() + ")").wrap().align("left").growX().padLeft(4f));
 
                     String kickAct = ctx.registerAction((sess, st, res) -> Registry.get(VoteKickMenu.class).send(sess, candidate));
@@ -61,7 +61,7 @@ public class VoteKickMenu extends ServerMenu<Player> {
                 }
             });
         } else {
-            ctx.label(Tr.t(ctx.getSession(), "votekick.menu_select_reason", "target", target.name)).width(MenuContext.SAFE_WIDTH);
+            ctx.label(Tr.t(ctx.getSession(), "votekick.menu_select_reason", "target", target.name));
             ctx.row();
 
             String[] reasonKeys = {

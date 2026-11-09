@@ -30,15 +30,15 @@ Guidelines for building server menus using Mindustry build 160's `MenuBuilder`, 
 
 ## 3. Layout, Alignment & Sizing
 
-* **Card Width Bounds in Scroll Panes**: Items inside scrollable panes (`ctx.pane(...)`) MUST specify `card.width(MenuContext.SAFE_CARD_WIDTH)` (`290f`). This provides Arc's `Table` with a concrete boundary to wrap dynamic and multi-column labels within the 320px scroll viewport. Without this bound, unconstrained labels expand the table past 320px, causing the scrollpane scissor bounds to clip buttons, counts, and arrows.
+* **Card Width Bounds in Scroll Panes**: Items inside scrollable panes (`ctx.pane(...)`) MUST specify `card.width(ctx.safeCardWidth())` or `ctx.getCardWidth(paneWidth)`. This provides Arc's `Table` with a concrete boundary to wrap dynamic and multi-column labels within the scroll viewport. Without this bound, unconstrained labels expand the table past the viewport, causing the scrollpane scissor bounds to clip buttons, counts, and arrows.
 * **Left Alignment**: Mindustry centers elements by default. Panes and cards must be aligned to the left (`.align("left")`), with standard `padLeft(4f)` on inner labels matching `ctx.label(...)` for clean vertical alignment.
 * **Rows and Columns**: Organize layouts in structured rows and columns using `.row()`.
-* **Fill Available Width**: Use `growX` on cells inside bounded cards to fill card width cleanly.
+* **Fill Available Width**: Use `growX()` on cells inside bounded cards to fill card width cleanly. Multi-button rows (e.g. Yes/No actions) should use `growX()` within a row table sized with `ctx.getDialogWidth()` to distribute buttons evenly without hardcoded widths.
 * **Uniform Button Height**: Native dialogs feature a fixed cancel button. Match button heights to standard row heights (34–40px) for visual balance.
 * **Button and Table Margins**: When styling tables or buttons with border drawables (e.g., `flatBordert` which has ~6px 9-patch border insets), use `.margin(12f)` to provide breathing room inside the border so text and content do not touch the border lines.
 * **Mobile Viewport Boundaries**:
-  * Root containers must stay within mobile safe width: `MenuContext.SAFE_WIDTH` (`320f`).
-  * Card items inside scroll panes must fit: `MenuContext.SAFE_CARD_WIDTH` (`290f`).
+  * Dialog content must stay within dynamic safe width: `ctx.getDialogWidth()` (or `ctx.safeWidth()`), which adapts fluidly on mobile (264px on 288px viewports) and caps at 360px on desktop.
+  * Card items inside scroll panes must fit: `ctx.safeCardWidth()` (240px on 288px viewports).
   * Scrollable panes must stay within mobile max height: `MenuContext.MOBILE_MAX_PANE_HEIGHT` (`220f`).
 
 ---
@@ -175,7 +175,7 @@ public void build(MenuContext<Integer> ctx) {
     ctx.row();
 
     // Scrollable pane constrained to safe mobile dimensions
-    ctx.pane(MenuContext.SAFE_WIDTH, 260f, paneTable -> {
+    ctx.pane(260f, paneTable -> {
         if (entries.isEmpty()) {
             paneTable.add(UiBuilder.label("[gray]" + Tr.t(ctx.getSession(), "common.empty"))
                 .wrap().align("left").growX()).row();
@@ -184,6 +184,7 @@ public void build(MenuContext<Integer> ctx) {
 
         for (var entry : entries) {
             TableBuilder card = UiBuilder.table().align("left");
+            card.width(ctx.safeCardWidth());
 
             // Left-aligned title with right-aligned stats
             card.add(UiBuilder.label(entry.name()).wrap().align("left").growX());
