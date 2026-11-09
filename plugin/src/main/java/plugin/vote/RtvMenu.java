@@ -178,7 +178,7 @@ public class RtvMenu extends ServerMenu<Integer> {
                         .padTop(2f))
                         .row();
 
-                card.add(UiBuilder.space().growY());
+                card.add(UiBuilder.space().growY()).row();
 
                 String voteAct = ctx.registerAction((sess, st, res) -> rtvService.handleVote(sess.player, map));
                 String voteBtnText = isVoted

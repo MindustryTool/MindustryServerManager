@@ -126,7 +126,7 @@ public class GlobalServerListMenu extends ServerMenu<Integer> {
                                 .row();
                     }
 
-                    card.add(UiBuilder.space().growY());
+                    card.add(UiBuilder.space().growY()).row();
 
                     String redirectAct = ctx.registerAction((sess, st, res) -> ServerUtils.redirectAll(server));
                     String buttonLabel = "[gold]" + Iconc.players + " Redirect All";
