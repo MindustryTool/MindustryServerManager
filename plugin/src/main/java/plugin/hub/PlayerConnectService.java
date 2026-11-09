@@ -133,7 +133,7 @@ public class PlayerConnectService {
             }
         } catch (Exception e) {
             if (running.get()) {
-                Log.err("Error reading PlayerConnect SSE stream: " + e.getMessage());
+                Log.err("Error reading player connect sse stream: " + e.getMessage());
             }
         } finally {
             if (running.get()) {
@@ -148,7 +148,7 @@ public class PlayerConnectService {
         }
 
         if (!jsonPayload.trim().startsWith("{")) {
-            Log.info("PlayerConnect SSE message: " + jsonPayload);
+            Log.info("player connect sse message: " + jsonPayload);
             return;
         }
 
@@ -158,7 +158,7 @@ public class PlayerConnectService {
                 updateRooms(event.getRooms());
             }
         } catch (Exception e) {
-            Log.err("Failed to parse PlayerConnect SSE event: " + e.getMessage());
+            Log.err("Failed to parse player connect sse event: " + e.getMessage());
         }
     }
 
@@ -168,7 +168,7 @@ public class PlayerConnectService {
         }
         scheduler.schedule(() -> {
             if (running.get()) {
-                Log.info("Reconnecting to PlayerConnect SSE...");
+                Log.info("Reconnecting to player connect sse");
                 connectSse();
             }
         }, 5, TimeUnit.SECONDS);
