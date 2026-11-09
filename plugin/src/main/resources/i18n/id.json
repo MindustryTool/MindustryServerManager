@@ -179,9 +179,6 @@
     "kicked_by_server": "[scarlet]{player} telah dikeluarkan oleh server.",
     "restart_scheduled": "[cyan]Server dijadwalkan untuk restart."
   },
-  "afk": {
-    "label": "Afk"
-  },
   "rank": {
     "no_record": "Tidak ada catatan untuk map ini",
     "title": "Map: {map}\nWaktu terbaik: {time}\nPemain: {players}",

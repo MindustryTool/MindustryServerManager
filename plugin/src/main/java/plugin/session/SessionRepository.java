@@ -133,7 +133,7 @@ public class SessionRepository {
         dirty.remove(uuid);
     }
 
-    @Schedule(delay = 10, fixedDelay = 10, unit = TimeUnit.SECONDS)
+    @Schedule(delay = 5, fixedDelay = 5, unit = TimeUnit.MINUTES)
     public void flushBatch() {
         if (dirty.isEmpty()) {
             return;

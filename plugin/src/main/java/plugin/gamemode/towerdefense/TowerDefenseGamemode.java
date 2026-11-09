@@ -249,7 +249,7 @@ public class TowerDefenseGamemode {
     }
 
     @MainThread
-    @Schedule(fixedDelay = 1, unit = TimeUnit.SECONDS)
+    @Schedule(fixedDelay = 3, unit = TimeUnit.SECONDS)
     public void onSecondTick() {
         if (Vars.state.rules.waveTeam != null) {
             Vars.state.rules.waveTeam.data().units.each(unit -> {

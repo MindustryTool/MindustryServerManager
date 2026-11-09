@@ -179,9 +179,6 @@
     "kicked_by_server": "[scarlet]{player}님이 서버에 의해 추방되었습니다.",
     "restart_scheduled": "[cyan]서버 재시작이 예약되었습니다."
   },
-  "afk": {
-    "label": "자리비움"
-  },
   "rank": {
     "no_record": "이 맵의 기록이 없습니다",
     "title": "맵: {map}\n최단 시간: {time}\n플레이어: {players}",

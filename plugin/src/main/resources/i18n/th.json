@@ -179,9 +179,6 @@
     "kicked_by_server": "[scarlet]{player} ถูกเตะโดยเซิร์ฟเวอร์",
     "restart_scheduled": "[cyan]เซิร์ฟเวอร์ถูกกำหนดเวลาให้รีสตาร์ท"
   },
-  "afk": {
-    "label": "AFK"
-  },
   "rank": {
     "no_record": "ไม่มีบันทึกสำหรับแผนที่นี้",
     "title": "แผนที่: {map}\nเวลาที่ดีที่สุด: {time}\nผู้เล่น: {players}",

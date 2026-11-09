@@ -179,9 +179,6 @@
     "kicked_by_server": "[scarlet]{player} 已被服务器踢出。",
     "restart_scheduled": "[cyan]服务器已计划重启。"
   },
-  "afk": {
-    "label": "挂机"
-  },
   "rank": {
     "no_record": "此地图没有记录",
     "title": "地图：{map}\n最佳时间：{time}\n玩家：{players}",

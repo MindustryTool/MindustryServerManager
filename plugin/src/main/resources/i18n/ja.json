@@ -179,9 +179,6 @@
     "kicked_by_server": "[scarlet]{player} はサーバーによってキックされました。",
     "restart_scheduled": "[cyan]サーバーは再起動が予定されています。"
   },
-  "afk": {
-    "label": "放置中"
-  },
   "rank": {
     "no_record": "このマップの記録はありません",
     "title": "マップ: {map}\nベストタイム: {time}\nプレイヤー: {players}",

@@ -72,7 +72,7 @@ public class ZigerGamemode {
     }
 
     @MainThread
-    @Schedule(fixedDelay = 500, unit = TimeUnit.MILLISECONDS)
+    @Schedule(fixedDelay = 1, unit = TimeUnit.SECONDS)
     private void tick() {
         if (!Vars.state.isPlaying()) {
             return;

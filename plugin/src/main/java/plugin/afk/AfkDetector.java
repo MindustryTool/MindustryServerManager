@@ -7,7 +7,6 @@ import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import mindustry.game.EventType.PlayerChatEvent;
 import mindustry.game.EventType.TapEvent;
-import mindustry.gen.Call;
 import mindustry.net.Administration.PlayerAction;
 import plugin.Cfg.OnOfficial;
 import plugin.annotations.Component;
@@ -17,7 +16,6 @@ import plugin.annotations.PlayerActionFilter;
 import plugin.annotations.Schedule;
 import plugin.session.SessionService;
 import plugin.session.Session.AfkState;
-import plugin.utils.Tr;
 
 @Component
 @ConditionOn(OnOfficial.class)
@@ -50,7 +48,7 @@ public class AfkDetector {
                 });
     }
 
-    @Schedule(fixedDelay = 1, unit = TimeUnit.SECONDS)
+    @Schedule(fixedDelay = 5, unit = TimeUnit.SECONDS)
     public void detectAfk() {
         sessionService.each(session -> {
             boolean hasMoved = session.lastX != session.player.x() || session.lastY != session.player.y();
@@ -75,13 +73,6 @@ public class AfkDetector {
             } else {
                 session.afkState = AfkState.ACTIVE;
             }
-        });
-    }
-
-    @Schedule(fixedDelay = 1, unit = TimeUnit.SECONDS)
-    public void updateAfkLabel() {
-        sessionService.each(session -> session.afkState == AfkState.AFK, session -> {
-            Call.label(session.player.con, Tr.t(session, "afk.label"), 1.1f, session.player.x(), session.player.y());
         });
     }
 }

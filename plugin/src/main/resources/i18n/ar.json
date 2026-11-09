@@ -179,9 +179,6 @@
     "kicked_by_server": "[scarlet]تم طرد {player} بواسطة الخادم.",
     "restart_scheduled": "[cyan]تمت جدولة إعادة تشغيل الخادم."
   },
-  "afk": {
-    "label": "غير متصل"
-  },
   "rank": {
     "no_record": "لا يوجد سجل لهذه الخريطة",
     "title": "الخريطة: {map}\nأفضل وقت: {time}\nاللاعبون: {players}",

@@ -145,7 +145,7 @@ public class ApiGateway {
         gatewayClient.connect();
     }
 
-    @Schedule(fixedDelay = 10, unit = TimeUnit.SECONDS)
+    @Schedule(fixedDelay = 15, unit = TimeUnit.SECONDS)
     private void autoHost() {
         try {
             boolean isGame = Vars.state.isGame();

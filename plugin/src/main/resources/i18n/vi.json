@@ -179,9 +179,6 @@
     "kicked_by_server": "[scarlet]{player} đã bị máy chủ đá ra.",
     "restart_scheduled": "[cyan]Máy chủ đã được lên lịch khởi động lại."
   },
-  "afk": {
-    "label": "Afk"
-  },
   "rank": {
     "no_record": "Không có kỷ lục cho bản đồ này",
     "title": "Bản đồ: {map}\nThời gian tốt nhất: {time}\nNgười chơi: {players}",

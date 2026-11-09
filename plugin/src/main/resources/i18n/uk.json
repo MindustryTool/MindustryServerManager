@@ -179,9 +179,6 @@
     "kicked_by_server": "[scarlet]{player} був кікнутий сервером.",
     "restart_scheduled": "[cyan]Сервер заплановано на перезапуск."
   },
-  "afk": {
-    "label": "Afk"
-  },
   "rank": {
     "no_record": "Немає рекорду для цієї мапи",
     "title": "Мапа: {map}\nНайкращий час: {time}\nГравці: {players}",

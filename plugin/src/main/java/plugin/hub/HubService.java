@@ -297,7 +297,7 @@ public class HubService {
         }
     }
 
-    @Schedule(fixedDelay = 5, unit = TimeUnit.SECONDS)
+    @Schedule(fixedDelay = 60, unit = TimeUnit.SECONDS)
     private void refreshServerList() {
         if (Groups.player.size() <= 0) {
             return;
@@ -340,7 +340,7 @@ public class HubService {
         }
     }
 
-    @Schedule(delay = 5, fixedDelay = 5, unit = TimeUnit.SECONDS)
+    @Schedule(delay = 15, fixedDelay = 15, unit = TimeUnit.SECONDS)
     private void renderServerLabels() {
         if (Groups.player.size() <= 0) {
             return;
@@ -363,7 +363,7 @@ public class HubService {
                     }
 
                     String message = entry.renderLabel();
-                    Call.label(message, i + 1, 5.1f, core.getX(), core.getY(), flags);
+                    Call.label(message, i + 1, 15.1f, core.getX(), core.getY(), flags);
                 }
                 break;
             }

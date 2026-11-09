@@ -224,7 +224,7 @@ public class FloodGamemode {
     }
 
     @MainThread
-    @Schedule(fixedDelay = 100, unit = TimeUnit.MILLISECONDS)
+    @Schedule(fixedDelay = 200, unit = TimeUnit.MILLISECONDS)
     private void updateUnitDamgeOnFlood() {
         if (!shouldUpdate() || spreader == null || !spreader.isInitialized()) {
             return;

@@ -179,9 +179,6 @@
     "kicked_by_server": "[scarlet]{player} has been kicked by the server.",
     "restart_scheduled": "[cyan]Server scheduled for a restart."
   },
-  "afk": {
-    "label": "Afk"
-  },
   "rank": {
     "no_record": "No record for this map",
     "title": "Map: {map}\nBest time: {time}\nPlayers: {players}",

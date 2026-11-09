@@ -179,9 +179,6 @@
     "kicked_by_server": "[scarlet]{player} был кикнут сервером.",
     "restart_scheduled": "[cyan]Сервер запланирован на перезапуск."
   },
-  "afk": {
-    "label": "Afk"
-  },
   "rank": {
     "no_record": "Нет рекорда для этой карты",
     "title": "Карта: {map}\nЛучшее время: {time}\nИгроки: {players}",

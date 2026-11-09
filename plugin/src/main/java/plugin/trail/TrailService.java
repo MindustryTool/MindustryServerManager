@@ -2,6 +2,7 @@ package plugin.trail;
 
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import arc.func.Cons2;
 import arc.graphics.Color;
@@ -55,7 +56,7 @@ public class TrailService {
         Trail.create(this, "explotion", 0, Fx.explosion, TrailRequirement.admin());
     }
 
-    @Schedule(fixedRate = 1000)
+    @Schedule(fixedRate = 1, unit = TimeUnit.SECONDS)
     @MainThread
     private void render() {
         sessionService.each(session -> {

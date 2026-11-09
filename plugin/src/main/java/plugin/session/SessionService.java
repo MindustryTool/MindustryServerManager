@@ -54,7 +54,8 @@ public class SessionService {
     private final UserBanService userBanService;
     private final ModerationService moderationService;
 
-    public SessionService(SessionRepository sessionRepository, UserBanService userBanService, ModerationService moderationService) {
+    public SessionService(SessionRepository sessionRepository, UserBanService userBanService,
+            ModerationService moderationService) {
         this.sessionRepository = sessionRepository;
         this.userBanService = userBanService;
         this.moderationService = moderationService;
@@ -189,7 +190,16 @@ public class SessionService {
 
     @Schedule(fixedDelay = 1, unit = TimeUnit.SECONDS)
     private void tick() {
-        each(s -> PluginEvents.fire(new ExpGainEvent(s, 1)));
+        each(session -> {
+            if (session.isAfk()) {
+                session.expGainBonus -= 0.01f;
+                if (session.expGainBonus < 0) {
+                    session.expGainBonus = 0;
+                }
+            }
+
+            PluginEvents.fire(new ExpGainEvent(session, 1));
+        });
     }
 
     @Destroy
@@ -210,18 +220,6 @@ public class SessionService {
         Utils.forEachPlayerLocale((locale, players) -> {
             String message = SessionUtils.getLevelUpMessage(locale, lastLevel, newLevel);
             players.forEach(p -> p.sendMessage(session.player.name + message));
-        });
-    }
-
-    @Schedule(fixedRate = 1, unit = TimeUnit.MINUTES)
-    public void reduceExpGainBonusWhenAfk() {
-        each(session -> {
-            if (session.isAfk()) {
-                session.expGainBonus -= 0.01f;
-                if (session.expGainBonus < 0) {
-                    session.expGainBonus = 0;
-                }
-            }
         });
     }
 

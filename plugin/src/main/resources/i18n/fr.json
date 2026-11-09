@@ -179,9 +179,6 @@
     "kicked_by_server": "[scarlet]{player} a été expulsé par le serveur.",
     "restart_scheduled": "[cyan]Redémarrage du serveur programmé."
   },
-  "afk": {
-    "label": "AFK"
-  },
   "rank": {
     "no_record": "Aucun record pour cette carte",
     "title": "Carte : {map}\nMeilleur temps : {time}\nJoueurs : {players}",
