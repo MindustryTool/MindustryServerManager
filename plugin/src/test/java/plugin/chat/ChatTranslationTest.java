@@ -6,8 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicReference;
-
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,23 +32,6 @@ class ChatTranslationTest {
     @AfterEach
     void tearDown() {
         Core.app = null;
-    }
-
-    private Player createConnectedPlayer(String name, String locale) {
-        Player player = Player.create();
-        player.name = name;
-        player.locale = locale;
-        player.con = new NetConnection("127.0.0.1") {
-            @Override
-            public void send(Object object, boolean reliable) {
-            }
-
-            @Override
-            public void close() {
-            }
-        };
-        player.add();
-        return player;
     }
 
     @Test
