@@ -44,7 +44,7 @@ class GlobalServerListMenuTest {
 
     @Test
     void testBuildEmptyServerList() {
-        ApiGateway mockGateway = new ApiGateway(null, null) {
+        ApiGateway mockGateway = new ApiGateway(null, null, null) {
             @Override
             public List<Server> getServers(PaginationRequest request) {
                 return List.of();
@@ -68,7 +68,7 @@ class GlobalServerListMenuTest {
         Server offlineServer = createServer("Sandbox Test", 0, null, "sandbox");
         List<Server> mockServers = List.of(onlineServer, offlineServer);
 
-        ApiGateway mockGateway = new ApiGateway(null, null) {
+        ApiGateway mockGateway = new ApiGateway(null, null, null) {
             @Override
             public List<Server> getServers(PaginationRequest request) {
                 return mockServers;
@@ -102,7 +102,7 @@ class GlobalServerListMenuTest {
             fullPage.add(createServer("Server " + i, i, "Map " + i, "survival"));
         }
 
-        ApiGateway mockGateway = new ApiGateway(null, null) {
+        ApiGateway mockGateway = new ApiGateway(null, null, null) {
             @Override
             public List<Server> getServers(PaginationRequest request) {
                 return fullPage;

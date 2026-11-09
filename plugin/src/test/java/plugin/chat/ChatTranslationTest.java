@@ -138,7 +138,7 @@ class ChatTranslationTest {
     @Test
     void handleAsyncTranslationDeliversOnSuccess() {
         CompletableFuture<TranslationResponse> future = new CompletableFuture<>();
-        ApiGateway stubGateway = new ApiGateway(null, null) {
+        ApiGateway stubGateway = new ApiGateway(null, null, null) {
             @Override
             @SuppressWarnings("unchecked")
             public <R> CompletableFuture<R> sendRequest(String type, Object payload, Class<R> clazz) {
@@ -188,7 +188,7 @@ class ChatTranslationTest {
     @Test
     void handleAsyncTranslationFallsBackOnError() {
         CompletableFuture<TranslationResponse> future = new CompletableFuture<>();
-        ApiGateway stubGateway = new ApiGateway(null, null) {
+        ApiGateway stubGateway = new ApiGateway(null, null, null) {
             @Override
             @SuppressWarnings("unchecked")
             public <R> CompletableFuture<R> sendRequest(String type, Object payload, Class<R> clazz) {

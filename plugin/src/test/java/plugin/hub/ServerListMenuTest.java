@@ -44,7 +44,7 @@ class ServerListMenuTest {
 
     @Test
     void testBuildEmptyServerList() {
-        ApiGateway mockGateway = new ApiGateway(null, null) {
+        ApiGateway mockGateway = new ApiGateway(null, null, null) {
             @Override
             public List<Server> getServers(PaginationRequest request) {
                 return List.of();
@@ -68,7 +68,7 @@ class ServerListMenuTest {
         Server offlineServer = createServer("Sandbox Test", 0, null, "sandbox");
         List<Server> mockServers = List.of(onlineServer, offlineServer);
 
-        ApiGateway mockGateway = new ApiGateway(null, null) {
+        ApiGateway mockGateway = new ApiGateway(null, null, null) {
             @Override
             public List<Server> getServers(PaginationRequest request) {
                 return mockServers;
@@ -103,7 +103,7 @@ class ServerListMenuTest {
             fullPage.add(createServer("Server " + i, i, "Map " + i, "survival"));
         }
 
-        ApiGateway mockGateway = new ApiGateway(null, null) {
+        ApiGateway mockGateway = new ApiGateway(null, null, null) {
             @Override
             public List<Server> getServers(PaginationRequest request) {
                 return fullPage;
@@ -125,7 +125,7 @@ class ServerListMenuTest {
     void testPreviousButtonAppearsOnPageGreaterZero() {
         List<Server> pageServers = List.of(createServer("S1", 1, "Map 1", "survival"));
 
-        ApiGateway mockGateway = new ApiGateway(null, null) {
+        ApiGateway mockGateway = new ApiGateway(null, null, null) {
             @Override
             public List<Server> getServers(PaginationRequest request) {
                 return pageServers;
@@ -139,7 +139,8 @@ class ServerListMenuTest {
         MenuContext<Integer> ctx = new MenuContext<>(session, 1, 1L);
         menu.build(ctx);
 
-        // 1 server connect action + 1 "previous" pagination action (since size < 12, no "next")
+        // 1 server connect action + 1 "previous" pagination action (since size < 12, no
+        // "next")
         assertEquals(2, ctx.getActions().size());
     }
 }

@@ -234,7 +234,7 @@ class RenderAllMenuPreviewsTest {
 
         List<Server> mockServers = List.of(server1, server2, server3, server4);
 
-        ApiGateway mockGateway = new ApiGateway(null, null) {
+        ApiGateway mockGateway = new ApiGateway(null, null, null) {
             @Override
             public List<Server> getServers(PaginationRequest request) {
                 return mockServers;
@@ -273,20 +273,66 @@ class RenderAllMenuPreviewsTest {
             public List<ShopItem> getItems() {
                 List<ShopItem> list = new ArrayList<>();
                 list.add(new ShopItem() {
-                    @Override public String getId() { return "pet_fire"; }
-                    @Override public String getTitle(Session s) { return "Fire Pet Companion"; }
-                    @Override public String getDescription(Session s) { return ""; }
-                    @Override public long getPrice(Session s) { return 500; }
-                    @Override public boolean isAvailable(Session s) { return true; }
-                    @Override public boolean purchase(Session s) { return true; }
+                    @Override
+                    public String getId() {
+                        return "pet_fire";
+                    }
+
+                    @Override
+                    public String getTitle(Session s) {
+                        return "Fire Pet Companion";
+                    }
+
+                    @Override
+                    public String getDescription(Session s) {
+                        return "";
+                    }
+
+                    @Override
+                    public long getPrice(Session s) {
+                        return 500;
+                    }
+
+                    @Override
+                    public boolean isAvailable(Session s) {
+                        return true;
+                    }
+
+                    @Override
+                    public boolean purchase(Session s) {
+                        return true;
+                    }
                 });
                 list.add(new ShopItem() {
-                    @Override public String getId() { return "trail_rainbow"; }
-                    @Override public String getTitle(Session s) { return "Rainbow Trail"; }
-                    @Override public String getDescription(Session s) { return ""; }
-                    @Override public long getPrice(Session s) { return 1000; }
-                    @Override public boolean isAvailable(Session s) { return true; }
-                    @Override public boolean purchase(Session s) { return true; }
+                    @Override
+                    public String getId() {
+                        return "trail_rainbow";
+                    }
+
+                    @Override
+                    public String getTitle(Session s) {
+                        return "Rainbow Trail";
+                    }
+
+                    @Override
+                    public String getDescription(Session s) {
+                        return "";
+                    }
+
+                    @Override
+                    public long getPrice(Session s) {
+                        return 1000;
+                    }
+
+                    @Override
+                    public boolean isAvailable(Session s) {
+                        return true;
+                    }
+
+                    @Override
+                    public boolean purchase(Session s) {
+                        return true;
+                    }
                 });
                 return list;
             }
@@ -321,22 +367,22 @@ class RenderAllMenuPreviewsTest {
     void renderVoteFeature() {
         Seq<Map> maps = new Seq<>();
         String[][] realMaps = {
-                {"flod12.msav", "flod 12[red][v1.5]"},
-                {"diamond(1).msav", "diamond"},
-                {"flod10.msav", "flod 10[red][v1.5]"},
-                {"flod9.msav", "flod9[red][v1.3]"},
-                {"flodmk2.msav", "flod mk2[red][v1.3]"},
-                {"flod7.msav", "flod 7[red][v1.3]"},
-                {"flod3.msav", "flod 3[red][v1.3]"},
-                {"flod13.msav", "flod 13[red][v1.3]"},
-                {"flod8.msav", "flod 8[red][v1.2]"},
-                {"flod6.msav", "flod 6[red][v1.4]"},
-                {"flod5.msav", "flod 5[red][v1.1]"},
-                {"flod.msav", "flod"},
-                {"flod11.msav", "flod 11[red][v1.5]"},
-                {"019ca89e-f5fb-7724-ade9-915ed10bc4a0.msav", "Stone maze"},
-                {"easyflod.msav", "easy flood"},
-                {"flod4.msav", "flod 4[red][v1.3]"}
+                { "flod12.msav", "flod 12[red][v1.5]" },
+                { "diamond(1).msav", "diamond" },
+                { "flod10.msav", "flod 10[red][v1.5]" },
+                { "flod9.msav", "flod9[red][v1.3]" },
+                { "flodmk2.msav", "flod mk2[red][v1.3]" },
+                { "flod7.msav", "flod 7[red][v1.3]" },
+                { "flod3.msav", "flod 3[red][v1.3]" },
+                { "flod13.msav", "flod 13[red][v1.3]" },
+                { "flod8.msav", "flod 8[red][v1.2]" },
+                { "flod6.msav", "flod 6[red][v1.4]" },
+                { "flod5.msav", "flod 5[red][v1.1]" },
+                { "flod.msav", "flod" },
+                { "flod11.msav", "flod 11[red][v1.5]" },
+                { "019ca89e-f5fb-7724-ade9-915ed10bc4a0.msav", "Stone maze" },
+                { "easyflod.msav", "easy flood" },
+                { "flod4.msav", "flod 4[red][v1.3]" }
         };
 
         Color[] palette = {
@@ -414,14 +460,16 @@ class RenderAllMenuPreviewsTest {
     void renderDailyTaskFeature() {
         TaskMenu taskMenu = new TaskMenu(new DailyTaskService(null, null, null) {
             @Override
-            public void checkRollover(Session session) {}
+            public void checkRollover(Session session) {
+            }
 
             @Override
             public List<DailyTask> getActiveTasks() {
                 return List.of(
-                        new DailyTask("task_1", "task.td_waves_title", "task.td_waves_desc", 30, 250, DailyTask.TaskType.SURVIVE_WAVES),
-                        new DailyTask("task_2", "task.td_kills_title", "task.td_kills_desc", 500, 500, DailyTask.TaskType.KILL_UNITS)
-                );
+                        new DailyTask("task_1", "task.td_waves_title", "task.td_waves_desc", 30, 250,
+                                DailyTask.TaskType.SURVIVE_WAVES),
+                        new DailyTask("task_2", "task.td_kills_title", "task.td_kills_desc", 500, 500,
+                                DailyTask.TaskType.KILL_UNITS));
             }
 
             @Override
@@ -455,10 +503,11 @@ class RenderAllMenuPreviewsTest {
         List<MapRecordPlayer> players = List.of(
                 new MapRecordPlayer("u1", "PlayerOne"),
                 new MapRecordPlayer("u2", "SpeedRunner_99"),
-                new MapRecordPlayer("u3", "DefenderHero")
-        );
-        MapRecord rec1 = new MapRecord(1L, "flod 3[red][v1.3]", "attack", 1254000L, players, System.currentTimeMillis());
-        MapRecord rec2 = new MapRecord(2L, "flod 3[red][v1.3]", "attack", 1580000L, List.of(new MapRecordPlayer("u4", "SoloMaster")), System.currentTimeMillis());
+                new MapRecordPlayer("u3", "DefenderHero"));
+        MapRecord rec1 = new MapRecord(1L, "flod 3[red][v1.3]", "attack", 1254000L, players,
+                System.currentTimeMillis());
+        MapRecord rec2 = new MapRecord(2L, "flod 3[red][v1.3]", "attack", 1580000L,
+                List.of(new MapRecordPlayer("u4", "SoloMaster")), System.currentTimeMillis());
         MapRecordMenuState recordState = new MapRecordMenuState("flod 3[red][v1.3]", "attack", List.of(rec1, rec2));
 
         MapRecordsMenu mapRecordsMenu = new MapRecordsMenu();
