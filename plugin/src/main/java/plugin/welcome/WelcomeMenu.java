@@ -16,17 +16,26 @@ public class WelcomeMenu extends ServerMenu<Void> {
     public void build(MenuContext<Void> ctx) {
         this.title = "[gold]MindustryTool";
 
-        ctx.label("[accent]Welcome to the server! Explore our community links below:");
+        ctx.label("[accent]Welcome to the server!");
         ctx.row();
 
         ctx.table(links -> {
             String rulesAct = ctx.registerAction((sess, st, res) -> Call.openURI(sess.player.con, Cfg.RULE_URL));
-            String webAct = ctx.registerAction((sess, st, res) -> Call.openURI(sess.player.con, Cfg.MINDUSTRY_TOOL_URL));
-            String discordAct = ctx.registerAction((sess, st, res) -> Call.openURI(sess.player.con, Cfg.DISCORD_INVITE_URL));
 
-            links.add(UiBuilder.button(Iconc.book + " [green]" + Tr.t(ctx.getSession(), "welcome.rules")).clicked(rulesAct).growX().height(36f).pad(3f)).row();
-            links.add(UiBuilder.button(Iconc.link + " [green]" + Tr.t(ctx.getSession(), "welcome.website")).clicked(webAct).growX().height(36f).pad(3f)).row();
-            links.add(UiBuilder.button(Iconc.discord + " [royal]" + Tr.t(ctx.getSession(), "welcome.discord")).clicked(discordAct).growX().height(36f).pad(3f)).row();
+            String webAct = ctx
+                    .registerAction((sess, st, res) -> Call.openURI(sess.player.con, Cfg.MINDUSTRY_TOOL_URL));
+
+            String discordAct = ctx
+                    .registerAction((sess, st, res) -> Call.openURI(sess.player.con, Cfg.DISCORD_INVITE_URL));
+
+            links.add(UiBuilder.button(Iconc.book + " [green]" + Tr.t(ctx.getSession(), "welcome.rules"))
+                    .clicked(rulesAct).growX().height(36f).pad(3f)).row();
+
+            links.add(UiBuilder.button(Iconc.link + " [green]" + Tr.t(ctx.getSession(), "welcome.website"))
+                    .clicked(webAct).growX().height(36f).pad(3f)).row();
+
+            links.add(UiBuilder.button(Iconc.discord + " [royal]" + Tr.t(ctx.getSession(), "welcome.discord"))
+                    .clicked(discordAct).growX().height(36f).pad(3f)).row();
         }).growX();
     }
 }
