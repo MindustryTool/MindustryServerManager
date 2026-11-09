@@ -314,9 +314,24 @@ public class ServerService {
 
     public List<ServerMisMatch> getMismatch(UUID serverId, ServerConfig config) {
         storeDesiredConfig(serverId, config);
-        var state = state(serverId);
-        var mods = getMods(serverId).stream().filter(mod -> !mod.getName().equals("PluginLoader")).toList();
-        return nodeManager.getMismatch(serverId, config, state, mods);
+
+        try {
+            var state = gatewayService.of(serverId)
+                    .server()
+                    .getState()
+                    .get(2, TimeUnit.SECONDS);
+
+            var mods = getMods(serverId).stream().filter(mod -> !mod.getName().equals("PluginLoader")).toList();
+
+            return nodeManager.getMismatch(serverId, config, state, mods);
+        } catch (ExecutionException e) {
+            Throwable inner = e.getCause();
+            throw new ApiError(500, "Failed to get server state", inner != null ? inner : e);
+        } catch (TimeoutException e) {
+            throw new ApiError(504, "Timeout to get server state", e);
+        } catch (Exception e) {
+            throw new ApiError(500, "Failed to get server state", e);
+        }
     }
 
     public void updateConfig(UUID serverId, ServerConfig config) {
