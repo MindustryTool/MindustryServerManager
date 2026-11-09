@@ -272,8 +272,11 @@ public class DockerNodeManager implements NodeManager {
         }
 
         if (Const.IS_PRODUCTION) {
-            hostConfig.withExtraHosts("server.mindustry-tool.com:194.163.191.228",
-                    "api.mindustry-tool.com:194.163.191.228");
+            hostConfig.withExtraHosts(
+                    "server.mindustry-tool.com:194.163.191.228",
+                    "api.mindustry-tool.com:194.163.191.228",
+                    "content.mindustry-tool.com:194.163.191.228"//
+            );
         }
 
         if (Const.IS_PRODUCTION) {
