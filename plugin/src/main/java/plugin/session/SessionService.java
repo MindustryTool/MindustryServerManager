@@ -250,11 +250,15 @@ public class SessionService {
     }
 
     public Optional<Session> getByUuid(String uuid) {
-        return Optional.ofNullable(find(p -> p.player.uuid().equals(uuid)));
+        return get(uuid);
+    }
+
+    public Optional<Session> get(String uuid) {
+        return Optional.ofNullable(data.get(uuid));
     }
 
     public Optional<Session> get(Player p) {
-        return Optional.ofNullable(data.get(p.uuid()));
+        return get(p.uuid());
     }
 
     public Session put(Player p) {

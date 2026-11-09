@@ -1,22 +1,55 @@
 package plugin.maprating;
 
+import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import arc.Core;
 import arc.util.Log;
 import mindustry.gen.Iconc;
+import mindustry.game.EventType.PlayEvent;
 import mindustry.maps.Map;
+import plugin.Tasks;
 import plugin.annotations.Component;
+import plugin.annotations.Init;
+import plugin.annotations.Listener;
 import plugin.utils.Tr;
 
 @Component
 public class MapRatingService {
+    private static final MapRatingStat EMPTY_STAT = new MapRatingStat(0, 0f);
+
     private final MapRatingRepository repository;
-    private final ConcurrentMap<String, MapRatingStat> cache = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, MapRatingRecord> cache = new ConcurrentHashMap<>();
 
     public MapRatingService(MapRatingRepository repository) {
         this.repository = repository;
+    }
+
+    @Init
+    public void init() {
+        reloadCache();
+    }
+
+    @Listener(PlayEvent.class)
+    public void onPlayEvent(PlayEvent event) {
+        reloadCache();
+    }
+
+    private void reloadCache() {
+        if (repository == null) {
+            return;
+        }
+        Tasks.io("load map ratings", () -> {
+            List<MapRatingRecord> records = repository.findAll();
+            Core.app.post(() -> {
+                cache.clear();
+                for (MapRatingRecord record : records) {
+                    cache.put(record.mapName(), record);
+                }
+            });
+        });
     }
 
     public void updateMapRating(Map map, int star) {
@@ -27,32 +60,47 @@ public class MapRatingService {
     }
 
     public void updateMapRating(String mapName, int star) {
-        repository.updateRating(mapName, star);
-        if (mapName != null && !mapName.isBlank()) {
-            String cleanName = mapName.trim();
-            repository.findByMapName(cleanName).ifPresentOrElse(
-                    r -> cache.put(cleanName, new MapRatingStat(r.votes(), r.rating())),
-                    () -> cache.remove(cleanName)
-            );
+        if (mapName == null || mapName.isBlank() || star < 1 || star > 5) {
+            return;
+        }
+        String cleanName = mapName.trim();
+
+        MapRatingRecord current = cache.get(cleanName);
+        int[] stars = current == null ? new int[5] : current.stars().clone();
+        stars[star - 1]++;
+
+        int totalVotes = 0;
+        float totalScore = 0f;
+        for (int i = 0; i < 5; i++) {
+            totalVotes += stars[i];
+            totalScore += stars[i] * (i + 1);
+        }
+        float avg = totalVotes == 0 ? 0f : totalScore / totalVotes;
+
+        MapRatingRecord updated = new MapRatingRecord(cleanName, stars[0], stars[1], stars[2], stars[3], stars[4], totalVotes, avg);
+        cache.put(cleanName, updated);
+
+        if (repository != null) {
+            Tasks.io("save map rating " + cleanName, () -> repository.updateRating(cleanName, star));
         }
     }
 
     public MapRatingStat getStat(Map map) {
         if (map == null || map.file == null) {
-            return new MapRatingStat(0, 0f);
+            return EMPTY_STAT;
         }
         return getStat(map.file.nameWithoutExtension());
     }
 
     public MapRatingStat getStat(String mapName) {
         if (mapName == null || mapName.isBlank()) {
-            return new MapRatingStat(0, 0f);
+            return EMPTY_STAT;
         }
-        return cache.computeIfAbsent(mapName.trim(), name ->
-                repository.findByMapName(name)
-                        .map(r -> new MapRatingStat(r.votes(), r.rating()))
-                        .orElseGet(() -> new MapRatingStat(0, 0f))
-        );
+        MapRatingRecord record = cache.get(mapName.trim());
+        if (record == null) {
+            return EMPTY_STAT;
+        }
+        return new MapRatingStat(record.votes(), record.rating());
     }
 
     public String getAvgString(Map map) {
@@ -67,10 +115,10 @@ public class MapRatingService {
 
         try {
             String mapName = map.file != null ? map.file.nameWithoutExtension() : map.name();
-            var recordOpt = repository.findByMapName(mapName);
-            int[] stars = recordOpt.map(MapRatingRecord::stars).orElseGet(() -> new int[5]);
-            int totalVotes = recordOpt.map(MapRatingRecord::votes).orElse(0);
-            float avg = recordOpt.map(MapRatingRecord::rating).orElse(0f);
+            MapRatingRecord record = cache.get(mapName == null ? null : mapName.trim());
+            int[] stars = record == null ? new int[5] : record.stars();
+            int totalVotes = record == null ? 0 : record.votes();
+            float avg = record == null ? 0f : record.rating();
 
             StringBuilder sb = new StringBuilder(map.name()).append("\n");
 

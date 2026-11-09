@@ -579,11 +579,6 @@ public class ApiGateway {
     }
 
     @Listener(PlayEvent.class)
-    private void onWorldLoadEnd() {
-        sendStateUpdate();
-    }
-
-    @Listener(PlayEvent.class)
     private void onPlay() {
         sendStateUpdate();
         generateMapImage();

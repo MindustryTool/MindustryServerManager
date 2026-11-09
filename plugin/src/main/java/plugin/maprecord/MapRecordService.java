@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import arc.Core;
 import lombok.RequiredArgsConstructor;
 import mindustry.Vars;
 import mindustry.game.EventType.GameOverEvent;
@@ -17,6 +18,7 @@ import plugin.annotations.ConditionOn;
 import plugin.annotations.Listener;
 import plugin.gamemode.Gamemode;
 import plugin.gamemode.GamemodeCondition;
+import plugin.Tasks;
 import plugin.gamemode.flood.FloodWonEvent;
 import plugin.session.SessionService;
 import plugin.utils.TimeUtils;
@@ -33,6 +35,10 @@ public class MapRecordService {
     private Instant mapStartedAt = Instant.now();
     private Instant pauseStartedAt = null;
 
+    private volatile MapRecord currentBestRecord;
+    private volatile String currentBestMapName;
+    private volatile String currentBestGamemode;
+
     public Instant getMapStartedAt() {
         if (pauseStartedAt != null) {
             return mapStartedAt.plus(Duration.between(pauseStartedAt, Instant.now()));
@@ -45,12 +51,12 @@ public class MapRecordService {
         if (map == null || map.file == null) {
             return Tr.t(locale, "rank.no_record");
         }
-        var mapName = map.file.nameWithoutExtension();
-        var best = repository.getBestRecord(mapName, Gamemode.current());
-        if (best.isEmpty()) {
+
+        MapRecord record = currentBestRecord;
+        if (record == null || !map.file.nameWithoutExtension().equals(currentBestMapName)) {
             return Tr.t(locale, "rank.no_record");
         }
-        MapRecord record = best.get();
+
         List<String> playerNames = record.players().stream().map(MapRecordPlayer::name).toList();
         return Tr.t(locale, "rank.title",
                 "map", map.name(),
@@ -63,6 +69,39 @@ public class MapRecordService {
         mapStartedAt = Instant.now();
         pauseStartedAt = Vars.state.isPaused() ? Instant.now() : null;
 
+        currentBestRecord = null;
+        currentBestMapName = null;
+        currentBestGamemode = null;
+
+        var map = Vars.state.map;
+        if (repository == null || map == null || map.file == null) {
+            announceRank();
+            return;
+        }
+
+        String mapName = map.file.nameWithoutExtension();
+        String gamemode = Gamemode.current();
+
+        Tasks.io("load map best record", () -> {
+            MapRecord record = repository.getBestRecord(mapName, gamemode).orElse(null);
+
+            Core.app.post(() -> {
+                if (Vars.state.map == null || Vars.state.map.file == null) {
+                    return;
+                }
+                if (!mapName.equals(Vars.state.map.file.nameWithoutExtension())) {
+                    return;
+                }
+
+                currentBestRecord = record;
+                currentBestMapName = mapName;
+                currentBestGamemode = gamemode;
+                announceRank();
+            });
+        });
+    }
+
+    private void announceRank() {
         Utils.forEachPlayerLocale((locale, players) -> {
             String msg = buildRankString(locale);
             for (var p : players) {
@@ -125,28 +164,11 @@ public class MapRecordService {
         }
 
         if (repository != null) {
-            var resultOpt = repository.saveAttempt(mapName, gamemode, durationMs, players, System.currentTimeMillis());
-            if (resultOpt.isPresent()) {
-                RecordSaveResult result = resultOpt.get();
-                if (result.isNewBest()) {
-                    Utils.forEachPlayerLocale((locale, ps) -> {
-                        String msg = Tr.t(locale, "rank.new_best_time",
-                                "time", TimeUtils.toString(Duration.ofMillis(durationMs)));
-                        for (var p : ps) {
-                            p.sendMessage(msg);
-                        }
-                    });
-                } else {
-                    Utils.forEachPlayerLocale((locale, ps) -> {
-                        String msg = Tr.t(locale, "rank.new_rank",
-                                "rank", String.valueOf(result.rank()),
-                                "time", TimeUtils.toString(Duration.ofMillis(durationMs)));
-                        for (var p : ps) {
-                            p.sendMessage(msg);
-                        }
-                    });
-                }
-            }
+            Tasks.io("save map record", () -> {
+                var resultOpt = repository.saveAttempt(mapName, gamemode, durationMs, players, System.currentTimeMillis());
+                resultOpt.ifPresent(result -> Core.app.post(
+                        () -> announceRecord(result, mapName, gamemode, durationMs)));
+            });
         }
 
         if (sessionService != null) {
@@ -162,6 +184,31 @@ public class MapRecordService {
                 session.expGainBonus = playerParticipation;
                 session.player.sendMessage(Tr.t(session, "rank.win_bonus",
                         "percent", String.valueOf(playerParticipation * 100)));
+            });
+        }
+    }
+
+    private void announceRecord(RecordSaveResult result, String mapName, String gamemode, long durationMs) {
+        if (result.isNewBest() && mapName.equals(currentBestMapName) && gamemode.equals(currentBestGamemode)) {
+            currentBestRecord = result.record();
+        }
+
+        if (result.isNewBest()) {
+            Utils.forEachPlayerLocale((locale, ps) -> {
+                String msg = Tr.t(locale, "rank.new_best_time",
+                        "time", TimeUtils.toString(Duration.ofMillis(durationMs)));
+                for (var p : ps) {
+                    p.sendMessage(msg);
+                }
+            });
+        } else {
+            Utils.forEachPlayerLocale((locale, ps) -> {
+                String msg = Tr.t(locale, "rank.new_rank",
+                        "rank", String.valueOf(result.rank()),
+                        "time", TimeUtils.toString(Duration.ofMillis(durationMs)));
+                for (var p : ps) {
+                    p.sendMessage(msg);
+                }
             });
         }
     }

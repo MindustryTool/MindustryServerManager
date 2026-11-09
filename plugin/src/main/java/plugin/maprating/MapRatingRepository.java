@@ -1,5 +1,7 @@
 package plugin.maprating;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 import arc.util.Log;
@@ -27,6 +29,41 @@ public class MapRatingRepository {
             database.db().createTableIfNotExists(MapRatings.TABLE);
         } catch (Exception e) {
             Log.err("Failed to create map_ratings table", e);
+        }
+    }
+
+    public List<MapRatingRecord> findAll() {
+        try {
+            var rows = database.db().select(
+                            MapRatings.MAP_NAME,
+                            MapRatings.STAR_1,
+                            MapRatings.STAR_2,
+                            MapRatings.STAR_3,
+                            MapRatings.STAR_4,
+                            MapRatings.STAR_5,
+                            MapRatings.VOTES,
+                            MapRatings.RATING
+                    )
+                    .from(MapRatings.TABLE)
+                    .fetch();
+
+            List<MapRatingRecord> records = new ArrayList<>(rows.size());
+            for (var row : rows) {
+                records.add(new MapRatingRecord(
+                        row.get(MapRatings.MAP_NAME),
+                        row.get(MapRatings.STAR_1),
+                        row.get(MapRatings.STAR_2),
+                        row.get(MapRatings.STAR_3),
+                        row.get(MapRatings.STAR_4),
+                        row.get(MapRatings.STAR_5),
+                        row.get(MapRatings.VOTES),
+                        row.get(MapRatings.RATING)
+                ));
+            }
+            return records;
+        } catch (Exception e) {
+            Log.err("Failed to load map ratings", e);
+            return new ArrayList<>();
         }
     }
 

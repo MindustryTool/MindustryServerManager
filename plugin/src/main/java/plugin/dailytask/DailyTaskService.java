@@ -142,7 +142,7 @@ public class DailyTaskService {
                     return;
                 }
                 lastBuildTime.put(player.uuid(), now);
-                sessionService.getByUuid(player.uuid()).ifPresent(session -> {
+                sessionService.get(player.uuid()).ifPresent(session -> {
                     addProgress(session, DailyTask.TaskType.BUILD_BLOCKS, 1);
                 });
             }
@@ -167,7 +167,7 @@ public class DailyTaskService {
         }
 
         if (killer != null) {
-            sessionService.getByUuid(killer.uuid()).ifPresent(session -> {
+            sessionService.get(killer.uuid()).ifPresent(session -> {
                 addProgress(session, DailyTask.TaskType.KILL_UNITS, 1);
             });
         }

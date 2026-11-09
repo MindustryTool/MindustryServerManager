@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import plugin.database.Database;
 import plugin.database.schema.MapRatings;
+import plugin.orm.Row;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -35,6 +36,11 @@ public class MapRatingServiceTest {
 
     @AfterEach
     void tearDown() {
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
         if (database != null) {
             database.close();
         }
@@ -71,14 +77,26 @@ public class MapRatingServiceTest {
         var statAfterInvalid = service.getStat("desert_war");
         assertEquals(3, statAfterInvalid.totalVotes);
 
-        // Verify database persistence directly
-        var row = database.db().select(
-                        MapRatings.MAP_NAME, MapRatings.STAR_1, MapRatings.STAR_3, MapRatings.STAR_5,
-                        MapRatings.VOTES, MapRatings.RATING)
-                .from(MapRatings.TABLE)
-                .where(MapRatings.MAP_NAME.eq("desert_war"))
-                .fetchOne()
-                .orElse(null);
+        // Wait for asynchronous persistence to complete
+        long deadline = System.currentTimeMillis() + 5000;
+        Row row = null;
+        while (System.currentTimeMillis() < deadline) {
+            row = database.db().select(
+                            MapRatings.MAP_NAME, MapRatings.STAR_1, MapRatings.STAR_3, MapRatings.STAR_5,
+                            MapRatings.VOTES, MapRatings.RATING)
+                    .from(MapRatings.TABLE)
+                    .where(MapRatings.MAP_NAME.eq("desert_war"))
+                    .fetchOne()
+                    .orElse(null);
+            if (row != null && row.get(MapRatings.VOTES) == 3) {
+                break;
+            }
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
 
         assertNotNull(row);
         assertEquals("desert_war", row.get(MapRatings.MAP_NAME));

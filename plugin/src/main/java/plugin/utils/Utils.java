@@ -40,6 +40,7 @@ import mindustry.io.MapIO;
 import mindustry.io.SaveIO;
 import mindustry.maps.Map;
 import plugin.Control;
+import plugin.Tasks;
 import plugin.core.Registry;
 import plugin.session.SessionService;
 
@@ -232,31 +233,34 @@ public class Utils {
                 SaveIO.save(tempFile);
             }, 3000, "Generate map preview");
 
-            var bytes = tempFile.readBytes();
+            Tasks.io("generate map preview", () -> {
+                var bytes = tempFile.readBytes();
 
-            if (bytes.length == 0) {
-                return;
-            }
+                if (bytes.length == 0) {
+                    return;
+                }
 
-            HashMap<String, String> body = new HashMap<>();
+                HashMap<String, String> body = new HashMap<>();
 
-            body.put("data", Base64.getEncoder().encodeToString(bytes));
+                body.put("data", Base64.getEncoder().encodeToString(bytes));
 
-            HttpUtils
-                    .post("https://api.mindustry-tool.com", "api", "v4", "maps", "image-json")
-                    .header("Content-Type", "application/json")
-                    .content(JsonUtils.toJsonString(body))
-                    .timeout(120000)
-                    .error(error -> {
-                        if (error instanceof HttpStatusException httpStatusException) {
-                            Log.err("Fail to fetch map preview:" + httpStatusException.response.getResultAsString());
-                        } else {
-                            Log.err("Fail to generate map preview: " + error.getMessage());
-                        }
-                    })
-                    .submit((res) -> {
-                        tempImageFile.write(res.getResultAsStream(), false);
-                    });
+                HttpUtils
+                        .post("https://api.mindustry-tool.com", "api", "v4", "maps", "image-json")
+                        .header("Content-Type", "application/json")
+                        .content(JsonUtils.toJsonString(body))
+                        .timeout(120000)
+                        .error(error -> {
+                            if (error instanceof HttpStatusException httpStatusException) {
+                                Log.err("Fail to fetch map preview:"
+                                        + httpStatusException.response.getResultAsString());
+                            } else {
+                                Log.err("Fail to generate map preview: " + error.getMessage());
+                            }
+                        })
+                        .submit((res) -> {
+                            tempImageFile.write(res.getResultAsStream(), false);
+                        });
+            });
         }
     }
 

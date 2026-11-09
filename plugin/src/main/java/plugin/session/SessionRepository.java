@@ -40,7 +40,8 @@ public class SessionRepository {
     @Listener
     public void onSessionRemoved(SessionRemovedEvent event) {
         String uuid = event.getSession().player.uuid();
-        write(uuid, event.getSession().getData());
+        SessionData sessionData = event.getSession().getData();
+        Tasks.io("save session " + uuid, () -> write(uuid, sessionData));
         cache.remove(uuid);
         dirty.remove(uuid);
     }

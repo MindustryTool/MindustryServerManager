@@ -3,9 +3,11 @@ package plugin.session;
 import java.time.LocalDate;
 import java.util.Optional;
 
+import arc.Core;
 import lombok.RequiredArgsConstructor;
 import plugin.Cfg.OnOfficial;
 import plugin.PluginEvents;
+import plugin.Tasks;
 import plugin.annotations.Component;
 import plugin.annotations.ConditionOn;
 import plugin.annotations.Listener;
@@ -28,18 +30,24 @@ public class DailyService {
         String uuid = session.player.uuid();
         String today = LocalDate.now().toString();
 
-        Optional<String> lastLogin = dailyRepository.getLastLogin(uuid);
+        Tasks.io("daily bonus " + uuid, () -> {
+            Optional<String> lastLogin = dailyRepository.getLastLogin(uuid);
 
-        if (lastLogin.isEmpty()) {
+            if (lastLogin.isEmpty()) {
+                dailyRepository.setLastLogin(uuid, today);
+                return;
+            }
+
+            if (lastLogin.get().equals(today)) {
+                return;
+            }
+
             dailyRepository.setLastLogin(uuid, today);
-            return;
-        }
+            Core.app.post(() -> grantBonus(session));
+        });
+    }
 
-        if (lastLogin.get().equals(today)) {
-            return;
-        }
-
-        dailyRepository.setLastLogin(uuid, today);
+    private void grantBonus(Session session) {
         session.player.sendMessage(Tr.t(session, "session.daily_bonus", "bonus", "+" + DAILY_BONUS_EXP + " exp, +" + DAILY_BONUS_COINS + " coins"));
         PluginEvents.fire(new ExpGainEvent(session, DAILY_BONUS_EXP));
         moneyService.deposit(session, DAILY_BONUS_COINS);
