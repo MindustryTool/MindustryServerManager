@@ -61,7 +61,7 @@ import com.github.dockerjava.api.model.Volume;
 
 public class DockerNodeManager implements NodeManager {
     public static final Fi SERVER_FOLDER = new Fi(Const.volumeFolderPath).child("servers");
-    public static final String CONFIG_VERSION = "3";
+    public static final String CONFIG_VERSION = "4";
     public static final List<String> DEFAULT_JVM_ARGS = List.of(
             "-XX:+UseZGC",
             "-XX:+ZGenerational",
