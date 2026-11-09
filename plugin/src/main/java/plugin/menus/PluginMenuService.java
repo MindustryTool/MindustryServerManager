@@ -231,6 +231,20 @@ public class PluginMenuService {
         @SuppressWarnings("unchecked")
         public void show(PluginMenuService service, long token) {
             menu.setToken(token);
+            var p = menu.getSession() != null ? menu.getSession().player : null;
+            var con = p != null ? p.con : null;
+            Log.info("[PluginMenuService-Debug] show() menu=@ token=@ player='@' (hasCon=@, mobile=@, viewW=@, viewH=@, viewX=@, viewY=@, connected=@)",
+                    menu.getClass().getSimpleName(),
+                    token,
+                    p != null ? p.name : "null",
+                    con != null,
+                    con != null && con.mobile,
+                    con != null ? con.viewWidth : -1f,
+                    con != null ? con.viewHeight : -1f,
+                    con != null ? con.viewX : -1f,
+                    con != null ? con.viewY : -1f,
+                    con != null && con.isConnected());
+
             MenuContext<T> ctx = new MenuContext<>(menu.getSession(), menu.getState(), token);
             try {
                 menu.build(ctx);
