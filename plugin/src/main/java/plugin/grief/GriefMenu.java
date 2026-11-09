@@ -46,7 +46,7 @@ public class GriefMenu extends ServerMenu<Session> {
             ctx.table(actions -> {
                 String confirmAct = ctx.registerAction((sess, st, res) -> adminService.reportGrief(sess, target));
 
-                actions.add(UiBuilder.button(Tr.t(ctx.getSession().locale, "grief.report")).clicked(confirmAct).width(120f).height(38f).pad(4f));
+                actions.add(UiBuilder.button(Tr.t(ctx.getSession().locale, "grief.report")).clicked(confirmAct).width(120f).height(36f).pad(4f));
             });
 
             ctx.row();

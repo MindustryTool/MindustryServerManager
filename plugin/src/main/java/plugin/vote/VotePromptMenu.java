@@ -38,8 +38,8 @@ public class VotePromptMenu extends ServerMenu<Void> {
             String yesAct = ctx.registerAction((sess, st, res) -> voteKickService.vote(sess.player, Vote.YES));
             String noAct = ctx.registerAction((sess, st, res) -> voteKickService.vote(sess.player, Vote.NO));
 
-            actions.add(UiBuilder.button(Tr.t(ctx.getSession(), "votekick.btn_yes")).clicked(yesAct).width(135f).height(40f).pad(3f));
-            actions.add(UiBuilder.button(Tr.t(ctx.getSession(), "votekick.btn_no")).clicked(noAct).width(135f).height(40f).pad(3f));
+            actions.add(UiBuilder.button(Tr.t(ctx.getSession(), "votekick.btn_yes")).clicked(yesAct).width(135f).height(36f).pad(3f));
+            actions.add(UiBuilder.button(Tr.t(ctx.getSession(), "votekick.btn_no")).clicked(noAct).width(135f).height(36f).pad(3f));
 
             if (ctx.getSession().player.admin) {
                 ctx.row();

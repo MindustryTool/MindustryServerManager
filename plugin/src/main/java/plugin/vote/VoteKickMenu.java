@@ -75,7 +75,7 @@ public class VoteKickMenu extends ServerMenu<Player> {
                 for (String key : reasonKeys) {
                     String reasonText = Tr.t(ctx.getSession(), key);
                     String act = ctx.registerAction((sess, st, res) -> voteKickService.startVote(sess.player, target, reasonText));
-                    reasonsTable.add(UiBuilder.button(reasonText).clicked(act).growX().height(38f).pad(3f)).row();
+                    reasonsTable.add(UiBuilder.button(reasonText).clicked(act).growX().height(36f).pad(3f)).row();
                 }
             });
 

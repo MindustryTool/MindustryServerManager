@@ -533,7 +533,7 @@ public class ApiGateway {
                 .setIp(player.ip());
 
         try {
-            return sendRequest("login", body, Login.class).get(5, TimeUnit.SECONDS);
+            return sendRequest("login", body, Login.class).get(10, TimeUnit.SECONDS);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
             throw new RuntimeException("Login failed", e);
         }

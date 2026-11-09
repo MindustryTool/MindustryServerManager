@@ -42,18 +42,18 @@ public class CommonUpgradeQuantityMenu extends ServerMenu<Pair<CataliTeamData, C
 
         // 1 point
         String act1 = ctx.registerAction((sess, p, res) -> applyPoints(sess, team, upgrade, 1));
-        btnTable.add(UiBuilder.button(Tr.t(session, "catali.add_points", "count", 1)).clicked(act1).width(90f).height(40f).pad(3f));
+        btnTable.add(UiBuilder.button(Tr.t(session, "catali.add_points", "count", 1)).clicked(act1).width(90f).height(36f).pad(3f));
 
         // 2 points
         if (level.commonUpgradePoints >= 2) {
             String act2 = ctx.registerAction((sess, p, res) -> applyPoints(sess, team, upgrade, 2));
-            btnTable.add(UiBuilder.button(Tr.t(session, "catali.add_points", "count", 2)).clicked(act2).width(90f).height(40f).pad(3f));
+            btnTable.add(UiBuilder.button(Tr.t(session, "catali.add_points", "count", 2)).clicked(act2).width(90f).height(36f).pad(3f));
         }
 
         // 5 points
         if (level.commonUpgradePoints >= 5) {
             String act5 = ctx.registerAction((sess, p, res) -> applyPoints(sess, team, upgrade, 5));
-            btnTable.add(UiBuilder.button(Tr.t(session, "catali.add_points", "count", 5)).clicked(act5).width(90f).height(40f).pad(3f));
+            btnTable.add(UiBuilder.button(Tr.t(session, "catali.add_points", "count", 5)).clicked(act5).width(90f).height(36f).pad(3f));
         }
 
         btnTable.row();
@@ -63,7 +63,7 @@ public class CommonUpgradeQuantityMenu extends ServerMenu<Pair<CataliTeamData, C
         btnTable.add(UiBuilder.button(Tr.t(session, "catali.all_points") + " (" + level.commonUpgradePoints + ")")
                 .clicked(actAll)
                 .growX()
-                .height(40f)
+                .height(36f)
                 .colspan(3)
                 .pad(4f));
 
