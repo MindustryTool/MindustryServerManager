@@ -1,7 +1,5 @@
 package plugin.host;
 
-import java.util.concurrent.TimeUnit;
-
 import arc.Core;
 import arc.files.Fi;
 import arc.util.Log;
@@ -17,8 +15,6 @@ import plugin.Control;
 import plugin.PluginState;
 import plugin.annotations.Component;
 import plugin.annotations.Destroy;
-import plugin.annotations.MainThread;
-import plugin.annotations.Schedule;
 
 @Component
 @RequiredArgsConstructor
@@ -34,14 +30,6 @@ public class HostService {
             }
         } catch (Exception e) {
             Log.err("Failed to save map", e);
-        }
-    }
-
-    @MainThread
-    @Schedule(delay = 5, fixedDelay = 5, unit = TimeUnit.MINUTES)
-    private void autoSave() {
-        if (Vars.state.isPlaying() && !Vars.world.isGenerating()) {
-            SaveIO.save(SAVE_FILE);
         }
     }
 

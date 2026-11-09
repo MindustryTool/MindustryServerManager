@@ -55,7 +55,7 @@ public class TrailService {
         Trail.create(this, "explotion", 0, Fx.explosion, TrailRequirement.admin());
     }
 
-    @Schedule(fixedRate = 500)
+    @Schedule(fixedRate = 1000)
     @MainThread
     private void render() {
         sessionService.each(session -> {

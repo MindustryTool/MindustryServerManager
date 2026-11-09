@@ -46,7 +46,7 @@ public class PlayerConnectService {
     @Init
     public void start() {
         if (running.compareAndSet(false, true)) {
-            Log.info("Starting PlayerConnectService SSE connection...");
+            Log.info("Starting player connect sse connection");
             connectSse();
         }
     }
