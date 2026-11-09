@@ -6,26 +6,24 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
-import java.util.Base64;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
+import common.util.MultipartBody;
 import server.utils.ApiError;
 import server.utils.HttpClients;
-import server.utils.Utils;
 
 public class ApiService {
 
     private final HttpClient httpClient = HttpClients.shared();
 
-    public CompletableFuture<InputStream> getMapPreview(byte[] mapData) {
-        Map<String, Object> body = Map.of("data", Base64.getEncoder().encodeToString(mapData));
+    public CompletableFuture<InputStream> getMapPreview(String filename, byte[] mapData) {
+        MultipartBody body = MultipartBody.encodeFile("data", filename, mapData);
 
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create("https://api.mindustry-tool.com/api/v4/maps/image-json"))
-                .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(Utils
-                        .toJsonString(body)))
+                .uri(URI.create("https://content.mindustry-tool.com/api/v2/maps/image"))
+                .header("Content-Type", body.contentType())
+                .header("x-source", "server manager")
+                .POST(HttpRequest.BodyPublishers.ofByteArray(body.body()))
                 .timeout(Duration.ofMinutes(5))
                 .build();
 
@@ -33,15 +31,14 @@ public class ApiService {
                 .thenApply(response -> {
                     if (response.statusCode() >= 400) {
                         String message = "Unknown error";
-                        
+
                         try {
                             message = new String(response.body().readAllBytes());
                         } catch (Exception ignored) {
                         }
 
                         throw new ApiError(response.statusCode(),
-                                "Get map preview failed: " + "https://api.mindustry-tool.com/api/v4/maps/image-json"
-                                        + " - " + response.statusCode() + " - " + message);
+                                "Get map preview failed: " + " - " + response.statusCode() + " - " + message);
                     }
 
                     return response.body();

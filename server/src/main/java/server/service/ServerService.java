@@ -428,7 +428,7 @@ public class ServerService {
             if (mapBytes.length > 0) {
                 Log.info("Generate map preview for file " + mapFilePath + " on server " + serverId);
 
-                apiService.getMapPreview(mapBytes).whenComplete((res, err) -> {
+                apiService.getMapPreview(mapFilePath, mapBytes).whenComplete((res, err) -> {
                     if (res != null) {
                         try {
                             nodeManager.writeFile(serverId, path, res.readAllBytes());
@@ -470,7 +470,7 @@ public class ServerService {
         if (filename != null && filename.endsWith("msav")) {
             CompletableFuture.runAsync(() -> {
                 try {
-                    byte[] image = apiService.getMapPreview(bytes).get(5, TimeUnit.MINUTES).readAllBytes();
+                    byte[] image = apiService.getMapPreview(filename, bytes).get(5, TimeUnit.MINUTES).readAllBytes();
                     byte[] preview = Utils.toByteArray(Utils.toPreviewImage(Utils.fromBytes(image)));
                     nodeManager.writeFile(serverId, path + ".png", preview);
                 } catch (Exception e) {

@@ -7,7 +7,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -35,6 +34,7 @@ import common.content.ModMetadata;
 import common.player.PlayerInfo;
 import common.server.ServerSnapshot;
 import common.server.ServerStatus;
+import common.util.MultipartBody;
 import mindustry.Vars;
 import mindustry.core.Version;
 import mindustry.gen.Groups;
@@ -218,16 +218,17 @@ public class Utils {
                     return;
                 }
 
-                HashMap<String, String> body = new HashMap<>();
-
-                body.put("data", Base64.getEncoder().encodeToString(bytes));
-
                 try {
+                    MultipartBody multipart = MultipartBody.encodeFile("data", "save.msav", bytes);
+
                     byte[] response = HttpUtils.send(
-                            HttpUtils.post("https://api.mindustry-tool.com", "api", "v4", "maps", "image-json")
-                                    .header("Content-Type", "application/json")
-                                    .POST(HttpRequest.BodyPublishers.ofString(JsonUtils.toJsonString(body))),
+                            HttpUtils.post("https://content.mindustry-tool.com", "api", "v2", "maps", "image")
+                                    .header("Content-Type", multipart.contentType())
+                                    .header("x-source", "mindustry server")
+                                    .POST(HttpRequest.BodyPublishers.ofByteArray(multipart.body())),
+
                             Duration.ofSeconds(180));
+
                     tempImageFile.writeBytes(response, false);
                 } catch (Exception e) {
                     Log.err("Fail to generate map preview: " + e.getMessage() + ", force=" + force, e);
