@@ -92,13 +92,14 @@ public class Scheduler {
             float delaySeconds = schedule.unit().toMillis(schedule.delay()) / 1000f;
             float intervalSeconds = schedule.unit().toMillis(schedule.fixedDelay()) / 1000f;
 
-            Timer.schedule(new Timer.Task() {
+            Timer.Task reschedulingTask = new Timer.Task() {
                 @Override
                 public void run() {
                     wrapped.run();
                     Timer.schedule(this, intervalSeconds);
                 }
-            }, delaySeconds);
+            };
+            Timer.schedule(reschedulingTask, delaySeconds);
         } else {
             scheduler.scheduleWithFixedDelay(wrapped, schedule.delay(), schedule.fixedDelay(), schedule.unit());
         }
