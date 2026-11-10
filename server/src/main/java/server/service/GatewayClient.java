@@ -259,7 +259,7 @@ public class GatewayClient {
                         .header("X-MANAGER-AUTH", envConfig.serverConfig().accessToken())
                         .timeout(Duration.ofMinutes(2));
             } catch (Exception e) {
-                throw new ApiError(500, "Internal server error", e);
+                throw new ApiError(500, "Internal manager server error", e);
             }
         }
 
@@ -279,7 +279,7 @@ public class GatewayClient {
                 if (e instanceof ApiError apiError) {
                     throw apiError;
                 }
-                throw new ApiError(500, "Internal server error", e);
+                throw new ApiError(500, "Internal manager server error", e);
             }
         }
 
@@ -299,7 +299,7 @@ public class GatewayClient {
                 if (e instanceof ApiError apiError) {
                     throw apiError;
                 }
-                throw new ApiError(500, "Internal server error", e);
+                throw new ApiError(500, "Internal manager server error", e);
             }
         }
     }

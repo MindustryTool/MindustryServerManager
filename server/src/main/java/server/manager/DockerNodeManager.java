@@ -246,12 +246,14 @@ public class DockerNodeManager implements NodeManager {
             portBindings.bind(localTcp, Ports.Binding.bindPort(9999));
             exposedPorts.add(localTcp);
         }
+        long period = 100_000L;
 
         HostConfig hostConfig = HostConfig.newHostConfig()
                 .withPortBindings(portBindings)
                 .withNetworkMode("mindustry-server")
-                // Experimental: Limit CPU using share
-                .withCpuShares((int) (request.getCpu() * 1024))
+                .withCpuPeriod(period)
+                .withCpuQuota((long) (request.getCpu() * period))
+                // .withCpuShares((int) (request.getCpu() * 1024))
                 .withCpusetCpus("0-4")
                 .withMemory(request.getMemory() * 1024 * 1024L)
                 .withRestartPolicy(RestartPolicy.onFailureRestart(1000))
@@ -261,15 +263,6 @@ public class DockerNodeManager implements NodeManager {
                 .withPidsLimit(256L)
                 .withDns("8.8.8.8", "1.1.1.1")
                 .withBinds(bind);
-
-        if (!request.getIsOfficial()) {
-            long period = 100_000L;
-
-            hostConfig
-                    .withCpuPeriod(period)
-                    .withCpuQuota((long) (request.getCpu() * period));
-
-        }
 
         if (Const.IS_PRODUCTION) {
             hostConfig.withExtraHosts(

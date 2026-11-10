@@ -56,8 +56,8 @@ public class TrailService {
         Trail.create(this, "explotion", 0, Fx.explosion, TrailRequirement.admin());
     }
 
-    @Schedule(fixedRate = 1, unit = TimeUnit.SECONDS)
     @MainThread
+    @Schedule(fixedDelay = 1, unit = TimeUnit.SECONDS)
     private void render() {
         sessionService.each(session -> {
             var userTrail = session.getData().trail;
