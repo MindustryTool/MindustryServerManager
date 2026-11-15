@@ -47,7 +47,7 @@ public class TipService {
         tips.add(tip);
     }
 
-    @Schedule(fixedDelay = 3, unit = TimeUnit.MINUTES)
+    @Schedule(fixedDelay = 5, unit = TimeUnit.MINUTES)
     private void sendTips() {
         if (Vars.state.isPlaying()) {
             var tip = tips.random();
@@ -55,7 +55,7 @@ public class TipService {
             Tasks.io("Send tip", () -> {
                 Utils.forEachPlayerLocale((locale, players) -> {
                     for (var player : players) {
-                        player.sendMessage("\n[sky]" + tip.get(locale) + "[white]\n");
+                        player.sendMessage("[sky]" + tip.get(locale));
                     }
                 });
             });
