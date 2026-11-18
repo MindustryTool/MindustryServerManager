@@ -80,7 +80,7 @@ public class EventHandler {
     @Listener
     private void onPlayerChat(PlayerChatEvent event) {
         if (!event.message.startsWith("/")) {
-            String message = Strings.format("[@]: @", event.player.name, Strings.stripColors(event.message));
+            String message = Strings.format("[@]: @", Strings.stripColors(event.player.name), Strings.stripColors(event.message));
             apiGateway.fire(new ServerEvents.ChatEvent(Control.SERVER_ID, message));
         }
     }
