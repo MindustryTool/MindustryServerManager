@@ -36,26 +36,26 @@ Ranking order SHALL be evaluated as follows:
 - **THEN** the attempt is not added to the top 10 records
 
 ### Requirement: Pause-Aware Map Duration Tracking
-The system SHALL exclude paused game time from the tracked map duration calculation across all gamemodes.
+The system SHALL calculate map completion or survival duration using in-game simulation ticks (`Vars.state.tick / 60.0`), automatically excluding paused periods and scaling with simulation speed.
 
 #### Scenario: Game is paused and resumed
 - **WHEN** a game is paused during play and later resumed
-- **THEN** the duration spent in paused state is subtracted from the final calculated map duration
+- **THEN** simulation ticks do not increment during the pause and the recorded duration reflects only active gameplay time
 
 ### Requirement: In-Game Leaderboard Presentation and Command
-The system SHALL provide in-game notifications and a custom menu to view stored map records.
+The system SHALL provide in-game notifications and a custom menu to view stored map records, formatting duration in clean seconds without raw milliseconds.
 
 #### Scenario: Map start or player join announcement
 - **WHEN** a map begins or a player joins the server
-- **THEN** the #1 best record for the current map and gamemode is displayed to players, or a no-record notification if none exist
+- **THEN** the #1 best record for the current map and gamemode is displayed to players with clean seconds precision (e.g. `5m20s`), or a no-record notification if none exist
 
 #### Scenario: Inspecting top 10 records via client command
 - **WHEN** a player executes the `/records` command
-- **THEN** a custom `ServerMenu` opens displaying the top 10 recorded attempts for the current map, including rank, time, date, and participant names
+- **THEN** a custom `ServerMenu` opens displaying the top 10 recorded attempts for the current map, including rank, duration formatted in clean seconds, relative achievement date (e.g. `2d ago`), and participant names
 
 #### Scenario: Achieving a new record
 - **WHEN** a qualifying attempt finishes and ranks as a new #1 record
-- **THEN** a server-wide announcement broadcasts the new record time to all players
+- **THEN** a server-wide announcement broadcasts the new record time formatted in clean seconds to all players
 
 ### Requirement: Session Participation Bonus
 The system SHALL reward connected players with an EXP bonus based on their active participation duration relative to the total map duration upon a winning game completion.
@@ -75,4 +75,30 @@ The system SHALL reward connected players with an EXP bonus based on their activ
 - **WHEN** a game reaches game over or completion
 - **THEN** the attempt persistence and pruning logic executes asynchronously inside `Tasks.io`
 - **AND** any new best record notifications are posted back to players on completion
+
+### Requirement: One-Time Legacy Record Migration Purge
+The system SHALL execute a one-time purge of existing `map_records` on initial deployment guarded by a persistent flag in `Core.settings` (`map_records_v2_migrated`). Once purged, the flag SHALL be persisted so subsequent server deploys and restarts never clear the table again.
+
+#### Scenario: Initial deployment after update
+- **WHEN** the server boots with `map_records_v2_migrated` not set
+- **THEN** all existing corrupt records in `map_records` are cleared and `map_records_v2_migrated` is set to true and saved
+
+#### Scenario: Subsequent deployments and server reboots
+- **WHEN** the server restarts or is redeployed with `map_records_v2_migrated` already set to true
+- **THEN** existing map records are retained intact and no purge occurs
+
+### Requirement: Administrative Record Management Commands
+The system SHALL provide administrative commands on both server console and client to purge map records on demand.
+
+#### Scenario: Server console clears records
+- **WHEN** an administrator runs `clearrecords` or `clearrecords all` on the console
+- **THEN** all map records are deleted and in-memory best records are cleared
+
+#### Scenario: Server console clears specific map
+- **WHEN** an administrator runs `clearrecords <mapName>` on the console
+- **THEN** records for only that map are deleted
+
+#### Scenario: In-game administrator clears records
+- **WHEN** an authorized admin executes `/records-clear all` or `/records-clear current`
+- **THEN** the specified records are deleted and in-memory caches are updated
 

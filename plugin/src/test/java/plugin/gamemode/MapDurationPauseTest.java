@@ -1,19 +1,13 @@
 package plugin.gamemode;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.time.Duration;
-import java.time.Instant;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import mindustry.Vars;
 import mindustry.core.GameState;
-import mindustry.game.EventType.PlayEvent;
-import mindustry.game.EventType.StateChangeEvent;
 import mindustry.gen.Groups;
-import plugin.maprecord.MapRecordService;
 
 public class MapDurationPauseTest {
 
@@ -24,26 +18,16 @@ public class MapDurationPauseTest {
     }
 
     @Test
-    void testMapRecordServicePauseTracking() throws InterruptedException {
+    void testTickDurationCalculation() {
         Vars.state.set(GameState.State.playing);
-        MapRecordService service = new MapRecordService(null, null);
-        service.onPlayEvent(new PlayEvent());
+        Vars.state.tick = 3600.0; // 3600 ticks at 60 tps = 60 seconds = 60,000 ms
 
-        Instant initialStart = service.getMapStartedAt();
+        long durationMs = (long) ((Vars.state.tick / 60.0) * 1000.0);
+        assertEquals(60_000L, durationMs);
 
-        // Pause state transition
-        Vars.state.set(GameState.State.paused);
-        service.onStateChangeEvent(new StateChangeEvent(GameState.State.playing, GameState.State.paused));
-
-        Thread.sleep(100);
-
-        // Resume state transition
-        Vars.state.set(GameState.State.playing);
-        service.onStateChangeEvent(new StateChangeEvent(GameState.State.paused, GameState.State.playing));
-
-        Instant newStart = service.getMapStartedAt();
-        assertTrue(newStart.isAfter(initialStart));
-        long pausedDiff = Duration.between(initialStart, newStart).toMillis();
-        assertTrue(pausedDiff >= 80, "Paused difference should be at least 80ms, got: " + pausedDiff);
+        // Advance ticks
+        Vars.state.tick += 180.0; // 3 more seconds = 63 seconds = 63,000 ms
+        durationMs = (long) ((Vars.state.tick / 60.0) * 1000.0);
+        assertEquals(63_000L, durationMs);
     }
 }

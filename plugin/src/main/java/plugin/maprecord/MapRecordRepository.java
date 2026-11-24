@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import arc.Core;
+import arc.util.Log;
 import lombok.RequiredArgsConstructor;
 import plugin.annotations.Component;
 import plugin.annotations.Init;
@@ -15,6 +17,8 @@ import plugin.utils.JsonUtils;
 @Component
 @RequiredArgsConstructor
 public class MapRecordRepository {
+    public static final String MIGRATION_KEY = "map_records_v2_migrated";
+
     private final Database database;
 
     @Init
@@ -28,6 +32,26 @@ public class MapRecordRepository {
                 MapRecords.PLAYERS,
                 MapRecords.CREATED_AT
         );
+
+        if (!Core.settings.getBool(MIGRATION_KEY, false)) {
+            clearAll();
+            Core.settings.put(MIGRATION_KEY, true);
+            Core.settings.forceSave();
+            Log.info("Purged legacy map records with invalid duration (v2 migration).");
+        }
+    }
+
+    public synchronized void clearAll() {
+        database.db().delete(MapRecords.TABLE).all().execute();
+    }
+
+    public synchronized void clearByMap(String mapName) {
+        if (mapName == null) {
+            return;
+        }
+        database.db().delete(MapRecords.TABLE)
+                .where(MapRecords.MAP_NAME.eq(mapName))
+                .execute();
     }
 
     public boolean isAscending(String gamemode) {

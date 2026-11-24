@@ -8,6 +8,8 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 
+import arc.Core;
+import arc.Settings;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,6 +26,10 @@ public class MapRecordRepositoryTest {
 
     @BeforeEach
     void setUp() {
+        if (Core.settings == null) {
+            Core.settings = new Settings();
+        }
+        Core.settings.put(MapRecordRepository.MIGRATION_KEY, true);
         Database.setTestPath(tempDir.resolve("map_records.db"));
         database = new Database();
         repository = new MapRecordRepository(database);
@@ -116,5 +122,60 @@ public class MapRecordRepositoryTest {
         assertEquals("Alice", rec.players().get(0).name());
         assertEquals("uuid-beta", rec.players().get(1).uuid());
         assertEquals("Bob", rec.players().get(1).name());
+    }
+
+    @Test
+    void testClearAll() {
+        String map = "clear-map";
+        String mode = "attack";
+        List<MapRecordPlayer> players = List.of(new MapRecordPlayer("u1", "Player1"));
+
+        repository.saveAttempt(map, mode, 5000L, players, 1000L);
+        assertEquals(1, repository.getTopRecords(map, mode, 10).size());
+
+        repository.clearAll();
+        assertTrue(repository.getTopRecords(map, mode, 10).isEmpty());
+    }
+
+    @Test
+    void testClearByMap() {
+        String map1 = "map-one";
+        String map2 = "map-two";
+        String mode = "attack";
+        List<MapRecordPlayer> players = List.of(new MapRecordPlayer("u1", "Player1"));
+
+        repository.saveAttempt(map1, mode, 5000L, players, 1000L);
+        repository.saveAttempt(map2, mode, 6000L, players, 1001L);
+
+        assertEquals(1, repository.getTopRecords(map1, mode, 10).size());
+        assertEquals(1, repository.getTopRecords(map2, mode, 10).size());
+
+        repository.clearByMap(map1);
+        assertTrue(repository.getTopRecords(map1, mode, 10).isEmpty());
+        assertEquals(1, repository.getTopRecords(map2, mode, 10).size());
+    }
+
+    @Test
+    void testOneTimeMigrationOnlyRunsOnce() {
+        Core.settings.put(MapRecordRepository.MIGRATION_KEY, false);
+        String map = "migrated-map";
+        String mode = "attack";
+        List<MapRecordPlayer> players = List.of(new MapRecordPlayer("u1", "Player1"));
+
+        repository.saveAttempt(map, mode, 5000L, players, 1000L);
+        assertEquals(1, repository.getTopRecords(map, mode, 10).size());
+
+        // First init runs migration and wipes
+        repository.init();
+        assertTrue(repository.getTopRecords(map, mode, 10).isEmpty());
+        assertTrue(Core.settings.getBool(MapRecordRepository.MIGRATION_KEY, false));
+
+        // Insert new record after migration
+        repository.saveAttempt(map, mode, 4000L, players, 2000L);
+        assertEquals(1, repository.getTopRecords(map, mode, 10).size());
+
+        // Second init (e.g. server restart) should NOT wipe
+        repository.init();
+        assertEquals(1, repository.getTopRecords(map, mode, 10).size());
     }
 }

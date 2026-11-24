@@ -12,7 +12,6 @@ import mindustry.Vars;
 import mindustry.game.EventType.GameOverEvent;
 import mindustry.game.EventType.PlayEvent;
 import mindustry.game.EventType.PlayerJoin;
-import mindustry.game.EventType.StateChangeEvent;
 import plugin.annotations.Component;
 import plugin.annotations.ConditionOn;
 import plugin.annotations.Listener;
@@ -32,18 +31,42 @@ public class MapRecordService {
     private final MapRecordRepository repository;
     private final SessionService sessionService;
 
-    private Instant mapStartedAt = Instant.now();
-    private Instant pauseStartedAt = null;
-
     private volatile MapRecord currentBestRecord;
     private volatile String currentBestMapName;
     private volatile String currentBestGamemode;
 
-    public Instant getMapStartedAt() {
-        if (pauseStartedAt != null) {
-            return mapStartedAt.plus(Duration.between(pauseStartedAt, Instant.now()));
+    public void resetCachedRecord() {
+        currentBestRecord = null;
+        currentBestMapName = null;
+        currentBestGamemode = null;
+        reloadBestRecord();
+    }
+
+    public void reloadBestRecord() {
+        var map = Vars.state.map;
+        if (repository == null || map == null || map.file == null) {
+            return;
         }
-        return mapStartedAt;
+
+        String mapName = map.file.nameWithoutExtension();
+        String gamemode = Gamemode.current();
+
+        Tasks.io("load map best record", () -> {
+            MapRecord record = repository.getBestRecord(mapName, gamemode).orElse(null);
+
+            Core.app.post(() -> {
+                if (Vars.state.map == null || Vars.state.map.file == null) {
+                    return;
+                }
+                if (!mapName.equals(Vars.state.map.file.nameWithoutExtension())) {
+                    return;
+                }
+
+                currentBestRecord = record;
+                currentBestMapName = mapName;
+                currentBestGamemode = gamemode;
+            });
+        });
     }
 
     public String buildRankString(Locale locale) {
@@ -60,15 +83,12 @@ public class MapRecordService {
         List<String> playerNames = record.players().stream().map(MapRecordPlayer::name).toList();
         return Tr.t(locale, "rank.title",
                 "map", map.name(),
-                "time", TimeUtils.toString(Duration.ofMillis(record.durationMs())),
+                "time", TimeUtils.toSeconds(Duration.ofMillis(record.durationMs())),
                 "players", String.join(", ", playerNames));
     }
 
     @Listener
     public void onPlayEvent(PlayEvent event) {
-        mapStartedAt = Instant.now();
-        pauseStartedAt = Vars.state.isPaused() ? Instant.now() : null;
-
         currentBestRecord = null;
         currentBestMapName = null;
         currentBestGamemode = null;
@@ -111,20 +131,6 @@ public class MapRecordService {
     }
 
     @Listener
-    public void onStateChangeEvent(StateChangeEvent event) {
-        if (Vars.state.isPaused()) {
-            if (pauseStartedAt == null) {
-                pauseStartedAt = Instant.now();
-            }
-        } else {
-            if (pauseStartedAt != null) {
-                mapStartedAt = mapStartedAt.plus(Duration.between(pauseStartedAt, Instant.now()));
-                pauseStartedAt = null;
-            }
-        }
-    }
-
-    @Listener
     public void onPlayerJoin(PlayerJoin event) {
         event.player.sendMessage(buildRankString(Utils.parseLocale(event.player.locale())));
     }
@@ -153,7 +159,7 @@ public class MapRecordService {
             return;
         }
 
-        long durationMs = Duration.between(getMapStartedAt(), Instant.now()).toMillis();
+        long durationMs = (long) ((Vars.state.tick / 60.0) * 1000.0);
         String mapName = Vars.state.map.file.nameWithoutExtension();
 
         List<MapRecordPlayer> players = new ArrayList<>();
@@ -174,7 +180,7 @@ public class MapRecordService {
         if (sessionService != null) {
             sessionService.each(session -> {
                 long playerPlayedDuration = Duration.between(Instant.ofEpochMilli(session.joinedAt), Instant.now()).abs().toSeconds();
-                long mapDuration = Duration.between(getMapStartedAt(), Instant.now()).abs().toSeconds();
+                long mapDuration = (long) (Vars.state.tick / 60.0);
                 float playerParticipation = mapDuration > 0 ? (float) playerPlayedDuration / mapDuration : 1f;
 
                 if (playerPlayedDuration > mapDuration || playerParticipation > 1f) {
@@ -196,7 +202,7 @@ public class MapRecordService {
         if (result.isNewBest()) {
             Utils.forEachPlayerLocale((locale, ps) -> {
                 String msg = Tr.t(locale, "rank.new_best_time",
-                        "time", TimeUtils.toString(Duration.ofMillis(durationMs)));
+                        "time", TimeUtils.toSeconds(Duration.ofMillis(durationMs)));
                 for (var p : ps) {
                     p.sendMessage(msg);
                 }
@@ -205,7 +211,7 @@ public class MapRecordService {
             Utils.forEachPlayerLocale((locale, ps) -> {
                 String msg = Tr.t(locale, "rank.new_rank",
                         "rank", String.valueOf(result.rank()),
-                        "time", TimeUtils.toString(Duration.ofMillis(durationMs)));
+                        "time", TimeUtils.toSeconds(Duration.ofMillis(durationMs)));
                 for (var p : ps) {
                     p.sendMessage(msg);
                 }

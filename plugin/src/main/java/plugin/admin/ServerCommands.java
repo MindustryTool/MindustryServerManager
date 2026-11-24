@@ -20,6 +20,9 @@ import plugin.annotations.ServerCommand;
 import plugin.database.Database;
 import plugin.event.UnloadServerEvent;
 import plugin.gamemode.Gamemode;
+import plugin.maprecord.MapRecordRepository;
+import plugin.maprecord.MapRecordService;
+import plugin.core.Registry;
 import plugin.security.UserBanService;
 import plugin.security.ModerationLogService;
 import plugin.session.ExpUtils;
@@ -37,6 +40,23 @@ public class ServerCommands {
 
     public ServerCommands(Database database) {
         this.database = database;
+    }
+
+    @ServerCommand(name = "clearrecords", description = "Clear map records: clearrecords [mapName|all]")
+    private void clearrecords(
+            @Param(name = "target", required = false) String target,
+            MapRecordRepository repository) {
+
+        MapRecordService recordService = Registry.getOrNull(MapRecordService.class);
+        if (target == null || target.equalsIgnoreCase("all")) {
+            repository.clearAll();
+            if (recordService != null) recordService.resetCachedRecord();
+            Log.info("All map records cleared.");
+        } else {
+            repository.clearByMap(target);
+            if (recordService != null) recordService.resetCachedRecord();
+            Log.info("Map records for '@' cleared.", target);
+        }
     }
 
     @ServerCommand(name = "gamemode", description = "Set gamemode")

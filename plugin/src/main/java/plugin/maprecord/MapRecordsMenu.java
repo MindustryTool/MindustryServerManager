@@ -37,9 +37,12 @@ public class MapRecordsMenu extends ServerMenu<MapRecordMenuState> {
             for (int i = 0; i < records.size(); i++) {
                 MapRecord record = records.get(i);
                 int rank = i + 1;
-                String time = TimeUtils.toString(Duration.ofMillis(record.durationMs()));
+                String time = TimeUtils.toSeconds(Duration.ofMillis(record.durationMs()));
                 List<String> names = record.players().stream().map(MapRecordPlayer::name).toList();
                 String playersStr = names.isEmpty() ? "-" : String.join(", ", names);
+
+                long elapsedAgo = Math.max(0, System.currentTimeMillis() - record.createdAt());
+                String ago = TimeUtils.toSeconds(Duration.ofMillis(elapsedAgo)) + " ago";
 
                 String rankBadge = rank == 1 ? "[gold]#1" : rank == 2 ? "[#C0C0C0]#2" : rank == 3 ? "[#CD7F32]#3" : "[lightgray]#" + rank;
                 TableBuilder card = UiBuilder.table().background("pane").margin(10f).align("left");
@@ -49,6 +52,8 @@ public class MapRecordsMenu extends ServerMenu<MapRecordMenuState> {
                 card.add(UiBuilder.label("[green]" + time).align("right").padLeft(6f));
                 card.row();
                 card.add(UiBuilder.label("[lightgray]" + playersStr).wrap().align("left").colspan(2).growX().padTop(2f));
+                card.row();
+                card.add(UiBuilder.label("[gray]" + ago).align("right").colspan(2).growX().padTop(2f));
 
                 paneTable.add(card.growX().pad(2f)).row();
             }
